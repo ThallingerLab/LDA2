@@ -1,0 +1,5979 @@
+package at.tugraz.genome.lda;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Frame;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Hashtable;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Properties;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.Vector;
+
+import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JApplet;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.UIManager;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.table.TableColumnModel;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+
+////import jlk.LicenseHandler;
+////import jlk.MatrixLipidDataAnalyzer2;
+
+import org.apache.batik.dom.GenericDOMImplementation;
+import org.apache.batik.svggen.SVGGraphics2D;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.w3c.dom.DOMImplementation;
+import org.w3c.dom.Document;
+
+import uk.ac.ebi.pride.jmztab.model.Assay;
+import uk.ac.ebi.pride.jmztab.model.CVParam;
+import uk.ac.ebi.pride.jmztab.model.MZTabColumnFactory;
+import uk.ac.ebi.pride.jmztab.model.Metadata;
+import uk.ac.ebi.pride.jmztab.model.MZTabFile;
+import uk.ac.ebi.pride.jmztab.model.MZTabDescription;
+import uk.ac.ebi.pride.jmztab.model.Contact;
+import uk.ac.ebi.pride.jmztab.model.Instrument;
+import uk.ac.ebi.pride.jmztab.model.Modification;
+import uk.ac.ebi.pride.jmztab.model.MsRun;
+import uk.ac.ebi.pride.jmztab.model.Param;
+import uk.ac.ebi.pride.jmztab.model.PublicationItem;
+import uk.ac.ebi.pride.jmztab.model.Section;
+import uk.ac.ebi.pride.jmztab.model.SmallMolecule;
+import uk.ac.ebi.pride.jmztab.model.SmallMoleculeColumn;
+import uk.ac.ebi.pride.jmztab.model.Software;
+import uk.ac.ebi.pride.jmztab.model.StudyVariable;
+import uk.ac.ebi.pride.jmztab.model.UserParam;
+import at.tugraz.genome.lda.analysis.AnalyteAddRemoveListener;
+import at.tugraz.genome.lda.analysis.ClassNamesExtractor;
+import at.tugraz.genome.lda.analysis.ComparativeAnalysis;
+import at.tugraz.genome.lda.analysis.ComparativeNameExtractor;
+import at.tugraz.genome.lda.analysis.HeatMapClickListener;
+import at.tugraz.genome.lda.analysis.exception.CalculationNotPossibleException;
+import at.tugraz.genome.lda.exception.AbsoluteSettingsInputException;
+import at.tugraz.genome.lda.exception.ExcelInputFileException;
+import at.tugraz.genome.lda.exception.NoRuleException;
+import at.tugraz.genome.lda.exception.RulesException;
+import at.tugraz.genome.lda.exception.SettingsException;
+import at.tugraz.genome.lda.interfaces.ColorChangeListener;
+import at.tugraz.genome.lda.listeners.AnnotationThresholdListener;
+import at.tugraz.genome.lda.msn.FragmentCalculator;
+import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
+import at.tugraz.genome.lda.msn.MSnAnalyzer;
+import at.tugraz.genome.lda.quantification.LipidParameterSet;
+import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
+import at.tugraz.genome.lda.quantification.QuantificationResult;
+import at.tugraz.genome.lda.swing.AbsoluteQuantSettingsPanel;
+import at.tugraz.genome.lda.swing.BarChartPainter;
+import at.tugraz.genome.lda.swing.BatchQuantificationTable;
+import at.tugraz.genome.lda.swing.BatchQuantificationTableModel;
+import at.tugraz.genome.lda.swing.ClassesOverviewPanel;
+import at.tugraz.genome.lda.swing.ColorChooserDialog;
+import at.tugraz.genome.lda.swing.CutoffSettingsPanel;
+import at.tugraz.genome.lda.swing.ExportPanel;
+import at.tugraz.genome.lda.swing.GroupsPanel;
+import at.tugraz.genome.lda.swing.HeatMapDrawing;
+import at.tugraz.genome.lda.swing.InputDialog;
+import at.tugraz.genome.lda.swing.JHyperlink;
+import at.tugraz.genome.lda.swing.LipidomicsJTable;
+import at.tugraz.genome.lda.swing.LipidomicsTableCellRenderer;
+import at.tugraz.genome.lda.swing.LipidomicsTableModel;
+import at.tugraz.genome.lda.swing.RangeColor;
+import at.tugraz.genome.lda.swing.ResultDisplaySettings;
+import at.tugraz.genome.lda.swing.ResultSelectionSettings;
+import at.tugraz.genome.lda.swing.RuleDefinitionInterface;
+import at.tugraz.genome.lda.swing.SpectrumUpdateListener;
+import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.verifier.DoubleVerifier;
+import at.tugraz.genome.lda.verifier.IntegerMaxVerifier;
+import at.tugraz.genome.lda.vos.AbsoluteSettingsVO;
+import at.tugraz.genome.lda.vos.AddAnalyteVO;
+import at.tugraz.genome.lda.vos.AutoAnalyteAddVO;
+import at.tugraz.genome.lda.vos.IntegerStringVO;
+import at.tugraz.genome.lda.vos.RawQuantificationPairVO;
+import at.tugraz.genome.lda.vos.ResultAreaVO;
+import at.tugraz.genome.lda.vos.ResultCompVO;
+import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
+import at.tugraz.genome.lda.xml.AbsoluteQuantSettingsWholeReader;
+import at.tugraz.genome.lda.xml.AbsoluteQuantSettingsWholeWriter;
+import at.tugraz.genome.lda.xml.CutoffSettingsReader;
+import at.tugraz.genome.lda.xml.CutoffSettingsWriter;
+import at.tugraz.genome.maspectras.chromaviewer.MSMapViewer;
+import at.tugraz.genome.maspectras.chromaviewer.MSMapViewerFactory;
+import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
+import at.tugraz.genome.maspectras.quantification.CgAreaStatus;
+import at.tugraz.genome.lda.quantification.LipidomicsDefines;
+import at.tugraz.genome.maspectras.quantification.CgException;
+import at.tugraz.genome.maspectras.quantification.CgProbe;
+import at.tugraz.genome.maspectras.quantification.ChromatogramReader;
+import at.tugraz.genome.maspectras.quantification.Probe3D;
+import at.tugraz.genome.maspectras.utils.Calculator;
+import at.tugraz.genome.maspectras.utils.StringUtils;
+import at.tugraz.genome.voutils.GeneralComparator;
+
+import com.sun.j3d.utils.applet.MainFrame;
+
+public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMapClickListener,AnalyteAddRemoveListener,ColorChangeListener,SpectrumUpdateListener
+{
+    
+  private static final long serialVersionUID = -1358973418774645198L;
+  
+  private static MainFrame frame_;
+  private JFileChooser mzXMLFileChooser;
+  private JFileChooser mzXMLDirChooser;
+  private JTabbedPane mainTabs;
+  private JPanel singleQuantMenu;
+  private JPanel batchQuantMenu_;
+  private JPanel resultsMenu_;
+  private JPanel resultsPanel_;
+  private JPanel settingsPanel_;
+  private JPanel licensePanel_;
+  private JPanel helpPanel_;
+  private JPanel aboutPanel_;
+  private JPanel displayTopMenu;
+  private JLabel mzXMLLabel;
+  private JTextField selectedMzxmlFile;
+  private JTextField selectedMzxmlDirectory_;
+  private JButton jButtonMxXMLOpen;
+  private JButton jButtonMxXMLDirOpen_;
+  private QuantificationThread quantThread_;
+  private BatchQuantThread batchQuantThread_;
+  private RawToMzxmlThread rawmzThread_;
+  private MzxmlToChromThread mzToChromThread_;
+  private Timer timer_;
+  private JLabel quantifyingLabel_;
+  private JLabel quantifyingBatchLabel_;
+  
+  private JLabel resultStatus_;
+
+  private JTabbedPane resultTabs_;
+  private JPanel resultStatusPanel_;
+  private JPanel resultsSelectionPanel_;
+  private Hashtable<String,JTabbedPane> molBarCharts_; 
+
+  private JButton jButtonResultsDirOpen_;
+  private JButton jButtonResultFilesOpen_;
+  private JButton jButtonResultFilesRemove_;
+  private JButton jButtonResultAddToGroup_;
+  private JCheckBox separateHitsByRT_;
+  private JTextField rtGroupingTime_;
+  private JLabel rtTimeUnit_;
+  private JButton jButtonResultFilesClean_;
+  private GroupsPanel groupsPanel_;
+  private AbsoluteQuantSettingsPanel quantSettingsPanel_;
+  private CutoffSettingsPanel cutoffSettingsPanel_;
+  private JButton jButtonResultFilesAccept_;
+  private JButton jButtonResultAbsQuant_;
+  private JButton jButtonResultCutoff_;
+  private JFileChooser resultsDirChooser_;
+  private JFileChooser resultFilesChooser_;
+  private JScrollPane analysisTablePane;
+  private JPanel analysisSelectionTablePanel_;
+  private JTable resultFilesDisplayTable;
+  private ListSelectionModel resultListSelectionModel;
+  private ImageIcon addFilesIcon_ = new ImageIcon(getClass().getResource(
+  "/images/addFiles.gif"));
+  private ImageIcon addFolderIcon_ = new ImageIcon(getClass().getResource(
+  "/images/addFromFolder.gif"));
+  private ImageIcon removeFilesIcon_ = new ImageIcon(getClass().getResource(
+  "/images/removeFiles.gif"));
+  private ImageIcon addToGroupIcon_ = new ImageIcon(getClass().getResource(
+  "/images/User16.gif"));
+  private ImageIcon ldaLogo_ = new ImageIcon(getClass().getResource(
+      "/images/lda_logo.png"));
+  private ImageIcon tugLogo_ = new ImageIcon(getClass().getResource(
+      "/images/logo-RGB.png"));
+
+  private JTextField internalStandardSelection_;
+  private JTextField externalStandardSelection_;
+  private JTextField correctOrderFile_;
+  private JFileChooser correctOrderFileChooser_;
+
+  
+  private JLabel chromLabel;
+  private JTextField selectedChromFile;
+  private JButton jButtonChromOpen;
+  private JTextField selectedQuantFile;
+  private JTextField selectedQuantDir_;
+  private JButton jButtonQuantOpen;
+  private JButton jBatchQuantOpen_;
+  private JButton startQuantification;
+  private JButton startBatchQuantification_;
+  private JFileChooser chromFileChooser_;
+  private JFileChooser quantFileChooser_;
+  private JFileChooser quantDirChooser_;
+  private JTextField singleTimeMinusTol_;
+  private JTextField singleTimePlusTol_;
+  private JTextField singleCutoff_;
+  private JTextField singleRTShift_;
+  private JCheckBox isoValidation_;
+  private JTextField amountOfIsotopes_;
+  private JCheckBox isoBatchValidation_;
+  private JTextField amountOfBatchIsotopes_;
+  private JCheckBox searchUnknownTime_;
+  private JCheckBox searchUnknownBatchTime_;
+  private JTextField amountOfMatchingSearchIsotopes_;
+  private JTextField amountOfMatchingBatchSearchIsotopes_;
+  private JTextField nrProcessors_;
+  private JTextField nrProcessorsBatch_;
+
+
+  private JTextField batchTimeMinusTol_;
+  private JTextField batchTimePlusTol_;
+  private JTextField batchCutoff_;
+  private JTextField batchRTShift_;
+
+  
+  private JTextField selectedResultFile;
+  private JButton jButtonResultOpen;
+  private JButton startDisplay;
+  private JFileChooser resultFileChooser_;
+  private LipidomicsJTable displayTable;
+  private BatchQuantificationTable batchQuantTable_;
+  private BatchQuantificationTableModel batchQuantTableModel_;
+  private ListSelectionModel listSelectionModel;
+  private JPanel selectionPane;
+  private JPanel tableContainer;
+  private JPanel tablePanel_;
+  private JComboBox<String> selectedSheet_;
+  private JPanel quantifyingPanel_;
+  private JPanel quantifyingBatchPanel_;  
+  private JTextField displayMinusTolerance_;
+  private JTextField displayPlusTolerance_;
+  private JCheckBox show2D_;
+  /** show the names in MSn style in the display results or not*/
+  private JCheckBox showMSnNames_;
+
+  private Lipidomics2DPainter l2DPainter_;
+  private Lipidomics2DPainter spectrumPainter_;
+  
+  private JPanel displayPanel_;
+  private JSplitPane majorSplitPane_;
+  private JSplitPane topSplitPane_;
+  private RuleDefinitionInterface userInterface;
+  private JScrollPane tablePane;
+  private QuantificationResult result_;
+  private Hashtable<Integer,Integer> resultPositionToOriginalLoopkup_ = new Hashtable<Integer,Integer>();
+  private Hashtable<String,Integer> orderResultsType_ = new Hashtable<String,Integer>();
+  private Hashtable<String,Boolean> resultsShowModification_ = new Hashtable<String,Boolean>();
+  private Vector<File> resultFiles_;
+  private int currentSelected_ = -1;
+  private String currentSelectedSheet_ = "";
+  private ChromatogramReader reader_;
+  private LipidomicsAnalyzer analyzer_;
+  private JLabel resultWarningLabel_;
+  private JLabel cutoffWarningLabel_;
+  private JButton resultLoadButton_; 
+  private JButton resultSaveButton_; 
+  private JButton cutoffLoadButton_; 
+  private JButton cutoffSaveButton_; 
+
+  private JFileChooser saveAbsSettingsFileChooser_;
+  private JFileChooser loadAbsSettingsFileChooser_;
+
+  private JFileChooser saveCutoffSettingsFileChooser_;
+  private JFileChooser loadCutoffSettingsFileChooser_;
+  
+  private LipidParameterSet params_;
+  private MSMapViewer viewer_;
+  private JProgressBar progressBar_;
+  private JProgressBar progressBatchBar_;
+  private JLabel spinnerLabel_;
+  private JLabel spinnerBatchLabel_;
+  private JPanel l2dPanel_;
+  private JPanel spectrumPanel_;
+  private boolean readFromRaw_;
+  
+  private JRadioButton m_chkRaw_;
+  private JComboBox<String> isotope_;
+  private JLabel isotopeLabel_;
+  private JRadioButton m_chkSmooth_;
+  private JButton m_upButton_;
+  private JButton m_dnButton_;
+  private JLabel lx_min_;
+  private JLabel lx_max_;
+  private JTextField m_minTimeText_;
+  private JTextField m_maxTimeText_;
+  private JLabel lz_min_;
+  private JLabel lz_max_;
+  private JTextField mz_minTimeText_;
+  private JTextField mz_maxTimeText_;
+  private JButton m_zoomIn_;
+  private JButton m_zoomAll_;
+  private JButton mz_zoomIn_;
+  private JButton mz_zoomAll_;
+  private JRadioButton relAbund_;
+  private JRadioButton absAbund_;
+  private JLabel spectrumSelectedLabel_;
+  private JLabel spectrumSelected_;
+  private JLabel rtSelectedLabel_;
+  private JLabel rtSelected_;
+  private JLabel precursorSelectedLabel_;
+  private JLabel precursorSelected_;
+  private JButton spectrumEarlier_;
+  private JButton spectrumLater_;
+  private JLabel annotationLabel_;
+  private JTextField annotationThreshold_;
+  private JLabel annotationUnit_;
+  private ExportPanel exportSpectra_;
+  private JFileChooser exportFileChooser_;
+  
+  private JButton storeSelectedAreas_;
+  
+  private ClassesOverviewPanel classOverviewPanel_;
+  private ClassesOverviewPanel classOverviewGroupPanel_;
+  
+  private ComparativeAnalysis analysisModule_;
+  
+  private Hashtable<String,HeatMapDrawing> heatmaps_;
+  private Hashtable<String,HeatMapDrawing> groupHeatmaps_;
+  private Hashtable<String,String> expDisplayNamesLookup_;
+  private Hashtable<String,String> groupDisplayNamesLookup_;
+  
+  private ColorChooserDialog colorChooserDialog_;
+  
+  private boolean displaysMs2_;
+  private int currentMs2Position_;
+  private Vector<Vector<CgProbe>> ms1ProbesWhileMs2Display_;
+  
+  /** panel for the selection of fragmentation language settings */
+  private JPanel inputFragSettings2_;
+  /** combo box containing the available MS machines*/
+  private JComboBox<String> msMachineTypes_;
+  /** combo box containing the fragmentation settings for each machine */
+  private JComboBox<String> fragmentationSettings1_;
+  /** combo box containing the fragmentation settings for each machine for a second selection*/
+  private JComboBox<String> fragmentationSettings2_;
+  
+  private final static String CHANGE_SEPARATE_RT_STATUS = "rtActivateTextBox";
+  
+  /** Global finalButtonSection to delete it in the makeDisplayRemoveOperations */
+  private JPanel finalButtonSection_;
+  
+  /** Object for the Rule Definition Interface */
+  private RuleDefinitionInterface msnUserInterfaceObject_;
+  
+  private final static String DEFAULT_ANNOTATION_CUTOFF = "5";
+  
+  public LipidDataAnalyzer(){
+    this.checkLicense();
+    this.createDisplayTopMenu();
+    this.createSingleQuantMenu();
+    this.createBatchQuantMenu();
+    this.createResultsMenu();
+    this.initL2dPanel();
+    displaysMs2_ = false;
+
+    JPanel displayTolerancePanel = new JPanel();
+    displayTolerancePanel.setLayout(new GridBagLayout());    
+    JLabel diplayTolMinus = new JLabel("- m/z: ");
+    diplayTolMinus.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
+    displayTolerancePanel.add(diplayTolMinus,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel diplayTolPlus = new JLabel("+ m/z: ");
+    diplayTolPlus.setToolTipText(TooltipTexts.DISPLAY_MZ_PLUS);
+    displayTolerancePanel.add(diplayTolPlus,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    displayMinusTolerance_ = new JTextField(4);
+    displayMinusTolerance_.setText("1.5");
+    displayMinusTolerance_.setHorizontalAlignment(JTextField.RIGHT);
+    displayMinusTolerance_.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
+    displayMinusTolerance_.setInputVerifier(new DoubleVerifier());
+    displayTolerancePanel.add(displayMinusTolerance_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));    
+    displayPlusTolerance_ = new JTextField(4);
+    displayPlusTolerance_.setText("2.5");
+    displayPlusTolerance_.setHorizontalAlignment(JTextField.RIGHT);
+    displayPlusTolerance_.setToolTipText(TooltipTexts.DISPLAY_MZ_PLUS);
+    displayPlusTolerance_.setInputVerifier(new DoubleVerifier());
+    displayTolerancePanel.add(displayPlusTolerance_,new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel diplayTolUnit1 = new JLabel("[Da]");
+    diplayTolUnit1.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
+    displayTolerancePanel.add(diplayTolUnit1,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel diplayTolUnit2 = new JLabel("[Da]");
+    diplayTolUnit2.setToolTipText(TooltipTexts.DISPLAY_MZ_PLUS);
+    displayTolerancePanel.add(diplayTolUnit2,new GridBagConstraints(2, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JButton quantTolUpdate = new JButton("Update");
+    quantTolUpdate.addActionListener(this);
+    quantTolUpdate.setFont(quantTolUpdate.getFont().deriveFont(10f));
+    quantTolUpdate.setMargin(new Insets(1,5,1,5));
+    quantTolUpdate.setActionCommand("updateQuantTolOfCurrentlySelected");
+    quantTolUpdate.setToolTipText(TooltipTexts.DISPLAY_UPDATE);
+    displayTolerancePanel.add(quantTolUpdate,new GridBagConstraints(3, 0, 1, 2, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JPanel showOptionsPanel = new JPanel();
+    displayTolerancePanel.add(showOptionsPanel,new GridBagConstraints(0, 3, 4, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    showMSnNames_ = new JCheckBox();
+    showMSnNames_.addItemListener(new LipidomicsItemListener("showMSnNames"));
+    showMSnNames_.setToolTipText(TooltipTexts.DISPLAY_SHOW_MSN);
+    showOptionsPanel.add(showMSnNames_);
+    JLabel showMSn = new JLabel("Show MSn");
+    showMSn.setToolTipText(TooltipTexts.DISPLAY_SHOW_MSN);
+    showOptionsPanel.add(showMSn);
+    
+    show2D_ = new JCheckBox();
+    show2D_.setSelected(true);
+    show2D_.addItemListener(new LipidomicsItemListener("show2dChanged"));
+    show2D_.setToolTipText(TooltipTexts.DISPLAY_SHOW_2D);
+    showOptionsPanel.add(show2D_);
+    JLabel show2d = new JLabel("Show 2D-View");
+    show2d.setToolTipText(TooltipTexts.DISPLAY_SHOW_2D);
+    showOptionsPanel.add(show2d);
+
+    
+    selectionPane = new JPanel();
+    selectionPane.setLayout(new BoxLayout(selectionPane, BoxLayout.LINE_AXIS));
+    Vector<LipidParameterSet> dummy = new Vector<LipidParameterSet>();
+    
+
+    displayTable = new LipidomicsJTable(new LipidomicsTableModel(dummy,dummy,false,false),new LipidomicsTableCellRenderer(),false,0,true,this);
+    listSelectionModel = displayTable.getSelectionModel();
+    displayTable.setSelectionModel(listSelectionModel);
+    listSelectionModel.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+    
+    JPanel listContainer = new JPanel(new GridLayout(1,1));
+    tablePane = new JScrollPane(displayTable);
+
+    
+    tablePanel_ = new JPanel();
+    tablePanel_.setLayout(new BorderLayout());
+    selectedSheet_ = new JComboBox<String>();
+    tablePanel_.add(selectedSheet_,BorderLayout.NORTH);
+    tablePanel_.add(tablePane,BorderLayout.CENTER);
+    tablePanel_.add(displayTolerancePanel,BorderLayout.SOUTH);
+
+    
+    tableContainer = new JPanel(new GridLayout(1,1));
+    tableContainer.setBorder(BorderFactory.createTitledBorder("Results"));
+    tableContainer.add(tablePanel_);
+    tablePane.setPreferredSize(new Dimension(380, 130));  
+    
+    selectionPane.add(tableContainer);
+    selectionPane.add(listContainer);
+    
+
+    selectionPane.setMinimumSize(new Dimension(270, 50));
+    selectionPane.setPreferredSize(new Dimension(240, 110));
+    selectionPane.setVisible(false);
+    
+    mainTabs = new JTabbedPane();
+    
+    
+    
+    displayPanel_ = new JPanel();
+    displayPanel_.setLayout(new BorderLayout());
+    displayPanel_.add(displayTopMenu,BorderLayout.NORTH);
+    displayPanel_.add(selectionPane,BorderLayout.WEST);
+
+    JPanel singleQuantificationPanel_ = new JPanel();
+    singleQuantificationPanel_.setLayout(new BorderLayout());
+    JPanel batchQuantificationPanel_ = new JPanel();
+    batchQuantificationPanel_.setLayout(new BorderLayout());
+    resultsPanel_ = new JPanel();
+    resultsPanel_.setLayout(new BorderLayout());
+    settingsPanel_ = new JPanel();
+    initSettingsPanel();
+    licensePanel_ = new JPanel();
+    helpPanel_ = new JPanel();
+    initHelpPanel();
+    aboutPanel_ = new JPanel();
+    initAboutPanel();
+
+    
+    mainTabs.addTab("Quantitation", singleQuantificationPanel_);
+    mainTabs.setToolTipTextAt(0, TooltipTexts.TABS_MAIN_QUANTITATION);
+    mainTabs.addTab("Batch Quantitation", batchQuantificationPanel_);
+    mainTabs.setToolTipTextAt(1, TooltipTexts.TABS_MAIN_BATCH);
+    mainTabs.addTab("Statistical Analysis", resultsPanel_);
+    mainTabs.setToolTipTextAt(2, TooltipTexts.TABS_MAIN_STATISTICS);
+    mainTabs.addTab("Display Results", displayPanel_);
+    mainTabs.setToolTipTextAt(3, TooltipTexts.TABS_MAIN_DISPLAY);
+    mainTabs.addTab("Settings", settingsPanel_);
+    mainTabs.setToolTipTextAt(4, TooltipTexts.TABS_MAIN_SETTINGS);
+    mainTabs.addTab("Help", helpPanel_);
+    mainTabs.setToolTipTextAt(5, TooltipTexts.TABS_MAIN_HELP);
+    mainTabs.addTab("About", aboutPanel_);
+    mainTabs.setToolTipTextAt(6, TooltipTexts.TABS_MAIN_ABOUT);
+    LicenseChangeListener licenseListener = new LicenseChangeListener();
+    //mainTabs.addMouseListener(licenseListener);
+    mainTabs.addChangeListener(licenseListener);
+    mainTabs.setSelectedIndex(0);
+    singleQuantificationPanel_.add(singleQuantMenu);
+    batchQuantificationPanel_.add(batchQuantMenu_);
+    resultTabs_= new JTabbedPane();
+    resultsPanel_.add(resultTabs_,BorderLayout.CENTER);
+    resultStatusPanel_ = new JPanel(new BorderLayout());
+    resultStatus_ = new JLabel();
+    resultStatusPanel_.add(resultStatus_,BorderLayout.WEST);
+    resultsPanel_.add(resultStatusPanel_,BorderLayout.SOUTH);
+    
+    resultsSelectionPanel_ = new JPanel();
+    resultsSelectionPanel_.setLayout(new BorderLayout());
+    JScrollPane scrollPane = new JScrollPane(resultsMenu_);
+    resultsSelectionPanel_.add(scrollPane);
+    resultTabs_.addTab("Selection",resultsSelectionPanel_);
+    resultTabs_.setToolTipTextAt(0, TooltipTexts.TABS_RESULTS_SELECTION);
+//    resultsPanel_.add(resultsMenu_);
+    this.add(mainTabs);
+    this.initTimer();
+  }
+  
+  private void initL2dPanel(){
+    l2dPanel_ = new JPanel();
+    l2dPanel_.setLayout(new BorderLayout());
+    JPanel l2dMenu = new JPanel();
+    l2dMenu.setPreferredSize(new Dimension(95,50));
+    l2dPanel_.add(l2dMenu,BorderLayout.EAST);
+    l2dMenu.setLayout(new GridBagLayout());
+    Font smallFont=new Font("Helvetica",Font.PLAIN,9);
+    Font toolBarFont=new Font("Helvetica",Font.PLAIN,10);
+    
+//    JPanel isotopePanel = new JPanel();
+//    isotopePanel.setLayout(new BorderLayout());
+    isotopeLabel_ = new JLabel("Isotope:");
+    isotopeLabel_.setFont(smallFont);
+    l2dMenu.add(isotopeLabel_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+      ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 6, 1, 0), 0, 0));
+//    isotopePanel.add(isotopeLabel,BorderLayout.EAST);
+    isotope_ = new JComboBox<String>();
+//    isotope_.addItem("0");
+//    isotope_.addItem("1");
+//    isotope_.addItem("2");
+//    isotope_.addItem("3");
+    isotope_.setFont(smallFont);    
+    isotope_.addItemListener(new LipidomicsItemListener("ChangeIsotope"));
+    isotope_.setSize(isotope_.getWidth()*4, isotope_.getHeight());
+    l2dMenu.add(isotope_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 0, 1, 0), 0, 0));
+//     isotopePanel.add(isotope_,BorderLayout.CENTER);
+//    l2dMenu.add(isotopePanel,new GridBagConstraints(0, 0, 1, 2, 0.0, 0.0
+//        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 6, 1, 0), 0, 0));
+    
+    
+    ButtonGroup group = new ButtonGroup();
+    m_chkRaw_ = new JRadioButton("Raw");
+    group.add(m_chkRaw_);
+    m_chkRaw_.setFont(smallFont);
+    m_chkRaw_.addItemListener(new LipidomicsItemListener("DisplayModeRaw"));
+    l2dMenu.add(m_chkRaw_,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 2, 1, 0), 0, 0));
+    m_chkSmooth_ = new JRadioButton("Smooth");
+    m_chkSmooth_.setFont(smallFont);
+    m_chkSmooth_.setSelected(true);
+    m_chkSmooth_.addItemListener(new LipidomicsItemListener("DisplayModeSmooth"));
+    group.add(m_chkSmooth_);
+    l2dMenu.add(m_chkSmooth_,new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 2, 1, 0), 0, 0));
+
+    m_upButton_ = new JButton("- mz");
+    m_upButton_.setMargin(new Insets(1,1,1,2));
+    m_upButton_.setFont(smallFont);
+    m_upButton_.setActionCommand("Dn");
+    m_upButton_.addActionListener(this);
+    l2dMenu.add(m_upButton_,new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 0, 1, 0), 2, 1));
+      
+    
+    m_dnButton_ = new JButton("+ mz");
+    m_dnButton_.setMargin(new Insets(1,1,1,1));
+    m_dnButton_.setFont(smallFont);
+    m_dnButton_.setActionCommand("Up");
+    m_dnButton_.addActionListener(this);
+    l2dMenu.add(m_dnButton_,new GridBagConstraints(1, 2, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 0, 1, 0), 2, 1));    
+
+    // **** Zoom ****
+    JPanel l2dZoomPanel = new JPanel();
+    l2dZoomPanel.setLayout(new GridBagLayout());
+
+    l2dMenu.add(l2dZoomPanel,new GridBagConstraints(0, 7, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 0, 0, 0), 0, 0));
+
+    lx_min_ = new JLabel();
+    lx_min_.setText("t[min]:");
+    lx_min_.setFont(toolBarFont);
+    l2dZoomPanel.add(lx_min_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 3, 1, 0), 0, 0));
+    m_minTimeText_ = new JTextField(3);
+    m_minTimeText_.setText("");
+    m_minTimeText_.setFont(toolBarFont);
+    m_minTimeText_.setHorizontalAlignment(JTextField.RIGHT);
+    l2dZoomPanel.add(m_minTimeText_,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    lx_max_ = new JLabel();
+    lx_max_.setText("t[max]:");
+    lx_max_.setFont(toolBarFont);
+    l2dZoomPanel.add(lx_max_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 3, 1, 0), 0, 0));
+    m_maxTimeText_ = new JTextField(3);
+    m_maxTimeText_.setText("");
+    m_maxTimeText_.setFont(toolBarFont);
+    m_maxTimeText_.setHorizontalAlignment(JTextField.RIGHT);
+    l2dZoomPanel.add(m_maxTimeText_,new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    m_zoomIn_ = new JButton("Zoom in");
+    m_zoomIn_.setMargin(new Insets(1,5,1,5));
+    m_zoomIn_.setFont(toolBarFont);
+    m_zoomIn_.setActionCommand("ZoomIn");
+    m_zoomIn_.addActionListener(this);
+    l2dMenu.add(m_zoomIn_,new GridBagConstraints(0, 8, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(3, 0, 0, 0), 2, 0));
+//    m_comPnl.add(m_zoomIn,new GridBagConstraints(0, 14, 2, 1, 0.0, 0.0
+//        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    m_zoomAll_ = new JButton("Zoom all");
+    m_zoomAll_.setMargin(new Insets(1,5,1,5));
+    m_zoomAll_.setFont(toolBarFont);
+    m_zoomAll_.setActionCommand("ZoomAll");
+    m_zoomAll_.addActionListener(this);
+    l2dMenu.add(m_zoomAll_,new GridBagConstraints(0, 9, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(3, 0, 0, 0), 0, 0));
+
+    storeSelectedAreas_ = new JButton("Save");
+    storeSelectedAreas_.setMargin(new Insets(1,5,1,5));
+    storeSelectedAreas_.setFont(toolBarFont);
+    storeSelectedAreas_.setActionCommand("SaveSelectedAreas");
+    storeSelectedAreas_.addActionListener(this);
+    l2dMenu.add(storeSelectedAreas_,new GridBagConstraints(0, 10, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(15, 0, 0, 0), 0, 0));
+
+    spectrumPanel_ = new JPanel();
+    spectrumPanel_.setLayout(new BorderLayout());
+    JPanel spectrumMenu = new JPanel();
+    spectrumMenu.setPreferredSize(new Dimension(95,50));
+    spectrumPanel_.add(spectrumMenu,BorderLayout.EAST);
+    spectrumMenu.setLayout(new GridBagLayout());
+    
+    JPanel l2dSpectrumSelectionPanel = new JPanel();
+    spectrumMenu.add(l2dSpectrumSelectionPanel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 0, 0, 0), 0, 0));
+    l2dSpectrumSelectionPanel.setLayout(new GridBagLayout());
+
+    spectrumSelectedLabel_ = new JLabel();
+    spectrumSelectedLabel_.setText("Spect.: ");
+    spectrumSelectedLabel_.setFont(toolBarFont);
+    l2dSpectrumSelectionPanel.add(spectrumSelectedLabel_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 3, 1, 0), 0, 0));
+    spectrumSelected_ = new JLabel();
+    spectrumSelected_.setText("");
+    spectrumSelected_.setFont(toolBarFont);
+    l2dSpectrumSelectionPanel.add(spectrumSelected_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(1, 3, 1, 0), 0, 0));
+    rtSelectedLabel_ = new JLabel();
+    rtSelectedLabel_.setText("RT: ");
+    rtSelectedLabel_.setFont(toolBarFont);
+    l2dSpectrumSelectionPanel.add(rtSelectedLabel_,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 3, 1, 0), 0, 0));
+    rtSelected_ = new JLabel();
+    rtSelected_.setText("");
+    rtSelected_.setFont(toolBarFont);
+    l2dSpectrumSelectionPanel.add(rtSelected_,new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(1, 3, 1, 0), 0, 0));
+
+    precursorSelectedLabel_ = new JLabel();
+    precursorSelectedLabel_.setText("Prec: ");
+    precursorSelectedLabel_.setFont(toolBarFont);
+    l2dSpectrumSelectionPanel.add(precursorSelectedLabel_,new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 3, 1, 0), 0, 0));
+    precursorSelected_ = new JLabel();
+    precursorSelected_.setText("");
+    precursorSelected_.setFont(toolBarFont);
+    l2dSpectrumSelectionPanel.add(precursorSelected_,new GridBagConstraints(1, 2, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(1, 3, 1, 0), 0, 0));
+    spectrumEarlier_ = new JButton(" - ");
+    spectrumEarlier_.setMargin(new Insets(1,1,1,1));
+    spectrumEarlier_.setFont(smallFont);
+    spectrumEarlier_.setActionCommand("SpectMinus");
+    spectrumEarlier_.addActionListener(this);
+    l2dSpectrumSelectionPanel.add(spectrumEarlier_,new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 3, 1, 0), 0, 0));
+    spectrumLater_ = new JButton(" + ");
+    spectrumLater_.setMargin(new Insets(1,1,1,1));
+    spectrumLater_.setFont(smallFont);
+    spectrumLater_.setActionCommand("SpectPlus");
+    spectrumLater_.addActionListener(this);
+    l2dSpectrumSelectionPanel.add(spectrumLater_,new GridBagConstraints(1, 3, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 3, 1, 0), 0, 0));
+    
+    JPanel annotationPanel = new JPanel();
+    annotationLabel_ = new JLabel("Annot.:");
+    annotationLabel_.setFont(smallFont);
+    annotationPanel.add(annotationLabel_);
+    annotationThreshold_ = new JTextField(2);
+    annotationThreshold_.setInputVerifier(new DoubleVerifier());
+    annotationThreshold_.setFont(smallFont);
+    annotationThreshold_.setText(DEFAULT_ANNOTATION_CUTOFF);
+    annotationThreshold_.setHorizontalAlignment(JTextField.RIGHT);
+    AnnotationThresholdListener annotationListener = new AnnotationThresholdListener(this);
+    annotationThreshold_.getDocument().addDocumentListener(annotationListener); 
+    annotationThreshold_.addFocusListener(annotationListener);     
+
+    annotationPanel.add(annotationThreshold_);
+    annotationUnit_ = new JLabel("%");
+    annotationUnit_.setFont(smallFont);
+    annotationPanel.add(annotationUnit_);
+    
+    l2dSpectrumSelectionPanel.add(annotationPanel,new GridBagConstraints(0, 4, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 3, 1, 0), 0, 0));
+    
+    
+    JPanel l2dSpectrumIntensityPanel = new JPanel();
+    spectrumMenu.add(l2dSpectrumIntensityPanel,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 0, 0, 0), 0, 0));
+    l2dSpectrumIntensityPanel.setLayout(new GridBagLayout());
+    group = new ButtonGroup();
+    relAbund_ = new JRadioButton("rel. Abund.");
+    group.add(relAbund_);
+    relAbund_.setFont(smallFont);
+    relAbund_.setSelected(true);
+    relAbund_.addItemListener(new LipidomicsItemListener("DisplayModeAbundance"));
+    l2dSpectrumIntensityPanel.add(relAbund_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 2, 1, 0), 0, 0));
+    absAbund_ = new JRadioButton("abs. Abund.");
+    absAbund_.setFont(smallFont);
+    absAbund_.addItemListener(new LipidomicsItemListener("DisplayModeAbundance"));
+    group.add(absAbund_);
+    l2dSpectrumIntensityPanel.add(absAbund_,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 2, 1, 0), 0, 0));
+    
+    // **** Zoom ****
+    JPanel spectrumZoomPanel = new JPanel();
+    spectrumZoomPanel.setLayout(new GridBagLayout());
+    spectrumMenu.add(spectrumZoomPanel,new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 0, 0, 0), 0, 0));
+    lz_min_ = new JLabel();
+    lz_min_.setText("mz[min]:");
+    lz_min_.setFont(toolBarFont);
+    spectrumZoomPanel.add(lz_min_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 3, 1, 0), 0, 0));
+    mz_minTimeText_ = new JTextField(3);
+    mz_minTimeText_.setText("");
+    mz_minTimeText_.setFont(toolBarFont);
+    mz_minTimeText_.setHorizontalAlignment(JTextField.RIGHT);
+    spectrumZoomPanel.add(mz_minTimeText_,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    lz_max_ = new JLabel();
+    lz_max_.setText("mz[max]:");
+    lz_max_.setFont(toolBarFont);
+    spectrumZoomPanel.add(lz_max_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 3, 1, 0), 0, 0));
+    mz_maxTimeText_ = new JTextField(3);
+    mz_maxTimeText_.setText("");
+    mz_maxTimeText_.setFont(toolBarFont);
+    mz_maxTimeText_.setHorizontalAlignment(JTextField.RIGHT);
+    spectrumZoomPanel.add(mz_maxTimeText_,new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    mz_zoomIn_ = new JButton("Zoom in");
+    mz_zoomIn_.setMargin(new Insets(1,5,1,5));
+    mz_zoomIn_.setFont(toolBarFont);
+    mz_zoomIn_.setActionCommand("ZoomMzIn");
+    mz_zoomIn_.addActionListener(this);
+    spectrumZoomPanel.add(mz_zoomIn_,new GridBagConstraints(0, 2, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(3, 0, 0, 0), 2, 0));
+//    m_comPnl.add(m_zoomIn,new GridBagConstraints(0, 14, 2, 1, 0.0, 0.0
+//        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    mz_zoomAll_ = new JButton("Zoom all");
+    mz_zoomAll_.setMargin(new Insets(1,5,1,5));
+    mz_zoomAll_.setFont(toolBarFont);
+    mz_zoomAll_.setActionCommand("ZoomMzAll");
+    mz_zoomAll_.addActionListener(this);
+    spectrumZoomPanel.add(mz_zoomAll_,new GridBagConstraints(0, 3, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(3, 0, 0, 0), 0, 0));
+    
+    exportSpectra_ = new ExportPanel(null,Color.BLACK,this,false,false,true);
+    spectrumZoomPanel.add(exportSpectra_,new GridBagConstraints(0, 4, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(3, 0, 0, 0), 0, 0));
+    exportFileChooser_ = new JFileChooser();
+    exportFileChooser_.setPreferredSize(new Dimension(600,500));
+    
+  }
+  
+  private void initHelpPanel(){
+    helpPanel_.setLayout(new BorderLayout());
+    JPanel centerPanel = new JPanel();
+    helpPanel_.add(centerPanel,BorderLayout.CENTER);
+    centerPanel.setLayout(new GridBagLayout());
+    
+    JLabel helpText = new JLabel("To access the user manual on click one of the links:");
+    helpText.setToolTipText(TooltipTexts.HELP_USER_MANUAL);
+    centerPanel.add(helpText,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    String releaseWOMinor = Settings.VERSION.substring(0,Settings.VERSION.lastIndexOf("."));
+    String linkAddress = "http://genome.tugraz.at/lda2/"+releaseWOMinor+"/LDA_"+releaseWOMinor+".pdf";
+
+    
+    JHyperlink linkText = new JHyperlink(linkAddress,linkAddress);
+    centerPanel.add(linkText,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    String baseRootPath = getClass().getResource("/at/tugraz/genome/lda/LipidDataAnalyzer.class").getPath();
+    baseRootPath = baseRootPath.substring(0,baseRootPath.length()-"at/tugraz/genome/lda/LipidDataAnalyzer.class".length());
+    if (baseRootPath.indexOf("!")>-1) baseRootPath = baseRootPath.substring(0,baseRootPath.lastIndexOf("!"));
+    baseRootPath = baseRootPath.substring(0,baseRootPath.lastIndexOf("/"));
+    String rootPath = baseRootPath+"/doc/LDA.pdf";
+//      rootPath = (new File((new URL(rootPath)).toURI())).getCanonicalPath();
+    rootPath = rootPath.replaceAll("\\\\", "/");
+      
+    if (rootPath.indexOf("file:")!=-1)rootPath = rootPath.substring(rootPath.indexOf("file:")+"file:".length());
+    while (rootPath.startsWith("/")) rootPath = rootPath.substring(1);    
+    rootPath = "file:///"+rootPath;
+    linkText = new JHyperlink("Local instance in /doc folder",rootPath);
+    centerPanel.add(linkText,new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    centerPanel.add(new JLabel(" "),new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    helpText = new JLabel("To access the study data description document click one of the links:");
+    helpText.setToolTipText(TooltipTexts.HELP_EXAMPLES);
+    centerPanel.add(helpText,new GridBagConstraints(0, 4, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    linkAddress = "http://genome.tugraz.at/lda2/data/DataDescription.pdf";
+    linkText = new JHyperlink(linkAddress,linkAddress);
+    centerPanel.add(linkText,new GridBagConstraints(0, 5, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    rootPath = baseRootPath+"/examples/DataDescription.pdf";
+//      rootPath = (new File((new URL(rootPath)).toURI())).getCanonicalPath();
+    rootPath = rootPath.replaceAll("\\\\", "/");
+      
+    if (rootPath.indexOf("file:")!=-1)rootPath = rootPath.substring(rootPath.indexOf("file:")+"file:".length());
+    while (rootPath.startsWith("/")) rootPath = rootPath.substring(1);    
+    rootPath = "file:///"+rootPath;
+    linkText = new JHyperlink("Local instance in /examples folder",rootPath);
+    centerPanel.add(linkText,new GridBagConstraints(0, 6, 1, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    centerPanel.add(new JLabel(" "),new GridBagConstraints(0, 7, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    helpText = new JLabel("The study data is available from our homepage:");
+    helpText.setToolTipText(TooltipTexts.HELP_EXAMPLE_DOWNLOAD);
+    centerPanel.add(helpText,new GridBagConstraints(0, 8, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    linkText = new JHyperlink("Link to Genome download","http://genome.tugraz.at/lda2/lda_data.shtml");
+    centerPanel.add(linkText,new GridBagConstraints(0, 9, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    helpText = new JLabel("Please consult the examples document chapter to avoid unnecessary downloads!");
+    centerPanel.add(helpText,new GridBagConstraints(0, 10, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+
+    centerPanel.add(new JLabel(" "),new GridBagConstraints(0, 11, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));    
+  }
+  
+  private void initAboutPanel(){
+    aboutPanel_.setLayout(new BorderLayout());
+    JPanel topPanel = new JPanel();
+    aboutPanel_.add(topPanel,BorderLayout.NORTH);
+    topPanel.setLayout(new BorderLayout());
+    JPanel logoPanel = new JPanel();
+    logoPanel.setLayout(new GridBagLayout());
+    topPanel.add(logoPanel,BorderLayout.WEST);
+    JPanel headerPanel = new JPanel();
+//    topPanel.add(headerPanel,BorderLayout.CENTER);
+    logoPanel.add(new JLabel(ldaLogo_), new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(20, 50, 0, 0), 0, 0));
+    logoPanel.add(new JLabel(tugLogo_), new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(10, 50, 0, 0), 0, 0));
+    logoPanel.add(headerPanel, new GridBagConstraints(1, 0, 1, 2, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(10, 50, 0, 0), 0, 0));
+
+    
+//    logoPanel.setLayout(new BorderLayout());
+//    logoPanel.add(new JLabel(ldaLogo_),BorderLayout.CENTER);
+//    JLabel tugLabel = new JLabel(tugLogo_);
+//    logoPanel.add(tugLabel,BorderLayout.SOUTH);
+    
+    
+    headerPanel.setLayout(new GridBagLayout());
+    JLabel text = new JLabel("L D A");
+    text.setFont(new Font("Arial",Font.BOLD, 50));
+    headerPanel.add(text,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    text = new JLabel("Lipid Data Analyzer");
+    text.setFont(new Font("Arial",Font.BOLD, 24));
+    headerPanel.add(text,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    headerPanel.add(new JLabel(" "),new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    text = new JLabel("Designed and developed by:");
+    text.setFont(new Font("Arial",Font.PLAIN, 18));
+    headerPanel.add(text,new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    text = new JLabel("Jürgen Hartler, Martin Trötzmüller, Alexander Triebl, Andreas Ziegl");
+    text.setFont(new Font("Arial",Font.PLAIN, 16));
+    headerPanel.add(text,new GridBagConstraints(0, 4, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    headerPanel.add(new JLabel(" "),new GridBagConstraints(0, 5, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    text = new JLabel("Thallinger Lab");
+    text.setFont(new Font("Arial",Font.PLAIN, 16));
+    headerPanel.add(text,new GridBagConstraints(0, 6, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    text = new JLabel("Institute of Molecular Biotechnology");
+    text.setFont(new Font("Arial",Font.PLAIN, 16));
+    headerPanel.add(text,new GridBagConstraints(0, 7, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    text = new JLabel("Graz University of Tehcnology");
+    text.setFont(new Font("Arial",Font.PLAIN, 16));
+    headerPanel.add(text,new GridBagConstraints(0, 8, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    JHyperlink linkText = new JHyperlink("http://genome.tugraz.at/lda2","http://genome.tugraz.at/lda2");
+    linkText.setFont(new Font("Arial",Font.PLAIN, 16));
+    headerPanel.add(linkText,new GridBagConstraints(0, 9, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+
+    if (Settings.isWindows()){
+      text = new JLabel("For msconvert file translation (ProteoWizard), the following third-party software is included:");
+      text.setFont(new Font("Arial",Font.PLAIN, 12));
+      logoPanel.add(text,new GridBagConstraints(0, 3, 2, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(30, 50, 0, 0), 0, 0));
+
+      text = new JLabel("WIFF Reader Distributable Beta SDK. Copyright \u00A9 2013 AB SCIEX");
+      text.setFont(new Font("Arial",Font.PLAIN, 12));
+      logoPanel.add(text,new GridBagConstraints(0, 4, 2, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
+      text = new JLabel("MASSHUNTER DATA ACCESS COMPONENT RUNTIME VERSION. Copyright \u00A9 2016 Agilent Technologies");
+      text.setFont(new Font("Arial",Font.PLAIN, 12));
+      logoPanel.add(text,new GridBagConstraints(0, 5, 2, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
+      text = new JLabel("This software uses CompassXtract software. Copyright \u00A9 2011, 2013, 2013 by Bruker Daltonik GmbH. All rights reserved.");
+      text.setFont(new Font("Arial",Font.PLAIN, 12));
+      logoPanel.add(text,new GridBagConstraints(0, 6, 2, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
+      text = new JLabel("MSFileReader file reading tool. Copyright \u00A9 2009 - 2014 by Thermo Fisher Scientific, Inc. All rights reserved.");
+      text.setFont(new Font("Arial",Font.PLAIN, 12));
+      logoPanel.add(text,new GridBagConstraints(0, 7, 2, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
+    }
+
+  }
+
+  private void initSettingsPanel(){
+    settingsPanel_.setLayout(new BorderLayout());
+    JPanel centerPanel = new JPanel();
+    settingsPanel_.add(centerPanel,BorderLayout.CENTER);
+    centerPanel.setLayout(new GridBagLayout());
+    centerPanel.add(new JLabel("Please do not change the settings while a calculation is running!"), new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0,0,0,0), 0, 0));
+
+    
+    JPanel inputPanel = new JPanel();
+    inputPanel.setLayout(new GridBagLayout());
+    JLabel msMachineLabel = new JLabel("MS settings: ");
+    msMachineLabel.setToolTipText(TooltipTexts.SETTINGS_MS_MACHINE);
+    inputPanel.add(msMachineLabel, new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+    msMachineTypes_ = new JComboBox<String>();
+    for (String msSetting : Settings.getPropertyFileNames()) msMachineTypes_.addItem(msSetting);
+    String currentMachine = LipidomicsConstants.getCurrentMSMachine();
+    msMachineTypes_.setSelectedItem(currentMachine);
+    msMachineTypes_.setToolTipText(TooltipTexts.SETTINGS_MS_MACHINE);
+    msMachineTypes_.addItemListener(new FragSettingsChangeListener("ChangeMachine"));
+    inputPanel.add(msMachineTypes_, new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+    centerPanel.add(inputPanel, new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0,0,0,0), 0, 0));
+        
+    centerPanel.add(new JLabel(" "), new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0,0,0,0), 0, 0));
+    centerPanel.add(new JLabel("Please do not change the fragmentation settings while a calculation is running!"), new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0,0,0,0), 0, 0));
+
+    JPanel inputFragSettings1 = new JPanel();
+    inputFragSettings1.setLayout(new GridBagLayout());
+    JLabel fragmentaionLabel1 = new JLabel("Fragmentation Selection 1: ");
+    fragmentaionLabel1.setToolTipText(TooltipTexts.SETTINGS_MSN_FRAGMENTATION);
+    inputFragSettings1.add(fragmentaionLabel1, new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+    fragmentationSettings1_ = new JComboBox<String>();
+    fragmentationSettings1_.setToolTipText(TooltipTexts.SETTINGS_MSN_FRAGMENTATION);
+    inputFragSettings1.add(fragmentationSettings1_, new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+    
+    inputFragSettings2_ = new JPanel();
+    inputFragSettings2_.setLayout(new GridBagLayout());
+    JLabel fragmentaionLabel2 = new JLabel("Fragmentation Selection 2: ");
+    fragmentaionLabel2.setToolTipText(TooltipTexts.SETTINGS_MSN_FRAGMENTATION);
+    inputFragSettings2_.add(fragmentaionLabel2, new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+    fragmentationSettings2_ = new JComboBox<String>();
+    fragmentationSettings2_.setToolTipText(TooltipTexts.SETTINGS_MSN_FRAGMENTATION);
+    inputFragSettings2_.add(fragmentationSettings2_, new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+    
+    refreshFragSettingsSelection();
+    fragmentationSettings1_.addItemListener(new FragSettingsChangeListener("ChangeFragSelection"));
+    centerPanel.add(inputFragSettings1, new GridBagConstraints(0, 4, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0,0,0,0), 0, 0));
+    centerPanel.add(inputFragSettings2_, new GridBagConstraints(0, 5, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0,0,0,0), 0, 0));
+
+    JPanel buttonPanel = new JPanel();
+    JButton applyButton = new JButton("Apply");
+    applyButton.setActionCommand("ApplyOtherMachineSettings");
+    applyButton.setToolTipText(TooltipTexts.SETTINGS_BUTTON_APPLY);
+    applyButton.addActionListener(this);
+    buttonPanel.add(applyButton);
+    JButton saveButton = new JButton("Save as default");
+    saveButton.setActionCommand("SaveOtherMachineSettings");
+    saveButton.setToolTipText(TooltipTexts.SETTINGS_BUTTON_SAVE);
+    saveButton.addActionListener(this);
+    buttonPanel.add(saveButton);
+    centerPanel.add(buttonPanel, new GridBagConstraints(0, 6, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+
+  }
+    
+  private void initTimer(){
+    timer_ = new java.util.Timer();
+    timer_.schedule(new ThreadSupervisor(), 10, 1000);
+  }
+  
+  private void createDisplayTopMenu(){
+    this.displayTopMenu = new JPanel();
+    this.displayTopMenu.setLayout(new GridBagLayout());
+
+
+    this.selectedChromFile = new JTextField(62);
+    selectedChromFile.setToolTipText(TooltipTexts.DISPLAY_OPEN_CHROM);
+    displayTopMenu.add(selectedChromFile,new GridBagConstraints(0, 0, 6, 1, 0.0, 0.0
+      ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    jButtonChromOpen = new JButton("Open Chrom");
+    jButtonChromOpen.addActionListener(this);
+    jButtonChromOpen.setActionCommand("showChromFileChooser");
+    jButtonChromOpen.setToolTipText(TooltipTexts.DISPLAY_OPEN_CHROM);
+    displayTopMenu.add(jButtonChromOpen,new GridBagConstraints(7, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    this.selectedResultFile = new JTextField(62);
+    selectedResultFile.setToolTipText(TooltipTexts.DISPLAY_OPEN_RESULT);
+    displayTopMenu.add(selectedResultFile,new GridBagConstraints(0, 1, 6, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    this.jButtonResultOpen = new JButton("Open Result");
+    jButtonResultOpen.addActionListener(this);
+    jButtonResultOpen.setActionCommand("showResultChooser");
+    jButtonResultOpen.setToolTipText(TooltipTexts.DISPLAY_OPEN_RESULT);
+    displayTopMenu.add(jButtonResultOpen,new GridBagConstraints(7, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    startDisplay = new JButton("Start Display");
+    startDisplay.addActionListener(this);
+    startDisplay.setActionCommand("startDisplay");
+    startDisplay.setToolTipText(TooltipTexts.DISPLAY_START);
+    displayTopMenu.add(startDisplay,new GridBagConstraints(8, 0, 1, 2, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0)); 
+  }
+  
+  private void createBatchQuantMenu(){
+    this.batchQuantMenu_ = new JPanel();
+    this.batchQuantMenu_.setLayout(new GridBagLayout());
+    JPanel selectionPanel = new JPanel();
+    selectionPanel.setLayout(new GridBagLayout());
+    batchQuantMenu_.add(selectionPanel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel batchMzXMLLabel = new JLabel("Raw files: ");
+    batchMzXMLLabel.setToolTipText(TooltipTexts.QUANTITATION_BATCH_RAW_FILE);
+    selectionPanel.add(batchMzXMLLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    this.selectedMzxmlDirectory_ = new JTextField(62);
+    selectedMzxmlDirectory_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_RAW_FILE);
+    selectionPanel.add(selectedMzxmlDirectory_,new GridBagConstraints(1, 0, 6, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    jButtonMxXMLDirOpen_ = new JButton("Select");
+    jButtonMxXMLDirOpen_.addActionListener(this);
+    jButtonMxXMLDirOpen_.setActionCommand("showMzxmlDirChooser");
+    jButtonMxXMLDirOpen_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_RAW_FILE);
+    selectionPanel.add(jButtonMxXMLDirOpen_,new GridBagConstraints(7, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel quantChromLabel = new JLabel("Quant. files: ");
+    quantChromLabel.setToolTipText(TooltipTexts.QUANTITATION_BATCH_MASS_LIST);
+    selectionPanel.add(quantChromLabel,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    jBatchQuantOpen_ = new JButton("Select");
+    jBatchQuantOpen_.addActionListener(this);
+    jBatchQuantOpen_.setActionCommand("showQuantDirChooser");
+    jBatchQuantOpen_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_MASS_LIST);
+    selectionPanel.add(jBatchQuantOpen_,new GridBagConstraints(7, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    this.selectedQuantDir_ = new JTextField(62);
+    selectedQuantDir_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_MASS_LIST);
+    selectionPanel.add(selectedQuantDir_,new GridBagConstraints(1, 1, 6, 1, 0.0, 0.0
+      ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    
+    JPanel settingsPanel = new JPanel ();  
+    settingsPanel.setLayout(new GridBagLayout());
+    batchQuantMenu_.add(settingsPanel,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
+
+//    JLabel mzTolLabel = new JLabel("m/z-Tolerance: ");
+//    settingsPanel.add(mzTolLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+//        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+//    batchMzTol_ = new JTextField(4);
+//    batchMzTol_.setText("0.02");
+//    batchMzTol_.setHorizontalAlignment(JTextField.RIGHT);
+//    settingsPanel.add(batchMzTol_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+//        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel timeMinusTolLabel = new JLabel("Time before tol.: ");
+    timeMinusTolLabel.setToolTipText(TooltipTexts.QUANTITATION_RET_BEFORE);
+    settingsPanel.add(timeMinusTolLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    batchTimeMinusTol_ = new JTextField(4);
+    batchTimeMinusTol_.setText("5");
+    batchTimeMinusTol_.setHorizontalAlignment(JTextField.RIGHT);
+    batchTimeMinusTol_.setToolTipText(TooltipTexts.QUANTITATION_RET_BEFORE);
+    settingsPanel.add(batchTimeMinusTol_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel timeMinusUnit = new JLabel("min");
+    timeMinusUnit.setToolTipText(TooltipTexts.QUANTITATION_RET_BEFORE);
+    settingsPanel.add(timeMinusUnit,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel timePlusTolLabel = new JLabel("Time after tol.: ");
+    timePlusTolLabel.setToolTipText(TooltipTexts.QUANTITATION_RET_AFTER);
+    settingsPanel.add(timePlusTolLabel,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    batchTimePlusTol_ = new JTextField(4);
+    batchTimePlusTol_.setText("5");
+    batchTimePlusTol_.setHorizontalAlignment(JTextField.RIGHT);
+    batchTimePlusTol_.setToolTipText(TooltipTexts.QUANTITATION_RET_AFTER);
+    settingsPanel.add(batchTimePlusTol_,new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel timePlusUnit = new JLabel("min");
+    timePlusUnit.setToolTipText(TooltipTexts.QUANTITATION_RET_AFTER);
+    settingsPanel.add(timePlusUnit,new GridBagConstraints(5, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+
+    JLabel cutoffLabel = new JLabel("Rel. base-peak cutoff: ");
+    cutoffLabel.setToolTipText(TooltipTexts.QUANTITATION_CUTOFF);
+    settingsPanel.add(cutoffLabel,new GridBagConstraints(6, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    batchCutoff_ = new JTextField(4);
+    batchCutoff_.setText(LipidomicsConstants.getBasePeakDefaultCutoff());
+    batchCutoff_.setHorizontalAlignment(JTextField.RIGHT);
+    batchCutoff_.setToolTipText(TooltipTexts.QUANTITATION_CUTOFF);
+    settingsPanel.add(batchCutoff_,new GridBagConstraints(7, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel cutoffUnit = new JLabel("\u2030");
+    cutoffUnit.setToolTipText(TooltipTexts.QUANTITATION_CUTOFF);
+    settingsPanel.add(cutoffUnit,new GridBagConstraints(8, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel rtShiftLabel = new JLabel("RT-shift: ");
+    rtShiftLabel.setToolTipText(TooltipTexts.QUANTIFICATION_RET_SHIFT);
+    settingsPanel.add(rtShiftLabel,new GridBagConstraints(9, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    batchRTShift_ = new JTextField(4);
+    batchRTShift_.setText("0.0");
+    batchRTShift_.setHorizontalAlignment(JTextField.RIGHT);
+    batchRTShift_.setToolTipText(TooltipTexts.QUANTIFICATION_RET_SHIFT);
+    settingsPanel.add(batchRTShift_,new GridBagConstraints(10, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel rtShiftUnit = new JLabel("min");
+    rtShiftUnit.setToolTipText(TooltipTexts.QUANTIFICATION_RET_SHIFT);
+    settingsPanel.add(rtShiftUnit,new GridBagConstraints(11, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+
+    
+    JPanel settingsPanel2 = new JPanel ();
+    settingsPanel2.setLayout(new GridBagLayout());
+    batchQuantMenu_.add(settingsPanel2,new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
+    isoBatchValidation_ = new JCheckBox();
+    isoBatchValidation_.setSelected(true);
+    isoBatchValidation_.addItemListener(new LipidomicsItemListener("endisableAmountOfBatchIsotopes"));
+    isoBatchValidation_.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
+    settingsPanel2.add(isoBatchValidation_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel allowIsotopicValidation = new JLabel("Isotopic quantitation of ");
+    allowIsotopicValidation.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
+    settingsPanel2.add(allowIsotopicValidation,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    amountOfBatchIsotopes_ = new JTextField(4);
+    amountOfBatchIsotopes_.setText("2");
+    amountOfBatchIsotopes_.setHorizontalAlignment(JTextField.RIGHT);
+    amountOfBatchIsotopes_.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
+    settingsPanel2.add(amountOfBatchIsotopes_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel isotopePeaks = new JLabel("isotopes where ");
+    isotopePeaks.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
+    settingsPanel2.add(isotopePeaks,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    amountOfMatchingBatchSearchIsotopes_ = new JTextField(4);
+    amountOfMatchingBatchSearchIsotopes_.setText("1");
+    amountOfMatchingBatchSearchIsotopes_.setHorizontalAlignment(JTextField.RIGHT);
+//    amountOfMatchingBatchSearchIsotopes_.setEnabled(false);
+    amountOfMatchingBatchSearchIsotopes_.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
+    settingsPanel2.add(amountOfMatchingBatchSearchIsotopes_,new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel isotopeMatchPeaks = new JLabel("isotopic peak(s) have to match");
+    isotopeMatchPeaks.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
+    settingsPanel2.add(isotopeMatchPeaks,new GridBagConstraints(5, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+
+
+    JPanel settingsPanel3 = new JPanel ();
+    settingsPanel3.setLayout(new GridBagLayout());
+    batchQuantMenu_.add(settingsPanel3,new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
+    searchUnknownBatchTime_ = new JCheckBox();
+    searchUnknownBatchTime_.setSelected(true);
+    searchUnknownBatchTime_.setToolTipText(TooltipTexts.QUANTITATION_RET_UNKNOWN);
+    settingsPanel3.add(searchUnknownBatchTime_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel findUnknownMolecules = new JLabel("Find molecules where retention time is unknown");
+    findUnknownMolecules.setToolTipText(TooltipTexts.QUANTITATION_RET_UNKNOWN);
+    settingsPanel3.add(findUnknownMolecules,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+
+    JLabel maxProcessors = new JLabel("Processors for quantitation:");
+    maxProcessors.setToolTipText(TooltipTexts.QUANTITATION_PROCESSORS);
+    settingsPanel3.add(maxProcessors,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    nrProcessorsBatch_ = new JTextField(3);
+    nrProcessorsBatch_.setText(String.valueOf(this.getAmountOfProcessorsPreferred()));
+    nrProcessorsBatch_.setHorizontalAlignment(JTextField.RIGHT);
+    nrProcessorsBatch_.setToolTipText(TooltipTexts.QUANTITATION_PROCESSORS);
+    nrProcessorsBatch_.setInputVerifier(new IntegerMaxVerifier(true,1,getMaxProcessors()));
+    settingsPanel3.add(nrProcessorsBatch_,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+
+    
+    startBatchQuantification_ = new JButton("Start Quantitation");
+    startBatchQuantification_.addActionListener(this);
+    startBatchQuantification_.setActionCommand("startBatchQuantification");
+    startBatchQuantification_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_START);
+    batchQuantMenu_.add(startBatchQuantification_,new GridBagConstraints(0, 4, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
+    quantifyingBatchPanel_ = new JPanel ();  
+    quantifyingBatchPanel_.setLayout(new BorderLayout());
+    batchQuantMenu_.add(quantifyingBatchPanel_,new GridBagConstraints(0, 5, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
+    
+    batchQuantTableModel_ = new BatchQuantificationTableModel();
+    batchQuantTable_ = new BatchQuantificationTable(batchQuantTableModel_);
+
+    TableColumnModel tcm = batchQuantTable_.getColumnModel();
+    tcm.getColumn(0).setPreferredWidth(15);
+    tcm.getColumn(0).setMaxWidth(15);
+    tcm.getColumn(1).setPreferredWidth(170);
+    tcm.getColumn(2).setPreferredWidth(200);
+    tcm.getColumn(3).setPreferredWidth(170);
+
+    JScrollPane scrollPane = new JScrollPane(batchQuantTable_);
+    scrollPane.setPreferredSize(new Dimension(650, 200));
+    quantifyingBatchPanel_.add(scrollPane,BorderLayout.CENTER);
+    JPanel quantProgressPanel = new JPanel();
+    quantProgressPanel.setLayout(new GridBagLayout());
+    quantifyingBatchPanel_.add(quantProgressPanel,BorderLayout.SOUTH);
+    
+    quantifyingBatchLabel_ = new JLabel("Quantifying");
+    quantifyingBatchLabel_.setToolTipText(TooltipTexts.QUANTITATION_STATUS_TEXT);
+    quantProgressPanel.add(quantifyingBatchLabel_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    progressBatchBar_ = new JProgressBar();
+    progressBatchBar_.setMaximum(100);
+    progressBatchBar_.setToolTipText(TooltipTexts.QUANTITATION_PROGRESS);
+    quantProgressPanel.add(progressBatchBar_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    Icon icon = new ImageIcon(LipidDataAnalyzer.class.getResource("/images/spinner.gif"));
+    spinnerBatchLabel_ = new JLabel(icon);
+    quantProgressPanel.add(spinnerBatchLabel_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    
+    quantifyingBatchPanel_.setVisible(false);
+  }
+  
+  private void createResultsMenu(){
+    resultsMenu_ = new JPanel();
+    resultsMenu_.setLayout(new GridBagLayout());
+    jButtonResultFilesOpen_ = new JButton("Add Files", addFilesIcon_);
+    jButtonResultFilesOpen_.addActionListener(this);
+    jButtonResultFilesOpen_.setActionCommand("showResultsFilesChooser");
+    jButtonResultFilesOpen_.setToolTipText(TooltipTexts.STATISTICS_ADD_RESULT_FILES);
+    resultsMenu_.add(jButtonResultFilesOpen_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    jButtonResultsDirOpen_ = new JButton("Add Dir",addFolderIcon_);
+    jButtonResultsDirOpen_.addActionListener(this);
+    jButtonResultsDirOpen_.setActionCommand("showResultsDirChooser");
+    jButtonResultsDirOpen_.setToolTipText(TooltipTexts.STATISTICS_ADD_DIR);
+    resultsMenu_.add(jButtonResultsDirOpen_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    jButtonResultFilesRemove_ = new JButton("Remove",removeFilesIcon_);
+    jButtonResultFilesRemove_.addActionListener(this);
+    jButtonResultFilesRemove_.setActionCommand("removeResultFiles");
+    jButtonResultFilesRemove_.setToolTipText(TooltipTexts.STATISTICS_REMOVE_SELECTION);
+    resultsMenu_.add(jButtonResultFilesRemove_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));    
+    
+    jButtonResultFilesClean_ = new JButton("Remove all",removeFilesIcon_);
+    jButtonResultFilesClean_.addActionListener(this);
+    jButtonResultFilesClean_.setActionCommand("removeAllResultFiles");
+    jButtonResultFilesClean_.setToolTipText(TooltipTexts.STATISTICS_REMOVE_ALL_SELECTION);
+    resultsMenu_.add(jButtonResultFilesClean_,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    jButtonResultAddToGroup_ = new JButton("Add to group",addToGroupIcon_);
+    jButtonResultAddToGroup_.addActionListener(this);
+    jButtonResultAddToGroup_.setActionCommand("addToGroup");
+    jButtonResultAddToGroup_.setToolTipText(TooltipTexts.STATISTICS_ADD_TO_GROUP);
+    resultsMenu_.add(jButtonResultAddToGroup_,new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+
+    analysisSelectionTablePanel_ = new JPanel();
+    this.generateResultsAnalysisTablePane(new String[0][0]);
+//    resultsMenu_.add(analysisSelectionTablePanel_);
+    resultsMenu_.add(analysisSelectionTablePanel_,new GridBagConstraints(0, 1, 5, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    JPanel groupRtPanel = new JPanel();
+    groupRtPanel.setLayout(new GridBagLayout());  
+    JLabel sepRtLabel = new JLabel("Show hits with same RT separately: ");
+    sepRtLabel.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
+    groupRtPanel.add(sepRtLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    separateHitsByRT_  = new JCheckBox();
+    separateHitsByRT_.setSelected(true);
+    separateHitsByRT_.setActionCommand(CHANGE_SEPARATE_RT_STATUS);
+    separateHitsByRT_.addActionListener(this);
+    separateHitsByRT_.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
+    groupRtPanel.add(separateHitsByRT_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    rtGroupingTime_ = new JTextField(3);
+    rtGroupingTime_.setHorizontalAlignment(JTextField.RIGHT);
+    rtGroupingTime_.setInputVerifier(new DoubleVerifier(true));
+    rtGroupingTime_.setText("0.1");
+    rtGroupingTime_.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
+    groupRtPanel.add(rtGroupingTime_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    rtTimeUnit_ = new JLabel("min");
+    rtTimeUnit_.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
+    groupRtPanel.add(rtTimeUnit_,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    resultsMenu_.add(groupRtPanel,new GridBagConstraints(0, 2, 5, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 15, 0), 0, 0));    
+    
+    JPanel correctOrderPanel = new JPanel();
+    correctOrderPanel.setLayout(new GridBagLayout());  
+    JLabel quantLabel = new JLabel("Quant file (for correct analyte order):");
+    quantLabel.setToolTipText(TooltipTexts.STATISTICS_CORRECT_ORDER_FILE);
+    correctOrderPanel.add(quantLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    correctOrderFile_ = new JTextField(35);
+    correctOrderFile_.setToolTipText(TooltipTexts.STATISTICS_CORRECT_ORDER_FILE);
+    correctOrderPanel.add(correctOrderFile_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+      ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JButton correctOpen = new JButton("Select");
+    correctOpen.addActionListener(this);
+    correctOpen.setActionCommand("showCorrectOrderFileChooser");
+    correctOpen.setToolTipText(TooltipTexts.STATISTICS_CORRECT_ORDER_FILE);
+    correctOrderPanel.add(correctOpen,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+      ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    
+    resultsMenu_.add(correctOrderPanel,new GridBagConstraints(0, 3, 5, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 15, 0), 0, 0));    
+    
+    groupsPanel_= new GroupsPanel();
+    resultsMenu_.add(groupsPanel_ ,new GridBagConstraints(0, 4, 5, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    JLabel label = new JLabel("Internal-standard prefix: ");
+    label.setToolTipText(TooltipTexts.STATISTICS_IS_PREFIX);
+    resultsMenu_.add(label ,new GridBagConstraints(0, 5, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    internalStandardSelection_ = new JTextField(3);
+    internalStandardSelection_.setText(Settings.getInternalStandardDefaultInput());
+    internalStandardSelection_.setToolTipText(TooltipTexts.STATISTICS_IS_PREFIX);
+    resultsMenu_.add(internalStandardSelection_ ,new GridBagConstraints(1, 5, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    label = new JLabel("External-standard prefix: ");
+    resultsMenu_.add(label ,new GridBagConstraints(0, 6, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    label.setToolTipText(TooltipTexts.STATISTICS_ES_PREFIX);
+    externalStandardSelection_ = new JTextField(3);
+    externalStandardSelection_.setText(Settings.getExternalStandardDefaultInput());
+    externalStandardSelection_.setToolTipText(TooltipTexts.STATISTICS_ES_PREFIX);
+    resultsMenu_.add(externalStandardSelection_ ,new GridBagConstraints(1, 6, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+//    externalStandardSelection_.setToolTipText();
+    JPanel cutoffPanel = new JPanel();
+    cutoffLoadButton_ = new JButton("Load settings");
+    cutoffLoadButton_.addActionListener(this);
+    cutoffLoadButton_.setActionCommand("loadCutoffSettings");
+    cutoffLoadButton_.setToolTipText(TooltipTexts.STATISTICS_CUTOFF_LOAD);
+    cutoffPanel.add(cutoffLoadButton_);
+    cutoffLoadButton_.setVisible(false);
+    cutoffSaveButton_ = new JButton("Save settings");
+    cutoffSaveButton_.addActionListener(this);
+    cutoffSaveButton_.setActionCommand("saveCutoffSettings");
+    cutoffSaveButton_.setToolTipText(TooltipTexts.STATISTICS_CUTOFF_SAVE);
+    cutoffPanel.add(cutoffSaveButton_);
+    cutoffSaveButton_.setVisible(false);
+    saveCutoffSettingsFileChooser_ = new JFileChooser();
+    saveCutoffSettingsFileChooser_.setPreferredSize(new Dimension(600,500));
+    saveCutoffSettingsFileChooser_.setFileFilter(new FileNameExtensionFilter("Cutoff settings file (*.cut.xml)","xml"));
+    loadCutoffSettingsFileChooser_ = new JFileChooser();
+    loadCutoffSettingsFileChooser_.setPreferredSize(new Dimension(600,500));
+    loadCutoffSettingsFileChooser_.setFileFilter(new FileNameExtensionFilter("Cutoff settings file (*.cut.xml)","xml"));
+    jButtonResultCutoff_ = new JButton("Add cutoff settings");
+    jButtonResultCutoff_.addActionListener(this);
+    jButtonResultCutoff_.setActionCommand("addRemoveCutoffSettings");
+    jButtonResultCutoff_.setToolTipText(TooltipTexts.STATISTICS_ADD_CUTOFF_SETTINGS);
+    cutoffPanel.add(jButtonResultCutoff_);
+    cutoffWarningLabel_ = new JLabel("(Please specify result-files before)");
+    cutoffWarningLabel_.setToolTipText(TooltipTexts.STATISTICS_ADD_CUTOFF_SETTINGS);
+    cutoffPanel.add(cutoffWarningLabel_); 
+    resultsMenu_.add(cutoffPanel,new GridBagConstraints(3, 5, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+
+    JPanel absQuantSetPanel = new JPanel();
+    resultLoadButton_ = new JButton("Load settings");
+    resultLoadButton_.addActionListener(this);
+    resultLoadButton_.setActionCommand("loadAbsoluteSettings");
+    resultLoadButton_.setToolTipText(TooltipTexts.STATISTICS_CUTOFF_LOAD);
+    absQuantSetPanel.add(resultLoadButton_);
+    resultLoadButton_.setVisible(false);
+    resultSaveButton_ = new JButton("Save settings");
+    resultSaveButton_.addActionListener(this);
+    resultSaveButton_.setActionCommand("saveAbsoluteSettings");
+    resultSaveButton_.setToolTipText(TooltipTexts.STATISTICS_CUTOFF_SAVE);
+    absQuantSetPanel.add(resultSaveButton_);
+    resultSaveButton_.setVisible(false);
+    saveAbsSettingsFileChooser_ = new JFileChooser();
+    saveAbsSettingsFileChooser_.setPreferredSize(new Dimension(600,500));
+    saveAbsSettingsFileChooser_.setFileFilter(new FileNameExtensionFilter("Whole quant-settings file (*.wqs.xml)","xml"));
+    loadAbsSettingsFileChooser_ = new JFileChooser();
+    loadAbsSettingsFileChooser_.setPreferredSize(new Dimension(600,500));
+    loadAbsSettingsFileChooser_.setFileFilter(new FileNameExtensionFilter("Whole quant-settings file (*.wqs.xml)","xml"));
+    jButtonResultAbsQuant_ = new JButton("Add absolute settings");
+    jButtonResultAbsQuant_.addActionListener(this);
+    jButtonResultAbsQuant_.setActionCommand("addRemoveAbsoluteSettings");
+    jButtonResultAbsQuant_.setToolTipText(TooltipTexts.STATISTICS_ADD_ABS_SETTINGS);
+    absQuantSetPanel.add(jButtonResultAbsQuant_);
+    resultWarningLabel_ = new JLabel("(Please specify result-files before)");
+    resultWarningLabel_.setToolTipText(TooltipTexts.STATISTICS_ADD_ABS_SETTINGS);
+    absQuantSetPanel.add(resultWarningLabel_); 
+    resultsMenu_.add(absQuantSetPanel,new GridBagConstraints(3, 6, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    cutoffSettingsPanel_ = new CutoffSettingsPanel(TooltipTexts.STATISTICS_ADD_CUTOFF_SETTINGS);
+    resultsMenu_.add(cutoffSettingsPanel_ ,new GridBagConstraints(0, 7, 5, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));  
+    quantSettingsPanel_ = new AbsoluteQuantSettingsPanel (groupsPanel_);
+    resultsMenu_.add(quantSettingsPanel_ ,new GridBagConstraints(0, 8, 5, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));  
+    jButtonResultFilesAccept_ = new JButton("Accept");
+    jButtonResultFilesAccept_.addActionListener(this);
+    jButtonResultFilesAccept_.setActionCommand("acceptSelectedResultFiles");
+    jButtonResultFilesAccept_.setToolTipText(TooltipTexts.STATISTICS_ACCEPT_SELECTION);
+    resultsMenu_.add(jButtonResultFilesAccept_,new GridBagConstraints(0, 9, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+  }
+  
+  private void createSingleQuantMenu(){
+    this.singleQuantMenu = new JPanel();
+    this.singleQuantMenu.setLayout(new GridBagLayout());
+    JPanel selectionPanel = new JPanel();
+    selectionPanel.setLayout(new GridBagLayout());
+    singleQuantMenu.add(selectionPanel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+
+    mzXMLLabel = new JLabel("Raw file: ");
+    mzXMLLabel.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_RAW_FILE);
+    selectionPanel.add(mzXMLLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    this.selectedMzxmlFile = new JTextField(62);
+    selectedMzxmlFile.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_RAW_FILE);
+//    selectedFile.setEnabled(false);
+    
+    selectionPanel.add(selectedMzxmlFile,new GridBagConstraints(1, 0, 6, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    
+    jButtonMxXMLOpen = new JButton("Select");
+    jButtonMxXMLOpen.addActionListener(this);
+    jButtonMxXMLOpen.setActionCommand("showMzxmlFileChooser");
+    jButtonMxXMLOpen.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_RAW_FILE);
+    selectionPanel.add(jButtonMxXMLOpen,new GridBagConstraints(7, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    chromLabel = new JLabel("Quantitation: ");
+    chromLabel.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_MASS_LIST);
+    this.selectedQuantFile = new JTextField(62);
+    selectedQuantFile.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_MASS_LIST);
+    selectionPanel.add(selectedQuantFile,new GridBagConstraints(1, 1, 6, 1, 0.0, 0.0
+      ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    selectionPanel.add(chromLabel,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    jButtonQuantOpen = new JButton("Select");
+    jButtonQuantOpen.addActionListener(this);
+    jButtonQuantOpen.setActionCommand("showQuantFileChooser");
+    jButtonQuantOpen.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_MASS_LIST);
+    selectionPanel.add(jButtonQuantOpen,new GridBagConstraints(7, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+
+    
+    JPanel settingsPanel = new JPanel ();  
+    settingsPanel.setLayout(new GridBagLayout());
+    singleQuantMenu.add(settingsPanel,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
+
+//    JLabel mzTolLabel = new JLabel("m/z-Tolerance: ");
+//    settingsPanel.add(mzTolLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+//        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+//    singleMzTol_ = new JTextField(4);
+//    singleMzTol_.setText("0.02");
+//    singleMzTol_.setHorizontalAlignment(JTextField.RIGHT);
+//    settingsPanel.add(singleMzTol_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+//        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel timeMinusTolLabel = new JLabel("Time before tol.: ");
+    timeMinusTolLabel.setToolTipText(TooltipTexts.QUANTITATION_RET_BEFORE);
+    settingsPanel.add(timeMinusTolLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    singleTimeMinusTol_ = new JTextField(4);
+    singleTimeMinusTol_.setText("5");
+    singleTimeMinusTol_.setHorizontalAlignment(JTextField.RIGHT);
+    singleTimeMinusTol_.setToolTipText(TooltipTexts.QUANTITATION_RET_BEFORE);
+    settingsPanel.add(singleTimeMinusTol_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel timeMinusUnit = new JLabel("min");
+    timeMinusUnit.setToolTipText(TooltipTexts.QUANTITATION_RET_BEFORE);
+    settingsPanel.add(timeMinusUnit,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel timePlusTolLabel = new JLabel("Time after tol.: ");
+    timePlusTolLabel.setToolTipText(TooltipTexts.QUANTITATION_RET_AFTER);
+    settingsPanel.add(timePlusTolLabel,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    singleTimePlusTol_ = new JTextField(4);
+    singleTimePlusTol_.setText("5");
+    singleTimePlusTol_.setHorizontalAlignment(JTextField.RIGHT);
+    singleTimePlusTol_.setToolTipText(TooltipTexts.QUANTITATION_RET_AFTER);
+    settingsPanel.add(singleTimePlusTol_,new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel timePlusUnit = new JLabel("min");
+    timePlusUnit.setToolTipText(TooltipTexts.QUANTITATION_RET_AFTER);
+    settingsPanel.add(timePlusUnit,new GridBagConstraints(5, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel cutoffLabel = new JLabel("Rel. base-peak cutoff: ");
+    cutoffLabel.setToolTipText(TooltipTexts.QUANTITATION_CUTOFF);
+    settingsPanel.add(cutoffLabel,new GridBagConstraints(6, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    singleCutoff_ = new JTextField(4);
+    singleCutoff_.setText(LipidomicsConstants.getBasePeakDefaultCutoff());
+    singleCutoff_.setHorizontalAlignment(JTextField.RIGHT);
+    singleCutoff_.setToolTipText(TooltipTexts.QUANTITATION_CUTOFF);
+    settingsPanel.add(singleCutoff_,new GridBagConstraints(7, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel cutoffUnit = new JLabel("\u2030");
+    cutoffUnit.setToolTipText(TooltipTexts.QUANTITATION_CUTOFF);
+    settingsPanel.add(cutoffUnit,new GridBagConstraints(8, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel rtShiftLabel = new JLabel("RT-shift: ");
+    rtShiftLabel.setToolTipText(TooltipTexts.QUANTIFICATION_RET_SHIFT);
+    settingsPanel.add(rtShiftLabel,new GridBagConstraints(9, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    singleRTShift_ = new JTextField(4);
+    singleRTShift_.setText("0.0");
+    singleRTShift_.setHorizontalAlignment(JTextField.RIGHT);
+    singleRTShift_.setToolTipText(TooltipTexts.QUANTIFICATION_RET_SHIFT);
+    settingsPanel.add(singleRTShift_,new GridBagConstraints(10, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel rtShiftUnit = new JLabel("min");
+    rtShiftUnit.setToolTipText(TooltipTexts.QUANTIFICATION_RET_SHIFT);
+    settingsPanel.add(rtShiftUnit,new GridBagConstraints(11, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+
+    
+    JPanel settingsPanel2 = new JPanel ();
+    settingsPanel2.setLayout(new GridBagLayout());
+    singleQuantMenu.add(settingsPanel2,new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
+    isoValidation_ = new JCheckBox();
+    isoValidation_.setSelected(true);
+    isoValidation_.addItemListener(new LipidomicsItemListener("endisableAmountOfIsotopes"));
+    isoValidation_.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
+    settingsPanel2.add(isoValidation_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel allowIsotopicValidation = new JLabel("Isotopic quantitation of ");
+    allowIsotopicValidation.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
+    settingsPanel2.add(allowIsotopicValidation,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    amountOfIsotopes_ = new JTextField(4);
+    amountOfIsotopes_.setText("2");
+    amountOfIsotopes_.setHorizontalAlignment(JTextField.RIGHT);
+    amountOfIsotopes_.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
+    settingsPanel2.add(amountOfIsotopes_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel isotopePeaks = new JLabel("isotopes where");
+    isotopePeaks.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
+    settingsPanel2.add(isotopePeaks,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    amountOfMatchingSearchIsotopes_ = new JTextField(4);
+    amountOfMatchingSearchIsotopes_.setText("1");
+    amountOfMatchingSearchIsotopes_.setHorizontalAlignment(JTextField.RIGHT);
+    amountOfMatchingSearchIsotopes_.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
+//    amountOfMatchingSearchIsotopes_.setEnabled(false);
+    settingsPanel2.add(amountOfMatchingSearchIsotopes_,new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel isotopeMatchPeaks = new JLabel("isotopic peak(s) have to match");
+    isotopeMatchPeaks.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
+    settingsPanel2.add(isotopeMatchPeaks,new GridBagConstraints(5, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+
+    
+    JPanel settingsPanel3 = new JPanel ();
+    settingsPanel3.setLayout(new GridBagLayout());
+    singleQuantMenu.add(settingsPanel3,new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
+    searchUnknownTime_ = new JCheckBox();
+    searchUnknownTime_.setSelected(true);
+    searchUnknownTime_.setToolTipText(TooltipTexts.QUANTITATION_RET_UNKNOWN);
+    settingsPanel3.add(searchUnknownTime_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel findUnknownMolecules = new JLabel("Find molecules where retention time is unknown");
+    findUnknownMolecules.setToolTipText(TooltipTexts.QUANTITATION_RET_UNKNOWN);
+    settingsPanel3.add(findUnknownMolecules,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JLabel maxProcessors = new JLabel("Processors for quantitation:");
+    maxProcessors.setToolTipText(TooltipTexts.QUANTITATION_PROCESSORS);
+    settingsPanel3.add(maxProcessors,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    nrProcessors_ = new JTextField(3);
+    nrProcessors_.setText(String.valueOf(this.getAmountOfProcessorsPreferred()));
+    nrProcessors_.setHorizontalAlignment(JTextField.RIGHT);
+    nrProcessors_.setToolTipText(TooltipTexts.QUANTITATION_PROCESSORS);
+    nrProcessors_.setInputVerifier(new IntegerMaxVerifier(true,1,getMaxProcessors()));
+    settingsPanel3.add(nrProcessors_,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+
+
+    startQuantification = new JButton("Start Quantitation");
+    startQuantification.addActionListener(this);
+    startQuantification.setActionCommand("startQuantification");
+    startQuantification.setToolTipText(TooltipTexts.QUANTITATION_START);
+    singleQuantMenu.add(startQuantification,new GridBagConstraints(0, 4, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
+    
+    quantifyingPanel_ = new JPanel ();  
+    quantifyingPanel_.setLayout(new GridBagLayout());
+    singleQuantMenu.add(quantifyingPanel_,new GridBagConstraints(0, 5, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
+    quantifyingLabel_ = new JLabel("Quantifying");
+    quantifyingLabel_.setToolTipText(TooltipTexts.QUANTITATION_STATUS_TEXT);
+    quantifyingPanel_.add(quantifyingLabel_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    progressBar_ = new JProgressBar();
+    progressBar_.setMaximum(100);
+    progressBar_.setToolTipText(TooltipTexts.QUANTITATION_PROGRESS);
+    quantifyingPanel_.add(progressBar_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    Icon icon = new ImageIcon(LipidDataAnalyzer.class.getResource("/images/spinner.gif"));
+    spinnerLabel_ = new JLabel(icon);
+    quantifyingPanel_.add(spinnerLabel_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    
+
+    quantifyingPanel_.setVisible(false);
+
+  }
+  
+  public void actionPerformed(ActionEvent arg0)
+  {
+    String command = arg0.getActionCommand();
+    if (command.equalsIgnoreCase("showMzxmlFileChooser")){
+      if (this.mzXMLFileChooser==null)
+        this.mzXMLFileChooser = new JFileChooser();
+      this.mzXMLFileChooser.setPreferredSize(new Dimension(600,500));
+      this.mzXMLFileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+      
+      int returnVal = this.mzXMLFileChooser.showOpenDialog(new Frame());;
+      if (returnVal == JFileChooser.APPROVE_OPTION) {
+         String text = this.mzXMLFileChooser.getSelectedFile().getAbsolutePath();
+         this.selectedMzxmlFile.setText(text);
+      } else return;
+    }
+    if (command.equalsIgnoreCase("showMzxmlDirChooser")){
+      if (this.mzXMLDirChooser==null)
+        this.mzXMLDirChooser = new JFileChooser();
+      this.mzXMLDirChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+      this.mzXMLDirChooser.setPreferredSize(new Dimension(600,500));
+      
+      int returnVal = this.mzXMLDirChooser.showOpenDialog(new Frame());;
+      if (returnVal == JFileChooser.APPROVE_OPTION) {
+         String text = this.mzXMLDirChooser.getSelectedFile().getAbsolutePath();
+         this.selectedMzxmlDirectory_.setText(text);
+      } else return;
+    }
+    String subCommand = "";
+    if (command.equalsIgnoreCase("showResultsDirChooser")){
+      if (this.resultsDirChooser_==null)
+        this.resultsDirChooser_ = new JFileChooser();
+      this.resultsDirChooser_.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+      this.resultsDirChooser_.setPreferredSize(new Dimension(600,500));
+      
+      int returnVal = this.resultsDirChooser_.showOpenDialog(new Frame());;
+      if (returnVal == JFileChooser.APPROVE_OPTION) {
+        Hashtable<String,File> avoidDuplicates = new Hashtable<String,File>();
+        if (this.resultFiles_!=null){
+          for (File file : this.resultFiles_) avoidDuplicates.put(file.getAbsolutePath(), file);
+        }else{
+          this.resultFiles_ = new Vector<File>();
+        }
+         String text = this.resultsDirChooser_.getSelectedFile().getAbsolutePath();
+         File resultsDir = new File(text);
+         if (resultsDir.exists() && resultsDir.isDirectory()){
+           File[] resultFileCandidates = resultsDir.listFiles();
+           for (int i=0; i!=resultFileCandidates.length;i++){
+             if (resultFileCandidates[i].isFile() && !avoidDuplicates.containsKey(resultFileCandidates[i].getAbsolutePath())){
+               String fileName = StaticUtils.extractFileName(resultFileCandidates[i].getAbsolutePath()); 
+               String suffix = fileName.substring(fileName.lastIndexOf(".")+1);
+               if (suffix.equalsIgnoreCase("xls")||suffix.equalsIgnoreCase("xlsx")){
+                 avoidDuplicates.put(resultFileCandidates[i].getAbsolutePath(),resultFileCandidates[i]);
+                 this.resultFiles_.add(resultFileCandidates[i]);
+               }
+             }
+           }
+           this.resultFiles_ = sortFilesByName(this.resultFiles_);
+         }
+         if (avoidDuplicates.size()>0){
+           this.updateAnalysisSelectionTable();
+         }
+         if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove abs settings")||jButtonResultCutoff_.getText().equalsIgnoreCase("Remove cutoff settings"))
+           subCommand = "removeSettings";
+         
+      } else return;
+
+    }
+    if (command.equalsIgnoreCase("showResultsFilesChooser")){
+      if (this.resultFilesChooser_==null){
+        this.resultFilesChooser_ = new JFileChooser();
+        this.resultFilesChooser_.setFileFilter(new FileNameExtensionFilter("LDA quant results (*.xls,*.xlsx)","xls","xlsx"));
+      }  
+      this.resultFilesChooser_.setMultiSelectionEnabled(true);
+      this.resultFilesChooser_.setPreferredSize(new Dimension(600,500));  
+      int returnVal = this.resultFilesChooser_.showOpenDialog(new Frame());;
+      if (returnVal == JFileChooser.APPROVE_OPTION) {      
+        File[] resultFileCandidates = this.resultFilesChooser_.getSelectedFiles();
+        Hashtable<String,File> avoidDuplicates = new Hashtable<String,File>();
+        if (this.resultFiles_!=null){
+          for (File file : this.resultFiles_) avoidDuplicates.put(file.getAbsolutePath(), file);
+        }else{
+          this.resultFiles_ = new Vector<File>();
+        }
+        for (int i=0; i!=resultFileCandidates.length;i++){
+          if (resultFileCandidates[i].isFile() && !avoidDuplicates.containsKey(resultFileCandidates[i].getAbsolutePath())){
+            avoidDuplicates.put(resultFileCandidates[i].getAbsolutePath(),resultFileCandidates[i]);
+            this.resultFiles_.add(resultFileCandidates[i]);
+          }
+        }
+        if (avoidDuplicates.size()>0){
+          this.updateAnalysisSelectionTable();
+        }
+        if (resultFileCandidates.length>0 && jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove abs settings")||jButtonResultCutoff_.getText().equalsIgnoreCase("Remove cutoff settings"))
+          subCommand = "removeSettings";
+      } else return;
+    }
+    if (command.equalsIgnoreCase("showCorrectOrderFileChooser")){
+      if (this.correctOrderFileChooser_==null){
+        this.correctOrderFileChooser_ = new JFileChooser();
+        this.correctOrderFileChooser_.setFileFilter(new FileNameExtensionFilter("Quant file (*.xls,*.xlsx)","xls","xlsx"));
+      }  
+      this.correctOrderFileChooser_.setPreferredSize(new Dimension(600,500));
+      this.correctOrderFileChooser_.setFileSelectionMode(JFileChooser.FILES_ONLY);
+      
+      int returnVal = this.correctOrderFileChooser_.showOpenDialog(new Frame());;
+      if (returnVal == JFileChooser.APPROVE_OPTION) {
+         String text = this.correctOrderFileChooser_.getSelectedFile().getAbsolutePath();
+         this.correctOrderFile_.setText(text);
+      } else return;
+    }
+    if (this.resultFiles_!=null && command.equalsIgnoreCase("removeResultFiles")){
+      int[] selectedColumns = resultFilesDisplayTable.getSelectedRows();
+      if (selectedColumns!=null && selectedColumns.length>0){
+        List<Integer> selectedList = new ArrayList<Integer>();
+        for (int i=0;i!=selectedColumns.length;i++){
+          selectedList.add(selectedColumns[i]);
+        }
+        Collections.sort(selectedList);
+        Vector<File> filesToRemove = new Vector<File>();
+        for (int i=(selectedList.size()-1);i!=-1;i--){
+          filesToRemove.add(this.resultFiles_.get((int)selectedList.get(i)));
+          this.resultFiles_.remove((int)selectedList.get(i));
+        }
+        groupsPanel_.removeFiles(filesToRemove);
+        this.updateAnalysisSelectionTable();
+        if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove abs settings")||jButtonResultCutoff_.getText().equalsIgnoreCase("Remove cutoff settings"))
+          subCommand = "removeSettings";
+      }
+    }
+    if (this.resultFiles_!=null && command.equalsIgnoreCase("removeAllResultFiles")){
+      this.resultFiles_ = new Vector<File>();
+      this.groupsPanel_.removeAllGroups();
+      this.updateAnalysisSelectionTable();
+      if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove abs settings")||jButtonResultCutoff_.getText().equalsIgnoreCase("Remove cutoff settings"))
+        subCommand = "removeSettings";
+    }
+    if (command.equalsIgnoreCase("addToGroup")){
+      if (resultFiles_!=null){
+        int[] selectedColumns = resultFilesDisplayTable.getSelectedRows();
+        if (selectedColumns!=null && selectedColumns.length>0){
+          Vector<File> selectedFiles = new Vector<File>();
+          for (int selectedColumn : selectedColumns){
+            selectedFiles.add(resultFiles_.get(selectedColumn));
+          }
+          resultFilesDisplayTable.getSelectionModel().clearSelection();
+          int amountGroups = groupsPanel_.getGroups().size();
+          InputDialog dlg = new InputDialog(new JFrame(), "Add to group", "Enter the group name", "Group "+String.valueOf(amountGroups+1));
+          String groupName = dlg.getEnteredText();
+          if (groupName!=null&&groupName.length()>0){
+            groupName = groupName.trim();
+            groupsPanel_.addGroup(groupName,selectedFiles,getWidth());
+          }else{
+            new WarningMessage(new JFrame(), "Warning", "You have to specifiy a name for the group!");
+          }
+//        List<Integer> selectedList = new ArrayList<Integer>();
+//        for (int i=0;i!=selectedColumns.length;i++){
+//          selectedList.add(selectedColumns[i]);
+//        }
+//        Collections.sort(selectedList);
+//        for (int i=(selectedList.size()-1);i!=-1;i--){
+//          this.resultFiles_.remove((int)selectedList.get(i));
+//        }
+//        this.updateAnalysisSelectionTable();
+        }else{
+          new WarningMessage(new JFrame(), "Warning", "You have to select at least one result-file!");
+        }
+      }else{
+        new WarningMessage(new JFrame(), "Warning", "First you have to add some result-files!");
+      }
+    }
+    if (command.equalsIgnoreCase("acceptSelectedResultFiles")){
+      this.acceptResultFiles();
+    }
+    if (command.equalsIgnoreCase("showChromFileChooser")){
+      if (chromFileChooser_==null)
+        this.chromFileChooser_ = new JFileChooser();
+      this.chromFileChooser_.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+      this.chromFileChooser_.setPreferredSize(new Dimension(600,500));
+      
+      int returnVal = this.chromFileChooser_.showOpenDialog(new Frame());
+      if (returnVal == JFileChooser.APPROVE_OPTION) {
+         String text = this.chromFileChooser_.getSelectedFile().getAbsolutePath();
+         this.selectedChromFile.setText(text);
+
+      } else return;
+    }
+    if (command.equalsIgnoreCase("showQuantFileChooser")){
+      if (quantFileChooser_==null)
+        this.quantFileChooser_ = new JFileChooser();
+      this.quantFileChooser_.setPreferredSize(new Dimension(600,500));
+      
+      int returnVal = this.quantFileChooser_.showOpenDialog(new Frame());;
+      if (returnVal == JFileChooser.APPROVE_OPTION) {
+         String text = this.quantFileChooser_.getSelectedFile().getAbsolutePath();
+         this.selectedQuantFile.setText(text);
+      } else return;
+    }
+    if (command.equalsIgnoreCase("showQuantDirChooser")){
+      if (quantDirChooser_==null)
+        this.quantDirChooser_ = new JFileChooser();
+      this.quantDirChooser_.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+      this.quantDirChooser_.setPreferredSize(new Dimension(600,500));
+      
+      int returnVal = this.quantDirChooser_.showOpenDialog(new Frame());;
+      if (returnVal == JFileChooser.APPROVE_OPTION) {
+         String text = this.quantDirChooser_.getSelectedFile().getAbsolutePath();
+         this.selectedQuantDir_.setText(text);
+      } else return;
+    }
+    if (command.equalsIgnoreCase("showResultChooser")){
+      if (resultFileChooser_==null){
+        this.resultFileChooser_ = new JFileChooser();
+        this.resultFileChooser_.setFileFilter(new FileNameExtensionFilter("LDA quant results (*.xls,*.xlsx)","xls","xlsx"));
+      }  
+      this.resultFileChooser_.setPreferredSize(new Dimension(600,500));
+      int returnVal = this.resultFileChooser_.showOpenDialog(new Frame());;
+      if (returnVal == JFileChooser.APPROVE_OPTION) {
+         String text = this.resultFileChooser_.getSelectedFile().getAbsolutePath();
+         this.selectedResultFile.setText(text);
+
+      } else return;
+    }
+    if (command.equalsIgnoreCase("startBatchQuantification")){
+      boolean canStartQuantification = false;
+      float cutoff = 0f;
+      float rtShift = 0f;
+      if (selectedMzxmlDirectory_.getText()!=null&&selectedMzxmlDirectory_.getText().length()>0 &&
+          selectedQuantDir_.getText()!=null&&selectedQuantDir_.getText().length()>0){
+        canStartQuantification = true;
+        if (this.isoBatchValidation_.isSelected()){
+          if (this.amountOfBatchIsotopes_.getText()==null||this.amountOfBatchIsotopes_.getText().length()<1)
+            canStartQuantification = false;
+          else{
+            try{
+              Integer.parseInt(this.amountOfBatchIsotopes_.getText());
+            }catch(NumberFormatException nfx){
+              canStartQuantification = false;
+            }
+          }
+          if (this.amountOfMatchingBatchSearchIsotopes_.getText()==null||this.amountOfMatchingBatchSearchIsotopes_.getText().length()<1)
+            canStartQuantification = false;
+          else{
+            try{
+              int isos = Integer.parseInt(this.amountOfMatchingBatchSearchIsotopes_.getText());
+              if (isos<1)
+                canStartQuantification = false;
+            }catch(NumberFormatException nfx){
+              canStartQuantification = false;
+            }
+          }
+        }
+        try{
+          if (batchCutoff_.getText()!=null && batchCutoff_.getText().length()>0){
+            cutoff = Float.parseFloat(batchCutoff_.getText().replaceAll(",", "."));
+            LipidomicsConstants.getInstance().setRelativeMS1BasePeakCutoff(batchCutoff_.getText());
+          }  
+        }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The cutoff value must be float format!"); canStartQuantification=false;}
+        try{
+          if (batchRTShift_.getText()!=null && batchRTShift_.getText().length()>0)
+            rtShift = Float.parseFloat(batchRTShift_.getText().replaceAll(",", "."));
+        }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The RT-shift value must be float format!"); canStartQuantification=false;}
+
+//        if (this.searchUnknownBatchTime_.isSelected()){
+//        }
+      }
+      float minusTimeTol = 0f;
+      float plusTimeTol = 0f;
+      if (this.batchTimeMinusTol_.getText()!=null && this.batchTimeMinusTol_.getText().length()>0){
+        try{ minusTimeTol = Float.parseFloat(this.batchTimeMinusTol_.getText());} catch (NumberFormatException nfx){new WarningMessage(new JFrame(), "Error", "The  \"Time before tol.\" value must be entered in float format!"); canStartQuantification=false;}
+      }
+      if (this.batchTimePlusTol_.getText()!=null && this.batchTimePlusTol_.getText().length()>0){
+        try{ plusTimeTol = Float.parseFloat(this.batchTimePlusTol_.getText());} catch (NumberFormatException nfx){new WarningMessage(new JFrame(), "Error", "The  \"Time after tol.\" value must be entered in float format!"); canStartQuantification=false;}
+      }
+      if (canStartQuantification){      
+        Vector<File> rawFiles = new Vector<File>();
+        Vector<File> quantFiles = new Vector<File>();
+        File rawDir = new File(this.selectedMzxmlDirectory_.getText());
+        File quantDir = new File(this.selectedQuantDir_.getText());
+        int amountOfIsotopes = 0;
+        int isotopesMustMatch = 0;
+        if (this.isoBatchValidation_.isSelected()){
+          amountOfIsotopes = Integer.parseInt(this.amountOfBatchIsotopes_.getText());
+          isotopesMustMatch = Integer.parseInt(this.amountOfMatchingBatchSearchIsotopes_.getText());
+        }
+//        if (this.searchUnknownBatchTime_.isSelected()){          
+//        }
+        if (rawDir.exists()&&rawDir.isDirectory()&&quantDir.exists()&&quantDir.isDirectory()){
+          File[] rawFileCandidates = rawDir.listFiles();
+          Hashtable<String,Vector<File>> avoidDuplication = new Hashtable<String,Vector<File>>();
+          boolean mzXMLOrChromPresent = false;
+          for (int i=0; i!=rawFileCandidates.length;i++){
+            if (rawFileCandidates[i].isFile()){
+              String[] fileNameAndSuffix = StaticUtils.extractFileNameAndSuffix(rawFileCandidates[i].getAbsolutePath()); 
+              String suffix = fileNameAndSuffix[1];
+              String fileName = fileNameAndSuffix[0];
+              if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("raw")||suffix.equalsIgnoreCase("chrom")||suffix.equalsIgnoreCase("wiff")){
+                if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("chrom")) mzXMLOrChromPresent = true;
+                Vector<File> theFiles = new Vector<File>();
+                if (avoidDuplication.containsKey(fileName)){
+                  theFiles = avoidDuplication.get(fileName);
+                }
+                theFiles.add(rawFileCandidates[i]);
+                avoidDuplication.put(fileName, theFiles);
+              }
+            }
+            if (rawFileCandidates[i].isDirectory()){
+              String[] fileNameAndSuffix = StaticUtils.extractFileNameAndSuffix(rawFileCandidates[i].getAbsolutePath()); 
+              String suffix = fileNameAndSuffix[1];
+              String fileName = fileNameAndSuffix[0];
+              if (suffix.equalsIgnoreCase("raw")|| suffix.equalsIgnoreCase("d") ||suffix.equalsIgnoreCase("chrom")){
+                if (suffix.equalsIgnoreCase("chrom")) mzXMLOrChromPresent = true;
+                Vector<File> theFiles = new Vector<File>();
+                if (avoidDuplication.containsKey(fileName)){
+                  theFiles = avoidDuplication.get(fileName);
+                }
+                theFiles.add(rawFileCandidates[i]);
+                avoidDuplication.put(fileName, theFiles);
+              }
+            }
+          }
+          for (String key : avoidDuplication.keySet()){
+            Vector<File> theFiles = avoidDuplication.get(key);
+            if (theFiles.size()==1){
+              String suffix = StaticUtils.extractFileNameAndSuffix(theFiles.get(0).getAbsolutePath())[1];
+              if (!mzXMLOrChromPresent || !suffix.equalsIgnoreCase("wiff"))
+                rawFiles.add(theFiles.get(0));
+            }else{
+              int selectedIndex = -1;
+              for (int i=0; i!=theFiles.size();i++){
+                File file = theFiles.get(i);
+                String suffix = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf(".")+1);
+                if (mzXMLOrChromPresent && suffix.equalsIgnoreCase("wiff")) continue;
+                if (suffix.equalsIgnoreCase("chrom")){
+                  selectedIndex = i;
+                }
+              }
+              if (selectedIndex>-1){
+                rawFiles.add(theFiles.get(selectedIndex));
+              }else{
+                for (int i=0; i!=theFiles.size();i++){
+                  File file = theFiles.get(i);
+                  String suffix = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf(".")+1);
+                  if (mzXMLOrChromPresent && suffix.equalsIgnoreCase("wiff")) continue;
+                  if (suffix.equalsIgnoreCase("mzXML")){
+                    rawFiles.add(theFiles.get(i));
+                  }
+                }  
+              }
+            }
+          }
+          File[] quantificationFileCandidates = quantDir.listFiles();
+          for (int i=0; i!=quantificationFileCandidates.length;i++){
+            String suffix = quantificationFileCandidates[i].getAbsolutePath().substring(quantificationFileCandidates[i].getAbsolutePath().lastIndexOf(".")+1);
+            if (suffix.equalsIgnoreCase("xls")||suffix.equalsIgnoreCase("xlsx")){
+              quantFiles.add(quantificationFileCandidates[i]);
+            }
+          }
+          if (rawFiles.size()>0 && quantFiles.size()>0){
+            Vector<RawQuantificationPairVO> pairs = new Vector<RawQuantificationPairVO>();
+            for (File rawFile: rawFiles){
+              for (File quantFile: quantFiles){
+                pairs.add(new RawQuantificationPairVO(rawFile,quantFile));
+              }
+            }
+            this.batchQuantTableModel_.clearFiles();
+            this.batchQuantTableModel_.addFiles(pairs);
+            this.quantifyingBatchLabel_.setText("Quantifying");
+            this.progressBatchBar_.setValue(0);
+            this.quantifyingBatchPanel_.setVisible(true);
+            this.startBatchQuantification_.setEnabled(false);
+            this.spinnerBatchLabel_.setVisible(true);
+            batchQuantThread_ = new BatchQuantThread(this.batchQuantTable_, this.batchQuantTableModel_,this.progressBatchBar_, 
+                this.quantifyingBatchLabel_,//Float.parseFloat(this.batchMzTol_.getText()),
+                minusTimeTol,plusTimeTol,amountOfIsotopes,isotopesMustMatch,this.searchUnknownBatchTime_.isSelected(), cutoff, 
+                rtShift, Integer.parseInt(nrProcessorsBatch_.getText()));
+            batchQuantThread_.start();
+          }else{
+            if (rawFiles.size()==0){
+              @SuppressWarnings("unused")
+              WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "In the specified raw directory are no quantifyable files");
+            }
+            if (quantFiles.size()==0){
+              @SuppressWarnings("unused")
+              WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "In the specified quant directory are no quantifyable files");
+            }
+          }
+        }else{
+          if (!rawDir.exists()||!rawDir.isDirectory()){
+            @SuppressWarnings("unused")
+            WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The raw directory does not exist");
+          }
+          if (!quantDir.exists()||!quantDir.isDirectory()){
+            @SuppressWarnings("unused")
+            WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The quantification directory does not exist");
+          }
+        }
+      }else{
+//        boolean wasWarningMessage=false;
+        if (selectedMzxmlDirectory_.getText()==null||selectedMzxmlDirectory_.getText().length()<1){
+          @SuppressWarnings("unused")
+          WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a raw, mzXML or chrom file directory");
+//          wasWarningMessage=true;
+        }else if (selectedQuantDir_.getText()==null||selectedQuantDir_.getText().length()<1){
+          @SuppressWarnings("unused")
+          WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a quant file directory");
+//          wasWarningMessage=true;
+        } else if (this.isoBatchValidation_.isSelected()){
+          if (this.amountOfBatchIsotopes_.getText()==null||this.amountOfBatchIsotopes_.getText().length()<1){
+            @SuppressWarnings("unused")
+            WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "If you select the isotope option, please specify the amount of isotopes (integer format)!");
+//            wasWarningMessage=true;
+          }else{
+            try{
+              Integer.parseInt(this.amountOfBatchIsotopes_.getText());
+            }catch(NumberFormatException nfx){
+              @SuppressWarnings("unused")
+              WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The number of isotopes must be integer format!");
+//              wasWarningMessage=true;
+            }
+          }
+        }
+        if (this.amountOfMatchingBatchSearchIsotopes_.getText()==null||this.amountOfMatchingBatchSearchIsotopes_.getText().length()<0){
+          @SuppressWarnings("unused")
+          WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "If you select the find molecules without retention-time option, please specify the amount of matching isotopes (integer format)!");
+//          wasWarningMessage=true;
+        }else{
+          try{
+            int isotopes = Integer.parseInt(this.amountOfMatchingBatchSearchIsotopes_.getText());
+            if (isotopes<1){
+              @SuppressWarnings("unused")
+              WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The number of matching isotopes must be >=0!");
+//              wasWarningMessage=true;
+            }
+          }catch(NumberFormatException nfx){
+            @SuppressWarnings("unused")
+            WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The number of matching isotopes must be integer format!");
+//            wasWarningMessage=true;
+          }
+        } 
+
+//        if (!wasWarningMessage && this.searchUnknownBatchTime_.isSelected()){
+//        }
+      }
+    }
+    if (command.equalsIgnoreCase("startQuantification")){
+      boolean canStartQuantification = false;
+      float beforeTolerance = 0f;
+      float afterTolerance = 0f;
+      float cutoff = 0f;
+      float rtShift = 0f;
+      if (selectedMzxmlFile.getText()!=null)
+        selectedMzxmlFile.setText(selectedMzxmlFile.getText().trim());
+      if (selectedQuantFile.getText()!=null)
+        selectedQuantFile.setText(selectedQuantFile.getText().trim());
+      if (selectedMzxmlFile.getText()!=null&&selectedMzxmlFile.getText().length()>0 &&
+          selectedQuantFile.getText()!=null&&selectedQuantFile.getText().length()>0){
+        canStartQuantification = true;
+        if (!StaticUtils.existsFile(selectedMzxmlFile.getText())){
+          new WarningMessage(new JFrame(), "Error", "The raw file \""+StaticUtils.extractFileName(selectedMzxmlFile.getText())+"\" does not exist!"); 
+          return;
+        }else{
+          if (selectedQuantFile.getText().length()>3){
+            String suffix = selectedQuantFile.getText().substring(selectedQuantFile.getText().lastIndexOf("."));
+            if (!(suffix.equalsIgnoreCase(".xls")||(suffix.equalsIgnoreCase(".xlsx")))){
+              new WarningMessage(new JFrame(), "Error", "For the mass lists just Excel files in the xls or xlsx format are allowed!"); 
+              return;
+            }
+          }
+        }
+        if (canStartQuantification){
+          String suffix = selectedMzxmlFile.getText().substring(selectedMzxmlFile.getText().lastIndexOf(".")+1);
+          if (!(suffix.equalsIgnoreCase("chrom")||suffix.equalsIgnoreCase("head")||suffix.equalsIgnoreCase("idx")||
+              suffix.equalsIgnoreCase("rtt")||suffix.equalsIgnoreCase("mzXML")||suffix.equalsIgnoreCase("raw")||suffix.equalsIgnoreCase("d")
+              ||suffix.equalsIgnoreCase("wiff"))){
+            new WarningMessage(new JFrame(), "Error", "For the raw data just files and directories with the suffix raw, mzXML, d, wiff, and chrom are allowed!"); 
+            return;
+          }
+        }
+        if (!StaticUtils.existsFile(selectedQuantFile.getText())){
+          new WarningMessage(new JFrame(), "Error", "The mass list file \""+StaticUtils.extractFileName(selectedQuantFile.getText())+"\" does not exist!"); 
+          canStartQuantification=false;
+        }
+        try{
+          if (singleTimeMinusTol_.getText()!=null && singleTimeMinusTol_.getText().length()>0)
+            beforeTolerance = Float.parseFloat(singleTimeMinusTol_.getText().replaceAll(",", "."));
+        }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The  \"Time before tol.\" value must be entered in float format!"); canStartQuantification=false;}
+        try{
+          if (singleTimePlusTol_.getText()!=null && singleTimePlusTol_.getText().length()>0)
+            afterTolerance = Float.parseFloat(singleTimePlusTol_.getText().replaceAll(",", "."));
+        }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The  \"Time after tol.\" value must be entered in float format!"); canStartQuantification=false;}
+        if (this.isoValidation_.isSelected()){
+          if (this.amountOfIsotopes_.getText()==null||this.amountOfIsotopes_.getText().length()<1)
+            canStartQuantification = false;
+          else{
+            try{
+              Integer.parseInt(this.amountOfIsotopes_.getText());
+            }catch(NumberFormatException nfx){
+              canStartQuantification = false;
+            }
+          }
+          if (this.amountOfMatchingSearchIsotopes_.getText()==null||this.amountOfMatchingSearchIsotopes_.getText().length()<1)
+            canStartQuantification = false;
+          else{
+            try{
+              int isos = Integer.parseInt(this.amountOfMatchingSearchIsotopes_.getText());
+              if (isos<1)
+                canStartQuantification = false;
+            }catch(NumberFormatException nfx){
+              canStartQuantification = false;
+            }
+          }
+        }
+        try{
+          if (singleCutoff_.getText()!=null && singleCutoff_.getText().length()>0){
+            cutoff = Float.parseFloat(singleCutoff_.getText().replaceAll(",", "."));
+            LipidomicsConstants.getInstance().setRelativeMS1BasePeakCutoff(singleCutoff_.getText());
+          }
+        }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The cutoff value must be float format!"); canStartQuantification=false;}
+        try{
+          if (singleRTShift_.getText()!=null && singleRTShift_.getText().length()>0)
+            rtShift = Float.parseFloat(singleRTShift_.getText().replaceAll(",", "."));
+        }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The RT-shift value must be float format!"); canStartQuantification=false;}
+
+//        if (this.searchUnknownTime_.isSelected()){
+//        }
+      }      
+      if (canStartQuantification){
+        this.quantifyingPanel_.setVisible(true);
+        this.startQuantification.setEnabled(false);
+        spinnerLabel_.setVisible(true);
+        String fileToTranslate = selectedMzxmlFile.getText();
+        readFromRaw_ = false;
+        boolean threadStarted = false;
+        boolean aborted = false;
+        int amountOfIsotopes = 0;
+        int isotopesMustMatch = 0;
+        if (this.isoValidation_.isSelected()){
+          amountOfIsotopes = Integer.parseInt(this.amountOfIsotopes_.getText());
+          isotopesMustMatch = Integer.parseInt(this.amountOfMatchingSearchIsotopes_.getText());
+        }
+        
+//        if (this.searchUnknownTime_.isSelected()){
+//          isotopesMustMatch = Integer.parseInt(this.amountOfMatchingSearchIsotopes_.getText());
+//        }
+        String suffix = fileToTranslate.substring(fileToTranslate.lastIndexOf("."));
+        if (suffix.equalsIgnoreCase(".RAW")||suffix.equalsIgnoreCase(".d")||suffix.equalsIgnoreCase(".wiff")){        
+          File headerFile = new File(StringUtils.getChromFilePaths(fileToTranslate)[1]);
+          if (!headerFile.exists()){
+            File rawFile = new File(fileToTranslate);
+            if ((rawFile.isFile()&& ((Settings.getReadWPath()!=null&&Settings.getReadWPath().length()>0)||(Settings.getMsConvertPath()!=null&&Settings.getMsConvertPath().length()>0)))||
+              (rawFile.isDirectory() && ((suffix.equalsIgnoreCase(".RAW")&&((Settings.getMassWolfPath()!=null&&Settings.getMassWolfPath().length()>0)||((Settings.getMassPlusPlusPath()!=null&&Settings.getMassPlusPlusPath().length()>0))))
+                                     ||   (suffix.equalsIgnoreCase(".d") &&Settings.getMsConvertPath()!=null&&Settings.getMsConvertPath().length()>0)))){
+              String[] params = new String[3];
+              boolean isMassPlusPlus = false;
+              if (rawFile.isFile()){
+                if (!LipidomicsConstants.isMS2()||(Settings.getMsConvertPath()!=null&&Settings.getMsConvertPath().length()>0)){
+                  if (Settings.getMsConvertPath()!=null&&Settings.getMsConvertPath().length()>0){
+                    params = BatchQuantThread.getMsConvertParams(fileToTranslate);
+                  }else if (Settings.getReadWPath()!=null&&Settings.getReadWPath().length()>0){
+                    params[0] = Settings.getReadWPath();
+                    params[1] = fileToTranslate;
+                    params[2] = "p";
+                  }
+                }else{
+                  aborted = true;
+                  @SuppressWarnings("unused")
+                  WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "For the MS/MS feature msconvert is required, because ReadW does not convert the MS/MS spectra of XCalibur correctly!");
+                }  
+              }
+              if (rawFile.isDirectory()){
+                if (suffix.equalsIgnoreCase(".RAW")){
+                  if (!LipidomicsConstants.isMS2()||(Settings.getMassPlusPlusPath()!=null&&Settings.getMassPlusPlusPath().length()>0)){
+                    String outputFile = fileToTranslate.substring(0,fileToTranslate.lastIndexOf("."))+".mzXML";
+                    if (Settings.getMassPlusPlusPath()!=null&&Settings.getMassPlusPlusPath().length()>0){
+                      params = new String[8];
+                      params[0] = Settings.getMassPlusPlusPath();
+                      params[1] = "-in";
+                      params[2] = fileToTranslate;
+                      params[3] = "-out";
+                      params[4] = "mzxml";
+                      params[5] = outputFile;
+                      params[6] = "-sample";
+                      params[7] = "0";
+                      if (LipidomicsConstants.isMS2()) isMassPlusPlus = true;
+                    }else if (Settings.getMassWolfPath()!=null&&Settings.getMassWolfPath().length()>0){
+                      params = new String[4];
+                      params[0] = Settings.getMassWolfPath();
+                      params[1] = "--mzXML";
+                      params[2] = fileToTranslate;
+                      params[3] = outputFile;  
+                    }
+                  }else{
+                    aborted = true;
+                    @SuppressWarnings("unused")
+                    WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "For the MS/MS feature Mass++ is required, because MassWolf does not convert the MS/MS spectra of MassLynx!");              
+                  }
+                }else if(suffix.equalsIgnoreCase(".d")){
+                  if (Settings.getMsConvertPath()!=null&&Settings.getMsConvertPath().length()>0){
+                    params =BatchQuantThread.getMsConvertParams(fileToTranslate);
+                  }else{
+                    aborted = true;
+                    @SuppressWarnings("unused")
+                    WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "For the conversion of MassHunter files \"msconvert\" is required!");
+                  }                    
+                }
+              }
+              if (params[0]!=null && params[0].length()>0){
+                System.out.println("Translating to mzXML");
+                this.progressBar_.setValue(5);
+                this.quantifyingLabel_.setText("Translating to mzXML");
+                rawmzThread_ = new RawToMzxmlThread(params,isMassPlusPlus);
+                rawmzThread_.start();
+                threadStarted = true;
+              }  
+            }
+          }
+        }
+        if (!threadStarted && fileToTranslate.endsWith(".mzXML")){
+          File headerFile = new File(StringUtils.getChromFilePaths(fileToTranslate)[1]);
+          if (!headerFile.exists()){
+            System.out.println("Translating to mzXML");
+            this.progressBar_.setValue(30);
+            this.quantifyingLabel_.setText("Translating to chrom");
+            mzToChromThread_ = new MzxmlToChromThread(fileToTranslate);
+            mzToChromThread_.start();
+            threadStarted = true;
+          }
+        }
+        if (!threadStarted && !aborted){
+          this.quantifyingLabel_.setText("Quantifying");
+          this.progressBar_.setValue(70);
+          quantThread_ = new QuantificationThread(selectedMzxmlFile.getText(), selectedQuantFile.getText(),LipidDataAnalyzer.getResultFilePath(selectedMzxmlFile.getText(), selectedQuantFile.getText()),//Float.parseFloat(this.singleMzTol_.getText()),
+              beforeTolerance,afterTolerance,amountOfIsotopes,isotopesMustMatch,
+              this.searchUnknownTime_.isSelected(),cutoff,rtShift,Integer.parseInt(nrProcessors_.getText()));
+          quantThread_.start();
+          threadStarted = true;
+        }else if (aborted){
+          this.quantifyingPanel_.setVisible(false);
+          this.startQuantification.setEnabled(true);
+          spinnerLabel_.setVisible(false);          
+        }
+      }else{
+//        boolean wasWarningMessage=false;
+        if (selectedMzxmlFile.getText()==null||selectedMzxmlFile.getText().length()<1){
+          @SuppressWarnings("unused")
+          WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a raw, mzXML or chrom file");
+//          wasWarningMessage=true;
+        }else if (selectedQuantFile.getText()==null||selectedQuantFile.getText().length()<1){
+          @SuppressWarnings("unused")
+          WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a quant file");
+//          wasWarningMessage=true;
+        } else if (this.isoValidation_.isSelected()){
+          if (this.amountOfIsotopes_.getText()==null||this.amountOfIsotopes_.getText().length()<1){
+            @SuppressWarnings("unused")
+            WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "If you select the isotope option, please specify the amount of isotopes that you want to quantify (integer format)!");
+//            wasWarningMessage=true;
+          }else{
+            try{
+              Integer.parseInt(this.amountOfIsotopes_.getText());
+            }catch(NumberFormatException nfx){
+              @SuppressWarnings("unused")
+              WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The number of isotopes must be integer format!");
+//              wasWarningMessage=true;
+            }
+          }
+          if (this.amountOfMatchingSearchIsotopes_.getText()==null||this.amountOfMatchingSearchIsotopes_.getText().length()<0){
+            @SuppressWarnings("unused")
+            WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "If you select the find molecules without retention-time option, please specify the amount of matching isotopes (integer format)!");
+//            wasWarningMessage=true;
+          }else{
+            try{
+              int isotopes = Integer.parseInt(this.amountOfMatchingSearchIsotopes_.getText());
+              if (isotopes<1){
+                @SuppressWarnings("unused")
+                WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The number of matching isotopes must be >=0!");
+//                wasWarningMessage=true;
+              }
+            }catch(NumberFormatException nfx){
+              @SuppressWarnings("unused")
+              WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The number of matching isotopes must be integer format!");
+//              wasWarningMessage=true;
+            }
+          }          
+        }
+//        if (!wasWarningMessage && this.searchUnknownTime_.isSelected()){
+//        }
+      }
+    }
+    if (command.equalsIgnoreCase("startDisplay")){
+      if (selectedChromFile.getText()!=null)
+        selectedChromFile.setText(selectedChromFile.getText().trim());
+      if (selectedResultFile.getText()!=null)
+        selectedResultFile.setText(selectedResultFile.getText().trim());
+      if (selectedChromFile.getText()!=null&&selectedChromFile.getText().length()>0 &&
+          selectedResultFile.getText()!=null&&selectedResultFile.getText().length()>0){
+        String[] chromPaths = StringUtils.getChromFilePaths(selectedChromFile.getText());
+        String pureFile = chromPaths[0].substring(0,selectedChromFile.getText().lastIndexOf("."));
+        if (StaticUtils.existChromFiles(pureFile) && StaticUtils.existsFile(selectedResultFile.getText())){
+          try {
+            reader_ = new ChromatogramReader(chromPaths[1], chromPaths[2], chromPaths[3],  chromPaths[0],LipidomicsConstants.isSparseData(),LipidomicsConstants.getChromSmoothRange());
+            analyzer_ = new LipidomicsAnalyzer(chromPaths[1], chromPaths[2], chromPaths[3],  chromPaths[0]);           
+            
+            currentSelected_ = -1;
+            currentSelectedSheet_ = "";
+            QuantificationThread.setAnalyzerProperties(analyzer_);
+            analyzer_.setGeneralBasePeakCutoff(0f);
+            this.readResultFile(selectedResultFile.getText());
+            this.updateSheetSelectionList();
+            this.params_ = null;
+            RuleDefinitionInterface.clearCacheDir();
+          }
+          catch (CgException e) {
+            @SuppressWarnings("unused")
+            WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The chrom file you specified is not valid");
+            e.printStackTrace();
+          } catch (ExcelInputFileException e) {
+            
+          }
+        } else {
+          if (!StaticUtils.existsFile(selectedResultFile.getText()))
+            new WarningMessage(new JFrame(), "Warning", "The results file \""+StaticUtils.extractFileName(selectedResultFile.getText())+"\" does not exist!");
+        }
+      }else{
+        if (selectedChromFile.getText()==null||selectedChromFile.getText().length()<1){
+          @SuppressWarnings("unused")
+          WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a chrom file");
+        }else if (selectedResultFile.getText()==null||selectedResultFile.getText().length()<1){
+          @SuppressWarnings("unused")
+          WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a result file");
+        }
+      }
+    }
+    if (command.equalsIgnoreCase("updateQuantTolOfCurrentlySelected")){
+      if (params_!=null){
+        if (this.displaysMs2_){
+          if (ms1ProbesWhileMs2Display_!=null){
+            this.initANewViewer(params_,ms1ProbesWhileMs2Display_);
+          }else
+            this.initANewViewer(params_,getAllProbesFromParams(params_,null));
+        }else{
+        if (this.l2DPainter_!=null)
+          this.initANewViewer(params_,l2DPainter_.getAllSelectedProbes());
+        else
+          this.initANewViewer(params_);
+        }
+      }
+    }
+    if (command.equalsIgnoreCase("ZoomIn")||command.equalsIgnoreCase("ZoomMzIn")){
+      float f1 = -1;
+      float f2 = -1;
+      Lipidomics2DPainter painter = null;
+      if (command.equalsIgnoreCase("ZoomMzIn")){
+        f1 = Float.parseFloat(mz_minTimeText_.getText());
+        f2 = Float.parseFloat(mz_maxTimeText_.getText());
+        painter = spectrumPainter_;
+      }else{
+        f1 = Float.parseFloat(m_minTimeText_.getText());
+        f2 = Float.parseFloat(m_maxTimeText_.getText());
+        painter = l2DPainter_;
+      }
+      if (f1 < 0 || f2 < 0 || f1 >= f2)
+        return;
+      if (painter.setMinDispTime2d(f1) == false)
+        return;
+      if (painter.setMaxDispTime2d(f2) == false)
+        return;
+      painter.repaint();
+    }
+    if (command.equalsIgnoreCase("SpectPlus")){
+      selectCorrespondingSpectrum(true);
+    }
+    if (command.equalsIgnoreCase("SpectMinus")){
+      selectCorrespondingSpectrum(false);
+    }
+    if (command.equalsIgnoreCase("SpectPlus")||command.equalsIgnoreCase("SpectMinus")){
+      Float selectedRt = null;
+      if (rtSelected_.getText()!=null && rtSelected_.getText().length()>0)
+        selectedRt = Float.parseFloat(rtSelected_.getText());
+      l2DPainter_.paintMs2Position(selectedRt);
+
+    }
+    if (command.equalsIgnoreCase("ZoomAll")||command.equalsIgnoreCase("ZoomMzAll")){
+      Lipidomics2DPainter painter = null;
+      if (command.equalsIgnoreCase("ZoomMzAll"))painter = spectrumPainter_;
+      else painter = l2DPainter_;
+      painter.zoomAll();
+      painter.repaint();
+    }
+    if (command.equalsIgnoreCase("Dn")){
+      l2DPainter_.previousChromatogram();
+      l2DPainter_.repaint();
+      viewer_.setCurrent2DMzRange(l2DPainter_.getLowerMz(), l2DPainter_.getUpperMz());
+      viewer_.repaintColors();
+    }
+    if (command.equalsIgnoreCase("Up")){
+      l2DPainter_.nextChromatogram();
+      l2DPainter_.repaint();
+      viewer_.setCurrent2DMzRange(l2DPainter_.getLowerMz(), l2DPainter_.getUpperMz());
+      viewer_.repaintColors();
+    }
+    if (command.equalsIgnoreCase("Determine Area")) {
+      l2DPainter_.determineArea(LipidomicsDefines.StandardValleyMethod);
+      this.viewer_.setPaintableProbes(l2DPainter_.getAllSelectedProbes());
+      this.viewer_.setTheShowSelectedWasOn(false);
+      this.viewer_.repaintColors();
+    }
+    if (command.equalsIgnoreCase("Determine Area (Col)")) {
+      l2DPainter_.determineArea(LipidomicsDefines.EnhancedValleyMethod);
+      this.viewer_.setPaintableProbes(l2DPainter_.getAllSelectedProbes());
+      this.viewer_.setTheShowSelectedWasOn(false);
+      this.viewer_.repaintColors();
+    }
+    if (command.equalsIgnoreCase("Determine Area (Greedy)")) {
+      l2DPainter_.determineArea(LipidomicsDefines.GreedySteepnessReductionMethod);
+      this.viewer_.setPaintableProbes(l2DPainter_.getAllSelectedProbes());
+      this.viewer_.setTheShowSelectedWasOn(false);
+      this.viewer_.repaintColors();
+    }
+    if (command.equalsIgnoreCase("Determine Area (3D)")) {
+      l2DPainter_.determineArea(LipidomicsDefines.Valley3DMethod);
+      this.viewer_.setPaintableProbes(l2DPainter_.getAllSelectedProbes());
+      this.viewer_.setTheShowSelectedWasOn(false);
+      this.viewer_.repaintColors();
+    }
+    if (command.equalsIgnoreCase("Delete Area")) {
+      l2DPainter_.deleteArea();
+      this.viewer_.setPaintableProbes(l2DPainter_.getAllSelectedProbes());
+      this.viewer_.setTheShowSelectedWasOn(false);
+      this.viewer_.repaintColors();    
+    }
+    if (command.equalsIgnoreCase("acceptAreaSettings")){
+      this.viewer_.setPaintableProbes(l2DPainter_.getAllSelectedProbes());
+      this.viewer_.setTheShowSelectedWasOn(false);
+      this.viewer_.repaintColors();      
+    }
+    if (command.equalsIgnoreCase("SaveSelectedAreas")){
+      this.storeSelectedAreasToFile();
+    }
+    if (command.equalsIgnoreCase("addRemoveAbsoluteSettings")||subCommand.equalsIgnoreCase("removeSettings")){
+      if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Add absolute settings") && command.equalsIgnoreCase("addRemoveAbsoluteSettings")){
+        if (this.resultFiles_!=null&&this.resultFiles_.size()>0){
+          ComparativeNameExtractor extractor;
+          if (this.groupsPanel_.getGroups().size()>0){
+            extractor = new ComparativeNameExtractor(this.resultFiles_,this.internalStandardSelection_.getText(),
+                this.externalStandardSelection_.getText(),groupsPanel_.getGroups(),groupsPanel_.getGroupFiles());
+          }else{
+            extractor = new ComparativeNameExtractor(this.resultFiles_,this.internalStandardSelection_.getText(),
+                this.externalStandardSelection_.getText());
+          }
+          
+          try {
+            extractor.parseInput();
+            jButtonResultAbsQuant_.setText("Remove abs settings");
+            jButtonResultAbsQuant_.setToolTipText(TooltipTexts.STATISTICS_REMOVE_ABS_SETTINGS);
+            resultWarningLabel_.setVisible(false);
+            resultLoadButton_.setVisible(true); 
+            resultSaveButton_.setVisible(true); 
+            quantSettingsPanel_.showSettingsPanel(extractor);
+          }
+          catch (ExcelInputFileException e) {
+            e.printStackTrace();
+            new WarningMessage(new JFrame(), "Error", "Some of the input files contain invalid information!");
+          }
+        }else{
+          @SuppressWarnings("unused")
+          WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "Please specify the files to analyze! There have to be at least one!!");
+        }  
+
+      }else{
+        jButtonResultAbsQuant_.setText("Add absolute settings");
+        jButtonResultAbsQuant_.setToolTipText(TooltipTexts.STATISTICS_ADD_ABS_SETTINGS);
+        quantSettingsPanel_.hideSettingsPanel();
+        resultWarningLabel_.setVisible(true);
+        resultLoadButton_.setVisible(false); 
+        resultSaveButton_.setVisible(false);
+      }
+    }
+    if (command.equalsIgnoreCase("addRemoveCutoffSettings") || subCommand.equalsIgnoreCase("removeSettings")){
+      if (jButtonResultCutoff_.getText().equalsIgnoreCase("Add cutoff settings") && command.equalsIgnoreCase("addRemoveCutoffSettings")){
+        if (this.resultFiles_!=null&&this.resultFiles_.size()>0){
+          ClassNamesExtractor extractor = new ClassNamesExtractor(this.resultFiles_);          
+          try {
+            extractor.parseInput();
+            jButtonResultCutoff_.setText("Remove cutoff settings");
+            jButtonResultCutoff_.setToolTipText(TooltipTexts.STATISTICS_REMOVE_CUTOFF_SETTINGS);
+            cutoffWarningLabel_.setVisible(false);
+            cutoffLoadButton_.setVisible(true); 
+            cutoffSaveButton_.setVisible(true);
+            cutoffSettingsPanel_.showSettingsPanel(extractor);
+          }
+          catch (ExcelInputFileException e) {
+            e.printStackTrace();
+            new WarningMessage(new JFrame(), "Error", "Some of the input files contain invalid information!");
+          }
+        }else{
+          @SuppressWarnings("unused")
+          WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "Please specify the files to analyze! There have to be at least one!!");
+        }  
+
+      }else{
+        jButtonResultCutoff_.setText("Add cutoff settings");
+        jButtonResultCutoff_.setToolTipText(TooltipTexts.STATISTICS_ADD_CUTOFF_SETTINGS);
+        cutoffSettingsPanel_.hideSettingsPanel();
+        cutoffWarningLabel_.setVisible(true);
+        cutoffLoadButton_.setVisible(false); 
+        cutoffSaveButton_.setVisible(false);
+      }
+    }
+    if (command.equalsIgnoreCase("saveCutoffSettings")){
+      int returnVal = saveCutoffSettingsFileChooser_.showSaveDialog(new JFrame());
+      if (returnVal == JFileChooser.APPROVE_OPTION) {
+        File fileToStore = saveCutoffSettingsFileChooser_.getSelectedFile();
+        boolean store = true;
+        if (fileToStore.exists()){
+          if (JOptionPane.showConfirmDialog(this, "The file "+fileToStore.getName()+" exists! Replace existing file?") != JOptionPane.YES_OPTION)
+            store = false;
+        }else{
+          if (fileToStore.getName().indexOf(".")==-1){
+            fileToStore = new File(fileToStore.getAbsoluteFile()+".cut.xml");
+            if (fileToStore.exists()){
+              if (JOptionPane.showConfirmDialog(this, "The file "+fileToStore.getName()+" exists! Replace existing file?") != JOptionPane.YES_OPTION)
+                store = false;
+            }  
+          }  
+        }    
+        if (store){
+          Exception ex = null;
+          try {
+            CutoffSettingsWriter writer = new CutoffSettingsWriter(fileToStore.getAbsolutePath(), this.cutoffSettingsPanel_.getMaxIsotope(),  cutoffSettingsPanel_.getCutoffsAsString());
+            writer.writeXMLFile();
+          }
+          catch (ParserConfigurationException e) {
+            ex = e;
+          } catch (TransformerConfigurationException e) {
+            ex = e;
+          }
+          catch (TransformerException e) {
+            ex = e;
+          }
+          catch (IOException e) {
+            ex = e;
+          } catch (AbsoluteSettingsInputException e){
+            ex = e;            
+          }
+          if (ex!=null){
+            ex.printStackTrace();
+            new WarningMessage(new JFrame(), "Error", ex.getMessage());
+          }
+
+        }
+      } 
+      return;
+    }
+    if (command.equalsIgnoreCase("saveAbsoluteSettings")){
+      int returnVal = saveAbsSettingsFileChooser_.showSaveDialog(new JFrame());
+      if (returnVal == JFileChooser.APPROVE_OPTION) {
+        File fileToStore = saveAbsSettingsFileChooser_.getSelectedFile();
+        boolean store = true;
+        if (fileToStore.exists()){
+          if (JOptionPane.showConfirmDialog(this, "The file "+fileToStore.getName()+" exists! Replace existing file?") != JOptionPane.YES_OPTION)
+            store = false;
+        }else{
+          if (fileToStore.getName().indexOf(".")==-1){
+            fileToStore = new File(fileToStore.getAbsoluteFile()+".wqs.xml");
+            if (fileToStore.exists()){
+              if (JOptionPane.showConfirmDialog(this, "The file "+fileToStore.getName()+" exists! Replace existing file?") != JOptionPane.YES_OPTION)
+                store = false;
+            }  
+          }  
+        }    
+        if (store){
+          AbsoluteQuantSettingsWholeWriter writer = new AbsoluteQuantSettingsWholeWriter(fileToStore.getAbsolutePath(),this.quantSettingsPanel_);
+          Exception ex = null;
+          try {
+              writer.writeXMLFile();
+          }
+          catch (ParserConfigurationException e) {
+            ex = e;
+          } catch (TransformerConfigurationException e) {
+            ex = e;
+          }
+          catch (TransformerException e) {
+            ex = e;
+          }
+          catch (IOException e) {
+            ex = e;
+          }
+          if (ex!=null){
+            ex.printStackTrace();
+            new WarningMessage(new JFrame(), "Error", ex.getMessage());
+          }
+
+        }
+         //this.selectedResultFile.setText(text);
+
+      } 
+      return;
+    }
+    if (command.equalsIgnoreCase("loadCutoffSettings")){
+      new WarningMessage(new JFrame(), "Warning", "Pay attention that the loading of the file will erase your previous \"cutoff-settings\"");
+      if (loadCutoffSettingsFileChooser_.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
+        File file = loadCutoffSettingsFileChooser_.getSelectedFile();
+        if (file.exists()){
+          try {
+            CutoffSettingsReader reader = new CutoffSettingsReader(file.getAbsolutePath(),this.cutoffSettingsPanel_);
+            reader.parseXMLFile();
+          }
+          catch (Exception e) {
+            e.printStackTrace();
+            new WarningMessage(new JFrame(), "Error", e.getMessage());
+          }
+        }
+      }
+      return;
+    }
+
+    if (command.equalsIgnoreCase("loadAbsoluteSettings")){
+      new WarningMessage(new JFrame(), "Warning", "Pay attention that the loading of the file will erase your previous \"absolute quant-settings\"");
+      if (loadAbsSettingsFileChooser_.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
+        File file = loadAbsSettingsFileChooser_.getSelectedFile();
+        if (file.exists()){
+          try {
+            AbsoluteQuantSettingsWholeReader reader = new AbsoluteQuantSettingsWholeReader(file.getAbsolutePath(),this.quantSettingsPanel_);
+            reader.parseXMLFile();
+          }
+          catch (Exception e) {
+            e.printStackTrace();
+            new WarningMessage(new JFrame(), "Error", e.getMessage());
+          }
+        }
+      }
+      return;
+    }
+    if (command.equalsIgnoreCase("ApplyOtherMachineSettings")){
+      try {
+        Settings.applySettings((String)msMachineTypes_.getSelectedItem());
+        Settings.applyFragmentationSettings((String)fragmentationSettings1_.getSelectedItem(),(String)fragmentationSettings2_.getSelectedItem());
+        frame_.setTitle(getFrameTitleString());
+      }
+      catch (SettingsException e) {
+        e.printStackTrace();
+        new WarningMessage(new JFrame(), "Error", e.getMessage());
+      }      
+      return;
+    }
+    if (command.equalsIgnoreCase("SaveOtherMachineSettings")){
+      try {
+        Settings.saveMachineSettings((String)msMachineTypes_.getSelectedItem());
+        Settings.saveFragmentationSettings((String)fragmentationSettings1_.getSelectedItem(),(String)fragmentationSettings2_.getSelectedItem());
+        frame_.setTitle(getFrameTitleString());
+      }
+      catch (SettingsException e) {
+        e.printStackTrace();
+        new WarningMessage(new JFrame(), "Error", e.getMessage());
+      }      
+      return;
+    }
+    if (command.equalsIgnoreCase(CHANGE_SEPARATE_RT_STATUS)){
+      rtGroupingTime_.setEnabled(separateHitsByRT_.isSelected());
+      rtTimeUnit_.setEnabled(separateHitsByRT_.isSelected());
+    } else if  (command.equalsIgnoreCase(ExportPanel.EXPORT_PNG)){
+      exportFileChooser_.setFileFilter(new FileNameExtensionFilter("PNG (*.png)","png"));
+      int returnVal = exportFileChooser_.showSaveDialog(new JFrame());
+      if (returnVal == JFileChooser.APPROVE_OPTION) {
+        File fileToStore = exportFileChooser_.getSelectedFile();
+        @SuppressWarnings("rawtypes")
+        Vector results = StaticUtils.checkFileStorage(fileToStore,"png",this);
+        fileToStore = (File)results.get(0);
+        if ((Boolean)results.get(1)){
+          try {
+            ImageIO.write(spectrumPainter_.getImage(), "PNG", fileToStore);
+          }catch (IOException ex){ new WarningMessage(new JFrame(), "Error", ex.getMessage());}
+        }
+      }
+    }else if (command.equalsIgnoreCase(ExportPanel.EXPORT_SVG)){
+      exportFileChooser_.setFileFilter(new FileNameExtensionFilter("SVG (*.svg)","svg"));
+      int returnVal = exportFileChooser_.showSaveDialog(new JFrame());
+      if (returnVal == JFileChooser.APPROVE_OPTION) {
+        File fileToStore = exportFileChooser_.getSelectedFile();
+        @SuppressWarnings("rawtypes")
+        Vector results = StaticUtils.checkFileStorage(fileToStore,"svg",this);
+        fileToStore = (File)results.get(0);
+        if ((Boolean)results.get(1)){
+          try {
+            DOMImplementation domImpl = GenericDOMImplementation.getDOMImplementation();
+
+            // Create an instance of org.w3c.dom.Document.
+            String svgNS = "http://www.w3.org/2000/svg";
+            Document document = domImpl.createDocument(svgNS, "svg", null);
+
+            // Create an instance of the SVG Generator.
+            SVGGraphics2D svgGenerator = new SVGGraphics2D(document);
+            spectrumPainter_.draw2DDiagram(svgGenerator);
+            boolean useCSS = true; // we want to use CSS style attributes
+            BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(fileToStore));
+            Writer out = new OutputStreamWriter(stream, "UTF-8");
+            svgGenerator.stream(out, useCSS);
+            out.close();
+          }catch (IOException ex){ new WarningMessage(new JFrame(), "Error", ex.getMessage());}
+        }  
+      }      
+    } 
+  }
+  
+  private void selectCorrespondingSpectrum(boolean next){
+    RuleDefinitionInterface rdi = null;
+    if (topSplitPane_.getTopComponent() instanceof RuleDefinitionInterface) rdi = (RuleDefinitionInterface) topSplitPane_.getTopComponent();
+    LipidParameterSet param = null;
+    Vector<RangeColor> rangeColors = new Vector<RangeColor>();
+    if (rdi != null) {
+      int specNumber = getSelectedSpectrumNumber();
+      if (next) specNumber++;
+      else specNumber--;
+      try {
+       param = rdi.testForMSnDetection(specNumber);
+       rangeColors = StaticUtils.createRangeColorVOs(param, ((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentMs2Position_));
+      }
+      catch (NoRuleException | IOException
+          | SpectrummillParserException | CgException e) {
+        e.printStackTrace();
+      }
+      //if it is a rules exception, then a new rule is currently entered - no need to report an error
+      catch (RulesException  e) {
+      }
+   }
+    if (next){
+      if (param!=null) spectrumPainter_.nextSpectrum(param,rangeColors);
+      else spectrumPainter_.nextSpectrum();
+    } else {
+      if (param!=null) spectrumPainter_.previousSpectrum(param,rangeColors);
+      else spectrumPainter_.previousSpectrum();
+    }
+    this.spectrumSelected_.setText(spectrumPainter_.getSpectSelectedText());
+    this.rtSelected_.setText(spectrumPainter_.getRtSelectedText());
+    this.precursorSelected_.setText(spectrumPainter_.getPrecursorMassSelected());
+    if (rdi==null){
+      float[] range = spectrumPainter_.getRTRange();
+      viewer_.setCurrent2DTimeRange(range[0], range[1]);
+      try{viewer_.repaintColors();}catch(Exception ex){}
+    }
+  }
+  
+  private void acceptResultFiles(){
+    this.cleanupResultView();
+    expDisplayNamesLookup_ = new Hashtable<String,String>();
+    if (this.resultFiles_!=null&&this.resultFiles_.size()>0){
+      AbsoluteSettingsVO absSettingVO = null;
+      Hashtable<String,Double> cutoffValues = null;
+      int maxCutoffIsotope = -1;
+      if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove abs settings")){
+        try {
+          absSettingVO = quantSettingsPanel_.getSettingsVO();
+        }
+        catch (AbsoluteSettingsInputException e) {
+          new WarningMessage(new JFrame(), "Error", e.getMessage());
+          return;
+        }
+      }
+      if (jButtonResultCutoff_.getText().equalsIgnoreCase("Remove cutoff settings")){
+        try {
+          cutoffValues = cutoffSettingsPanel_.getCutoffs();
+          maxCutoffIsotope = cutoffSettingsPanel_.getMaxIsotope();
+        }
+        catch (AbsoluteSettingsInputException e) {
+          new WarningMessage(new JFrame(), "Error", e.getMessage());
+          return;
+        }
+        
+      }
+      Hashtable<String,Vector<String>> correctAnalyteSequence = null;
+      if (correctOrderFile_.getText()!=null && correctOrderFile_.getText().length()>0){
+        try {
+          correctAnalyteSequence = QuantificationThread.getCorrectAnalyteSequence(correctOrderFile_.getText());
+        }
+        catch (Exception e) {
+          new WarningMessage(new JFrame(), "Error", e.getMessage());
+        }
+      }
+      separateHitsByRT_.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
+      double expRtGroupingTime = -1d;
+      
+      if (separateHitsByRT_.isSelected()) expRtGroupingTime = Double.valueOf(rtGroupingTime_.getText());
+
+      if (this.groupsPanel_.getGroups().size()>0){
+        analysisModule_ = new ComparativeAnalysis(this.resultFiles_,this.internalStandardSelection_.getText(),
+            this.externalStandardSelection_.getText(), absSettingVO, cutoffValues, maxCutoffIsotope, groupsPanel_.getGroups(),
+            groupsPanel_.getGroupFiles(),Settings.getElementConfigPath(),correctAnalyteSequence,expRtGroupingTime);
+      }else{
+        analysisModule_ = new ComparativeAnalysis(this.resultFiles_,this.internalStandardSelection_.getText(),
+            this.externalStandardSelection_.getText(), absSettingVO, cutoffValues, maxCutoffIsotope, Settings.getElementConfigPath(),
+            correctAnalyteSequence,expRtGroupingTime);
+      }
+      try {
+        analysisModule_.parseInput();
+        analysisModule_.calculateStatistics();
+        this.expDisplayNamesLookup_ = analysisModule_.getExpNames();
+        if (this.groupsPanel_.getGroups().size()>0){
+          groupDisplayNamesLookup_ = new Hashtable<String,String>();
+          for (String groupName : this.groupsPanel_.getGroups()){
+            groupDisplayNamesLookup_.put(groupName, groupName);
+          }
+        }
+      }
+      catch (ExcelInputFileException e) {
+        e.printStackTrace();
+        new WarningMessage(new JFrame(), "Error", "Some of the input files contain invalid information!");
+      }
+      catch (Exception e) {
+        e.printStackTrace();
+        new WarningMessage(new JFrame(), "Error", "The Excel returns the following failure: "+e.getMessage());
+      }
+        this.generateHeatMaps();
+    }else{
+      @SuppressWarnings("unused")
+      WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "Please specify the files to analyze! There have to be at least two!!");
+    }
+  }
+  
+  private void generateHeatMaps(){
+    heatmaps_ = new Hashtable<String,HeatMapDrawing>();
+    Hashtable<String,Hashtable<String,Hashtable<String,ResultCompVO>>> analysisResults = analysisModule_.getResults();
+    Hashtable<String,Vector<String>> moleculeNames =  analysisModule_.getAllMoleculeNames();
+    Hashtable<String,Hashtable<String,Integer>> corrTypeISLookup = analysisModule_.getCorrectionTypeISLookup();
+    Hashtable<String,Hashtable<String,Integer>> corrTypeESLookup = analysisModule_.getCorrectionTypeESLookup();
+    Vector<String> expNames = analysisModule_.getExpNamesInSequence();
+    resultTabs_.removeAll();
+    resultTabs_.addTab("Selection",resultsSelectionPanel_);
+    resultTabs_.setToolTipTextAt(0, TooltipTexts.TABS_RESULTS_SELECTION);
+    molBarCharts_ = new Hashtable<String,JTabbedPane>();
+    
+    // for the groupedValues
+    Hashtable<String,Hashtable<String,Hashtable<String,ResultCompVO>>> groupedAnalysisResults = analysisModule_.getGroupedResults();
+    groupHeatmaps_ = new Hashtable<String,HeatMapDrawing>();
+    Hashtable<String,ResultDisplaySettings> displaySettingHash = new Hashtable<String,ResultDisplaySettings>();
+    
+    colorChooserDialog_ = new ColorChooserDialog(new JFrame(),"",expNames,groupsPanel_.getGroups(),this);
+    int groupCount = 0;
+    for (String molGroup : analysisResults.keySet()){
+      JPanel aResultsViewPanel = new JPanel(new BorderLayout());
+      JTabbedPane resultsViewTabs= new JTabbedPane();
+      groupCount++;
+      aResultsViewPanel.add(resultsViewTabs,BorderLayout.CENTER);
+      Hashtable<String,Hashtable<String,ResultCompVO>> resultsOfOneGroup = analysisResults.get(molGroup);
+      Vector<String> molNames = moleculeNames.get(molGroup);
+      Hashtable<String,Integer> isLookup = new Hashtable<String,Integer> ();
+      Hashtable<String,Integer> esLookup = new Hashtable<String,Integer> ();
+      if (corrTypeISLookup.containsKey(molGroup))
+        isLookup = corrTypeISLookup.get(molGroup);
+      if (corrTypeESLookup.containsKey(molGroup))
+        esLookup = corrTypeESLookup.get(molGroup);
+      
+      JPanel aPanel = new JPanel();
+      aPanel.setLayout(new BorderLayout());
+      boolean hasAbs = false;
+      boolean hasProtein = false;
+      boolean hasSampleWeight = false;
+      boolean hasNeutralLipid = false;
+      if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove abs settings")){
+        hasAbs = true;
+        try {
+          if (this.quantSettingsPanel_.getSettingsVO().getVolumeSettings().size()>0 &&
+              this.quantSettingsPanel_.getSettingsVO().getVolumeSettings().values().iterator().next().getProteinConc()!=null)
+            hasProtein = true;
+          if (this.quantSettingsPanel_.getSettingsVO().getVolumeSettings().size()>0 &&
+              this.quantSettingsPanel_.getSettingsVO().getVolumeSettings().values().iterator().next().getNeutralLipidConc()!=null)
+            hasNeutralLipid = true;
+          if (this.quantSettingsPanel_.getSettingsVO().getVolumeSettings().size()>0 &&
+              this.quantSettingsPanel_.getSettingsVO().getVolumeSettings().values().iterator().next().getSampleWeight()!=null)
+            hasSampleWeight = true;
+
+        }
+        catch (AbsoluteSettingsInputException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+      }
+      ResultDisplaySettings displaySettings = new ResultDisplaySettings(analysisModule_.getISAvailability().get(molGroup),analysisModule_.getESAvailability().get(molGroup),isLookup,esLookup,hasAbs,
+          hasSampleWeight,hasProtein,hasNeutralLipid);
+      ResultSelectionSettings selectionSettings = new ResultSelectionSettings(null,molNames,true);
+      ResultSelectionSettings combinedChartSettings = new ResultSelectionSettings(null,molNames,false);      
+      HeatMapDrawing drawing = new HeatMapDrawing(molGroup,resultsOfOneGroup, expNames,molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,false,
+          analysisModule_.getISAvailability().get(molGroup),analysisModule_.getESAvailability().get(molGroup),hasAbs, hasProtein, hasNeutralLipid, displaySettings,selectionSettings,combinedChartSettings,
+          analysisModule_.getRtTolerance());
+      displaySettings.addActionListener(drawing);
+      selectionSettings.addActionListener(drawing);
+      combinedChartSettings.addActionListener(drawing);
+      JScrollPane scrollPane = new JScrollPane(drawing);
+      int scrollPaneWidth = drawing.getTotalSize().width+30;
+      int scrollPaneHeight = 700;
+      if (this.getWidth()<(scrollPaneWidth+15)) scrollPaneWidth = this.getWidth()-15;
+      if (this.getHeight()<(scrollPaneHeight+15)) scrollPaneHeight = this.getHeight()-15;
+      scrollPane.setPreferredSize(new Dimension(scrollPaneWidth, scrollPaneHeight));
+      heatmaps_.put(molGroup, drawing);
+      if (expNames.size()>25)
+        aPanel.add(scrollPane,BorderLayout.CENTER);
+      else
+        aPanel.add(scrollPane,BorderLayout.WEST);
+      resultsViewTabs.addTab("Heatmap", aPanel);
+      resultsViewTabs.setToolTipTextAt(0, TooltipTexts.TABS_RESULTS_HEATMAP+molGroup+"</html>");
+      JPanel barChartPanel = new JPanel();
+      resultsViewTabs.addTab("Bar-chart", barChartPanel);
+      resultsViewTabs.setToolTipTextAt(1, TooltipTexts.TABS_RESULTS_BARCHART+molGroup+"</html>");
+      if (this.groupsPanel_.getGroups().size()>0){
+        Hashtable<String,Hashtable<String,ResultCompVO>> groupedResultsOfOneGroup = groupedAnalysisResults.get(molGroup);
+        JPanel groupPanel = new JPanel();
+        groupPanel.setLayout(new BorderLayout());
+        HeatMapDrawing groupDrawing = new HeatMapDrawing(molGroup,groupedResultsOfOneGroup, this.groupsPanel_.getGroups(),molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,true,
+            analysisModule_.getISAvailability().get(molGroup),analysisModule_.getESAvailability().get(molGroup),hasAbs,hasProtein, hasNeutralLipid, displaySettings,selectionSettings,combinedChartSettings,analysisModule_.getRtTolerance());
+        displaySettings.addActionListener(groupDrawing);
+        selectionSettings.addActionListener(groupDrawing);
+        combinedChartSettings.addActionListener(groupDrawing);
+        JScrollPane groupScrollPane = new JScrollPane(groupDrawing);
+        scrollPane.setPreferredSize(new Dimension(drawing.getTotalSize().width+30, 700));
+        groupHeatmaps_.put(molGroup, groupDrawing);
+        groupPanel.add(groupScrollPane,BorderLayout.WEST);
+        resultsViewTabs.addTab("Group-Heatmap", groupPanel);
+        resultsViewTabs.setToolTipTextAt(2, TooltipTexts.TABS_RESULTS_HEATMAP_GROUP+molGroup+"</html>");
+        JPanel groupBarChartPanel = new JPanel();
+        resultsViewTabs.addTab("Group bar-chart", groupBarChartPanel);
+        resultsViewTabs.setToolTipTextAt(3, TooltipTexts.TABS_RESULTS_BARCHART_GROUP+molGroup+"</html>");
+      }
+      displaySettingHash.put(molGroup, displaySettings);
+      molBarCharts_.put(molGroup, resultsViewTabs);
+//        resultTabs_.addTab(molGroup,aPanel);
+      resultTabs_.addTab(molGroup,aResultsViewPanel);
+      resultTabs_.setToolTipTextAt(groupCount, TooltipTexts.TABS_RESULTS_GROUP+molGroup+"</html>");      
+    }
+    if (analysisResults.size()>0)
+      resultTabs_.setSelectedIndex(1);
+    if (analysisResults.size()>1){     
+      classOverviewPanel_ = new ClassesOverviewPanel(expNames,this,analysisModule_,displaySettingHash,heatmaps_,corrTypeISLookup,corrTypeESLookup,analysisResults,colorChooserDialog_);
+      resultTabs_.addTab("Overview", classOverviewPanel_);
+      resultTabs_.setToolTipTextAt(groupCount+1, TooltipTexts.TABS_RESULTS_OVERVIEW);
+      if (this.groupsPanel_.getGroups().size()>0){
+        classOverviewGroupPanel_ = new ClassesOverviewPanel(groupsPanel_.getGroups(),this,analysisModule_,displaySettingHash,heatmaps_,corrTypeISLookup,corrTypeESLookup,groupedAnalysisResults,colorChooserDialog_);
+        resultTabs_.addTab("O.view-Group", classOverviewGroupPanel_);
+        resultTabs_.setToolTipTextAt(groupCount+2, TooltipTexts.TABS_RESULTS_OVERVIEW_GROUPS);
+      }
+    }
+
+  }
+  
+  private void readResultFile(String filePath) throws ExcelInputFileException{
+    readResultFile(filePath,false);
+  }
+  
+  private void readResultFile(String filePath,boolean keepOrder) throws ExcelInputFileException{
+    resultsShowModification_ = new Hashtable<String,Boolean>();
+    if (!keepOrder) orderResultsType_ = new Hashtable<String,Integer>();
+    result_ = readResultFile(filePath,  resultsShowModification_);
+
+  }
+  
+  public static QuantificationResult readResultFile(String filePath, Hashtable<String,Boolean> showModifications) throws ExcelInputFileException{
+    Hashtable<String,Vector<LipidParameterSet>> resultParams = new Hashtable<String,Vector<LipidParameterSet>>();
+    Hashtable<String,Integer> msLevels = new Hashtable<String,Integer>();
+    LipidomicsConstants readConstants = null;
+    String suffix = "";
+    if (filePath!=null && filePath.length()>3)
+      suffix = filePath.substring(filePath.lastIndexOf("."));
+    if (!(suffix.equalsIgnoreCase(".xls")||(suffix.equalsIgnoreCase(".xlsx")))){
+      new WarningMessage(new JFrame(), "ERROR", "The specified file is not Microsoft Excel!");
+      throw new ExcelInputFileException("The specified file is not Microsoft Excel!");
+    } 
+    try {
+      InputStream myxls = new FileInputStream(filePath);
+      Workbook workbook  = null;
+      if (suffix.equalsIgnoreCase(".xlsx")) workbook = new XSSFWorkbook(myxls);
+      else if (suffix.equalsIgnoreCase(".xls")) workbook  = new HSSFWorkbook(myxls);
+      //Workbook workbook = Workbook.getWorkbook(new File(filePath));
+      
+      for (int sheetNumber=0;sheetNumber!=workbook.getNumberOfSheets();sheetNumber++){       
+        Sheet sheet = workbook.getSheetAt(sheetNumber);
+        if (!sheet.getSheetName().contains("Overview")&&!sheet.getSheetName().endsWith(QuantificationThread.OVERVIEW_SHEET_ADDUCT)&&
+            !sheet.getSheetName().endsWith(QuantificationThread.MSN_SHEET_ADDUCT) && !sheet.getSheetName().equalsIgnoreCase(QuantificationThread.CONSTANTS_SHEET)){
+          Vector<LipidParameterSet> resultPrms = new Vector<LipidParameterSet>();
+          int nameColumn = -1;
+          int dbsColumn = -1;
+          int modificationColumn = -1;
+          int formulaColumn = -1;
+          int modFormulaColumn = -1;
+          int rtColumn = -1;
+          int isotopeColumn = -1;
+          int areaColumn = -1;
+          int areaErrorColumn = -1;
+          int backgroundColumn = -1;
+          int chargeColumn = -1;
+          int mzColumn = -1;
+          int mzToleranceColumn = -1;
+          int peakColumn = -1;
+          int lowerValleyColumn = -1;
+          int upperValleyColumn = -1;
+          int lowMzColumn = -1;
+          int upMzColumn = -1;
+          int ellipseTimePosColumn = -1;
+          int ellipseMzPosColumn = -1;
+          int ellipseTimeStretchColumn = -1;
+          int ellipseMzStretchColumn = -1;
+          int lowerHardLimitColumn = -1;
+          int upperHardLimitColumn = -1;
+          int percentalSplitColumn = -1;
+          
+          int msLevel=1;
+          LipidParameterSet params = null;
+          boolean showModification = false;
+          Hashtable<String,String> analyteNames = new Hashtable<String,String>();
+          for (int rowCount=0;rowCount!=(sheet.getLastRowNum()+1);rowCount++){
+            Row row = sheet.getRow(rowCount);
+            String name = null;
+            int dbs = -1;
+            int paramCharge = 1;
+            String modification = null;
+            String formula = null;
+            String modFormula = null;
+            String rtString = "";
+            float area = 0f;
+            float areaError = 0f;
+            float background = 0f; 
+            int charge = -1;
+            float mz = 0f;
+            float mzTolerance = 0f;
+            float peak = 0f;
+            float lowerValley = 0f;
+            float upperValley = 0f;
+            int isotope = -1;
+            float lowMz = -1;
+            float upMz = -1;
+            float ellipseTimePosition = -1f;
+            float ellipseMzPosition = -1f;
+            float ellipseTimeStretch = -1f;
+            float ellipseMzStretch = -1f;
+            float lowerRtHardLimit = -1f;
+            float upperRtHardLimit = -1f;
+            float percentalSplit = -1f;
+            for (int i=0;  row!=null && i!=(row.getLastCellNum()+1);i++){
+              Cell cell = row.getCell(i);
+              String contents = "";
+              Double numeric = null;
+              int cellType = -1;
+              if (cell!=null) cellType = cell.getCellType();
+              if (cellType==Cell.CELL_TYPE_STRING){
+                contents = cell.getStringCellValue();
+                try{ numeric = new Double(contents);}catch(NumberFormatException nfx){};
+              }else if (cellType==Cell.CELL_TYPE_NUMERIC || cellType==Cell.CELL_TYPE_FORMULA){
+               numeric = cell.getNumericCellValue();
+               contents = String.valueOf(numeric);
+              }
+              
+              if (cellType == Cell.CELL_TYPE_STRING)
+                contents = cell.getStringCellValue();
+              else if (cellType == Cell.CELL_TYPE_NUMERIC){
+                double cellValue = -1;
+                cellValue = cell.getNumericCellValue();
+                contents = String.valueOf(cellValue);
+              }  
+              if (rowCount==0){
+                if (contents.equalsIgnoreCase("Name"))
+                  nameColumn = i;
+                if (contents.equalsIgnoreCase("Dbs"))
+                  dbsColumn = i;
+                if (contents.equalsIgnoreCase("Modification"))
+                  modificationColumn = i;
+                if (contents.equalsIgnoreCase("Formula"))
+                  formulaColumn = i;
+                if (contents.equalsIgnoreCase("Mod-Formula"))
+                  modFormulaColumn = i;
+                if (contents.equalsIgnoreCase("RT"))
+                  rtColumn = i;
+                if (contents.equalsIgnoreCase("Isotope"))
+                  isotopeColumn = i;            
+                if (contents.equalsIgnoreCase("Area"))
+                  areaColumn = i;            
+                if (contents.equalsIgnoreCase("AreaError"))
+                  areaErrorColumn = i;
+                if (contents.equalsIgnoreCase("Background"))
+                  backgroundColumn = i;
+                if (contents.equalsIgnoreCase("Charge"))
+                  chargeColumn = i;
+                if (contents.equalsIgnoreCase("Mz"))
+                  mzColumn = i;
+                if (contents.equalsIgnoreCase("MzTolerance"))
+                  mzToleranceColumn = i;
+                if (contents.equalsIgnoreCase("Peak"))
+                  peakColumn = i;
+                if (contents.equalsIgnoreCase("LowerValley"))
+                  lowerValleyColumn = i;
+                if (contents.equalsIgnoreCase("UpperValley"))
+                  upperValleyColumn = i;
+                if (contents.equalsIgnoreCase("LowMz"))
+                  lowMzColumn = i;
+                if (contents.equalsIgnoreCase("UpMz"))
+                  upMzColumn = i;
+                if (contents.equalsIgnoreCase("EllCentTime"))
+                  ellipseTimePosColumn = i;
+                if (contents.equalsIgnoreCase("EllCentMz"))
+                  ellipseMzPosColumn = i;
+                if (contents.equalsIgnoreCase("EllStretchTime"))
+                  ellipseTimeStretchColumn = i;
+                if (contents.equalsIgnoreCase("EllStretchMz"))
+                  ellipseMzStretchColumn = i;
+                if (contents.equalsIgnoreCase("LowerRtHardLimit"))
+                  lowerHardLimitColumn = i;
+                if (contents.equalsIgnoreCase("UpperRtHardLimit"))
+                  upperHardLimitColumn = i;
+                if (contents.equalsIgnoreCase("PercentalSplit"))
+                  percentalSplitColumn = i;
+                if (contents.startsWith("level=")){
+                  String levelString = contents.substring("level=".length()).trim();
+                  msLevel = Integer.valueOf(levelString);
+                }  
+              }else{
+                if (i==nameColumn)
+                  name = contents;
+                if (i==dbsColumn&&contents!=null&&contents.length()>0){
+                  dbs = numeric.intValue();
+                }if (i==modificationColumn)
+                  modification = contents;
+                if (i==formulaColumn)
+                  formula = contents;
+                if (i==modFormulaColumn)
+                  modFormula = contents;
+                if (i==rtColumn)
+                  rtString = contents;
+                if (i==isotopeColumn && contents!=null&&contents.length()>0){
+                  isotope = numeric.intValue();
+                }  
+                if (i==chargeColumn&&contents!=null&&contents.length()>0)
+                  paramCharge = numeric.intValue();
+                if (i==areaColumn && contents!=null && contents.length()>0)
+                  area = numeric.floatValue();
+                if (i==areaErrorColumn && contents!=null && contents.length()>0)
+                  areaError = numeric.floatValue();
+                if (i==backgroundColumn && contents!=null && contents.length()>0)
+                  background = numeric.floatValue();
+                if (i==chargeColumn && contents!=null && contents.length()>0){
+                  charge = numeric.intValue();
+                }  
+                if (i==mzColumn && contents!=null && contents.length()>0)
+                  mz = numeric.floatValue();
+                if (i==mzToleranceColumn && contents!=null && contents.length()>0)
+                  mzTolerance = numeric.floatValue();
+                if (i==peakColumn && contents!=null && contents.length()>0)
+                  peak = numeric.floatValue();;
+                if (i==lowerValleyColumn && contents!=null && contents.length()>0)
+                  lowerValley = numeric.floatValue();
+                if (i==upperValleyColumn && contents!=null && contents.length()>0)
+                  upperValley = numeric.floatValue();
+                if (i==lowMzColumn && contents!=null && contents.length()>0)
+                  lowMz = numeric.floatValue();;
+                if (i==upMzColumn && contents!=null && contents.length()>0)
+                  upMz = numeric.floatValue();
+                if (i==ellipseTimePosColumn && contents!=null && contents.length()>0)
+                  ellipseTimePosition = numeric.floatValue();
+                if (i==ellipseMzPosColumn && contents!=null && contents.length()>0)
+                  ellipseMzPosition = numeric.floatValue();
+                if (i==ellipseTimeStretchColumn && contents!=null && contents.length()>0)
+                  ellipseTimeStretch = numeric.floatValue();
+                if (i==ellipseMzStretchColumn && contents!=null && contents.length()>0)
+                  ellipseMzStretch = numeric.floatValue();
+                
+                if (i==lowerHardLimitColumn && contents!=null && contents.length()>0)
+                  lowerRtHardLimit = numeric.floatValue();
+                if (i==upperHardLimitColumn && contents!=null && contents.length()>0)
+                  upperRtHardLimit = numeric.floatValue();
+                if (i==percentalSplitColumn && contents!=null && contents.length()>0)
+                  percentalSplit = numeric.floatValue();
+
+              }
+            }
+            if (name!=null&&name.length()>0){
+              if (params!=null){
+                // this is for backward compatibility
+                if (params.ProbeCount()>0)
+                  params.setCharge(params.Probe(0).Charge);
+                resultPrms.add(params);
+                if (analyteNames.containsKey(params.getNameString())) showModification = true;
+                analyteNames.put(params.getNameString(), params.getNameString());
+              }
+              //this is for backward compatibility
+              if (modificationColumn==-1 || formulaColumn==-1 || modFormulaColumn==-1){
+                Object[] components = ComparativeNameExtractor.splitOldNameStringToComponents(name);
+                name = (String)components[0];
+                dbs = (Integer)components[1];
+                formula = (String)components[2];
+                modification = "";
+                modFormula = "";
+              }
+              params = new LipidParameterSet(mz, name, dbs, modification, rtString, formula, modFormula,paramCharge);
+              if (lowerRtHardLimit>=0) params.setLowerRtHardLimit(lowerRtHardLimit);
+              if (upperRtHardLimit>=0) params.setUpperRtHardLimit(upperRtHardLimit);
+              if (percentalSplit>=0) params.setPercentalSplit(percentalSplit);
+              params.Area = area;
+              params.LowerMzBand = mzTolerance;
+              params.UpperMzBand = mzTolerance;
+            }else{
+              if (params!=null){
+                if (charge!=-1){
+                  CgProbe probe = new CgProbe(0,charge);
+                  if (area>0){
+                    probe.AreaStatus = CgAreaStatus.OK;
+                    probe.Area = area;
+                    probe.AreaError = areaError;
+                    probe.Background = background;
+                    probe.Peak = peak;
+                    probe.LowerValley = lowerValley;
+                    probe.UpperValley = upperValley;
+                  }else{
+                    probe.AreaStatus = CgAreaStatus.TooSmall;
+                  }            
+                  probe.Mz = mz;
+                  probe.LowerMzBand = mzTolerance;
+                  probe.UpperMzBand = mzTolerance;
+                  probe.isotopeNumber = isotope;
+                  if (ellipseTimePosition>0&&ellipseMzPosition>0&&ellipseTimeStretch>0&&ellipseMzStretch>0&&
+                      lowMz>0&&upMz>0){
+                    Probe3D probe3D = new Probe3D(probe,ellipseTimePosition,ellipseMzPosition,
+                        ellipseTimeStretch,ellipseMzStretch,-1f,-1f);
+                    probe3D.LowerMzBand = lowMz;
+                    probe3D.UpperMzBand = upMz;
+                    if (params.getLowerRtHardLimit()>=0) probe3D.setLowerHardRtLimit(params.getLowerRtHardLimit());
+                    if (params.getUpperRtHardLimit()>=0) probe3D.setUpperHardRtLimit(params.getUpperRtHardLimit());
+                    params.AddProbe(probe3D);
+                  }else
+                    params.AddProbe(probe);
+                }
+              }
+            }
+        
+          }
+          if (params!=null){
+            // this is for backward compatibility
+            if (params.ProbeCount()>0)
+              params.setCharge(params.Probe(0).Charge);
+            resultPrms.add(params);
+            if (analyteNames.containsKey(params.getNameString())) showModification = true;
+            analyteNames.put(params.getNameString(), params.getNameString());
+          }
+          if (!showModification){
+            String modificationString = null;
+            for (LipidParameterSet set : resultPrms){
+              if (modificationString==null) modificationString = set.getModificationName();
+              if (!modificationString.equalsIgnoreCase(set.getModificationName())){
+                showModification = true;
+                break;
+              }
+            }
+          }
+          resultParams.put(sheet.getSheetName(), resultPrms);
+          showModifications.put(sheet.getSheetName(), showModification);
+          msLevels.put(sheet.getSheetName(), msLevel);
+        } else if (sheet.getSheetName().equalsIgnoreCase(QuantificationThread.CONSTANTS_SHEET)){
+          readConstants = LipidomicsConstants.readSettingsFromExcel(sheet);
+        }
+      }
+      for (int sheetNumber=0;sheetNumber!=workbook.getNumberOfSheets();sheetNumber++){       
+        Sheet sheet = workbook.getSheetAt(sheetNumber);
+        if (sheet.getSheetName().endsWith(QuantificationThread.MSN_SHEET_ADDUCT)){
+          String lipidClass = sheet.getSheetName().substring(0,sheet.getSheetName().lastIndexOf(QuantificationThread.MSN_SHEET_ADDUCT));
+          Vector<LipidParameterSet> resultPrms = resultParams.get(lipidClass);
+          resultPrms = QuantificationThread.readMSnEvidence(sheet,resultPrms);
+          resultParams.put(lipidClass,resultPrms);
+        }
+      }  
+      myxls.close();
+    }
+    catch (IOException e) {
+      e.printStackTrace();
+      new WarningMessage(new JFrame(), "ERROR", e.getMessage()+"; it does not seem to be Microsoft Excel");
+      throw new ExcelInputFileException(e);
+    } catch (Exception e) {
+      e.printStackTrace();
+      new WarningMessage(new JFrame(), "ERROR", e.getMessage());
+      throw new ExcelInputFileException(e);
+    }
+    QuantificationResult result = new QuantificationResult(resultParams,readConstants,msLevels);
+    return result;
+  }
+  
+  private void initANewViewer(LipidParameterSet params){
+    this.initANewViewer(params,null);
+  }
+  
+  private void initANewViewer(LipidParameterSet params,Vector<Vector<CgProbe>> previouslyselectedProbes){
+    try {
+      displaysMs2_ = false;
+      int charge = 1;
+      if (params.ProbeCount()>0)
+        charge = params.Probe(0).Charge;
+      else if (params.getCharge()!=null&&params.getCharge()>1)
+        charge = params.getCharge();
+      float currentIsotopicMass = params.Mz[0]+(LipidomicsConstants.getNeutronMass()*Integer.parseInt((String)this.isotope_.getSelectedItem())/(float)charge);
+      float startFloat = currentIsotopicMass-Float.parseFloat(this.displayMinusTolerance_.getText());
+      float stopFloat = currentIsotopicMass+Float.parseFloat(this.displayPlusTolerance_.getText());
+      
+      String[] rawLines = reader_.getRawLines(startFloat, stopFloat, result_.getMsLevels().get(currentSelectedSheet_));
+      Hashtable<Integer,Float> rtTimes = reader_.getRetentionTimesOriginal();
+
+      MSMapViewer viewer = MSMapViewerFactory.getMSMapViewer(rawLines, rtTimes,
+          startFloat,stopFloat,reader_.getMultiplicationFactorForInt_()/reader_.getLowestResolution_(),5f,this,
+          MSMapViewer.DISPLAY_TIME_MINUTES,false);
+      viewer.setViewerSettings(true, true, true,LipidomicsConstants.getThreeDViewerDefaultMZResolution(),LipidomicsConstants.getThreeDViewerDefaultTimeResolution());
+      
+      Vector<Vector<CgProbe>> allProbes = getAllProbesFromParams(params,previouslyselectedProbes);
+      Vector<CgProbe> storedProbes = allProbes.get(0);
+      Vector<CgProbe> selectedProbes = allProbes.get(1);
+      viewer.setPaintableProbes(allProbes);
+      viewer.setCurrent2DMzRange(currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand);
+      System.out.println("startFloat: "+startFloat);
+      System.out.println("stopFloat: "+stopFloat);
+      viewer.init();
+      viewer.removeSaveLipidomicsSettings();
+      
+      if (this.show2D_.isSelected()){     
+        Lipidomics2DPainter l2DPainter = new Lipidomics2DPainter(analyzer_,rawLines, rtTimes, reader_.getRetentionTimes(),
+            startFloat,stopFloat,reader_.getMultiplicationFactorForInt_()/reader_.getLowestResolution_(),params_.LowerMzBand*2,this,
+            MSMapViewer.DISPLAY_TIME_MINUTES,currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand, false,
+            storedProbes,selectedProbes,Integer.parseInt((String)this.isotope_.getSelectedItem()),charge,result_.getMsLevels().get(currentSelectedSheet_));
+        l2DPainter.preChromatogramExtraxtion(currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand);
+        this.makeDisplayRemoveOperations();
+        this.viewer_ = viewer;
+
+        majorSplitPane_ = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        majorSplitPane_.setDividerSize(1);
+        majorSplitPane_.setTopComponent(viewer_);
+        l2DPainter_ = l2DPainter;
+        l2dPanel_.add(l2DPainter,BorderLayout.CENTER);
+        majorSplitPane_.setBottomComponent(this.l2dPanel_);
+        l2DPainter.setBackground(Color.WHITE);
+      
+        this.displayPanel_.add(majorSplitPane_,BorderLayout.CENTER);
+        this.displayPanel_.validate();
+        majorSplitPane_.setDividerLocation(0.75);
+      
+
+        l2DPainter_.draw2DDiagram(currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand, false);
+
+      //      l2DPainter_.paint(l2DPainter_.getGraphics());
+        majorSplitPane_.repaint();
+        l2DPainter_.repaint();
+      }else{
+        this.makeDisplayRemoveOperations();
+        this.viewer_ = viewer;
+        this.displayPanel_.add(viewer_,BorderLayout.CENTER);
+        this.displayPanel_.validate();
+      }
+    }
+    catch (CgException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    this.showInputElements();
+  }
+  
+  private void makeDisplayRemoveOperations(){
+    makeDisplayRemoveOperations(true);
+  }
+  
+  private void makeDisplayRemoveOperations(boolean remove2DPainter){
+    this.hideInputElements();
+    if (viewer_!=null){
+      try{
+        viewer_.destroyViewer();
+      }catch(Exception ex){
+        ex.printStackTrace();
+      }
+      if (majorSplitPane_!=null)
+        majorSplitPane_.remove(viewer_);
+      this.displayPanel_.remove(viewer_);
+      this.viewer_ = null;
+    }
+    if (l2DPainter_!=null && remove2DPainter){
+      l2DPainter_.getGraphics().dispose();
+      l2dPanel_.remove(l2DPainter_);
+      l2DPainter_ = null;
+    }
+    if (spectrumPainter_!=null){
+      spectrumPainter_.getGraphics().dispose();
+      if (finalButtonSection_!=null) spectrumPanel_.remove(finalButtonSection_);
+      spectrumPanel_.remove(spectrumPainter_);
+      spectrumPainter_ = null;
+    }
+    if (topSplitPane_!=null){
+      topSplitPane_.removeAll();
+      topSplitPane_.getGraphics().dispose();
+      this.majorSplitPane_.remove(topSplitPane_);
+      topSplitPane_ = null;
+    }
+    if (majorSplitPane_!=null){
+      majorSplitPane_.removeAll();
+      majorSplitPane_.getGraphics().dispose();
+      this.displayPanel_.remove(majorSplitPane_);
+      majorSplitPane_= null;
+    }
+    if(msnUserInterfaceObject_ != null)
+      msnUserInterfaceObject_.deleteDetailsBoxes();
+    
+  }
+  
+  
+  public static void main(String[] args)
+  {
+    System.out.println("LipidDataAnalyzer "+Settings.VERSION);
+    String lookAndFeel = "system";
+    try{
+      File file = new File(Settings.SETTINGS_FILE);
+      FileInputStream inNew = new FileInputStream(file);
+      Properties properties = new Properties();
+      properties.load(inNew);
+      inNew.close();
+      lookAndFeel = properties.getProperty("LookAndFeel", "default");
+      Settings.isWindows();
+      if (lookAndFeel.equalsIgnoreCase("default")){
+        if (Settings.isWindows()){
+          lookAndFeel = "system";
+        }else{
+          lookAndFeel = "java";
+        }  
+      }
+    }catch(Exception e){
+      e.printStackTrace();
+    }
+    
+    //ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
+    
+    if (lookAndFeel.equalsIgnoreCase("system")){
+      try {
+        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+      } catch (Exception unused) {
+        ; // Ignore exception because we can't do anything.  Will use default.
+      }
+    }else if (lookAndFeel.equalsIgnoreCase("java")){
+      try {
+        UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+      } catch (Exception unused) {
+        ; // Ignore exception because we can't do anything.  Will use default.
+      }      
+    }else if (lookAndFeel.equalsIgnoreCase("windows")){
+      try {
+        UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
+      } catch (Exception unused) {
+        ; // Ignore exception because we can't do anything.  Will use default.
+      }      
+    }else if (lookAndFeel.equalsIgnoreCase("motif")){
+      try {
+        UIManager.setLookAndFeel("com.sun.java.swing.plaf.motif.MotifLookAndFeel");
+      } catch (Exception unused) {
+        ; // Ignore exception because we can't do anything.  Will use default.
+      }      
+    }else if (lookAndFeel.equalsIgnoreCase("mac")){
+      try {
+        UIManager.setLookAndFeel("javax.swing.plaf.mac.MacLookAndFeel");
+      } catch (Exception unused) {
+        ; // Ignore exception because we can't do anything.  Will use default.
+      }      
+    }else if (lookAndFeel.equalsIgnoreCase("nimbus")){
+      try {
+        UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
+      } catch (Exception unused) {
+        ; // Ignore exception because we can't do anything.  Will use default.
+      }      
+    }
+
+    frame_ = new MainFrame(new LipidDataAnalyzer(), 1024, 950);
+    frame_.setTitle(getFrameTitleString());
+  }
+  
+  private static String getFrameTitleString(){
+    String titleString = "Lipid Data Analyzer "+Settings.VERSION+"   "+LipidomicsConstants.getCurrentMSMachine()+" settings ";
+    String fragSelected = Settings.getFragmentSettingsString();
+    if (fragSelected!=null) titleString += " "+fragSelected;
+    return titleString;
+  }
+
+  public void listSelectionChanged(int leadIndex){
+    if (currentSelected_!=leadIndex || !currentSelectedSheet_.equalsIgnoreCase((String)selectedSheet_.getSelectedItem())){
+      currentSelected_=leadIndex;
+      currentSelectedSheet_ = (String)selectedSheet_.getSelectedItem();
+      params_ = result_.getIdentifications().get(selectedSheet_.getSelectedItem()).get(resultPositionToOriginalLoopkup_.get(leadIndex));
+      isotope_.removeAllItems();
+      if (params_.getMinIsotope()<0){
+        for (int j=0; j!=params_.getMinIsotope()-2; j--){
+          isotope_.addItem(String.valueOf(j));
+        }
+      } else {
+        for (int j=0; j!=params_.getMaxIsotope()+2; j++){
+          isotope_.addItem(String.valueOf(j));
+        }
+      }
+      isotope_.setSelectedIndex(0);
+      initANewViewer(params_);
+    }
+  }
+    
+  private void handleTimerEvent(){
+    if (this.rawmzThread_!=null && this.rawmzThread_.finished()){
+      if (this.rawmzThread_.getErrorString()!=null&&this.rawmzThread_.getErrorString().length()>0){
+        @SuppressWarnings("unused")
+        WarningMessage dlg = new WarningMessage(new JFrame(), "Error", rawmzThread_.getErrorString());
+        this.startQuantification.setEnabled(true);
+        spinnerLabel_.setVisible(false);
+      }
+      this.rawmzThread_ = null;
+      this.progressBar_.setValue(30);
+      this.quantifyingLabel_.setText("Translating to chrom");
+      System.out.println("Translating to chrom from timer");
+      this.readFromRaw_ = true;
+      String filePath = selectedMzxmlFile.getText();
+      String suffix = filePath.substring(filePath.lastIndexOf("."));
+      if (suffix.equalsIgnoreCase(".wiff")){
+        Vector<File> filesToTranslate = BatchQuantThread.getMzXMLFilesOfWiffConversion(filePath);
+        if (filesToTranslate.size()==1){
+          selectedMzxmlFile.setText(filesToTranslate.get(0).getAbsolutePath());
+          mzToChromThread_ = new MzxmlToChromThread(filesToTranslate.get(0).getAbsolutePath());
+          mzToChromThread_.start();          
+        } else {
+          Vector<RawQuantificationPairVO> pairs = new Vector<RawQuantificationPairVO>();
+          File quantFile = new File(selectedQuantFile.getText());
+          for (File rawFile: filesToTranslate){
+            pairs.add(new RawQuantificationPairVO(rawFile,quantFile,true));
+          }
+          int amountOfIsotopes = 0;
+          int isotopesMustMatch = 0;
+          if (this.isoValidation_.isSelected()){
+            amountOfIsotopes = Integer.parseInt(this.amountOfIsotopes_.getText());
+            isotopesMustMatch = Integer.parseInt(this.amountOfMatchingSearchIsotopes_.getText());
+          }
+          boolean ok = true;
+          float cutoff = 0f;
+          float rtShift = 0f;
+          try{
+            if (singleCutoff_.getText()!=null && singleCutoff_.getText().length()>0)
+              cutoff = Float.parseFloat(singleCutoff_.getText().replaceAll(",", "."));
+          }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The cutoff value must be float format!"); ok=false;}
+          try{
+            if (singleRTShift_.getText()!=null && singleRTShift_.getText().length()>0)
+              rtShift = Float.parseFloat(singleRTShift_.getText().replaceAll(",", "."));
+          }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The RT-shift value must be float format!"); ok=false;}
+          if (ok){
+            batchQuantTableModel_.clearFiles();
+            batchQuantTableModel_.addFiles(pairs);
+            batchQuantThread_ = new BatchQuantThread(this.batchQuantTable_, this.batchQuantTableModel_,this.progressBatchBar_, 
+                this.quantifyingBatchLabel_,//Float.parseFloat(this.batchMzTol_.getText()),
+                Float.parseFloat(this.singleTimeMinusTol_.getText()),Float.parseFloat(this.singleTimePlusTol_.getText()),
+                amountOfIsotopes,isotopesMustMatch,this.searchUnknownTime_.isSelected(), cutoff, 
+                rtShift, Integer.parseInt(nrProcessors_.getText()));
+            this.quantifyingBatchLabel_.setText("Quantifying");
+            this.progressBatchBar_.setValue(0);
+            this.quantifyingBatchPanel_.setVisible(true);
+            this.startBatchQuantification_.setEnabled(false);
+            this.spinnerBatchLabel_.setVisible(true);
+
+            mainTabs.setSelectedIndex(1);
+            batchQuantThread_.start();
+          }
+        }
+      }else{
+        String mzXMLFilePath = selectedMzxmlFile.getText().substring(0,selectedMzxmlFile.getText().lastIndexOf("."))+".mzXML";
+        mzToChromThread_ = new MzxmlToChromThread(mzXMLFilePath);
+        mzToChromThread_.start();
+      }
+    }
+    if (this.mzToChromThread_!=null && this.mzToChromThread_.finished()){
+      if (this.mzToChromThread_.getErrorString()!=null&&this.mzToChromThread_.getErrorString().length()>0){
+        @SuppressWarnings("unused")
+        WarningMessage dlg = new WarningMessage(new JFrame(), "Error", mzToChromThread_.getErrorString());
+        this.startQuantification.setEnabled(true);
+        spinnerLabel_.setVisible(false);
+      }
+      this.mzToChromThread_ = null;
+      this.quantifyingLabel_.setText("Quantifying");
+      System.out.println("Quantifying from thread");
+      this.progressBar_.setValue(70);
+      int amountOfIsotopes = 0;
+      int isotopesMustMatch = 0;
+      if (this.isoValidation_.isSelected()){
+        amountOfIsotopes = Integer.parseInt(this.amountOfIsotopes_.getText());
+        isotopesMustMatch = Integer.parseInt(this.amountOfMatchingSearchIsotopes_.getText());
+      }      
+      boolean ok = true;
+      float cutoff = 0f;
+      float rtShift = 0f;
+      try{
+        if (singleCutoff_.getText()!=null && singleCutoff_.getText().length()>0)
+          cutoff = Float.parseFloat(singleCutoff_.getText().replaceAll(",", "."));
+      }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The cutoff value must be float format!"); ok=false;}
+      try{
+        if (singleRTShift_.getText()!=null && singleRTShift_.getText().length()>0)
+          rtShift = Float.parseFloat(singleRTShift_.getText().replaceAll(",", "."));
+      }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The RT-shift value must be float format!"); ok=false;}
+      if (ok){
+        quantThread_ = new QuantificationThread(selectedMzxmlFile.getText(), selectedQuantFile.getText(),LipidDataAnalyzer.getResultFilePath(selectedMzxmlFile.getText(), selectedQuantFile.getText()),// Float.parseFloat(this.singleMzTol_.getText()),
+            Float.parseFloat(this.singleTimeMinusTol_.getText()),Float.parseFloat(this.singleTimePlusTol_.getText()),amountOfIsotopes,isotopesMustMatch,this.searchUnknownTime_.isSelected(),
+            cutoff,rtShift,Integer.parseInt(this.nrProcessors_.getText()));
+        quantThread_.start();
+        if (readFromRaw_){
+          this.readFromRaw_ = false;
+          RawToMzxmlThread.deleteMzXMLFiles(selectedMzxmlFile.getText().substring(0,selectedMzxmlFile.getText().lastIndexOf("."))+".mzXML");
+        }
+      }else{
+        this.startQuantification.setEnabled(true);
+        spinnerLabel_.setVisible(false);
+      }
+    }
+    if (this.quantThread_!=null && !this.quantThread_.finished() && 
+        (this.quantThread_.getErrorString()==null||this.quantThread_.getErrorString().length()==0)){
+      if (quantThread_.getTotalAmountOfLipids()>0&&quantThread_.getCurrentLipidCount()>0){
+        this.progressBar_.setValue(70+((30*(quantThread_.getCurrentLipidCount()-1))/quantThread_.getTotalAmountOfLipids()));
+        quantifyingLabel_.setText("Quantifying "+quantThread_.getCurrentLipid()+" ("+quantThread_.getCurrentLipidCount()+"/"+quantThread_.getTotalAmountOfLipids()+")");
+      }  
+    }
+    if (this.quantThread_!=null && this.quantThread_.finished()){
+      if (this.quantThread_.getErrorString()!=null&&this.quantThread_.getErrorString().length()>0){
+        @SuppressWarnings("unused")
+        WarningMessage dlg = new WarningMessage(new JFrame(), "Error", quantThread_.getErrorString());
+        this.startQuantification.setEnabled(true);
+        spinnerLabel_.setVisible(false);
+      }
+      this.quantThread_ = null;
+      this.progressBar_.setValue(100);
+      quantifyingLabel_.setText("Finished");
+      this.startQuantification.setEnabled(true);
+      spinnerLabel_.setVisible(false);
+    }
+    if (this.batchQuantThread_!=null && this.batchQuantThread_.finished()){
+      this.batchQuantThread_ = null;
+      this.progressBatchBar_.setValue(100);
+      quantifyingBatchLabel_.setText("Finished");
+      this.startBatchQuantification_.setEnabled(true);
+      spinnerBatchLabel_.setVisible(false);
+    }
+
+  }
+  
+  public static String getResultFilePath(String rawFilePath, String quantFilePath){
+    String resultFilePath = rawFilePath.substring(0,rawFilePath.lastIndexOf("."));
+    String quantFileFrag = new String(quantFilePath);
+    int index = -1;
+    int slashIndex = quantFileFrag.lastIndexOf("/");
+    int backSlashIndex = quantFileFrag.lastIndexOf("\\");
+    if (slashIndex>backSlashIndex)
+      index = slashIndex;
+    else
+      index = backSlashIndex;
+    resultFilePath+="_"+quantFilePath.substring(index+1);
+    //this is for using xlsx as new Excel
+    if (resultFilePath.endsWith(".xls")) resultFilePath+="x";
+    return resultFilePath;
+  }
+  
+  private class ThreadSupervisor extends TimerTask{
+
+    public void run()
+    {
+      handleTimerEvent();
+    }
+    
+  }
+  
+  private void changeSeletectSheet(String command){
+    this.updateResultListSelectionTable();
+  }
+  
+  private void updateResultListSelectionTable(){
+    tablePanel_.remove(tablePane);
+    
+    int orderType = LipidomicsJTable.ORDER_TYPE_AS_IS;
+    if (orderResultsType_.containsKey(selectedSheet_.getSelectedItem()))
+      orderType = orderResultsType_.get(selectedSheet_.getSelectedItem());
+    resultPositionToOriginalLoopkup_ = new Hashtable<Integer,Integer>();
+    Vector<LipidParameterSet> lipids = result_.getIdentifications().get(selectedSheet_.getSelectedItem());
+    Vector<LipidParameterSet> lipidsOrdered = new Vector<LipidParameterSet>();
+    if (orderType==LipidomicsJTable.ORDER_TYPE_MZ || orderType==LipidomicsJTable.ORDER_TYPE_INTENSITY){
+      for (LipidParameterSet analyte : lipids){
+        int count = 0;
+        for (int i=0;i!=lipidsOrdered.size();i++){
+          if (orderType==LipidomicsJTable.ORDER_TYPE_MZ){
+            if (lipidsOrdered.get(i).Mz[0]>analyte.Mz[0]) break;
+          }else if (orderType==LipidomicsJTable.ORDER_TYPE_INTENSITY){
+            if (analyte.getArea()>lipidsOrdered.get(i).getArea()) break;
+          }
+          count++;
+        }
+        lipidsOrdered.add(count,analyte);
+      }
+    } else lipidsOrdered = new Vector<LipidParameterSet>(lipids);
+    LipidomicsTableModel model = new LipidomicsTableModel(lipidsOrdered,lipids,showMSnNames_.isSelected(),resultsShowModification_.get(selectedSheet_.getSelectedItem()));
+    resultPositionToOriginalLoopkup_ = model.getPositionToOriginal(); 
+    displayTable = new LipidomicsJTable(model, new LipidomicsTableCellRenderer(),
+        reader_.getHighestMsLevel()>1&&reader_.getMsmsType().equalsIgnoreCase(ChromatogramReader.CHROMATOGRAM_HEADER_FILE_MSMS_TYPE_PRECURSOR), orderType,
+        QuantificationThread.hasRtInfo(result_.getIdentifications()),this);
+    listSelectionModel = displayTable.getSelectionModel();
+    displayTable.setSelectionModel(listSelectionModel);
+    listSelectionModel.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+    tablePane = new JScrollPane(displayTable);
+    tablePane.setPreferredSize(new Dimension(420, 130));
+    tablePanel_.add(tablePane,BorderLayout.CENTER);
+    tablePanel_.invalidate();
+    tablePanel_.updateUI();
+    selectionPane.setVisible(true);    
+  }
+  
+  private void updateAnalysisSelectionTable(){
+    analysisSelectionTablePanel_.remove(analysisTablePane);
+    String[][] tableData = new String[resultFiles_.size()][2];
+    int count=0;
+    for (File file : resultFiles_){
+      String fileName = StaticUtils.extractFileName(file.getAbsolutePath()); 
+      String dir = StaticUtils.extractDirName(file.getAbsolutePath()); 
+      tableData[count][0] = fileName;
+      tableData[count][1] = dir;
+      count++;
+    }
+    this.generateResultsAnalysisTablePane(tableData);
+    analysisSelectionTablePanel_.invalidate();
+    analysisSelectionTablePanel_.updateUI();
+  }
+  
+  private void generateResultsAnalysisTablePane(String[][] tableData){
+    int columnWidth = 950;
+    int tableWidth = columnWidth-3;
+    if (tableData.length>24)
+      tableWidth = columnWidth-18;
+    String[] columnNames = { "file name", "directory" };
+    resultFilesDisplayTable = new JTable(tableData, columnNames);
+    resultListSelectionModel = resultFilesDisplayTable.getSelectionModel();
+    resultFilesDisplayTable.setSelectionModel(resultListSelectionModel);
+    resultListSelectionModel.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);  
+    analysisTablePane = new JScrollPane(resultFilesDisplayTable);
+    analysisTablePane.setPreferredSize(new Dimension(columnWidth, 300));
+    if (tableData!=null && tableData.length>0){
+      int longestFirstColumnElement = 0;
+      int longestSecondColumnElement = 0;
+      for (int i=0;i!=tableData.length;i++){
+        int lengthOne = tableData[i][0].length();
+        int lengthTwo = tableData[i][1].length();
+        if (lengthOne>longestFirstColumnElement)longestFirstColumnElement = lengthOne;
+        if (lengthTwo>longestSecondColumnElement)longestSecondColumnElement = lengthTwo;
+      }
+      double percentOne = (double)longestFirstColumnElement/(double)(longestFirstColumnElement+longestSecondColumnElement);
+      if (percentOne<0.25)
+        percentOne = 0.25;
+      if (percentOne>0.75)
+        percentOne = 0.75;
+      int columnWidthOne = (int)((double)tableWidth*percentOne);
+      int columnWidthTwo = tableWidth-columnWidthOne;
+      resultFilesDisplayTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+      resultFilesDisplayTable.getColumnModel().getColumn(0).setPreferredWidth(columnWidthOne);
+      resultFilesDisplayTable.getColumnModel().getColumn(1).setPreferredWidth(columnWidthTwo);
+    }
+    analysisSelectionTablePanel_.add(analysisTablePane);
+    
+  }
+   
+  
+  private void change2DTypeState(ItemEvent e, String command){
+    if (command.equalsIgnoreCase("DisplayModeRaw")){
+      this.l2DPainter_.setRaw(true);
+      this.l2DPainter_.repaint();
+    }
+    if (command.equalsIgnoreCase("DisplayModeSmooth")){
+      this.l2DPainter_.setRaw(false);
+      this.l2DPainter_.repaint();
+    }
+    if (command.equalsIgnoreCase("show2dChanged")){
+      if (this.params_!=null)
+        this.initANewViewer(params_);
+    }
+    if (command.equalsIgnoreCase("DisplayModeAbundance")){
+      this.spectrumPainter_.setRelativeValues(relAbund_.isSelected());
+      this.spectrumPainter_.repaint();
+    }
+    if (command.equalsIgnoreCase("endisableAmountOfIsotopes")){
+      if (this.isoValidation_.isSelected()){
+        this.amountOfIsotopes_.setEnabled(true);
+        this.amountOfMatchingSearchIsotopes_.setEnabled(true);
+      }else{
+        this.amountOfIsotopes_.setEnabled(false);
+        this.amountOfMatchingSearchIsotopes_.setEnabled(false);
+      }  
+    }
+    if (command.equalsIgnoreCase("endisableAmountOfBatchIsotopes")){
+      if (this.isoBatchValidation_.isSelected()){
+        this.amountOfBatchIsotopes_.setEnabled(true);
+        this.amountOfMatchingBatchSearchIsotopes_.setEnabled(true);
+      }else{
+        this.amountOfBatchIsotopes_.setEnabled(false);
+        this.amountOfMatchingBatchSearchIsotopes_.setEnabled(false);
+      }  
+    }
+//    if (command.equalsIgnoreCase("searchForUnknownRetentionTime")){
+//      if (this.searchUnknownTime_.isSelected())
+//        this.amountOfMatchingSearchIsotopes_.setEnabled(true);
+//      else
+//        this.amountOfMatchingSearchIsotopes_.setEnabled(false);
+//    }
+//    if (command.equalsIgnoreCase("searchForUnknownBatchRetentionTime")){
+//      if (this.searchUnknownBatchTime_.isSelected())
+//        this.amountOfMatchingBatchSearchIsotopes_.setEnabled(true);
+//      else
+//        this.amountOfMatchingBatchSearchIsotopes_.setEnabled(false);
+//    }   
+    if (command.equalsIgnoreCase("ChangeIsotope") && !this.displaysMs2_){
+      if (e.getStateChange()==ItemEvent.SELECTED){
+        if (this.params_!=null && l2DPainter_!=null){     
+          this.initANewViewer(params_,this.l2DPainter_.getAllSelectedProbes());
+        }
+      }
+    } else if (command.equalsIgnoreCase("showMSnNames")){
+      updateResultListSelectionTable();
+    }
+    
+  }
+  
+  private class LipidomicsItemListener implements java.awt.event.ItemListener
+  {
+    private String m_ctrl;
+    
+    public LipidomicsItemListener(String ctrl){
+      m_ctrl = ctrl;
+    }
+
+    public void itemStateChanged(ItemEvent e)  {
+      change2DTypeState(e,m_ctrl);
+    }
+  }
+  
+  private class SheetSelectionItemListener implements java.awt.event.ItemListener
+  {
+    private String m_ctrl;
+    
+    public SheetSelectionItemListener(String ctrl){
+      m_ctrl = ctrl;
+    }
+
+    public void itemStateChanged(ItemEvent e)  {
+      if (m_ctrl.equalsIgnoreCase("ChangeSheet")){
+        if (e.getStateChange()==ItemEvent.SELECTED){
+          changeSeletectSheet(m_ctrl);
+        }
+      }
+    }
+  }
+  
+  private class FragSettingsChangeListener implements java.awt.event.ItemListener
+  {
+    private String m_ctrl;
+    
+    public FragSettingsChangeListener(String ctrl){
+      m_ctrl = ctrl;
+    }
+
+    public void itemStateChanged(ItemEvent e)  {
+      if (m_ctrl.equalsIgnoreCase("ChangeMachine")){
+        if (e.getStateChange()==ItemEvent.SELECTED){
+          refreshFragSettingsSelection();
+        }
+      }
+      if (m_ctrl.equalsIgnoreCase("ChangeFragSelection")){
+        if (e.getStateChange()==ItemEvent.SELECTED){
+          refreshFragSettingsVisibility();
+        }
+      }
+    }
+  }
+
+  private void refreshFragSettingsSelection(){
+    String currentMachine = (String)msMachineTypes_.getSelectedItem();
+    fragmentationSettings1_.removeAllItems();
+    fragmentationSettings2_.removeAllItems();
+    for (String fragSetting : Settings.getFragmentationSettings(currentMachine)) fragmentationSettings1_.addItem(fragSetting);
+    for (String fragSetting : Settings.getFragmentationSettings(currentMachine)) fragmentationSettings2_.addItem(fragSetting);
+    if (currentMachine.equalsIgnoreCase(LipidomicsConstants.getCurrentMSMachine())){
+      fragmentationSettings1_.setSelectedItem(Settings.getFragmentationSelection1());
+      fragmentationSettings2_.setSelectedItem(Settings.getFragmentationSelection2());
+    } else {
+      fragmentationSettings1_.setSelectedItem(Settings.FRAG_SELECTION_NONE);
+      fragmentationSettings2_.setSelectedItem(Settings.FRAG_SELECTION_NONE);
+    }
+    refreshFragSettingsVisibility();
+  }
+  
+  private void refreshFragSettingsVisibility(){
+    String selected1 = (String)fragmentationSettings1_.getSelectedItem();
+    if (selected1.equalsIgnoreCase(Settings.FRAG_SELECTION_NONE)||selected1.equalsIgnoreCase(Settings.FRAG_SELECTION_NO_INTENSITY))
+      inputFragSettings2_.setVisible(false);
+    else
+      inputFragSettings2_.setVisible(true);
+    settingsPanel_.invalidate();
+  }
+  
+  private void hideInputElements(){
+    isotopeLabel_.setVisible(false);
+    m_chkRaw_.setVisible(false);
+    m_chkSmooth_.setVisible(false);
+    m_upButton_.setVisible(false);
+    m_dnButton_.setVisible(false);
+    lx_min_.setVisible(false);
+    lx_max_.setVisible(false);
+    m_minTimeText_.setVisible(false);
+    m_maxTimeText_.setVisible(false);
+    spectrumSelectedLabel_.setVisible(false);
+    spectrumSelected_.setVisible(false);
+    rtSelectedLabel_.setVisible(false);
+    rtSelected_.setVisible(false);
+    precursorSelectedLabel_.setVisible(false);
+    precursorSelected_.setVisible(false);
+    spectrumEarlier_.setVisible(false);
+    spectrumLater_.setVisible(false);
+    lz_min_.setVisible(false);
+    lz_max_.setVisible(false);
+    mz_minTimeText_.setVisible(false);
+    mz_maxTimeText_.setVisible(false);
+    m_zoomIn_.setVisible(false);
+    m_zoomAll_.setVisible(false);
+    mz_zoomIn_.setVisible(false);
+    mz_zoomAll_.setVisible(false);
+    storeSelectedAreas_.setVisible(false);
+    isotope_.setVisible(false);
+    relAbund_.setVisible(false);
+    absAbund_.setVisible(false);
+    annotationLabel_.setVisible(false);
+    annotationThreshold_.setVisible(false);
+    annotationUnit_.setVisible(false);
+    exportSpectra_.setVisible(false);
+  }
+  
+  private void showInputElements(){
+    isotopeLabel_.setVisible(true);
+    m_chkRaw_.setVisible(true);
+    m_chkSmooth_.setVisible(true);
+    m_upButton_.setVisible(true);
+    m_dnButton_.setVisible(true);
+    lx_min_.setVisible(true);
+    lx_max_.setVisible(true);
+    m_minTimeText_.setVisible(true);
+    m_maxTimeText_.setVisible(true);
+    m_zoomIn_.setVisible(true);
+    m_zoomAll_.setVisible(true);
+    storeSelectedAreas_.setVisible(true);
+    isotope_.setVisible(true);
+  }
+  
+  private void showMs2InputElements(){
+    spectrumSelectedLabel_.setVisible(true);
+    spectrumSelected_.setVisible(true);
+    spectrumEarlier_.setVisible(true);
+    spectrumLater_.setVisible(true);
+    rtSelectedLabel_.setVisible(true);
+    rtSelected_.setVisible(true);
+    precursorSelectedLabel_.setVisible(true);
+    precursorSelected_.setVisible(true);
+    relAbund_.setVisible(true);
+    absAbund_.setVisible(true);
+    lz_min_.setVisible(true);
+    lz_max_.setVisible(true);
+    mz_minTimeText_.setVisible(true);
+    mz_maxTimeText_.setVisible(true);
+    mz_zoomIn_.setVisible(true);
+    mz_zoomAll_.setVisible(true);
+    annotationLabel_.setVisible(true);
+    annotationThreshold_.setVisible(true);
+    annotationUnit_.setVisible(true);
+    showChromInputElementsForMs2();
+  }
+  
+  private void showChromInputElementsForMs2(){
+    m_chkRaw_.setVisible(true);
+    m_chkSmooth_.setVisible(true);
+    lx_min_.setVisible(true);
+    lx_max_.setVisible(true);
+    m_minTimeText_.setVisible(true);
+    m_maxTimeText_.setVisible(true);
+    m_zoomIn_.setVisible(true);
+    m_zoomAll_.setVisible(true);
+    exportSpectra_.setVisible(true);
+  }
+
+
+  private void storeSelectedAreasToFile(){
+    Vector<CgProbe> probesToStore = new Vector<CgProbe>();
+    Vector<Vector<CgProbe>> allProbes = this.l2DPainter_.getAllSelectedProbes();
+    probesToStore.addAll(allProbes.get(0));
+    probesToStore.addAll(allProbes.get(1));
+    float totalArea = 0;
+    int highestIsotope = 0;
+    int lowestIsotope = 0;
+    for (CgProbe aProbe: probesToStore){
+      if (aProbe.AreaStatus==CgAreaStatus.OK){
+        totalArea+=aProbe.Area;
+        if (aProbe.isotopeNumber>highestIsotope)
+          highestIsotope = aProbe.isotopeNumber;
+        if (aProbe.isotopeNumber<lowestIsotope)
+          lowestIsotope = aProbe.isotopeNumber;
+          
+      }
+    }
+    Hashtable<Integer,Boolean> foundIsotopes = new Hashtable<Integer,Boolean>();
+    for (int i=lowestIsotope;i!=highestIsotope;i++){
+      foundIsotopes.put(i, false);
+    }
+    for (CgProbe aProbe: probesToStore){
+      if (aProbe.AreaStatus==CgAreaStatus.OK && foundIsotopes.containsKey(aProbe.isotopeNumber))
+        foundIsotopes.put(aProbe.isotopeNumber, true);
+    }
+    List<Integer> keyList = new ArrayList<Integer>(foundIsotopes.keySet());
+    Collections.sort(keyList);
+    Vector<Integer> missingIsotopes = new Vector<Integer>();
+    for (Integer isoKey : keyList){
+      if (!foundIsotopes.get(isoKey)){
+        if (lowestIsotope<0)
+          missingIsotopes.add(0,isoKey);
+        else
+          missingIsotopes.add(isoKey);
+      }  
+    }
+    if (missingIsotopes.size()==0){
+      this.result_.getIdentifications().get(this.currentSelectedSheet_).get(resultPositionToOriginalLoopkup_.get(this.currentSelected_)).setProbes(probesToStore);
+      this.result_.getIdentifications().get(this.currentSelectedSheet_).get(resultPositionToOriginalLoopkup_.get(this.currentSelected_)).Area = totalArea;
+      this.params_ = this.result_.getIdentifications().get(this.currentSelectedSheet_).get(resultPositionToOriginalLoopkup_.get(this.currentSelected_));
+      
+      try{
+        QuantificationThread.writeResultsToExcel(selectedResultFile.getText(), result_);
+        this.readResultFile(selectedResultFile.getText(),true);
+        this.updateResultListSelectionTable();
+        this.displayTable.changeSelection(this.currentSelected_, 1, false, false);
+        listSelectionChanged(this.currentSelected_);
+        this.l2DPainter_.setStoredProbes(probesToStore);
+        allProbes = new Vector<Vector<CgProbe>>();
+        allProbes.add(probesToStore);
+        allProbes.add(new Vector<CgProbe>());
+        this.viewer_.setPaintableProbes(allProbes);
+        this.viewer_.setTheShowSelectedWasOn(false);
+        this.viewer_.repaintColors();
+      }catch (Exception ex){
+        ex.printStackTrace();
+        @SuppressWarnings("unused")
+        WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "The areas could not be stored: "+ex.getMessage());
+      }
+    }else{
+      String missingString = "";
+      for (Integer missIso : missingIsotopes){
+        missingString+=" ,"+missIso;
+      }
+      missingString = missingString.substring(2);
+      new WarningMessage(new JFrame(), "Error", "You cannot store a +"+highestIsotope+" isotope without having selected peaks at "+missingString+" isotope! So add these isotopes or delete the +"+highestIsotope+" isotope!");
+    }
+  }
+  
+  private void updateSheetSelectionList(){
+    
+    tablePanel_.remove(selectedSheet_);
+    selectedSheet_ = new JComboBox<String>();
+    selectedSheet_.addItemListener(new SheetSelectionItemListener("ChangeSheet"));
+    selectedSheet_.setPreferredSize(new Dimension(30, 20));
+    for (String sheetName : result_.getIdentifications().keySet()){ 
+      selectedSheet_.addItem(sheetName);
+    }
+    selectedSheet_.setToolTipText(TooltipTexts.DISPLAY_SELECT_CLASS);
+    tablePanel_.add(selectedSheet_,BorderLayout.NORTH);
+    tablePanel_.invalidate();
+    tablePanel_.updateUI();
+    selectionPane.setVisible(true);
+  }
+
+  public boolean heatMapClicked(String experimentName, String resultFilePath,  String moleculeNameIn)
+  {
+    File resultsFile = new File (resultFilePath);
+    String moleculeName = new String(moleculeNameIn);
+    if (resultsFile.exists()&&resultsFile.isFile()){
+      selectedResultFile.setText(resultFilePath);
+      String chromFileBase = StaticUtils.extractChromBaseName(resultFilePath,experimentName);
+      boolean chromFileExists = false;
+      if (chromFileBase!=null && chromFileBase.length()>0){
+        chromFileExists = true;        
+      }
+      if (chromFileExists){
+        if (!StaticUtils.existChromFiles(chromFileBase)){
+          return false;
+        }
+        String chromFilePath = chromFileBase+".chrom";
+        System.out.println("chromFilePath: "+chromFilePath);
+        this.selectedChromFile.setText(chromFilePath);      
+        startDisplay.doClick();
+        String sheetToSelect = resultTabs_.getTitleAt(resultTabs_.getSelectedIndex());
+        selectedSheet_.setSelectedItem(sheetToSelect);
+        String moelculeTableName = null;
+//        String rtInTableName = null;
+        int selection = -1;
+        String[] molRtAndMod = StaticUtils.extractMoleculeRtAndModFromMoleculeName(moleculeName);
+        moleculeName = molRtAndMod[0];
+        String rt = molRtAndMod[1];
+        for (int i=0;i!=this.displayTable.getRowCount();i++){
+          String moleculeInTable = (String)this.displayTable.getSumLipidNameAt(i);
+          if (moleculeInTable.startsWith(moleculeName)){
+            boolean found = false;
+            if (rt==null) found = true;
+            else{
+              String rtInTableString = moleculeInTable.substring(moleculeName.length()+1);
+              if (rtInTableString.indexOf("_")!=-1) rtInTableString = rtInTableString.substring(0,rtInTableString.indexOf("_"));
+              try{
+                System.out.println(rt+";"+rtInTableString);
+                if (analysisModule_.isWithinRtGroupingBoundaries(Double.valueOf(rtInTableString), Double.valueOf(rt))){
+                  found=true;
+//                  rtInTableName = rtInTableString;
+                }
+              }catch(NumberFormatException nfx){}
+            }
+            if (found){
+              moelculeTableName = moleculeInTable;
+              selection = i;
+              break;
+            }
+          }
+        }
+        if (moelculeTableName!=null){
+          mainTabs.setSelectedIndex(3);
+//          try {
+//            Thread.sleep(100);
+//          }
+//          catch (InterruptedException e) {
+//            // TODO Auto-generated catch block
+//            e.printStackTrace();
+//          }
+//          ListSelectionEvent event2 = new ListSelectionEvent(displayTable,selection,selection+1,false);
+//          displayTable.addSelectionInterval(selection,selection);
+//          System.out.println("Handlers: "+handler.length);
+//          .valueChanged(event2);
+          this.makeDisplayRemoveOperations();
+          this.displayTable.changeSelection(selection, 1, false, false);
+          listSelectionChanged(selection);
+        }else
+          return false;
+      }else{
+        new WarningMessage(new JFrame(),"ERROR","The chrom file \""+experimentName+".chrom\" is not there!");
+        return false;
+      }  
+    }else{
+      new WarningMessage(new JFrame(),"ERROR","The result file \""+resultFilePath+"\" does not exist!");
+      return false;
+    }  
+    return true;
+  }
+
+  
+  public boolean analyteClicked(String moleculeName, String groupName, int maxIsotope, ResultDisplaySettingsVO settingVO, String prefUnit, String unit){
+    molBarCharts_.get(groupName).remove(1);
+    Hashtable<String,ResultCompVO> analysisResults = new Hashtable<String,ResultCompVO>(analysisModule_.getResults().get(groupName).get(moleculeName));
+//    Vector<String> expNames = new Vector<String>();
+//    for (String name : analysisModule_.getExpNamesInSequence()){
+//      String displayName  = getDisplayName(name);
+//      expNames.add(displayName);
+//      if (!displayName.equalsIgnoreCase(name)){
+//        analysisResults.put(displayName, analysisResults.get(name));
+//        analysisResults.remove(name);
+//      }
+//    }
+
+    molBarCharts_.get(groupName).insertTab("Bar-chart", null, new BarChartPainter(BarChartPainter.TYPE_MOLECULE,groupName,moleculeName,analysisResults,analysisModule_.getExpNamesInSequence(),this,false,getMaxIsotopeForSetting(settingVO, maxIsotope,analysisResults),settingVO, prefUnit, unit,
+        analysisModule_.getCorrectionTypeISLookup().get(groupName), analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_),null,1);
+    molBarCharts_.get(groupName).setSelectedIndex(1);
+    return true; 
+  }
+  
+  public boolean analyteGroupClicked(String moleculeName, String groupName, int maxIsotope, ResultDisplaySettingsVO settingVO, String prefUnit, String unit){
+    molBarCharts_.get(groupName).remove(3);
+    Hashtable<String,ResultCompVO> analysisResults = analysisModule_.getGroupedResults().get(groupName).get(moleculeName);
+    Vector<String> groupNames = new Vector<String>(analysisModule_.getGroupNames());
+    molBarCharts_.get(groupName).insertTab("Group bar-chart", null, new BarChartPainter(BarChartPainter.TYPE_MOLECULE,groupName,moleculeName,analysisResults,groupNames,null,true,getMaxIsotopeForSetting(settingVO, maxIsotope,analysisResults),settingVO, prefUnit, unit,
+        analysisModule_.getCorrectionTypeISLookup().get(groupName), analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
+    ,null,3);
+    molBarCharts_.get(groupName).setSelectedIndex(3);
+    return true; 
+  }
+  
+  public static int getMaxIsotopeForSetting(ResultDisplaySettingsVO settingVO, int maxIsotope,Hashtable<String,ResultCompVO> analysisResults){
+    int maxAppliIsotope = maxIsotope+1;
+    if (!settingVO.getType().equalsIgnoreCase("relative to measured class amount") && 
+        !settingVO.getType().equalsIgnoreCase("relative to total amount"))
+      maxAppliIsotope = StaticUtils.getMaxApplicableIsotope(analysisResults, maxIsotope);
+    return maxAppliIsotope;
+  }
+  
+  public boolean combinedAnalyteSelected(Vector<String> moleculeNames, String groupName, int maxIsotope, ResultDisplaySettingsVO settingVO, String prefUnit, String unit){
+    molBarCharts_.get(groupName).remove(1);
+    Hashtable<String,String> molNameHash = new Hashtable<String,String>();
+    for (String molName : moleculeNames) molNameHash.put(molName, molName);
+    Hashtable<String,Hashtable<String,ResultCompVO>> allAnalysisResults = new Hashtable<String,Hashtable<String,ResultCompVO>>(analysisModule_.getResults().get(groupName));
+    Hashtable<String,Hashtable<String,ResultCompVO>> analysisResults = new Hashtable<String,Hashtable<String,ResultCompVO>>();
+    Vector<String> expNames = new Vector<String>();
+    Hashtable<String,String> expHash = new Hashtable<String,String>();
+    for (String molName : allAnalysisResults.keySet()){
+      if (molNameHash.containsKey(molName)){
+        Hashtable<String,ResultCompVO> results = new Hashtable<String,ResultCompVO>();
+        for (String name : analysisModule_.getExpNamesInSequence()){
+//          String displayName  = getDisplayName(name);
+//          if (!expHash.containsKey(displayName)){
+            if (!expHash.containsKey(name)){
+//            expNames.add(displayName);
+//            expHash.put(displayName, displayName);
+              expNames.add(name);
+              expHash.put(name, name);
+          }
+//          results.put(displayName, allAnalysisResults.get(molName).get(name));
+            results.put(name, allAnalysisResults.get(molName).get(name));
+        }
+        analysisResults.put(molName, results);
+      }
+    }
+    molBarCharts_.get(groupName).insertTab("Bar-chart", null, new BarChartPainter(BarChartPainter.TYPE_MOLECULE,groupName,moleculeNames,analysisResults,expNames,this,false,StaticUtils.getMaxApplicableIsotopeHash(analysisResults, maxIsotope),settingVO, prefUnit, unit,
+        analysisModule_.getCorrectionTypeISLookup().get(groupName), analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
+    ,null,1);
+    molBarCharts_.get(groupName).setSelectedIndex(1);
+    return true;
+  }
+  public boolean combinedAnalyteGroupSelected(Vector<String> moleculeNames, String groupName, int maxIsotope, ResultDisplaySettingsVO settingVO, String prefUnit, String unit){
+    molBarCharts_.get(groupName).remove(3);
+    Hashtable<String,String> molNameHash = new Hashtable<String,String>();
+    Vector<String> groupNames = new Vector<String>(analysisModule_.getGroupNames());
+    for (String molName : moleculeNames) molNameHash.put(molName, molName);
+    Hashtable<String,Hashtable<String,ResultCompVO>> allAnalysisResults = new Hashtable<String,Hashtable<String,ResultCompVO>>(analysisModule_.getGroupedResults().get(groupName));
+    Hashtable<String,Hashtable<String,ResultCompVO>> analysisResults = new Hashtable<String,Hashtable<String,ResultCompVO>>();
+    for (String molName : allAnalysisResults.keySet()){
+      if (molNameHash.containsKey(molName)){
+        Hashtable<String,ResultCompVO> results = new Hashtable<String,ResultCompVO>();
+        for (String name : groupNames){
+          results.put(name, allAnalysisResults.get(molName).get(name));
+        }
+        analysisResults.put(molName, results);
+      }
+    }
+    molBarCharts_.get(groupName).insertTab("Group bar-chart", null, new BarChartPainter(BarChartPainter.TYPE_MOLECULE,groupName,moleculeNames,analysisResults,groupNames,null,true,StaticUtils.getMaxApplicableIsotopeHash(analysisResults, maxIsotope),settingVO, prefUnit, unit,
+        analysisModule_.getCorrectionTypeISLookup().get(groupName), analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
+    ,null,3);
+    molBarCharts_.get(groupName).setSelectedIndex(3);
+    return true;    
+  }
+
+  
+  public boolean experimentClicked(String experimentName,String groupName, int maxIsotope, ResultDisplaySettingsVO settingVO, String prefUnit, String unit){
+    molBarCharts_.get(groupName).remove(1);
+    Hashtable<String,Hashtable<String,ResultCompVO>> analysisResults = analysisModule_.getResults().get(groupName);
+    Hashtable<String,ResultCompVO> resultsForChart = new Hashtable<String,ResultCompVO>();
+//    Vector<String> namesVector = analysisModule_.getAllMoleculeNames().get(groupName);
+    Vector<String> namesVector = heatmaps_.get(groupName).getSelectedMoleculeNames();
+    for (String moleculeName : analysisResults.keySet()){
+      resultsForChart.put(moleculeName, analysisResults.get(moleculeName).get(experimentName));
+    }
+//    if (this.heatmaps_.get(groupName).hasNoInternalStandards()){
+//      Hashtable<String,String> isNames = analysisModule_.getAllISNames().get(groupName);
+//      for (String isName : isNames.keySet())
+//        resultsForChart.remove(isName);
+//      Vector<String> newNameVector = new Vector<String>();
+//      for (String name: namesVector){
+//        if (!isNames.containsKey(name))
+//          newNameVector.add(name);
+//      }
+//      namesVector = new Vector<String>(newNameVector);
+//    }
+    molBarCharts_.get(groupName).insertTab("Bar chart", null,new BarChartPainter(BarChartPainter.TYPE_EXPERIMENT,groupName,getDisplayName(experimentName),resultsForChart,namesVector,null,false,getMaxIsotopeForSetting(settingVO, maxIsotope,resultsForChart),settingVO, prefUnit, unit,
+        analysisModule_.getCorrectionTypeISLookup().get(groupName), analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
+    ,null,1);
+    molBarCharts_.get(groupName).setSelectedIndex(1);
+    return true;
+  }
+  
+  public boolean experimentGroupClicked(String experimentGroupName,String groupName, int maxIsotope, ResultDisplaySettingsVO settingVO, String prefUnit, String unit){
+    molBarCharts_.get(groupName).remove(3);
+    Hashtable<String,Hashtable<String,ResultCompVO>> analysisResults = analysisModule_.getGroupedResults().get(groupName);
+    Hashtable<String,ResultCompVO> resultsForChart = new Hashtable<String,ResultCompVO>();
+//    Vector<String> namesVector = analysisModule_.getAllMoleculeNames().get(groupName);
+    Vector<String> namesVector = groupHeatmaps_.get(groupName).getSelectedMoleculeNames();
+    for (String moleculeName : analysisResults.keySet()){
+      resultsForChart.put(moleculeName, analysisResults.get(moleculeName).get(experimentGroupName));
+    }
+//    if (this.groupHeatmaps_.get(groupName).hasNoInternalStandards()){
+//      Hashtable<String,String> isNames = analysisModule_.getAllISNames().get(groupName);
+//      for (String isName : isNames.keySet())
+//        resultsForChart.remove(isName);
+//      Vector<String> newNameVector = new Vector<String>();
+//      for (String name: namesVector){
+//        if (!isNames.containsKey(name))
+//          newNameVector.add(name);
+//      }
+//      namesVector = new Vector<String>(newNameVector);
+//    }
+    molBarCharts_.get(groupName).insertTab("Group bar-chart", null,new BarChartPainter(BarChartPainter.TYPE_EXPERIMENT,groupName,getDisplayName(experimentGroupName),resultsForChart,namesVector,null,true,getMaxIsotopeForSetting(settingVO, maxIsotope,resultsForChart),settingVO, prefUnit, unit,
+        analysisModule_.getCorrectionTypeISLookup().get(groupName), analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
+    ,null,3);
+    molBarCharts_.get(groupName).setSelectedIndex(3);
+    return true;
+  }
+  
+  public String getDisplayName(String sampleName){
+    if (groupDisplayNamesLookup_!=null && groupDisplayNamesLookup_.containsKey(sampleName)){
+      return groupDisplayNamesLookup_.get(sampleName);
+    }else{
+      return this.expDisplayNamesLookup_.get(sampleName);
+    }
+  }
+  
+  public void setDisplayName(String sampleName, String displayName){
+    this.expDisplayNamesLookup_.put(sampleName, displayName);
+    for (String molGroup : heatmaps_.keySet()){
+      heatmaps_.get(molGroup).generateHeatMap();
+    }
+    if (classOverviewPanel_!=null)
+      classOverviewPanel_.refreshNames();
+//    colorChooserDialog_.refreshNames();
+  }
+  
+  public void changeISStatus(String groupName, boolean isGrouped, boolean value){
+    HeatMapDrawing heatMap = getCorrespodingHeatMap(groupName, isGrouped);
+    if (heatMap !=null)
+      heatMap.setISSelected(value);
+  }
+  
+  private HeatMapDrawing getCorrespodingHeatMap(String groupName, boolean isGrouped){
+    HeatMapDrawing heatMap = null;
+    if (isGrouped)
+      heatMap = heatmaps_.get(groupName);
+    else{
+      if (groupHeatmaps_.containsKey(groupName))
+        heatMap = groupHeatmaps_.get(groupName);
+    }
+    return heatMap;
+  }
+  
+  public void changeESStatus(String groupName, boolean isGrouped, boolean value){
+    HeatMapDrawing heatMap = getCorrespodingHeatMap(groupName, isGrouped);
+    if (heatMap !=null)
+      heatMap.setESSelected(value);
+  }
+  
+//  public void changeDoublePeakStatus(String groupName, boolean value){
+//    HeatMapDrawing heatMap = getCorrespodingHeatMap(groupName, false);
+//    if (heatMap !=null)
+//      heatMap.setDoublePeakSelected(value);
+//  }
+  
+  public void changeIsotopesUsed(String groupName, boolean isGrouped, int value){
+    HeatMapDrawing heatMap = getCorrespodingHeatMap(groupName, isGrouped);
+    if (heatMap !=null)
+      heatMap.setSelectedIsotope(value);
+  }
+  
+  @SuppressWarnings("unchecked")
+  public void eliminateDoublePeaks(String groupName, String analyteName, String absFilePathStartEx, Vector<String> selectedMods, Vector<String> foundUpdateables){
+    try{
+      Hashtable<String,Boolean> showMods = new Hashtable<String,Boolean>();
+      Hashtable<String,String> modHash = new Hashtable<String,String>();
+      for (String modName : selectedMods) modHash.put(modName, modName);
+      QuantificationResult result1 = readResultFile(absFilePathStartEx, showMods);
+      Hashtable<String,LipidParameterSet> paramOfInterest = getParamByAnalyteName(analyteName, result1.getIdentifications().get(groupName), modHash);
+      String[] nameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(analyteName);
+      if (nameAndRt[1]==null) nameAndRt[1] = "";
+      String[] nameAndRtParam1 = StaticUtils.extractMoleculeRtAndModFromMoleculeName(analyteName);
+      if (nameAndRtParam1[1]==null) nameAndRtParam1[1]="";
+      if (paramOfInterest.size()>0){
+        for (String updateablePath : foundUpdateables){
+          Hashtable<String,Boolean> updateShowMods = new Hashtable<String,Boolean>();
+          try{
+            QuantificationResult result2 = readResultFile(updateablePath, updateShowMods);
+            Vector<LipidParameterSet> updateParams = result2.getIdentifications().get(groupName);
+            Hashtable<String,Vector<LipidParameterSet>> paramsToSelectOne = new Hashtable<String,Vector<LipidParameterSet>>();
+            Vector<Integer> updateToRemove = new Vector<Integer>();
+            Hashtable<String,Integer> positionToAdd = new Hashtable<String,Integer>();
+            for (int j=0; j!=updateParams.size(); j++){
+              LipidParameterSet param = updateParams.get(j);
+              String[] nameAndRtParam2 = StaticUtils.extractMoleculeRtAndModFromMoleculeName(param.getNameString());
+              if (nameAndRtParam2[1]==null) nameAndRtParam2[1]="";
+              if (nameAndRtParam1[0].equalsIgnoreCase(nameAndRtParam2[0])){
+                if (analysisModule_.neglectRtInformation(analyteName) || analysisModule_.isWithinRtGroupingBoundaries(Double.valueOf(nameAndRtParam1[1]), Double.valueOf(nameAndRtParam2[1]))){
+                  if (modHash.containsKey(param.getModificationName())){
+                    Vector<LipidParameterSet> paramsOfMod = new  Vector<LipidParameterSet>();
+                    if (paramsToSelectOne.containsKey(param.getModificationName())) paramsOfMod = paramsToSelectOne.get(param.getModificationName());
+                    paramsOfMod.add(param);
+                    paramsToSelectOne.put(param.getModificationName(), paramsOfMod);
+                    updateToRemove.add(0,j);
+                    if (!positionToAdd.containsKey(param.getModificationName()))positionToAdd.put(param.getModificationName(), j);
+                  }
+                }
+              }
+            }
+            for (int j : updateToRemove) updateParams.remove(j);
+            Hashtable<String,LipidParameterSet> cleanedParams = new Hashtable<String,LipidParameterSet>();
+            for (String modification : paramsToSelectOne.keySet()){
+              Vector<LipidParameterSet> paramsOfMod = paramsToSelectOne.get(modification);
+              LipidParameterSet paramOfInt = paramOfInterest.get(modification);
+              LipidParameterSet remainingParam = null;
+              for (LipidParameterSet set : paramsOfMod){
+                if (remainingParam==null) remainingParam = set;
+                else{
+                  Vector<CgProbe> zeroProbes1 = remainingParam.getIsotopicProbes().get(0);
+                  Vector<CgProbe> zeroProbes2 = set.getIsotopicProbes().get(0);
+                  float refTime = paramOfInt.getIsotopicProbes().get(0).get(0).Peak;
+                  float timeDifferenceMin = Float.MAX_VALUE;
+                  for (CgProbe probe1 : zeroProbes1){
+                    float timeDiff = StaticUtils.calculateDiff(refTime,probe1.Peak);
+                    if (timeDiff<timeDifferenceMin)timeDifferenceMin = timeDiff;
+                  }
+                  boolean secondIsCloser = false;
+                  for (CgProbe probe2 : zeroProbes2){
+                    float timeDiff = StaticUtils.calculateDiff(refTime,probe2.Peak);
+                    if (timeDiff<timeDifferenceMin){
+                      timeDifferenceMin = timeDiff;
+                      secondIsCloser = true;
+                    }
+                  }
+                  if (secondIsCloser) remainingParam = set;
+                }
+              }
+              Vector<Vector<CgProbe>> newIsotopicProbes = new Vector<Vector<CgProbe>>();
+              for (int i=0; i!=remainingParam.getIsotopicProbes().size();i++){
+                if (paramOfInt.getIsotopicProbes().size()>i){
+                  if (paramOfInt.getIsotopicProbes().get(i).size()==1 && remainingParam.getIsotopicProbes().get(i).size()>1){
+                    float retentionTime = paramOfInt.getIsotopicProbes().get(i).get(0).Peak;
+                    float timeDifferenceMin = Float.MAX_VALUE;
+                    CgProbe nearestProbe = null;
+                    for (CgProbe aProbe : remainingParam.getIsotopicProbes().get(i)){
+                      float timeDiff = aProbe.Peak-retentionTime;
+                      if (timeDiff<0)
+                        timeDiff = timeDiff*-1;
+                      if (timeDiff<timeDifferenceMin){
+                        nearestProbe = aProbe;
+                        timeDifferenceMin = timeDiff;
+                      }
+                    }
+                    Vector<CgProbe> newProbes = new Vector<CgProbe>();
+                    newProbes.add(nearestProbe);
+                    newIsotopicProbes.add(newProbes);
+                  }else{
+                    newIsotopicProbes.add(remainingParam.getIsotopicProbes().get(i));
+                  }
+                }
+                if (i==0)remainingParam.setRt(Calculator.FormatNumberToString(newIsotopicProbes.get(0).get(0).Peak/60f,2));
+              }
+              float totalArea = 0f;
+              Vector<CgProbe> probesVect = new Vector<CgProbe>();
+              for (Vector<CgProbe> probes : newIsotopicProbes){
+                for (CgProbe probe : probes){
+                  totalArea+=probe.Area;
+                  probesVect.add(probe);
+                }  
+              }
+              remainingParam.setProbes(probesVect);
+              remainingParam.Area = totalArea;
+              cleanedParams.put(modification, remainingParam);
+            }
+            Vector<IntegerStringVO> positions = new Vector<IntegerStringVO>();
+            for (String mod : positionToAdd.keySet())positions.add(new IntegerStringVO(mod,positionToAdd.get(mod)));
+            Collections.sort(positions,new GeneralComparator("at.tugraz.genome.lda.vos.IntegerStringVO", "getValue", "java.lang.Integer"));
+            int removalReduction = 0;
+            for (IntegerStringVO position : positions){
+              updateParams.add(position.getValue()-removalReduction,cleanedParams.get(position.getKey()));
+              removalReduction = removalReduction+paramsToSelectOne.get(position.getKey()).size()-1;
+            }
+            try {
+              QuantificationThread.writeResultsToExcel(updateablePath, result2);
+            }catch (Exception e) {e.printStackTrace();
+            }
+          } catch (ExcelInputFileException eif){
+            //Comment: the graphical Warning message is shown in the readResultFile itself
+          }
+        }
+        acceptResultFiles();
+        for (int i=0; i!=resultTabs_.getTabCount();i++){
+          if (resultTabs_.getTitleAt(i).equalsIgnoreCase(groupName))
+            resultTabs_.setSelectedIndex(i);
+        }      
+      }else{
+        new WarningMessage(new JFrame(), "Error", "There is something wrong with the file "+absFilePathStartEx+"! The "+analyteName+" in the group "+groupName+" does not exist!");
+      }
+    } catch (ExcelInputFileException eif){
+      //Comment: the graphical Warning message is shown in the readResultFile itself
+    }
+  }
+  
+  public void addAnalyteEverywhereAtPosition(String groupName, String analyteName, String absFilePathStartEx, Vector<String> selectedMods, Vector<AutoAnalyteAddVO> updateableAndAnalyteBefore, int maxIsotope, boolean exactProbePosition){
+    Hashtable<String,Boolean> showMods = new Hashtable<String,Boolean>();
+    Hashtable<String,String> modHash = new Hashtable<String,String>();
+    for (String modName : selectedMods) modHash.put(modName, modName);
+    try{
+      QuantificationResult result1 = readResultFile(absFilePathStartEx, showMods);
+      Hashtable<String,LipidParameterSet> paramsOfInterest = getParamByAnalyteName(analyteName, result1.getIdentifications().get(groupName), modHash);
+      if (paramsOfInterest.size()>0){
+        for (AutoAnalyteAddVO addVO : updateableAndAnalyteBefore){
+          try {
+            QuantificationResult result2 = readResultFile(addVO.getResultFilePath(), new Hashtable<String,Boolean>());
+            boolean hasRtInfo = QuantificationThread.hasRtInfo(result2.getIdentifications());
+            Vector<LipidParameterSet> updateParams = result2.getIdentifications().get(groupName);
+            Vector<LipidParameterSet> updateParamsWOZeroAnalyte = new Vector<LipidParameterSet>();
+            for (LipidParameterSet set: updateParams ){
+              if (!set.getNameString().equalsIgnoreCase(analyteName) || set.Area>0f)
+                updateParamsWOZeroAnalyte.add(set);
+            }
+            updateParams = updateParamsWOZeroAnalyte;
+            String chromSetBasePath = StaticUtils.extractChromBaseName(addVO.getResultFilePath(), addVO.getExperimentName());
+            String[] chromPaths = StringUtils.getChromFilePaths(chromSetBasePath+".chrom");
+            LipidomicsAnalyzer analyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0]);
+            QuantificationThread.setAnalyzerProperties(analyzer);
+        
+            int positionToAdd = 0;
+            if (addVO.getPreviousElement()!=null && addVO.getPreviousElement().length()>0){
+              String[] analyteBeforeNameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(addVO.getPreviousElement());
+              if (analyteBeforeNameAndRt[1]==null) analyteBeforeNameAndRt[1]="";
+              for (int i=0;i!=updateParams.size();i++){
+                String[] currentNameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(updateParams.get(i).getNameString());
+                if (currentNameAndRt[0].equalsIgnoreCase(analyteBeforeNameAndRt[0])){
+                  if (analysisModule_.neglectRtInformation(analyteName) || analysisModule_.isWithinRtGroupingBoundaries(Double.valueOf(currentNameAndRt[1]), Double.valueOf(analyteBeforeNameAndRt[1]))){
+                    positionToAdd = i+1;
+                    break;
+                  }  
+                }
+              }
+            }
+            boolean isEmptyThere = true;
+            for (String modName : paramsOfInterest.keySet()){
+              LipidParameterSet templateParam = paramsOfInterest.get(modName);
+              int charge = 1;
+              if (templateParam.ProbeCount()>0)
+                charge = templateParam.Probe(0).Charge;
+              boolean existsEmpty = checkIsEmptyThere(templateParam,updateParams);
+              if (existsEmpty)
+                System.out.println("There exists a empty one at :"+addVO.getExperimentName()+" ; "+modName);
+              if (!existsEmpty){
+                  Vector<Vector<CgProbe>> probes = null;
+                  if (exactProbePosition)
+                    probes = analyzer.calculatePeakAtExactProbePosition(templateParam,maxIsotope,charge,result1.getMsLevels().get(groupName));
+                  else
+                    probes = analyzer.calculatePeakAtExactTimePosition(templateParam,maxIsotope,charge,result1.getMsLevels().get(groupName));
+                  // to calculate the total area
+                  float totalArea = 0;
+                  String rt = "";
+                  for (int k=0;k!=probes.size();k++){
+                    Vector<CgProbe> isoProbes = probes.get(k);
+                    Vector<Double> rts = new Vector<Double>();
+                    for (CgProbe probe : isoProbes){
+                      totalArea+=probe.Area;
+                      rts.add((double)probe.Peak);
+                    }
+                    if (k==0 && hasRtInfo) rt = Calculator.FormatNumberToString(Calculator.mean(rts)/60d,2d);
+                  }
+                  if (probes.size()==0 && hasRtInfo) rt = templateParam.getRt();
+// INFO: This check has been removed due to Martin, since he wants to have an empty entry if the analyte cannot be quantified                  
+//                  if (totalArea>0){
+                    LipidParameterSet paramToQuantify = new LipidParameterSet(templateParam.Mz[0], templateParam.getName(),
+                      templateParam.getDoubleBonds(), templateParam.getModificationName(), rt, templateParam.getAnalyteFormula(),
+                      templateParam.getModificationFormula(),templateParam.getCharge());
+                      paramToQuantify.LowerMzBand = templateParam.LowerMzBand;
+                    paramToQuantify.UpperMzBand = templateParam.UpperMzBand;
+                    paramToQuantify.Area = totalArea;
+                    paramToQuantify.setIsotopicProbes(probes);
+                    String[] paramNameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(paramToQuantify.getNameString());
+                    boolean existsSameOne = false;
+                    if (rt.length()>0){
+                      // check if the identified peak is already there
+                      if ((positionToAdd-1)>-1){
+                        String[] currentNameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(updateParams.get(positionToAdd-1).getNameString());
+                        if (currentNameAndRt[0].equalsIgnoreCase(paramNameAndRt[0]) && currentNameAndRt[1].equalsIgnoreCase(paramNameAndRt[1]))
+                          existsSameOne = true;
+                      }
+                      for (int j=positionToAdd;j!=updateParams.size();j++){
+                        String[] currentNameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(updateParams.get(j).getNameString());
+                        if (currentNameAndRt[0].equalsIgnoreCase(paramNameAndRt[0])){
+                          if (paramToQuantify.getModificationName().equalsIgnoreCase(updateParams.get(j).getModificationName())){
+                            if (currentNameAndRt[1].equalsIgnoreCase(paramNameAndRt[1])){
+                              existsSameOne = true;
+                              break;
+                            }
+                            else if (Double.valueOf(currentNameAndRt[1])<Double.valueOf(paramNameAndRt[1]))positionToAdd = j+1;
+                            else{
+                              positionToAdd = j;
+                              break;
+                            }  
+                          }
+                        }else break;                        
+                      }
+                    }
+                    updateParams.add(positionToAdd, paramToQuantify);
+                    if (rt.length()>0)
+                      positionToAdd++;
+                    if (!existsSameOne)
+                      isEmptyThere = false;
+// end removed due to Martin
+//                 }
+              }
+          
+            }
+            if (!isEmptyThere){
+              result2.getIdentifications().put(groupName, updateParams);
+              QuantificationThread.writeResultsToExcel(addVO.getResultFilePath(), result2);
+            }
+          } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            new WarningMessage(new JFrame(), "Error", e.getMessage());
+          }          
+        }
+        acceptResultFiles();
+        for (int i=0; i!=resultTabs_.getTabCount();i++){
+          if (resultTabs_.getTitleAt(i).equalsIgnoreCase(groupName))
+            resultTabs_.setSelectedIndex(i);
+        }
+      }
+    } catch (ExcelInputFileException eif){
+      //Comment: the graphical Warning message is shown in the readResultFile itself
+    }
+  }
+  
+  public void eliminateAnalyteEverywhere(String groupName, Hashtable<String,String> selectedAnalytes, Vector<String> selectedMods, Vector<String> foundUpdateables){
+    for (String updateablePath : foundUpdateables){
+      Hashtable<String,String> modHash = new Hashtable<String,String>();
+      for (String modName : selectedMods)modHash.put(modName, modName);
+      Hashtable<String,Boolean> showMods = new Hashtable<String,Boolean>();
+      Hashtable<String,Hashtable<String,String>> nameRtHash = new Hashtable<String,Hashtable<String,String>>();
+      for (String selected : selectedAnalytes.keySet()){
+        String[] nameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(selected);
+        if (nameAndRt[1]==null) nameAndRt[1]="";
+        Hashtable<String,String> rts = new Hashtable<String,String>();
+        if (nameRtHash.containsKey(nameAndRt[0])) rts = nameRtHash.get(nameAndRt[0]);
+        rts.put(nameAndRt[1], nameAndRt[1]);
+        nameRtHash.put(nameAndRt[0], rts);
+      }
+      try{
+        QuantificationResult result = readResultFile(updateablePath, showMods);
+        Vector<LipidParameterSet> oldParams = result.getIdentifications().get(groupName);
+        Vector<LipidParameterSet> newParams = new Vector<LipidParameterSet>();
+        for (LipidParameterSet param : oldParams){
+          String[] nameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(param.getNameString());
+          if (nameAndRt[1]==null) nameAndRt[1]="";
+          boolean remove = false;
+          if (nameRtHash.containsKey(nameAndRt[0])){
+            Hashtable<String,String> rts = nameRtHash.get(nameAndRt[0]);
+            for (String rt : rts.keySet()){
+              if (analysisModule_.neglectRtInformation(nameAndRt[0]) || analysisModule_.isWithinRtGroupingBoundaries(Double.valueOf(nameAndRt[1]), Double.valueOf(rt))){
+                if (modHash.containsKey(param.getModificationName()))remove = true;
+              }
+            }
+          }
+          if (!remove) newParams.add(param);
+        }
+        result.getIdentifications().put(groupName, newParams);
+        try {
+          QuantificationThread.writeResultsToExcel(updateablePath, result);
+        }
+        catch (Exception e) {
+          e.printStackTrace();
+        }
+      } catch (ExcelInputFileException eif){
+        //Comment: the graphical Warning message is shown in the readResultFile itself
+      }
+    }
+    acceptResultFiles();
+    for (int i=0; i!=resultTabs_.getTabCount();i++){
+      if (resultTabs_.getTitleAt(i).equalsIgnoreCase(groupName))
+        resultTabs_.setSelectedIndex(i);
+    }    
+  }
+  
+  public void addAnalyte(int position, AddAnalyteVO analyteDescrVO){
+
+    LipidParameterSet set = new LipidParameterSet(new Float(analyteDescrVO.getExactMass()), analyteDescrVO.getName(), 
+        analyteDescrVO.getDoubleBonds(), analyteDescrVO.getModName(), analyteDescrVO.getRt(), analyteDescrVO.getFormula(), 
+        analyteDescrVO.getModFormula(), new Integer(analyteDescrVO.getCharge()) );
+      set.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance();
+      set.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance();
+      set.Area = 0;
+      result_.getIdentifications().get(this.currentSelectedSheet_).add(position, set);
+      try {
+       QuantificationThread.writeResultsToExcel(selectedResultFile.getText(), result_);
+       readResultFile(selectedResultFile.getText(),true);
+       updateResultListSelectionTable();
+       // this is that the selection gets updated in any case
+       currentSelected_ = -1;
+       displayTable.changeSelection(position, 1, false, false);
+       listSelectionChanged(position);
+    } catch (Exception e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
+  
+  public void removeAnalyte(int[] indices){
+    List<Integer> inds = new ArrayList<Integer>();
+    for (int ind:indices)inds.add(resultPositionToOriginalLoopkup_.get(ind));
+    Collections.sort(inds);
+    this.currentSelectedSheet_ =  (String)selectedSheet_.getSelectedItem();
+    for (int i=(inds.size()-1); i>-1; i--){
+      result_.getIdentifications().get(this.currentSelectedSheet_).remove(inds.get(i).intValue());
+      try {
+        QuantificationThread.writeResultsToExcel(selectedResultFile.getText(), result_);
+        readResultFile(selectedResultFile.getText(),true);
+        updateResultListSelectionTable();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
+  public void updateColorChange()
+  {
+    for (String molName : molBarCharts_.keySet()){
+      JTabbedPane tabbedPane = molBarCharts_.get(molName);
+      for (int i=0;i!=tabbedPane.getTabCount();i++){
+        if (tabbedPane.getComponentAt(i)!=null && tabbedPane.getComponentAt(i) instanceof BarChartPainter){
+          BarChartPainter painter = (BarChartPainter)tabbedPane.getComponentAt(i);
+          painter.repaint();
+        }
+      }
+    }
+    if (classOverviewPanel_!=null)
+      classOverviewPanel_.repaint();
+    if (classOverviewGroupPanel_!=null)
+      classOverviewGroupPanel_.repaint();
+  }
+  
+  public LipidParameterSet getAnalyteInTableAtPosition(int position){
+    this.currentSelectedSheet_ =  (String)selectedSheet_.getSelectedItem();
+    return result_.getIdentifications().get(currentSelectedSheet_).get(resultPositionToOriginalLoopkup_.get(position));
+  }
+  
+  private boolean checkIsEmptyThere(LipidParameterSet templateParam,Vector<LipidParameterSet> updateParams){
+    boolean emptyThere = false;
+    for (LipidParameterSet param : updateParams){
+      if (param.getNameString().equalsIgnoreCase(templateParam.getNameString())&&param.getModificationName().equalsIgnoreCase(templateParam.getNameString())){
+        emptyThere = true;
+        break;
+      }
+    }
+    return emptyThere;
+  }
+  
+  private void checkLicense(){
+    MatrixLipidDataAnalyzer2 licenseMatrix = new MatrixLipidDataAnalyzer2();
+    Vector<String> forbiddenkeys = new Vector<String>();
+    LicenseHandler.setForbiddenKeyMD5Hashes(forbiddenkeys);
+    LicenseHandler.setLicenseArray(licenseMatrix);
+    LicenseHandler.setApplicationIcon(new ImageIcon(getClass().getResource("/images/Delete.gif")));
+    LicenseHandler.setAppName(licenseMatrix.getApplicationName());
+    LicenseHandler.setModuleNames(new String[]{"0"});
+    LicenseHandler.setDemoModeEnabled(false);
+    LicenseHandler.setUseRoamingProfileEnabled(false);
+    File licenseFolder = new File(Settings.getLicensePath());
+    File ldaHomeFolder = new File (Settings.getLdaUserHomePath());
+    if (!ldaHomeFolder.exists()) {
+      if (!ldaHomeFolder.mkdirs()) {
+        System.err.println("Could not create mandatory directory "+ldaHomeFolder.getAbsolutePath());
+        System.exit(-1);
+      }
+      try {
+        Runtime.getRuntime().exec("attrib +h \""+ldaHomeFolder.getAbsolutePath()+"\"");
+      } catch (Exception ex) {
+        System.err.println("Could not hide directory "+ldaHomeFolder.getAbsolutePath());
+      }
+    }
+//    if (!licenseFolder.exists()) {               
+      //TODO: this license for reviewing is valid until the 31st of October 2017!
+      LicenseHandler.writeLicenseStringAndUserName(licenseFolder,"2x46-sGS]-[WXu-O48S-^7kF-]Xnv-X65r-K]^z","Review");
+//    }
+    LicenseHandler.checkLicenseInFolder(licenseFolder);
+  }
+  
+  private class LicenseChangeListener implements ChangeListener{
+
+    int currentSelectedIndex_;
+    int lastSelectedIndex_;
+   
+    public LicenseChangeListener(){
+      currentSelectedIndex_ = 0;
+    }
+
+    public void stateChanged(ChangeEvent e)
+    {
+      lastSelectedIndex_ = currentSelectedIndex_;
+      currentSelectedIndex_ = mainTabs.getSelectedIndex();
+    }
+  }
+  
+  private static Vector<File> sortFilesByName(Vector<File> filesToSort){
+    Vector<File> newOrder = new Vector<File>(filesToSort.size());
+    Hashtable<String,File> hash = new Hashtable<String,File>();
+    for (File file : filesToSort) hash.put(file.getAbsolutePath(), file);
+    Vector<String> pathVect = new Vector<String>(hash.keySet());
+    Collections.sort(pathVect);
+    for (String path : pathVect) newOrder.add(hash.get(path));
+    return newOrder;
+  }
+  
+    
+ 
+  public void showMs2(int position){
+    currentMs2Position_ = position;
+    showMs2(null);
+  }
+
+  public boolean showMs2(LipidParameterSet set){ 
+     ms1ProbesWhileMs2Display_ = l2DPainter_.getAllSelectedProbes();
+    int charge = 1;
+    if (params_.ProbeCount()>0)
+      charge = params_.Probe(0).Charge;
+    else if (params_.getCharge()!=null&&params_.getCharge()>1)
+      charge = params_.getCharge();
+    float currentIsotopicMass = params_.Mz[0];
+    
+    displaysMs2_ = true;
+    LipidParameterSet params = getAnalyteInTableAtPosition(currentMs2Position_);
+    if (set !=null) params = set;
+    Vector<RangeColor> rangeColors = StaticUtils.createRangeColorVOs(params, ((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentMs2Position_));
+    try {
+      Vector<String> spectraRaw = reader_.getMsMsSpectra(params.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), params.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance(), 2);
+      float peakRt = Float.parseFloat(params.getRt())*60f;
+      //String[] chroms = reader_.getMsMsChroms(params.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), params.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance(), 2,LipidomicsConstants.getMs2ChromMultiplicationFactorForInt());
+      int msLevel = 2;
+      String[] chroms = reader_.translateSpectraToChroms(spectraRaw, msLevel, LipidomicsConstants.getMs2ChromMultiplicationFactorForInt());
+      Hashtable<Integer,Float> retTimes = reader_.getRetentionTimes(msLevel);
+      int[] borders = reader_.getBordersOfLastMs2Extraction();
+      float[] timeStartStop = getMSn3DTimeStartStopValues(retTimes,borders[2],borders[3],params.getIsotopicProbes().get(0));
+      MSMapViewer viewer = MSMapViewerFactory.getMSMapViewer(chroms, retTimes,
+          borders[0],borders[1],timeStartStop[0],timeStartStop[1],LipidomicsConstants.getMs2ChromMultiplicationFactorForInt(),1f,this,MSMapViewer.DISPLAY_TIME_MINUTES,true);
+      viewer.setMulticolorProbes(StaticUtils.get3DColorHash(rangeColors));
+      viewer.setViewerSettings(true, true, true,LipidomicsConstants.getThreeDViewerMs2DefaultMZResolution(),LipidomicsConstants.getThreeDViewerMs2DefaultTimeResolution_());
+      try{
+        viewer.init();
+      }catch (Exception cgx) {
+        cgx.printStackTrace();
+        @SuppressWarnings("unused")
+        WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The 3D Viewer cannot be started: "+cgx.getMessage());
+      }
+      viewer.removeSaveLipidomicsSettings();
+      @SuppressWarnings("rawtypes")
+      Vector<Hashtable> rtNrSpectraAndPrecursor = reader_.getRtNrSpectrumHash(spectraRaw,msLevel);
+      @SuppressWarnings("unchecked")
+      Hashtable<Integer,String> rtNrSpectrumHash = (Hashtable<Integer,String>)rtNrSpectraAndPrecursor.get(0);
+      @SuppressWarnings("unchecked")
+      Hashtable<Integer,Double> rtNrPrecursorHash = (Hashtable<Integer,Double>)rtNrSpectraAndPrecursor.get(1);
+      if (this.show2D_.isSelected()){
+        int extendedStart = (borders[0]*9)/10;
+        int extendedStop = (borders[1]*21)/20;
+        Lipidomics2DSpectraChromPainter spectrumPainter = new Lipidomics2DSpectraChromPainter(analyzer_,rtNrSpectrumHash, rtNrPrecursorHash, retTimes, peakRt,
+            extendedStart,extendedStop,LipidomicsConstants.getMs2ChromMultiplicationFactorForInt(),LipidomicsConstants.getMs2PrecursorTolerance()*2,this,
+            extendedStart,extendedStop, true,new Vector<CgProbe>(),new Vector<CgProbe>(),1,1, this.relAbund_.isSelected(),
+            params,rangeColors, new Double(annotationThreshold_.getText()));
+        
+        this.spectrumSelected_.setText(spectrumPainter.getSpectSelectedText());
+        this.rtSelected_.setText(spectrumPainter.getRtSelectedText());
+        this.precursorSelected_.setText(spectrumPainter.getPrecursorMassSelected());
+        float[] range = spectrumPainter.getRTRange();        
+        viewer.setCurrent2DTimeRange(range[0], range[1]);       
+        makeDisplayRemoveOperations(false);
+        this.viewer_ = viewer;
+
+        
+        majorSplitPane_ = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        majorSplitPane_.setDividerSize(2);
+        JPanel topSplitPanel = new JPanel();
+        topSplitPanel.setLayout(new BorderLayout());
+        topSplitPane_ = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        topSplitPanel.add(topSplitPane_,BorderLayout.CENTER);
+        majorSplitPane_.setTopComponent(topSplitPanel);
+        topSplitPane_.setDividerSize(2);
+        topSplitPane_.setTopComponent(viewer_);
+        topSplitPane_.setBottomComponent(this.l2dPanel_);
+        //topSplitPane_.setDividerLocation(0.6d);
+        
+        spectrumPainter_ = spectrumPainter;
+        spectrumPanel_.add(spectrumPainter_,BorderLayout.CENTER);
+        majorSplitPane_.setBottomComponent(this.spectrumPanel_);
+        spectrumPainter.setBackground(Color.WHITE);
+      
+        this.displayPanel_.add(majorSplitPane_,BorderLayout.CENTER);
+        this.displayPanel_.validate();
+        majorSplitPane_.setDividerLocation(0.6d);
+      
+        
+        spectrumPainter_.draw2DDiagram(extendedStart,extendedStop, true);
+        
+        
+        // this is for setting the displayed chromatogram to the isotope 0
+        if (isotope_.getSelectedIndex()!=0){
+          isotope_.setSelectedIndex(0);
+          float startFloat = currentIsotopicMass-Float.parseFloat(this.displayMinusTolerance_.getText());
+          float stopFloat = currentIsotopicMass+Float.parseFloat(this.displayPlusTolerance_.getText());
+          Vector<CgProbe> storedProbes = ms1ProbesWhileMs2Display_.get(0);
+          Vector<CgProbe> selectedProbes = ms1ProbesWhileMs2Display_.get(1);
+          l2DPainter_.getGraphics().dispose();
+          l2dPanel_.remove(l2DPainter_);
+          l2DPainter_ = null;
+          
+          try {
+            String[] rawLines = reader_.getRawLines(startFloat, stopFloat, result_.getMsLevels().get(currentSelectedSheet_));
+            Hashtable<Integer,Float> rtTimes = reader_.getRetentionTimes();
+            Lipidomics2DPainter l2DPainter = new Lipidomics2DPainter(analyzer_,rawLines, rtTimes,
+                startFloat,stopFloat,reader_.getMultiplicationFactorForInt_()/reader_.getLowestResolution_(),params_.LowerMzBand*2,this,
+                MSMapViewer.DISPLAY_TIME_MINUTES,currentIsotopicMass-params_.LowerMzBand, currentIsotopicMass+params_.UpperMzBand, false,
+                storedProbes,selectedProbes,Integer.parseInt((String)this.isotope_.getSelectedItem()),charge,result_.getMsLevels().get(currentSelectedSheet_));
+            l2DPainter.preChromatogramExtraxtion(currentIsotopicMass-params_.LowerMzBand, currentIsotopicMass+params_.UpperMzBand);
+            l2DPainter_ = l2DPainter;
+            l2DPainter_.setBackground(Color.WHITE);
+            l2dPanel_.add(l2DPainter,BorderLayout.CENTER);
+          }
+          catch (CgException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+          }
+
+        }
+        l2DPainter_.repaint();
+        l2DPainter_.paintMs2Position(Float.parseFloat(rtSelected_.getText()));
+        majorSplitPane_.repaint();
+        topSplitPane_.setResizeWeight(0.58);
+        showMs2InputElements();
+      }else{
+        this.makeDisplayRemoveOperations();
+        this.viewer_ = viewer;
+        this.displayPanel_.add(viewer_,BorderLayout.CENTER);
+        this.displayPanel_.validate();
+      }
+      
+
+      
+    }
+    catch (CgException cgx) {
+      @SuppressWarnings("unused")
+      WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "The MS/MS cannot be displayed: "+cgx.getMessage());
+      return false;
+    }catch (Exception cgx) {
+      cgx.printStackTrace();
+        @SuppressWarnings("unused")
+        WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The 3D Viewer cannot be started: "+cgx.getMessage());
+    }
+    return true;
+  }
+  
+  private Vector<Vector<CgProbe>> getAllProbesFromParams(LipidParameterSet params,Vector<Vector<CgProbe>> previouslyselectedProbes){
+    Vector<Vector<CgProbe>> allProbes = new Vector<Vector<CgProbe>>(2);
+    Vector<CgProbe> storedProbes = new Vector<CgProbe>();
+    Vector<CgProbe> selectedProbes = new Vector<CgProbe>();
+    for (int i=0; i!=params.ProbeCount();i++){
+      storedProbes.add(params.Probe(i));
+    }
+    if (previouslyselectedProbes!=null){
+      storedProbes = previouslyselectedProbes.get(0);
+      selectedProbes = previouslyselectedProbes.get(1);
+    }
+    allProbes.add(storedProbes);
+    allProbes.add(selectedProbes);
+    return allProbes;
+  }
+  
+  public void exportMzTab(File exportFile)
+  {
+	  // save the internal and external standard prefix
+	  String internalStandardPref = internalStandardSelection_.getText();
+	  String externalStandardPref = externalStandardSelection_.getText();
+	  
+	  // use the same param list as search engine identifier for all
+	  // identifications
+  MZTabDescription tabDescription = new MZTabDescription(MZTabDescription.Mode.Complete,MZTabDescription.Type.Quantification);
+	  Metadata metadata = new Metadata(tabDescription);
+	  Software software = new Software(1);
+  software.setParam(new UserParam("LipidDataAnalyzer", Settings.VERSION));
+  metadata.addSoftware(software);
+  CVParam quantificationMethod = new CVParam("MS","MS:1002038","unlabeled sample",null);
+  metadata.setQuantificationMethod(quantificationMethod);
+  Instrument instrument = LipidomicsConstants.getMzTabInstrument();
+  if (instrument!=null)
+    metadata.addInstrument(instrument);
+  
+  for (Contact contact : LipidomicsConstants.getMzTabContacts()){
+    metadata.addContact(contact);
+  }
+  List<Param> processings = LipidomicsConstants.getMzTabSampleprocessings();
+  for (int i=0; i!=processings.size();i++){
+    metadata.addSampleProcessingParam((i+1), processings.get(i));
+  }
+  List<String> pubmedIds = LipidomicsConstants.getMzTabPubmedIds();
+  for (int i=0; i!=pubmedIds.size();i++){
+    metadata.addPublicationItem(i+1, PublicationItem.Type.PUBMED, pubmedIds.get(i));
+  }
+  List<String> dois = LipidomicsConstants.getMzTabDOIs();
+  for (int i=0; i!=dois.size();i++){
+    metadata.addPublicationItem(i+1, PublicationItem.Type.DOI, dois.get(i));
+  }
+  
+  String taxId = null;
+  String species = null;
+  if (LipidomicsConstants.getMzTabSpecies()!=null){
+    metadata.addSampleSpecies(1, LipidomicsConstants.getMzTabSpecies());
+    taxId = LipidomicsConstants.getMzTabSpecies().getAccession();
+    species = LipidomicsConstants.getMzTabSpecies().getName();
+  }  
+  if (LipidomicsConstants.getMzTabTissue()!=null)
+    metadata.addSampleTissue(1, LipidomicsConstants.getMzTabTissue());
+  if (LipidomicsConstants.getMzTabCelltype()!=null)
+    metadata.addSampleCellType(1, LipidomicsConstants.getMzTabCelltype());
+
+  metadata.setSmallMoleculeQuantificationUnit(new CVParam("PRIDE", "PRIDE:0000330", "Arbitrary quantification unit", null));
+  metadata.addSmallMoleculeColUnit(SmallMoleculeColumn.RETENTION_TIME, new CVParam("UO", "UO:0000031", "minute", null));
+  
+  MZTabColumnFactory factory = MZTabColumnFactory.getInstance(Section.Small_Molecule);
+  try {
+    Hashtable<String,Integer> expToMsRun = new Hashtable<String,Integer>();
+   for (int i=0; i!=analysisModule_.getExpNamesInSequence().size(); i++) {
+	      String exp = analysisModule_.getExpNamesInSequence().get(i);
+	      String chromFileBase = StaticUtils.extractChromBaseName(analysisModule_.getFullFilePath(exp).getAbsolutePath(),exp);
+	      metadata.addMsRunLocation((i+1),new URL("file://"+chromFileBase+".chrom"));
+	      Assay assay = new Assay(i+1);
+	      assay.setQuantificationReagent(quantificationMethod);
+	      assay.setMsRun(new MsRun(i+1));
+	      metadata.addAssay(assay);
+	      expToMsRun.put(exp, (i+1));
+	      factory.addAbundanceOptionalColumn(assay);
+	    }
+    if (analysisModule_.getGroupNames()!=null && analysisModule_.getGroupNames().size()>0){
+      for (int i=0; i!=analysisModule_.getGroupNames().size(); i++){
+        String group = analysisModule_.getGroupNames().get(i);
+        StudyVariable studyVariable = new StudyVariable(i+1);
+        studyVariable.setDescription(group);
+        for (String exp : analysisModule_.getExpsOfGroup(group)){
+          studyVariable.addAssay(metadata.getAssayMap().get(expToMsRun.get(exp)));
+        }
+        metadata.addStudyVariable(studyVariable);
+        factory.addAbundanceOptionalColumn(studyVariable);
+      }
+    }  
+    MZTabFile mztabFile = new MZTabFile(metadata);
+    mztabFile.setSmallMoleculeColumnFactory(factory);
+    Hashtable<String,Vector<String>> correctAnalyteSequence = this.analysisModule_.getAllMoleculeNames();
+    for (String molGroup:this.heatmaps_.keySet()) {
+      Hashtable<String,String> selectedMolHash = new Hashtable<String,String>();
+      HeatMapDrawing heatmap = this.heatmaps_.get(molGroup);
+      HeatMapDrawing groupHeatmap = null;
+      if (analysisModule_.getGroupNames()!=null && analysisModule_.getGroupNames().size()>0) groupHeatmap = this.groupHeatmaps_.get(molGroup);
+      for (String molName: heatmap.getSelectedMoleculeNames()){
+        selectedMolHash.put(molName, molName);
+      }
+      Hashtable<String,Hashtable<String,Vector<Double>>> results = heatmap.getResultValues();
+      Hashtable<String,Hashtable<String,Vector<Double>>> resultsGroup = null;
+      if (groupHeatmap!=null) resultsGroup = groupHeatmap.getResultValues();
+      for (String molName: correctAnalyteSequence.get(molGroup)){
+        if (selectedMolHash.containsKey(molName)){
+          Hashtable<String,Vector<Double>> resultsMol = results.get(molName);
+          Hashtable<String,Vector<Double>> resultsGroupMol = null;
+          if (resultsGroup != null) resultsGroupMol = resultsGroup.get(molName);
+          SmallMolecule sm = new SmallMolecule(factory, metadata);
+          // build the lipid's identifier
+          String identifier = null;
+
+          if (molName.startsWith(internalStandardPref))
+            identifier = "IS_" + molGroup + molName.substring(internalStandardPref.length());
+          else if (molName.startsWith(externalStandardPref))
+            identifier = "ES_" + molGroup + molName.substring(externalStandardPref.length());
+          else
+            identifier = molGroup + molName;
+
+          sm.setIdentifier(identifier);
+          Hashtable<String,ResultAreaVO> expResults = new Hashtable<String,ResultAreaVO>();
+          Vector<String> modifications = this.analysisModule_.getModifications().get(molGroup);
+          Hashtable<String,String> modFormulas = new Hashtable<String,String>();
+          Hashtable<String,Integer> modCharges = new Hashtable<String,Integer>();
+          Hashtable<String,Double> calcMasses = new Hashtable<String,Double>();
+          Hashtable<String,Vector<Double>> expMasses = new Hashtable<String,Vector<Double>>();
+          for (String expName : analysisModule_.getExpNamesInSequence()){
+            ResultAreaVO areaVO = analysisModule_.getResultAreaVO(molGroup,molName,expName);
+            if (areaVO!=null){
+              expResults.put(expName, areaVO);
+              for (String mod : modifications){
+                if (!modFormulas.containsKey(mod)&&areaVO.hasModification(mod)){
+                  modFormulas.put(mod, areaVO.getModificationFormula(mod));
+                  modCharges.put(mod, areaVO.getCharge(mod));
+                  calcMasses.put(mod, areaVO.getTheoreticalMass(mod));
+                }
+                if (areaVO.hasModification(mod)){
+                  Vector<Double> expMass = new Vector<Double>();
+                  if (expMasses.containsKey(mod)) expMass = expMasses.get(mod);
+                  expMass.add(areaVO.getExperimentalMass(mod));
+                  expMasses.put(mod, expMass);
+                }
+              }
+            }
+          }
+         for (String modFormula : modFormulas.values()){
+            if (modFormula.length() > 0) {
+              String formattedMod = modFormula.replaceAll(" ", "");
+              if (formattedMod.startsWith("-")) {
+                formattedMod = formattedMod.replaceAll("-", "");
+                formattedMod = "-" + formattedMod;
+              } else {
+                formattedMod = "+" + formattedMod;
+              }
+              Modification mzTabMod = new Modification(Section.Small_Molecule,Modification.Type.CHEMMOD,formattedMod);
+              sm.addModification(mzTabMod);
+            }
+          }
+
+          //TODO: the parameters can be found in more than one charge state*/
+          ResultAreaVO firstInLine = expResults.values().iterator().next();
+          sm.setChemicalFormula(firstInLine.getChemicalFormulaBase().replaceAll(" ", ""));
+          //TODO: the area can consist of several modificiations - having different charge states, theoretical and experimental mass
+          //      however, mzTab does not support this until now!
+          String mod = modFormulas.keySet().iterator().next();
+          sm.setCharge(modCharges.get(mod));
+          sm.setCalcMassToCharge(calcMasses.get(mod));
+          Vector<Double> masses = expMasses.get(mod);
+          double sumMass = 0d;
+          for (Double mass : masses) sumMass += mass;
+          sm.setExpMassToCharge(sumMass/((double)masses.size()));
+              
+          String rt = null;
+          if (analysisModule_.getRtTolerance()!=null && !molName.startsWith(internalStandardPref) && !molName.startsWith(externalStandardPref)) rt = molName.substring(molName.lastIndexOf("_")+1);
+          if (rt!=null) sm.setRetentionTime(rt);
+          for (int i=0; i!=analysisModule_.getExpNamesInSequence().size(); i++) {
+            String exp = analysisModule_.getExpNamesInSequence().get(i);
+            if (!resultsMol.containsKey(exp)) continue;
+            Vector<Double> res = resultsMol.get(exp);
+            if (res.get(0)!=null && res.get(0)>0d){
+            		  sm.setAbundanceColumn(metadata.getAssayMap().get(expToMsRun.get(exp)), res.get(0));
+            		  if (rt==null){
+            		    Double rt2 = Calculator.roundDBL(res.get(1),2,BigDecimal.ROUND_HALF_UP);
+            		    if (rt2<0) rt2 = null;
+            		    sm.addRetentionTime(rt2);
+            		  }
+            }
+          }
+          if (resultsGroupMol!=null){
+            for (int i=0; i!=analysisModule_.getGroupNames().size(); i++){
+              String group = analysisModule_.getGroupNames().get(i);
+              Vector<Double> res = resultsGroupMol.get(group);
+              StudyVariable stdVar = metadata.getStudyVariableMap().get(i+1);
+              Double intensity = res.get(0);
+              Double stdev = res.get(1);
+              Double stderr = res.get(2);
+              if (intensity > 0)
+                sm.setAbundanceColumn(stdVar, intensity);
+              if (stdev > 0)
+                sm.setAbundanceStdevColumn(stdVar, stdev);
+              if (stderr > 0)
+                sm.setAbundanceStdErrorColumn(stdVar, stderr);
+            }
+          }
+          sm.setSearchEngine("[, , LipidDataAnalyzer, "+Settings.VERSION+"]");
+          if (taxId!=null){
+            try{sm.setTaxid(new Integer(taxId));}catch(NumberFormatException ex){}
+          }
+          if (species!=null){
+            sm.setSpecies(species);
+          }
+          mztabFile.addSmallMolecule(sm);
+
+        }
+      }
+
+    }
+    
+	    BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(exportFile));
+    mztabFile.printMZTab(stream);
+    stream.close();
+  }
+  catch (IOException e) {
+    // TODO Auto-generated catch block
+    e.printStackTrace();
+  }
+  catch (NumberFormatException e) {
+    // TODO Auto-generated catch block
+    e.printStackTrace();
+  }
+  catch (CalculationNotPossibleException e) {
+    // TODO Auto-generated catch block
+    e.printStackTrace();
+  }
+//  catch (ExcelInputFileException e) {
+//    // TODO Auto-generated catch block
+//    e.printStackTrace();
+//  }
+
+	  }
+  
+  @SuppressWarnings("unchecked")
+  public void exportMaf(File exportFile){
+    try {
+      BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(exportFile));
+      Hashtable<String,Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>> results = new Hashtable<String,Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>>();
+      String headerLine = "";
+      headerLine += "\"database_identifier\"";
+      headerLine += "\t"+"\"chemical_formula\"";
+      headerLine += "\t"+"\"smiles\"";
+      headerLine += "\t"+"\"inchi\"";
+      headerLine += "\t"+"\"metabolite_identification\"";
+      headerLine += "\t"+"\"mass_to_charge\"";
+      headerLine += "\t"+"\"fragmentation\"";
+      headerLine += "\t"+"\"modifications\"";
+      headerLine += "\t"+"\"charge\"";
+      headerLine += "\t"+"\"retention_time\"";
+      headerLine += "\t"+"\"taxid\"";
+      headerLine += "\t"+"\"species\"";
+      headerLine += "\t"+"\"database\"";
+      headerLine += "\t"+"\"database_version\"";
+      headerLine += "\t"+"\"reliability\"";
+      headerLine += "\t"+"\"uri\"";
+      headerLine += "\t"+"\"search_engine\"";
+      headerLine += "\t"+"\"search_engine_score\"";
+      headerLine += "\t"+"\"smallmolecule_abundance_sub\"";
+      headerLine += "\t"+"\"smallmolecule_abundance_stdev_sub\"";
+      headerLine += "\t"+"\"smallmolecule_abundance_std_error_sub\"";
+
+      for (int i=0; i!=analysisModule_.getExpNamesInSequence().size(); i++) {
+        String exp = analysisModule_.getExpNamesInSequence().get(i);
+        QuantificationResult result = LipidDataAnalyzer.readResultFile(analysisModule_.getFullFilePath(exp).getAbsolutePath(),  new Hashtable<String,Boolean>());
+        Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>> resultsOfExp = new Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>();
+        for (String className : result.getIdentifications().keySet()){
+          Hashtable<String,Vector<LipidomicsMSnSet>> msnFound = new Hashtable<String,Vector<LipidomicsMSnSet>>();
+          Vector<LipidParameterSet> sets = result.getIdentifications().get(className);
+          for (LipidParameterSet set : sets){
+            if (!(set instanceof LipidomicsMSnSet)) continue;
+            Vector<LipidomicsMSnSet> ofOneAnalyte = new Vector<LipidomicsMSnSet>();
+            if (msnFound.containsKey(set.getNameStringWithoutRt())) ofOneAnalyte = msnFound.get(set.getNameStringWithoutRt());
+            ofOneAnalyte.add((LipidomicsMSnSet)set);
+            msnFound.put(set.getNameStringWithoutRt(), ofOneAnalyte);
+          }
+          resultsOfExp.put(className, msnFound);
+        }
+        results.put(exp, resultsOfExp);
+        headerLine += "\t\""+analysisModule_.getFullFilePath(exp).getName()+"\"";
+      }
+      
+      stream.write((headerLine+"\n").getBytes());
+      Hashtable<String,Vector<String>> correctAnalyteSequence = this.analysisModule_.getAllMoleculeNames();
+      
+      for (String className:this.heatmaps_.keySet()) {
+        LinkedHashMap<String,String> mods = new LinkedHashMap<String,String>();
+        for (String molName: correctAnalyteSequence.get(className)){
+          //first key is the lipid molecular species identifier (FA level), second key is the experiment, third key is the modification
+          LinkedHashMap<String,Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>> sortedByMolSpecies = new  LinkedHashMap<String,Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>>();
+          for (int i=0; i!=analysisModule_.getExpNamesInSequence().size(); i++) {
+            String exp = analysisModule_.getExpNamesInSequence().get(i);
+            if (!results.containsKey(exp) || !results.get(exp).containsKey(className) || !results.get(exp).get(className).containsKey(molName)) continue;
+            for (LipidomicsMSnSet set : results.get(exp).get(className).get(molName)){
+              for (Object msnNames : set.getMSnIdentificationNames()){    
+                String nameString = "";
+                String faId = "";
+                if (msnNames instanceof Vector){
+                  for (String name : (Vector<String>)msnNames){
+                    nameString += name+"|";
+                  }
+                  faId = nameString.substring(0,nameString.indexOf("|"));
+                  nameString = nameString.substring(0,nameString.length()-1);
+                }else{
+                  nameString = (String)msnNames;
+                  faId = nameString;
+                }
+                faId = faId.replaceAll("/", "_");
+//                if (faId.indexOf("-_")>-1) faId = faId.replaceAll("-_", "");
+//                else if (faId.indexOf("_-")>-1) faId = faId.replaceAll("_-", "");
+                Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>> oneMolSpecies = new Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>();
+                if (sortedByMolSpecies.containsKey(faId)) oneMolSpecies = sortedByMolSpecies.get(faId);
+                else{
+                  for (String otherId : sortedByMolSpecies.keySet()){
+                    if (StaticUtils.isAPermutedVersion(faId, otherId)){
+                      faId = otherId;
+                      oneMolSpecies = sortedByMolSpecies.get(faId);
+                      break;
+                    }
+                  }
+                }
+                Hashtable<String,Vector<LipidomicsMSnSet>> speciesPerExp = new Hashtable<String,Vector<LipidomicsMSnSet>>();
+                if (oneMolSpecies.containsKey(exp)) speciesPerExp = oneMolSpecies.get(exp);
+                Vector<LipidomicsMSnSet> foundPerMod = new Vector<LipidomicsMSnSet>();
+                if (speciesPerExp.containsKey(set.getModificationName())) foundPerMod = speciesPerExp.get(set.getModificationName());
+                foundPerMod.add(set);
+                speciesPerExp.put(set.getModificationName(), foundPerMod);
+                if (!mods.containsKey(set.getModificationName())) mods.put(set.getModificationName(), set.getModificationName());
+                oneMolSpecies.put(exp, speciesPerExp);
+                sortedByMolSpecies.put(faId, oneMolSpecies);
+              }
+            } 
+          }
+          // if there are species present where no FAs are known - add them to the other ones
+          if (sortedByMolSpecies.containsKey(molName) && sortedByMolSpecies.size()>1){
+            Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>> totalMolSpecies = sortedByMolSpecies.get(molName);
+            Hashtable<String,String> foundModsWithStructure = new Hashtable<String,String>();
+            for (Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>> faResults : sortedByMolSpecies.values()){
+              for (Hashtable<String,Vector<LipidomicsMSnSet>> expResults : faResults.values()){
+                for (String mod : expResults.keySet()) foundModsWithStructure.put(mod, mod);
+              }
+            }
+            Hashtable<String,String> foundMods = new Hashtable<String,String>();
+            for (Hashtable<String,Vector<LipidomicsMSnSet>> expResults : totalMolSpecies.values()){
+              for (String mod : expResults.keySet()) foundMods.put(mod, mod);
+            }
+            for (String faId : sortedByMolSpecies.keySet()){
+              if (faId.equalsIgnoreCase(molName)) continue;
+              Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>> oneMolSpecies = sortedByMolSpecies.get(faId);
+              Hashtable<String,String> modsToAdd = new Hashtable<String,String>();
+              for (Hashtable<String,Vector<LipidomicsMSnSet>> expResults : oneMolSpecies.values()){
+                for (String mod : expResults.keySet()) modsToAdd.put(mod, mod);
+              }
+              for (String exp : totalMolSpecies.keySet()){
+                Hashtable<String,Vector<LipidomicsMSnSet>> totalPerExp = totalMolSpecies.get(exp);
+                if (oneMolSpecies.containsKey(exp)){
+                  Hashtable<String,Vector<LipidomicsMSnSet>> speciesPerExp = oneMolSpecies.get(exp);
+                  for (String mod : totalPerExp.keySet()){
+                    if (foundModsWithStructure.containsKey(mod) && !modsToAdd.containsKey(mod)) continue;
+                    Vector<LipidomicsMSnSet> totalPerMod = totalPerExp.get(mod);
+                    if (speciesPerExp.containsKey(mod)){
+                      Vector<LipidomicsMSnSet> foundPerMod = speciesPerExp.get(mod);
+                      for (LipidomicsMSnSet hit : totalPerMod){
+                        int count = 0;
+                        for (LipidomicsMSnSet otherHit : foundPerMod){
+                          if (Float.parseFloat(otherHit.getRt())<Float.parseFloat(hit.getRt()))count++;
+                          else break;
+                        }
+                        foundPerMod.add(count,hit);
+                      }
+                      speciesPerExp.put(mod, foundPerMod);
+                    }else{
+                      speciesPerExp.put(mod, totalPerMod);
+                    }
+                  }
+                  oneMolSpecies.put(exp,speciesPerExp);
+                }else{
+                  Hashtable<String,Vector<LipidomicsMSnSet>> toAdd = new Hashtable<String,Vector<LipidomicsMSnSet>>();
+                  for (String mod : foundMods.keySet()){
+                    if (!totalPerExp.containsKey(mod)) continue;
+                    if (!foundModsWithStructure.containsKey(mod) || modsToAdd.containsKey(mod)) toAdd.put(mod, totalPerExp.get(mod));
+                  }
+                  if (toAdd.size()>0) oneMolSpecies.put(exp, toAdd);
+                }
+              }
+              sortedByMolSpecies.put(faId,oneMolSpecies);
+            }
+            sortedByMolSpecies.remove(molName);
+          }
+          
+          for (String faId : sortedByMolSpecies.keySet()){
+            //System.out.println(className+faId);
+            for (String mod : mods.keySet()){
+              boolean modFound = false;
+              String dbId = className+" "+molName;
+              String chemicalFormula = "";
+              String formattedMod = "";
+              String metaboIdent = "";
+              String fragmentString = "";
+              String chargeString = "";
+              String rtString = "";
+              Hashtable<String,Double> totalMasses = new Hashtable<String,Double>();
+              Hashtable<String,Integer> totalMassCount = new Hashtable<String,Integer>();
+              Hashtable<String,Integer> posDefined = new Hashtable<String,Integer>();
+              Hashtable<String,Double> abundances = new Hashtable<String,Double>();
+              for (int i=0; i!=analysisModule_.getExpNamesInSequence().size(); i++){
+                String exp  = analysisModule_.getExpNamesInSequence().get(i);
+                Hashtable<String,Integer> posExpDefined = new Hashtable<String,Integer>();
+                Hashtable<String,Integer> faDefined = new Hashtable<String,Integer>();
+                Hashtable<String,Integer> nothingDefined = new Hashtable<String,Integer>();
+                if (i!=0){
+                  metaboIdent += "|";
+                  fragmentString += "|";
+                  rtString += "|";
+                }
+                double abundanceOfAnalyte = 0d;
+                List<Float> fragments = new ArrayList<Float>();
+                if (sortedByMolSpecies.get(faId).containsKey(exp) && sortedByMolSpecies.get(faId).get(exp).containsKey(mod)){
+                  for (LipidomicsMSnSet set : sortedByMolSpecies.get(faId).get(exp).get(mod)){
+                    for (Object msnNames : set.getMSnIdentificationNames()){    
+                      String nameString = "";
+                      String detectedFaId = "";
+                      if (msnNames instanceof Vector){
+                        for (String name : (Vector<String>)msnNames){
+                          nameString += name+"|";
+                        }
+                        detectedFaId = nameString.substring(0,nameString.indexOf("|")).replaceAll("/", "_");
+                        nameString = nameString.substring(0,nameString.length()-1);
+                      }else{
+                        nameString = (String)msnNames;
+                        detectedFaId = nameString.replaceAll("/", "_");
+                      }
+                      boolean isCorrect = false;
+                      if (detectedFaId.equalsIgnoreCase(faId) || StaticUtils.isAPermutedVersion(detectedFaId, faId) || detectedFaId.equalsIgnoreCase(molName)) isCorrect = true;
+                      if (!isCorrect)continue;
+                      if (chemicalFormula.length()==0){
+                        chemicalFormula = set.getAnalyteFormula().replaceAll(" ", "");
+                        formattedMod = set.getModificationFormula().replaceAll(" ", "");
+                        if (formattedMod.startsWith("-")) {
+                          formattedMod = formattedMod.replaceAll("-", "");
+                          formattedMod = "-" + formattedMod;
+                        } else {
+                          formattedMod = "+" + formattedMod;
+                        }
+                      }
+                      //System.out.println("              "+nameString+" ; "+exp+" ; "+mod+" ; "+set.getRt());
+                      modFound = true;
+                      if (nameString.contains("/")){
+                        int count = 0;
+                        int count2 = 0;
+                        if (posDefined.containsKey(nameString)) count = posDefined.get(nameString);
+                        if (posExpDefined.containsKey(nameString)) count2 = posExpDefined.get(nameString);
+                        count++;
+                        count2++;
+                        posDefined.put(nameString,count);
+                        posExpDefined.put(nameString, count2);
+                      } else if (nameString.contains("_")){
+                        int count = 0;
+                        if (nameString.contains("_") && faDefined.containsKey(nameString)) count=faDefined.get(nameString);
+                        else if (nothingDefined.containsKey(nameString)) count = nothingDefined.get(nameString);
+                        count++;
+                        if (nameString.contains("_")) faDefined.put(nameString,count);
+                        else nothingDefined.put(nameString,count);
+                      }
+                      double totalMass = 0d;
+                      int totalCount = 0;
+                      if (totalMasses.containsKey(mod)){
+                        totalMass = totalMasses.get(mod);
+                        totalCount = totalMassCount.get(mod);
+                      }
+                      for (CgProbe probe : set.getIsotopicProbes().get(0)){
+                        totalMass += (double)probe.Mz;
+                        totalCount++;
+                      }
+                      totalMasses.put(mod, totalMass);
+                      totalMassCount.put(mod, totalCount);
+                      
+                      for (CgProbe probe : set.getHeadGroupFragments().values()){
+                        fragments.add(probe.Mz);
+                      }
+                      //abundance is currently not used for the fragments
+                      @SuppressWarnings("unused")
+                      double abundance = 0d;
+                      if (set.getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED){
+                        String faName = nameString.replaceAll("/","_");
+                        if (faName.indexOf("|")>-1) faName = faName.substring(0,faName.indexOf("|"));
+                        String[] fas = FragmentCalculator.getFAsFromCombiName(faName);
+                        for (int j=0; j!= fas.length; j++){
+                          String fa = fas[j];
+                          if (!set.getChainFragments().containsKey(fa)) continue;
+                          for (CgProbe probe : set.getChainFragments().get(fa).values()){
+                            fragments.add(probe.Mz);
+                          }
+                        }
+                        abundance = ((double)set.getArea())*set.getRelativeIntensity(nameString);
+                      } else {
+                        abundance = (double)set.getArea();
+                      }
+                      if (rtString.length()>0 && !rtString.endsWith("|")) rtString+=",";
+                      rtString += set.getRt();
+                      abundanceOfAnalyte += abundance;
+                    }
+                    if (chargeString.length()==0) chargeString = set.getCharge().toString();
+                    
+                  }
+                  if (posExpDefined.size()>0){
+                    boolean isATie = true;
+                    int highestFound = 0;
+                    String bestId = "";
+                    for (String pos : posExpDefined.keySet()){
+                      int count = posExpDefined.get(pos);
+                      if (count>highestFound){
+                        bestId = pos;
+                        isATie = false;
+                        highestFound = count;
+                      } else if (count==highestFound) isATie = true;
+                    }
+                    if (posExpDefined.size()==0 || isATie) metaboIdent += className+" "+faId;
+                    else metaboIdent += className+" "+bestId.replaceAll("\\|", ",");
+                  } else if (faDefined.size()>0) metaboIdent += className+" "+faId;
+                  else metaboIdent += className+" "+molName;
+                  
+                  Collections.sort(fragments);
+                  Hashtable<String,String> used = new Hashtable<String,String>();
+                  for (Float fragment : fragments){
+                    String mz = Calculator.FormatNumberToString(fragment,2);
+                    if (used.contains(mz)) continue;
+                    if (fragmentString.length()>0 && !fragmentString.endsWith("|")) fragmentString+=",";
+                    fragmentString+=mz;
+                    used.put(mz, mz);
+                  }
+                }else{
+                  metaboIdent += "-";
+                  fragmentString += "-";
+                  rtString += "-";
+                }
+                if (abundanceOfAnalyte>0) abundances.put(exp, abundanceOfAnalyte);              
+              }
+              if (modFound){
+                String line = "";
+                if (!faId.equalsIgnoreCase(molName)){
+                  dbId+=","+className+" ";
+                  boolean isATie = true;
+                  int highestFound = 0;
+                  String bestId = "";
+                  for (String pos : posDefined.keySet()){
+                    int count = posDefined.get(pos);
+                    if (count>highestFound){
+                      bestId = pos;
+                      isATie = false;
+                      highestFound = count;
+                    } else if (count==highestFound) isATie = true;
+                  }
+                  if (posDefined.size()==0 || isATie || bestId.indexOf("|")!=-1){
+                    String toAdd = faId;
+                    if (toAdd.indexOf("-_")!=-1) toAdd = toAdd.replaceAll("-_", "");
+                    if (toAdd.indexOf("_-")!=-1) toAdd = toAdd.replaceAll("_-", "");
+                    dbId += toAdd;
+                  } else dbId += bestId;
+                }
+                line += "\""+dbId+"\"";
+                line += "\t\""+chemicalFormula+"\"";
+                line += "\t\"\"";
+                line += "\t\"\"";
+                line += "\t\""+metaboIdent+"\"";
+                double mass = totalMasses.get(mod)/((double)totalMassCount.get(mod));
+                line += "\t\""+Calculator.FormatNumberToString(mass,4)+"\"";
+                line += "\t\""+fragmentString+"\"";
+                line += "\t\""+"CHEMMOD:"+formattedMod+"\"";
+                line += "\t\""+chargeString+"\"";
+                line += "\t\""+rtString+"\"";
+                if (LipidomicsConstants.getMzTabSpecies()!=null && LipidomicsConstants.getMzTabSpecies().getAccession()!=null && LipidomicsConstants.getMzTabSpecies().getAccession().length()>0 &&
+                    LipidomicsConstants.getMzTabSpecies().getName()!=null && LipidomicsConstants.getMzTabSpecies().getName().length()>0){
+                  line += "\t\""+LipidomicsConstants.getMzTabSpecies().getAccession()+"\"";
+                  line += "\t\""+LipidomicsConstants.getMzTabSpecies().getName()+"\"";
+                }else{
+                  line += "\t\""+"\"";//+"taxid";
+                  line += "\t\""+"\"";//+"species";                  
+                }
+                line += "\t\""+"\"";//+"database";
+                line += "\t\""+"\"";//+"database_version";
+                line += "\t\""+"\"";//+"reliability";
+                line += "\t\""+"\"";//+"uri";
+                line += "\t\""+"LipidDataAnalyzer, "+Settings.VERSION+"\"";
+                line += "\t\""+"\"";//+"search_engine_score";
+                line += "\t\""+Calculator.mean(new Vector<Double>(abundances.values()))+"\"";
+                String stdev = "NaN";
+                String stderr = "NaN";
+                if (abundances.size()>1){
+                  stdev = String.valueOf(Calculator.stddeviation(new Vector<Double>(abundances.values())));
+                  stderr = String.valueOf(Calculator.stddeviation(new Vector<Double>(abundances.values()))/Math.sqrt(abundances.size()));
+                }
+                line += "\t\""+stdev+"\"";
+                line += "\t\""+stderr+"\"";
+                for (int i=0; i!=analysisModule_.getExpNamesInSequence().size(); i++) {
+                  String exp = analysisModule_.getExpNamesInSequence().get(i);
+                  line += "\t\"";
+                  if (abundances.containsKey(exp)) line+= abundances.get(exp);
+                  line += "\"";
+                }
+                stream.write((line+"\n").getBytes());
+              }
+            }
+          }
+            
+        }
+      }
+      stream.close();
+    }
+    catch (IOException e) {
+      e.printStackTrace();
+    }
+    catch (ExcelInputFileException e) {
+      e.printStackTrace();
+    }     
+  }
+  
+
+  
+  private int getMaxProcessors(){
+    int maxProcessors = Runtime.getRuntime().availableProcessors();
+    if (maxProcessors<1) maxProcessors = Integer.MAX_VALUE;
+    return maxProcessors;
+  }
+  
+  private int getAmountOfProcessorsPreferred(){
+    int maxProcessors = getMaxProcessors();
+    if (maxProcessors == Integer.MAX_VALUE) maxProcessors=1;
+    int procs = maxProcessors-1;
+    if (procs<1) procs=1;
+    return procs;
+  }
+  
+  private Hashtable<String,LipidParameterSet> getParamByAnalyteName(String analyteName, Vector<LipidParameterSet> params, Hashtable<String,String> modHash){
+    Hashtable<String,LipidParameterSet> paramOfInterest = new Hashtable<String,LipidParameterSet>();
+    String[] nameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(analyteName);
+    if (nameAndRt[1]==null) nameAndRt[1] = "";
+    String[] nameAndRtParam1 = StaticUtils.extractMoleculeRtAndModFromMoleculeName(analyteName);
+    if (nameAndRtParam1[1]==null) nameAndRtParam1[1]="";
+    for (LipidParameterSet param : params){
+      String[] nameAndRtParam2 = StaticUtils.extractMoleculeRtAndModFromMoleculeName(param.getNameString());
+      if (nameAndRtParam2[1]==null) nameAndRtParam2[1]="";
+      if (nameAndRtParam1[0].equalsIgnoreCase(nameAndRtParam2[0])){
+        if (analysisModule_.neglectRtInformation(analyteName) || analysisModule_.isWithinRtGroupingBoundaries(Double.valueOf(nameAndRtParam1[1]), Double.valueOf(nameAndRtParam2[1]))){
+          if (modHash.containsKey(param.getModificationName())){
+            paramOfInterest.put(param.getModificationName(), param);
+          }
+        }  
+      }  
+    }
+    return paramOfInterest;
+  }
+  
+  
+  private void cleanupResultView(){
+    if (analysisModule_!=null){
+      analysisModule_.cleanup();
+      if (groupDisplayNamesLookup_!=null)groupDisplayNamesLookup_.clear();
+      groupDisplayNamesLookup_ = null;
+      if (expDisplayNamesLookup_!=null)expDisplayNamesLookup_.clear();
+      expDisplayNamesLookup_ = null;
+      if (heatmaps_!=null){
+        for (HeatMapDrawing map : heatmaps_.values())map.cleanup();
+        heatmaps_.clear();
+        heatmaps_ = null;
+      }
+      if (groupHeatmaps_!=null){
+        for (HeatMapDrawing map : groupHeatmaps_.values())map.cleanup();
+        groupHeatmaps_.clear();
+        groupHeatmaps_ = null;
+      }
+      System.gc();
+    }
+  }
+  
+  /**
+   * changes the list sort type of the "Display results" table
+   */
+  public void changeListSorting(int sortType){
+    orderResultsType_.put(this.currentSelectedSheet_, sortType);
+    updateResultListSelectionTable();
+    this.currentSelected_ = -1;
+  }
+  
+  
+  /**
+   * returns start and stop times for MSn display in the 3D viewer
+   * @param retTimes the retention time look up
+   * @param start start scan of the found hits in the chromatogram
+   * @param stop stop scan of the found hits in the chromatogram
+   * @param probes the found MS1 probes to be displayed
+   * @return float[0] = start retention time; float[1] = stop retention time
+   */
+  private float[] getMSn3DTimeStartStopValues(Hashtable<Integer,Float> retTimes, int start, int stop, Vector<CgProbe> probes){
+    float[] startStop = new float[2];
+    System.out.println(retTimes.size()+";"+start+";"+stop);
+    startStop[0] = retTimes.get(start);
+    startStop[1] = retTimes.get(stop);
+    if (probes!=null && probes.size()>0){
+      float lowestTime = Float.MAX_VALUE;
+      float highestTime = 0f;
+      for (CgProbe probe : probes){
+        if (probe.LowerValley<lowestTime) lowestTime = probe.LowerValley;
+        if (probe.UpperValley>highestTime) highestTime = probe.UpperValley;
+      }
+      lowestTime -= Settings.getMsn3DDisplayTolerance();
+      highestTime += Settings.getMsn3DDisplayTolerance();
+      if (lowestTime<startStop[1] && lowestTime>startStop[0]) startStop[0] = lowestTime;
+      if (highestTime>startStop[0]&& highestTime<startStop[1]) startStop[1] = highestTime;
+    }
+    return startStop;
+  }
+  
+  private LipidParameterSet refreshSpectrumPainterRDI() throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException{
+    LipidParameterSet param = msnUserInterfaceObject_.testForMSnDetection(getSelectedSpectrumNumber());
+    Vector<RangeColor> rangeColors = StaticUtils.createRangeColorVOs(param, ((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentMs2Position_));
+    if (rangeColors!=null) spectrumPainter_.refresh(param,rangeColors);
+    else spectrumPainter_.clearRangeColors();
+    this.spectrumSelected_.setText(spectrumPainter_.getSpectSelectedText());
+    this.rtSelected_.setText(spectrumPainter_.getRtSelectedText());
+    this.precursorSelected_.setText(spectrumPainter_.getPrecursorMassSelected());
+    return param;
+  }
+  
+  /**
+   * Paints a new spectra with certain parameters
+   * @param params
+   * @throws CgException
+   */
+  public void updateSpectra(LipidParameterSet params, boolean newPrec) throws CgException
+  {  
+    if(newPrec ==  true){
+      //PAINTS THE NEW SPEKTRA WITH THE LPS
+      float m2dGain = spectrumPainter_.getM2dGain();   
+      spectrumPanel_.remove(spectrumPainter_);    
+      int msLevel = 2;
+      Vector<String> spectraRaw = reader_.getMsMsSpectra(params.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), params.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance(), 2);
+      //TODO: a dummy call to set the values for getBordersOfLastMs2Extraction()
+      reader_.translateSpectraToChroms(spectraRaw, msLevel, LipidomicsConstants.getMs2ChromMultiplicationFactorForInt());
+      int[] borders = reader_.getBordersOfLastMs2Extraction();
+      @SuppressWarnings("rawtypes")
+      Vector<Hashtable> rtNrSpectraAndPrecursor = reader_.getRtNrSpectrumHash(spectraRaw,msLevel);
+      @SuppressWarnings("unchecked")
+      Hashtable<Integer,String> rtNrSpectrumHash = (Hashtable<Integer,String>)rtNrSpectraAndPrecursor.get(0);
+      @SuppressWarnings("unchecked")
+      Hashtable<Integer,Double> rtNrPrecursorHash = (Hashtable<Integer,Double>)rtNrSpectraAndPrecursor.get(1);
+      Hashtable<Integer,Float> retTimes = reader_.getRetentionTimes(msLevel);     
+      float peakRt = Float.parseFloat(params.getRt())*60f;
+
+      int extendedStart = (borders[0]*9)/10;
+      int extendedStop = (borders[1]*21)/20;
+      Lipidomics2DSpectraChromPainter spectrumPainter = new Lipidomics2DSpectraChromPainter(analyzer_,rtNrSpectrumHash, rtNrPrecursorHash, retTimes, peakRt,
+          extendedStart,extendedStop,LipidomicsConstants.getMs2ChromMultiplicationFactorForInt(),LipidomicsConstants.getMs2PrecursorTolerance()*2,this,
+          extendedStart,extendedStop, true,new Vector<CgProbe>(),new Vector<CgProbe>(),1,1, this.relAbund_.isSelected(),
+          params,new Vector<RangeColor>(),new Double(annotationThreshold_.getText()));      
+
+      //SETS THE ZOOM BACK BEFORE THE REFRESHMENT
+      if(mz_minTimeText_.getText() != null){
+        if(!(mz_minTimeText_.getText().isEmpty())){
+          spectrumPainter.setMinDispTime2d(Float.parseFloat(mz_minTimeText_.getText()));
+        }
+      }
+      if(mz_maxTimeText_.getText() != null){
+        if(!(mz_maxTimeText_.getText().isEmpty())){
+          spectrumPainter.setMaxDispTime2d(Float.parseFloat(mz_maxTimeText_.getText()));
+        }
+      }
+  
+      //SETS THE GAIN BACK BEFORE THE REFRESHMENT
+      spectrumPainter.setM2dGain(m2dGain);     
+      spectrumPainter_ = spectrumPainter;     
+    
+      spectrumPanel_.add(spectrumPainter_,BorderLayout.CENTER); 
+      spectrumPainter.setBackground(Color.WHITE);       
+    
+      precursorSelected_.setText(spectrumPainter_.getPrecursorMassSelected());
+      rtSelected_.setText(spectrumPainter_.getRtSelectedText());      
+      spectrumPainter_.draw2DDiagram(extendedStart,extendedStop, true);  
+    
+      LipidParameterSet pr = params;
+      try {
+        pr = refreshSpectrumPainterRDI();
+      } catch (RulesException | NoRuleException | IOException
+        | SpectrummillParserException e1) {
+      }
+    
+      //REFRESHES THE CHROM PAINTER FROM HERE ONLY FOR NEW PRECUSORS
+      int charge = 1;
+      if (pr.ProbeCount()>0)
+        charge = pr.Probe(0).Charge;
+      else if (pr.getCharge()!=null&&params_.getCharge()>1)
+        charge = pr.getCharge();
+      float currentIsotopicMass = pr.Mz[0];    
+      isotope_.setSelectedIndex(0);
+      float startFloat = currentIsotopicMass-Float.parseFloat(this.displayMinusTolerance_.getText());
+      float stopFloat = currentIsotopicMass+Float.parseFloat(this.displayPlusTolerance_.getText());
+      Vector<CgProbe> storedProbes = ms1ProbesWhileMs2Display_.get(0);
+      Vector<CgProbe> selectedProbes = ms1ProbesWhileMs2Display_.get(1);
+      l2DPainter_.getGraphics().dispose();
+      l2dPanel_.remove(l2DPainter_);
+      l2DPainter_ = null;
+  
+      try {
+        String[] rawLines = reader_.getRawLines(startFloat, stopFloat, result_.getMsLevels().get(currentSelectedSheet_));
+        Hashtable<Integer,Float> rtTimes = reader_.getRetentionTimes();
+        Lipidomics2DPainter l2DPainter = new Lipidomics2DPainter(analyzer_,rawLines, rtTimes,
+            startFloat,stopFloat,reader_.getMultiplicationFactorForInt_()/reader_.getLowestResolution_(),pr.LowerMzBand*2,this,
+            MSMapViewer.DISPLAY_TIME_MINUTES,currentIsotopicMass-pr.LowerMzBand, currentIsotopicMass+pr.UpperMzBand, false,
+            storedProbes,selectedProbes,Integer.parseInt((String)this.isotope_.getSelectedItem()),charge,result_.getMsLevels().get(currentSelectedSheet_));
+        l2DPainter.preChromatogramExtraxtion(currentIsotopicMass-pr.LowerMzBand, currentIsotopicMass+pr.UpperMzBand);
+        l2DPainter_ = l2DPainter;
+        l2DPainter_.setBackground(Color.WHITE);
+        l2dPanel_.add(l2DPainter,BorderLayout.CENTER);
+      } catch (CgException e) {
+        e.printStackTrace();
+      }
+      l2DPainter_.repaint();
+      l2DPainter_.paintMs2Position(Float.parseFloat(rtSelected_.getText()));
+      majorSplitPane_.repaint(); 
+      topSplitPane_.setResizeWeight(0.58);
+    
+      showMs2InputElements();
+      l2dPanel_.invalidate();
+      l2dPanel_.updateUI();
+      spectrumPanel_.invalidate();
+      spectrumPanel_.updateUI();
+      
+    } else {
+      try {
+        refreshSpectrumPainterRDI();
+      }
+      catch (RulesException | NoRuleException | IOException
+          | SpectrummillParserException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+  
+  /**
+   * Returns the selected spectra
+   * @return
+   */
+  public int getSelectedSpectrumNumber()
+  {
+    return spectrumPainter_.getSpectrumSelected();
+  }
+  
+  /**
+   * Creates the interface via the RuleDefinitionInterface class
+   */
+  public void newRule(int position) 
+  {     
+    LipidParameterSet data = getAnalyteInTableAtPosition(position);
+    currentMs2Position_ = position;
+    try 
+    {      
+      MSnAnalyzer analyzer = new MSnAnalyzer(null,(String)selectedSheet_.getSelectedItem(),data.getModificationName(),data,analyzer_);      
+      data = analyzer.getResult();
+    }
+    catch (RulesException e) {
+      e.printStackTrace();
+    }
+    catch (IOException e) {
+      e.printStackTrace();
+    }
+    catch (SpectrummillParserException e) {
+      e.printStackTrace();
+    }
+    catch (CgException e) {
+      e.printStackTrace();
+    }
+    
+    if (!showMs2(data)) return; 
+    try {
+      userInterface = new RuleDefinitionInterface((String)selectedSheet_.getSelectedItem(), data, analyzer_, reader_.getHighestMsLevel(), this);  
+      if(viewer_!=null)
+      {
+        topSplitPane_.remove(viewer_);  
+      } 
+      topSplitPane_.setTopComponent(userInterface);
+      majorSplitPane_.setDividerLocation(0.72);
+      majorSplitPane_.setBottomComponent(this.spectrumPanel_);
+      finalButtonSection_ = userInterface.makeFinalButtonSection();
+      spectrumPanel_.add(finalButtonSection_,BorderLayout.SOUTH);
+      msnUserInterfaceObject_ = userInterface;
+      refreshSpectrumPainterRDI();
+    }
+    catch (NoRuleException nrx){
+      
+    }
+    catch (RulesException | IOException
+        | SpectrummillParserException | CgException e) {
+      e.printStackTrace();
+    }
+  }
+  
+  public void updateCurrentSpectrum(){
+    String cutoff = annotationThreshold_.getText();
+    if (cutoff==null || cutoff.length()<1) return;
+    try{
+      double cutoffValue = Double.parseDouble(cutoff);
+      spectrumPainter_.setAnnotationThreshold(cutoffValue);
+    } catch (NumberFormatException nfx){}
+  }
+  
+}
+  
+ 
