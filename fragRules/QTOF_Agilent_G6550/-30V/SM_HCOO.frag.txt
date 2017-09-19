@@ -1,0 +1,20 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=1%
+ChainCutoff=1%
+SpectrumCoverage=1%
+RetentionTimePostprocessing=true
+
+
+[HEAD]
+!FRAGMENTS	
+Name=NL_PChead_60			Formula=$PRECURSOR-C2O2H4	Charge=1	MSLevel=2	mandatory=true
+Name=PChead_168				Formula=C4H11NO4P		Charge=1	MSLevel=2	mandatory=false
+Name=phosphoric_acid_ethyl_ester_123	Formula=C2H4O4P			Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=NL_PChead_60*0.5>PChead_168				mandatory=true
+Equation=NL_PChead_60*1.2>phosphoric_acid_ethyl_ester_123	mandatory=true

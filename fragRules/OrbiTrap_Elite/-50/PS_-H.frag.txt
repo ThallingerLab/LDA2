@@ -1,0 +1,45 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.01%
+RetentionTimePostprocessing=true
+SpectrumCoverage=10%
+EnforcePeakUnionTime=6
+IgnorePositionForUnion=true
+ClassSpecificMS1Cutoff=0.001
+
+
+[HEAD]
+!FRAGMENTS
+Name=NL_serine_87	Formula=$PRECURSOR-C3H5NO2	Charge=1	MSLevel=2	mandatory=true
+Name=PL153		Formula=C3H6O5P			Charge=1	MSLevel=2	mandatory=false
+Name=Precursor		Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=false
+Name=NL_PChead_60_WRONG	Formula=$PRECURSOR-C2O2H4	Charge=1	MSLevel=2	mandatory=other
+
+!INTENSITIES
+Equation=NL_serine_87*0.5>Precursor		mandatory=true
+Equation=NL_serine_87>NL_PChead_60_WRONG*1.5	mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=Carboxy		Formula=$CHAIN-H			Charge=1	MSLevel=2	mandatory=true
+Name=NL_Carboxy_serine	Formula=$PRECURSOR-$CHAIN-C3H5NO2	Charge=1	MSLevel=2	mandatory=true
+Name=NL_Ketene_serine	Formula=$PRECURSOR-$CHAIN+H2O-C3H5NO2	Charge=1	MSLevel=2	mandatory=true
+
+!INTENSITIES
+Equation=NL_Carboxy_serine*0.9>NL_Ketene_serine	mandatory=true
+
+
+[POSITION]
+!INTENSITIES
+Equation=Carboxy[1]*0.9>Carboxy[2]			mandatory=true
+Equation=NL_Carboxy_serine[2]*0.9>NL_Carboxy_serine[1]	mandatory=true
+Equation=NL_Ketene_serine[2]*0.9>NL_Ketene_serine[1]	mandatory=true
+
+
+
+
+

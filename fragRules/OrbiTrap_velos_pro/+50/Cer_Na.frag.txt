@@ -1,0 +1,19 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+SpectrumCoverage=5%
+BasePeakCutoff=0.01%
+ChainCutoff=10%
+RetentionTimePostprocessing=false
+
+
+[HEAD]
+!FRAGMENTS
+Name=Precursor		Formula=$PRECURSOR	Charge=1	MSLevel=2	mandatory=false
+Name=NL_H2O		Formula=$PRECURSOR-H2O	Charge=1	MSLevel=2	mandatory=true
+Name=NL_2xH2O_36	Formula=$PRECURSOR-H4O2	Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=NL_H2O>0.2*$BASEPEAK	mandatory=true

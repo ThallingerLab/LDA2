@@ -1,0 +1,26 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=1%
+RetentionTimePostprocessing=true
+SpectrumCoverage=2%
+ChainCutoff=20%
+AddChainPositions=1
+
+
+[CHAINS]
+!FRAGMENTS
+Name=Carboxy		Formula=$CHAIN+H		Charge=1	MSLevel=2	mandatory=false
+Name=Carboxy_OH		Formula=$CHAIN-OH		Charge=1	MSLevel=2	mandatory=false
+Name=Na_Carboxy		Formula=$CHAIN+Na		Charge=1	MSLevel=2	mandatory=false
+Name=NL_Carboxy		Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Carboxy_Na	Formula=$PRECURSOR-$CHAIN+H-Na	Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=NL_Carboxy_Na>0.02*NL_Carboxy												mandatory=true
+Equation=NL_Carboxy>0.02*NL_Carboxy_Na												mandatory=true
+Equation=(NL_Carboxy_Na+Na_Carboxy+NL_Carboxy*0.01+Carboxy*0+Carboxy_OH*0)>(Carboxy+Carboxy_OH+NL_Carboxy*0+$BASEPEAK*0)	mandatory=true
+
+

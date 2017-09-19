@@ -1,0 +1,31 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.02%
+ChainCutoff=10%
+SpectrumCoverage=10%
+RetentionTimePostprocessing=true
+
+[HEAD]
+!FRAGMENTS
+Name=PEhead_164			Formula=C2H8NO4PNa		Charge=1	MSLevel=2	mandatory=false
+Name=NL_Ethanolamine-H2O_43	Formula=$PRECURSOR-C2H5N	Charge=1	MSLevel=2	mandatory=false
+Name=NL_PEhead_123		Formula=$PRECURSOR-C2H6NO3P	Charge=1	MSLevel=2	mandatory=false
+Name=NL_PEhead_141		Formula=$PRECURSOR-C2H8NO4P	Charge=1	MSLevel=2	mandatory=false
+Name=NL_PEhead_163		Formula=$PRECURSOR-C2H7NO4PNa	Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=PEhead_164+NL_Ethanolamine-H2O_43+NL_PEhead_163+NL_PEhead_123+0*NL_PEhead_141>0*PEhead_164+0*NL_Ethanolamine-H2O_43+0*NL_PEhead_163+0*NL_PEhead_123+0*NL_PEhead_141		mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=NL_Carboxy			Formula=$PRECURSOR-$CHAIN		Charge=1	MSLevel=2	mandatory=false
+Name=NL_Carboxy_Ethanolamine	Formula=$PRECURSOR-$CHAIN-C2H5N		Charge=1	MSLevel=2	mandatory=true
+Name=NL_Ketene_Ethanolamine	Formula=$PRECURSOR-$CHAIN-C2H5N+H2O	Charge=1	MSLevel=2	mandatory=false
+
+[POSITION]
+!INTENSITIES
+

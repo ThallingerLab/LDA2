@@ -1,0 +1,20 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.01%
+RetentionTimePostprocessing=true
+SpectrumCoverage=2%
+
+
+[HEAD]
+!FRAGMENTS
+Name=PIhead_283		Formula=C6H13O9PNa	Charge=1	MSLevel=2	mandatory=false
+Name=NL_PIhead_260	Formula=$PRECURSOR-C6H13O9P	Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=(PIhead_283+NL_PIhead_260)>0*$BASEPEAK			mandatory=true
+Equation=4*PIhead_283>NL_PIhead_260					mandatory=true
+
+

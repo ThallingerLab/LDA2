@@ -1,0 +1,19 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=1%
+ChainCutoff=1%
+SpectrumCoverage=1%
+RetentionTimePostprocessing=true
+
+
+[HEAD]
+!FRAGMENTS	
+Name=NL_PChead_60			Formula=$PRECURSOR-C2O2H4	Charge=1	MSLevel=2	mandatory=true
+Name=SM_fragment1			Formula=C22H46N2O5P		Charge=1	MSLevel=2	mandatory=false
+Name=PChead_168				Formula=C4H11NO4P		Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=NL_PChead_60*3>PChead_168				mandatory=true

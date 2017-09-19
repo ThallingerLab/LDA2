@@ -1,0 +1,44 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.02%
+ChainCutoff=20%
+AlkenylChains=1
+RetentionTimePostprocessing=true
+SpectrumCoverage=10%
+
+
+[HEAD]
+!FRAGMENTS
+Name=PChead_104		Formula=C5H14NO			Charge=1	MSLevel=2	mandatory=false
+Name=PChead_125		Formula=C2H6O4P			Charge=1	MSLevel=2	mandatory=false
+Name=PChead_184		Formula=C5H15NO4P		Charge=1	MSLevel=2	mandatory=true
+Name=Precursor		Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=false
+Name=NL-triMeth		Formula=$PRECURSOR-NC3H9	Charge=1	MSLevel=2	mandatory=other
+Name=NL-Na_wrong	Formula=$PRECURSOR-P1O4C5N1H14	Charge=1	MSLevel=2	mandatory=other
+
+!INTENSITIES
+Equation=PChead_184>0.1*$BASEPEAK			mandatory=true
+Equation=PChead_184*0.5>NL-triMeth			mandatory=true
+Equation=PChead_184*0.2>NL-Na_wrong			mandatory=true
+Equation=PChead_184*0.3>PChead_125			mandatory=true
+Equation=PChead_184*0.2>PChead_104			mandatory=true
+Equation=PChead_125+PChead_104+0*PChead_184>0*$BASEPEAK	mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=NL_Ketene		Formula=$PRECURSOR-$CHAIN+H2O		Charge=1	MSLevel=2	mandatory=true
+Name=NL_Carboxy		Formula=$PRECURSOR-$CHAIN		Charge=1	MSLevel=2	mandatory=false
+Name=NL_Carb_Alk	Formula=$PRECURSOR-$ALKENYLCHAIN	Charge=1	MSLevel=2	mandatory=true
+
+!INTENSITIES
+Equation=NL_Carb_Alk*1.1>NL_Ketene		mandatory=true
+
+
+[POSITION]
+!INTENSITIES
+Equation=NL_Carb_Alk[1]>0.1*NL_Ketene[1]+0*$BASEPEAK				mandatory=true
+

@@ -1,0 +1,22 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.05%
+ChainCutoff=80%
+RetentionTimePostprocessing=true
+SpectrumCoverage=10%
+
+
+[HEAD]
+!FRAGMENTS
+Name=NL_PIhead_260	Formula=$PRECURSOR-C6H13O9P	Charge=1	MSLevel=2	mandatory=true
+
+[CHAINS]
+!FRAGMENTS
+Name=NL_Ketene_head	Formula=NL_PIhead_260-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false
+
+[POSITION]
+!INTENSITIES
+Equation=NL_Ketene_head[2]>NL_Ketene_head[1]					mandatory=true
