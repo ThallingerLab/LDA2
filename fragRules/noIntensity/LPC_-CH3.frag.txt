@@ -1,0 +1,19 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.01%
+
+[HEAD]
+!FRAGMENTS
+Name=PChead_168		Formula=C4H11NO4P		Charge=1	MSLevel=2	mandatory=false
+Name=PChead_224		Formula=C7H15O5NP		Charge=1	MSLevel=2	mandatory=false
+Name=PChead_242		Formula=C7H17O6NP		Charge=1	MSLevel=2	mandatory=false
+Name=PL171		Formula=C3H8O6P		Charge=1	MSLevel=2	mandatory=false
+Name=PL153		Formula=C3H6O5P		Charge=1	MSLevel=2	mandatory=false
+
+
+[CHAINS]
+!FRAGMENTS
+Name=Carboxy		Formula=$CHAIN-H	Charge=1	MSLevel=2	mandatory=false
