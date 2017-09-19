@@ -1,0 +1,223 @@
+<project name="LipidDataAnalyzer" default="jars">
+	<!-- Load user environment parameters -->
+	<property file="build.properties" />
+
+	<path id="base.class.path">
+		<fileset dir="${maspectras.lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${mztab.lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${excel.lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${xml.lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${svg.lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+
+	<path id="compile.class.path">
+		<path refid="base.class.path" />
+	</path>
+	
+	<path id="distri.class.path">
+		<fileset dir="${dist.dir}">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+
+	<target name="init">
+		<mkdir dir="${classes.dir}" />
+		<mkdir dir="${dist.dir}" />
+		<mkdir dir="${dist.dir}/doc" />
+		<mkdir dir="${dist.dir}/examples" />
+		<mkdir dir="${dist.dir}/tuLibs" />
+		<mkdir dir="${dist.dir}/thirdParty" />
+		<mkdir dir="${classes.dir}/images" />
+		<mkdir dir="${classes.dir}/doc" />
+		<mkdir dir="${classes.dir}/examples" />
+		<mkdir dir="${classes.dir}/dtds" />
+	</target>
+
+	<target name="compile" depends="init">
+		<javac debug="true" destdir="${classes.dir}" includes="**/*.java,**/*.gif" includeAntRuntime="false">
+			<src path="${src.dir}" />
+			<classpath refid="compile.class.path" />
+		</javac>
+		<copy todir="${classes.dir}/doc">
+			<fileset dir="${doc.dir}" includes="*.pdf" />
+		</copy>
+		<copy todir="${classes.dir}/examples">
+			<fileset dir="${examples.dir}" includes="*.pdf" />
+		</copy>
+		<copy todir="${classes.dir}/images">
+			<fileset dir="${images.dir}" includes="*.gif" />
+			<fileset dir="${images.dir}" includes="*.png" />
+		</copy>
+		<copy todir="${classes.dir}/dtds">
+			<fileset dir="${dtd.dir}" includes="*.dtd" />
+		</copy>
+	</target>
+
+	<target name="jars-base">
+		<!--mkdir dir="${lib.classes.dir}" /-->
+		<!--unjar src="${excel.lib.dir}/poi-3.12-20150511.jar" dest="${lib.classes.dir}" /-->
+		<!--unjar src="${excel.lib.dir}/poi-ooxml-3.12-20150511.jar" dest="${lib.classes.dir}" /-->
+		<!--unjar src="${excel.lib.dir}/poi-ooxml-schemas-3.12-20150511.jar" dest="${lib.classes.dir}" /-->
+		<!--unjar src="${xml.lib.dir}/xpp3-1.1.3.4.C.jar" dest="${lib.classes.dir}" /-->
+		<!--unjar src="${xml.lib.dir}/xmlbeans-2.3.0.jar" dest="${lib.classes.dir}" /-->
+		<!--unjar src="${maspectras.lib.dir}/maspectras-lipidomics.jar" dest="${lib.classes.dir}" /-->
+		<!--unjar src="${mztab.lib.dir}/jmztab.jar" dest="${lib.classes.dir}" /-->
+		<!--unjar src="${mztab.lib.dir}/log4j-1.2.17.jar" dest="${lib.classes.dir}" /-->
+		<!--unjar dest="${lib.classes.dir}"-->
+			<!--fileset dir="${svg.lib.dir}" includes="*.jar" /-->
+		<!--/unjar-->
+		<!--unjar src="${jlk.lib.dir}/jlk.jar" dest="${lib.classes.dir}" /-->
+		<jar jarfile="${dist.dir}/LipidDataAnalyzer.jar" index="no">
+			<manifest>
+				<attribute name="Main-Class" value="at.tugraz.genome.lda.LipidDataAnalyzer" />
+				<attribute name="Class-Path" value="tuLibs/maspectras-lipidomics.jar thirdParty/j3dcore.jar thirdParty/j3dutils.jar thirdParty/vecmath.jar thirdParty/batik-awt-util.jar thirdParty/batik-dom.jar thirdParty/batik-ext.jar thirdParty/batik-svggen.jar thirdParty/batik-util.jar thirdParty/batik-xml.jar thirdParty/jh.jar thirdParty/jmztab.jar thirdParty/log4j.jar thirdParty/poi.jar thirdParty/poi-ooxml.jar thirdParty/poi-ooxml-schemas.jar thirdParty/xmlbeans.jar thirdParty/xpp.jar thirdParty/gluegen-rt.jar thirdParty/j3dfly-utils.jar thirdParty/joal.jar thirdParty/jogl-all.jar"/>
+				<!--attribute name="Class-Path" value="${maspectras.lib.dir}/maspectras-lipidomics.jar ${svg.lib.dir}/batik-awt-util.jar ${svg.lib.dir}/batik-dom.jar ${svg.lib.dir}/batik-ext.jar ${svg.lib.dir}/batik-svggen.jar ${svg.lib.dir}/batik-util.jar ${svg.lib.dir}/batik-xml.jar ${mztab.lib.dir}/jmztab.jar ${mztab.lib.dir}/log4j-1.2.17.jar ${excel.lib.dir}/poi-3.12-20150511.jar ${excel.lib.dir}/poi-ooxml-3.12-20150511.jar ${excel.lib.dir}/poi-ooxml-schemas-3.12-20150511.jar ${xml.lib.dir}/xmlbeans-2.3.0.jar ${xml.lib.dir}/xpp3-1.1.3.4.C.jar"/-->
+			</manifest>
+			<fileset dir="${classes.dir}" includes="**/*" excludes="**/*.pdf" />
+			<!--fileset dir="${lib.classes.dir}" includes="**/*.*" /-->
+		</jar>
+		<copy todir="${dist.dir}/doc">
+			<fileset dir="${doc.dir}" includes="*.pdf" />
+		</copy>
+		<copy todir="${dist.dir}/examples">
+			<fileset dir="${examples.dir}" includes="*.pdf" />
+		</copy>
+		<!--delete includeEmptyDirs="true" quiet="true"-->
+			<!--fileset dir="${lib.classes.dir}" /-->
+		<!--/delete-->
+	</target>
+
+	<target name="jars" depends="compile,jars-base,copyLibs" />
+
+	<target name="clean-all" depends="clean-build" description="Removes all generated files" />
+
+	<target name="clean-build">
+		<delete includeEmptyDirs="true" quiet="true">
+			<fileset dir="${dist.dir}" />
+			<fileset dir="${classes.dir}" />
+			<fileset dir="${lib.classes.dir}" />
+			<fileset dir="${classes.utils.dir}" />
+		</delete>
+	</target>
+
+	<path id="ttest.class.path">
+		<fileset dir="${ttest.lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+	</path>	
+	
+	<target name="ttest">
+    	<mkdir dir="${classes.ttest.dir}"/>
+		<unjar src="${maspectras.lib.dir}/maspectras-lipidomics.jar" dest="${classes.ttest.dir}">
+			<patternset>
+				<include name="at/tugraz/genome/maspectras/utils/Calculator.class" />
+		    </patternset>
+        </unjar>
+	  	<javac debug="true"
+	         destdir="${classes.ttest.dir}"
+	         includes="**/*.java"
+	         includeAntRuntime="false">
+	  		<src path="${src.ttest.dir}" />
+	      <classpath refid="ttest.class.path" />
+	  	</javac>
+	    <unjar src="${ttest.lib.dir}/JSci.jar" dest="${classes.ttest.dir}">
+	        <patternset>
+	          <include name="JSci/maths/statistics/TDistribution.class"/>
+	          <include name="JSci/maths/statistics/ProbabilityDistribution.class"/>
+	          <include name="JSci/maths/statistics/OutOfRangeException.class"/>
+	          <include name="JSci/maths/SpecialMath.class"/>
+	          <include name="JSci/maths/NumericalConstants.class"/>
+	          <include name="JSci/maths/AbstractMath.class"/>
+	        </patternset>
+	    </unjar>
+	  	<jar jarfile="${dist.dir}/TwoSampleTTest.jar">
+			<manifest>
+				<attribute name="Main-Class" value="at.tugraz.genome.IndependentTwoSamplesTTest" />
+			</manifest>
+	        <fileset dir="${classes.ttest.dir}" includes="**/*.*"/> 
+	    </jar>
+	    <delete includeEmptyDirs="true" >
+	       <fileset dir="${classes.ttest.dir}" />
+	    </delete>
+	</target>
+	
+	<target name="merger">
+    	<mkdir dir="${classes.merger.dir}"/>
+	  	<javac debug="true"
+	         destdir="${classes.merger.dir}"
+	         includes="**/*.java"
+	         includeAntRuntime="false">
+	  		<src path="${src.merger.dir}" />
+	      <classpath refid="distri.class.path"/>
+	  	</javac>
+	    <unjar src="${dist.dir}/LipidDataAnalyzer.jar" dest="${classes.merger.dir}">
+	        <patternset>
+	          <include name="at/tugraz/genome/lda/parser/MzXMLMergerForWaters.class"/>
+	          <include name="at/tugraz/genome/lda/parser/MzXMLNextScanReader.class"/>
+	          <include name="at/tugraz/genome/lda/exception/MzXMLReaderException.class"/>
+	          <include name="JSci/maths/statistics/OutOfRangeException.class"/>
+	        </patternset>
+	    </unjar>
+	  	<jar jarfile="${dist.dir}/MzXMLMerger.jar">
+			<manifest>
+				<attribute name="Main-Class" value="at.tugraz.genome.MzXMLMerger" />
+			</manifest>
+	        <fileset dir="${classes.merger.dir}" includes="**/*.*"/> 
+	    </jar>
+	    <delete includeEmptyDirs="true" >
+	       <fileset dir="${classes.merger.dir}" />
+	    </delete>
+
+	</target>
+	
+	
+	<target name="distriCalc">
+    	<mkdir dir="${classes.utils.dir}"/>
+	  	<javac debug="true"
+	         destdir="${classes.utils.dir}"
+	         includes="**/*.java"
+	         includeAntRuntime="false">
+	  		<src path="${src.utils.dir}" />
+	      <classpath refid="distri.class.path" />
+	  	</javac>
+	  	<jar jarfile="${dist.dir}/DistributionCalculator.jar">
+			<manifest>
+				<attribute name="Main-Class" value="at.tugraz.genome.DistributionCalculator" />
+			</manifest>
+	        <fileset dir="${classes.utils.dir}" includes="**/*.*"/> 
+	    </jar>
+	    <delete includeEmptyDirs="true" >
+	       <fileset dir="${classes.utils.dir}" />
+	    </delete>
+	</target>
+	
+	<target name="copyLibs">
+		<copy todir="${dist.dir}/tuLibs">
+			<fileset dir="${maspectras.lib.dir}"/>
+		</copy>
+		<copy todir="${dist.dir}/thirdParty">
+			<fileset dir="${excel.lib.dir}"/>
+			<fileset dir="${xml.lib.dir}"/>
+			<fileset dir="${mztab.lib.dir}" includes="*.jar"/>
+			<fileset dir="${svg.lib.dir}"/>
+		</copy>
+		<move file="${dist.dir}/thirdParty/poi-3.12-20150511.jar" toFile="${dist.dir}/thirdParty/poi.jar" />
+		<move file="${dist.dir}/thirdParty/poi-ooxml-3.12-20150511.jar" toFile="${dist.dir}/thirdParty/poi-ooxml.jar" />
+		<move file="${dist.dir}/thirdParty/poi-ooxml-schemas-3.12-20150511.jar" toFile="${dist.dir}/thirdParty/poi-ooxml-schemas.jar" />
+		<move file="${dist.dir}/thirdParty/xpp3-1.1.3.4.C.jar" toFile="${dist.dir}/thirdParty/xpp.jar" />
+		<move file="${dist.dir}/thirdParty/xmlbeans-2.3.0.jar" toFile="${dist.dir}/thirdParty/xmlbeans.jar" />
+		<move file="${dist.dir}/thirdParty/log4j-1.2.17.jar" toFile="${dist.dir}/thirdParty/log4j.jar" />
+
+	</target>
+	
+</project>

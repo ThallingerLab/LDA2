@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!ELEMENT abs-settings-whole (exp-settings,class-settings)>
+
+<!ELEMENT exp-settings (exp-setting*)>
+<!ELEMENT exp-setting (setting*)>
+<!ATTLIST exp-setting
+		name	CDATA #REQUIRED>
+
+<!ELEMENT class-settings (class-setting*)>
+<!ELEMENT class-setting (setting*,es-setting*,is-setting*,exp-stand-settings?)>
+<!ATTLIST class-setting
+		lipid-class	CDATA #REQUIRED>
+
+<!ELEMENT es-setting (setting*)>
+<!ATTLIST es-setting
+		name	CDATA #REQUIRED>
+
+<!ELEMENT is-setting (setting*)>
+<!ATTLIST is-setting
+		name	CDATA #REQUIRED>		
+		
+<!ELEMENT exp-stand-settings (exp-stand-setting*)>
+
+<!ELEMENT exp-stand-setting (setting?,es-setting*,is-setting*)>
+<!ATTLIST exp-stand-setting
+		name	CDATA #REQUIRED>
+
+<!ELEMENT setting (#PCDATA)>
+<!ATTLIST setting
+		name		CDATA #REQUIRED
+		magnitude	CDATA #REQUIRED
+		value		CDATA #REQUIRED>
+		
+
+		

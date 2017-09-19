@@ -1,3 +1,26 @@
+/* 
+ * This file is part of Lipid Data Analyzer
+ * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
+ *  
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *  
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details. 
+ *  
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Please contact lda@genome.tugraz.at if you need additional information or 
+ * have any questions.
+ */ 
+
 package at.tugraz.genome.lda;
 
 import java.awt.BorderLayout;
@@ -64,9 +87,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 
-////import jlk.LicenseHandler;
-////import jlk.MatrixLipidDataAnalyzer2;
-
 import org.apache.batik.dom.GenericDOMImplementation;
 import org.apache.batik.svggen.SVGGraphics2D;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -96,6 +116,8 @@ import uk.ac.ebi.pride.jmztab.model.SmallMoleculeColumn;
 import uk.ac.ebi.pride.jmztab.model.Software;
 import uk.ac.ebi.pride.jmztab.model.StudyVariable;
 import uk.ac.ebi.pride.jmztab.model.UserParam;
+import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.analysis.AnalyteAddRemoveListener;
 import at.tugraz.genome.lda.analysis.ClassNamesExtractor;
 import at.tugraz.genome.lda.analysis.ComparativeAnalysis;
@@ -165,6 +187,11 @@ import at.tugraz.genome.voutils.GeneralComparator;
 
 import com.sun.j3d.utils.applet.MainFrame;
 
+/**
+ * 
+ * @author Juergen Hartler
+ *
+ */
 public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMapClickListener,AnalyteAddRemoveListener,ColorChangeListener,SpectrumUpdateListener
 {
     
@@ -179,7 +206,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JPanel resultsMenu_;
   private JPanel resultsPanel_;
   private JPanel settingsPanel_;
-  private JPanel licensePanel_;
   private JPanel helpPanel_;
   private JPanel aboutPanel_;
   private JPanel displayTopMenu;
@@ -408,7 +434,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private final static String DEFAULT_ANNOTATION_CUTOFF = "5";
   
   public LipidDataAnalyzer(){
-    this.checkLicense();
     this.createDisplayTopMenu();
     this.createSingleQuantMenu();
     this.createBatchQuantMenu();
@@ -530,7 +555,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     resultsPanel_.setLayout(new BorderLayout());
     settingsPanel_ = new JPanel();
     initSettingsPanel();
-    licensePanel_ = new JPanel();
     helpPanel_ = new JPanel();
     initHelpPanel();
     aboutPanel_ = new JPanel();
@@ -956,7 +980,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     text.setFont(new Font("Arial",Font.PLAIN, 18));
     headerPanel.add(text,new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
-    text = new JLabel("Jürgen Hartler, Martin Trötzmüller, Alexander Triebl, Andreas Ziegl");
+    text = new JLabel("J\u00fcrgen Hartler, Alexander Triebl, Martin Tr\u00f6tzm\u00fcller, Andreas Ziegl");
     text.setFont(new Font("Arial",Font.PLAIN, 16));
     headerPanel.add(text,new GridBagConstraints(0, 4, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
@@ -966,11 +990,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     text.setFont(new Font("Arial",Font.PLAIN, 16));
     headerPanel.add(text,new GridBagConstraints(0, 6, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
-    text = new JLabel("Institute of Molecular Biotechnology");
-    text.setFont(new Font("Arial",Font.PLAIN, 16));
-    headerPanel.add(text,new GridBagConstraints(0, 7, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
-    text = new JLabel("Graz University of Tehcnology");
+    //Removed according to the instruction of the corresponding author: Gerhard G Thallinger
+//    text = new JLabel("Institute of Computational Biotechnology");
+//    text.setFont(new Font("Arial",Font.PLAIN, 16));
+//    headerPanel.add(text,new GridBagConstraints(0, 7, 1, 1, 0.0, 0.0
+//        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    text = new JLabel("Graz University of Technology");
     text.setFont(new Font("Arial",Font.PLAIN, 16));
     headerPanel.add(text,new GridBagConstraints(0, 8, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
@@ -978,28 +1003,107 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     linkText.setFont(new Font("Arial",Font.PLAIN, 16));
     headerPanel.add(linkText,new GridBagConstraints(0, 9, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    text = new JLabel("Lipid Data Analyzer");
+    text.setFont(new Font("Arial",Font.PLAIN, 12));
+    logoPanel.add(text,new GridBagConstraints(0, 3, 3, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(30, 50, 0, 0), 0, 0));
+    text = new JLabel("Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry");
+    text.setFont(new Font("Arial",Font.PLAIN, 12));
+    logoPanel.add(text,new GridBagConstraints(0, 4, 3, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
+    text = new JLabel("Copyright \u00A9 2017 J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger");
+    text.setFont(new Font("Arial",Font.PLAIN, 12));
+    logoPanel.add(text,new GridBagConstraints(0, 5, 3, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
+    text = new JLabel("This program is free software: you can redistribute it and/or modify");
+    text.setFont(new Font("Arial",Font.PLAIN, 12));
+    logoPanel.add(text,new GridBagConstraints(0, 6, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(30, 50, 0, 0), 0, 0));
+    text = new JLabel("it under the terms of the GNU General Public License as published by");
+    text.setFont(new Font("Arial",Font.PLAIN, 12));
+    logoPanel.add(text,new GridBagConstraints(0, 7, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
+    text = new JLabel("the Free Software Foundation, either version 3 of the License, or");
+    text.setFont(new Font("Arial",Font.PLAIN, 12));
+    logoPanel.add(text,new GridBagConstraints(0, 8, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
+    text = new JLabel("(at your option) any later version.");
+    text.setFont(new Font("Arial",Font.PLAIN, 12));
+    logoPanel.add(text,new GridBagConstraints(0, 9, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
+
+    text = new JLabel("This program is distributed in the hope that it will be useful,");
+    text.setFont(new Font("Arial",Font.PLAIN, 12));
+    logoPanel.add(text,new GridBagConstraints(0, 10, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(30, 50, 0, 0), 0, 0));
+    text = new JLabel("but WITHOUT ANY WARRANTY; without even the implied warranty of");
+    text.setFont(new Font("Arial",Font.PLAIN, 12));
+    logoPanel.add(text,new GridBagConstraints(0, 11, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
+    text = new JLabel("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the");
+    text.setFont(new Font("Arial",Font.PLAIN, 12));
+    logoPanel.add(text,new GridBagConstraints(0, 12, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
+    text = new JLabel("GNU General Public License for more details.");
+    text.setFont(new Font("Arial",Font.PLAIN, 12));
+    logoPanel.add(text,new GridBagConstraints(0, 13, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
+
+    text = new JLabel(" You should have received a copy of the GNU General Public License");
+    text.setFont(new Font("Arial",Font.PLAIN, 12));
+    logoPanel.add(text,new GridBagConstraints(0, 14, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(30, 50, 0, 0), 0, 0));
+    JPanel linkInText = new JPanel();
+    linkInText.setLayout(new GridBagLayout());
+
+    text = new JLabel("along with this program.  If not, see <");
+    text.setFont(new Font("Arial",Font.PLAIN, 12));
+    linkInText.add(text,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    linkInText.add(text);
+    linkText = new JHyperlink("http://www.gnu.org/licenses/","http://www.gnu.org/licenses/");
+    linkText.setFont(new Font("Arial",Font.PLAIN, 12));
+    linkInText.add(linkText,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    text = new JLabel("/>.");
+    text.setFont(new Font("Arial",Font.PLAIN, 12));
+    linkInText.add(text,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    logoPanel.add(linkInText,new GridBagConstraints(0, 15, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
+    
 
     if (Settings.isWindows()){
-      text = new JLabel("For msconvert file translation (ProteoWizard), the following third-party software is included:");
+      text = new JLabel("For msconvert file translation (ProteoWizard), the following third-party software is provided:");
       text.setFont(new Font("Arial",Font.PLAIN, 12));
-      logoPanel.add(text,new GridBagConstraints(0, 3, 2, 1, 0.0, 0.0
+      logoPanel.add(text,new GridBagConstraints(0, 16, 2, 1, 0.0, 0.0
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(30, 50, 0, 0), 0, 0));
 
       text = new JLabel("WIFF Reader Distributable Beta SDK. Copyright \u00A9 2013 AB SCIEX");
       text.setFont(new Font("Arial",Font.PLAIN, 12));
-      logoPanel.add(text,new GridBagConstraints(0, 4, 2, 1, 0.0, 0.0
-          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
+      logoPanel.add(text,new GridBagConstraints(0, 17, 2, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(5, 50, 0, 0), 0, 0));
       text = new JLabel("MASSHUNTER DATA ACCESS COMPONENT RUNTIME VERSION. Copyright \u00A9 2016 Agilent Technologies");
       text.setFont(new Font("Arial",Font.PLAIN, 12));
-      logoPanel.add(text,new GridBagConstraints(0, 5, 2, 1, 0.0, 0.0
+      logoPanel.add(text,new GridBagConstraints(0, 18, 2, 1, 0.0, 0.0
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
       text = new JLabel("This software uses CompassXtract software. Copyright \u00A9 2011, 2013, 2013 by Bruker Daltonik GmbH. All rights reserved.");
       text.setFont(new Font("Arial",Font.PLAIN, 12));
-      logoPanel.add(text,new GridBagConstraints(0, 6, 2, 1, 0.0, 0.0
+      logoPanel.add(text,new GridBagConstraints(0, 19, 2, 1, 0.0, 0.0
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
       text = new JLabel("MSFileReader file reading tool. Copyright \u00A9 2009 - 2014 by Thermo Fisher Scientific, Inc. All rights reserved.");
       text.setFont(new Font("Arial",Font.PLAIN, 12));
-      logoPanel.add(text,new GridBagConstraints(0, 7, 2, 1, 0.0, 0.0
+      logoPanel.add(text,new GridBagConstraints(0, 20, 2, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
+      text = new JLabel("These are individual software packages which in no event represent combined work with Lipid Data Analyzer.");
+      text.setFont(new Font("Arial",Font.PLAIN, 12));
+      logoPanel.add(text,new GridBagConstraints(0, 21, 2, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(5, 50, 0, 0), 0, 0));
+      text = new JLabel("None of these software are governed by the license the Lipid Data Analyzer (GNU GPL) is providing you.");
+      text.setFont(new Font("Arial",Font.PLAIN, 12));
+      logoPanel.add(text,new GridBagConstraints(0, 22, 2, 1, 0.0, 0.0
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
     }
 
@@ -3595,7 +3699,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private static String getFrameTitleString(){
     String titleString = "Lipid Data Analyzer "+Settings.VERSION+"   "+LipidomicsConstants.getCurrentMSMachine()+" settings ";
     String fragSelected = Settings.getFragmentSettingsString();
-    if (fragSelected!=null) titleString += " "+fragSelected;
+    if (fragSelected!=null) titleString += " "+fragSelected;    
+    titleString += "         \u00A9 2017 - J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger - GNU GPL v3 license";
     return titleString;
   }
 
@@ -4858,49 +4963,20 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     return emptyThere;
   }
   
-  private void checkLicense(){
-    MatrixLipidDataAnalyzer2 licenseMatrix = new MatrixLipidDataAnalyzer2();
-    Vector<String> forbiddenkeys = new Vector<String>();
-    LicenseHandler.setForbiddenKeyMD5Hashes(forbiddenkeys);
-    LicenseHandler.setLicenseArray(licenseMatrix);
-    LicenseHandler.setApplicationIcon(new ImageIcon(getClass().getResource("/images/Delete.gif")));
-    LicenseHandler.setAppName(licenseMatrix.getApplicationName());
-    LicenseHandler.setModuleNames(new String[]{"0"});
-    LicenseHandler.setDemoModeEnabled(false);
-    LicenseHandler.setUseRoamingProfileEnabled(false);
-    File licenseFolder = new File(Settings.getLicensePath());
-    File ldaHomeFolder = new File (Settings.getLdaUserHomePath());
-    if (!ldaHomeFolder.exists()) {
-      if (!ldaHomeFolder.mkdirs()) {
-        System.err.println("Could not create mandatory directory "+ldaHomeFolder.getAbsolutePath());
-        System.exit(-1);
-      }
-      try {
-        Runtime.getRuntime().exec("attrib +h \""+ldaHomeFolder.getAbsolutePath()+"\"");
-      } catch (Exception ex) {
-        System.err.println("Could not hide directory "+ldaHomeFolder.getAbsolutePath());
-      }
-    }
-//    if (!licenseFolder.exists()) {               
-      //TODO: this license for reviewing is valid until the 31st of October 2017!
-      LicenseHandler.writeLicenseStringAndUserName(licenseFolder,"2x46-sGS]-[WXu-O48S-^7kF-]Xnv-X65r-K]^z","Review");
-//    }
-    LicenseHandler.checkLicenseInFolder(licenseFolder);
-  }
   
   private class LicenseChangeListener implements ChangeListener{
 
-    int currentSelectedIndex_;
-    int lastSelectedIndex_;
+//    int currentSelectedIndex_;
+//    int lastSelectedIndex_;
    
     public LicenseChangeListener(){
-      currentSelectedIndex_ = 0;
+//      currentSelectedIndex_ = 0;
     }
 
     public void stateChanged(ChangeEvent e)
     {
-      lastSelectedIndex_ = currentSelectedIndex_;
-      currentSelectedIndex_ = mainTabs.getSelectedIndex();
+//      lastSelectedIndex_ = currentSelectedIndex_;
+//      currentSelectedIndex_ = mainTabs.getSelectedIndex();
     }
   }
   
@@ -5550,7 +5626,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                         fragments.add(probe.Mz);
                       }
                       //abundance is currently not used for the fragments
-                      @SuppressWarnings("unused")
                       double abundance = 0d;
                       if (set.getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED){
                         String faName = nameString.replaceAll("/","_");

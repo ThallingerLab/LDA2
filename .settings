@@ -1,0 +1,27 @@
+###################
+## General settings
+## path to the msConvert executable for the translation of RAW to chrom
+MsconvertPath=installer/windows/x64/msconvert/msconvert.exe
+## path to the Mass++ executable for the translation of RAW to chrom
+MassPPPath=C:/Program Files (x86)/Mass++/bin/msppcmd.exe
+## path to the element config file (comes with the application)
+ElementConfig=elementconfig.xml
+## should an overview excel be generated
+OverviewExcelWorkbook=true
+## should the mass values be displays in the overview excel
+OverviewExcelMass=true
+## should the single isotopic values be displayed in the overview excel
+OverviewIsotopicValues=true
+## the used look and feel; if you want the specific one of the system write "system"
+LookAndFeel=java
+## pre-selected prefix for the internalStandardSelection
+ISDefaultInput=IS
+ESDefaultInput=Ex-IS
+## for MSn display - time [min] to show in 3D view before and after a hit
+MSn3DDisplayTimeWindow=1
+## for Waters QTOF, several traces for MS/MS are generated, each one leads to a separate mzXML
+## if true the mzXML files are merged to one file - this setting should be false for MSE
+MergeMultipleMSMSFiles=true
+## only applicable if "MergeMultipleMSMSFiles" is true;
+## the last trace is a quality trace for detection stability - this should not be merged into the data
+SkipLastMzXML=true

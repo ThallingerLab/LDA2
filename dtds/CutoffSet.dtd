@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!ELEMENT cutoff-settings (isotope,cutoff*)>
+<!ELEMENT isotope (#PCDATA)>
+<!ELEMENT cutoff (#PCDATA)>
+<!ATTLIST cutoff
+		class	CDATA #REQUIRED
+		value	CDATA #REQUIRED>
