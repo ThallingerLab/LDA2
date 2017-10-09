@@ -116,8 +116,6 @@ import uk.ac.ebi.pride.jmztab.model.SmallMoleculeColumn;
 import uk.ac.ebi.pride.jmztab.model.Software;
 import uk.ac.ebi.pride.jmztab.model.StudyVariable;
 import uk.ac.ebi.pride.jmztab.model.UserParam;
-import at.tugraz.genome.lda.LipidomicsConstants;
-import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.analysis.AnalyteAddRemoveListener;
 import at.tugraz.genome.lda.analysis.ClassNamesExtractor;
 import at.tugraz.genome.lda.analysis.ComparativeAnalysis;
@@ -5452,9 +5450,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                   nameString = (String)msnNames;
                   faId = nameString;
                 }
+                //this command has to be commented for position specific detection
                 faId = faId.replaceAll("/", "_");
 //                if (faId.indexOf("-_")>-1) faId = faId.replaceAll("-_", "");
 //                else if (faId.indexOf("_-")>-1) faId = faId.replaceAll("_-", "");
+                if (className.equalsIgnoreCase("DG") && set.getModificationName().equalsIgnoreCase("Na") && faId.split("_").length==2)
+                  faId+="_-"; 
                 Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>> oneMolSpecies = new Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>();
                 if (sortedByMolSpecies.containsKey(faId)) oneMolSpecies = sortedByMolSpecies.get(faId);
                 else{
@@ -5571,13 +5572,18 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                         for (String name : (Vector<String>)msnNames){
                           nameString += name+"|";
                         }
+                        //the replaceAll has to be removed for position specific comparison
                         detectedFaId = nameString.substring(0,nameString.indexOf("|")).replaceAll("/", "_");
                         nameString = nameString.substring(0,nameString.length()-1);
                       }else{
                         nameString = (String)msnNames;
+                      //the replaceAll has to be removed for position specific comparison
                         detectedFaId = nameString.replaceAll("/", "_");
                       }
                       boolean isCorrect = false;
+                      if (className.equalsIgnoreCase("DG") && set.getModificationName().equalsIgnoreCase("Na") && detectedFaId.split("_").length==2){
+                        detectedFaId+="_-"; 
+                      }
                       if (detectedFaId.equalsIgnoreCase(faId) || StaticUtils.isAPermutedVersion(detectedFaId, faId) || detectedFaId.equalsIgnoreCase(molName)) isCorrect = true;
                       if (!isCorrect)continue;
                       if (chemicalFormula.length()==0){

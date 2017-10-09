@@ -109,6 +109,7 @@ import uk.ac.ebi.pride.jmztab.model.UserParam;
 ////import at.tugraz.genome.IndependentTwoSamplesTTest;
 import JSci.maths.statistics.ChiSqrDistribution;
 import JSci.maths.statistics.TDistribution;
+import at.tugraz.genome.dbutilities.SimpleValueObject;
 import at.tugraz.genome.exception.LipidBLASTException;
 import at.tugraz.genome.lda.LipidDataAnalyzer;
 import at.tugraz.genome.lda.LipidomicsConstants;
@@ -297,7 +298,7 @@ public class TestClass extends JApplet
     //this.searchMSnSpectra();
     //this.mergeMzXMLFiles();
     //this.convertWiffFile();
-    this.evaluateExperiment3();
+    //this.evaluateExperiment3();
     //this.writeLDAResultsToCompareExcel();
     //this.compareLDABLASTNaturalProbesNegative();
     //this.compareLDABLASTNaturalProbesPositive();
@@ -306,10 +307,11 @@ public class TestClass extends JApplet
     //this.testAfterStructuralIdentification();
     //this.quantifyPeak();
     //this.checkForMassDeviation();
-    //this.sixOf45();
     //this.parseRule();
     //this.countMS2();
     //this.mergeTGRessults();
+    //this.detectLBNotDetected(); 
+    this.readOneFile();
   }
 
   private void testExportPanel()
@@ -9256,27 +9258,7 @@ public void testTabFile() throws Exception {
 
     return false;
   }
-  
-  private void sixOf45(){
-    Vector<Integer> numbers = new Vector<Integer>();
-    while (numbers.size()<6){
-      int number = (int)(Math.random()*45d)+1;
-      if (number==46) number--;
-      boolean found = false;
-      for (Integer other : numbers){
-        if (other==number){
-          found = true;
-          break;
-        }
-      }
-      if (!found) numbers.add(number);
-    }
-    Collections.sort(numbers);
-    for (Integer number : numbers){
-      System.out.println(number);
-    }
-  }
-  
+    
   private void parseRule(){
     try{
       ElementConfigParser elPar = new ElementConfigParser(Settings.getElementConfigPath());
@@ -9595,4 +9577,314 @@ public void testTabFile() throws Exception {
     return false;
   }
   
+  private void detectLBNotDetected(){
+    Hashtable<String,Vector<String>> detectedByLB = new Hashtable<String,Vector<String>>();
+    Hashtable<String,Hashtable<String,Vector<SimpleValueObject>>> foundByLDAOnly = new Hashtable<String,Hashtable<String,Vector<SimpleValueObject>>>();
+    String baseDir = "L:\\Biological_Experiment_LDA2\\LipidBlast\\";
+    Vector<String> excels = new Vector<String>();
+    excels.add(baseDir+"positive\\002_liver2-1_Orbitrap_CID_pos_LB10_comp.xlsx");
+    excels.add(baseDir+"positive\\003_liver2-1_Orbitrap_CID_pos_LB10_comp.xlsx");
+    excels.add(baseDir+"positive\\004_liver2-1_Orbitrap_CID_pos_LB10_comp.xlsx");
+    excels.add(baseDir+"positive\\005_liver2-1_Orbitrap_CID_pos_LB10_comp.xlsx");
+    excels.add(baseDir+"positive\\006_liver2-1_Orbitrap_CID_pos_LB10_comp.xlsx");
+
+    excels.add(baseDir+"negative\\002_liver2-1_Orbitrap_CID_neg_LB10_comp.xlsx");
+    excels.add(baseDir+"negative\\003_liver2-1_Orbitrap_CID_neg_LB10_comp.xlsx");
+    excels.add(baseDir+"negative\\004_liver2-1_Orbitrap_CID_neg_LB10_comp.xlsx");
+    excels.add(baseDir+"negative\\005_liver2-1_Orbitrap_CID_neg_LB10_comp.xlsx");
+    excels.add(baseDir+"negative\\006_liver2-1_Orbitrap_CID_neg_LB10_comp.xlsx");
+
+    for (String excel : excels){
+      Vector<Hashtable<String,Vector<String>>> detectedAndNotDetected = detectLBNotDetectedFromExcel(excel);
+      Hashtable<String,Vector<String>> ldaOnlyDetected = detectedAndNotDetected.get(0);
+      Hashtable<String,Vector<String>> lbDetected = detectedAndNotDetected.get(1);
+      Hashtable<String,Vector<String>> ldaOriginal = detectedAndNotDetected.get(2);
+      //remove LDA detected and fill up the lbDetected
+      for (String className : lbDetected.keySet()){
+        Vector<String> lbClassDetected = lbDetected.get(className);
+        Hashtable<String,Vector<SimpleValueObject>> ldaClassFound = new Hashtable<String,Vector<SimpleValueObject>>();
+        if (foundByLDAOnly.containsKey(className)) ldaClassFound = foundByLDAOnly.get(className);
+        Vector<String> alreadyDetected = new Vector<String>();
+        if (detectedByLB.containsKey(className)) alreadyDetected = detectedByLB.get(className);
+        for (String detected : lbClassDetected){
+          Vector<String> keys = new Vector<String>(ldaClassFound.keySet());
+          int pos = this.isFACombiInList(detected, keys);
+          if (pos>-1) ldaClassFound.remove(keys.get(pos));
+          pos = this.isFACombiInList(detected, alreadyDetected);
+          if (pos==-1) alreadyDetected.add(detected);
+        }
+        detectedByLB.put(className, alreadyDetected);
+        foundByLDAOnly.put(className, ldaClassFound);
+      }
+      //add the ones that were found by LDA only
+      for (String className : ldaOnlyDetected.keySet()){
+        Vector<String> ldaOnlys = ldaOnlyDetected.get(className);
+        Vector<String> ldaOriginals = ldaOriginal.get(className);
+        
+        Vector<String> lbClass = new Vector<String>();
+        if (detectedByLB.containsKey(className)) lbClass = detectedByLB.get(className);
+        Hashtable<String,Vector<SimpleValueObject>> ldaClassFound = new Hashtable<String,Vector<SimpleValueObject>>();
+        if (foundByLDAOnly.containsKey(className)) ldaClassFound = foundByLDAOnly.get(className);
+        for (int i=0;i!=ldaOnlys.size();i++){
+          String structure = ldaOnlys.get(i);
+          int pos = this.isFACombiInList(structure, lbClass);
+          if (pos>-1) continue;
+          Vector<SimpleValueObject> info = new Vector<SimpleValueObject>();
+          Vector<String> keys = new Vector<String>(ldaClassFound.keySet());
+          pos = this.isFACombiInList(structure, keys);
+          if (pos>-1){
+            String key = keys.get(pos);
+            info = ldaClassFound.get(key);
+            structure = key;
+          }
+          String fileName = excel.substring(excel.lastIndexOf("\\")+1);
+          SimpleValueObject svo = new SimpleValueObject(fileName,ldaOriginals.get(i));
+          info.add(svo);
+          ldaClassFound.put(structure, info);
+        }
+        if (ldaClassFound.size()>0) foundByLDAOnly.put(className, ldaClassFound);
+      }
+    }
+    try{
+      BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(baseDir+"LDAFoundOnly.xlsx"));
+      Workbook resultWorkbook = new XSSFWorkbook();
+      Sheet sheet = resultWorkbook.createSheet("LDA_only");
+      int rowCount = 0;
+      int sumColumn = 0;
+      int structureColumn = 1;
+      int detailsColumn = 2;
+      for (String className : foundByLDAOnly.keySet()){
+        if (rowCount!=0) rowCount++;
+        Row row = sheet.createRow(rowCount);
+        rowCount++;
+        Cell cell = row.createCell(sumColumn);
+        cell.setCellType(XSSFCell.CELL_TYPE_STRING);
+        cell.setCellValue(className);
+        Hashtable<String,Vector<SimpleValueObject>> ldaClassOnly = foundByLDAOnly.get(className);
+        Hashtable<Integer,Hashtable<Integer,Integer>> sumSpecies = new Hashtable<Integer,Hashtable<Integer,Integer>>();
+        for (String structure : ldaClassOnly.keySet()){
+          int[] cAndDbs = getCAtomsAndDoubleBonds(structure);
+          Hashtable<Integer,Integer> dbs = new Hashtable<Integer,Integer>();
+          if (sumSpecies.containsKey(cAndDbs[0])) dbs = sumSpecies.get(cAndDbs[0]);
+          dbs.put(cAndDbs[1], cAndDbs[1]);
+          sumSpecies.put(cAndDbs[0], dbs);
+        }
+        List<Integer> cAtoms = new  ArrayList<Integer>(sumSpecies.keySet());
+        Collections.sort(cAtoms);
+        for (Integer cAtom : cAtoms){
+          List<Integer> dbs = new ArrayList<Integer>(sumSpecies.get(cAtom).keySet());
+          Collections.sort(dbs);
+          for (Integer db : dbs){
+            boolean firstSumStructure = true;
+            for (String structure : ldaClassOnly.keySet()){
+              int[] cAndDbs = getCAtomsAndDoubleBonds(structure);
+              if (cAtom!=cAndDbs[0] || db!=cAndDbs[1]) continue;
+              row = sheet.createRow(rowCount);
+              rowCount++;
+              if (firstSumStructure){
+                cell = row.createCell(sumColumn);
+                cell.setCellType(XSSFCell.CELL_TYPE_STRING);
+                cell.setCellValue(className+" "+cAtom+":"+db);                
+              }
+              Vector<SimpleValueObject> vos = ldaClassOnly.get(structure);
+              Hashtable<String,Integer> mostOftenOccuringStructure = new Hashtable<String,Integer>();
+              String detailsString = "";
+              for (SimpleValueObject vo : vos){
+                if (detailsString.length()>0) detailsString+="; ";
+                detailsString += vo.getLabel().substring(0,4);
+                if (vo.getLabel().indexOf("pos")>-1) detailsString += "pos";
+                else if (vo.getLabel().indexOf("neg")>-1) detailsString += "neg";
+                detailsString+="="+vo.getValue();
+                int count = 0;
+                if (mostOftenOccuringStructure.containsKey(vo.getValue())) count = mostOftenOccuringStructure.get(vo.getValue());
+                count++;
+                mostOftenOccuringStructure.put(vo.getValue(),count);
+              }
+              String mostPresentStructure = structure;
+              int mostOften = 0;
+              for (String struct : mostOftenOccuringStructure.keySet()){
+                if (mostOftenOccuringStructure.get(struct)>mostOften){
+                  mostOften = mostOftenOccuringStructure.get(struct);
+                  mostPresentStructure = struct;
+                }
+              }              
+              firstSumStructure = false;
+              cell = row.createCell(structureColumn);
+              cell.setCellType(XSSFCell.CELL_TYPE_STRING);
+              cell.setCellValue(mostPresentStructure);
+              cell = row.createCell(detailsColumn);
+              cell.setCellType(XSSFCell.CELL_TYPE_STRING);
+              cell.setCellValue(detailsString);
+            }    
+          }
+        }
+      }
+      resultWorkbook.write(out);
+      out.close();
+    } catch (Exception ex){
+      ex.printStackTrace();
+    }
+  }
+  
+  private Vector<Hashtable<String,Vector<String>>> detectLBNotDetectedFromExcel(String excel){
+    Vector<Hashtable<String,Vector<String>>> detectedAndNotDetected = new Vector<Hashtable<String,Vector<String>>>();
+    Hashtable<String,Vector<String>> lbDetected = new Hashtable<String,Vector<String>>();
+    Hashtable<String,Vector<String>> ldaOnlyDetected = new Hashtable<String,Vector<String>>();
+    Hashtable<String,Vector<String>> ldaOriginal = new Hashtable<String,Vector<String>>();
+    try{
+      InputStream myxls = new FileInputStream(excel);
+      Workbook workbook = new XSSFWorkbook(excel);
+      for (int i=0; i!=workbook.getNumberOfSheets();i++){
+        Sheet sheet = workbook.getSheetAt(i);
+        String className = sheet.getSheetName();
+        //if (!className.equalsIgnoreCase("TG")) continue;
+        Row row = sheet.getRow(0);
+        int structureColumn = -1;
+        int ldaStructureColumn = -1;
+        int ldaCodeColumn = -1;
+        int lbCodeColumn = -1;
+        int nameColumn = -1;
+        for (int j=0; j!=row.getLastCellNum(); j++){
+          Cell cell = row.getCell(j);
+          String contents = "";
+          int cellType = -1;
+          if (cell==null) continue;
+          cellType = cell.getCellType();
+          if (cellType!=XSSFCell.CELL_TYPE_STRING) continue;
+          contents = cell.getStringCellValue();
+          if (contents.equalsIgnoreCase("Structure")) structureColumn = j;
+          else if (contents.equalsIgnoreCase("LDA")) ldaStructureColumn = j;
+          else if (contents.equalsIgnoreCase("LDA-Code")) ldaCodeColumn = j;
+          else if (contents.equalsIgnoreCase("LB-Code")) lbCodeColumn = j;
+          else if (contents.equalsIgnoreCase("Name")) nameColumn = j;
+        }
+        if (ldaCodeColumn>-1 && lbCodeColumn>-1 && structureColumn<0) structureColumn = nameColumn;
+        if (ldaCodeColumn<0 && lbCodeColumn<0 && structureColumn<0) continue;
+        
+        Vector<String> lbClassDetected = new Vector<String>();
+        Vector<String> ldaClassDetected = new Vector<String>();
+        Vector<String> ldaOriginalClassDetected = new Vector<String>();
+        for (int rowNum=1; rowNum<sheet.getLastRowNum()+1;rowNum++){
+          row = sheet.getRow(rowNum);
+          String structureOriginal = "";
+          String structure = "";
+          String ldaStructure = "";
+          int ldaCode = -1000;
+          int lbCode = -1000;
+          
+          if (row==null) continue;
+          //reading structureInformation
+          Cell cell = row.getCell(structureColumn);
+          if (cell==null || cell.getCellType()!=XSSFCell.CELL_TYPE_STRING) continue;
+          structureOriginal = cell.getStringCellValue().trim();
+          if (structureOriginal.endsWith("_FP") || structureOriginal.endsWith("_noMS2") || structureOriginal.length()==0) continue;
+          structure = structureOriginal.replaceAll("/", "_");
+          
+          cell = row.getCell(ldaStructureColumn);
+          if (cell==null || cell.getCellType()!=XSSFCell.CELL_TYPE_STRING) continue;
+          ldaStructure = cell.getStringCellValue().trim();
+          
+         
+          //reading ldaCode
+          cell = row.getCell(ldaCodeColumn);
+          if (cell==null) continue;
+          int cellType = cell.getCellType();
+          if (cellType==XSSFCell.CELL_TYPE_STRING)
+            try{ldaCode = Integer.parseInt(cell.getStringCellValue());}catch(NumberFormatException nfx){continue;}
+          else if (cellType==XSSFCell.CELL_TYPE_NUMERIC || cellType==XSSFCell.CELL_TYPE_FORMULA){
+            try{ldaCode = (new Double(cell.getNumericCellValue()).intValue());}catch(NumberFormatException nfx){continue;}
+          } else continue;
+          
+          //reading ldaCode
+          cell = row.getCell(lbCodeColumn);
+          if (cell==null) continue;
+          cellType = cell.getCellType();
+          if (cellType==XSSFCell.CELL_TYPE_STRING)
+            try{lbCode = Integer.parseInt(cell.getStringCellValue());}catch(NumberFormatException nfx){continue;}
+          else if (cellType==XSSFCell.CELL_TYPE_NUMERIC || cellType==XSSFCell.CELL_TYPE_FORMULA){
+            try{lbCode = (new Double(cell.getNumericCellValue()).intValue());}catch(NumberFormatException nfx){continue;}
+          } else continue;
+          
+          if (ldaCode==0 && lbCode==0) continue;
+          
+          if (lbCode>0){
+            int pos = isFACombiInList(structure, ldaClassDetected);
+            if (pos>-1){
+              ldaClassDetected.remove(pos);
+              ldaOriginalClassDetected.remove(pos);
+            }
+            pos = isFACombiInList(structure, lbClassDetected);
+            if (pos==-1) lbClassDetected.add(structure);
+          } else if (ldaCode>0 && (lbCode==-1 || lbCode==-3)){
+            int pos = isFACombiInList(structure, lbClassDetected);
+            if (pos>-1) continue;
+            pos = isFACombiInList(structure, ldaClassDetected);
+            if (pos>-1) continue;
+            ldaClassDetected.add(structure);
+            ldaOriginalClassDetected.add(ldaStructure);
+          }
+          //System.out.println(className+" "+structureOriginal+";"+ldaCode+";"+lbCode);
+        }
+        if (lbClassDetected.size()>0 || ldaClassDetected.size()>0){
+          lbDetected.put(className, lbClassDetected);
+          ldaOnlyDetected.put(className, ldaClassDetected);
+          ldaOriginal.put(className, ldaOriginalClassDetected);
+        }
+      }
+
+    } catch (Exception ex){
+      ex.printStackTrace();
+    }
+    detectedAndNotDetected.add(ldaOnlyDetected);
+    detectedAndNotDetected.add(lbDetected);
+    detectedAndNotDetected.add(ldaOriginal);
+    return detectedAndNotDetected;
+  }
+  
+  private int isFACombiInList(String structure, Vector<String> list){
+    for (int i=0; i!=list.size(); i++){
+      if (StaticUtils.isAPermutedVersion(structure, list.get(i))) return i;
+    }
+    return -1;
+  }
+  
+  private int[] getCAtomsAndDoubleBonds(String structure){
+    int[] cAndDbs = new int[2];
+    String[] fas = structure.split("_");
+    cAndDbs[0] = 0;
+    cAndDbs[1] = 0;
+    for (String fa:fas){
+      if (fa.equalsIgnoreCase("-")) continue;
+      String toSplit = new String(fa);
+      if (fa.startsWith("P-")) toSplit = toSplit.substring(2);
+      cAndDbs[0] += Integer.parseInt(toSplit.substring(0,toSplit.indexOf(":")));
+      cAndDbs[1] += Integer.parseInt(toSplit.substring(toSplit.indexOf(":")+1));
+    }
+    return cAndDbs;
+  }
+  
+  private void readOneFile(){
+    try {
+      Vector<LipidParameterSet> sets = LipidDataAnalyzer.readResultFile("D:\\Experiment1\\Orbitrap_CID\\positive\\50\\016_Ex1_Orbitrap_CID_pos_50_DG.xlsx", new Hashtable<String,Boolean>()).getIdentifications().get("DG");
+      for (LipidParameterSet set : sets){
+        if (set.getNameStringWithoutRt().equalsIgnoreCase("36:2") && set.getModificationName().equalsIgnoreCase("Na")){
+          LipidomicsMSnSet msn = (LipidomicsMSnSet)set;
+          for (Object names : msn.getMSnIdentificationNames()){
+            if (names instanceof String){
+              System.out.println("String: "+(String)names);
+            }else if (names instanceof Vector){
+              System.out.println("Vector");
+              for (String name : (Vector<String>)names){
+                System.out.println(name);
+              }
+            }
+          }
+        }
+      }
+    }
+    catch (Exception e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
 }
