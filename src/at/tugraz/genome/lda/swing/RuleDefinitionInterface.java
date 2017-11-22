@@ -168,7 +168,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
   private Vector<FragmentRuleVO> sortedChainFragments_;
   
   /** the element parser */
-  private ElementConfigParser elementParser_ = new ElementConfigParser(Settings.getElementConfigPath());  
+  private ElementConfigParser elementParser_ = Settings.getElementParser();  
   
   /** Possibility List for combo mandatory fields */
   private String possibibilityListPostProcessing_[] = {"true", "false"};
@@ -369,14 +369,6 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
  */
   public void createPanel()
   {    
-    try 
-    {
-      elementParser_.parse();
-    }
-    catch (SpectrummillParserException e) 
-    {      
-      e.printStackTrace();
-    }        
     generalTopSection();    
     ruleTabsSection();     
     topSplitPane_ = new JSplitPane(JSplitPane.VERTICAL_SPLIT);    
@@ -796,7 +788,6 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
      {       
       try 
       {
-        elementParser_.parse();        
         FragmentRuleVO ruleVO = new FragmentRuleVO(fragRuleNameField_.getText(),fragRuleFormulaField_.getText(),Integer.parseInt(fragRuleChargeField_.getText()), 
         Integer.parseInt(fragRuleMsLevelField_.getText()), getComboMandatory(fragRuleMandatoryCombo_.getSelectedIndex()), false, headFragmentRules_, chainFragmentRules_, elementParser_);
         headFragmentRules_.put(fragRuleNameField_.getText(), ruleVO);        
@@ -809,10 +800,6 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       catch (java.lang.NumberFormatException e2) 
       {   
         JOptionPane.showMessageDialog(topSplitPane_, e2.getMessage());         
-      }
-      catch (SpectrummillParserException e2) 
-      {
-        JOptionPane.showMessageDialog(topSplitPane_, e2.getMessage());  
       }
      }
    }); 
@@ -1272,7 +1259,6 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
        
        try 
        {
-         elementParser_.parse();         
          FragmentRuleVO ruleVO = new FragmentRuleVO(chainRuleNameField_.getText(),chainRuleFormulaField_.getText(),Integer.parseInt(chainRuleChargeField_.getText()), 
          Integer.parseInt(chainRuleMsLevelField_.getText()), getComboMandatory(chainRuleMandatoryCombo_.getSelectedIndex()), false, headFragmentRules_, chainFragmentRules_, elementParser_);
          chainFragmentRules_.put(chainRuleNameField_.getText(), ruleVO);
@@ -1287,10 +1273,6 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
        {   
          JOptionPane.showMessageDialog(topSplitPane_, e2.getMessage());         
        }
-      catch (SpectrummillParserException e2) 
-      {        
-        JOptionPane.showMessageDialog(topSplitPane_, e2.getMessage());    
-      }
       }
     });
      
@@ -2658,7 +2640,6 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     if(headFragmentRules_.containsKey(fragRuleNameField_.getText())) return;
     if(checkHeadFragment())
 	    {       
-	      elementParser_.parse();      
 	      ruleVO = new FragmentRuleVO(fragRuleNameField_.getText(),fragRuleFormulaField_.getText(),Integer.parseInt(fragRuleChargeField_.getText()), 
 	      Integer.parseInt(fragRuleMsLevelField_.getText()), getComboMandatory(fragRuleMandatoryCombo_.getSelectedIndex()), false, headFragmentRules_, chainFragmentRules_, elementParser_);        
 	      headFragmentRules_.put(fragRuleNameField_.getText(), ruleVO); 
@@ -2735,7 +2716,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     }
     catch (NoRuleException | RulesException e ) 
     {
-      msnAnalyzer_ = new MSnAnalyzer(lipidClassName_, lipidAdduct_, data_, analyzer_,false);
+      msnAnalyzer_ = new MSnAnalyzer(lipidClassName_, lipidAdduct_, data_, analyzer_, null,true,false);
       return 0;
     }      
   }
@@ -2847,7 +2828,6 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     if(chainFragmentRules_.containsKey(chainRuleNameField_.getText())) return;
     if(checkChainFragment())
 	    {
-	      this.elementParser_.parse();
 	      ruleVO = new FragmentRuleVO(this.chainRuleNameField_.getText(),this.chainRuleFormulaField_.getText(),Integer.parseInt(this.chainRuleChargeField_.getText()), 
 	          Integer.parseInt(this.chainRuleMsLevelField_.getText()), getComboMandatory(this.chainRuleMandatoryCombo_.getSelectedIndex()), false, this.headFragmentRules_, this.chainFragmentRules_, this.elementParser_);
 	      this.chainFragmentRules_.put(this.chainRuleNameField_.getText(), ruleVO); 
@@ -2933,7 +2913,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     }
     catch (NoRuleException | RulesException e) 
     {
-      msnAnalyzer_ = new MSnAnalyzer(lipidClassName_, lipidAdduct_, data_, analyzer_, false);
+      msnAnalyzer_ = new MSnAnalyzer(lipidClassName_, lipidAdduct_, data_, analyzer_, null, true, false);
       return 0;
     } 
     
@@ -3136,7 +3116,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
   {
     try {
       msnAnalyzer_ = new MSnAnalyzer(lipidClassName_, lipidAdduct_, data_,
-          analyzer_, false);
+          analyzer_, null, true, false);
     }
     catch (RulesException | IOException | SpectrummillParserException
         | CgException e) {
@@ -3208,13 +3188,6 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       source = chainFragmentRules_;
     }
     
-    try 
-    {
-      elementParser_.parse();
-    }
-    catch (SpectrummillParserException e) 
-    {
-    } 
     Enumeration<String> headFragmentEnum = source.keys(); 
     while (headFragmentEnum.hasMoreElements()) 
     {
@@ -3332,7 +3305,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       probes.add(probe);
     }
     data_.setProbes(probes);
-    MSnAnalyzer analyzer = new MSnAnalyzer(CACHE_DIR, lipidClassName_, lipidAdduct_, data_, analyzer_, false, true);
+    MSnAnalyzer analyzer = new MSnAnalyzer(CACHE_DIR, lipidClassName_, lipidAdduct_, data_, analyzer_, null, false, true, true);
     return analyzer;
   }
   

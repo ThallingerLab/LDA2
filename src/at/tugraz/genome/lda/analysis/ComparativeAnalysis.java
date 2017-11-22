@@ -28,12 +28,14 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Vector;
 
 
 import at.tugraz.genome.lda.LipidDataAnalyzer;
 import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
@@ -44,11 +46,11 @@ import at.tugraz.genome.lda.vos.DoubleStringVO;
 import at.tugraz.genome.lda.vos.InternalStandardStatistics;
 import at.tugraz.genome.lda.vos.LipidClassSettingVO;
 import at.tugraz.genome.lda.vos.ProbeVolConcVO;
+import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.lda.vos.ResultAreaVO;
 import at.tugraz.genome.lda.vos.ResultCompGroupVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.VolumeConcVO;
-
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
@@ -161,7 +163,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
   
   private Hashtable<String,Integer> maxIsotopesOfGroup_;
   
-  private String elementConfigPath_;
   private ElementConfigParser elementParser_;
   
   private AbsoluteSettingsVO absSetting_;
@@ -189,7 +190,12 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
   private Hashtable<String,Hashtable<Integer,VolumeConcVO>> isAmountLookup_;
   private Hashtable<String,Hashtable<Integer,VolumeConcVO>> esAmountLookup_;
   
+  /** the sequence of the classes as in the quantification file*/
+  private LinkedHashMap<String,Integer> classSequence_;
+  /** the sequence of the analytes as in the quantification file*/
   private Hashtable<String,Vector<String>> correctAnalyteSequence_;
+  /** the original quantification file objects*/
+  private Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects_;
   
   private double expRtGroupingTime_;
   
@@ -205,31 +211,28 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
 //  Hashtable<String,Hashtable<String,Hashtable<String,Vector<Double>>>> esSingleCorrectiveFactorsNoCorr_;
   
   public ComparativeAnalysis(Vector<File> resultFiles, String isSelectionPrefix, String esSelectionPrefix, AbsoluteSettingsVO absSetting, Hashtable<String,Double> classCutoffs, int maxCutoffIsotope, 
-      String elementConfigPath, Hashtable<String,Vector<String>> correctAnalyteSequence,double expRtGroupingTime){
-    this(resultFiles, isSelectionPrefix, esSelectionPrefix,absSetting,classCutoffs,maxCutoffIsotope,null,null, elementConfigPath,correctAnalyteSequence,expRtGroupingTime);
+      LinkedHashMap<String,Integer> classSequence, Hashtable<String,Vector<String>> correctAnalyteSequence, Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects,
+      double expRtGroupingTime){
+    this(resultFiles, isSelectionPrefix, esSelectionPrefix,absSetting,classCutoffs,maxCutoffIsotope,null,null,classSequence,correctAnalyteSequence,
+        quantObjects,expRtGroupingTime);
   }
   
   public ComparativeAnalysis(Vector<File> resultFiles, String isSelectionPrefix, String esSelectionPrefix,
-      AbsoluteSettingsVO absSetting, Hashtable<String,Double> classCutoffs, int maxCutoffIsotope, Vector<String> groups, Hashtable<String,Vector<File>> filesOfGroup, String elementConfigPath,
-      Hashtable<String,Vector<String>> correctAnalyteSequence,double expRtGroupingTime){
+      AbsoluteSettingsVO absSetting, Hashtable<String,Double> classCutoffs, int maxCutoffIsotope, Vector<String> groups, Hashtable<String,Vector<File>> filesOfGroup, 
+      LinkedHashMap<String,Integer> classSequence, Hashtable<String,Vector<String>> correctAnalyteSequence,
+      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects, double expRtGroupingTime){
     super(resultFiles, isSelectionPrefix, esSelectionPrefix,groups,filesOfGroup);
-    elementConfigPath_ = elementConfigPath;
     absSetting_ = absSetting;
+    this.classSequence_ = classSequence;
     correctAnalyteSequence_ = correctAnalyteSequence;
+    this.quantObjects_ = quantObjects;
     expRtGroupingTime_ = expRtGroupingTime;
     classCutoffs_ = classCutoffs;
     maxCutoffIsotope_ = maxCutoffIsotope;
   }
   
   public void parseInput() throws ExcelInputFileException{
-    try {
-      elementParser_ = new ElementConfigParser(elementConfigPath_);
-      elementParser_.parse();
-    }
-    catch (SpectrummillParserException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
+    elementParser_ = Settings.getElementParser();
     unprocessedResults_ = new Hashtable<String,Hashtable<String,Vector<Hashtable<String,ResultAreaVO>>>>();
     isNullResult_ = new Hashtable<String,Hashtable<String,Hashtable<String,Boolean>>>();
     allResults_ = new Hashtable<String,Hashtable<String,Vector<ResultAreaVO>>>();
@@ -1187,6 +1190,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
     results = LipidDataAnalyzer.readResultFile(resultFile.getAbsolutePath(), showMods).getIdentifications();
 
     Hashtable<String,Vector<Hashtable<String,ResultAreaVO>>> areaSheetVOs = new Hashtable<String,Vector<Hashtable<String,ResultAreaVO>>>();    
+    ElementConfigParser elementParser = Settings.getElementParser();
     try{
       if (LipidomicsConstants.isotopicCorrection()) results = IsotopeCorrector.correctIsotopicPattern(elementParser_,results);
       for (String sheetName : results.keySet()){
@@ -1206,8 +1210,19 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
             retentionTime = new Double(param.getRt());
             if (expRtGroupingTime_>0 && !((isSelectionPrefix_!=null && param.getName().startsWith(isSelectionPrefix_))||(esSelectionPrefix_!=null && param.getName().startsWith(esSelectionPrefix_))))rtDef = param.getRt();
           }
-
-        
+          
+          //calculating the neutral mass
+          double neutralMass = (double)param.Mz[0];
+          double massDiffToNeutral = 0d;
+          Hashtable<String,Integer> elements = StaticUtils.categorizeFormula(param.getModificationFormula());
+          for (String element : elements.keySet()){
+            massDiffToNeutral += elementParser.getElementDetails(element).getMonoMass()*elements.get(element);
+          }
+          
+          neutralMass -= massDiffToNeutral;
+          ////double massDiffToNeutral = 0d;
+          ////for ()
+          
         //TODO: this was when I read directly from the Excel file; might be useful
 //        if (areaVO!=null){
 //          if (!(retentionTime<0)){
@@ -1228,7 +1243,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
               areaVO = sameMoleculeDiffRet.values().iterator().next();
             else if (rtDef!=null&&rtDef.length()>0){ 
               areaVO = findAreaVoWithinRtBoundaries(rtDef,sameMoleculeDiffRet);
-              if (areaVO==null) areaVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit());
+              if (areaVO==null) areaVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass);
               // Juergen: I am not sure if this "if" and the setting of the retention time is required; for various charge states it seems to be counterproductive
               else /*if (areaVO.hasModification(param.getModificationName()))*/{
                 ////retentionTime = areaVO.getRetentionTime(param.getModificationName());
@@ -1237,7 +1252,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
             }  
           }else{
             if (param.getArea()>0f){
-              areaVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit());
+              areaVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass);
               if (orderedAnalytes.size()==0||!orderedAnalytes.get(orderedAnalytes.size()-1).equalsIgnoreCase(analId))
                 orderedAnalytes.add(analId);
             }else{
@@ -1245,7 +1260,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
               if (this.isNullResult_.containsKey(fileName)) fileHash = isNullResult_.get(fileName);
               Hashtable<String,Boolean> sheetHash = new Hashtable<String,Boolean>();
               if (fileHash.containsKey(sheetName)) sheetHash = fileHash.get(sheetName);
-              ResultAreaVO dummyVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit());
+              ResultAreaVO dummyVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass);
               sheetHash.put(dummyVO.getMoleculeName(), true);
               fileHash.put(sheetName, sheetHash);
               isNullResult_.put(fileName,fileHash);
@@ -1729,7 +1744,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
             }else{
               masses = moleculeMassHashGroup.get(resVO.getMoleculeName());
             }
-            masses.put(expName, resVO.getWeightedMass());           
+            masses.put(expName, resVO.getWeightedNeutralMass());           
             moleculeMassHashGroup.put(resVO.getMoleculeName(), masses);
             //here I am grouping the values to calculate the comparative values afterwards
             Hashtable<String,ResultAreaVO> resOfOneMolecule = new Hashtable<String,ResultAreaVO>();
@@ -1765,6 +1780,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
     if (correctAnalyteSequence_!=null){
       for (String groupName : correctAnalyteSequence_.keySet()){
         Vector<String> analytesInSequence = correctAnalyteSequence_.get(groupName);
+        if (!allMoleculeNames_.containsKey(groupName)) continue;
         Vector<String> unorderedSequence = allMoleculeNames_.get(groupName);
         Vector<String> correctOrder = new Vector<String>();
         for (String anal : analytesInSequence){
@@ -2475,7 +2491,21 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
     return allESNames_;
   }
   
+  /**
+   * 
+   * @return the original class sequence if "Quant file" is entered, otherwise null
+   */
+  public LinkedHashMap<String,Integer> getClassSequence(){
+    return this.classSequence_;
+  }
   
+  /**
+   * 
+   * @return the original quantification objects if "Quant file" is entered, otherwise null; first key is the class, second the analyte name, third, the modification
+   */
+  public Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> getQuantObjects(){
+    return quantObjects_;
+  }
 
   public Hashtable<String,Hashtable<String,Integer>> getCorrectionTypeISLookup()
   {
@@ -3095,7 +3125,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
     expNamesOfGroup_ = null;
     if (maxIsotopesOfGroup_!=null)maxIsotopesOfGroup_.clear();
     maxIsotopesOfGroup_ = null;
-    elementConfigPath_ = null;
     //maybe TODO: clean of elementParser
     elementParser_ = null;
     //maybe TODO: clean of absSetting
@@ -3130,6 +3159,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
     esAmountLookup_ = null;
     if (correctAnalyteSequence_!=null)correctAnalyteSequence_.clear();
     correctAnalyteSequence_ = null;
+    if (quantObjects_!=null)quantObjects_.clear();
+    quantObjects_ = null;
   }
   
   public Vector<String> getExpsOfGroup (String group){

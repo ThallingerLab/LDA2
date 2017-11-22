@@ -36,6 +36,8 @@ import java.util.Vector;
 
 import at.tugraz.genome.dbutilities.Base64;
 import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.Settings;
+import at.tugraz.genome.lda.alex123.vos.TargetlistEntry;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
@@ -133,6 +135,14 @@ public class MSnAnalyzer
   /** are there are any MSn spectra found for this precursor ion m/z value*/
   private boolean msnSpectraPresent_;
   
+  /** stores the probes that correspond to spectra at various MS-levels; the key is the MS-level*/
+  private Hashtable<Integer,Vector<CgProbe>> probesWithMSnSpectra_;
+  
+  /** reports for which MS-levels spectra are present*/
+  Hashtable<Integer,Boolean> msLevels_;
+  
+  
+  
     
   /**
    * constructor requires the name for the lipid class, MS1 data including quantitation info for the lipid to be checked,
@@ -142,14 +152,16 @@ public class MSnAnalyzer
    * @param modName name of the adduct
    * @param set MS1 data including quantitation info for the lipid to be checked
    * @param analyzer object that holds MS data and can quantify fragments of interest
+   * @param quantVO the VO containing the original parameters of the quantitation request
+   * @param readMSnSpectra should the MSn spectra be read, or are they already in the cache
    * @param ignoreAbsolute should absolute rules be ignored - whenever there is an overlap of isobars assumed
    * @throws RulesException specifies in detail which rule has been infringed
    * @throws IOException exception if there is something wrong about the file
    * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
    * throws CgException errors from the quantitation process
    */
-  public MSnAnalyzer(String className, String modName, LipidParameterSet set, LipidomicsAnalyzer analyzer, boolean ignoreAbsolute) throws RulesException, IOException, SpectrummillParserException, CgException {
-    this(null, className,modName,set,analyzer,ignoreAbsolute,false);
+  public MSnAnalyzer(String className, String modName, LipidParameterSet set, LipidomicsAnalyzer analyzer, QuantVO quantVO, boolean readMSnSpectra, boolean ignoreAbsolute) throws RulesException, IOException, SpectrummillParserException, CgException {
+    this(null, className,modName,set,analyzer,quantVO,ignoreAbsolute,readMSnSpectra,false);
   }
 
   /**
@@ -161,13 +173,14 @@ public class MSnAnalyzer
    * @param modName name of the adduct
    * @param set MS1 data including quantitation info for the lipid to be checked
    * @param analyzer object that holds MS data and can quantify fragments of interest
+   * @param quantVO the VO containing the original parameters of the quantitation request 
    * @throws RulesException specifies in detail which rule has been infringed
    * @throws IOException exception if there is something wrong about the file
    * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
    * throws CgException errors from the quantitation process
    */
   public MSnAnalyzer(String rulesDir, String className, String modName, LipidParameterSet set, LipidomicsAnalyzer analyzer) throws RulesException, IOException, SpectrummillParserException, CgException {
-    this(rulesDir, className,modName,set,analyzer,false,false);
+    this(rulesDir, className,modName,set,analyzer,null,false,true,false);
   }
 
   
@@ -180,29 +193,42 @@ public class MSnAnalyzer
    * @param modName name of the adduct
    * @param set MS1 data including quantitation info for the lipid to be checked
    * @param analyzer object that holds MS data and can quantify fragments of interest
+   * @param quantVO object that holds the quantification request
    * @param ignoreAbsolute should absolute rules be ignored - whenever there is an overlap of isobars assumed
+   * @param readMSnSpectra should the MSn spectra be read, or are they already in the cache
    * @param debug should the analyzer store the details why a class, chain, etc. was abandoned?
    * @throws RulesException specifies in detail which rule has been infringed
    * @throws IOException exception if there is something wrong about the file
    * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
    * throws CgException errors from the quantitation process
    */
-  public MSnAnalyzer(String rulesDir, String className, String modName, LipidParameterSet set, LipidomicsAnalyzer analyzer, boolean ignoreAbsolute, boolean debug) throws RulesException, IOException, SpectrummillParserException, CgException {
+  public MSnAnalyzer(String rulesDir, String className, String modName, LipidParameterSet set, LipidomicsAnalyzer analyzer, 
+      QuantVO quantVO, boolean ignoreAbsolute, boolean readMSnSpectra, boolean debug) throws RulesException, IOException, SpectrummillParserException, CgException {
     this(className,modName,analyzer,debug,ignoreAbsolute);
     this.rulesDir_  = rulesDir;
     this.set_ = set;
     this.debug_ = debug;
-    Hashtable<Integer,Boolean> msLevels =  MSnAnalyzer.prepareCachedSpectra(analyzer_, set_);
+    fragCalc_ = null;
+    msLevels_ =  MSnAnalyzer.prepareCachedSpectra(analyzer_, set_, readMSnSpectra);
     try{
-      fragCalc_ = new FragmentCalculator(rulesDir_,className_,modName_,set_.getNameStringWithoutRt(),set_.getChemicalFormula(),set_.Mz[0]);
-      this.checkMSnEvidence(msLevels);
+      if (Settings.useAlex() && quantVO!=null && (quantVO instanceof TargetlistEntry) && ((TargetlistEntry)quantVO).hasAlex123FragmentsForClass()){
+        //This is checking if there exist any rules - used only for definition of a base peak cutoff!!!! - I am not sure if I should remove this
+        try{
+          fragCalc_ = new FragmentCalculator(rulesDir_,className_,modName_,set_.getNameStringWithoutRt(),set_.getChemicalFormula(),set_.Mz[0]);          
+        } catch (NoRuleException nrx){
+        }
+        this.checkMSnByAlexFragments((TargetlistEntry)quantVO,msLevels_);
+      }else{
+        fragCalc_ = new FragmentCalculator(rulesDir_,className_,modName_,set_.getNameStringWithoutRt(),set_.getChemicalFormula(),set_.Mz[0]);
+        this.checkMSnEvidence(msLevels_);
+      }
       transferResultsToLipidParameterSet();
     } catch (NoRuleException nrx){
       // if the rule is not present, the status is NO_MSN_PRESENT
       // and there should be no further checks
       return;
     }
-   
+
   }
   
   /**
@@ -318,6 +344,31 @@ public class MSnAnalyzer
    * @throws NoRuleException thrown if the rules are not there
    */
   private void checkMSnEvidence(Hashtable<Integer,Boolean> msLevels) throws RulesException, IOException, SpectrummillParserException, CgException, NoRuleException {
+    probesWithMSnSpectra_ = performStandardInitialProcesses(msLevels);
+    if (probesWithMSnSpectra_==null || probesWithMSnSpectra_.size()<1){
+      this.status_ = LipidomicsMSnSet.NO_MSN_PRESENT;
+      return;
+    }
+    if (fragCalc_.getChainCutoff()>=0) relativeChainCutoff_ = fragCalc_.getChainCutoff();
+    basePeakValues_ = calculateBasePeakValuesIfRequired(msLevels);
+    checkHeadGroupFragments(probesWithMSnSpectra_);
+    if (status_== LipidomicsMSnSet.DISCARD_HIT && !debug_) return;
+    checkChainFragments(probesWithMSnSpectra_);
+    if (debug_) debugVO_.setSpectrumCoverageFulfilled(true);
+    checkSpectrumCoverage(msLevels);
+    if (status_!= LipidomicsMSnSet.FRAGMENTS_DETECTED && !debug_) return;
+    if (fragCalc_.getAllowedChainPositions()>1)checkPositions();
+    else if (status_!=LipidomicsMSnSet.DISCARD_HIT)status_ = LipidomicsMSnSet.POSITION_DETECTED;
+  }
+  
+
+  /**
+   * initializes the hashtables, checks if MSn spectra are present, and if they are within the region of the quantified peak
+   * @param msLevels the msLevels to be checked
+   * @return only probes where MSn spectra are present; key is the msLevel
+   * @throws CgException
+   */
+  private Hashtable<Integer,Vector<CgProbe>> performStandardInitialProcesses(Hashtable<Integer,Boolean> msLevels) throws CgException{
     headGroupFragments_ = new Hashtable<String,CgProbe>();
     fulfilledHeadIntensityRules_ = new Hashtable<String,IntensityRuleVO>();
     chainFragments_ = new Hashtable<String,Hashtable<String,CgProbe>>();
@@ -330,7 +381,7 @@ public class MSnAnalyzer
     if (debug_) debugVO_ = new MSnDebugVO();
     if (msLevels.size()<1){
       this.status_ = LipidomicsMSnSet.NO_MSN_PRESENT;
-      return;
+      return null;
     }
     Hashtable<Integer,Vector<CgProbe>> probesWithMSnSpectra = new Hashtable<Integer,Vector<CgProbe>>();
     for (int msLevel : msLevels.keySet()){
@@ -342,20 +393,77 @@ public class MSnAnalyzer
         if (probes.size()>0)probesWithMSnSpectra.put(msLevel, probes);
       }
     }
-    if (probesWithMSnSpectra.size()<1){
+    return probesWithMSnSpectra;
+  }
+  
+  /**
+   * checks for fragments by Alex123 target lists
+   * @param quantVO object that holds the quantification request
+   * @param msLevels the msLevels to be checked
+   * @throws CgException errors from the quantitation process
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  private void checkMSnByAlexFragments(TargetlistEntry quantVO, Hashtable<Integer,Boolean> msLevels) throws CgException,
+    RulesException, NoRuleException, IOException, SpectrummillParserException{
+    if (quantVO.getMsnFragments()==null || quantVO.getMsnFragments().size()==0){
+      this.status_ = LipidomicsMSnSet.NO_MSN_PRESENT;
+      return;      
+    }
+    probesWithMSnSpectra_ = performStandardInitialProcesses(msLevels);
+    if (probesWithMSnSpectra_==null || probesWithMSnSpectra_.size()<1){
       this.status_ = LipidomicsMSnSet.NO_MSN_PRESENT;
       return;
     }
-    if (fragCalc_.getChainCutoff()>=0) relativeChainCutoff_ = fragCalc_.getChainCutoff();
-    basePeakValues_ = calculateBasePeakValuesIfRequired(msLevels);
-    checkHeadGroupFragments(probesWithMSnSpectra);
-    if (status_== LipidomicsMSnSet.DISCARD_HIT && !debug_) return;
-    checkChainFragments(probesWithMSnSpectra);
-    if (debug_) debugVO_.setSpectrumCoverageFulfilled(true);
-    checkSpectrumCoverage(msLevels);
-    if (status_!= LipidomicsMSnSet.FRAGMENTS_DETECTED && !debug_) return;
-    if (fragCalc_.getAllowedChainPositions()>1)checkPositions();
-    else if (status_!=LipidomicsMSnSet.DISCARD_HIT)status_ = LipidomicsMSnSet.POSITION_DETECTED;
+    if (fragCalc_!=null)
+      basePeakValues_ = calculateBasePeakValuesIfRequired(msLevels);
+//    for (Integer level : basePeakValues_.keySet()){
+//      System.out.println("Class: "+quantVO.getAnalyteClass());
+//      System.out.println("Basepeakvalue "+level+": "+basePeakValues_.get(level));
+//    }
+    
+    Hashtable<String,String> verifiedMolecularSpecies = new Hashtable<String,String>();
+    Hashtable<Integer,Hashtable<String,Hashtable<String,TargetlistEntry>>> allFragments = quantVO.getMsnFragments();
+    boolean foundAnyFragments = false;
+    boolean foundHeadFragments = false;
+    boolean foundChainFragments = false;
+    for (Integer msLevel : allFragments.keySet()){
+      if (!msLevels.get(msLevel)) continue;
+      Hashtable<String,Hashtable<String,TargetlistEntry>> fragments = allFragments.get(msLevel);
+      for (String fragmentName : fragments.keySet()){
+        //System.out.println("Fragment: "+fragmentName);
+        Hashtable<String,TargetlistEntry> molSpecies = fragments.get(fragmentName);
+        TargetlistEntry oneFragment = molSpecies.values().iterator().next();
+        CgProbe probe = analyzer_.calculateMs2Area(oneFragment.getAnalyteMass(), oneFragment.getFragmentFormula(),
+            oneFragment.getMsLevel(), oneFragment.getCharge(), false, probesWithMSnSpectra_.get(oneFragment.getMsLevel()));
+        if (probe.AreaStatus == CgAreaStatus.OK && (fragCalc_==null || checkBasePeakCutoff(probe,oneFragment.getMsLevel())) ){
+          foundAnyFragments = true;
+          //if (oneFragment.getStructure().equalsIgnoreCase(quantVO.getAnalyteClass()) || quantVO.getAnalyteClass().equalsIgnoreCase("IS "+oneFragment.getStructure())){
+          if (!oneFragment.getStructure().startsWith("FA ") && !oneFragment.getStructure().startsWith("LCB ")){
+            headGroupFragments_.put(fragmentName,probe);
+            foundHeadFragments = true;
+          }else{
+            String chainName = oneFragment.getStructure();////oneFragment.getFragmentSumComposition();
+            Hashtable<String,CgProbe> fragmentsOfChain = new Hashtable<String,CgProbe>();
+            if (chainFragments_.containsKey(chainName)) fragmentsOfChain = chainFragments_.get(chainName);
+            fragmentsOfChain.put(fragmentName, probe);
+            chainFragments_.put(chainName, fragmentsOfChain);
+            for (String molSpec : molSpecies.keySet()){
+              foundChainFragments = true;
+              verifiedMolecularSpecies.put(molSpec, molSpec);            
+            }
+          }
+        }
+      }
+    }
+    if (!foundAnyFragments) this.status_ = LipidomicsMSnSet.DISCARD_HIT;
+    if (foundHeadFragments && status_!=LipidomicsMSnSet.DISCARD_HIT) this.status_ = LipidomicsMSnSet.HEAD_GROUP_DETECTED;
+    if (foundChainFragments && status_!=LipidomicsMSnSet.DISCARD_HIT) this.status_ = LipidomicsMSnSet.FRAGMENTS_DETECTED;
+    for (String molSpecies : verifiedMolecularSpecies.keySet()){
+      validChainCombinations_.add(molSpecies);
+    }
   }
   
   /**
@@ -1518,15 +1626,21 @@ public class MSnAnalyzer
   
   private void transferResultsToLipidParameterSet() throws RulesException, NoRuleException, IOException, SpectrummillParserException{
     if (status_ > LipidomicsMSnSet.DISCARD_HIT || debug_){
+      Hashtable<Integer,Vector<Float>> msnRetentionTimes = new Hashtable<Integer,Vector<Float>>();
+      for (int msLevel : msLevels_.keySet()){
+        if (!msLevels_.get(msLevel) || !this.probesWithMSnSpectra_.containsKey(msLevel)) continue;
+        msnRetentionTimes.put(msLevel, analyzer_.getMSnSpectraRetentionTimes(msLevel,probesWithMSnSpectra_.get(msLevel)));
+      }      
       set_ = new LipidomicsMSnSet(set_,status_,LipidomicsConstants.getMs2MzTolerance(),headGroupFragments_,fulfilledHeadIntensityRules_,
           chainFragments_, fulfilledChainIntensityRules_, validChainCombinations_,positionDefinition_, posEvidenceAccordToProposedDefinition_,
-          fragCalc_.getAllowedChainPositions(), basePeakValues_);
+          fragCalc_!=null ? fragCalc_.getAllowedChainPositions() : 1, basePeakValues_, msnRetentionTimes);
     }
   }
   
   public LipidParameterSet getResult(){
     return this.set_;
   }
+  
   
   /**
    * creates an IntensityPositionVO from the IntensityRuleVO, the assigned positions, and the name of the two fatty acids
@@ -2014,7 +2128,8 @@ public class MSnAnalyzer
    * throws CgException errors from the quantitation process
    */
   private static void recalculateMS2Identification(SharedPeakContributionVO contr, LipidomicsAnalyzer analyzer) throws RulesException, IOException, SpectrummillParserException, CgException{
-    MSnAnalyzer msnAnalyzer = new MSnAnalyzer(contr.getQuantVO().getAnalyteClass(),contr.getQuantVO().getModName(),contr.getSet(),analyzer,true);  
+    //TODO: the parameter before the last one is set to true in the meantime - maybe play around with caching in the future to improve calculation time
+    MSnAnalyzer msnAnalyzer = new MSnAnalyzer(contr.getQuantVO().getAnalyteClass(),contr.getQuantVO().getModName(),contr.getSet(),analyzer,contr.getQuantVO(),true,true);  
     if (msnAnalyzer.checkStatus()==LipidomicsMSnSet.DISCARD_HIT) contr.setSet(null);
     else contr.setSet(msnAnalyzer.getResult());
 
@@ -2172,8 +2287,12 @@ public class MSnAnalyzer
     return lowerHigher;
   }
   
-  public static Hashtable<Integer,Boolean> prepareCachedSpectra(LipidomicsAnalyzer analyzer, LipidParameterSet set) throws CgException{
-    return analyzer.prepareMSnSpectraCache(set.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), set.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance());
+  public static Hashtable<Integer,Boolean> prepareCachedSpectra(LipidomicsAnalyzer analyzer, LipidParameterSet set, boolean readMSnSpectra) throws CgException{
+    if (readMSnSpectra)
+      return analyzer.prepareMSnSpectraCache(set.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), set.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance());
+    else{
+      return analyzer.checkMSnLevels();
+    }
   }
 }
 

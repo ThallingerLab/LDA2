@@ -65,6 +65,8 @@ public class LipidomicsMSnSet extends LipidParameterSet
   private int numberOfPositions_;
   /** the intensities of the base peaks */
   private Hashtable<Integer,Float> basePeakValues_;
+  /** the retention times of the used MSn spectra; the key is the msLevel*/
+  private Hashtable<Integer,Vector<Float>> msnRetentionTimes_;
   
   
   /** position definitions for fatty acid combinations - first key: id of the chain combination; second hash: lookup from the position of the fatty acid in the combination key to the assigned position*/
@@ -91,12 +93,13 @@ public class LipidomicsMSnSet extends LipidParameterSet
    * @param positionEvidence hash containing the fulfilled MSn evidence for a position assignment - first key: id of the chain combination; second key: position where evidence is provided; values: rules that are fulfilled by MSn evidence
    * @param numberOfPositions at how many positions the fatty acids may be assigned
    * @param basePeakValues found values for the base peak
+   * @param msnRetentionTimes the retention times of the used MSn spectra; the key is the msLevel
    */
   public LipidomicsMSnSet(LipidParameterSet set, int status, float mzTolerance, Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,IntensityRuleVO> headIntensityRules,
       Hashtable<String,Hashtable<String,CgProbe>> chainFragments, Hashtable<String,Hashtable<String,IntensityChainVO>> chainIntensityRules,
       Vector<String> validChainCombinations, Hashtable<String,Hashtable<Integer,Integer>> positionDefinition,
       Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>> positionEvidence, int numberOfPositions, 
-      Hashtable<Integer,Float> basePeakValues){
+      Hashtable<Integer,Float> basePeakValues, Hashtable<Integer,Vector<Float>> msnRetentionTimes){
     super(set);
     status_ = status;
     mzTolerance_ = mzTolerance;
@@ -125,11 +128,13 @@ public class LipidomicsMSnSet extends LipidParameterSet
     }
     numberOfPositions_ = numberOfPositions;
     basePeakValues_ = new  Hashtable<Integer,Float>(basePeakValues);
+    msnRetentionTimes_ = msnRetentionTimes;
   }
   
   public LipidomicsMSnSet(LipidomicsMSnSet set){
     this(set,set.status_,set.mzTolerance_,set.headGroupFragments_,set.headIntensityRules_,set.chainFragments_,set.chainIntensityRules_,
-        set.validChainCombinations_,set.positionDefinition_,set.positionEvidence_,set.numberOfPositions_,set.basePeakValues_);
+        set.validChainCombinations_,set.positionDefinition_,set.positionEvidence_,set.numberOfPositions_,set.basePeakValues_,
+        set.msnRetentionTimes_);
   }
 
   /**
@@ -301,8 +306,13 @@ public class LipidomicsMSnSet extends LipidParameterSet
       double area = 0d;
       String[] combiFAs = getFAsFromCombiName(combi);
       for (String combiFA : combiFAs){
-        if (areas.containsKey(combiFA))
-          area += areas.get(combiFA)/((double)faChainOccurrences.get(combiFA));
+        if (areas.containsKey(combiFA) || areas.containsKey("FA "+combiFA) || areas.containsKey("LCB "+combiFA)){
+          double fragmentArea = 0d;
+          if (areas.containsKey(combiFA)) fragmentArea = areas.get(combiFA);
+          else if (areas.containsKey("FA "+combiFA)) fragmentArea = areas.get("FA "+combiFA);
+          else if (areas.containsKey("LCB "+combiFA)) fragmentArea = areas.get("LCB "+combiFA);
+          area += fragmentArea/((double)faChainOccurrences.get(combiFA));
+        }
       }
       combiAreas.put(combi, area);
       totalArea += area;
@@ -339,7 +349,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
    * @return individual lipid species names
    */
   public static String[] getFAsFromCombiName(String combiName){
-    return FragmentCalculator.getFAsFromCombiName(combiName);
+    return FragmentCalculator.getFAsFromCombiName(combiName.replaceAll("/", FragmentCalculator.FA_SEPARATOR));
   }
 
   private double getAreaOfOneChain(String faName){
@@ -366,6 +376,14 @@ public class LipidomicsMSnSet extends LipidParameterSet
    */
   public float getMSnMzTolerance(){
     return mzTolerance_;
+  }
+  
+  /**
+   * @return the retention times of the used MSn spectra; the key is the msLevel
+   */
+  public Hashtable<Integer,Vector<Float>> getMsnRetentionTimes()
+  {
+    return msnRetentionTimes_;
   }
 
   /**

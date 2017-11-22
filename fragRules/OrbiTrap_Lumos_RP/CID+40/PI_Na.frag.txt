@@ -1,0 +1,37 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.01%
+RetentionTimePostprocessing=true
+SpectrumCoverage=20%
+
+
+[HEAD]
+!FRAGMENTS
+Name=Precursor		Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=other
+Name=PIhead_283		Formula=C6H13O9PNa		Charge=1	MSLevel=2	mandatory=true
+Name=NL_PIhead_242	Formula=$PRECURSOR-C6H11O8P	Charge=1	MSLevel=2	mandatory=true
+Name=NL_PIhead_260	Formula=$PRECURSOR-C6H13O9P	Charge=1	MSLevel=2	mandatory=true
+Name=NL_PIhead_282	Formula=$PRECURSOR-C6H12O9PNa	Charge=1	MSLevel=2	mandatory=true
+
+!INTENSITIES
+Equation=PIhead_283+NL_PIhead_282>0.10*$BASEPEAK	mandatory=true
+Equation=PIhead_283*0.7>NL_PIhead_242			mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=NL_Carboxy		Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Carboxy_Ino	Formula=NL_Carboxy-C6H10O5	Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=NL_Carboxy*2+0*$BASEPEAK>NL_Carboxy_Ino+0*$BASEPEAK		mandatory=true
+Equation=NL_Carboxy+NL_Carboxy_Ino>0.005*$BASEPEAK			mandatory=true
+
+
+[POSITION]
+!INTENSITIES
+Equation=NL_Carboxy_Ino[2]*0.8>NL_Carboxy_Ino[1]					mandatory=false
+Equation=NL_Carboxy[1]*0.7+NL_Carboxy_Ino[1]*0>NL_Carboxy[2]+NL_Carboxy_Ino[2]*0	mandatory=false

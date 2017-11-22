@@ -35,27 +35,27 @@ import at.tugraz.genome.lda.utils.StaticUtils;
  */
 public class QuantVO
 {
-  private String analyteClass_;
-  private String analyteName_;
-  private int dbs_;
-  private String analyteFormula_;
-  private double analyteMass_;
-  private int charge_;
-  private String modName_;
-  private String modFormula_;
-  private float retTime_;
-  private float isobaricRetTime_;
-  private float usedMinusTime_;
-  private float isobaricMinusTime_;
-  private float usedPlusTime_;
-  private float isobaricPlusTime_;
-  private Vector<Double> mustMatchProbabs_;
-  private Vector<Double> probabs_;
-  private int negStartValue_;
+  protected String analyteClass_;
+  protected String analyteName_;
+  protected int dbs_;
+  protected String analyteFormula_;
+  protected double analyteMass_;
+  protected int charge_;
+  protected String modName_;
+  protected String modFormula_;
+  protected float retTime_;
+  protected float isobaricRetTime_;
+  protected float usedMinusTime_;
+  protected float isobaricMinusTime_;
+  protected float usedPlusTime_;
+  protected float isobaricPlusTime_;
+  protected Vector<Double> mustMatchProbabs_;
+  protected Vector<Double> probabs_;
+  protected int negStartValue_;
   /** other isobaric quantitation objects */
-  private Vector<QuantVO> isobaricSpecies_;
+  protected Vector<QuantVO> isobaricSpecies_;
   /** will this QuantVO be quantified by another isobar?*/
-  private boolean quantifiedByOtherIsobar_;
+  protected boolean quantifiedByOtherIsobar_;
   
   public QuantVO(String analyteClass, String analyteName, int dbs,
       String analyteFormula, double analyteMass, int charge,

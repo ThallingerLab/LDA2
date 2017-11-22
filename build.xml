@@ -183,6 +183,8 @@
 	
 	<target name="distriCalc">
     	<mkdir dir="${classes.utils.dir}"/>
+		<unjar src="${maspectras.lib.dir}/maspectras-lipidomics.jar" dest="${classes.utils.dir}" />
+		<unjar src="${dist.dir}/LipidDataAnalyzer.jar" dest="${classes.utils.dir}" />
 	  	<javac debug="true"
 	         destdir="${classes.utils.dir}"
 	         includes="**/*.java"

@@ -46,6 +46,7 @@ import java.util.Vector;
 
 
 
+
 import at.tugraz.genome.maspectras.quantification.Analyzer;
 import at.tugraz.genome.maspectras.quantification.CgAreaStatus;
 import at.tugraz.genome.lda.LipidomicsConstants;
@@ -53,6 +54,7 @@ import at.tugraz.genome.lda.exception.QuantificationException;
 import at.tugraz.genome.lda.quantification.LipidomicsDefines;
 import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.maspectras.quantification.CgChromatogram;
+import at.tugraz.genome.maspectras.quantification.CgDefines;
 import at.tugraz.genome.maspectras.quantification.CgException;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.maspectras.quantification.ChromaAnalyzer;
@@ -66,18 +68,29 @@ import at.tugraz.genome.maspectras.utils.Calculator;
  */
 public class LipidomicsAnalyzer extends ChromaAnalyzer
 {
-  public LipidomicsAnalyzer(String headerFilePath, String indexFilePath, String retentionTimeFilePath, String chromatogramFilePath)throws CgException{
-    super(headerFilePath, indexFilePath, retentionTimeFilePath, chromatogramFilePath,LipidomicsConstants.isSparseData(),LipidomicsConstants.getChromSmoothRange());
-    this.init();
-  }
   
-  public LipidomicsAnalyzer(String filePath) throws CgException{
-    super (filePath);
-    this.init();
-  }
-
-  public LipidomicsAnalyzer(String filePath, boolean useCache) throws CgException{
-    super(filePath, useCache);
+  private boolean useCuda_;
+  protected SavGolJNI sav_gol_jni_;
+  
+  public LipidomicsAnalyzer(String headerFilePath, String indexFilePath, String retentionTimeFilePath, String chromatogramFilePath, boolean useCuda)throws CgException{
+    super();
+    if (useCuda){
+      sav_gol_jni_ = new SavGolJNI();
+    }
+    reader_ = new LipidomicsChromReader(headerFilePath,indexFilePath,retentionTimeFilePath,chromatogramFilePath,LipidomicsConstants.isSparseData(),
+        LipidomicsConstants.getChromSmoothRange(), useCuda);
+    m_chroma = new LipidomicsChromatogram[CgDefines.MaxCharge];
+    LipidomicsChromReader lReader = (LipidomicsChromReader) reader_;
+    if (useCuda){
+      int max_length = lReader.getNumberOfScans();
+      for(Integer key : lReader.getMsmsNrOfScans().keySet()){
+        if (max_length < lReader.getMsmsNrOfScans().get(key)){
+          max_length = lReader.getMsmsNrOfScans().get(key);
+        }
+      }
+      sav_gol_jni_.initMalloc( max_length );
+    }
+    this.useCuda_ = useCuda;
     this.init();
   }
   
@@ -345,6 +358,44 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     lowerIntensityThreshold_ = 0f;
   }
 
+  protected CgChromatogram readAChromatogram(float mz, float lowerMzBand, float upperMzBand,int msLevel,float smoothRange, int smoothRepeats, float meanSmoothRange, int meanSmoothRepeats, float startTime, float stopTime) throws CgException{
+//  long time = System.currentTimeMillis();
+	CgChromatogram cx = reader_.readChromatogram(mz - lowerMzBand,mz + upperMzBand,msLevel);
+    cx.Mz = mz;
+    cx.LowerMzBand = lowerMzBand;
+    cx.UpperMzBand = upperMzBand;
+    if (startTime!=-1f || stopTime!=Float.MAX_VALUE){
+      boolean foundStart = false;
+      boolean foundStop = false;
+      for (int i=0;i!=cx.ScanCount;i++){
+        if (!foundStart && startTime<cx.Value[i][0]){
+          cx.startSmoothScan_ = i-1;
+          foundStart = true;
+        }
+        if (!foundStop && stopTime<cx.Value[i][0]){
+          cx.stopSmoothScan_ = i+1;
+          foundStop = true;
+        }
+      }
+    }
+    boolean copyRawData = true;
+    if (meanSmoothRange>0){
+      cx.smoothMean(meanSmoothRange, meanSmoothRepeats,copyRawData);
+      copyRawData = false;
+    }
+//    System.out.println("Reading Time: "+(System.currentTimeMillis()-time));
+//    time = System.currentTimeMillis();
+    if (useCuda_){
+      LipidomicsChromatogram lCx = new LipidomicsChromatogram(cx);
+      lCx.Smooth(smoothRange, smoothRepeats, copyRawData, sav_gol_jni_);
+    } else {
+      cx.Smooth(smoothRange, smoothRepeats, copyRawData);
+    }
+    
+//    System.out.println("Smoothing Time: "+(System.currentTimeMillis()-time));
+    return cx;
+  }
+  
   public Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> processByMzProbabsAndPossibleRetentionTime(float mz, int charge, float retentionTime, float prevTimeTolerance, float afterTimeTolerance, int timeType, Vector<Double>probabs, Vector<Double>possibleProbabs,int msLevel, boolean negative) throws CgException{
     return this.processByMzProbabsAndPossibleRetentionTime(mz, charge, retentionTime, null, prevTimeTolerance, afterTimeTolerance, timeType, probabs, possibleProbabs, msLevel, negative);
   }
@@ -617,7 +668,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     // second, if the area is farer away from the highest probe it has to have at least 10% of its area; the reason for this
     // is that very close ones could be part of twin-peaks and should not be removed
     // third, if there is an other-isotope-probe between the highest probe and this probe the area has to be at least half of 
-    // the highest area, because than we cannot really distinguish anymore which one belongs to the other isotope
+    // the highest area, because then we cannot really distinguish anymore which one belongs to the other isotope
     for (int i=0;i!=probes4.size();i++){
       if (isOfInterest[i]){
         CgProbe aProbe = probes4.get(i);
@@ -2437,7 +2488,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
       later = true;
     if (((oldChromProbe.UpperValley-oldChromProbe.Peak)/(finalProbe.UpperValley-finalProbe.Peak)>overlapDistanceDeviationFactor_))
       later = true;
-    Probe3D probe3D = new Probe3D(finalProbe,lessMz,higherMz,before,later,ellipse);
+    Probe3D probe3D = new Probe3D(finalProbe,profileProbe,lessMz,higherMz,before,later,ellipse);
     return probe3D;
   }
   
@@ -2455,23 +2506,10 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
       return this.fromProbeToProfile_.get(probePositionInHash);
     }else{
 //      System.out.println("Reading from file");
-      Vector<CgProbe> theProbes = new Vector<CgProbe>();
-      theProbes.add(aProbe);
-//    System.out.println("aProbe.Mz: "+aProbe.Mz);
-      // here the raw profile is extracted from the file and smoothed 
-      float mzRange = this.profileMzRange_;
-      Vector<CgChromatogram> profiles = this.readProfiles(theProbes, mzRange, this.profileTimeTolerance_,5f,
-          profileSmoothRange_,profileSmoothRepeats_, profileSmoothRange_, profileMeanSmoothRepeats_, msLevel);
+      LipidomicsChromatogram  profile = readASingleProfile(aProbe,msLevel,true);
       
-      LipidomicsChromatogram  profile = new LipidomicsChromatogram(profiles.get(0));
-      if (justZeroValues(profile)){
-        profiles = this.readProfiles(theProbes, mzRange, this.broaderProfileTimeTolerance_,5f,
-            profileSmoothRange_,profileSmoothRepeats_, profileSmoothRange_, profileMeanSmoothRepeats_, msLevel);
-        profile = new LipidomicsChromatogram(profiles.get(0));
-      }
-      
-//      this.printChromaToFile(profile, "D:\\Experiment1\\QTOF\\profsmall.JPG");
-//      this.printChromaToFile(profile, "D:\\Experiment1\\QTOF\\profraw.JPG",1);
+//      this.printChromaToFile(profile, "D:\\Christer\\20170310\\test2\\profsmall.JPG");
+//      this.printChromaToFile(profile, "D:\\Christer\\20170310\\test2\\profraw.JPG",1);
       
       profile.GetMaximumAndAverage();
       // these are specific paramaters for the Greedy-Algorithm for detection of peak borders
@@ -2503,7 +2541,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
 ////    profile.FindPeak(profile.Value.length/2, 1, LipidomicsDefines.StandardValleyMethod);
 ////    profile.FindPeak(profile.Value.length/2, 1, LipidomicsDefines.EnhancedValleyMethod);
       CgProbe rightProfileProbe = new CgProbe(0,charge);
-      rightProfileProbe = LipidomicsAnalyzer.copyResults(rightProfileProbe, profile);
+      rightProfileProbe = LipidomicsAnalyzer.copyResults(rightProfileProbe, profile, true);
 //    System.out.println(rightProfileProbe.Peak+";"+(originalMz-(mzRange*2)/3)+";"+originalMz+";"+(originalMz+((mzRange*2)/3)));
       // if the peak is to far out of the
       rightProfileProbe.Peak = rightProfileProbe.Peak+profileSmoothingCorrection_;
@@ -2522,7 +2560,29 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
       return rightProfileProbe;
     }
   }
-    
+
+  /** reads an m/z profile from the chrom file and smooths it*/
+  protected Vector<CgChromatogram> readProfiles(Vector<CgProbe> probes, float mzTolerance, float timeTolerance, float maxTimeDeviation,
+      float mzSmoothRange, int smoothRepeats, float meanSmoothRange, int meanSmoothRepeats, int msLevel, boolean smooth) throws CgException{
+    LipidomicsChromReader lReader = (LipidomicsChromReader) reader_;
+    Vector<CgChromatogram> chroms =  lReader.readProfiles(probes, mzTolerance, timeTolerance, maxTimeDeviation,0,0, msLevel, sav_gol_jni_);
+    if (!smooth) return chroms;
+    for (CgChromatogram chrom : chroms){
+      LipidomicsChromatogram lChrom = new LipidomicsChromatogram(chrom);
+      boolean copyRawData = true;
+      if (meanSmoothRange>0){
+        lChrom.smoothMean(meanSmoothRange, meanSmoothRepeats,copyRawData);
+        copyRawData = false;
+      }
+      if( useCuda_ ){
+        lChrom.Smooth(mzSmoothRange, smoothRepeats, copyRawData, sav_gol_jni_);
+      } else {
+        lChrom.Smooth(mzSmoothRange, smoothRepeats, copyRawData);
+      }
+    }
+    return chroms;
+  }
+   
   @SuppressWarnings({ "unchecked", "rawtypes" })
   private Vector getSmallAndBroadProbe(CgProbe rightProfileProbe, int mainScan, LipidomicsChromatogram coarseChrom, int charge, int msLevel)throws CgException,QuantificationException{
     //System.out.println("rightProfileProbe.Peak: "+rightProfileProbe.Peak);
@@ -2571,7 +2631,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
 //    this.printChromaToFile(broadChroma, "D:\\Experiment1\\QTOF\\broadChrom.JPG");
     if (!smallChroma.Good) throw new QuantificationException("The exact chromatogram (small) does not show satisfying intensities");
     CgProbe smallProbe = new CgProbe(0,charge);
-    smallProbe = LipidomicsAnalyzer.copyResults(smallProbe, smallChroma);
+    smallProbe = LipidomicsAnalyzer.copyResults(smallProbe, smallChroma, false);
 //    System.out.println("smallProbe: "+smallProbe.LowerValley/60f+" ; "+smallProbe.Peak/60f+" ; "+smallProbe.UpperValley/60f+" ; "+smallProbe.AreaStatus);
 
     
@@ -2620,7 +2680,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     if (!broadChroma.Good) throw new QuantificationException("The exact chromatogram (broad)  does not show satisfying intensities");
     CgProbe finalProbe = new CgProbe(0,charge);
 
-    finalProbe = LipidomicsAnalyzer.copyResults(finalProbe, broadChroma);
+    finalProbe = LipidomicsAnalyzer.copyResults(finalProbe, broadChroma, false);
 //    System.out.println("finalProbe: "+finalProbe.LowerValley+" ; "+finalProbe.Peak+" ; "+finalProbe.UpperValley);
 //    System.out.println(takeLoVallyOfSmall+";"+takeUpVallyOfSmall);
 //    System.out.println(takeLoVallyOfSmall+";"+takeUpVallyOfSmall+";"+smallProbe.LowerValley+";"+smallProbe.Peak+";"+smallProbe.UpperValley);
@@ -3154,7 +3214,8 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
       ellipse[3] = profileMaxRange_;
     CgProbe newProbe = probe1;
     if (probe1 instanceof Probe3D || probe2 instanceof Probe3D){
-      Probe3D probe3D = new Probe3D(probe1,false,false,false,false,ellipse);
+      CgProbe profileProbe = this.getProfileProbeWithoutQualityCheck(probe1,probe1.Mz-probe1.LowerMzBand,probe1.Mz+probe1.UpperMzBand,msLevel);
+      Probe3D probe3D = new Probe3D(probe1,profileProbe,false,false,false,false,ellipse);
       LipidomicsChromatogram forQuant = new LipidomicsChromatogram(readJustIntensitiesOfInterest(probe3D,msLevel));
       forQuant.Background = probe1.Background;
       forQuant.getAreaRaw();
@@ -3244,8 +3305,10 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
                 probe1.LowerValley = probe2.LowerValley;
               if (probe2.UpperValley>probe1.UpperValley)
                 probe1.UpperValley = probe2.UpperValley;
+              Probe3D useForProfilePoints = probe1;
               if (chrom.Value[LipidomicsAnalyzer.findIndexByTime(probe2.Peak,chrom)][2]>chrom.Value[LipidomicsAnalyzer.findIndexByTime(probe1.Peak,chrom)][2]){
                 probe1.Peak = probe2.Peak;
+                useForProfilePoints = probe2;
               }
               if (probe2.LowerMzBand>probe1.LowerMzBand)
                 probe1.LowerMzBand = probe2.LowerMzBand;
@@ -3257,7 +3320,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
                 probe1.LowerValley, probe1.Mz, probe1.UpperValley, probe1.Mz);
               if (ellipse[3]>profileMaxRange_)
                 ellipse[3] = profileMaxRange_;
-              Probe3D probe3D = new Probe3D(probe1,((Probe3D)probe1).isOverlapLowerMz(),
+              Probe3D probe3D = new Probe3D(probe1,useForProfilePoints,((Probe3D)probe1).isOverlapLowerMz(),
                 ((Probe3D)probe1).isOverlapHigherMz(),((Probe3D)probe1).isOverlapBefore(),
                 ((Probe3D)probe1).isOverlapLater(),ellipse);;
                 LipidomicsChromatogram forQuant = new LipidomicsChromatogram(readJustIntensitiesOfInterest(probe3D,msLevel));
@@ -3908,7 +3971,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     }
     //TODO: here this is just for charge 1
     CgProbe twoDProbe = new CgProbe(0,charge);
-    twoDProbe = copyResults(twoDProbe, cr);
+    twoDProbe = copyResults(twoDProbe, cr, false);
     CgProbe returnProbe = null;
     if (is3D){
       float broadChromSmoothRange = broadChromSmoothRange_*60f;
@@ -3924,14 +3987,15 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
       broadChroma.GetAreaAndTime();
       //TODO: here this is just for charge 1
       twoDProbe = new CgProbe(0,charge);
-      twoDProbe = copyResults(twoDProbe, broadChroma);
+      twoDProbe = copyResults(twoDProbe, broadChroma, false);
       
       float[] ellipse = new float[4];
       ellipse[0] = (float)timeCenter;
       ellipse[1] = (float)mz;
       ellipse[2] = (float)((stopTime-startTime)/2d);
       ellipse[3] = (float)mzStretch;
-      returnProbe = new Probe3D(twoDProbe,false,false,false,false,ellipse);
+      CgProbe profileProbe = getProfileProbeWithoutQualityCheck(twoDProbe, (float)startMz, (float)stopMz, msLevel);
+      returnProbe = new Probe3D(twoDProbe,profileProbe,false,false,false,false,ellipse);
       LipidomicsChromatogram forQuant = new LipidomicsChromatogram(readJustIntensitiesOfInterest((Probe3D)returnProbe,msLevel));
       
       forQuant.Background = returnProbe.Background;    
@@ -4033,8 +4097,15 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     return justZero;
   }
   
-  protected static CgProbe copyResults(CgProbe px, LipidomicsChromatogram cx){
-    px = Analyzer.copyResults(px, cx);
+  /**
+   * 
+   * @param px the CgProbe to enter the values
+   * @param cx the chromatogram to get the values
+   * @param ignoreZeros ignores empty values in the raw data in between - use this for profiles (not chromatograms)
+   * @return
+   */
+  protected static CgProbe copyResults(CgProbe px, LipidomicsChromatogram cx, boolean ignoreZeros){
+    px = Analyzer.copyResults(px, cx, ignoreZeros);
     px.greedyFragment = cx.isGreedyFragment();
     boolean loOverlap = false;
     if (cx.getLoSteepnessPoint()!=-1)
@@ -4079,7 +4150,9 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     float highestRt = startStopRt[1];
 
     //mzRange has to be read from the properties
-    LipidomicsChromatogram chrom = new LipidomicsChromatogram(this.readAChromatogram((float)fragmentMass, msnMzTolerance_, msnMzTolerance_, msLevel,0f,0,0f,0,-1f,Float.MAX_VALUE));
+    //this was the old code before the improved spectral caching
+    //LipidomicsChromatogram chrom = new LipidomicsChromatogram(this.readAChromatogram((float)fragmentMass, msnMzTolerance_, msnMzTolerance_, msLevel,0f,0,0f,0,-1f,Float.MAX_VALUE));
+    LipidomicsChromatogram chrom = new LipidomicsChromatogram(this.readJustIntensitiesOfInterest((float)fragmentMass-msnMzTolerance_,(float)fragmentMass+msnMzTolerance_,lowestRt,highestRt,msLevel));
     float area = 0f;
     CgProbe result = new CgProbe(0,charge,msLevel,fragmentFormula);
     float peakRt = 0f;
@@ -4119,6 +4192,31 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
 //    String basePath = "E:\\lipidomicsMS2\\20130729\\";
 //    printChromaToFile(chrom,basePath+String.valueOf(fragmentMass)+".png",1);
     return result;
+  }
+  
+  /**
+   * returns the retention times of MSn spectra that are within the detected MS1 peaks
+   * @param msLevel the MS-level of the spectra
+   * @param probes the detected MS1 peaks
+   * @return the retention times of MSn spectra that are within the detected MS1 peaks
+   */
+  public Vector<Float> getMSnSpectraRetentionTimes(int msLevel, Vector<CgProbe> probes){
+    Vector<Float> rts = new Vector<Float>();
+    float[] startStopRt = this.getStartStopTimeFromProbes(probes);
+    float lowestRt = startStopRt[0];
+    float highestRt = startStopRt[1];
+    Hashtable<Integer,Hashtable<Integer,String>> spectraCache = getMSnSpectraCache();
+    if (!spectraCache.containsKey(msLevel)) return rts;
+    Hashtable<Integer,String> spectra = spectraCache.get(msLevel);
+    Hashtable<Integer,Float> retTimes = reader_.getRetentionTimes(msLevel);
+    List<Integer> consScanNumbers = new ArrayList<Integer>(spectra.keySet());
+    Collections.sort(consScanNumbers);
+    for (Integer consScanNumber : consScanNumbers){
+      float rt = retTimes.get(consScanNumber);
+      if (lowestRt<rt && rt<=highestRt)
+        rts.add(rt);
+    }
+    return rts;
   }
   
   private int getStartPosition(CgChromatogram chrom, float startRt){
@@ -4223,9 +4321,10 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
       chrom.detectPeakIntensityInsideBorders(LipidomicsAnalyzer.findIndexByTime(lowestRt,chrom),LipidomicsAnalyzer.findIndexByTime(highestRt,chrom));
       chrom.GetBackground(50);
       chrom.GetAreaAndTime();
-      Analyzer.copyResults(probe, chrom);
-      probe.AreaStatus = CgAreaStatus.OK;     
-      Probe3D probe3D = new Probe3D(probe,false,false,false,false,ellipse);
+      Analyzer.copyResults(probe, chrom, false);
+      probe.AreaStatus = CgAreaStatus.OK;
+      CgProbe profileProbe = getProfileProbeWithoutQualityCheck(probe, lowestMz, highestMz, probe.getMsLevel());
+      Probe3D probe3D = new Probe3D(probe,profileProbe,false,false,false,false,ellipse);
       
       LipidomicsChromatogram forQuant = new LipidomicsChromatogram(readJustIntensitiesOfInterest(probe3D,1));
 
@@ -4290,31 +4389,40 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
   }
 
   /**
-   * sets the area cutoff relative to the highest peak identified for this m/z
-   * @param relativeAreaCutoff
-   */
-  public void setRelativeAreaCutoff(float relativeAreaCutoff)
-  {
-    this.relativeAreaCutoff_ = relativeAreaCutoff;
-  }
-
-  /**
    * 
-   * @return the area cutoff farer away from the highest peak identified for this m/z
+   * @return the area cutoff of peaks farer away from the highest peak identified for this m/z
    */
   public float getRelativeFarAreaCutoff()
   {
     return relativeFarAreaCutoff_;
   }
   
+  
   /**
-   * sets the area cutoff farer away from the highest peak identified for this m/z
-   * @param relativeFarAreaCutoff
+   * 
+   * @return area multiplication factor to remove very small uninteresting peaks
    */
-  public void setRelativeFarAreaCutoff(float relativeFarAreaCutoff)
+  public int getPeakDiscardingAreaFactor()
   {
-    this.relativeFarAreaCutoff_ = relativeFarAreaCutoff;
+    return peakDiscardingAreaFactor_;
   }
+
+  /**
+   * sets to relative area cutoff for peaks of one chromatogram
+   * @param relativeAreaCutoff area cutoff relative to the highest peak identified for this m/z
+   * @param relativeFarAreaCutoff area cutoff of peaks farer away from the highest peak identified for this m/z
+   * @param peakDiscardingAreaFactor area multiplication factor to remove very small uninteresting peaks
+   * @param overWriteDiscardingFactorOnlyIfBigger if true, the discarding factor will only be overwritten if it is bigger
+   *                                              (alllowing smaller values); if false, it will be overwritten anyway
+   */
+  public void setAreaCutoffs(float relativeAreaCutoff, float relativeFarAreaCutoff,
+      int peakDiscardingAreaFactor, boolean overWriteDiscardingFactorOnlyIfBigger){
+    this.relativeAreaCutoff_ = relativeAreaCutoff;
+    this.relativeFarAreaCutoff_ = relativeFarAreaCutoff;
+    if (!overWriteDiscardingFactorOnlyIfBigger || peakDiscardingAreaFactor>this.peakDiscardingAreaFactor_)
+      this.peakDiscardingAreaFactor_ = peakDiscardingAreaFactor; 
+  }
+  
   
   /**
    * this method checks if any of the identified 0 isotopic peaks share the same peak center
@@ -4378,6 +4486,16 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     return msnMzTolerance_;
   }
   
+  public boolean getUseCuda()
+  {
+	return useCuda_;
+  }
+  
+  public SavGolJNI getSavGolJNI()
+  {
+	  return sav_gol_jni_;
+  }
+  
   /**
    * in the isobaric peak separation procedure, hard limits for the peak are set
    * this method calculates the peak areas only inside these hard limits
@@ -4388,6 +4506,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
    */
   public void recalculatePeaksAccordingToHardLimits(LipidParameterSet set, int msLevel, float peak) throws CgException{
     Vector<Vector<CgProbe>> newProbes = new Vector<Vector<CgProbe>>();
+    float totalArea = 0f;
     for (int i=0; i!=set.getIsotopicProbes().size(); i++){
       Vector<CgProbe> probes = set.getIsotopicProbes().get(i);
       Vector<CgProbe> newProbesOfIso = new Vector<CgProbe>();
@@ -4434,7 +4553,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
             chrom.detectPeakIntensityInsideBorders(LipidomicsAnalyzer.findIndexByTime(loVal,chrom), LipidomicsAnalyzer.findIndexByTime(upVal,chrom));
             chrom.GetBackground(50);
             chrom.GetAreaAndTime();
-            Analyzer.copyResults(newProbe, chrom);
+            Analyzer.copyResults(newProbe, chrom, false);
             newProbe.AreaStatus = CgAreaStatus.OK;
           }
           newProbe.Peak = peak;
@@ -4443,11 +4562,15 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
           newProbesOfIso.add(newProbe);
         }
       }
-      if (newProbesOfIso.size()>0)
+      if (newProbesOfIso.size()>0){
         newProbes.add(newProbesOfIso);
-      else break;
+        for (CgProbe probe : newProbesOfIso) totalArea += probe.Area;
+      } else {
+        break;
+      }
     }
     set.setIsotopicProbes(newProbes);
+    set.Area = totalArea;
   }
   
   private void checkIfSmoothingDeviatedPeakPosition(LipidomicsChromatogram chrom, CgProbe probe){
@@ -4501,6 +4624,77 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
 //      }
 //    }
 //    System.out.println(lowerCount+";"+upperCount+";"+peak);
+  }
+  
+  /**
+   * detects an m/z profile for a peak that was found by chromatogram analysis
+   * @param aProbe the detected peak in a chromatogram
+   * @param msLevel the MS-level of the extracted profile
+   * @param smooth should the profile be smoothed
+   * @return an m/z profile for a peak that was found by chromatogram analysis
+   * @throws CgException if there is something wrong with the chrom access
+   */
+  private LipidomicsChromatogram readASingleProfile(CgProbe aProbe, int msLevel, boolean smooth) throws CgException{
+    Vector<CgProbe> theProbes = new Vector<CgProbe>();
+    theProbes.add(aProbe);
+    //System.out.println("aProbe.Mz: "+aProbe.Mz);
+    // here the raw profile is extracted from the file and smoothed 
+    float mzRange = this.profileMzRange_;
+    Vector<CgChromatogram> profiles = this.readProfiles(theProbes, mzRange, this.profileTimeTolerance_,5f,
+      profileSmoothRange_,profileSmoothRepeats_, profileSmoothRange_, profileMeanSmoothRepeats_, msLevel, smooth);
+    LipidomicsChromatogram profile = new LipidomicsChromatogram(profiles.get(0));
+    if (justZeroValues(profile)){
+      profiles = this.readProfiles(theProbes, mzRange, this.broaderProfileTimeTolerance_,5f,
+          profileSmoothRange_,profileSmoothRepeats_, profileSmoothRange_, profileMeanSmoothRepeats_, msLevel, smooth);
+      profile = new LipidomicsChromatogram(profiles.get(0));
+    }
+    return profile;
+  }
+  
+  /**
+   * detects an m/z profile peak without checking if the peak is OK - used for manual setting of the peak borders for getting 10% and 50% values relative to the apex
+   * @param probe the MS1-peak containing the borders
+   * @param startMz the start m/z value
+   * @param stopMz the stop m/z value
+   * @param msLevel the MS-level of the extracted profile
+   * @return an m/z profile peak without checking if the peak is OK - used for manual setting of the peak borders for getting 10% and 50% values relative to the apex
+   * @throws CgException
+   */
+  private CgProbe getProfileProbeWithoutQualityCheck(CgProbe probe, float startMz, float stopMz, int msLevel) throws CgException{
+    LipidomicsChromatogram profile = readASingleProfile(probe,msLevel,false);
+    profile.LoValley = LipidomicsAnalyzer.findIndexByTime((float)startMz,profile);
+    profile.UpValley = LipidomicsAnalyzer.findIndexByTime((float)stopMz,profile);
+    profile.Good = true;
+    profile.detectPeakIntensityInsideBorders(LipidomicsAnalyzer.findIndexByTime((float)startMz,profile),LipidomicsAnalyzer.findIndexByTime((float)stopMz,profile));
+    CgProbe profileProbe = new CgProbe(0,probe.Charge);
+    profileProbe = LipidomicsAnalyzer.copyResults(profileProbe, profile, true);
+    return profileProbe;
+  }
+  
+  /**
+   * caches the spectra of a certain precursor mass
+   * @param from lower m/z threshold for precursor m/z
+   * @param to upper m/z threshold for precursor m/z
+   * @param from lower retention time
+   * @param top upper retention time
+   * @return
+   * @throws CgException
+   */
+  public Hashtable<Integer,Boolean> prepareMSnSpectraCache(float startMz, float stopMz, float startTime, float stopTime) throws CgException{
+    return reader_.prepareMSnSpectraCache(startMz, stopMz, startTime, stopTime);
+  }
+
+  /**
+   * checks in the MSn spectra cache which MSn levels are present
+   * @return
+   */
+  public Hashtable<Integer,Boolean> checkMSnLevels(){
+    Hashtable<Integer,Hashtable<Integer,String>> cache = reader_.getMSnSpectraCache();
+    Hashtable<Integer,Boolean> availableLevels = new Hashtable<Integer,Boolean>();
+    for (Integer msLevel : cache.keySet()){
+      availableLevels.put(msLevel, true);
+    }
+    return availableLevels;
   }
     
 }

@@ -104,6 +104,7 @@ public class SingleQuantThread extends Thread
     Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> isotopicProbes = null;
     float defaultRelativeAreaCutoff = analyzer.getRelativeAreaCutoff();
     float defaultRelativeFarAreaCutoff = analyzer.getRelativeFarAreaCutoff();
+    int peakDiscardingAreaFactor = analyzer.getPeakDiscardingAreaFactor();
     Vector<QuantVO> quantVOs = new Vector<QuantVO>();
     quantVOs.add(quantSet);
     quantVOs.addAll(quantSet.getOtherIsobaricSpecies());
@@ -128,8 +129,9 @@ public class SingleQuantThread extends Thread
       }
     }
     if (cutoff!=null){
-      analyzer.setRelativeAreaCutoff(Float.parseFloat(cutoff));
-      analyzer.setRelativeFarAreaCutoff(Float.parseFloat(cutoff));
+      float cut = Float.parseFloat(cutoff);
+      int peakDiscardingFactor = (int)(1f/cut);
+      analyzer.setAreaCutoffs(cut, cut, peakDiscardingFactor, true);
     }
 
     
@@ -176,8 +178,11 @@ public class SingleQuantThread extends Thread
     Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> hitsAccordingToQuant = new Hashtable<QuantVO,Hashtable<String,LipidParameterSet>>();
     //TODO: this is a quick hack - this can be improved by putting the MSnAanlyzer story in a separate method
     if (isotopicProbes!=null && isotopicProbes.size()>0){
-      for (Hashtable<Integer,Vector<CgProbe>> oneHit : isotopicProbes.values()){
-        Hashtable<QuantVO,LipidParameterSet> isobarHitsOfOneSpecies = new Hashtable<QuantVO,LipidParameterSet>();
+      //first, generate the LipidParameterSet value objects
+      Hashtable<Integer,Hashtable<QuantVO,LipidParameterSet>> isobarsOfAllSpecies = new Hashtable<Integer,Hashtable<QuantVO,LipidParameterSet>>();
+      for (Integer key : isotopicProbes.keySet()){
+        Hashtable<Integer,Vector<CgProbe>> oneHit = isotopicProbes.get(key);
+        Hashtable<QuantVO,LipidParameterSet> isobars = new Hashtable<QuantVO,LipidParameterSet>();
         for (QuantVO oneSet : quantVOs){
           LipidParameterSet param = createLipidParameterSet(oneHit,oneSet.getNegativeStartValue(), (float)oneSet.getAnalyteMass(),
               oneSet.getAnalyteName(), oneSet.getDbs(), oneSet.getModName(), oneSet.getAnalyteFormula(), oneSet.getModFormula(), 
@@ -185,34 +190,61 @@ public class SingleQuantThread extends Thread
           String rt = param.getRt();
           float rtValue = Float.parseFloat(rt);
           if (oneSet.getRetTime()>0 && ((rtValue<(oneSet.getRetTime()-oneSet.getUsedMinusTime()))||(rtValue>(oneSet.getRetTime()+oneSet.getUsedPlusTime())))) continue;
-          boolean addHit = true;
-          if (LipidomicsConstants.isMS2()){
-            try {
-              MSnAnalyzer msnAnalyzer = new MSnAnalyzer(oneSet.getAnalyteClass(),oneSet.getModName(),param,analyzer_,quantVOs.size()>1);
-              int msIdentOrder = RulesContainer.ORDER_MS1_FIRST;
-              try{
-                msIdentOrder = RulesContainer.getMSIdentificationOrder(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName()));;
-              } catch(Exception ex){
-              }                
-              if (msnAnalyzer.checkStatus()==LipidomicsMSnSet.DISCARD_HIT || (msIdentOrder==RulesContainer.ORDER_MSN_ONLY && msnAnalyzer.checkStatus()<LipidomicsMSnSet.HEAD_GROUP_DETECTED)) addHit = false;
-              else param = msnAnalyzer.getResult();
-            }
-            catch (RulesException e) {
-              e.printStackTrace();
-            }
-            catch (IOException e) {
-              e.printStackTrace();
-            }
-            catch (SpectrummillParserException e) {
-              e.printStackTrace();
-            }
+          isobars.put(oneSet, param);
+        }
+        if (isobars.size()>0) isobarsOfAllSpecies.put(key, isobars);
+      }
+      //second create m/z precursor and RT range VOs for each QuantVO for the caching of MS/MS spectra
+      if (LipidomicsConstants.isMS2()){
+        Hashtable<QuantVO,Hashtable<Integer,LipidParameterSet>> foundForQuantVO = new Hashtable<QuantVO,Hashtable<Integer,LipidParameterSet>>();
+        for (QuantVO oneSet : quantVOs){
+          float startMz = (float)oneSet.getAnalyteMass()-LipidomicsConstants.getMs2PrecursorTolerance();
+          float stopMz = (float)oneSet.getAnalyteMass()+LipidomicsConstants.getMs2PrecursorTolerance();
+          float lowestTime = Float.MAX_VALUE;
+          float highestTime = 0f;
+          for (Hashtable<QuantVO,LipidParameterSet> isobars : isobarsOfAllSpecies.values()){
+            if (!isobars.containsKey(oneSet)) continue;
+            LipidParameterSet param = isobars.get(oneSet);
+            float[] startStop = analyzer_.getStartStopTimeFromProbes(param.getIsotopicProbes().get(0));
+            if (startStop[0]<lowestTime) lowestTime = startStop[0];
+            if (startStop[1]>highestTime) highestTime = startStop[1];
           }
-          if (addHit) isobarHitsOfOneSpecies.put(oneSet,param);
-          else{
+          // third, prepare the spectral cache
+          analyzer.prepareMSnSpectraCache(startMz, stopMz, lowestTime, highestTime);
+          // fourth, do the MS2 detection
+          Hashtable<Integer,LipidParameterSet> sameRt = new Hashtable<Integer,LipidParameterSet>();
+          for (Integer key : isobarsOfAllSpecies.keySet()){
+            Hashtable<QuantVO,LipidParameterSet> isobars = isobarsOfAllSpecies.get(key);
+            if (!isobars.containsKey(oneSet)) continue;
+            LipidParameterSet param = isobars.get(oneSet);
+            boolean addHit = true;
             if (LipidomicsConstants.isMS2()){
+              try {
+                MSnAnalyzer msnAnalyzer = new MSnAnalyzer(oneSet.getAnalyteClass(),oneSet.getModName(),param,analyzer_,oneSet,false,quantVOs.size()>1);
+                int msIdentOrder = RulesContainer.ORDER_MS1_FIRST;
+                try{
+                  msIdentOrder = RulesContainer.getMSIdentificationOrder(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName()));;
+                } catch(Exception ex){
+                }
+                if (msnAnalyzer.checkStatus()==LipidomicsMSnSet.DISCARD_HIT || (msIdentOrder==RulesContainer.ORDER_MSN_ONLY && msnAnalyzer.checkStatus()<LipidomicsMSnSet.HEAD_GROUP_DETECTED)) addHit = false;
+                else param = msnAnalyzer.getResult();
+              }
+              catch (RulesException e) {
+                e.printStackTrace();
+              }
+              catch (IOException e) {
+                e.printStackTrace();
+              }
+              catch (SpectrummillParserException e) {
+                e.printStackTrace();
+              }
+            }
+            if (addHit) sameRt.put(key, param);
+            else {
               try{
                 if (RulesContainer.isRtPostprocessing(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName())) && 
                     RulesContainer.correctRtForParallelModel(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName()))){
+                  String rt = param.getRt();
                   ms2RemovedHits_.get(oneSet).put(rt, param);
                 }
               } catch(NoRuleException nrx){
@@ -225,8 +257,26 @@ public class SingleQuantThread extends Thread
               }
             }
           }
-          
+          if (sameRt.size()>0)
+            foundForQuantVO.put(oneSet, sameRt);
         }
+        //fifth reorganize to group isobars together
+        Hashtable<Integer,Hashtable<QuantVO,LipidParameterSet>> newIsobarsOfAllSpecies = new Hashtable<Integer,Hashtable<QuantVO,LipidParameterSet>>();
+        for (QuantVO oneSet : foundForQuantVO.keySet()){
+          Hashtable<Integer,LipidParameterSet> sameRt = foundForQuantVO.get(oneSet);
+          for (Integer key : sameRt.keySet()){
+            LipidParameterSet param = sameRt.get(key);
+            Hashtable<QuantVO,LipidParameterSet> isobars = new Hashtable<QuantVO,LipidParameterSet>();
+            if (newIsobarsOfAllSpecies.containsKey(key)) isobars = newIsobarsOfAllSpecies.get(key);
+            isobars.put(oneSet, param);
+            newIsobarsOfAllSpecies.put(key, isobars);
+          }
+        }
+        isobarsOfAllSpecies = newIsobarsOfAllSpecies;
+      }
+      
+      
+      for (Hashtable<QuantVO,LipidParameterSet> isobarHitsOfOneSpecies : isobarsOfAllSpecies.values()){  
         // if there is only one found -> retry with absolute settings
         if (isobarHitsOfOneSpecies.size()==1){
           boolean addHit = true;
@@ -236,7 +286,8 @@ public class SingleQuantThread extends Thread
 //          System.out.println("!!!!!!! "+oneSet.getAnalyteClass()+param.getNameString()+"_"+oneSet.getModName()+" "+param.getRt());
           if (LipidomicsConstants.isMS2()){
             try {
-              MSnAnalyzer msnAnalyzer = new MSnAnalyzer(oneSet.getAnalyteClass(),oneSet.getModName(),param,analyzer_,false);  
+              //TODO: the parameter before the last one is set to true in the meantime - maybe play around with caching in the future to improve calculation time
+              MSnAnalyzer msnAnalyzer = new MSnAnalyzer(oneSet.getAnalyteClass(),oneSet.getModName(),param,analyzer_,oneSet,true,false);  
               if (msnAnalyzer.checkStatus()==LipidomicsMSnSet.DISCARD_HIT) addHit = false;
               else param = msnAnalyzer.getResult();
 //              System.out.println("Status: "+msnAnalyzer.checkStatus());
@@ -308,8 +359,7 @@ public class SingleQuantThread extends Thread
     
     if (LipidomicsConstants.isMS2()){
       if (cutoff!=null){
-        analyzer.setRelativeAreaCutoff(defaultRelativeAreaCutoff);
-        analyzer.setRelativeFarAreaCutoff(defaultRelativeFarAreaCutoff);
+        analyzer.setAreaCutoffs(defaultRelativeAreaCutoff, defaultRelativeFarAreaCutoff, peakDiscardingAreaFactor, false);
       }
     }
     return hitsAccordingToQuant;
@@ -723,7 +773,8 @@ public class SingleQuantThread extends Thread
             (float)quantSet.getAnalyteMass(), quantSet.getAnalyteName(), quantSet.getDbs(), quantSet.getModName(), quantSet.getAnalyteFormula(),
             quantSet.getModFormula(), quantSet.getCharge());
         try {
-          MSnAnalyzer msnAnalyzer = new MSnAnalyzer(quantSet.getAnalyteClass(),quantSet.getModName(),set,analyzer_,false);  
+          //TODO: the parameter before the last one is set to true in the meantime - maybe play around with caching in the future to improve calculation time
+          MSnAnalyzer msnAnalyzer = new MSnAnalyzer(quantSet.getAnalyteClass(),quantSet.getModName(),set,analyzer_,quantSet,true,false);  
           if (msnAnalyzer.checkStatus()!=LipidomicsMSnSet.DISCARD_HIT) set = msnAnalyzer.getResult();
         }
         catch (RulesException e) {
@@ -952,7 +1003,8 @@ public class SingleQuantThread extends Thread
       QuantVO oneSet = contr.getQuantVO();
       Hashtable<String,LipidParameterSet> quantsOfMod = hitsAccordingToQuant.get(oneSet);
       try {
-        MSnAnalyzer msnAnalyzer = new MSnAnalyzer(oneSet.getAnalyteClass(),oneSet.getModName(),contr.getSet(),analyzer_,false);  
+        //TODO: this is set to true in the meantime - maybe play around with caching in the future to improve calculation time
+        MSnAnalyzer msnAnalyzer = new MSnAnalyzer(oneSet.getAnalyteClass(),oneSet.getModName(),contr.getSet(),analyzer_,oneSet,true,false);  
         if (msnAnalyzer.checkStatus()==LipidomicsMSnSet.DISCARD_HIT) quantsOfMod.remove(contr.getSet().getRt());
         else quantsOfMod.put(contr.getSet().getRt(),msnAnalyzer.getResult());
       }
@@ -983,7 +1035,8 @@ public class SingleQuantThread extends Thread
       SharedPeakContributionVO contr = shared.getPartners().get(i);
       boolean remove = false;
       try {
-        MSnAnalyzer.prepareCachedSpectra(analyzer,contr.getSet());
+        //TODO: this is set to true in the meantime - maybe play around with caching in the future to improve calculation time
+        MSnAnalyzer.prepareCachedSpectra(analyzer,contr.getSet(),true);
         float bpCutoff = (float)RulesContainer.getBasePeakCutoff(StaticUtils.getRuleName(contr.getQuantVO().getAnalyteClass(), contr.getQuantVO().getModName()));
         float coverage = (float)RulesContainer.getSpectrumCoverageMin(StaticUtils.getRuleName(contr.getQuantVO().getAnalyteClass(), contr.getQuantVO().getModName()));
         if (!MSnAnalyzer.isSpectrumCovered(analyzer, contr.getSet(), contr.getMsLevels(), new Vector<CgProbe>(contr.getFoundFragments().values()),
@@ -1046,7 +1099,8 @@ public class SingleQuantThread extends Thread
           break;
         }
       }
-      MSnAnalyzer.prepareCachedSpectra(analyzer,contr.getSet());
+    //TODO: this is set to true in the meantime - maybe play around with caching in the future to improve calculation time
+      MSnAnalyzer.prepareCachedSpectra(analyzer,contr.getSet(),true);
       if (!MSnAnalyzer.isSpectrumCovered(analyzer, contr.getSet(), msLevels, allFragments, new Vector<CgProbe>(),minCutoff,lowestCov)){
         for (int i=0; i!=shared.getPartners().size();i++){
           SharedPeakContributionVO cont = shared.getPartners().get(i);

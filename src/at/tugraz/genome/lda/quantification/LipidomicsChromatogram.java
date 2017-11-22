@@ -114,6 +114,23 @@ public class LipidomicsChromatogram extends CgChromatogram
           GetValleysOriginal();
   }
   
+  public void Smooth(float range, int repeats, boolean copyRawDataFirst, SavGolJNI sav_gol)
+  {
+    if (copyRawDataFirst) copyRawData();
+
+    float result[];
+    result = sav_gol.Smooth(  Value, ScanCount, range, repeats, startSmoothScan_, stopSmoothScan_ );
+    for( int i = 0; i < ScanCount; i ++ )
+    {
+      Value[i][2] = result[i];
+    }
+  }
+
+  public void Smooth(float range, int repeats, SavGolJNI sav_gol)
+  {
+    this.Smooth(range, repeats, true, sav_gol);
+  }
+  
   /**
    * This function finds the next valley from left (when "direction 
    * = -1") or right (when "direction = 1"), starting at "position" 

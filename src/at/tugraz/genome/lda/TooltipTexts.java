@@ -95,6 +95,11 @@ public class TooltipTexts
       "It is recommended to use n-1 processors.<br/>" +
       "In this way the remaining system can run properly.</html>";
   
+  public final static String QUANTITATION_ION_MODE = "<html>The used ion mode for this search.<br/>" +
+      "Alex123 target lists contain both ion modes, thus,<br/>" +
+      "the one for the search has to be selected.</html>";
+
+  
   public final static String QUANTITATION_RET_UNKNOWN = "<html>Specifies wether or not a molecule should be quantified where no <br/>" +
   "retention time has been entered in the mass list Excel file.</html>";
   
@@ -210,6 +215,7 @@ public class TooltipTexts
   public final static String EXPORT_SVG = "<html>Export image to SVG format (scalable vector graphics).</html>";
   public final static String EXPORT_EXCEL = "<html>Export data in Excel format.</html>";
   public final static String EXPORT_MZTAB = "<html>Export data in mzTab format.</html>";
+  public final static String EXPORT_RDB = "<html>Export data in relational database format.</html>";
   public final static String EXPORT_TXT = "<html>Export data tab-delimited plain text format.</html>";
   public final static String EXPORT_CHROMS = "<html>Export the chromatograms in a picture.</html>";
   public final static String EXPORT_MAF = "<html>Exports data in MAF format.</html>";

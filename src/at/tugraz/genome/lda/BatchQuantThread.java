@@ -65,6 +65,9 @@ public class BatchQuantThread extends Thread
   private boolean searchUnknownTime_;
   private float basePeakCutoff_;
   private float rtShift_;
+  /** the ion mode of the search: true for positive, and false for negative; required only for ALEX123*/
+  private boolean ionMode_;
+
   
   private int currentLine_;
   private boolean readFromRaw_;
@@ -76,7 +79,7 @@ public class BatchQuantThread extends Thread
   public BatchQuantThread(BatchQuantificationTable quantTable, BatchQuantificationTableModel quantTableModel, 
       JProgressBar progressBar, JLabel quantifyingLabel,//float mzTolerance,
       float minusTime, float plusTime,int amountOfIsotopes, int isotopesMustMatch, boolean searchUnknownTime,
-      float basePeakCutoff, float rtShift, int numberOfProcessors) {
+      float basePeakCutoff, float rtShift, int numberOfProcessors, boolean ionMode) {
     this.quantTable_ = quantTable;
     this.quantTableModel_ = quantTableModel;
     this.progressBar_ = progressBar;
@@ -98,6 +101,7 @@ public class BatchQuantThread extends Thread
     numberOfProcessors_ = numberOfProcessors;
     this.generatedMzXMLsFromWiff_ = new Vector<RawQuantificationPairVO>();
     this.areWiffPresent_ = false;
+    this.ionMode_ = ionMode;
   }
     
   public void run(){
@@ -149,7 +153,7 @@ public class BatchQuantThread extends Thread
             this.progressBar_.setValue((this.currentLine_*100)/this.quantTableModel_.getRowCount()+oneThird_);
             this.readFromRaw_ = true;
             String mzXMLFilePath = filePair.getRawFile().getAbsolutePath().substring(0,filePair.getRawFile().getAbsolutePath().lastIndexOf("."))+".mzXML";
-            mzThread_ = new MzxmlToChromThread(mzXMLFilePath);
+            mzThread_ = new MzxmlToChromThread(mzXMLFilePath,numberOfProcessors_);
             mzThread_.start();
           }
         }
@@ -168,7 +172,7 @@ public class BatchQuantThread extends Thread
               LipidDataAnalyzer.getResultFilePath(filePair.getRawFile().getAbsolutePath(), filePair.getQuantFile().getAbsolutePath()),
               //this.mzTolerance_,
               minusTime_,plusTime_,this.amountOfIsotopes_,this.isotopesMustMatch_,this.searchUnknownTime_,this.basePeakCutoff_,rtShift_, 
-              numberOfProcessors_);
+              numberOfProcessors_,ionMode_);
           quantThread_.start();
         }
         this.mzThread_ = null;
@@ -207,15 +211,14 @@ public class BatchQuantThread extends Thread
         readFromRaw_ = false;
         boolean threadStarted = false;
         RawQuantificationPairVO filePair = quantTableModel_.getDataByRow((this.currentLine_));
-        String suffix = filePair.getRawFile().getAbsolutePath().substring(filePair.getRawFile().getAbsolutePath().lastIndexOf(".")+1);
-        if (suffix.equalsIgnoreCase("RAW")||suffix.equalsIgnoreCase("d")||suffix.equalsIgnoreCase("wiff")){
+        String suffix = filePair.getRawFile().getAbsolutePath().substring(filePair.getRawFile().getAbsolutePath().lastIndexOf("."));
+        if (suffix.equalsIgnoreCase(".RAW")||suffix.equalsIgnoreCase(".d")||suffix.equalsIgnoreCase(".wiff")){
           File rawFile = new File(filePair.getRawFile().getAbsolutePath());
-          if ((rawFile.isFile()&& ((Settings.getReadWPath()!=null&&Settings.getReadWPath().length()>0 && !LipidomicsConstants.isMS2()) ||
-               (Settings.getMsConvertPath()!=null && Settings.getMsConvertPath().length()>0))) ||
-               (rawFile.isDirectory()&& ((Settings.getMassWolfPath()!=null&&Settings.getMassWolfPath().length()>0 && !LipidomicsConstants.isMS2()) ||
-                   (Settings.getMassPlusPlusPath()!=null && Settings.getMassPlusPlusPath().length()>0)))){
+          if ((rawFile.isFile()&& ((Settings.getReadWPath()!=null&&Settings.getReadWPath().length()>0)||(Settings.getMsConvertPath()!=null&&Settings.getMsConvertPath().length()>0)))||
+              (rawFile.isDirectory() && ((suffix.equalsIgnoreCase(".RAW")&&((Settings.getMassWolfPath()!=null&&Settings.getMassWolfPath().length()>0)||((Settings.getMassPlusPlusPath()!=null&&Settings.getMassPlusPlusPath().length()>0))))
+                                     ||   (suffix.equalsIgnoreCase(".d") &&Settings.getMsConvertPath()!=null&&Settings.getMsConvertPath().length()>0)))){
             File headerFile = new File(StringUtils.getChromFilePaths(filePair.getRawFile().getAbsolutePath())[1]);
-            File mzXMLFile = new File(filePair.getRawFile().getAbsolutePath().substring(0,filePair.getRawFile().getAbsolutePath().length()-suffix.length())+"mzXML");
+            File mzXMLFile = new File(filePair.getRawFile().getAbsolutePath().substring(0,filePair.getRawFile().getAbsolutePath().length()-suffix.length())+".mzXML");
             if (!headerFile.exists()&&!mzXMLFile.exists()){
               boolean isMassPlusPlus = false;
               filePair.setStatus("Trans to mzXML");
@@ -240,7 +243,7 @@ public class BatchQuantThread extends Thread
                 }  
               }
               if (rawFile.isDirectory()){
-                if (suffix.equalsIgnoreCase("RAW")){
+                if (suffix.equalsIgnoreCase(".RAW")){
                   if (Settings.getMassPlusPlusPath()!=null&&Settings.getMassPlusPlusPath().length()>0){
                     params = new String[8];
                     params[0] = Settings.getMassPlusPlusPath();
@@ -259,12 +262,12 @@ public class BatchQuantThread extends Thread
                     params[2] = filePair.getRawFile().getAbsolutePath();
                     params[3] = mzXMLFile.getAbsolutePath();  
                   }
-                }else if(suffix.equalsIgnoreCase("d")){
+                }else if(suffix.equalsIgnoreCase(".d")){
                   if (Settings.getMsConvertPath()!=null&&Settings.getMsConvertPath().length()>0){
                     params =BatchQuantThread.getMsConvertParams(filePair.getRawFile().getAbsolutePath());
                   }                    
                 }
-              }  
+              }
               this.rawmzThread_ = new RawToMzxmlThread(params,isMassPlusPlus);
               rawmzThread_.start();
               threadStarted = true;
@@ -284,7 +287,7 @@ public class BatchQuantThread extends Thread
 //          threadStarted=true;
 //          return;
 //        }
-        if (suffix.equalsIgnoreCase("mzXML")){
+        if (suffix.equalsIgnoreCase(".mzXML")){
           File headerFile = new File(StringUtils.getChromFilePaths(filePair.getRawFile().getAbsolutePath())[1]);
           if (!headerFile.exists()){
             filePair.setStatus("Trans to chrom");
@@ -293,7 +296,7 @@ public class BatchQuantThread extends Thread
             this.quantTable_.repaint();
             this.quantifyingLabel_.setText("Translating "+filePair.getRawFileName()+" to chrom");
             this.progressBar_.setValue((this.currentLine_*100)/this.quantTableModel_.getRowCount()+oneThird_);
-            mzThread_ = new MzxmlToChromThread(filePair.getRawFile().getAbsolutePath());
+            mzThread_ = new MzxmlToChromThread(filePair.getRawFile().getAbsolutePath(),numberOfProcessors_);
             mzThread_.start();
             threadStarted = true;
           }
@@ -309,7 +312,7 @@ public class BatchQuantThread extends Thread
               LipidDataAnalyzer.getResultFilePath(filePair.getRawFile().getAbsolutePath(), filePair.getQuantFile().getAbsolutePath()),
               //this.mzTolerance_,
               minusTime_,plusTime_,this.amountOfIsotopes_,this.isotopesMustMatch_,this.searchUnknownTime_,this.basePeakCutoff_,rtShift_,
-              numberOfProcessors_);
+              numberOfProcessors_,ionMode_);
           quantThread_.start();
           threadStarted = true;
         }

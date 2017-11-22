@@ -91,6 +91,11 @@ public class LipidomicsConstants
   
   private static LipidomicsConstants instance_ = null;
   private String ldaVersion_;
+  private String rawFileName_;
+    /** was this file quantified by using a Alex123 target list*/
+  private boolean alexTargetlist_;
+  /** lookup for classes whether MSn fragments were defined*/
+  private Hashtable<String,Boolean> alexTargetlistUsed_;
   private String relativeMS1BasePeakCutoff_;
   private String currentMSMachine_;
   private float neutronMass_;
@@ -166,6 +171,7 @@ public class LipidomicsConstants
   private String threeDViewerDefaultMZResolution_;
   
   private boolean ms2_;
+  private boolean useMostOverlappingIsotopeOnly_;
   
   private float ms2PrecursorTolerance_;
   private int ms2ChromMultiplicationFactorForInt_;
@@ -201,6 +207,7 @@ public class LipidomicsConstants
   private float ms2IsobaricOtherRtDifference_;
   
   private final static String LDA_VERSION = "LDA-version";
+  private final static String RAW_FILE = "rawFile";
   private final static String BASE_PEAK_CUTOFF = "basePeakCutoff";
   private final static String BASE_PEAK_CUTOFF_DEFAULT = "0.1";
   private final static String MASS_SHIFT = "massShift";
@@ -219,6 +226,8 @@ public class LipidomicsConstants
   private final static String CHROM_SMOOTH_REPEATS_DEFAULT = "10";
   private final static String ISOTOPE_CORRECTION = "isotopeCorrection";
   private final static String ISOTOPE_CORRECTION_DEFAULT = "false";
+  private final static String DEISOTOPE_BY_MOST_OVERLAPPING = "deisotopeByMostOverlappingOnly";
+  private final static String DEISOTOPE_BY_MOST_OVERLAPPING_DEFAULT = "false";
   private final static String REMOVE_FROM_OTHER_ISOTOPE = "removeFromOtherIsotopes";
   private final static String REMOVE_FROM_OTHER_ISOTOPE_DEFAULT = "true";
   private final static String RESPECT_ISO_DISTRI = "respectIsotopicDistribution";
@@ -352,6 +361,8 @@ public class LipidomicsConstants
   private final static String MS2_MZ_TOL_DEFAULT = "0.2";
   private final static String CHAIN_CUTOFF = "chainCutoffValue";
   private final static String CHAIN_CUTOFF_DEFAULT = "0.01";
+  private final static String ALEX_TARGETLIST = "alexTargetlist";
+
   
   private final static String MZTAB_INSTRUMENT = "mzTabInstrumentName";
   private final static String MZTAB_IONSOURCE = "mzTabInstrumentIonsource";
@@ -422,6 +433,11 @@ public class LipidomicsConstants
     String isotopeCorrectionString = properties.getProperty(ISOTOPE_CORRECTION,ISOTOPE_CORRECTION_DEFAULT);
     if (isotopeCorrectionString!=null && (isotopeCorrectionString.equalsIgnoreCase("yes")||isotopeCorrectionString.equalsIgnoreCase("true")))
       isotopeCorrection_ = true;
+    useMostOverlappingIsotopeOnly_ = false;
+    String mostOverlappingOnlyString = properties.getProperty(DEISOTOPE_BY_MOST_OVERLAPPING,DEISOTOPE_BY_MOST_OVERLAPPING_DEFAULT);
+    if (mostOverlappingOnlyString!=null && (mostOverlappingOnlyString.equalsIgnoreCase("yes")||mostOverlappingOnlyString.equalsIgnoreCase("true")))
+      useMostOverlappingIsotopeOnly_ = true;
+    
     removeFromOtherIsotopes_ = true;
     String removeIsotopesString = properties.getProperty(REMOVE_FROM_OTHER_ISOTOPE,REMOVE_FROM_OTHER_ISOTOPE_DEFAULT);
     if (removeIsotopesString!=null && (removeIsotopesString.equalsIgnoreCase("no")||removeIsotopesString.equalsIgnoreCase("false")))
@@ -553,6 +569,12 @@ public class LipidomicsConstants
     chromExportShowLegend_ = false;
     if (chromExportString!=null&&(chromExportString.equalsIgnoreCase("true")||chromExportString.equalsIgnoreCase("yes")))
       chromExportShowLegend_ = true;
+    
+    String alexTargetlistString = properties.getProperty(ALEX_TARGETLIST,"false");
+    alexTargetlist_ = false;
+    if (alexTargetlistString!=null&&(alexTargetlistString.equalsIgnoreCase("true")||alexTargetlistString.equalsIgnoreCase("yes")))
+      alexTargetlist_ = true;
+    alexTargetlistUsed_ = new Hashtable<String,Boolean>();
     
     mzTabInstrumentName_ = extractEBIParam(MZTAB_INSTRUMENT,properties);
     mzTabInstrumentSource_ = extractEBIParam(MZTAB_IONSOURCE,properties);
@@ -1186,6 +1208,11 @@ public class LipidomicsConstants
     return instance_.neutronMass_;
   }
   
+  public static boolean useMostOverlappingIsotopeOnly(){
+    LipidomicsConstants.getInstance();    
+    return instance_.useMostOverlappingIsotopeOnly_;
+  }
+  
   /**
    * 
    * @return contains the acquired data only sparse MS1 data points
@@ -1392,6 +1419,11 @@ public class LipidomicsConstants
     rowCount = createPropertyRow(sheet,rowCount,LDA_VERSION,ldaVersion_);
     if (LDA_VERSION.length()>longestKey) longestKey = LDA_VERSION.length();
     if (ldaVersion_.length()>longestValue) longestValue = ldaVersion_.length();
+    if (rawFileName_!=null){
+      rowCount = createPropertyRow(sheet,rowCount,RAW_FILE,rawFileName_);
+      if (RAW_FILE.length()>longestKey) longestKey = RAW_FILE.length();
+      if (rawFileName_.length()>longestValue) longestValue = rawFileName_.length();
+    }
     rowCount = createPropertyRow(sheet,rowCount,MACHINE_NAME,currentMSMachine_);
     if (MACHINE_NAME.length()>longestKey) longestKey = MACHINE_NAME.length();
     if (currentMSMachine_.length()>longestValue) longestValue = currentMSMachine_.length();
@@ -1650,13 +1682,18 @@ public class LipidomicsConstants
       if (value.length()>longestValue) longestValue = value.length();
       rowCount = createPropertyRow(sheet,rowCount,MZTAB_DETECTOR,value);
     }
+    if (alexTargetlist_==true){
+      rowCount = createPropertyRow(sheet,rowCount,ALEX_TARGETLIST,String.valueOf(alexTargetlist_));
+      if (ALEX_TARGETLIST.length()>longestKey) longestKey = ALEX_TARGETLIST.length();
+      if (String.valueOf(alexTargetlist_).length()>longestValue) longestValue = String.valueOf(alexTargetlist_).length();
+    }
     
     int keyColumnWidth = (int)((LipidomicsConstants.EXCEL_KEY.length()*ExcelUtils.CHAR_MULT)*ExcelUtils.BOLD_MULT);
     if ((longestKey+1)*ExcelUtils.CHAR_MULT>keyColumnWidth) keyColumnWidth =  (longestKey+1)*ExcelUtils.CHAR_MULT;
     sheet.setColumnWidth(EXCEL_KEY_COLUMN,keyColumnWidth); 
     int valueColumnWidth = (int)((LipidomicsConstants.EXCEL_VALUE.length()*ExcelUtils.CHAR_MULT)*ExcelUtils.BOLD_MULT);
     if ((longestValue+1)*ExcelUtils.CHAR_MULT>valueColumnWidth) valueColumnWidth =  (longestValue+1)*ExcelUtils.CHAR_MULT;
-    sheet.setColumnWidth(EXCEL_VALUE_COLUMN,valueColumnWidth); 
+    sheet.setColumnWidth(EXCEL_VALUE_COLUMN,valueColumnWidth);
   }
   
   /**
@@ -1752,6 +1789,9 @@ public class LipidomicsConstants
     }
     LipidomicsConstants consts = new LipidomicsConstants(false);
     consts.ldaVersion_ = properties.getProperty(LDA_VERSION, Settings.VERSION);
+    String rawFile = null;
+    if (properties.containsKey(RAW_FILE)) rawFile = properties.getProperty(RAW_FILE);
+    consts.rawFileName_ = rawFile;
     String usedCutoff = null;
     if (properties.containsKey(BASE_PEAK_CUTOFF)) usedCutoff = properties.getProperty(BASE_PEAK_CUTOFF);
     if (usedCutoff!=null){
@@ -1760,6 +1800,7 @@ public class LipidomicsConstants
         consts.relativeMS1BasePeakCutoff_ = usedCutoff; 
       }catch (NumberFormatException nfx){}
     }
+    if (properties.containsKey(MASS_SHIFT))properties.put(MASS_SHIFT, String.valueOf(Double.parseDouble(properties.getProperty(MASS_SHIFT))*1000d));
     consts.setVariables(properties);
     return consts;
   }
@@ -1774,5 +1815,47 @@ public class LipidomicsConstants
     this.relativeMS1BasePeakCutoff_ = relativeMS1BasePeakCutoff;
   }
   
+  public String getRawFileName(){
+    return rawFileName_;
+  }
+  
+  public void setRawFileName(String rawFileName){
+    rawFileName_ = rawFileName;
+  }
+
+  public String getMSMachine()
+  {
+    return currentMSMachine_;
+  }
+  
+  public double getShift()
+  {
+    return this.massShift_;
+  }
+  
+    /** was this file quantified by using a Alex123 target list*/
+  public boolean isAlexTargetlist()
+  {
+    return alexTargetlist_;
+  }
+
+  /** set whether this file was quantified by using a Alex123 target list*/
+  public void setAlexTargetlist(boolean alexTargetlist)
+  {
+    this.alexTargetlist_ = alexTargetlist;
+  }
+
+  /** lookup for classes whether MSn fragments were defined*/
+  public Hashtable<String,Boolean> getAlexTargetlistUsed()
+  {
+    return alexTargetlistUsed_;
+  }
+
+  /** set lookup for classes whether MSn fragments were defined*/
+  public void setAlexTargetlistUsed(Hashtable<String,Boolean> alexTargetlistUsed)
+  {
+    this.alexTargetlistUsed_ = alexTargetlistUsed;
+  }
+
   
 }

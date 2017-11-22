@@ -35,18 +35,23 @@ import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
 
+import javax.swing.JFrame;
 import javax.swing.UIManager;
 
 import at.tugraz.genome.lda.exception.SettingsException;
 import at.tugraz.genome.lda.msn.RulesContainer;
+import at.tugraz.genome.lda.quantification.SavGolJNI;
 import at.tugraz.genome.lda.swing.RuleDefinitionInterface;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
+import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
 
 /**
  * 
@@ -57,7 +62,7 @@ public class Settings
 {
   private static Settings instance_ = null;
 
-  public final static String VERSION = "2.5.2_6";
+  public final static String VERSION = "2.6.0_3";
   
   public final static String SETTINGS_FILE = ".settings";
   
@@ -68,6 +73,8 @@ public class Settings
   private static String massWolfPath_;
   private static String massPlusPlusPath_;
   private static String elementConfigPath_;
+  private static ElementConfigParser elementParser_;
+  private static String alexIsotopeLookup_;
   private static boolean overviewExcelWorkbook_;
   private static boolean overviewExcelMass_;
   private static boolean overviewExcelIsotope_;
@@ -77,6 +84,12 @@ public class Settings
   /** only applicable if "MergeMultipleMSMSFiles" is true;
    * the last trace is a quality trace for detection stability - this should not be merged into the data*/
   private static boolean skipLastMzXML_;
+  /** quantitation on the graphics card*/
+  private static boolean useCuda_;
+  /** use Alex123 target lists*/
+  private static boolean useAlex_;
+  /** the lookup of isotopes from the Alex format to the LDA format*/
+  private static Hashtable<String,String> alexIsoLookup_ = new Hashtable<String,String>();
 
   private static String isDefaultInput_;
   private static String esDefaultInput_;
@@ -125,6 +138,16 @@ public class Settings
       massWolfPath_ = properties.getProperty("MassWolfPath", null);
       massPlusPlusPath_ = properties.getProperty("MassPPPath", null);
       elementConfigPath_ = properties.getProperty("ElementConfig", null);
+      try {
+        elementParser_ = new ElementConfigParser(elementConfigPath_);
+        elementParser_.parse();
+      }
+      catch (SpectrummillParserException e) {
+        e.printStackTrace();
+        new WarningMessage(new JFrame(), "Error", "There is something wrong with the elementconfig.xml: "+e.getMessage());
+      }
+
+      alexIsotopeLookup_ = properties.getProperty("AlexIsotopeLookup", "alex123_isotopeLookup.txt");
       String overviewExcelString = properties.getProperty("OverviewExcelWorkbook", null);
       if (overviewExcelString!=null&&(overviewExcelString.equalsIgnoreCase("true")||overviewExcelString.equalsIgnoreCase("yes"))){
         overviewExcelWorkbook_ = true;
@@ -147,6 +170,16 @@ public class Settings
       if (skipLastMzXMLString!=null&&(skipLastMzXMLString.equalsIgnoreCase("true")||skipLastMzXMLString.equalsIgnoreCase("yes"))){
         skipLastMzXML_ = true;
       }
+      useCuda_ = false;
+      String useCudaString = properties.getProperty("useCuda", null);
+      if (useCudaString!=null&&(useCudaString.equalsIgnoreCase("true")||useCudaString.equalsIgnoreCase("yes"))){
+        useCuda_ = true;
+      }
+      useAlex_ = false;
+      String useAlexString = properties.getProperty("Alex123", null);
+      if (useAlexString!=null&&(useAlexString.equalsIgnoreCase("true")||useAlexString.equalsIgnoreCase("yes"))){
+        useAlex_ = true;
+      }
       
       isDefaultInput_ = properties.getProperty("ISDefaultInput", "");
       esDefaultInput_ = properties.getProperty("ESDefaultInput", "Ex-IS");
@@ -154,6 +187,22 @@ public class Settings
       String msn3DDisplayToleranceString = properties.getProperty("MSn3DDisplayTimeWindow","1");
       if (msn3DDisplayToleranceString!=null){
         try{ msn3DDisplayTolerance_ = Float.parseFloat(msn3DDisplayToleranceString)*60f;}catch(NumberFormatException ex){}
+      }
+      
+      //parsing the Alex iso lookup
+      alexIsoLookup_ = new Hashtable<String,String>();
+      if (useAlex_){
+        //read the isotope config properties file
+        File alexFile = new File(Settings.getAlexIsotopeLookup());
+        if (alexFile.exists()){
+          Properties alexProperties = new Properties();
+          FileInputStream alexNew = new FileInputStream(alexFile);
+          alexProperties.load(alexNew);
+          alexNew.close();
+          for (Object key : alexProperties.keySet()){
+            alexIsoLookup_.put((String)key, alexProperties.getProperty((String)key));
+          }
+        }
       }
     }catch(Exception e){
       e.printStackTrace();
@@ -233,6 +282,16 @@ public class Settings
     return Settings.elementConfigPath_;
   }
   
+  public static ElementConfigParser getElementParser(){
+    Settings.getInstance();
+    return Settings.elementParser_;
+  }
+  
+  public static String getAlexIsotopeLookup(){
+    Settings.getInstance();
+    return Settings.alexIsotopeLookup_;
+  }
+  
   public static boolean isOverviewInExcelDesired(){
     Settings.getInstance();
     return Settings.overviewExcelWorkbook_;
@@ -265,6 +324,38 @@ public class Settings
   public static boolean skipLastMzXML(){
     Settings.getInstance();
     return Settings.skipLastMzXML_;
+  }
+  
+  public static boolean useCuda(){
+    Settings.getInstance();
+    if (useCuda_)
+    	useCuda_ = hasCuda();
+    return Settings.useCuda_;
+  }
+  
+  /**
+   * 
+   * @return if a CUDA capable device is installed
+   */
+  public static boolean hasCuda() {
+	boolean cudaCapable;
+	SavGolJNI sav_gol_jni = null;
+	try {
+		// try to load the necessary libraries for CUDA and to find a CUDA capable device
+		sav_gol_jni = new SavGolJNI();
+		cudaCapable = sav_gol_jni.cudaCapableDeviceNative();
+	} catch (UnsatisfiedLinkError e) {
+		cudaCapable = false;
+	}
+	if (!cudaCapable)
+        new WarningMessage(new JFrame(), "Error", "Your GPU is not ready for CUDA! The calculation will continue without GPU assistance.");
+	return cudaCapable;
+  }
+  
+  /** use Alex123 target lists*/
+  public static boolean useAlex(){
+    Settings.getInstance();
+    return Settings.useAlex_;
   }
 
   public static String getInternalStandardDefaultInput()
@@ -349,6 +440,12 @@ public class Settings
   {
     Settings.getInstance();
     return msn3DDisplayTolerance_;
+  }
+  
+  /** the lookup of isotopes from the Alex format to the LDA format*/
+  public static Hashtable<String,String> getAlexIsoLookup(){
+    Settings.getInstance();
+    return alexIsoLookup_;
   }
 
   /**

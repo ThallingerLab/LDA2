@@ -1,0 +1,42 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=1%
+RetentionTimePostprocessing=true
+SpectrumCoverage=20%
+
+[HEAD]
+!FRAGMENTS
+Name=Precursor		Formula=$PRECURSOR	Charge=1	MSLevel=2	mandatory=false
+Name=Na_phosphate_121	Formula=H3PO4Na		Charge=1	MSLevel=2	mandatory=false
+Name=PEhead_146		Formula=C2H6NO3PNa	Charge=1	MSLevel=2	mandatory=false
+Name=PEhead_164		Formula=C2H8NO4PNa	Charge=1	MSLevel=2	mandatory=false
+Name=PGhead_177		Formula=C3H7O5PNa	Charge=1	MSLevel=2	mandatory=false
+Name=PGhead_195		Formula=C3H9NaO6P	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Ethanolamine_43	Formula=$PRECURSOR-C2H5N	Charge=1	MSLevel=2	mandatory=true
+Name=NL_PEhead_61	Formula=$PRECURSOR-C2H7NO	Charge=1	MSLevel=2	mandatory=true
+Name=NL_PEhead_123	Formula=$PRECURSOR-C2H6NO3P	Charge=1	MSLevel=2	mandatory=false
+Name=NL_PEhead_141	Formula=$PRECURSOR-C2H8NO4P	Charge=1	MSLevel=2	mandatory=false
+Name=NL_PEhead_163	Formula=$PRECURSOR-C2H7NO4PNa	Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=Precursor<0.25*$BASEPEAK			mandatory=true
+Equation=(NL_Ethanolamine_43+NL_PEhead_61)>$BASEPEAK	mandatory=true
+Equation=Na_phosphate_121<0.25*$BASEPEAK	mandatory=false
+Equation=PEhead_146<0.25*$BASEPEAK		mandatory=false
+Equation=PEhead_164<0.25*$BASEPEAK		mandatory=false
+Equation=PGhead_177<0.25*$BASEPEAK		mandatory=false
+Equation=PGhead_195<0.25*$BASEPEAK		mandatory=false
+Equation=NL_PEhead_123<0.25*$BASEPEAK		mandatory=false
+Equation=NL_PEhead_141<0.25*$BASEPEAK		mandatory=false
+Equation=NL_PEhead_163<0.5*$BASEPEAK		mandatory=false
+
+
+
+
+[CHAINS]
+!FRAGMENTS
+Name=NL_Carboxy		Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Ketene		Formula=$PRECURSOR-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false

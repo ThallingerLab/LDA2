@@ -107,16 +107,14 @@ public class RulesContainer
    * parses the rules files and stores them in the "rules_" hash - key is the name of the analyte class
    * @throws RulesException specifies in detail which rules are not valid
    * @throws IOException general exception if there is something wrong about the file
-   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
    */
-  private void extractRules() throws RulesException, IOException, SpectrummillParserException {
+  private void extractRules() throws RulesException, IOException {
     rules_ = new Hashtable<String,FragRuleParser>();
     File rulesDir = new File(rulesDir_);
     if (!rulesDir.exists()) throw new RulesException("The provided fragmentation rules directory does not exist!");
     if (!rulesDir.isDirectory()) throw new RulesException("The provided fragmentation rules directory is a file - not a directory!");
     File[] files = rulesDir.listFiles();
-    ElementConfigParser elementParser = new ElementConfigParser(Settings.getElementConfigPath());
-    elementParser.parse();
+    ElementConfigParser elementParser = Settings.getElementParser();
     for (File file : files){
       if (!file.getAbsolutePath().endsWith(StaticUtils.RULE_FILE_SUFFIX)) continue;
       FragRuleParser parser = new FragRuleParser(elementParser);

@@ -53,5 +53,6 @@ public interface HeatMapClickListener extends SampleLookup
   public void eliminateAnalyteEverywhere(String groupName, Hashtable<String,String> selectedAnalytes, Vector<String> selectedMods, Vector<String> foundUpdateables);
   public void addAnalyteEverywhereAtPosition(String groupName, String analyteName, String absFilePathStartExp, Vector<String> selectedMods, Vector<AutoAnalyteAddVO> updateableAndAnalyteBefore, int maxIsotope, boolean exactProbePosition);
   public void exportMzTab(File exportFile);
+  public void exportRdb(File exportFile);
   public void exportMaf(File exportFile);
 }

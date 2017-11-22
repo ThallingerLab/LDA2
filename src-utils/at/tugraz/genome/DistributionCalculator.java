@@ -109,8 +109,9 @@ public class DistributionCalculator extends JFrame implements ActionListener
       new WarningMessage(new JFrame(), "Error", "Please enter a formula!");
       return;
     }
-    Vector<Double> distri = calculateDistribution(input_.getText()); 
+    Vector<Vector<Double>> bothDistris = calculateDistribution(input_.getText());
     displayPanel_.removeAll();
+    Vector<Double> distri = bothDistris.get(0);
     for (int i=0; i!=distri.size(); i++){
       JLabel label = new JLabel("+"+i+": ");
       JLabel value = new JLabel(distri.get(i).toString());
@@ -118,14 +119,25 @@ public class DistributionCalculator extends JFrame implements ActionListener
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 0, 0, 0), 2, 0));
       displayPanel_.add(value,new GridBagConstraints(1, i, 1, 1, 0.0, 0.0
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 0, 0, 0), 2, 0));
-      
+    }
+    int add = distri.size()+1;
+    if (bothDistris.size()>1){
+      distri = bothDistris.get(1);
+      for (int i=0; i!=distri.size(); i++){
+        JLabel label = new JLabel("-"+i+": ");
+        JLabel value = new JLabel(distri.get(i).toString());
+        displayPanel_.add(label,new GridBagConstraints(0, i+add, 1, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 0, 0, 0), 2, 0));
+        displayPanel_.add(value,new GridBagConstraints(1, i+add, 1, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 0, 0, 0), 2, 0));
+      }
     }
     displayPanel_.invalidate();
     displayPanel_.updateUI();
   }
   
-  private Vector<Double> calculateDistribution(String formula) {
-    Vector<Double> distri = new Vector<Double>();
+  private  Vector<Vector<Double>> calculateDistribution(String formula) {
+    Vector<Vector<Double>> distri = new Vector<Vector<Double>>();
     ElementConfigParser aaParser = new ElementConfigParser("elementconfig.xml");
     try {
       Hashtable<String,Integer> categorized = StaticUtils.categorizeFormula(formula);
@@ -135,7 +147,7 @@ public class DistributionCalculator extends JFrame implements ActionListener
         formulaToCheck += elem+categorized.get(elem).toString();
       }
       aaParser.parse();
-      distri = StaticUtils.calculateChemicalFormulaIntensityDistribution(aaParser, formulaToCheck, 5, false);
+      return aaParser.calculateChemicalFormulaIntensityDistribution(formulaToCheck,5,false);
     }
     catch (SpectrummillParserException e) {
       new WarningMessage(new JFrame(), "Warning", e.getMessage());

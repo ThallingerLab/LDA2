@@ -23,9 +23,7 @@
 
 package at.tugraz.genome.lda;
 
-import java.io.File;
-
-import at.tugraz.genome.maspectras.quantification.RawToChromatogramTranslator;
+import at.tugraz.genome.lda.xml.RawToChromTranslator;
 
 /**
  * 
@@ -34,17 +32,19 @@ import at.tugraz.genome.maspectras.quantification.RawToChromatogramTranslator;
  */
 public class MzxmlToChromThread extends Thread
 {
-  String filePath_;
-  boolean finished_ = false;
-  String errorString_;
+  private String filePath_;
+  private boolean finished_ = false;
+  private String errorString_;
+  private int numberOfThreads_;
   
-  public MzxmlToChromThread(String filePath){
+  public MzxmlToChromThread(String filePath, int numberOfThreads){
     this.filePath_ = filePath;
+    this.numberOfThreads_ = numberOfThreads;
   }
   
   public void run(){
     try{
-      MzxmlToChromThread.translateToChrom(filePath_);
+      MzxmlToChromThread.translateToChrom(filePath_,numberOfThreads_);
     } catch (Exception ex){
       ex.printStackTrace();
       errorString_ = ex.toString();     
@@ -60,17 +60,11 @@ public class MzxmlToChromThread extends Thread
     return this.errorString_;
   }
   
-  public static void translateToChrom(String filePath) throws Exception{
-      RawToChromatogramTranslator translator = new RawToChromatogramTranslator(filePath,"mzXML", MzxmlToChromThread.getPiecesForChromTranslation(filePath),
-          LipidomicsConstants.getChromMultiplicationFactorForInt(),LipidomicsConstants.getChromLowestResolution(),LipidomicsConstants.isMS2());
+  public static void translateToChrom(String filePath, int numberOfThreads) throws Exception{
+    RawToChromTranslator translator = new RawToChromTranslator(filePath,"mzXML", LipidomicsConstants.getmMaxFileSizeForChromTranslationAtOnceInMB(),
+        numberOfThreads,LipidomicsConstants.getChromMultiplicationFactorForInt(),LipidomicsConstants.getChromLowestResolution(),LipidomicsConstants.isMS2());
       translator.translateToChromatograms();
   }
   
-  private static int getPiecesForChromTranslation(String filePath){
-    File file = new File (filePath);
-    long maxFilePieceInByte = LipidomicsConstants.getmMaxFileSizeForChromTranslationAtOnceInMB()*1024*1024;
-    int pieces = Integer.parseInt(Long.toString(file.length()/maxFilePieceInByte))+1;
-    return pieces;
-  }
   
 }

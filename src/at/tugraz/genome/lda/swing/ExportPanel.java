@@ -53,6 +53,8 @@ public class ExportPanel extends JPanel
   public static final String EXPORT_CHROMS = "exportChroms";
   
   public static final String EXPORT_MZTAB = "exportMztab";
+  
+  public static final String EXPORT_RDB = "exportRdb";
 
   public static final String EXPORT_MAF = "exportMAF";
 
@@ -87,6 +89,15 @@ public class ExportPanel extends JPanel
     ExportButton svg = new ExportButton("SVG",EXPORT_SVG,font,background,parent_);
     svg.setToolTipText(TooltipTexts.EXPORT_SVG);
     this.add(svg);
+//    if (pictureOnly){
+//      label = new JLabel(" | ");
+//      label.setForeground(font);
+//      label.setFont(textFont);
+//      this.add(label); 
+//      ExportButton mgf = new ExportButton("mgf","mgf",font,background,parent_);
+//      //mgf.setToolTipText(TooltipTexts.EXPORT_SVG);
+//      this.add(mgf);     
+//    }
     if (pictureOnly) return;
     label = new JLabel(" | ");
     label.setForeground(font);
@@ -103,6 +114,13 @@ public class ExportPanel extends JPanel
       ExportButton mztab = new ExportButton("mzTab",EXPORT_MZTAB,font,background,parent_);
       mztab.setToolTipText(TooltipTexts.EXPORT_MZTAB);
       this.add(mztab);
+      label = new JLabel(" | ");
+      label.setForeground(font);
+      label.setFont(textFont);
+      this.add(label); 
+      ExportButton rdb = new ExportButton("rdb",EXPORT_RDB,font,background,parent_);
+      rdb.setToolTipText(TooltipTexts.EXPORT_RDB);
+      this.add(rdb);
     }
     label = new JLabel(" | ");
     label.setForeground(font);

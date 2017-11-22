@@ -49,6 +49,7 @@ public class ResultAreaVO
   private String rt_;
   private Hashtable<String,Integer> chemicalFormula_;
   private Hashtable <String,Hashtable<String,Integer>> modFormulas_; 
+  private Double neutralMass_;
   private Hashtable<String,Double> mass_;
   private Hashtable<String,Double> expMass_;
   private Hashtable<String,Integer> charge_;
@@ -58,21 +59,22 @@ public class ResultAreaVO
   /** if there is a split according to MSn intensities - a percentage of the usable peak intensity is stored*/
   private float percentalSplit_;
   
-  public ResultAreaVO(String name, Integer dbs, String rt, String expName, String chemicalFormula, float percentalSplit/*,String modName, String modFormula,double mass*/) throws ChemicalFormulaException
+  public ResultAreaVO(String name, Integer dbs, String rt, String expName, String chemicalFormula, float percentalSplit/*,String modName, String modFormula*/,double neutralMass) throws ChemicalFormulaException
   {
-    this(name,dbs,expName,chemicalFormula,percentalSplit);
+    this(name,dbs,expName,chemicalFormula,percentalSplit,neutralMass);
     this.rtOriginal_ = rt;
     this.rt_ = rt;
   }
     
-  public ResultAreaVO(String name, Integer dbs, String expName, String chemicalFormula, float percentalSplit/*,String modName, String modFormula,double mass*/) throws ChemicalFormulaException
+  public ResultAreaVO(String name, Integer dbs, String expName, String chemicalFormula, float percentalSplit/*,String modName, String modFormula*/,double neutralMass) throws ChemicalFormulaException
   {
     super();
     name_ = name;
     dbs_ = dbs;
     expName_ = expName;
     chemicalFormula_ = StaticUtils.categorizeFormula(chemicalFormula);
-    modFormulas_ = new Hashtable <String,Hashtable<String,Integer>>(); 
+    modFormulas_ = new Hashtable <String,Hashtable<String,Integer>>();
+    neutralMass_ = neutralMass;
     mass_ = new Hashtable<String,Double>();
     expMass_ = new Hashtable<String,Double>();
     charge_ = new Hashtable<String,Integer>();
@@ -178,7 +180,7 @@ public class ResultAreaVO
     return getChemicalFormula("");
   }
   
-  public Vector<Double> getWeightedMass()
+  public Vector<Double> getWeightedNeutralMass()
   {
     int maxIsotpe = getMaxIsotope();
     Vector<Double> weightedMasses = new Vector<Double>();
@@ -195,7 +197,7 @@ public class ResultAreaVO
         Vector<Double> areas = areas_.get(modName);
         for (int j=0; j!=(i+1)&&j!=areas.size();j++){
           double area = areas.get(j);
-          double mass = mass_.get(modName)+LipidomicsConstants.getNeutronMass()*j;
+          double mass = /****mass_.get(modName)*/neutralMass_+LipidomicsConstants.getNeutronMass()*j;
           totalArea += area;
           totalMassArea += area*mass;
         }

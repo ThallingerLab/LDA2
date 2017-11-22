@@ -28,6 +28,10 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.event.ActionListener;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
@@ -512,5 +516,27 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
 
   }*/
 
+  public void writeMgf(File file, String rawFileName) throws IOException{
+    BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(file.getAbsolutePath()));
+    stream.write(("BEGIN IONS\n").getBytes());
+    stream.write(("TITLE="+rawFileName+"\n").getBytes());
+    String rtString = "RTINSECONDS=";
+    String pepMassString = "PEPMASS=";
+    if (spectrumSelected_>=0){
+      rtString += Calculator.roundFloat(retentionTimes_.get(spectraSequence_.get(spectrumSelected_)),4)+"\n";
+      pepMassString += precursors_.get(spectraSequence_.get(spectrumSelected_))+"\n";
+    }else{
+      rtString += "\n";
+      pepMassString += "\n";
+      
+    }
+    stream.write(rtString.getBytes());
+    stream.write(pepMassString.getBytes());
+    for (int i=0; i!=cr_.Value.length; i++){
+      if (cr_.Value[i][1]>0) stream.write((cr_.Value[i][0]+" "+cr_.Value[i][1]+"\n").getBytes());
+    }
+    stream.write(("END IONS\n").getBytes());
+    stream.close();
+  }
   
 }

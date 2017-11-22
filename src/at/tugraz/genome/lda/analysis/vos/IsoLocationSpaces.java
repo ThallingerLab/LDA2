@@ -164,6 +164,7 @@ public class IsoLocationSpaces
         for (int i=0;i!=this.nrOfPeaks_;i++){
           Hashtable<Integer,Vector<Float>> timeRangeOfSinglePeak = timeRange_.get(i);
           Hashtable<Integer,Vector<Float>> mzRangeOfSinglePeak = mzRange_.get(i);
+          Vector<String> isoOverlapsOfTheSamePeak = new Vector<String>();
           for (int j=0; j!=timeRangeOfSinglePeak.size();j++){
             Vector<Float> timeRange = timeRangeOfSinglePeak.get(j);
             Vector<Float> mzRange = mzRangeOfSinglePeak.get(j);
@@ -171,9 +172,31 @@ public class IsoLocationSpaces
               overlap = true;
               // the first is the probe, the second one the isotope
               String id_Overlap = i+"_"+j;
-              overlaps.add(id_Overlap);
+              isoOverlapsOfTheSamePeak.add(id_Overlap);
             }
           }
+          if (LipidomicsConstants.useMostOverlappingIsotopeOnly() && isoOverlapsOfTheSamePeak.size()>0){
+            String bestId = null;
+            float highestOverlapPercentage = 0f;
+            float range = mzEnd-mzStart;
+            for (String id_Overlap : isoOverlapsOfTheSamePeak){
+              int j = Integer.parseInt(id_Overlap.split("_")[1]);
+              Vector<Float> mzRange = mzRangeOfSinglePeak.get(j);
+              float start = mzRange.get(0);
+              float stop = mzRange.get(1);
+              if (mzStart>start) start = mzStart;
+              if (stop>mzEnd) stop = mzEnd;
+              float percentOverlap = (stop-start)/range;
+              if (percentOverlap>highestOverlapPercentage){
+                highestOverlapPercentage = percentOverlap;
+                bestId = id_Overlap;
+              }
+              
+            }
+            isoOverlapsOfTheSamePeak = new Vector<String>();
+            isoOverlapsOfTheSamePeak.add(bestId);
+          }
+          overlaps.addAll(isoOverlapsOfTheSamePeak);
         }
         if (overlaps.size()>0) overlapIso.put(probeNr, overlaps);
         probeNr++;

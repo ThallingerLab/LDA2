@@ -402,8 +402,14 @@ public class FragmentCalculator
     boolean hasBasePeakCutoff = (getBasePeakCutoff()>0d);
     Hashtable<Integer,Integer> levels = new Hashtable<Integer,Integer>();
     if (hasBasePeakCutoff){
-      for (FragmentRuleVO ruleVO : RulesContainer.getHeadFragmentRules(ruleName_,rulesDir_).values()) levels.put(ruleVO.getMsLevel(), ruleVO.getMsLevel());
-      for (FragmentRuleVO ruleVO : RulesContainer.getChainFragmentRules(ruleName_,rulesDir_).values()) levels.put(ruleVO.getMsLevel(), ruleVO.getMsLevel());
+      for (FragmentRuleVO ruleVO : RulesContainer.getHeadFragmentRules(ruleName_,rulesDir_).values()){
+        if (msLevels.containsKey(ruleVO.getMsLevel()) && msLevels.get(ruleVO.getMsLevel()))
+          levels.put(ruleVO.getMsLevel(), ruleVO.getMsLevel());
+      }
+      for (FragmentRuleVO ruleVO : RulesContainer.getChainFragmentRules(ruleName_,rulesDir_).values()){
+        if (msLevels.containsKey(ruleVO.getMsLevel()) && msLevels.get(ruleVO.getMsLevel()))
+          levels.put(ruleVO.getMsLevel(), ruleVO.getMsLevel());
+      }
     }else{
       getBasePeakIntRuleLevels(levels, getHeadIntensityRules(), msLevels);
       getBasePeakIntRuleLevels(levels, getChainIntensityRules(), msLevels);

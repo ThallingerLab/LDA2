@@ -344,6 +344,8 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
 
 
     paint2dAreas(paintableProbes, Color.RED);
+    //this is for exporting chromatograms
+    ////paint2dAreas(g,paintableProbes, Color.RED);
     paint2dAreas(this.selectedProbes_, Color.GREEN);
 
     draw2DDiagram(g, cr_, x0,y0,w0,h0, m_minDispTime2d_, m_maxDispTime2d_,maxIntensity_,m_2dGain_,
@@ -1114,11 +1116,15 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
   }
   
   private void paint2dAreas(Vector<CgProbe> areas, Color col){
+    paint2dAreas(this.getGraphics(),areas,col);
+  }
+  
+  private void paint2dAreas(Graphics g, Vector<CgProbe> areas, Color col){
     int x0 = leftMargin_2d();
     int w0 = diagramWidth_2d();
     int y0 = topMargin_2d() + diagramHeight_2d();
     int h0 = diagramHeight_2d();
-    paint2dAreas(this.getGraphics(),cr_, areas, col, isotopeNumber_, x0, y0, w0, h0, m_minDispTime2d_,m_maxDispTime2d_,maxIntensity_,m_2dGain_,raw_,true);
+    paint2dAreas(g,cr_, areas, col, isotopeNumber_, x0, y0, w0, h0, m_minDispTime2d_,m_maxDispTime2d_,maxIntensity_,m_2dGain_,raw_,true);    
   }
 
   private static void paint2dAreas(Graphics gx, CgChromatogram cr, Vector<CgProbe> areas, Color col, int isotopeNumber,int x0, int y0, int w0, int h0,

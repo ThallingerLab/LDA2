@@ -29,7 +29,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Vector;
 
 import javax.swing.JFrame;
@@ -183,16 +186,16 @@ public class StaticUtils
     String[] chromPaths = StringUtils.getChromFilePaths(chromBaseName+".");
     String oneDoesNotExist = "";
     if (chromPaths[0]==null || !existsFile(chromPaths[0])){
-      oneDoesNotExist = "The chrom file is missing";
+      oneDoesNotExist = "The chrom file is missing: "+chromPaths[0];
     }
     if (chromPaths[1]==null || !existsFile(chromPaths[1])){
-      oneDoesNotExist = "The head file is missing";
+      oneDoesNotExist = "The head file is missing: "+chromPaths[1];
     }
     if (chromPaths[2]==null || !existsFile(chromPaths[2])){
-      oneDoesNotExist = "The idx file is missing";
+      oneDoesNotExist = "The idx file is missing: "+chromPaths[2];
     }
     if (chromPaths[3]==null || !existsFile(chromPaths[3])){
-      oneDoesNotExist = "The rtt file is missing";
+      oneDoesNotExist = "The rtt file is missing: "+chromPaths[3];
     }
     return oneDoesNotExist;    
   }
@@ -513,17 +516,17 @@ public class StaticUtils
     String currentAmountString = "";
     for (int i=0;i!=chars.length;i++){
       if (chars[i]==' '){
-        addFormulaPartToHash(categorized, currentElement, currentAmountString, add);
+        addFormulaPartToHash(categorized, currentElement, currentAmountString, null, add);
         add = true;
         currentElement = "";
         currentAmountString = "";
       }else if (chars[i]=='+'){
-        addFormulaPartToHash(categorized, currentElement, currentAmountString, add);
+        addFormulaPartToHash(categorized, currentElement, currentAmountString, null, add);
         add = true;
         currentElement = "";
         currentAmountString = "";
       }else if (chars[i]=='-'){
-        addFormulaPartToHash(categorized, currentElement, currentAmountString, add);
+        addFormulaPartToHash(categorized, currentElement, currentAmountString, null, add);
         add = false;
         currentElement = "";
         currentAmountString = "";
@@ -531,7 +534,7 @@ public class StaticUtils
         if (Character.isUpperCase(chars[i])){
           if (currentElement.length()==0) currentElement+=String.valueOf(chars[i]);
           else{
-            addFormulaPartToHash(categorized, currentElement, currentAmountString, add);
+            addFormulaPartToHash(categorized, currentElement, currentAmountString, null, add);
             currentElement = String.valueOf(chars[i]);
             currentAmountString = "";
           }
@@ -547,7 +550,7 @@ public class StaticUtils
           throw new ChemicalFormulaException("The formula \""+formula+"\" is invalid! A term cannot start with a digit! Avoid empty spaces between element and amount!");
       }
     }
-    addFormulaPartToHash(categorized, currentElement, currentAmountString, add);
+    addFormulaPartToHash(categorized, currentElement, currentAmountString, null, add);
 //    System.out.println("-------------------------------");
 //    for (String elem : categorized.keySet()){
 //      System.out.println(elem+": "+categorized.get(elem));
@@ -555,18 +558,134 @@ public class StaticUtils
     return categorized;
   }
   
-  private static void addFormulaPartToHash(Hashtable<String,Integer> categorized, String currentElement, String currentAmountString, boolean add){
+  /**
+   * categorizes the formula of an Alex123 adduct in its elemental composition
+   * @param formula the adduct formula
+   * @return hashtable, key is the element, value is the amount
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
+   */
+  public static Hashtable<String,Integer> categorizeAdduct(String formula) throws ChemicalFormulaException {
+    Hashtable<String,Integer> categorized = new Hashtable<String,Integer>();
+    if (formula==null || formula.length()==0) return categorized;
+    boolean add = true;
+    //char[] chars = formula.replaceAll(" ", "+").toCharArray();//formulaWithoutSpaces.toCharArray();
+    char[] chars = formula.toCharArray();
+    String currentElement = "";
+    String currentAmountString = "";
+    String currentMultiString = "";
+    boolean formulaAlreadyAdded = false;
+    for (int i=0;i!=chars.length;i++){
+      if (chars[i]==' '){
+        addFormulaPartToHash(categorized, currentElement, currentAmountString, currentMultiString, add);
+        add = true;
+        currentElement = "";
+        currentAmountString = "";
+        currentMultiString = "";
+        formulaAlreadyAdded = true;
+      }else if (chars[i]=='+'){
+        if (!formulaAlreadyAdded) addFormulaPartToHash(categorized, currentElement, currentAmountString, currentMultiString, add);
+        add = true;
+        currentElement = "";
+        currentAmountString = "";
+        currentMultiString = "";
+        formulaAlreadyAdded = true;
+      }else if (chars[i]=='-'){
+        if (!formulaAlreadyAdded) addFormulaPartToHash(categorized, currentElement, currentAmountString, currentMultiString, add);
+        add = false;
+        currentElement = "";
+        currentAmountString = "";
+        currentMultiString = "";
+        formulaAlreadyAdded = true; 
+      }else if (Character.isLetter(chars[i])){
+        if (Character.isUpperCase(chars[i])){
+          if (currentElement.length()==0){
+            currentElement+=String.valueOf(chars[i]);
+            formulaAlreadyAdded = false;
+          }
+          else{
+            addFormulaPartToHash(categorized, currentElement, currentAmountString, currentMultiString, add);
+            currentElement = String.valueOf(chars[i]);
+            currentAmountString = "";
+          }
+        }else{
+          if (currentElement.length()==1 && currentAmountString.length()==0){
+            currentElement+=String.valueOf(chars[i]);
+          }else throw new ChemicalFormulaException("The formula \""+formula+"\" is invalid! An element must not start lower case!");
+        }
+      } else if (Character.isDigit(chars[i])){
+        if (currentElement.length()>0)
+          currentAmountString+=String.valueOf(chars[i]);
+        else
+          currentMultiString+=String.valueOf(chars[i]); 
+      }
+    }
+    addFormulaPartToHash(categorized, currentElement, currentAmountString, currentMultiString, add);
+//    System.out.println("-------------------------------");
+//    for (String elem : categorized.keySet()){
+//      System.out.println(elem+": "+categorized.get(elem));
+//    }
+    return categorized;
+  }
+  
+  /**
+   * adds a chemical element to the categorized hash
+   * @param categorized hashtable, key is the element, value is the amount
+   * @param currentElement chemical symbol
+   * @param currentAmountString the amount string of this element
+   * @param currentMultiString a multiplication factor for elements
+   * @param add add or remove these elemental parts
+   */
+  private static void addFormulaPartToHash(Hashtable<String,Integer> categorized, String currentElement, String currentAmountString, String currentMultiString, boolean add){
     if (currentElement!=null&&currentElement.length()>0){
       int finalAmount = 0;
       if (categorized.containsKey(currentElement))
         finalAmount = categorized.get(currentElement);
       int amountToChange = 1;
       if (currentAmountString!=null && currentAmountString.length()>0) amountToChange = Integer.parseInt(currentAmountString);
-      if (add) finalAmount += amountToChange;
-      else finalAmount -= amountToChange;
+      int multi = 1;
+      if (currentMultiString!=null && currentMultiString.length()>0) multi = Integer.parseInt(currentMultiString);      
+      if (add) finalAmount += amountToChange*multi;
+      else finalAmount -= amountToChange*multi;
       categorized.put(currentElement, finalAmount);
     }
   }
+  
+  /**
+   * returns a catogorized formula in its Hill notation
+   * @param formAnal the categorized formula
+   * @param space make a space between the elements
+   * @return formula in hill notation
+   */
+  public static String getFormulaInHillNotation(Hashtable<String,Integer> formAnal, boolean space){
+    String hillNotation = "";
+    if (formAnal.containsKey("C") && formAnal.get("C")!=0){
+      hillNotation += (formAnal.get("C")<0 ? "-" : "")+"C"+getHillNotationNumber("C",formAnal)+(space ? " " : "");
+    }
+    if (formAnal.containsKey("H") && formAnal.get("H")!=0){
+      hillNotation += (formAnal.get("H")<0 ? "-" : "")+"H"+getHillNotationNumber("H",formAnal)+(space ? " " : "");
+    }
+    List<String> list = new ArrayList<String>(formAnal.keySet());
+    Collections.sort(list);
+    for (String element : list){
+      if (element.equalsIgnoreCase("C") || element.equalsIgnoreCase("H") || formAnal.get(element)==0) continue;
+      hillNotation += (formAnal.get(element)<0 ? "-" : "")+element+getHillNotationNumber(element,formAnal)+(space ? " " : "");
+    }
+    return hillNotation;
+  }
+  
+  /**
+   * adds a number to the chemical element in Hill notation; i.e. no number if 0, otherwise add the number
+   * @param element the chemical element
+   * @param formAnal the categorized formula
+   * @return the number in Hill notation
+   */
+  private static String getHillNotationNumber(String element, Hashtable<String,Integer> formAnal){
+    String number = "";
+    int amount = Math.abs(formAnal.get(element));
+    if (amount>1) number = String.valueOf(amount);
+    return number;
+  }
+
   
   public static String generateLipidNameString(String name, Integer doubleBonds){
     String nameString = name;
@@ -663,10 +782,11 @@ public class StaticUtils
    * specifies m/z ranges for coloring from an MSn identification
    * @param paramUncasted the identification not casted in a LipidomicsMSnSet
    * @param selectedMSn shall only a certain MSn identifcation be displayed
+   * @param isAlex123 do the fragments originate from an Alex123 target list
    * @return m/z ranges for coloring from an MSn identification
    */
   @SuppressWarnings("unchecked")
-  public static Vector<RangeColor> createRangeColorVOs(LipidParameterSet paramUncasted, String selectedMSn){
+  public static Vector<RangeColor> createRangeColorVOs(LipidParameterSet paramUncasted, String selectedMSn, boolean isAlex123){
     String selected = null;
     if (selectedMSn!=null && selectedMSn.length()>0){
       selected = new String(selectedMSn);
@@ -714,7 +834,9 @@ public class StaticUtils
       }
       int colorCount = 1;
       Hashtable<String,String> usedFAs = new Hashtable<String,String>();
-      for (String combi : combiOrdered){
+      for (String combiOriginal : combiOrdered){
+        String combi = combiOriginal;
+        if (isAlex123) combi = combi.replaceAll("/","_");
         if (selected!=null && selected.length()>0 && !StaticUtils.isAPermutedVersion(selected.replaceAll("/", "_"),combi)) continue;
         String name = combi;
         for (String oneOrder : identNames){
@@ -725,11 +847,15 @@ public class StaticUtils
         String[] fas = LipidomicsMSnSet.getFAsFromCombiName(name);
         for (int i=0; i!= fas.length; i++){
           String fa = fas[i];
-          if (!chainFrags.containsKey(fa)) continue;
-          Hashtable<String,CgProbe> frags =  chainFrags.get(fa);
+          
+          Hashtable<String,CgProbe> frags =  new Hashtable<String,CgProbe>();
+          String faStored = getStoredFAName(fa,chainFrags);
+          if (faStored!=null) frags =  chainFrags.get(faStored);
+
           Color color = getFragemntColor(colorCount);
           for (String key : frags.keySet()){
-            String fragmentName = key+" ("+fa+")";
+            String fragmentName = key;
+            if (!fragmentName.contains(faStored)) fragmentName += " ("+faStored+")";
             if (usedFAs.containsKey(fragmentName))continue;
             usedFAs.put(fragmentName, fragmentName);
             CgProbe probe = frags.get(key);
@@ -742,6 +868,15 @@ public class StaticUtils
       }
     }
     return rangeColors;
+  }
+  
+  public static String getStoredFAName(String fa, Hashtable<String,Hashtable<String,CgProbe>> chainFrags){
+    if (!chainFrags.containsKey(fa) && !chainFrags.containsKey("FA "+fa) && !chainFrags.containsKey("LCB "+fa)) return null;
+    String faStored = "";
+    if (chainFrags.containsKey(fa)) faStored = fa;
+    else if (chainFrags.containsKey("FA "+fa)) faStored = "FA "+fa;
+    else if (chainFrags.containsKey("LCB "+fa)) faStored =  "LCB "+fa;
+    return faStored;
   }
   
   /**
@@ -856,6 +991,65 @@ public class StaticUtils
     results.add(fileToStore);
     results.add(store);
     return results;
+  }
+  
+  public static String sortFASequenceUnassigned(String key){
+    String[] fas = LipidomicsMSnSet.getFAsFromCombiName(key);
+    Hashtable<Integer,Integer> emptyFas = new Hashtable<Integer,Integer>();
+    Hashtable<Integer,Integer> unassignedFAs = new Hashtable<Integer,Integer>();
+    for (int i=0; i!=fas.length;i++){
+      if (fas[i].equalsIgnoreCase("-")) emptyFas.put(i, i);
+      else unassignedFAs.put(i, i);
+    }
+    Vector<Integer> assignedFAs = new Vector<Integer>();
+    while (unassignedFAs.size()>0){
+      Vector<Integer> lowestCarbonNumbers = new Vector<Integer>();
+      int lowestCarbonNumber = Integer.MAX_VALUE;
+      for (int i : unassignedFAs.keySet()){
+        int carbonNumber = Integer.parseInt(fas[i].substring(0,fas[i].indexOf(":")));
+        if (carbonNumber<lowestCarbonNumber ){
+          lowestCarbonNumbers = new Vector<Integer>();
+          lowestCarbonNumbers.add(i);
+          lowestCarbonNumber = carbonNumber;
+        }else if (carbonNumber==lowestCarbonNumber){
+          lowestCarbonNumbers.add(i);
+        }
+      }
+      if (lowestCarbonNumbers.size()==1){
+        assignedFAs.add(lowestCarbonNumbers.get(0));
+        unassignedFAs.remove(lowestCarbonNumbers.get(0));
+      }else{
+        Vector<Integer> lowestDoubleBonds = new Vector<Integer>();
+        int lowestDoubleBondNumber = Integer.MAX_VALUE;
+        for (int j=0; j!=lowestCarbonNumbers.size(); j++){
+          int indexInFA = lowestCarbonNumbers.get(j);
+          String fa = fas[indexInFA];
+          int doubleBonds = Integer.parseInt(fa.substring(fa.indexOf(":")+1));
+          if (doubleBonds<lowestDoubleBondNumber){
+            lowestDoubleBonds = new Vector<Integer>();
+            lowestDoubleBonds.add(j);
+            lowestDoubleBondNumber = doubleBonds;
+          } else if (doubleBonds==lowestDoubleBondNumber){
+            lowestDoubleBonds.add(j);
+          }
+        }
+        for (Integer nrInLowestCs : lowestDoubleBonds){
+          int indexInFA = lowestCarbonNumbers.get(nrInLowestCs);
+          assignedFAs.add(indexInFA);
+          unassignedFAs.remove(indexInFA);
+        }
+      }
+    }
+    for (Integer indexInFA : emptyFas.keySet()){
+      assignedFAs.add(indexInFA);
+    }
+    
+    String faString = "";
+    for (Integer faNr : assignedFAs){
+      if (faString.length()>0) faString += FragmentCalculator.FA_SEPARATOR;
+      faString += fas[faNr];
+    }
+    return faString;
   }
 
 }

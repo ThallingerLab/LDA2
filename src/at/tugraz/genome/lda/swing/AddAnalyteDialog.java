@@ -267,9 +267,8 @@ public class AddAnalyteDialog extends JDialog implements ActionListener
       formulaToCheck+=String.valueOf(currentChar);
       isPreviousDigit = Character.isDigit(currentChar);
     }
-    ElementConfigParser aaParser = new ElementConfigParser(Settings.getElementConfigPath());
+    ElementConfigParser aaParser = Settings.getElementParser();
     try {
-      aaParser.parse();
       aaParser.calculateTheoreticalMass(formulaToCheck, false);
       return true;
     }

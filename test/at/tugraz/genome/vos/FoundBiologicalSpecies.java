@@ -22,16 +22,49 @@
  */ 
 package at.tugraz.genome.vos;
 
+import java.util.Hashtable;
 import java.util.LinkedHashMap;
+
+import at.tugraz.genome.lda.swing.Range;
+
 
 /**
  * 
  * @author Juergen Hartler
  *
  */
-public class FoundBiologicalSpecies
-{
-  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPISpecies(){
+public class FoundBiologicalSpecies{
+  
+  
+  public final static Hashtable<String,String> adductIonisations = new Hashtable<String,String>(){
+    {
+      put("H","+H+");
+      put("Na","+Na+");
+      put("NH4","+NH4+");
+      put("-OH","+H+ -H2O");
+      put("HCOO","+HCOO-");
+      put("-CH3","-CH3+");
+      put("-H","-H+");
+      put("Na-H2","+Na+ -H2+");
+      put("Cl","+Cl-");
+    }
+  };
+  
+  public final static Hashtable<String,String> modToIonisationMode = new Hashtable<String,String>(){
+    {
+      put("H","+");
+      put("Na","+");
+      put("NH4","+");
+      put("-OH","+");
+      put("HCOO","-");
+      put("-CH3","-");
+      put("-H","-");
+      put("Na-H2","-");
+      put("Cl","-");
+    }
+  };
+  
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPISpeciesOrbitrap(){
     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
     LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
     molSpecies.put("16:0/18:1", new ReferenceInfoVO("16:0/18:1",23.9d,true,true));
@@ -97,14 +130,87 @@ public class FoundBiologicalSpecies
 
     return species;
   }
-
-  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPPCSpecies(){
+  
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPISpecies4000QTRAP(){
     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
     LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/18:1", new ReferenceInfoVO("16:0/18:1",22.7,true,true));
+    molSpecies.put("18:0/16:1", new ReferenceInfoVO("18:0/16:1",22.7d,true,true));
+    species.put("34:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/18:2", new ReferenceInfoVO("16:0/18:2",22.1d,true,true));
+    molSpecies.put("18:1/16:1", new ReferenceInfoVO("18:0/16:1",22.1d,true,true));
+    species.put("34:2", molSpecies);  
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/18:2", new ReferenceInfoVO("18:0/18:2",23.2d,true,true));
+    molSpecies.put("18:1/18:1", new ReferenceInfoVO("18:1/18:1",23.2d,true,false));
+    molSpecies.put("16:0/20:2", new ReferenceInfoVO("16:0/20:2",23.2d,true,true));
+    species.put("36:2", molSpecies);  
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1/18:2", new ReferenceInfoVO("18:1/18:2",22.6d,true,true));
+    molSpecies.put("16:0/20:3", new ReferenceInfoVO("16:0/20:3",22.6d,true,true));
+    molSpecies.put("18:0/18:3", new ReferenceInfoVO("16:0/20:2",22.6d,true,true));
+    species.put("36:3", molSpecies);  
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/20:4", new ReferenceInfoVO("16:0/20:4",22.0d,true,true));
+    molSpecies.put("18:2/18:2", new ReferenceInfoVO("18:2/18:2",22.0d,true,false));
+    molSpecies.put("14:0_22:4", new ReferenceInfoVO("14:0_22:4",22.0d,true,true));
+    species.put("36:4", molSpecies);  
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/20:5", new ReferenceInfoVO("16:0/20:5",21.4d,true,true));
+    molSpecies.put("16:1/20:4", new ReferenceInfoVO("16:1/20:4",21.4d,true,true));
+    species.put("36:5", molSpecies);  
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:0/20:4", new ReferenceInfoVO("17:0/20:4",22.9d,true,true));
+    molSpecies.put("18:0_19:4", new ReferenceInfoVO("18:0_19:4",22.9d,true,true));
+    species.put("37:4", molSpecies);  
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/20:3", new ReferenceInfoVO("18:0/20:3",25.3d,true,true));
+    molSpecies.put("18:1_20:2", new ReferenceInfoVO("18:1_20:2",25.3d,true,true));
+    species.put("38:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/20:4", new ReferenceInfoVO("18:0/20:4",23.8d,true,true));
+    molSpecies.put("18:1/20:3", new ReferenceInfoVO("18:1/20:3",23.8d,true,true));
+    species.put("38:4", molSpecies);  
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1/20:4", new ReferenceInfoVO("18:1/20:4",22.4d,true,true));
+    molSpecies.put("18:0/20:5", new ReferenceInfoVO("18:0/20:5",22.4d,true,true));
+    molSpecies.put("16:0/22:5", new ReferenceInfoVO("16:0/22:5",22.4d,true,true));
+    species.put("38:5", molSpecies);  
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/22:6", new ReferenceInfoVO("16:0/22:6",21.1d,true,true));
+    molSpecies.put("18:2/20:4", new ReferenceInfoVO("18:2/20:4",21.1d,true,true));
+    molSpecies.put("18:1/20:5", new ReferenceInfoVO("18:1/20:5",21.1d,true,true));
+    species.put("38:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("19:0/20:4", new ReferenceInfoVO("19:0/20:4",25.0d,true,true));
+    species.put("39:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("19:1/20:4", new ReferenceInfoVO("19:1/20:4",23.7d,true,true));
+    species.put("39:5", molSpecies);   
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/22:4", new ReferenceInfoVO("18:0/22:4",26.1d,true,true));
+    species.put("40:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/22:6", new ReferenceInfoVO("18:0/22:6",23.4d,true,true));
+    species.put("40:6", molSpecies);  
+
+    return species;
+  }
+
+
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPPCSpeciesOrbitrap(){
+    LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
     return species;
   }
   
-  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPPESpecies(){
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPPCSpecies4000QTRAP(){
+    LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
+    return species;
+  }
+
+  
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPPESpeciesOrbitrap(){
     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
     LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
     molSpecies.put("P-16:0/18:1", new ReferenceInfoVO("P-16:0/18:1",28.1d,true,false));
@@ -163,7 +269,29 @@ public class FoundBiologicalSpecies
     return species;
   }
   
-  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getLPCSpecies(){
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPPESpecies4000QTRAP(){
+    LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
+    LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("P-18:0/18:1", new ReferenceInfoVO("P-18:0/18:1",28.6d,true,false));
+    species.put("36:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("P-18:0/18:2", new ReferenceInfoVO("P-18:0/18:2",27.6d,true,false));
+    molSpecies.put("P-18:1/18:1", new ReferenceInfoVO("P-18:1/18:1",27.6d,true,false));
+    species.put("36:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("P-16:0/20:4", new ReferenceInfoVO("P-16:0/20:4",25.8d,true,false));
+    species.put("36:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("P-18:0/20:4", new ReferenceInfoVO("P-18:0/20:4",27.4d,true,false));
+    molSpecies.put("P-16:0/22:4", new ReferenceInfoVO("P-16:0/22:4",27.4d,true,false));
+    species.put("38:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("P-18:0/22:6", new ReferenceInfoVO("P-18:0/22:6",26.9d,true,false));
+    species.put("40:6", molSpecies);
+    return species;
+  }
+  
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getLPCSpeciesOrbitrap(){
     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
     LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
     molSpecies.put("16:0", new ReferenceInfoVO("16:0",4.2d,true,false));
@@ -204,8 +332,50 @@ public class FoundBiologicalSpecies
     return species;
   }
 
+
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getLPCSpecies4000QTRAP(){
+    LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
+    LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0", new ReferenceInfoVO("16:0",8.0d,true,false));
+    species.put("16:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:1", new ReferenceInfoVO("16:1",5.6d,true,false));
+    species.put("16:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:0", new ReferenceInfoVO("17:0",9.7d,true,false));
+    species.put("17:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0", new ReferenceInfoVO("18:0",11.4d,true,false));
+    species.put("18:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1", new ReferenceInfoVO("18:1",9.0d,true,false));
+    species.put("18:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2", new ReferenceInfoVO("18:2",6.1d,true,false));
+    species.put("18:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:3", new ReferenceInfoVO("18:3",3.3d,true,false));
+    species.put("18:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("20:2", new ReferenceInfoVO("20:2",11.7d,true,false));
+    species.put("20:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("20:3", new ReferenceInfoVO("20:3",8.9d,true,false));
+    species.put("20:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("20:4", new ReferenceInfoVO("20:4",6.1d,true,false));
+    species.put("20:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:5", new ReferenceInfoVO("22:5",8.8d,true,false));
+    species.put("22:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6", new ReferenceInfoVO("22:6",6.0d,true,false));
+    species.put("22:6", molSpecies);
+    return species;
+  }
+
   
-  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getLPESpecies(){
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getLPESpeciesOrbitrap(){
     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
     LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
     molSpecies.put("16:0", new ReferenceInfoVO("16:0",4.4d,true,false));
@@ -231,7 +401,34 @@ public class FoundBiologicalSpecies
     return species;
   }
   
-  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPSSpecies(){
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getLPESpecies4000QTRAP(){
+    LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
+    LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0", new ReferenceInfoVO("16:0",7.6d,true,false));
+    species.put("16:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:1", new ReferenceInfoVO("16:1",5.1d,true,false));
+    species.put("16:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0", new ReferenceInfoVO("18:0",11.1d,true,false));
+    species.put("18:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1", new ReferenceInfoVO("18:1",8.6d,true,false));
+    species.put("18:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2", new ReferenceInfoVO("18:2",6.6d,true,false));
+    species.put("18:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("20:4", new ReferenceInfoVO("20:4",5.4d,true,false));
+    species.put("20:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("20:6", new ReferenceInfoVO("22:6",4.6d,true,false));
+    species.put("22:6", molSpecies);
+    return species;
+  }
+
+  
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPSSpeciesOrbitrap(){
     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
     LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
     molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
@@ -274,7 +471,50 @@ public class FoundBiologicalSpecies
     return species;
   }
   
-  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPCSpecies(){
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPSSpecies4000QTRAP(){
+    LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
+    LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/18:2", new ReferenceInfoVO("18:0/18:2",24.5d,true,true));
+    molSpecies.put("18:1/18:1", new ReferenceInfoVO("18:1/18:1",24.5d,true,false));
+    species.put("36:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/20:4", new ReferenceInfoVO("16:0/20:4",22.5d,true,true));
+    molSpecies.put("18:2/18:2", new ReferenceInfoVO("18:2/18:2",22.5d,true,false));
+    species.put("36:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/20:3", new ReferenceInfoVO("18:0/20:3",25.3d,true,true));
+    species.put("38:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/20:4", new ReferenceInfoVO("18:0/20:4",24.3d,true,true));
+    molSpecies.put("18:1_20:3", new ReferenceInfoVO("18:1_20:3",24.3d,true,true));
+    species.put("38:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1/20:4", new ReferenceInfoVO("18:1/20:4",23.3d,true,true));
+    species.put("38:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/22:6", new ReferenceInfoVO("16:0/22:6",22.3d,true,true));
+    molSpecies.put("18:2/20:4", new ReferenceInfoVO("18:2/20:4",22.3d,true,true));
+    species.put("38:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/22:5", new ReferenceInfoVO("18:0/22:5",25.1d,true,true));
+    molSpecies.put("18:2/20:4", new ReferenceInfoVO("20:4/20:1",25.1d,true,true));
+    species.put("40:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/22:6", new ReferenceInfoVO("18:0/22:6",24.1d,true,true));
+    molSpecies.put("20:4/20:2", new ReferenceInfoVO("20:4/20:2",24.1d,true,true));
+    species.put("40:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1/22:6", new ReferenceInfoVO("18:1/22:6",23.1d,true,true));
+    species.put("40:7", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("20:4/20:4", new ReferenceInfoVO("20:4/20:4",22.1d,true,false));
+    species.put("40:8", molSpecies);
+    return species;
+  }
+
+  
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPCSpeciesOrbitrap(){
     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
     LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
     molSpecies.put("14:0/16:0", new ReferenceInfoVO("14:0/16:0",23.2d,true,true));
@@ -521,7 +761,255 @@ public class FoundBiologicalSpecies
     return species;
   }
   
-  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPESpecies(){
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPCSpecies4000QTRAP(){
+    LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
+    LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("14:0/16:0", new ReferenceInfoVO("14:0/16:0",24.4d,true,true));
+    molSpecies.put("12:0_18:0", new ReferenceInfoVO("12:0_18:0",24.4d,true,true));
+    molSpecies.put("15:0/15:0", new ReferenceInfoVO("15:0/15:0",24.4d,true,false));
+    species.put("30:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("15:0/16:0", new ReferenceInfoVO("15:0/16:0",25.3d,true,true));
+    species.put("31:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/16:0", new ReferenceInfoVO("16:0/16:0",26.3d,true,false));
+    species.put("32:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/16:1", new ReferenceInfoVO("16:0/16:1",24.8d,true,true));
+    molSpecies.put("14:0/18:1", new ReferenceInfoVO("14:0/18:1",24.8d,true,true));
+    species.put("32:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("14:0/18:2", new ReferenceInfoVO("14:0/18:2",23.7d,true,true));
+    molSpecies.put("16:1/16:1", new ReferenceInfoVO("16:1/16:1",23.7d,true,false));
+    molSpecies.put("16:0/16:2", new ReferenceInfoVO("16:0/16:2",23.7d,true,true));
+    species.put("32:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/17:0", new ReferenceInfoVO("16:0/17:0",27.2d,true,true));
+    molSpecies.put("15:0_18:0", new ReferenceInfoVO("15:0_18:0",27.2d,true,true));
+    species.put("33:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/17:1", new ReferenceInfoVO("16:0/17:1",25.8d,true,true));
+    molSpecies.put("15:0/18:1", new ReferenceInfoVO("15:0/18:1",25.8d,true,true));
+    molSpecies.put("16:1_17:0", new ReferenceInfoVO("16:1_17:0",25.8d,true,true));
+    species.put("33:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("15:0/18:2", new ReferenceInfoVO("15:0/18:2",24.4d,true,true));
+    molSpecies.put("16:0/17:2", new ReferenceInfoVO("16:0/17:2",24.4d,true,true));
+    molSpecies.put("16:1/17:1", new ReferenceInfoVO("16:1/17:1",24.4d,true,true));
+    molSpecies.put("15:1/18:1", new ReferenceInfoVO("15:1/18:1",24.4d,true,true));
+    species.put("33:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/16:0", new ReferenceInfoVO("18:0/16:0",28.2d,true,true));
+    species.put("34:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/18:1", new ReferenceInfoVO("16:0/18:1",26.5d,true,true));
+    species.put("34:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/18:2", new ReferenceInfoVO("16:0/18:2",25.2d,true,true));
+    species.put("34:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:1/18:2", new ReferenceInfoVO("16:1/18:2",24.0d,true,true));
+    molSpecies.put("16:0/18:3", new ReferenceInfoVO("16:0/18:3",24.0d,true,true));
+    species.put("34:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("14:0/20:4", new ReferenceInfoVO("14:0/20:4",23.4d,true,true));
+    molSpecies.put("16:1/18:3", new ReferenceInfoVO("16:1/18:3",23.4d,true,true));
+    molSpecies.put("16:2/18:2", new ReferenceInfoVO("16:2/18:2",23.4d,true,true));
+    molSpecies.put("16:0/18:4", new ReferenceInfoVO("16:0/18:4",23.4d,true,true));
+    species.put("34:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:0/18:1", new ReferenceInfoVO("17:0/18:1",27.5d,true,true));
+    molSpecies.put("16:0/19:1", new ReferenceInfoVO("16:0/19:1",27.5d,true,true));
+    molSpecies.put("17:1/18:0", new ReferenceInfoVO("17:1/18:0",27.5d,true,true));
+    species.put("35:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:0/18:2", new ReferenceInfoVO("17:0/18:2",26.2d,true,true));
+    molSpecies.put("17:1/18:1", new ReferenceInfoVO("17:1/18:1",26.2d,true,true));
+    molSpecies.put("16:0_19:2", new ReferenceInfoVO("16:0_19:2",26.2d,true,true));
+    species.put("35:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:1/18:2", new ReferenceInfoVO("17:1/18:2",24.8d,true,true));
+    molSpecies.put("20:3/15:0", new ReferenceInfoVO("20:3/15:0",24.8d,true,true));
+    molSpecies.put("18:1/17:2", new ReferenceInfoVO("18:1/17:2",24.8d,true,true));
+    molSpecies.put("17:3_18:0", new ReferenceInfoVO("17:3_18:0",24.8d,true,true));
+    molSpecies.put("16:1_19:2", new ReferenceInfoVO("16:1_19:2",24.8d,true,true));
+    species.put("35:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("15:0/20:4", new ReferenceInfoVO("15:0/20:4",23.4d,true,true));
+    molSpecies.put("16:0_19:4", new ReferenceInfoVO("16:0_19:4",23.4d,true,true));
+    species.put("35:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/18:0", new ReferenceInfoVO("18:0/18:0",30.0d,true,false));
+    species.put("36:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/18:1", new ReferenceInfoVO("18:0/18:1",28.5d,true,true));
+    species.put("36:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/18:2", new ReferenceInfoVO("18:0/18:2",27.1d,true,true));
+    molSpecies.put("18:1/18:1", new ReferenceInfoVO("18:1/18:1",27.1d,true,false));
+    species.put("36:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/20:3", new ReferenceInfoVO("16:0/20:3",25.7d,true,true));
+    molSpecies.put("18:1/18:2", new ReferenceInfoVO("18:1/18:2",25.7d,true,true));
+    molSpecies.put("18:0/18:3", new ReferenceInfoVO("18:0/18:3",25.7d,true,true));
+    species.put("36:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/20:4", new ReferenceInfoVO("16:0/20:4",24.9d,true,true));
+    molSpecies.put("18:2/18:2", new ReferenceInfoVO("18:2/18:2",24.2d,true,false));
+    molSpecies.put("18:3/18:1", new ReferenceInfoVO("18:3/18:1",24.2d,true,true));
+    molSpecies.put("16:1/20:3", new ReferenceInfoVO("16:1/20:3",24.2d,true,true));
+    species.put("36:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/20:5", new ReferenceInfoVO("16:0/20:5",23.0d,true,true));
+    molSpecies.put("16:1/20:4", new ReferenceInfoVO("16:1/20:4",22.6d,true,true));
+    molSpecies.put("18:3/18:2", new ReferenceInfoVO("18:3/18:2",21.7d,true,true));
+    species.put("36:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("14:0/22:6", new ReferenceInfoVO("14:0/22:6",23.9d,true,true));
+    molSpecies.put("16:0/20:6", new ReferenceInfoVO("16:0/20:6",23.9d,true,true));
+    molSpecies.put("16:1/20:5", new ReferenceInfoVO("16:1/20:5",23.2d,true,true));
+    molSpecies.put("16:2/20:4", new ReferenceInfoVO("16:2/20:4",23.9d,true,true));
+    molSpecies.put("18:0/18:6", new ReferenceInfoVO("18:0/18:6",23.2d,true,true));
+    species.put("36:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("19:0/18:1", new ReferenceInfoVO("19:0/18:1",29.2d,true,true));
+    molSpecies.put("18:0/19:1", new ReferenceInfoVO("18:0/19:1",29.2d,true,true));
+    species.put("37:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("19:0/18:2", new ReferenceInfoVO("19:0/18:2",28.0d,true,true));
+    molSpecies.put("18:0/19:2", new ReferenceInfoVO("18:0/19:2",28.0d,true,true));
+    molSpecies.put("19:1/18:1", new ReferenceInfoVO("19:1/18:1",28.0d,true,true));
+    molSpecies.put("17:0/20:2", new ReferenceInfoVO("17:0/20:2",28.0d,true,true));
+    species.put("37:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:0/20:3", new ReferenceInfoVO("17:0/20:3",26.5d,true,true));
+    molSpecies.put("19:1/18:2", new ReferenceInfoVO("19:1/18:2",26.5d,true,true));
+    molSpecies.put("18:1_19:2", new ReferenceInfoVO("18:1_19:2",26.5d,true,true));
+    species.put("37:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:0/20:4", new ReferenceInfoVO("17:0/20:4",25.9d,true,true));
+    species.put("37:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:1/20:4", new ReferenceInfoVO("17:1/20:4",24.2d,true,true));
+    molSpecies.put("17:0/20:5", new ReferenceInfoVO("17:0/20:5",24.2d,true,true));
+    species.put("37:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("15:0/22:6", new ReferenceInfoVO("15:0/22:6",22.5d,true,true));
+    molSpecies.put("19:6/18:0", new ReferenceInfoVO("19:6/18:0",22.5d,true,true));
+    species.put("37:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/20:1", new ReferenceInfoVO("18:0/20:1",30.5d,true,true));
+    molSpecies.put("18:1/20:0", new ReferenceInfoVO("18:1/20:0",30.5d,true,true));
+    species.put("38:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/20:2", new ReferenceInfoVO("18:0/20:2",28.7d,true,true));
+    molSpecies.put("20:0/18:2", new ReferenceInfoVO("20:0/18:2",28.7d,true,true));
+    molSpecies.put("20:1/18:1", new ReferenceInfoVO("20:1/18:1",28.7d,true,true));
+    species.put("38:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/20:3", new ReferenceInfoVO("18:0/20:3",27.6d,true,true));
+    molSpecies.put("20:1/18:2", new ReferenceInfoVO("20:1/18:2",27.6d,true,true));
+    species.put("38:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/20:4", new ReferenceInfoVO("18:0/20:4",26.7d,true,true));
+    molSpecies.put("18:1/20:3", new ReferenceInfoVO("18:1/20:3",26.7d,true,true));
+    molSpecies.put("16:0/22:4", new ReferenceInfoVO("16:0/22:4",26.7d,true,true));
+    molSpecies.put("20:2/18:2", new ReferenceInfoVO("20:2/18:2",26.7d,true,true));
+    species.put("38:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1/20:4", new ReferenceInfoVO("18:1/20:4",25.4d,true,true));
+    molSpecies.put("16:0/22:5", new ReferenceInfoVO("16:0/22:5",25.4d,true,true));
+    molSpecies.put("18:0/20:5", new ReferenceInfoVO("18:0/20:7",25.4d,true,true));
+    species.put("38:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/22:6", new ReferenceInfoVO("16:0/22:6",24.6d,true,true));
+    molSpecies.put("18:2/20:4", new ReferenceInfoVO("18:2/20:4",24.6d,true,true));
+    molSpecies.put("18:1/20:5", new ReferenceInfoVO("18:1/20:5",24.6d,true,true));
+    species.put("38:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:1/22:6", new ReferenceInfoVO("16:1/22:6",23.4d,true,true));
+    molSpecies.put("18:2/20:5", new ReferenceInfoVO("18:2/20:5",23.4d,true,true));
+    molSpecies.put("18:3/20:4", new ReferenceInfoVO("18:3/20:4",23.4d,true,true));
+    species.put("38:7", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("19:0/20:3", new ReferenceInfoVO("19:0/20:3",28.5d,true,true));
+    species.put("39:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("19:0/20:4", new ReferenceInfoVO("19:0/20:4",27.7d,true,true));
+    species.put("39:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("19:1/20:4", new ReferenceInfoVO("19:1/20:4",26.3d,true,true));
+    species.put("39:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:0/22:6", new ReferenceInfoVO("17:0/22:6",25.4d,true,true));
+    molSpecies.put("16:0/23:6", new ReferenceInfoVO("16:0/23:6",25.4d,true,true));
+    species.put("39:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:1/22:6", new ReferenceInfoVO("17:1/22:6",24.5d,true,true));
+    species.put("39:7", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("40:3", new ReferenceInfoVO("40:3",28.9d,true,true));
+    species.put("40:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/22:4", new ReferenceInfoVO("18:0/22:4",28.1d,true,true));
+    molSpecies.put("20:1/20:3", new ReferenceInfoVO("20:1/20:3",28.1d,true,true));
+    molSpecies.put("20:0/20:4", new ReferenceInfoVO("20:0/20:4",28.1d,true,true));
+    molSpecies.put("18:1/22:3", new ReferenceInfoVO("18:1/22:3",28.1d,true,true));
+    species.put("40:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/22:5", new ReferenceInfoVO("18:0/22:5",27.4d,true,true));
+    molSpecies.put("20:1/20:4", new ReferenceInfoVO("20:1/20:4",27.4d,true,true));
+    molSpecies.put("18:1/22:4", new ReferenceInfoVO("18:1/22:4",27.4d,true,true));
+    molSpecies.put("16:0/24:5", new ReferenceInfoVO("16:0/24:5",27.4d,true,true));
+    species.put("40:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/22:6", new ReferenceInfoVO("18:0/22:6",26.2d,true,true));
+    molSpecies.put("18:1/22:5", new ReferenceInfoVO("18:1/22:5",26.2d,true,true));
+    molSpecies.put("20:2/20:4", new ReferenceInfoVO("20:2/20:4",26.2d,true,true));
+    molSpecies.put("16:0/24:6", new ReferenceInfoVO("16:0/24:6",26.2d,true,true));
+    species.put("40:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1/22:6", new ReferenceInfoVO("18:1/22:6",24.9d,true,true));
+    molSpecies.put("22:5/18:2", new ReferenceInfoVO("22:5/18:2",24.9d,true,true));
+    molSpecies.put("20:3/20:4", new ReferenceInfoVO("20:3/20:4",24.9d,true,true));
+    species.put("40:7", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2/22:6", new ReferenceInfoVO("18:2/22:6",23.9d,true,true));
+    molSpecies.put("20:4/20:4", new ReferenceInfoVO("20:4/20:4",23.9d,true,false));
+    molSpecies.put("20:3_20:5", new ReferenceInfoVO("20:3_20:5",23.9d,true,false));
+    species.put("40:8", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6/18:3", new ReferenceInfoVO("22:6/18:3",22.9d,true,true));
+    molSpecies.put("20:5/20:4", new ReferenceInfoVO("20:5/20:4",22.9d,true,true));
+    species.put("40:9", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("19:0/22:6", new ReferenceInfoVO("19:0/22:6",27.0d,true,true));
+    species.put("41:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("20:1/22:6", new ReferenceInfoVO("20:1/22:6",26.5d,true,true));
+    molSpecies.put("18:2_24:5", new ReferenceInfoVO("18:2_24:5",26.5d,true,true));
+    molSpecies.put("18:1_24:6", new ReferenceInfoVO("18:1_24:6",26.5d,true,true));
+    species.put("42:7", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_24:6", new ReferenceInfoVO("18:2_24:6",25.5d,true,true));
+    molSpecies.put("20:2_22:6", new ReferenceInfoVO("20:2_22:6",25.5d,true,true));
+    species.put("42:8", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("20:3_22:6", new ReferenceInfoVO("20:3_22:6",24.1d,true,true));
+    molSpecies.put("18:3_24:6", new ReferenceInfoVO("18:3_24:6",24.1d,true,true));
+    molSpecies.put("20:4_22:5", new ReferenceInfoVO("20:4_22:5",24.1d,true,true));
+    species.put("42:9", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6/20:4", new ReferenceInfoVO("22:6/20:4",23.4d,true,true));
+    species.put("42:10", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6/22:6", new ReferenceInfoVO("22:6/22:6",23.0d,true,false));
+    species.put("44:12", molSpecies);
+    return species;
+  }
+
+  
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPESpeciesOrbitrap(){
     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
     LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
     molSpecies.put("12:0/12:0", new ReferenceInfoVO("12:0/12:0",14.6d,true,false));
@@ -682,8 +1170,172 @@ public class FoundBiologicalSpecies
     species.put("42:10", molSpecies);    
     return species;
   }
+
   
-  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPGSpecies(){
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPESpecies4000QTRAP(){
+    LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
+    LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("12:0/12:0", new ReferenceInfoVO("12:0/12:0",17.7d,true,false));
+    species.put("24:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/16:1", new ReferenceInfoVO("16:0/16:1",24.8d,true,true));
+    molSpecies.put("14:0/18:1", new ReferenceInfoVO("14:0/18:1",24.8d,true,true));
+    species.put("32:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/16:0", new ReferenceInfoVO("18:0/16:0",27.6d,true,true));
+    molSpecies.put("17:0/17:0", new ReferenceInfoVO("17:0/17:0",27.6d,true,false));
+    species.put("34:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/18:1", new ReferenceInfoVO("16:0/18:1",26.3d,true,true));
+    molSpecies.put("18:0/16:1", new ReferenceInfoVO("18:0/16:1",26.3d,true,true));
+    species.put("34:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/18:2", new ReferenceInfoVO("16:0/18:2",25.0d,true,true));
+    molSpecies.put("16:1_18:1", new ReferenceInfoVO("16:1_18:1",25.0d,true,true));
+    species.put("34:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:1/18:2", new ReferenceInfoVO("16:1/18:2",23.7d,true,true));
+    molSpecies.put("16:0/18:3", new ReferenceInfoVO("16:0/18:3",23.7d,true,true));
+    molSpecies.put("14:1_20:2", new ReferenceInfoVO("14:1_20:2",23.7d,true,true));
+    species.put("34:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:0/18:1", new ReferenceInfoVO("17:0/18:1",27.1d,true,true));
+    molSpecies.put("16:0/19:1", new ReferenceInfoVO("16:0/19:1",27.1d,true,true));
+    molSpecies.put("18:0/17:1", new ReferenceInfoVO("18:0/17:1",27.1d,true,true));
+    molSpecies.put("16:1_19:0", new ReferenceInfoVO("16:1_19:0",27.1d,true,true));
+    species.put("35:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:0/18:2", new ReferenceInfoVO("17:0/18:2",25.8d,true,true));
+    molSpecies.put("17:1/18:1", new ReferenceInfoVO("17:1/18:1",25.8d,true,true));
+    molSpecies.put("16:0_19:2", new ReferenceInfoVO("16:0_19:2",25.8d,true,true));
+    species.put("35:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/18:1", new ReferenceInfoVO("18:0/18:1",27.9d,true,true));
+    molSpecies.put("16:0/20:1", new ReferenceInfoVO("16:0/20:1",27.9d,true,true));
+    species.put("36:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/18:2", new ReferenceInfoVO("18:0/18:2",26.8d,true,true));
+    molSpecies.put("18:1/18:1", new ReferenceInfoVO("18:1/18:1",26.8d,true,false));
+    molSpecies.put("16:0/20:2", new ReferenceInfoVO("16:0/20:2",26.8d,true,true));
+    species.put("36:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1/18:2", new ReferenceInfoVO("18:1/18:2",25.8d,true,true));
+    molSpecies.put("16:0/20:3", new ReferenceInfoVO("16:0/20:3",25.8d,true,true));
+    molSpecies.put("18:0/18:3", new ReferenceInfoVO("18:0/18:3",25.8d,true,true));
+    species.put("36:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/20:4", new ReferenceInfoVO("16:0/20:4",24.8d,true,true));
+    molSpecies.put("18:2/18:2", new ReferenceInfoVO("18:2/18:2",24.8d,true,true));
+    molSpecies.put("18:1/18:3", new ReferenceInfoVO("18:1/18:3",24.8d,true,true));
+    molSpecies.put("16:1/20:3", new ReferenceInfoVO("16:1/20:3",24.8d,true,true));
+    species.put("36:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:1/20:4", new ReferenceInfoVO("16:1/20:4",23.5d,true,true));
+    molSpecies.put("16:0/20:5", new ReferenceInfoVO("16:0/20:5",23.5d,true,true));
+    molSpecies.put("18:3/18:2", new ReferenceInfoVO("18:3/18:2",23.5d,true,true));
+    species.put("36:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("14:0/22:6", new ReferenceInfoVO("14:0/22:5",22.5d,true,true));
+    species.put("36:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("19:0/18:2", new ReferenceInfoVO("19:0/18:2",27.5d,true,true));
+    molSpecies.put("18:1/19:1", new ReferenceInfoVO("18:1/19:1",27.5d,true,true));
+    molSpecies.put("17:0/20:2", new ReferenceInfoVO("17:0/20:2",27.5d,true,true));
+    molSpecies.put("18:0/19:2", new ReferenceInfoVO("18:0/19:2",27.5d,true,true));
+    species.put("37:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:0/20:4", new ReferenceInfoVO("17:0/20:4",25.7d,true,true));
+    species.put("37:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:1/20:4", new ReferenceInfoVO("17:1/20:4",24.4d,true,true));
+    molSpecies.put("17:0_20:5", new ReferenceInfoVO("17:0_20:5",24.4d,true,true));
+    species.put("37:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("15:0/22:6", new ReferenceInfoVO("15:0/22:6",23.4d,true,true));
+    molSpecies.put("16:0/21:6", new ReferenceInfoVO("16:0/21:6",23.4d,true,true));
+    species.put("37:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/20:1", new ReferenceInfoVO("18:0/20:1",29.3d,true,true));
+    molSpecies.put("20:0/18:1", new ReferenceInfoVO("20:0/18:1",29.3d,true,true));
+    species.put("38:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/20:2", new ReferenceInfoVO("18:0/20:2",28.2d,true,true));
+    molSpecies.put("18:1/20:1", new ReferenceInfoVO("18:1/20:1",28.2d,true,true));
+    molSpecies.put("20:0/18:2", new ReferenceInfoVO("20:0/18:2",28.2d,true,true));
+    species.put("38:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/20:3", new ReferenceInfoVO("18:0/20:3",27.2d,true,true));
+    molSpecies.put("18:1/20:2", new ReferenceInfoVO("18:1/20:2",27.2d,true,true));
+    molSpecies.put("20:1/18:2", new ReferenceInfoVO("20:1/18:2",27.2d,true,true));
+    species.put("38:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/20:4", new ReferenceInfoVO("18:0/20:4",26.5d,true,true));
+    molSpecies.put("16:0/22:4", new ReferenceInfoVO("16:0/22:4",26.5d,true,true));
+    molSpecies.put("18:1/20:3", new ReferenceInfoVO("18:1/20:3",26.5d,true,true));
+    species.put("38:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1/20:4", new ReferenceInfoVO("18:1/20:4",25.3d,true,true));
+    molSpecies.put("16:0/22:5", new ReferenceInfoVO("16:0/22:5",25.3d,true,true));
+    molSpecies.put("18:0/20:5", new ReferenceInfoVO("18:0/20:5",25.3d,true,true));
+    species.put("38:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/22:6", new ReferenceInfoVO("16:0/22:6",24.4d,true,true));
+    molSpecies.put("18:2/20:4", new ReferenceInfoVO("18:2/20:4",24.4d,true,true));
+    molSpecies.put("18:1/20:5", new ReferenceInfoVO("18:1/20:5",24.4d,true,true));
+    species.put("38:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:1/22:6", new ReferenceInfoVO("16:1/22:6",23.1d,true,true));
+    molSpecies.put("18:3/20:4", new ReferenceInfoVO("18:3/20:4",23.1d,true,true));
+    molSpecies.put("18:2/20:5", new ReferenceInfoVO("18:2/20:5",23.1d,true,true));
+    species.put("38:7", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("19:0/20:4", new ReferenceInfoVO("19:0/20:4",27.3d,true,true));
+    species.put("39:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:0/22:6", new ReferenceInfoVO("17:0/22:6",25.3d,true,true));
+    species.put("39:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:1/22:6", new ReferenceInfoVO("17:1/22:6",24.0d,true,true));
+    molSpecies.put("21:6/18:1", new ReferenceInfoVO("21:6/18:1",24.0d,true,true));
+    species.put("39:7", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/22:4", new ReferenceInfoVO("18:0/22:4",28.0d,true,true));
+    molSpecies.put("20:0/20:4", new ReferenceInfoVO("20:0/20:4",28.0d,true,true));
+    molSpecies.put("20:1/20:3", new ReferenceInfoVO("20:1/20:3",28.0d,true,true));
+    molSpecies.put("18:1/22:3", new ReferenceInfoVO("18:1/22:3",28.0d,true,true));
+    species.put("40:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/22:5", new ReferenceInfoVO("18:0/22:5",27.1d,true,true));
+    molSpecies.put("20:1/20:4", new ReferenceInfoVO("20:1/20:4",27.1d,true,true));
+    molSpecies.put("18:1/22:4", new ReferenceInfoVO("18:1/22:4",27.1d,true,true));
+    molSpecies.put("20:0/20:5", new ReferenceInfoVO("20:0/20:5",27.1d,true,true));
+    species.put("40:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0_22:6", new ReferenceInfoVO("18:0_22:6",26.0d,true,true));
+    molSpecies.put("18:1/22:5", new ReferenceInfoVO("18:1/22:5",26.0d,true,true));
+    molSpecies.put("20:2/20:4", new ReferenceInfoVO("20:2/20:4",26.0d,true,true));
+    species.put("40:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1/22:6", new ReferenceInfoVO("18:1/22:6",24.9d,true,true));
+    species.put("40:7", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2/22:6", new ReferenceInfoVO("18:2/22:6",23.6d,true,true));
+    molSpecies.put("20:4/20:4", new ReferenceInfoVO("20:4/20:4",23.6d,true,false));
+    species.put("40:8", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:3_22:6", new ReferenceInfoVO("18:3_22:6",22.6d,true,true));
+    species.put("40:9", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("19:0/22:6", new ReferenceInfoVO("19:0/22:6",26.3d,true,true));
+    species.put("41:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6/20:4", new ReferenceInfoVO("22:6/20:4",22.5d,true,true));
+    species.put("42:10", molSpecies);    
+    return species;
+  }
+
+  
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPGSpeciesOrbitrap(){
     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
     LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
     molSpecies.put("16:0/18:1", new ReferenceInfoVO("16:0/18:1",24.7d,true,true));
@@ -732,8 +1384,59 @@ public class FoundBiologicalSpecies
     species.put("44:12", molSpecies);
     return species;
   }
+  
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getPGSpecies4000QTRAP(){
+    LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
+    LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/18:1", new ReferenceInfoVO("16:0/18:1",24.6d,true,true));
+    species.put("34:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/18:2", new ReferenceInfoVO("16:0/18:2",23.0d,true,true));
+    species.put("34:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/18:2", new ReferenceInfoVO("18:0/18:2",25.1d,true,true));
+    molSpecies.put("18:1/18:1", new ReferenceInfoVO("18:1/18:1",25.1d,true,false));
+    molSpecies.put("16:0/20:2", new ReferenceInfoVO("16:0/20:2",25.1d,true,false));
+    species.put("36:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1/18:2", new ReferenceInfoVO("18:1/18:2",24.3d,true,true));
+    molSpecies.put("16:0/20:3", new ReferenceInfoVO("16:0/20:3",24.3d,true,true));
+    species.put("36:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2/18:2", new ReferenceInfoVO("18:2/18:2",24.2d,true,false));
+    molSpecies.put("18:1/18:3", new ReferenceInfoVO("18:1/18:3",24.2d,true,true));
+    species.put("36:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1/20:4", new ReferenceInfoVO("18:1/20:4",24.2d,true,true));
+    molSpecies.put("18:2/20:3", new ReferenceInfoVO("18:2/20:3",24.4d,true,true));
+    species.put("38:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2/20:4", new ReferenceInfoVO("18:2/20:4",23.4d,true,true));
+    molSpecies.put("18:1/20:5", new ReferenceInfoVO("18:1/20:5",23.4d,true,true));
+    species.put("38:6", molSpecies);
+//    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+//    molSpecies.put("22:5/18:1", new ReferenceInfoVO("22:5/18:1",22.4d,true,true));
+//    molSpecies.put("22:6/18:0", new ReferenceInfoVO("22:6/18:0",22.4d,true,true));
+//    species.put("40:6", molSpecies);
+//    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+//    molSpecies.put("22:6/18:1", new ReferenceInfoVO("22:6/18:1",22.0d,true,true));
+//    molSpecies.put("18:2/22:5", new ReferenceInfoVO("18:2/22:5",21.6d,true,true));
+//    species.put("40:7", molSpecies);
+//    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+//    molSpecies.put("22:6/18:2", new ReferenceInfoVO("22:6/18:2",20.2d,true,true));
+//    species.put("40:8", molSpecies);
+//    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+//    molSpecies.put("22:6/20:4", new ReferenceInfoVO("22:6/20:4",20.3d,true,true));
+//    species.put("42:10", molSpecies);
+//    molSpecies.put("22:6/22:5", new ReferenceInfoVO("22:6/22:5",21.4d,true,true));
+//    species.put("44:11", molSpecies);
+//    molSpecies.put("22:6/22:6", new ReferenceInfoVO("22:6/22:6",19.9d,true,false));
+//    species.put("44:12", molSpecies);
+    return species;
+  }
 
-  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getCerSpecies(){
+
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getCerSpeciesOrbitrap(){
     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
     LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
     molSpecies.put("16:0", new ReferenceInfoVO("16:0",26.1d,true,false));
@@ -780,7 +1483,36 @@ public class FoundBiologicalSpecies
     return species;
   }
   
-  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getDGSpecies(){
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getCerSpecies4000QTRAP(){
+    LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
+    LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0", new ReferenceInfoVO("16:0",26.9d,true,false));
+    species.put("16:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0", new ReferenceInfoVO("18:0",28.4d,true,false));
+    species.put("18:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("20:0", new ReferenceInfoVO("20:0",29.8d,true,false));
+    species.put("20:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("21:0", new ReferenceInfoVO("21:0",30.3d,true,false));
+    species.put("21:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:0", new ReferenceInfoVO("22:0",30.8d,true,false));
+    species.put("22:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("23:0", new ReferenceInfoVO("23:0",31.2d,true,false));
+    species.put("23:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("24:0", new ReferenceInfoVO("24:0",31.8d,true,false));
+    species.put("24:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("24:1", new ReferenceInfoVO("24:1",30.6d,true,false));
+    species.put("24:1", molSpecies);
+    return species;
+  }
+  
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getDGSpeciesOrbitrap(){
     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
     LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
     molSpecies.put("16:0/16:0/-", new ReferenceInfoVO("16:0/16:0/-",30.3d,true,false));
@@ -857,9 +1589,83 @@ public class FoundBiologicalSpecies
 //    species.put("36:3", molSpecies);
     return species;
   }
+  
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getDGSpecies4000QTRAP(){
+    LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
+    LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/16:0/-", new ReferenceInfoVO("16:0/16:0/-",29.6d,true,false));
+    species.put("32:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/16:1/-", new ReferenceInfoVO("16:0/16:1/-",28.6d,true,false));
+    molSpecies.put("14:0/18:1/-", new ReferenceInfoVO("14:0/18:1/-",28.6d,true,false));
+    species.put("32:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("14:0_18:2", new ReferenceInfoVO("14:0_18:2",27.6d,true,false));
+    molSpecies.put("16:1_16:1", new ReferenceInfoVO("16:1_16:1",27.6d,true,false));
+    species.put("32:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/16:0/-", new ReferenceInfoVO("18:0/16:0/-",30.7d,true,false));
+    species.put("34:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/18:1/-", new ReferenceInfoVO("16:0/18:1/-",29.7d,true,false));
+    species.put("34:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/-/18:2", new ReferenceInfoVO("16:0/-/18:2",28.7d,true,false));
+    species.put("34:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:1/-/18:2", new ReferenceInfoVO("16:1/-/18:2",27.7d,true,false));
+    molSpecies.put("16:0/-/18:3", new ReferenceInfoVO("16:0/-/18:3",27.7d,true,false));
+    species.put("34:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/-/18:0", new ReferenceInfoVO("18:0/-/18:0",31.7d,true,false));
+    species.put("36:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/-/18:1", new ReferenceInfoVO("18:0/-/18:1",30.7d,true,false));
+    species.put("36:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1/-/18:1", new ReferenceInfoVO("18:1/-/18:1",29.8d,true,false));
+    molSpecies.put("18:0/-/18:2", new ReferenceInfoVO("18:0/-/18:2",29.8d,true,false));
+    species.put("36:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1/-/18:2", new ReferenceInfoVO("18:1/-/18:2",28.9d,true,false));
+    species.put("36:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2/-/18:2", new ReferenceInfoVO("18:2/-/18:2",28.4d,true,false));
+    molSpecies.put("16:0/-/20:4", new ReferenceInfoVO("16:0/-/20:4",28.4d,true,false));
+    molSpecies.put("18:1_18:3", new ReferenceInfoVO("18:1_18:3",28.4d,true,false));
+    species.put("36:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/-/20:4", new ReferenceInfoVO("18:0/-/20:4",29.6d,true,false));
+    molSpecies.put("18:1/20:3/-", new ReferenceInfoVO("18:1/20:3/-",29.6d,true,false));
+    species.put("38:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1/-/20:4", new ReferenceInfoVO("18:1/-/20:4",29.0d,true,false));
+    molSpecies.put("22:4/16:1/-", new ReferenceInfoVO("22:4/16:1/-",29.0d,true,false));
+    molSpecies.put("16:0_22:5", new ReferenceInfoVO("16:0_22:5",29.0d,true,false));
+    molSpecies.put("18:2_20:3", new ReferenceInfoVO("18:2_20:3",29.0d,true,false));
+    species.put("38:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/-/22:6", new ReferenceInfoVO("16:0/-/22:6",28.4d,true,false));
+    molSpecies.put("18:2/-/20:4", new ReferenceInfoVO("18:2/-/20:4",28.4d,true,false));
+    molSpecies.put("16:1/-/22:5", new ReferenceInfoVO("16:1/-/22:5",28.4d,true,false));
+    species.put("38:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/-/22:6", new ReferenceInfoVO("18:0/-/22:6",29.6d,true,false));
+    molSpecies.put("18:1/-/22:5", new ReferenceInfoVO("18:1/-/22:5",29.6d,true,false));
+    species.put("40:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1/-/22:6", new ReferenceInfoVO("18:1/-/22:6",29.0d,true,false));
+    molSpecies.put("18:2/-/22:5", new ReferenceInfoVO("18:2/-/22:5",29.0d,true,false));
+    species.put("40:7", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2/-/22:6", new ReferenceInfoVO("18:2/-/22:6",28.4d,true,false));
+    species.put("40:8", molSpecies);
+    return species;
+  }
+
 
   
-  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getTGSpecies(){
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getTGSpeciesOrbitrap(){
     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
         
     LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
@@ -1747,8 +2553,969 @@ public class FoundBiologicalSpecies
     return species;
   }
   
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getTGSpecies4000QTRAP(){
+    LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
+        
+    LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0_14:0_4:0", new ReferenceInfoVO("16:0_14:0_4:0",30.6d,true,false));
+    molSpecies.put("16:0_10:0_8:0", new ReferenceInfoVO("16:0_10:0_8:0",30.6,true,false));
+    molSpecies.put("18:0_8:0_8:0", new ReferenceInfoVO("18:0_8:0_8:0",30.6,true,false));
+    molSpecies.put("14:0_12:0_8:0", new ReferenceInfoVO("14:0_12:0_8:0",30.6,true,false));
+    molSpecies.put("16:0_16:0_2:0", new ReferenceInfoVO("16:0_16:0_2:0",30.6,true,false));
+    molSpecies.put("16:0_12:0_6:0", new ReferenceInfoVO("16:0_12:0_6:0",30.6,true,false));
+    molSpecies.put("14:0_14:0_6:0", new ReferenceInfoVO("14:0_14:0_6:0",30.6,true,false));
+    molSpecies.put("18:0_12:0_4:0", new ReferenceInfoVO("18:0_12:0_4:0",30.6,true,false));
+    molSpecies.put("17:0_15:0_2:0", new ReferenceInfoVO("17:0_15:0_2:0",30.6,true,false));
+    molSpecies.put("14:0_10:0_10:0", new ReferenceInfoVO("14:0_10:0_10:0",30.6,true,false));
+    molSpecies.put("12:0_12:0_10:0", new ReferenceInfoVO("12:0_12:0_10:0",30.6,true,false));
+    molSpecies.put("18:0_14:0_2:0", new ReferenceInfoVO("18:0_14:0_2:0",30.6,true,false));
+    molSpecies.put("18:0_10:0_6:0", new ReferenceInfoVO("18:0_10:0_6:0",30.6,true,false));
+    species.put("34:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0_16:0_4:0", new ReferenceInfoVO("16:0_16:0_4:0",31.5,true,false));
+    molSpecies.put("16:0_12:0_8:0", new ReferenceInfoVO("16:0_12:0_8:0",31.5,true,false));
+    molSpecies.put("18:0_14:0_4:0", new ReferenceInfoVO("18:0_14:0_4:0",31.5,true,false));
+    molSpecies.put("16:0_14:0_6:0", new ReferenceInfoVO("16:0_14:0_6:0",31.5,true,false));
+    molSpecies.put("12:0/12:0/12:0", new ReferenceInfoVO("12:0/12:0/12:0",31.5,true,false));
+    molSpecies.put("16:0_10:0_10:0", new ReferenceInfoVO("16:0_10:0_10:0",31.5,true,false));
+    molSpecies.put("18:0_12:0_6:0", new ReferenceInfoVO("18:0_12:0_6:0",31.5,true,false));
+    molSpecies.put("18:0_10:0_8:0", new ReferenceInfoVO("18:0_10:0_8:0",31.5,true,false));
+    molSpecies.put("14:0_14:0_8:0", new ReferenceInfoVO("14:0_14:0_8:0",31.5,true,false));
+    molSpecies.put("14:0_12:0_10:0", new ReferenceInfoVO("14:0_12:0_10:0",31.5,true,false));
+    molSpecies.put("17:0_15:0_4:0", new ReferenceInfoVO("17:0_15:0_4:0",31.5,true,false));
+    molSpecies.put("18:0_16:0_2:0", new ReferenceInfoVO("18:0_16:0_2:0",31.5,true,false));
+    species.put("36:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0_16:0_4:0", new ReferenceInfoVO("18:0_16:0_4:0",32.4,true,false));
+    molSpecies.put("18:0_14:0_6:0", new ReferenceInfoVO("18:0_14:0_6:0",32.4,true,false));
+    molSpecies.put("18:0_12:0_8:0", new ReferenceInfoVO("18:0_12:0_8:0",32.4,true,false));
+    molSpecies.put("18:0_12:0_8:0", new ReferenceInfoVO("18:0_10:0_10:0",32.4,true,false));
+    molSpecies.put("16:0_16:0_6:0", new ReferenceInfoVO("16:0_16:0_6:0",32.4,true,false));
+    molSpecies.put("18:0_10:0_10:0", new ReferenceInfoVO("18:0_10:0_10:0",32.4,true,false));
+    molSpecies.put("16:0_14:0_8:0", new ReferenceInfoVO("16:0_14:0_8:0",32.4,true,false));
+    species.put("38:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("14:0_14:0_12:0", new ReferenceInfoVO("14:0_14:0_12:0",33.1,true,false));
+    molSpecies.put("16:0_12:0_12:0", new ReferenceInfoVO("16:0_12:0_12:0",33.1,true,false));
+    molSpecies.put("16:0_14:0_10:0", new ReferenceInfoVO("16:0_14:0_10:0",33.1,true,false));
+    molSpecies.put("16:0_16:0_8:0", new ReferenceInfoVO("16:0_16:0_8:0",33.1,true,false));
+    molSpecies.put("18:0_12:0_10:0", new ReferenceInfoVO("18:0_12:0_10:0",33.1,true,false));
+    molSpecies.put("18:0_14:0_8:0", new ReferenceInfoVO("18:0_14:0_8:0",33.1,true,false));
+    molSpecies.put("18:0_16:0_6:0", new ReferenceInfoVO("18:0_16:0_6:0",33.1,true,false));
+    species.put("40:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0_14:0_12:0", new ReferenceInfoVO("16:0_14:0_12:0",33.7,true,false));
+    molSpecies.put("16:0_16:0_10:0", new ReferenceInfoVO("16:0_16:0_10:0",33.7,true,false));
+    molSpecies.put("14:0/14:0/14:0", new ReferenceInfoVO("14:0/14:0/14:0",33.7,true,false));
+    molSpecies.put("18:0_12:0_12:0", new ReferenceInfoVO("18:0_12:0_12:0",33.7,true,false));
+    molSpecies.put("15:0_14:0_13:0", new ReferenceInfoVO("15:0_14:0_13:0",33.7,true,false));
+    molSpecies.put("18:0_14:0_10:0", new ReferenceInfoVO("18:0_14:0_10:0",33.7,true,false));
+    molSpecies.put("15:0_15:0_12:0", new ReferenceInfoVO("15:0_15:0_12:0",33.7,true,false));
+    species.put("42:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1_16:0_8:0", new ReferenceInfoVO("18:1_16:0_8:0",33.2,true,false));
+    molSpecies.put("18:1_12:0_12:0", new ReferenceInfoVO("18:1_12:0_12:0",33.2,true,false));
+    molSpecies.put("18:1_14:0_10:0", new ReferenceInfoVO("18:1_14:0_10:0",33.2,true,false));
+    molSpecies.put("18:1_13:0_11:0", new ReferenceInfoVO("18:1_13:0_11:0",33.2,true,false));    
+    molSpecies.put("16:1_16:0_10:0", new ReferenceInfoVO("16:1_16:0_10:0",33.2,true,false));
+    molSpecies.put("16:1_14:0_12:0", new ReferenceInfoVO("16:1_14:0_12:0",33.2,true,false));
+    molSpecies.put("15:1_14:0_13:0", new ReferenceInfoVO("15:0_14:0_13:0",33.2,true,false));
+    molSpecies.put("14:1_14:0_14:0", new ReferenceInfoVO("14:1_14:0_14:0",33.2,true,false));
+    molSpecies.put("16:0_14:0_12:1", new ReferenceInfoVO("16:0_14:0_12:1",33.2,true,false));
+    molSpecies.put("16:1_13:0_13:0", new ReferenceInfoVO("16:1_13:0_13:0",33.2,true,false));
+    molSpecies.put("16:0_14:1_12:0", new ReferenceInfoVO("16:0_14:1_12:0",33.2,true,false));
+    species.put("42:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("15:0_14:0_14:0", new ReferenceInfoVO("15:0_14:0_14:0",34.0,true,false));
+    molSpecies.put("16:0_14:0_13:0", new ReferenceInfoVO("16:0_14:0_13:0",34.0,true,false));
+    molSpecies.put("16:0_15:0_12:0", new ReferenceInfoVO("16:0_15:0_12:0",34.0,true,false));
+    molSpecies.put("15:0_15:0_13:0", new ReferenceInfoVO("15:0_15:0_13:0",34.0,true,false));
+    molSpecies.put("17:0_14:0_12:0", new ReferenceInfoVO("17:0_14:0_12:0",34.0,true,false));
+    molSpecies.put("16:0_16:0_11:0", new ReferenceInfoVO("16:0_16:0_11:0",34.0,true,false));
+    species.put("43:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0_14:0_14:0", new ReferenceInfoVO("16:0_14:0_14:0",34.3,true,false));
+    molSpecies.put("15:0_15:0_14:0", new ReferenceInfoVO("15:0_15:0_14:0",34.3,true,false));
+    molSpecies.put("16:0_16:0_12:0", new ReferenceInfoVO("16:0_16:0_12:0",34.3,true,false));
+    molSpecies.put("16:0_15:0_13:0", new ReferenceInfoVO("16:0_15:0_13:0",34.3,true,false));
+    molSpecies.put("18:0_14:0_12:0", new ReferenceInfoVO("18:0_14:0_12:0",34.3,true,false));
+    molSpecies.put("17:0_14:0_13:0", new ReferenceInfoVO("17:0_14:0_13:0",34.3,true,false));
+    molSpecies.put("18:0_16:0_10:0", new ReferenceInfoVO("18:0_16:0_10:0",34.3,true,false));
+    molSpecies.put("18:0_18:0_8:0", new ReferenceInfoVO("18:0_18:0_8:0",34.3,true,false));
+    species.put("44:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0_14:1_14:0", new ReferenceInfoVO("16:0_14:1_14:0",33.8,true,false));
+    molSpecies.put("16:1_14:0_14:0", new ReferenceInfoVO("16:1_14:0_14:0",33.8,true,false));
+    molSpecies.put("16:1_16:0_12:0", new ReferenceInfoVO("16:1_16:0_12:0",33.8,true,false));
+    molSpecies.put("16:1_15:0_13:0", new ReferenceInfoVO("16:1_15:0_13:0",33.8,true,false));
+    molSpecies.put("18:0_16:1_10:0", new ReferenceInfoVO("18:0_16:1_10:0",33.8,true,false));
+    molSpecies.put("18:1_14:0_12:0", new ReferenceInfoVO("18:1_14:0_12:0",33.8,true,false));
+    molSpecies.put("15:1_15:0_14:0", new ReferenceInfoVO("15:1_15:0_14:0",33.8,true,false));
+    molSpecies.put("18:0_14:1_12:0", new ReferenceInfoVO("18:0_14:1_12:0",33.8,true,false));
+    molSpecies.put("17:0_16:1_11:0", new ReferenceInfoVO("17:0_16:1_11:0",33.8,true,false));
+    species.put("44:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0_15:0_14:0", new ReferenceInfoVO("16:0_15:0_14:0",34.6,true,false));
+    molSpecies.put("15:0/15:0/15:0", new ReferenceInfoVO("15:0/15:0/15:0",34.6,true,false));
+    molSpecies.put("16:0_16:0_13:0", new ReferenceInfoVO("16:0_16:0_13:0",34.6,true,false));
+    molSpecies.put("17:0_14:0_14:0", new ReferenceInfoVO("17:0_14:0_14:0",34.6,true,false));
+    molSpecies.put("17:0_16:0_12:0", new ReferenceInfoVO("17:0_16:0_12:0",34.6,true,false));
+    molSpecies.put("18:0_14:0_13:0", new ReferenceInfoVO("18:0_14:0_13:0",34.6,true,false));
+    species.put("45:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:1_15:0_14:0", new ReferenceInfoVO("16:1_15:0_14:0",34.1,true,false));
+    molSpecies.put("16:1_16:0_13:0", new ReferenceInfoVO("16:1_16:0_13:0",34.1,true,false));
+    molSpecies.put("16:0_15:1_14:0", new ReferenceInfoVO("16:0_15:1_14:0",34.1,true,false));
+    molSpecies.put("17:0_16:1_12:0", new ReferenceInfoVO("17:0_16:1_12:0",34.1,true,false));
+    molSpecies.put("16:0_15:0_14:1", new ReferenceInfoVO("16:0_15:0_14:1",34.1,true,false));
+    molSpecies.put("15:1_15:0_15:0", new ReferenceInfoVO("15:1_15:0_15:0",34.1,true,false));
+    molSpecies.put("17:0_14:1_14:0", new ReferenceInfoVO("17:0_14:1_14:0",34.1,true,false));
+    molSpecies.put("18:0_16:1_11:0", new ReferenceInfoVO("18:0_16:1_11:0",34.1,true,false));
+    species.put("45:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0_16:0_14:0", new ReferenceInfoVO("16:0_16:0_14:0",34.8,true,false));
+    molSpecies.put("16:0_15:0_15:0", new ReferenceInfoVO("16:0_15:0_15:0",34.8,true,false));
+    molSpecies.put("17:0_15:0_14:0", new ReferenceInfoVO("17:0_15:0_14:0",34.8,true,false));
+    molSpecies.put("18:0_14:0_14:0", new ReferenceInfoVO("18:0_14:0_14:0",34.8,true,false));
+    molSpecies.put("18:0_16:0_12:0", new ReferenceInfoVO("18:0_16:0_12:0",34.8,true,false));
+    species.put("46:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:1_16:0_14:0", new ReferenceInfoVO("16:1_16:0_14:0",34.4,true,false));
+    molSpecies.put("18:1_14:0_14:0", new ReferenceInfoVO("18:1_14:0_14:0",34.4,true,false));
+    molSpecies.put("16:0_16:0_14:1", new ReferenceInfoVO("16:0_16:0_14:1",34.4,true,false));
+    molSpecies.put("16:1_15:0_15:0", new ReferenceInfoVO("16:1_15:0_15:0",34.4,true,false));
+    molSpecies.put("18:0_16:1_12:0", new ReferenceInfoVO("18:0_16:1_12:0",34.4,true,false));
+    molSpecies.put("17:0_16:1_13:0", new ReferenceInfoVO("17:0_16:1_13:0",34.4,true,false));
+    molSpecies.put("18:1_16:0_12:0", new ReferenceInfoVO("18:1_16:0_12:0",34.4,true,false));
+    species.put("46:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:1_16:1_14:0", new ReferenceInfoVO("16:1_16:1_14:0",34.0,true,false));
+    molSpecies.put("16:1_16:0_14:1", new ReferenceInfoVO("16:1_16:0_14:1",34.0,true,false));
+    molSpecies.put("18:1_16:1_12:0", new ReferenceInfoVO("18:1_16:1_12:0",34.0,true,false));
+    molSpecies.put("16:1_15:1_15:0", new ReferenceInfoVO("16:1_15:1_15:0",34.0,true,false));
+    molSpecies.put("17:1_16:1_13:0", new ReferenceInfoVO("17:1_16:1_13:0",34.0,true,false));
+    species.put("46:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0_16:0_15:0", new ReferenceInfoVO("16:0_16:0_15:0",35.1,true,false));
+    molSpecies.put("17:0_16:0_14:0", new ReferenceInfoVO("17:0_16:0_14:0",35.1,true,false));
+    molSpecies.put("17:0_15:0_15:0", new ReferenceInfoVO("17:0_15:0_15:0",35.1,true,false));
+    molSpecies.put("18:0_16:0_13:0", new ReferenceInfoVO("18:0_16:0_13:0",35.1,true,false));
+    species.put("47:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:1_16:0_15:0", new ReferenceInfoVO("16:1_16:0_15:0",34.7,true,false));
+    molSpecies.put("17:0_16:1_14:0", new ReferenceInfoVO("17:0_16:1_14:0",34.7,true,false));
+    molSpecies.put("16:0_16:0_15:1", new ReferenceInfoVO("16:0_16:0_15:1",34.7,true,false));
+    molSpecies.put("18:0_16:1_13:0", new ReferenceInfoVO("18:0_16:1_13:0",34.7,true,false));
+    molSpecies.put("18:1_15:0_14:0", new ReferenceInfoVO("18:1_15:0_14:0",34.7,true,false));
+    species.put("47:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:1_16:0_15:1", new ReferenceInfoVO("16:1_16:0_15:1",34.3,true,false));
+    molSpecies.put("16:1_16:1_15:0", new ReferenceInfoVO("16:1_16:1_15:0",34.3,true,false));
+    molSpecies.put("17:1_16:1_14:0", new ReferenceInfoVO("17:1_16:1_14:0",34.3,true,false));
+    molSpecies.put("17:0_16:1_14:1", new ReferenceInfoVO("17:0_16:1_14:1",34.3,true,false));
+    molSpecies.put("18:1_16:1_13:0", new ReferenceInfoVO("18:1_16:1_13:0",34.3,true,false));
+    species.put("47:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0/16:0/16:0", new ReferenceInfoVO("16:0/16:0/16:0",35.4,true,false));
+    molSpecies.put("18:0_16:0_14:0", new ReferenceInfoVO("18:0_16:0_14:0",35.4,true,false));
+    species.put("48:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:1_16:0_16:0", new ReferenceInfoVO("16:1_16:0_16:0",35.0,true,false));
+    molSpecies.put("18:1_16:0_14:0", new ReferenceInfoVO("18:1_16:0_14:0",35.0,true,false));
+    molSpecies.put("18:0_16:1_14:0", new ReferenceInfoVO("18:0_16:1_14:0",35.0,true,false));
+    molSpecies.put("18:1_15:0_15:0", new ReferenceInfoVO("18:1_15:0_15:0",35.0,true,false));
+    species.put("48:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_16:0_14:0", new ReferenceInfoVO("18:2_16:0_14:0",34.5,true,false));
+    molSpecies.put("16:1_16:1_16:0", new ReferenceInfoVO("16:1_16:1_16:0",34.5,true,false));
+    molSpecies.put("18:1_16:1_14:0", new ReferenceInfoVO("18:1_16:1_14:0",34.5,true,false));
+    molSpecies.put("18:2_15:0_15:0", new ReferenceInfoVO("18:2_15:0_15:0",34.5,true,false));
+    molSpecies.put("18:1_16:0_14:1", new ReferenceInfoVO("18:1_16:0_14:1",34.5,true,false));
+    molSpecies.put("16:2_16:0_16:0", new ReferenceInfoVO("16:2_16:0_16:0",34.5,true,false));
+    molSpecies.put("18:0_16:1_14:1", new ReferenceInfoVO("18:0_16:1_14:1",34.5,true,false));
+    species.put("48:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_18:1_12:0", new ReferenceInfoVO("18:2_18:1_12:0",34.1,true,false));
+    molSpecies.put("18:2_16:1_14:0", new ReferenceInfoVO("18:2_16:1_14:0",34.1,true,false));
+    molSpecies.put("18:2_16:0_14:1", new ReferenceInfoVO("18:2_16:0_14:1",34.1,true,false));
+    molSpecies.put("16:1/16:1/16:1", new ReferenceInfoVO("16:1/16:1/16:1",34.1,true,false));
+    molSpecies.put("18:3_16:0_14:0", new ReferenceInfoVO("18:3_16:0_14:0",34.1,true,false));
+    molSpecies.put("18:1_16:2_14:0", new ReferenceInfoVO("18:1_16:2_14:0",34.1,true,false));
+    molSpecies.put("18:1_16:1_14:1", new ReferenceInfoVO("18:1_16:1_14:1",34.1,true,false));
+    species.put("48:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:0_16:0_16:0", new ReferenceInfoVO("17:0_16:0_16:0",35.8,true,false));
+    molSpecies.put("18:0_16:0_15:0", new ReferenceInfoVO("18:0_16:0_15:0",35.8,true,false));
+    molSpecies.put("18:0_17:0_14:0", new ReferenceInfoVO("18:0_17:0_14:0",35.8,true,false));
+    molSpecies.put("17:0_17:0_15:0", new ReferenceInfoVO("17:0_17:0_15:0",35.8,true,false));
+    molSpecies.put("19:0_16:0_14:0", new ReferenceInfoVO("19:0_16:0_14:0",35.8,true,false));
+    species.put("49:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1_16:0_15:0", new ReferenceInfoVO("18:1_16:0_15:0",35.2,true,false));
+    molSpecies.put("17:1_16:0_16:0", new ReferenceInfoVO("17:1_16:0_16:0",35.2,true,false));
+    molSpecies.put("17:0_16:1_16:0", new ReferenceInfoVO("17:0_16:1_16:0",35.2,true,false));
+    molSpecies.put("18:0_16:1_15:0", new ReferenceInfoVO("18:0_16:1_15:0",35.2,true,false));
+    molSpecies.put("18:1_17:0_14:0", new ReferenceInfoVO("18:1_17:0_14:0",35.2,true,false));
+    molSpecies.put("18:1_18:0_13:0", new ReferenceInfoVO("18:1_18:0_13:0",35.2,true,false));
+    molSpecies.put("17:1_17:0_15:0", new ReferenceInfoVO("17:1_17:0_15:0",35.2,true,false));
+    molSpecies.put("19:1_15:0_15:0", new ReferenceInfoVO("19:1_15:0_15:0",35.2,true,false));
+    molSpecies.put("19:0_16:1_14:0", new ReferenceInfoVO("19:0_16:1_14:0",35.2,true,false));
+    species.put("49:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1_16:1_15:0", new ReferenceInfoVO("18:1_16:1_15:0",34.7,true,false));
+    molSpecies.put("17:1_16:1_16:0", new ReferenceInfoVO("17:1_16:1_16:0",34.7,true,false));
+    molSpecies.put("18:1_16:0_15:1", new ReferenceInfoVO("18:1_16:0_15:1",34.7,true,false));
+    molSpecies.put("17:0_16:1_16:1", new ReferenceInfoVO("17:0_16:1_16:1",34.7,true,false));
+    molSpecies.put("18:2_16:0_15:0", new ReferenceInfoVO("18:2_16:0_15:0",34.7,true,false));
+    molSpecies.put("17:1_17:1_15:0", new ReferenceInfoVO("17:1_17:1_15:0",34.7,true,false));
+    molSpecies.put("18:0_16:1_15:1", new ReferenceInfoVO("18:0_16:1_15:1",34.7,true,false));
+    molSpecies.put("18:2_17:0_14:0", new ReferenceInfoVO("18:2_17:0_14:0",34.7,true,false));
+    molSpecies.put("19:1_16:1_14:0", new ReferenceInfoVO("19:1_16:1_14:0",34.7,true,false));
+    molSpecies.put("19:1_15:1_15:0", new ReferenceInfoVO("19:1_15:1_15:0",34.7,true,false));
+    species.put("49:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0_16:0_16:0", new ReferenceInfoVO("18:0_16:0_16:0",36.1,true,false));
+    molSpecies.put("17:0_17:0_16:0", new ReferenceInfoVO("17:0_17:0_16:0",36.1,true,false));
+    molSpecies.put("18:0_18:0_14:0", new ReferenceInfoVO("18:0_18:0_14:0",36.1,true,false));
+    molSpecies.put("20:0_16:0_14:0", new ReferenceInfoVO("20:0_16:0_14:0",36.1,true,false));
+    species.put("50:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1_16:0_16:0", new ReferenceInfoVO("18:1_16:0_16:0",35.4,true,false));
+    molSpecies.put("18:0_16:1_16:0", new ReferenceInfoVO("18:0_16:1_16:0",35.4,true,false));
+    molSpecies.put("18:1_18:0_14:0", new ReferenceInfoVO("18:1_18:0_14:0",35.4,true,false));
+    molSpecies.put("18:1_17:0_15:0", new ReferenceInfoVO("18:1_17:0_15:0",35.4,true,false));
+    molSpecies.put("17:1_17:0_16:0", new ReferenceInfoVO("17:1_17:0_16:0",35.4,true,false));
+    species.put("50:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_16:0_16:0", new ReferenceInfoVO("18:2_16:0_16:0",34.9,true,false));
+    molSpecies.put("18:1_16:1_16:0", new ReferenceInfoVO("18:1_16:1_16:0",34.9,true,false));
+    molSpecies.put("18:0_16:1_16:1", new ReferenceInfoVO("18:0_16:1_16:1",34.9,true,false));
+    species.put("50:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_18:1_14:0", new ReferenceInfoVO("18:2_18:1_14:0",34.4,true,false));
+    molSpecies.put("18:2_16:1_16:0", new ReferenceInfoVO("18:2_16:1_16:0",34.4,true,false));
+    molSpecies.put("18:1_16:1_16:1", new ReferenceInfoVO("18:1_16:1_16:1",34.4,true,false));
+    molSpecies.put("18:3_16:0_16:0", new ReferenceInfoVO("18:3_16:0_16:0",34.4,true,false));
+    molSpecies.put("18:1_16:2_16:0", new ReferenceInfoVO("18:1_16:2_16:0",34.4,true,false));
+    molSpecies.put("20:2_16:1_14:0", new ReferenceInfoVO("20:2_16:1_14:0",34.4,true,false));
+    species.put("50:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_18:2_14:0", new ReferenceInfoVO("18:2_18:2_14:0",33.9,true,false));
+    molSpecies.put("18:2_16:1_16:1", new ReferenceInfoVO("18:2_16:1_16:1",33.9,true,false));
+    molSpecies.put("18:3_18:1_14:0", new ReferenceInfoVO("18:3_18:1_14:0",33.9,true,false));
+    molSpecies.put("18:2_16:2_16:0", new ReferenceInfoVO("18:2_16:2_16:0",33.9,true,false));
+    molSpecies.put("18:3_16:1_16:0", new ReferenceInfoVO("18:3_16:1_16:0",33.9,true,false));
+    molSpecies.put("17:2_17:1_16:1", new ReferenceInfoVO("17:2_17:1_16:1",33.9,true,false));
+    species.put("50:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:3_18:2_14:0", new ReferenceInfoVO("18:3_18:2_14:0",33.4,true,false));
+    molSpecies.put("18:2_18:2_14:1", new ReferenceInfoVO("18:2_18:2_14:1",33.4,true,false));
+    molSpecies.put("18:3_16:1_16:1", new ReferenceInfoVO("18:3_16:1_16:1",33.4,true,false));
+    molSpecies.put("18:3_18:1_14:1", new ReferenceInfoVO("18:3_18:1_14:1",33.4,true,false));
+    molSpecies.put("20:5_16:0_14:0", new ReferenceInfoVO("20:5_16:0_14:0",33.4,true,false));
+    molSpecies.put("18:3_16:2_16:0", new ReferenceInfoVO("18:3_16:2_16:0",33.4,true,false));
+    molSpecies.put("18:4_18:1_14:0", new ReferenceInfoVO("18:4_18:1_14:0",33.4,true,false));
+    molSpecies.put("22:5_14:0_14:0", new ReferenceInfoVO("22:5_14:0_14:0",33.4,true,false));
+    molSpecies.put("20:3_16:2_14:0", new ReferenceInfoVO("20:3_16:2_14:0",33.4,true,false));
+    molSpecies.put("18:2_16:2_16:1", new ReferenceInfoVO("18:2_16:2_16:1",33.4,true,false));
+    molSpecies.put("18:3_18:0_14:2", new ReferenceInfoVO("18:3_18:0_14:2",33.4,true,false));
+    species.put("50:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0_17:0_16:0", new ReferenceInfoVO("18:0_17:0_16:0",36.3,true,false));
+    molSpecies.put("17:0/17:0/17:0", new ReferenceInfoVO("17:0/17:0/17:0",36.3,true,false));
+    molSpecies.put("18:0_18:0_15:0", new ReferenceInfoVO("18:0_18:0_15:0",36.3,true,false));
+    molSpecies.put("19:0_16:0_16:0", new ReferenceInfoVO("19:0_16:0_16:0",36.3,true,false));
+    molSpecies.put("20:0_16:0_15:0", new ReferenceInfoVO("20:0_16:0_15:0",36.3,true,false));
+    molSpecies.put("19:0_17:0_15:0", new ReferenceInfoVO("19:0_17:0_15:0",36.3,true,false));
+    molSpecies.put("21:0_16:0_14:0", new ReferenceInfoVO("21:0_16:0_14:0",36.3,true,false));
+    molSpecies.put("19:0_18:0_14:0", new ReferenceInfoVO("19:0_18:0_14:0",36.3,true,false));
+    molSpecies.put("20:0_18:0_13:0", new ReferenceInfoVO("20:0_18:0_13:0",36.3,true,false));
+    molSpecies.put("20:0_17:0_14:0", new ReferenceInfoVO("20:0_17:0_14:0",36.3,true,false));
+    molSpecies.put("22:0_16:0_13:0", new ReferenceInfoVO("22:0_16:0_13:0",36.3,true,false));
+    species.put("51:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1_17:0_16:0", new ReferenceInfoVO("18:1_17:0_16:0",35.8,true,false));
+    molSpecies.put("19:1_16:0_16:0", new ReferenceInfoVO("19:1_16:0_16:0",35.8,true,false));
+    molSpecies.put("18:1_18:0_15:0", new ReferenceInfoVO("18:1_18:0_15:0",35.8,true,false));
+    molSpecies.put("17:1_17:0_17:0", new ReferenceInfoVO("17:1_17:0_17:0",35.8,true,false));
+    molSpecies.put("19:0_18:1_14:0", new ReferenceInfoVO("19:0_18:1_14:0",35.8,true,false));
+    molSpecies.put("18:0_17:1_16:0", new ReferenceInfoVO("18:0_17:1_16:0",35.8,true,false));
+    molSpecies.put("18:0_17:0_16:1", new ReferenceInfoVO("18:0_17:1_16:0",35.8,true,false));
+    molSpecies.put("19:0_16:1_16:0", new ReferenceInfoVO("19:0_16:1_16:0",35.8,true,false));
+    molSpecies.put("20:0_16:1_15:0", new ReferenceInfoVO("20:0_16:1_15:0",35.8,true,false));
+    molSpecies.put("21:0_16:1_14:0", new ReferenceInfoVO("21:0_16:1_14:0",35.8,true,false));
+    molSpecies.put("20:1_16:0_15:0", new ReferenceInfoVO("20:1_16:0_15:0",35.8,true,false));
+    species.put("51:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1_18:1_15:0", new ReferenceInfoVO("18:1_18:1_15:0",35.2,true,false));
+    molSpecies.put("18:1_17:1_16:0", new ReferenceInfoVO("18:1_17:1_16:0",35.2,true,false));
+    molSpecies.put("18:2_17:0_16:0", new ReferenceInfoVO("18:2_17:0_16:0",35.2,true,false));
+    molSpecies.put("18:1_17:0_16:1", new ReferenceInfoVO("18:1_17:0_16:1",35.2,true,false));
+    molSpecies.put("17:1_17:1_17:0", new ReferenceInfoVO("17:1_17:1_17:0",35.2,true,false));
+    molSpecies.put("18:2_18:0_15:0", new ReferenceInfoVO("18:2_18:0_15:0",35.2,true,false));
+    molSpecies.put("19:1_16:1_16:0", new ReferenceInfoVO("19:1_16:1_16:0",35.2,true,false));
+    molSpecies.put("19:1_17:1_15:0", new ReferenceInfoVO("19:1_17:1_15:0",35.2,true,false));
+    molSpecies.put("19:0_16:1_16:1", new ReferenceInfoVO("19:0_16:1_16:1",35.2,true,false));
+    molSpecies.put("20:1_16:1_15:0", new ReferenceInfoVO("20:1_16:1_15:0",35.2,true,false));
+    molSpecies.put("18:0_17:1_16:1", new ReferenceInfoVO("18:0_17:1_16:1",35.2,true,false));
+    molSpecies.put("18:1_18:0_15:1", new ReferenceInfoVO("18:1_18:0_15:1",35.2,true,false));
+    molSpecies.put("20:0_16:1_15:1", new ReferenceInfoVO("20:0_16:1_15:1",35.2,true,false));
+    molSpecies.put("20:2_16:0_15:0", new ReferenceInfoVO("20:2_16:0_15:0",35.2,true,false));
+    molSpecies.put("19:2_16:0_16:0", new ReferenceInfoVO("19:2_16:0_16:0",35.2,true,false));
+    species.put("51:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_18:1_15:0", new ReferenceInfoVO("18:2_18:1_15:0",34.7,true,false));
+    molSpecies.put("18:2_17:1_16:0", new ReferenceInfoVO("18:2_17:1_16:0",34.7,true,false));
+    molSpecies.put("19:2_17:1_15:0", new ReferenceInfoVO("19:2_17:1_15:0",34.7,true,false));
+    molSpecies.put("19:1_17:2_15:0", new ReferenceInfoVO("19:1_17:2_15:0",34.7,true,false));
+    molSpecies.put("18:1_17:2_16:0", new ReferenceInfoVO("18:1_17:2_16:0",34.7,true,false));
+    molSpecies.put("18:2_17:0_16:1", new ReferenceInfoVO("18:2_17:0_16:1",34.7,true,false));
+    molSpecies.put("18:1_17:1_16:1", new ReferenceInfoVO("18:1_17:1_16:1",34.7,true,false));
+    species.put("51:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_18:2_15:0", new ReferenceInfoVO("18:2_18:2_15:0",34.1,true,false));
+    molSpecies.put("18:3_18:1_15:0", new ReferenceInfoVO("18:3_18:1_15:0",34.1,true,false));
+    molSpecies.put("18:2_17:2_16:0", new ReferenceInfoVO("18:2_17:2_16:0",34.1,true,false));
+    molSpecies.put("18:3_17:1_16:0", new ReferenceInfoVO("18:3_17:1_16:0",34.1,true,false));
+    molSpecies.put("18:2_17:1_16:1", new ReferenceInfoVO("18:2_17:1_16:1",34.1,true,false));
+    species.put("51:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0_18:0_16:0", new ReferenceInfoVO("18:0_18:0_16:0",36.8,true,false));
+    molSpecies.put("20:0_16:0_16:0", new ReferenceInfoVO("20:0_16:0_16:0",36.8,true,false));
+    molSpecies.put("20:0_18:0_14:0", new ReferenceInfoVO("20:0_18:0_14:0",36.8,true,false));
+    molSpecies.put("18:0_17:0_17:0", new ReferenceInfoVO("18:0_17:0_17:0",36.8,true,false));
+    molSpecies.put("24:0_16:0_12:0", new ReferenceInfoVO("24:0_16:0_12:0",36.8,true,false));
+    molSpecies.put("22:0_16:0_14:0", new ReferenceInfoVO("24:0_16:0_12:0",36.8,true,false));
+    molSpecies.put("19:0_17:0_16:0", new ReferenceInfoVO("19:0_17:0_16:0",36.8,true,false));
+    molSpecies.put("21:0_16:0_15:0", new ReferenceInfoVO("21:0_16:0_15:0",36.8,true,false));
+    molSpecies.put("23:0_16:0_13:0", new ReferenceInfoVO("23:0_16:0_13:0",36.8,true,false));
+    species.put("52:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1_18:0_16:0", new ReferenceInfoVO("18:1_18:0_16:0",36.0,true,false));
+    molSpecies.put("20:1_16:0_16:0", new ReferenceInfoVO("20:1_16:0_16:0",36.0,true,false));
+    molSpecies.put("18:0_18:0_16:1", new ReferenceInfoVO("18:0_18:0_16:1",36.0,true,false));
+    molSpecies.put("20:0_16:1_16:0", new ReferenceInfoVO("20:0_16:1_16:0",36.0,true,false));
+    molSpecies.put("17:0_17:0_18:1", new ReferenceInfoVO("17:0_17:0_18:1",36.0,true,false));
+    species.put("52:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1_18:1_16:0", new ReferenceInfoVO("18:1_18:1_16:0",35.5,true,false));
+    molSpecies.put("18:2_18:0_16:0", new ReferenceInfoVO("18:2_18:0_16:0",35.5,true,false));
+    molSpecies.put("18:1_18:0_16:1", new ReferenceInfoVO("18:1_18:0_16:1",35.5,true,false));
+    molSpecies.put("20:1_16:1_16:0", new ReferenceInfoVO("20:1_16:1_16:0",35.5,true,false));
+    molSpecies.put("20:2_16:0_16:0", new ReferenceInfoVO("20:2_16:1_16:0",35.5,true,false));
+    molSpecies.put("18:1_17:0_17:1", new ReferenceInfoVO("18:1_17:0_17:1",35.5,true,false));
+    species.put("52:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_18:1_16:0", new ReferenceInfoVO("18:2_18:1_16:0",34.9,true,false));
+    molSpecies.put("18:2_18:0_16:1", new ReferenceInfoVO("18:2_18:0_16:1",34.9,true,false));
+    molSpecies.put("18:1_18:1_16:1", new ReferenceInfoVO("18:1_18:1_16:1",34.9,true,false));
+    molSpecies.put("18:3_18:0_16:0", new ReferenceInfoVO("18:3_18:0_16:0",34.9,true,false));
+    species.put("52:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_18:2_16:0", new ReferenceInfoVO("18:2_18:2_16:0",34.4,true,false));
+    molSpecies.put("18:2_18:1_16:1", new ReferenceInfoVO("18:2_18:1_16:1",34.4,true,false));
+    molSpecies.put("18:3_18:1_16:0", new ReferenceInfoVO("18:3_18:1_16:0",34.4,true,false));
+    molSpecies.put("20:4_16:0_16:0", new ReferenceInfoVO("20:4_16:0_16:0",34.4,true,false));
+    species.put("52:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:3_18:2_16:0", new ReferenceInfoVO("18:3_18:2_16:0",34.0,true,false));
+    molSpecies.put("18:2_18:2_16:1", new ReferenceInfoVO("18:2_18:2_16:1",34.0,true,false));
+    molSpecies.put("18:3_18:1_16:1", new ReferenceInfoVO("18:3_18:1_16:1",34.0,true,false));
+    molSpecies.put("20:4_16:1_16:0", new ReferenceInfoVO("20:4_16:1_16:0",34.0,true,false));
+    molSpecies.put("20:5_16:0_16:0", new ReferenceInfoVO("20:5_16:0_16:0",34.0,true,false));
+    molSpecies.put("18:4_18:1_16:0", new ReferenceInfoVO("18:4_18:1_16:0",34.0,true,false));
+    molSpecies.put("20:3_16:1_16:1", new ReferenceInfoVO("20:3_16:1_16:1",34.0,true,false));
+    molSpecies.put("22:5_16:0_14:0", new ReferenceInfoVO("22:5_16:0_14:0",34.0,true,false));
+    molSpecies.put("18:2_18:1_16:2", new ReferenceInfoVO("18:2_18:1_16:2",33.5,true,false));
+    species.put("52:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:3_18:3_16:0", new ReferenceInfoVO("18:3_18:3_16:0",33.5,true,false));
+    molSpecies.put("18:4_18:2_16:0", new ReferenceInfoVO("18:4_18:2_16:0",33.5,true,false));
+    molSpecies.put("18:3_18:2_16:1", new ReferenceInfoVO("18:3_18:2_16:1",33.5,true,false));
+    molSpecies.put("18:4_18:1_16:1", new ReferenceInfoVO("18:4_18:1_16:1",33.5,true,false));
+    molSpecies.put("20:4_16:1_16:1", new ReferenceInfoVO("20:4_16:1_16:1",33.5,true,false));
+    molSpecies.put("20:4_18:2_14:0", new ReferenceInfoVO("20:4_18:2_14:0",33.5,true,false));
+    molSpecies.put("18:2_18:2_16:2", new ReferenceInfoVO("18:2_18:2_16:2",33.5,true,false));
+    molSpecies.put("18:3_18:1_16:2", new ReferenceInfoVO("18:3_18:1_16:2",33.5,true,false));
+    molSpecies.put("18:2_18:1_16:3", new ReferenceInfoVO("18:2_18:1_16:3",33.5,true,false));
+    molSpecies.put("20:5_16:1_16:0", new ReferenceInfoVO("20:5_16:1_16:0",33.5,true,false));
+    molSpecies.put("20:4_16:2_16:0", new ReferenceInfoVO("20:4_16:2_16:0",33.5,true,false));
+    species.put("52:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("24:0_15:0_14:0", new ReferenceInfoVO("24:0_15:0_14:0",37.2,true,false));
+    molSpecies.put("23:0_16:0_14:0", new ReferenceInfoVO("23:0_16:0_14:0",37.2,true,false));
+    molSpecies.put("23:0_15:0_15:0", new ReferenceInfoVO("23:0_15:0_15:0",37.2,true,false));
+    molSpecies.put("22:0_16:0_15:0", new ReferenceInfoVO("22:0_16:0_15:0",37.2,true,false));
+    molSpecies.put("24:0_16:0_13:0", new ReferenceInfoVO("24:0_16:0_13:0",37.2,true,false));
+    molSpecies.put("22:0_17:0_14:0", new ReferenceInfoVO("22:0_17:0_14:0",37.2,true,false));
+    molSpecies.put("21:0_16:0_16:0", new ReferenceInfoVO("21:0_16:0_16:0",37.2,true,false));
+    molSpecies.put("25:0_14:0_14:0", new ReferenceInfoVO("25:0_14:0_14:0",37.2,true,false));
+    molSpecies.put("20:0_17:0_16:0", new ReferenceInfoVO("20:0_17:0_16:0",37.2,true,false));
+    molSpecies.put("19:0_18:0_16:0", new ReferenceInfoVO("19:0_18:0_16:0",37.2,true,false));
+    molSpecies.put("25:0_15:0_13:0", new ReferenceInfoVO("25:0_15:0_13:0",37.2,true,false));
+    molSpecies.put("21:0_18:0_14:0", new ReferenceInfoVO("21:0_18:0_14:0",37.2,true,false));
+    molSpecies.put("25:0_16:0_12:0", new ReferenceInfoVO("25:0_16:0_12:0",37.2,true,false));
+    molSpecies.put("20:0_19:0_14:0", new ReferenceInfoVO("20:0_19:0_14:0",37.2,true,false));
+    molSpecies.put("24:0_17:0_12:0", new ReferenceInfoVO("24:0_17:0_12:0",37.2,true,false));
+    molSpecies.put("20:0_18:0_15:0", new ReferenceInfoVO("20:0_18:0_15:0",37.2,true,false));
+    molSpecies.put("21:0_17:0_15:0", new ReferenceInfoVO("21:0_17:0_15:0",37.2,true,false));
+    molSpecies.put("22:0_18:0_13:0", new ReferenceInfoVO("22:0_18:0_13:0",37.2,true,false));
+    molSpecies.put("18:0_18:0_17:0", new ReferenceInfoVO("18:0_18:0_17:0",37.2,true,false));
+    molSpecies.put("26:0_14:0_13:0", new ReferenceInfoVO("26:0_14:0_13:0",37.2,true,false));
+    molSpecies.put("23:0_17:0_13:0", new ReferenceInfoVO("23:0_17:0_13:0",37.2,true,false));
+    species.put("53:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("19:0_18:1_16:0", new ReferenceInfoVO("19:0_18:1_16:0",36.4,true,false));
+    molSpecies.put("18:1_18:0_17:0", new ReferenceInfoVO("18:1_18:0_17:0",36.4,true,false));
+    molSpecies.put("20:1_17:0_16:0", new ReferenceInfoVO("20:1_17:0_16:0",36.4,true,false));
+    molSpecies.put("19:1_18:0_16:0", new ReferenceInfoVO("19:1_18:0_16:0",36.4,true,false));
+    molSpecies.put("19:1_17:0_17:0", new ReferenceInfoVO("19:1_17:0_17:0",36.4,true,false));
+    molSpecies.put("19:0_18:0_16:1", new ReferenceInfoVO("19:0_18:0_16:1",36.4,true,false));
+    molSpecies.put("20:0_18:1_15:0", new ReferenceInfoVO("20:0_18:1_15:0",36.4,true,false));
+    molSpecies.put("18:0_18:0_17:1", new ReferenceInfoVO("18:0_18:0_17:1",36.4,true,false));
+    molSpecies.put("21:0_18:1_14:0", new ReferenceInfoVO("21:0_18:1_14:0",36.4,true,false));
+    molSpecies.put("22:0_18:1_13:0", new ReferenceInfoVO("22:0_18:1_13:0",36.4,true,false));
+    molSpecies.put("21:0_16:1_16:0", new ReferenceInfoVO("21:0_16:1_16:0",36.4,true,false));
+    molSpecies.put("24:0_18:1_11:0", new ReferenceInfoVO("24:0_18:1_11:0",36.4,true,false));
+    molSpecies.put("23:0_18:1_12:0", new ReferenceInfoVO("23:0_18:1_12:0",36.4,true,false));
+    species.put("53:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1_18:1_17:0", new ReferenceInfoVO("18:1_18:1_17:0",35.8,true,false));
+    molSpecies.put("19:1_18:1_16:0", new ReferenceInfoVO("19:1_18:1_16:0",35.8,true,false));
+    molSpecies.put("18:1_18:0_17:1", new ReferenceInfoVO("18:1_18:0_17:1",35.8,true,false));
+    molSpecies.put("18:2_18:0_17:0", new ReferenceInfoVO("18:2_18:0_17:0",35.8,true,false));
+    molSpecies.put("20:2_17:0_16:0", new ReferenceInfoVO("20:2_17:0_16:0",35.8,true,false));
+    molSpecies.put("19:0_18:1_16:1", new ReferenceInfoVO("19:0_18:1_16:1",35.8,true,false));
+    species.put("53:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_18:1_17:0", new ReferenceInfoVO("18:2_18:1_17:0",35.2,true,false));
+    molSpecies.put("19:1_18:2_16:0", new ReferenceInfoVO("19:1_18:2_16:0",35.2,true,false));
+    molSpecies.put("18:1_18:1_17:1", new ReferenceInfoVO("18:1_18:1_17:1",35.2,true,false));
+    molSpecies.put("19:2_17:1_17:0", new ReferenceInfoVO("19:2_17:1_17:0",35.2,true,false));
+    molSpecies.put("18:2_18:0_17:1", new ReferenceInfoVO("18:2_18:0_17:1",35.2,true,false));
+    species.put("53:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_18:1_17:1", new ReferenceInfoVO("18:2_18:1_17:1",34.7,true,false));
+    molSpecies.put("18:2_18:2_17:0", new ReferenceInfoVO("18:2_18:2_17:0",34.7,true,false));
+    molSpecies.put("18:3_18:1_17:0", new ReferenceInfoVO("18:3_18:1_17:0",34.7,true,false));
+    molSpecies.put("19:2_18:2_16:0", new ReferenceInfoVO("19:2_18:2_16:0",34.7,true,false));
+    molSpecies.put("19:3_17:1_17:0", new ReferenceInfoVO("19:3_17:1_17:0",34.7,true,false));
+    species.put("53:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_18:2_17:1", new ReferenceInfoVO("18:2_18:2_17:1",34.2,true,false));
+    molSpecies.put("18:2_18:1_17:2", new ReferenceInfoVO("18:2_18:1_17:2",34.2,true,false));
+    molSpecies.put("18:3_18:1_17:1", new ReferenceInfoVO("18:3_18:1_17:1",34.2,true,false));
+    molSpecies.put("18:3_18:2_17:0", new ReferenceInfoVO("18:3_18:2_17:0",34.2,true,false));
+    molSpecies.put("19:3_17:1_17:1", new ReferenceInfoVO("19:3_17:1_17:1",34.2,true,false));
+    molSpecies.put("19:2_17:2_17:1", new ReferenceInfoVO("19:2_17:2_17:1",34.2,true,false));
+    species.put("53:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/18:0/18:0", new ReferenceInfoVO("18:0/18:0/18:0",37.5,true,false));
+    molSpecies.put("24:0_16:0_14:0", new ReferenceInfoVO("24:0_16:0_14:0",37.5,true,false));
+    molSpecies.put("22:0_18:0_14:0", new ReferenceInfoVO("22:0_18:0_14:0",37.5,true,false));
+    molSpecies.put("20:0_18:0_16:0", new ReferenceInfoVO("20:0_18:0_16:0",37.5,true,false));
+    molSpecies.put("22:0_16:0_16:0", new ReferenceInfoVO("22:0_16:0_16:0",37.5,true,false));
+    molSpecies.put("24:0_18:0_12:0", new ReferenceInfoVO("24:0_18:0_12:0",37.5,true,false));
+    molSpecies.put("21:0_18:0_15:0", new ReferenceInfoVO("21:0_18:0_15:0",37.5,true,false));
+    species.put("54:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1_18:0_18:0", new ReferenceInfoVO("18:1_18:0_18:0",36.7,true,false));
+    molSpecies.put("20:1_18:0_16:0", new ReferenceInfoVO("20:1_18:0_16:0",36.7,true,false));
+    molSpecies.put("20:0_18:0_16:1", new ReferenceInfoVO("20:0_18:0_16:1",36.7,true,false));
+    molSpecies.put("20:0_18:1_16:0", new ReferenceInfoVO("20:0_18:1_16:0",36.7,true,false));
+    species.put("54:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1_18:1_18:0", new ReferenceInfoVO("18:1_18:1_18:0",36.0,true,false));
+    molSpecies.put("20:1_18:1_16:0", new ReferenceInfoVO("20:1_18:1_16:0",36.0,true,false));
+    molSpecies.put("18:2_18:0_18:0", new ReferenceInfoVO("18:2_18:0_18:0",36.0,true,false));
+    molSpecies.put("20:0_18:1_16:1", new ReferenceInfoVO("20:0_18:1_16:1",36.0,true,false));
+    molSpecies.put("20:2_18:0_16:0", new ReferenceInfoVO("20:2_18:0_16:0",36.0,true,false));
+    species.put("54:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1/18:1/18:1", new ReferenceInfoVO("18:1/18:1/18:1",35.5,true,false));
+    molSpecies.put("18:2_18:1_18:0", new ReferenceInfoVO("18:2_18:1_18:0",35.5,true,false));
+    molSpecies.put("20:2_18:1_16:0", new ReferenceInfoVO("20:2_18:1_16:0",35.5,true,false));
+    molSpecies.put("20:1_18:2_16:0", new ReferenceInfoVO("20:1_18:2_16:0",35.5,true,false));
+    molSpecies.put("20:2_18:0_16:1", new ReferenceInfoVO("20:2_18:0_16:1",35.5,true,false));
+    molSpecies.put("20:1_18:1_16:1", new ReferenceInfoVO("20:1_18:1_16:1",35.5,true,false));
+    species.put("54:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_18:1_18:1", new ReferenceInfoVO("18:2_18:1_18:1",34.9,true,false));
+    molSpecies.put("20:3_18:1_16:0", new ReferenceInfoVO("20:3_18:1_16:0",34.9,true,false));
+    molSpecies.put("18:3_18:1_18:0", new ReferenceInfoVO("18:3_18:1_18:0",34.9,true,false));
+    molSpecies.put("18:2_18:2_18:0", new ReferenceInfoVO("18:2_18:2_18:0",34.9,true,false));
+    molSpecies.put("20:4_18:0_16:0", new ReferenceInfoVO("20:4_18:0_16:0",34.9,true,false));
+    molSpecies.put("20:2_18:2_16:0", new ReferenceInfoVO("20:2_18:2_16:0",34.9,true,false));
+    molSpecies.put("20:3_18:0_16:1", new ReferenceInfoVO("20:3_18:0_16:1",34.9,true,false));
+    molSpecies.put("20:2_18:1_16:1", new ReferenceInfoVO("20:2_18:1_16:1",34.9,true,false));
+    species.put("54:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_18:2_18:1", new ReferenceInfoVO("18:2_18:2_18:1",34.5,true,false));
+    molSpecies.put("18:3_18:1_18:1", new ReferenceInfoVO("18:3_18:1_18:1",34.5,true,false));
+    molSpecies.put("20:3_18:1_16:1", new ReferenceInfoVO("20:3_18:1_16:1",34.5,true,false));
+    molSpecies.put("20:3_18:2_16:0", new ReferenceInfoVO("20:3_18:2_16:0",34.5,true,false));
+    molSpecies.put("18:3_18:2_18:0", new ReferenceInfoVO("18:3_18:2_18:0",34.5,true,false));
+    molSpecies.put("20:4_18:1_16:0", new ReferenceInfoVO("20:4_18:1_16:0",34.5,true,false));
+    molSpecies.put("20:4_18:0_16:1", new ReferenceInfoVO("20:4_18:0_16:1",34.5,true,false));
+    molSpecies.put("22:5_16:0_16:0", new ReferenceInfoVO("22:5_16:0_16:0",34.5,true,false));
+    species.put("54:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:3_18:2_18:1", new ReferenceInfoVO("18:3_18:2_18:1",34.1,true,false));
+    molSpecies.put("20:4_18:2_16:0", new ReferenceInfoVO("20:4_18:2_16:0",34.1,true,false));
+    molSpecies.put("18:2/18:2/18:2", new ReferenceInfoVO("18:2/18:2/18:2",34.1,true,false));
+    molSpecies.put("20:4_18:1_16:1", new ReferenceInfoVO("20:4_18:1_16:1",34.1,true,false));
+    molSpecies.put("20:5_18:1_16:0", new ReferenceInfoVO("20:5_18:1_16:0",34.1,true,false));
+    molSpecies.put("22:6_16:0_16:0", new ReferenceInfoVO("22:6_16:0_16:0",34.1,true,false));
+    molSpecies.put("20:3_18:2_16:1", new ReferenceInfoVO("20:3_18:2_16:1",34.1,true,false));
+    molSpecies.put("22:5_16:1_16:0", new ReferenceInfoVO("22:5_16:1_16:0",34.1,true,false));
+    molSpecies.put("20:3_18:3_16:0", new ReferenceInfoVO("20:3_18:3_16:0",34.1,true,false));
+    species.put("54:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:3_18:2_18:2", new ReferenceInfoVO("18:3_18:2_18:2",33.5,true,false));
+    molSpecies.put("18:3_18:3_18:1", new ReferenceInfoVO("18:3_18:3_18:1",33.5,true,false));
+    molSpecies.put("18:4_18:2_18:1", new ReferenceInfoVO("18:4_18:2_18:1",33.5,true,false));
+    molSpecies.put("20:5_18:2_16:0", new ReferenceInfoVO("20:5_18:2_16:0",33.5,true,false));
+    molSpecies.put("20:5_18:1_16:1", new ReferenceInfoVO("20:5_18:1_16:1",33.5,true,false));
+    molSpecies.put("20:4_18:3_16:0", new ReferenceInfoVO("20:4_18:3_16:0",33.5,true,false));
+    molSpecies.put("22:6_16:1_16:0", new ReferenceInfoVO("22:6_16:1_16:0",33.5,true,false));
+    molSpecies.put("20:4_18:2_16:1", new ReferenceInfoVO("20:4_18:2_16:1",33.5,true,false));
+    molSpecies.put("22:6_18:1_14:0", new ReferenceInfoVO("22:6_18:1_14:0",33.5,true,false));
+    molSpecies.put("20:4_20:3_14:0", new ReferenceInfoVO("20:4_20:3_14:0",33.5,true,false));
+    molSpecies.put("20:3_18:4_16:0", new ReferenceInfoVO("20:3_18:4_16:0",33.2,true,false));
+    species.put("54:7", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6_18:2_14:0", new ReferenceInfoVO("22:6_18:2_14:0",33.2,true,false));
+    molSpecies.put("22:6_16:1_16:1", new ReferenceInfoVO("22:6_16:1_16:1",33.2,true,false));
+    molSpecies.put("22:6_16:2_16:0", new ReferenceInfoVO("22:6_16:2_16:0",33.2,true,false));
+    molSpecies.put("22:6_16:2_16:0", new ReferenceInfoVO("22:6_16:2_16:0",33.2,true,false));
+    molSpecies.put("20:5_18:3_16:0", new ReferenceInfoVO("20:5_18:3_16:0",33.2,true,false));
+    molSpecies.put("18:3_18:3_18:2", new ReferenceInfoVO("18:3_18:3_18:2",33.2,true,false));
+    molSpecies.put("20:4_18:3_16:1", new ReferenceInfoVO("20:4_18:3_16:1",33.2,true,false));
+    molSpecies.put("20:5_18:2_16:1", new ReferenceInfoVO("20:5_18:2_16:1",33.2,true,false));
+    species.put("54:8", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("24:0_16:0_15:0", new ReferenceInfoVO("24:0_16:0_15:0",37.0,true,false));
+    molSpecies.put("25:0_15:0_15:0", new ReferenceInfoVO("25:0_15:0_15:0",37.0,true,false));
+    molSpecies.put("25:0_16:0_14:0", new ReferenceInfoVO("25:0_16:0_14:0",37.0,true,false));
+    molSpecies.put("23:0_16:0_16:0", new ReferenceInfoVO("23:0_16:0_16:0",37.0,true,false));
+    molSpecies.put("24:0_17:0_14:0", new ReferenceInfoVO("24:0_17:0_14:0",37.0,true,false));
+    molSpecies.put("26:0_15:0_14:0", new ReferenceInfoVO("26:0_15:0_14:0",37.0,true,false));
+    molSpecies.put("22:0_17:0_16:0", new ReferenceInfoVO("22:0_17:0_16:0",37.0,true,false));
+    molSpecies.put("26:0_16:0_13:0", new ReferenceInfoVO("26:0_16:0_13:0",37.0,true,false));
+    molSpecies.put("21:0_18:0_16:0", new ReferenceInfoVO("21:0_18:0_16:0",37.0,true,false));
+    molSpecies.put("23:0_17:0_15:0", new ReferenceInfoVO("23:0_17:0_15:0",37.0,true,false));
+    molSpecies.put("27:0_16:0_12:0", new ReferenceInfoVO("27:0_16:0_12:0",37.0,true,false));
+    molSpecies.put("20:0_19:0_16:0", new ReferenceInfoVO("20:0_19:0_16:0",37.0,true,false));
+    species.put("55:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("19:0_18:1_18:1", new ReferenceInfoVO("19:0_18:1_18:1",36.4,true,false));
+    molSpecies.put("19:1_18:1_18:0", new ReferenceInfoVO("19:1_18:1_18:0",36.4,true,false));
+    molSpecies.put("20:1_18:1_17:0", new ReferenceInfoVO("20:1_18:1_17:0",36.4,true,false));
+    molSpecies.put("19:0_18:2_18:0", new ReferenceInfoVO("19:0_18:2_18:0",36.4,true,false));
+    molSpecies.put("21:1_18:1_16:0", new ReferenceInfoVO("21:1_18:1_16:0",36.4,true,false));
+    molSpecies.put("20:1_19:0_16:1", new ReferenceInfoVO("20:1_19:0_16:1",36.4,true,false));
+    molSpecies.put("23:1_18:1_14:0", new ReferenceInfoVO("23:1_18:1_14:0",36.4,true,false));
+    molSpecies.put("24:1_18:1_13:0", new ReferenceInfoVO("24:1_18:1_13:0",36.4,true,false));
+    species.put("55:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("19:0_18:2_18:1", new ReferenceInfoVO("19:0_18:2_18:1",35.8,true,false));
+    molSpecies.put("19:1_18:1_18:1", new ReferenceInfoVO("19:1_18:1_18:1",35.8,true,false));
+    molSpecies.put("19:1_18:2_18:0", new ReferenceInfoVO("19:1_18:2_18:0",35.8,true,false));
+    molSpecies.put("20:2_18:1_17:0", new ReferenceInfoVO("20:2_18:1_17:0",35.8,true,false));
+    molSpecies.put("20:1_18:1_17:1", new ReferenceInfoVO("20:1_18:1_17:1",35.8,true,false));
+    molSpecies.put("19:2_18:1_18:0", new ReferenceInfoVO("19:2_18:1_18:0",35.8,true,false));
+    species.put("55:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("19:1_18:2_18:1", new ReferenceInfoVO("19:1_18:2_18:1",35.1,true,false));
+    molSpecies.put("19:2_18:1_18:1", new ReferenceInfoVO("19:2_18:1_18:1",35.1,true,false));
+    molSpecies.put("19:0_18:2_18:2", new ReferenceInfoVO("19:0_18:2_18:2",35.1,true,false));
+    molSpecies.put("19:1_19:1_17:2", new ReferenceInfoVO("19:1_19:1_17:2",35.1,true,false));
+    molSpecies.put("19:0_18:3_18:1", new ReferenceInfoVO("19:0_18:3_18:1",35.1,true,false));
+    molSpecies.put("20:2_18:2_17:0", new ReferenceInfoVO("20:2_18:2_17:0",35.1,true,false));
+    molSpecies.put("20:1_18:2_17:1", new ReferenceInfoVO("20:1_18:2_17:1",35.1,true,false));
+    molSpecies.put("20:3_18:1_17:0", new ReferenceInfoVO("20:3_18:1_17:0",35.1,true,false));
+    molSpecies.put("20:3_19:1_16:0", new ReferenceInfoVO("20:3_19:1_16:0",35.1,true,false));
+    molSpecies.put("20:2_18:1_17:1", new ReferenceInfoVO("20:2_18:1_17:1",35.1,true,false));
+    species.put("55:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("19:1_18:2_18:2", new ReferenceInfoVO("19:1_18:2_18:2",34.7,true,false));
+    molSpecies.put("19:2_18:2_18:1", new ReferenceInfoVO("19:2_18:2_18:1",34.7,true,false));
+    molSpecies.put("20:3_18:2_17:0", new ReferenceInfoVO("20:3_18:2_17:0",34.7,true,false));
+    molSpecies.put("21:3_18:2_16:0", new ReferenceInfoVO("21:3_18:2_16:0",34.7,true,false));
+    molSpecies.put("20:2_18:2_17:1", new ReferenceInfoVO("20:2_18:2_17:1",34.7,true,false));
+    molSpecies.put("19:0_18:3_18:2", new ReferenceInfoVO("19:0_18:3_18:2",34.7,true,false));
+    species.put("55:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("25:0_16:0_15:0", new ReferenceInfoVO("25:0_16:0_15:0",38.1,true,false));
+    molSpecies.put("24:0_16:0_16:0", new ReferenceInfoVO("24:0_16:0_16:0",38.1,true,false));
+    molSpecies.put("26:0_16:0_14:0", new ReferenceInfoVO("26:0_16:0_14:0",38.1,true,false));
+    molSpecies.put("24:0_17:0_15:0", new ReferenceInfoVO("24:0_17:0_15:0",38.1,true,false));
+    molSpecies.put("22:0_18:0_16:0", new ReferenceInfoVO("22:0_18:0_16:0",38.1,true,false));
+    molSpecies.put("23:0_17:0_16:0", new ReferenceInfoVO("23:0_17:0_16:0",38.1,true,false));
+    molSpecies.put("24:0_18:0_14:0", new ReferenceInfoVO("24:0_18:0_14:0",38.1,true,false));
+    molSpecies.put("20:0_20:0_16:0", new ReferenceInfoVO("20:0_20:0_16:0",38.1,true,false));
+    species.put("56:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("24:0_16:1_16:0", new ReferenceInfoVO("24:0_16:1_16:0",37.4,true,false));
+    molSpecies.put("24:0_18:1_14:0", new ReferenceInfoVO("24:0_18:1_14:0",37.4,true,false));
+    molSpecies.put("25:0_16:1_15:0", new ReferenceInfoVO("25:0_16:1_15:0",37.4,true,false));
+    molSpecies.put("22:0_18:0_16:1", new ReferenceInfoVO("22:0_18:0_16:1",37.4,true,false));
+    molSpecies.put("22:0_18:1_16:0", new ReferenceInfoVO("22:0_18:1_16:0",37.4,true,false));
+    molSpecies.put("20:0_20:0_16:1", new ReferenceInfoVO("20:0_20:0_16:1",37.4,true,false));
+    molSpecies.put("26:0_16:1_14:0", new ReferenceInfoVO("26:0_16:1_14:0",37.4,true,false));
+    molSpecies.put("23:0_17:0_16:1", new ReferenceInfoVO("23:0_17:0_16:1",37.4,true,false));
+    molSpecies.put("20:0_18:1_18:0", new ReferenceInfoVO("20:0_18:1_18:0",37.4,true,false));
+    molSpecies.put("24:1_16:0_16:0", new ReferenceInfoVO("24:1_16:0_16:0",37.4,true,false));
+    molSpecies.put("23:0_18:1_15:0", new ReferenceInfoVO("23:0_18:1_15:0",37.4,true,false));
+    molSpecies.put("23:0_17:1_16:0", new ReferenceInfoVO("23:0_17:1_16:0",37.4,true,false));
+    molSpecies.put("25:0_18:1_13:0", new ReferenceInfoVO("25:0_18:1_13:0",37.4,true,false));
+    molSpecies.put("24:0_17:1_15:0", new ReferenceInfoVO("24:0_17:1_15:0",37.4,true,false));
+    molSpecies.put("22:1_18:0_16:0", new ReferenceInfoVO("22:1_18:0_16:0",37.4,true,false));
+    molSpecies.put("20:1_18:0_18:0", new ReferenceInfoVO("20:1_18:0_18:0",37.4,true,false));
+    molSpecies.put("25:0_16:0_15:1", new ReferenceInfoVO("25:0_16:0_15:1",37.4,true,false));
+    molSpecies.put("20:1_20:0_16:0", new ReferenceInfoVO("20:1_20:0_16:0",37.4,true,false));
+    species.put("56:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("20:0_18:1_18:1", new ReferenceInfoVO("20:0_18:1_18:1",36.7,true,false));
+    molSpecies.put("20:1_18:1_18:0", new ReferenceInfoVO("20:1_18:1_18:0",36.7,true,false));
+    molSpecies.put("22:1_18:1_16:0", new ReferenceInfoVO("22:1_18:1_16:0",36.7,true,false));
+    molSpecies.put("20:1_20:1_16:0", new ReferenceInfoVO("20:1_20:1_16:0",36.7,true,false));
+    molSpecies.put("20:0_18:2_18:0", new ReferenceInfoVO("20:0_18:2_18:0",36.7,true,false));
+    molSpecies.put("20:2_18:0_18:0", new ReferenceInfoVO("20:2_18:0_18:0",36.7,true,false));
+    molSpecies.put("22:0_18:1_16:1", new ReferenceInfoVO("22:0_18:1_16:1",36.7,true,false));
+    molSpecies.put("20:1_20:0_16:1", new ReferenceInfoVO("20:1_20:0_16:1",36.7,true,false));
+    species.put("56:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("20:1_18:1_18:1", new ReferenceInfoVO("20:1_18:1_18:1",36.0,true,false));
+    molSpecies.put("20:2_18:1_18:0", new ReferenceInfoVO("20:2_18:1_18:0",36.0,true,false));
+    molSpecies.put("20:0_18:2_18:1", new ReferenceInfoVO("20:0_18:2_18:1",36.0,true,false));
+    molSpecies.put("20:1_18:2_18:0", new ReferenceInfoVO("20:1_18:2_18:0",36.0,true,false));
+    molSpecies.put("20:1_20:1_16:1", new ReferenceInfoVO("20:1_20:1_16:1",36.0,true,false));
+    species.put("56:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("20:1_18:2_18:1", new ReferenceInfoVO("20:1_18:2_18:1",35.5,true,false));
+    molSpecies.put("20:2_18:1_18:1", new ReferenceInfoVO("20:2_18:1_18:1",35.5,true,false));
+    molSpecies.put("20:3_18:1_18:0", new ReferenceInfoVO("20:3_18:1_18:0",35.5,true,false));
+    molSpecies.put("22:3_18:1_16:0", new ReferenceInfoVO("22:3_18:1_16:0",35.5,true,false));
+    molSpecies.put("20:3_20:1_16:0", new ReferenceInfoVO("20:3_20:1_16:0",35.5,true,false));
+    molSpecies.put("20:0_18:2_18:2", new ReferenceInfoVO("20:0_18:2_18:2",35.5,true,false));
+    molSpecies.put("20:2_18:2_18:0", new ReferenceInfoVO("20:2_18:2_18:0",35.5,true,false));
+    molSpecies.put("20:4_18:0_18:0", new ReferenceInfoVO("20:4_18:0_18:0",35.5,true,false));
+    molSpecies.put("20:1_18:3_18:0", new ReferenceInfoVO("20:1_18:2_18:1",35.5,true,false));
+    molSpecies.put("20:4_20:0_16:0", new ReferenceInfoVO("20:4_20:0_16:0",35.5,true,false));
+    species.put("56:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:4_18:1_16:0", new ReferenceInfoVO("22:4_18:1_16:0",35.0,true,false));
+    molSpecies.put("20:2_18:2_18:1", new ReferenceInfoVO("20:2_18:2_18:1",35.0,true,false));
+    molSpecies.put("20:3_18:1_18:1", new ReferenceInfoVO("20:3_18:1_18:1",35.0,true,false));
+    molSpecies.put("20:4_18:1_18:0", new ReferenceInfoVO("20:4_18:1_18:0",35.0,true,false));
+    molSpecies.put("20:4_20:1_16:0", new ReferenceInfoVO("20:4_20:1_16:0",35.0,true,false));
+    molSpecies.put("20:3_18:2_18:0", new ReferenceInfoVO("20:3_18:2_18:0",35.0,true,false));
+    molSpecies.put("20:3_20:2_16:0", new ReferenceInfoVO("20:3_20:2_16:0",35.0,true,false));
+    molSpecies.put("20:1_18:2_18:2", new ReferenceInfoVO("20:1_18:2_18:2",35.0,true,false));
+    molSpecies.put("22:4_18:0_16:1", new ReferenceInfoVO("22:4_18:0_16:1",35.0,true,false));
+    molSpecies.put("20:1_18:3_18:1", new ReferenceInfoVO("20:1_18:3_18:1",35.0,true,false));
+    molSpecies.put("22:3_18:2_16:0", new ReferenceInfoVO("22:3_18:2_16:0",35.0,true,false));
+    molSpecies.put("22:5_18:0_16:0", new ReferenceInfoVO("22:5_18:0_16:0",35.0,true,false));
+    molSpecies.put("20:2_18:3_18:0", new ReferenceInfoVO("20:2_18:3_18:0",35.0,true,false));
+    species.put("56:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:5_18:1_16:0", new ReferenceInfoVO("22:5_18:1_16:0",34.6,true,false));
+    molSpecies.put("20:4_18:1_18:1", new ReferenceInfoVO("20:4_18:1_18:1",34.6,true,false));
+    molSpecies.put("22:4_18:2_16:0", new ReferenceInfoVO("22:4_18:2_16:0",34.6,true,false));
+    molSpecies.put("20:4_18:2_18:0", new ReferenceInfoVO("20:4_18:2_18:0",34.6,true,false));
+    molSpecies.put("20:4_20:2_16:0", new ReferenceInfoVO("20:4_20:2_16:0",34.6,true,false));
+    molSpecies.put("20:3_18:2_18:1", new ReferenceInfoVO("20:3_18:2_18:1",34.6,true,false));
+    molSpecies.put("22:5_18:0_16:1", new ReferenceInfoVO("22:5_18:0_16:1",34.6,true,false));
+    molSpecies.put("20:3_20:3_16:0", new ReferenceInfoVO("20:3_20:3_16:0",34.6,true,false));
+    molSpecies.put("22:6_18:0_16:0", new ReferenceInfoVO("22:6_18:0_16:0",34.6,true,false));
+    molSpecies.put("22:4_18:1_16:1", new ReferenceInfoVO("22:4_18:1_16:1",34.6,true,false));
+    molSpecies.put("20:2_18:2_18:2", new ReferenceInfoVO("20:2_18:2_18:2",34.6,true,false));
+    molSpecies.put("20:2_18:3_18:1", new ReferenceInfoVO("20:2_18:3_18:1",34.6,true,false));
+    molSpecies.put("20:5_18:1_18:0", new ReferenceInfoVO("20:5_18:1_18:0",34.6,true,false));
+    molSpecies.put("24:6_16:0_16:0", new ReferenceInfoVO("24:6_16:0_16:0",34.6,true,false));
+    species.put("56:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6_18:1_16:0", new ReferenceInfoVO("22:6_18:1_16:0",34.2,true,false));
+    molSpecies.put("22:5_20:2_14:0", new ReferenceInfoVO("22:5_20:2_14:0",34.2,true,false));
+    molSpecies.put("22:5_18:2_16:0", new ReferenceInfoVO("22:5_18:2_16:0",34.2,true,false));
+    molSpecies.put("20:4_18:2_18:1", new ReferenceInfoVO("20:4_18:2_18:1",34.2,true,false));
+    molSpecies.put("20:5_18:1_18:1", new ReferenceInfoVO("20:4_18:1_18:1",34.2,true,false));
+    molSpecies.put("20:4_20:3_16:0", new ReferenceInfoVO("20:4_20:3_16:0",34.2,true,false));
+    molSpecies.put("20:3_18:2_18:2", new ReferenceInfoVO("20:3_18:2_18:2",34.2,true,false));
+    molSpecies.put("22:5_18:1_16:1", new ReferenceInfoVO("22:5_18:1_16:1",34.2,true,false));
+    molSpecies.put("20:3_18:3_18:1", new ReferenceInfoVO("20:3_18:3_18:1",34.2,true,false));
+    molSpecies.put("22:6_18:0_16:1", new ReferenceInfoVO("22:6_18:0_16:1",34.2,true,false));
+    molSpecies.put("20:4_18:3_18:0", new ReferenceInfoVO("20:4_18:3_18:0",34.2,true,false));  
+    species.put("56:7", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6_18:2_16:0", new ReferenceInfoVO("22:6_18:2_16:0",33.8,true,false));
+    molSpecies.put("22:6_18:1_16:1", new ReferenceInfoVO("22:6_18:1_16:1",33.8,true,false));
+    molSpecies.put("20:4_18:2_18:2", new ReferenceInfoVO("20:4_18:2_18:2",33.8,true,false));
+    molSpecies.put("20:4_20:4_16:0", new ReferenceInfoVO("20:4_20:4_16:0",33.8,true,false));
+    molSpecies.put("20:3_18:3_18:2", new ReferenceInfoVO("20:3_18:3_18:2",33.8,true,false));
+    molSpecies.put("20:4_18:3_18:1", new ReferenceInfoVO("20:4_18:3_18:1",33.8,true,false));
+    molSpecies.put("20:4_20:3_16:1", new ReferenceInfoVO("20:4_20:3_16:1",33.8,true,false));
+    molSpecies.put("20:5_18:2_18:1", new ReferenceInfoVO("20:5_18:2_18:1",33.8,true,false));
+    molSpecies.put("22:5_18:2_16:1", new ReferenceInfoVO("22:5_18:2_16:1",33.8,true,false));
+    molSpecies.put("22:5_18:3_16:0", new ReferenceInfoVO("22:5_18:3_16:0",33.8,true,false));
+    molSpecies.put("20:5_20:3_16:0", new ReferenceInfoVO("20:5_20:3_16:0",33.8,true,false));
+    species.put("56:8", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6_18:2_16:1", new ReferenceInfoVO("22:6_18:2_16:1",33.3,true,false));
+    molSpecies.put("22:6_18:3_16:0", new ReferenceInfoVO("22:6_18:3_16:0",33.3,true,false));
+    molSpecies.put("22:6_18:1_16:2", new ReferenceInfoVO("22:6_18:1_16:2",33.3,true,false));
+    molSpecies.put("20:4_18:3_18:2", new ReferenceInfoVO("20:4_18:3_18:2",33.3,true,false));
+    molSpecies.put("20:5_18:2_18:2", new ReferenceInfoVO("20:5_18:2_18:2",33.3,true,false));
+    molSpecies.put("20:5_20:4_16:0", new ReferenceInfoVO("20:5_20:4_16:0",33.3,true,false));
+    molSpecies.put("20:5_18:3_18:1", new ReferenceInfoVO("20:5_18:3_18:1",33.3,true,false));
+    species.put("56:9", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("24:0_17:0_16:0", new ReferenceInfoVO("24:0_17:0_16:0",38.4,true,false));
+    molSpecies.put("26:0_16:0_15:0", new ReferenceInfoVO("26:0_16:0_15:0",38.4,true,false));
+    molSpecies.put("25:0_16:0_16:0", new ReferenceInfoVO("25:0_16:0_16:0",38.4,true,false));
+    molSpecies.put("23:0_18:0_16:0", new ReferenceInfoVO("23:0_18:0_16:0",38.4,true,false));
+    molSpecies.put("27:0_16:0_14:0", new ReferenceInfoVO("27:0_16:0_14:0",38.4,true,false));
+    molSpecies.put("25:0_17:0_15:0", new ReferenceInfoVO("25:0_17:0_15:0",38.4,true,false));
+    species.put("57:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("24:0_18:0_16:0", new ReferenceInfoVO("24:0_18:0_16:0",38.7,true,false));
+    molSpecies.put("26:0_16:0_16:0", new ReferenceInfoVO("26:0_16:0_16:0",38.7,true,false));
+    molSpecies.put("25:0_17:0_16:0", new ReferenceInfoVO("25:0_17:0_16:0",38.7,true,false));
+    molSpecies.put("27:0_16:0_15:0", new ReferenceInfoVO("27:0_16:0_15:0",38.7,true,false));
+    molSpecies.put("28:0_16:0_14:0", new ReferenceInfoVO("28:0_16:0_14:0",38.7,true,false));
+    molSpecies.put("22:0_20:0_16:0", new ReferenceInfoVO("22:0_20:0_16:0",38.7,true,false));
+    molSpecies.put("20:0_20:0_18:0", new ReferenceInfoVO("20:0_20:0_18:0",38.7,true,false));
+    molSpecies.put("22:0_18:0_18:0", new ReferenceInfoVO("22:0_18:0_18:0",38.7,true,false));
+    species.put("58:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:0_18:2_18:1", new ReferenceInfoVO("22:0_18:2_18:1",36.6,true,false));
+    molSpecies.put("22:1_18:1_18:1", new ReferenceInfoVO("22:1_18:1_18:1",36.6,true,false));
+    molSpecies.put("20:1_20:1_18:1", new ReferenceInfoVO("20:1_20:1_18:1",36.6,true,false));
+    molSpecies.put("22:1_18:2_18:0", new ReferenceInfoVO("22:1_18:2_18:0",36.6,true,false));
+    molSpecies.put("22:2_18:1_18:0", new ReferenceInfoVO("22:2_18:1_18:0",36.6,true,false));
+    molSpecies.put("20:2_20:0_18:1", new ReferenceInfoVO("20:2_20:0_18:1",36.6,true,false));
+    molSpecies.put("20:1_20:0_18:2", new ReferenceInfoVO("20:1_20:0_18:2",36.6,true,false));
+    molSpecies.put("24:2_18:1_16:0", new ReferenceInfoVO("24:2_18:1_16:0",36.6,true,false));
+    molSpecies.put("22:1_20:1_16:1", new ReferenceInfoVO("22:1_20:1_16:1",36.6,true,false));
+    molSpecies.put("24:1_18:2_16:0", new ReferenceInfoVO("24:1_18:2_16:0",36.6,true,false));
+    molSpecies.put("24:1_18:1_16:1", new ReferenceInfoVO("24:1_18:1_16:1",36.6,true,false));
+    molSpecies.put("22:1_20:2_16:0", new ReferenceInfoVO("22:1_20:2_16:0",36.6,true,false));
+    species.put("58:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("20:2_20:1_18:1", new ReferenceInfoVO("20:2_20:1_18:1",36.0,true,false));
+    molSpecies.put("22:1_18:2_18:1", new ReferenceInfoVO("22:1_18:2_18:1",36.0,true,false));
+    molSpecies.put("20:1_20:1_18:2", new ReferenceInfoVO("20:1_20:1_18:2",36.0,true,false));
+    molSpecies.put("22:2_18:1_18:1", new ReferenceInfoVO("22:2_18:1_18:1",36.0,true,false));
+    molSpecies.put("22:3_18:1_18:0", new ReferenceInfoVO("22:3_18:1_18:0",36.0,true,false));
+    molSpecies.put("22:2_18:2_18:0", new ReferenceInfoVO("22:2_18:2_18:0",36.0,true,false));
+    molSpecies.put("22:0_18:2_18:2", new ReferenceInfoVO("22:0_18:2_18:2",36.0,true,false));
+    molSpecies.put("22:1_20:2_16:1", new ReferenceInfoVO("22:1_20:2_16:1",36.0,true,false));
+    molSpecies.put("22:3_20:1_16:0", new ReferenceInfoVO("22:3_20:1_16:0",36.0,true,false));
+    molSpecies.put("20:3_20:1_18:0", new ReferenceInfoVO("20:3_20:1_18:0",36.0,true,false));
+    molSpecies.put("24:3_18:1_16:0", new ReferenceInfoVO("24:3_18:1_16:0",36.0,true,false));
+    molSpecies.put("20:3_20:0_18:1", new ReferenceInfoVO("20:3_20:0_18:1",36.0,true,false));
+    molSpecies.put("22:1_18:3_18:0", new ReferenceInfoVO("22:1_18:3_18:0",36.0,true,false));
+    molSpecies.put("22:1_20:3_16:0", new ReferenceInfoVO("22:1_20:3_16:0",36.0,true,false));
+    molSpecies.put("22:0_18:3_18:1", new ReferenceInfoVO("22:0_18:3_18:1",36.0,true,false));
+    molSpecies.put("22:2_20:1_16:1", new ReferenceInfoVO("22:2_20:1_16:1",36.0,true,false));
+    molSpecies.put("20:2_20:0_18:2", new ReferenceInfoVO("20:2_20:0_18:2",36.0,true,false));
+    molSpecies.put("22:4_18:0_18:0", new ReferenceInfoVO("22:4_18:0_18:0",36.0,true,false));
+    molSpecies.put("24:2_18:1_16:1", new ReferenceInfoVO("24:2_18:1_16:1",36.0,true,false));
+    species.put("58:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:4_18:1_18:0", new ReferenceInfoVO("22:4_18:1_18:0",35.6,true,false));
+    molSpecies.put("22:3_18:1_18:1", new ReferenceInfoVO("22:3_18:1_18:1",35.6,true,false));
+    molSpecies.put("22:4_20:1_16:0", new ReferenceInfoVO("22:4_20:1_16:0",35.6,true,false));
+    molSpecies.put("24:4_18:1_16:0", new ReferenceInfoVO("24:4_18:1_16:0",35.6,true,false));
+    molSpecies.put("20:3_20:1_18:1", new ReferenceInfoVO("20:3_20:1_18:1",35.6,true,false));
+    molSpecies.put("22:2_18:2_18:1", new ReferenceInfoVO("22:2_18:2_18:1",35.6,true,false));
+    molSpecies.put("20:4_20:0_18:1", new ReferenceInfoVO("20:4_20:0_18:1",35.6,true,false));
+    molSpecies.put("20:2_20:1_18:0", new ReferenceInfoVO("20:2_20:1_18:0",35.6,true,false));
+    molSpecies.put("20:4_20:1_18:0", new ReferenceInfoVO("20:4_20:1_18:0",35.6,true,false));
+    molSpecies.put("20:2_20:1_18:2", new ReferenceInfoVO("20:2_20:1_18:2",35.6,true,false));
+    molSpecies.put("22:3_18:2_18:0", new ReferenceInfoVO("22:3_18:2_18:0",35.6,true,false));
+    molSpecies.put("20:3_20:2_18:0", new ReferenceInfoVO("20:3_20:2_18:0",35.6,true,false));
+    molSpecies.put("20:2_20:2_18:1", new ReferenceInfoVO("20:2_20:2_18:1",35.6,true,false));
+    species.put("58:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:4_18:1_18:1", new ReferenceInfoVO("22:4_18:1_18:1",35.1,true,false));
+    molSpecies.put("22:4_18:2_18:0", new ReferenceInfoVO("22:4_18:2_18:0",35.1,true,false));
+    molSpecies.put("22:5_18:1_18:0", new ReferenceInfoVO("22:5_18:1_18:0",35.1,true,false));
+    molSpecies.put("24:5_18:1_16:0", new ReferenceInfoVO("24:5_18:1_16:0",35.1,true,false));
+    molSpecies.put("22:4_20:2_16:0", new ReferenceInfoVO("22:4_20:2_16:0",35.1,true,false));
+    molSpecies.put("22:3_18:2_18:1", new ReferenceInfoVO("22:3_18:2_18:1",35.1,true,false));
+    molSpecies.put("20:3_20:2_18:1", new ReferenceInfoVO("20:3_20:2_18:1",35.1,true,false));
+    molSpecies.put("20:4_20:1_18:1", new ReferenceInfoVO("20:4_20:1_18:1",35.1,true,false));
+    molSpecies.put("22:5_20:1_16:0", new ReferenceInfoVO("22:5_20:1_16:0",35.1,true,false));
+    molSpecies.put("20:3_20:1_18:2", new ReferenceInfoVO("20:3_20:1_18:2",35.1,true,false));
+    molSpecies.put("20:4_20:2_18:0", new ReferenceInfoVO("20:4_20:2_18:0",35.1,true,false));
+    species.put("58:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:4_18:2_18:1", new ReferenceInfoVO("22:4_18:2_18:1",34.6,true,false));
+    molSpecies.put("22:5_18:1_18:1", new ReferenceInfoVO("22:5_18:1_18:1",34.6,true,false));
+    molSpecies.put("22:5_18:2_18:0", new ReferenceInfoVO("22:5_18:2_18:0",34.6,true,false));
+    molSpecies.put("24:6_18:1_16:0", new ReferenceInfoVO("24:6_18:1_16:0",34.6,true,false));
+    molSpecies.put("22:6_18:1_18:0", new ReferenceInfoVO("22:6_18:1_18:0",34.6,true,false));
+    molSpecies.put("22:5_20:2_16:0", new ReferenceInfoVO("22:5_20:2_16:0",34.6,true,false));
+    molSpecies.put("22:6_20:1_16:0", new ReferenceInfoVO("22:6_20:1_16:0",34.6,true,false));
+    molSpecies.put("24:5_18:2_16:0", new ReferenceInfoVO("24:5_18:2_16:0",34.6,true,false));
+    molSpecies.put("22:4_20:3_16:0", new ReferenceInfoVO("22:4_20:3_16:0",34.6,true,false));
+    molSpecies.put("20:4_20:2_18:1", new ReferenceInfoVO("20:4_20:2_18:1",34.6,true,false));
+    molSpecies.put("20:4_20:3_18:0", new ReferenceInfoVO("20:4_20:3_18:0",34.6,true,false));
+    molSpecies.put("20:3_20:2_18:2", new ReferenceInfoVO("20:3_20:2_18:2",34.6,true,false));
+    molSpecies.put("22:3_20:4_16:0", new ReferenceInfoVO("22:3_20:4_16:0",34.6,true,false));
+    molSpecies.put("20:3_20:3_18:1", new ReferenceInfoVO("20:3_20:3_18:1",34.6,true,false));
+    molSpecies.put("20:4_20:2_18:2", new ReferenceInfoVO("20:4_20:2_18:2",34.6,true,false));
+    molSpecies.put("22:3_18:2_18:2", new ReferenceInfoVO("22:3_18:2_18:2",34.6,true,false));
+    species.put("58:7", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6_18:1_18:1", new ReferenceInfoVO("22:6_18:1_18:1",34.2,true,false));
+    molSpecies.put("22:6_18:2_18:0", new ReferenceInfoVO("22:6_18:2_18:0",34.2,true,false));
+    molSpecies.put("22:5_18:2_18:1", new ReferenceInfoVO("22:5_18:2_18:1",34.2,true,false));
+    molSpecies.put("22:6_20:2_16:0", new ReferenceInfoVO("22:6_20:2_16:0",34.2,true,false));
+    molSpecies.put("20:3_20:3_18:2", new ReferenceInfoVO("20:3_20:3_18:2",34.2,true,false));
+    molSpecies.put("20:4_20:3_18:1", new ReferenceInfoVO("20:4_20:3_18:1",34.2,true,false));
+    molSpecies.put("22:4_18:3_18:1", new ReferenceInfoVO("22:4_18:3_18:1",34.2,true,false));
+    molSpecies.put("22:4_18:2_18:2", new ReferenceInfoVO("22:4_18:2_18:2",34.2,true,false));
+    molSpecies.put("22:4_20:4_16:0", new ReferenceInfoVO("22:4_20:4_16:0",34.2,true,false));
+    molSpecies.put("22:5_20:3_16:0", new ReferenceInfoVO("22:5_20:3_16:0",34.2,true,false));
+    molSpecies.put("20:4_20:4_18:0", new ReferenceInfoVO("20:4_20:4_18:0",34.2,true,false));
+    molSpecies.put("20:4_20:2_18:2", new ReferenceInfoVO("20:4_20:2_18:2",34.2,true,false));
+    molSpecies.put("22:5_18:3_18:0", new ReferenceInfoVO("22:5_18:3_18:0",34.2,true,false));
+    species.put("58:8", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6_18:2_18:1", new ReferenceInfoVO("22:6_18:2_18:1",33.9,true,false));
+    molSpecies.put("20:4_20:3_18:2", new ReferenceInfoVO("20:4_20:3_18:2",33.9,true,false));
+    molSpecies.put("22:5_18:2_18:2", new ReferenceInfoVO("22:5_18:2_18:2",33.9,true,false));
+    molSpecies.put("22:4_18:3_18:2", new ReferenceInfoVO("22:4_18:3_18:2",33.9,true,false));
+    molSpecies.put("22:6_20:3_16:0", new ReferenceInfoVO("22:6_20:3_16:0",33.9,true,false));
+    molSpecies.put("20:4_20:4_18:1", new ReferenceInfoVO("20:4_20:4_18:1",33.9,true,false));
+    molSpecies.put("22:5_20:4_16:0", new ReferenceInfoVO("22:5_20:4_16:0",33.9,true,false));
+    molSpecies.put("22:5_18:3_18:1", new ReferenceInfoVO("22:5_18:3_18:1",33.9,true,false));
+    species.put("58:9", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6_18:2_18:2", new ReferenceInfoVO("22:6_18:2_18:2",33.4,true,false));
+    molSpecies.put("22:6_18:3_18:1", new ReferenceInfoVO("22:6_18:3_18:1",33.4,true,false));
+    molSpecies.put("22:6_20:4_16:0", new ReferenceInfoVO("22:6_20:4_16:0",33.4,true,false));
+    molSpecies.put("20:4_20:4_18:2", new ReferenceInfoVO("20:4_20:4_18:2",33.4,true,false));
+    molSpecies.put("22:5_18:3_18:2", new ReferenceInfoVO("22:5_18:3_18:2",33.4,true,false));
+    molSpecies.put("20:5_20:3_18:2", new ReferenceInfoVO("20:5_20:3_18:2",33.4,true,false));
+    molSpecies.put("20:5_20:4_18:1", new ReferenceInfoVO("20:5_20:4_18:1",33.4,true,false));
+    species.put("58:10", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6_18:3_18:2", new ReferenceInfoVO("22:6_18:3_18:2",33.0,true,false));
+    molSpecies.put("22:6_18:4_18:1", new ReferenceInfoVO("22:6_18:4_18:1",33.0,true,false));
+    molSpecies.put("20:5_20:4_18:2", new ReferenceInfoVO("20:5_20:4_18:2",33.0,true,false));
+    molSpecies.put("22:6_20:4_16:1", new ReferenceInfoVO("22:6_20:4_16:1",33.0,true,false));
+    species.put("58:11", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:4_20:1_18:1", new ReferenceInfoVO("22:4_20:1_18:1",35.7,true,false));
+    molSpecies.put("24:4_18:1_18:1", new ReferenceInfoVO("24:4_18:1_18:1",35.7,true,false));
+    molSpecies.put("24:5_18:1_18:0", new ReferenceInfoVO("24:5_18:1_18:0",35.7,true,false));
+    molSpecies.put("24:4_18:2_18:0", new ReferenceInfoVO("24:4_18:2_18:0",35.7,true,false));
+    molSpecies.put("24:4_20:2_16:0", new ReferenceInfoVO("24:4_20:2_16:0",35.7,true,false));
+    molSpecies.put("22:4_20:2_18:0", new ReferenceInfoVO("22:4_20:2_18:0",35.7,true,false));
+    molSpecies.put("22:4_20:0_18:2", new ReferenceInfoVO("22:4_20:0_18:2",35.7,true,false));
+    molSpecies.put("24:5_20:1_16:0", new ReferenceInfoVO("24:5_20:1_16:0",35.7,true,false));
+    molSpecies.put("26:5_18:1_16:0", new ReferenceInfoVO("26:5_18:1_16:0",35.7,true,false));
+    molSpecies.put("22:4_22:2_16:0", new ReferenceInfoVO("22:4_22:2_16:0",35.7,true,false));
+    molSpecies.put("22:3_20:2_18:1", new ReferenceInfoVO("22:3_20:2_18:1",35.7,true,false));
+    species.put("60:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("24:4_18:2_18:1", new ReferenceInfoVO("24:4_18:2_18:1",35.1,true,false));
+    molSpecies.put("24:5_18:1_18:1", new ReferenceInfoVO("24:5_18:1_18:1",35.1,true,false));
+    molSpecies.put("22:4_20:2_18:1", new ReferenceInfoVO("22:4_20:2_18:1",35.1,true,false));
+    molSpecies.put("24:5_18:2_18:0", new ReferenceInfoVO("24:5_18:2_18:0",35.1,true,false));
+    molSpecies.put("24:6_18:1_18:0", new ReferenceInfoVO("24:6_18:1_18:0",35.1,true,false));
+    molSpecies.put("22:5_20:1_18:1", new ReferenceInfoVO("22:5_20:1_18:1",35.1,true,false));
+    molSpecies.put("24:5_20:2_16:0", new ReferenceInfoVO("24:5_20:2_16:0",35.1,true,false));
+    molSpecies.put("22:4_20:1_18:2", new ReferenceInfoVO("22:4_20:1_18:2",35.1,true,false));
+    molSpecies.put("22:2_20:4_18:1", new ReferenceInfoVO("22:2_20:4_18:1",35.1,true,false));
+    molSpecies.put("22:5_20:3_18:0", new ReferenceInfoVO("22:5_20:3_18:0",35.1,true,false));
+    molSpecies.put("22:4_20:3_18:0", new ReferenceInfoVO("22:4_20:3_18:0",35.1,true,false));
+    species.put("60:7", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("24:5_18:2_18:1", new ReferenceInfoVO("24:5_18:2_18:1",34.7,true,false));
+    molSpecies.put("24:6_18:1_18:1", new ReferenceInfoVO("24:6_18:1_18:1",34.7,true,false));
+    molSpecies.put("24:6_18:2_18:0", new ReferenceInfoVO("24:6_18:2_18:0",34.7,true,false));
+    molSpecies.put("22:5_20:2_18:1", new ReferenceInfoVO("22:5_20:2_18:1",34.7,true,false));
+    molSpecies.put("22:6_20:1_18:1", new ReferenceInfoVO("22:6_20:1_18:1",34.7,true,false));
+    molSpecies.put("24:6_20:2_16:0", new ReferenceInfoVO("24:6_20:2_16:0",34.7,true,false));
+    molSpecies.put("24:5_20:3_16:0", new ReferenceInfoVO("24:5_20:3_16:0",34.7,true,false));
+    molSpecies.put("22:6_20:2_18:0", new ReferenceInfoVO("22:6_20:2_18:0",34.7,true,false));
+    molSpecies.put("24:5_18:3_18:0", new ReferenceInfoVO("24:5_18:3_18:0",34.7,true,false));
+    molSpecies.put("22:5_20:1_18:2", new ReferenceInfoVO("22:5_20:1_18:2",34.7,true,false));
+    molSpecies.put("22:4_20:3_18:1", new ReferenceInfoVO("22:4_20:3_18:1",34.7,true,false));
+    molSpecies.put("22:3_20:4_18:1", new ReferenceInfoVO("22:3_20:4_18:1",34.7,true,false));
+    molSpecies.put("22:4_20:2_18:2", new ReferenceInfoVO("22:4_20:2_18:2",34.7,true,false));
+    molSpecies.put("22:4_20:4_18:0", new ReferenceInfoVO("22:4_20:4_18:0",34.7,true,false));
+    species.put("60:8", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6_20:1_18:2", new ReferenceInfoVO("22:6_20:1_18:2",34.3,true,false));
+    molSpecies.put("22:6_20:2_18:1", new ReferenceInfoVO("22:6_20:2_18:1",34.3,true,false));
+    molSpecies.put("24:6_18:2_18:1", new ReferenceInfoVO("24:6_18:2_18:1",34.3,true,false));
+    molSpecies.put("24:5_18:2_18:2", new ReferenceInfoVO("24:5_18:2_18:2",34.3,true,false));
+    molSpecies.put("22:6_20:3_18:0", new ReferenceInfoVO("22:6_20:3_18:0",34.3,true,false));
+    molSpecies.put("24:6_20:3_16:0", new ReferenceInfoVO("24:6_20:3_16:0",34.3,true,false));
+    molSpecies.put("24:6_18:3_18:0", new ReferenceInfoVO("24:6_18:3_18:0",34.3,true,false));
+    molSpecies.put("22:5_20:3_18:1", new ReferenceInfoVO("22:5_20:3_18:1",34.3,true,false));
+    molSpecies.put("22:6_21:0_17:3", new ReferenceInfoVO("22:6_21:0_17:3",34.3,true,false));
+    molSpecies.put("22:6_22:3_16:0", new ReferenceInfoVO("22:6_22:3_16:0",34.3,true,false));
+    molSpecies.put("22:4_20:4_18:1", new ReferenceInfoVO("22:4_20:4_18:1",34.3,true,false));
+    molSpecies.put("22:5_20:2_18:2", new ReferenceInfoVO("22:5_20:2_18:2",34.3,true,false));
+    molSpecies.put("22:5_20:3_18:1", new ReferenceInfoVO("22:5_20:3_18:1",34.3,true,false));
+    molSpecies.put("22:4_20:3_18:2", new ReferenceInfoVO("22:4_20:3_18:2",34.3,true,false));
+    species.put("60:9", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6_20:3_18:1", new ReferenceInfoVO("22:6_20:3_18:1",33.9,true,false));
+    molSpecies.put("22:6_20:2_18:2", new ReferenceInfoVO("22:6_20:2_18:2",33.9,true,false));
+    molSpecies.put("24:6_18:2_18:2", new ReferenceInfoVO("24:6_18:2_18:2",33.9,true,false));
+    molSpecies.put("22:6_22:4_16:0", new ReferenceInfoVO("22:6_22:4_16:0",33.9,true,false));
+    molSpecies.put("22:6_20:4_18:0", new ReferenceInfoVO("22:6_20:4_18:0",33.9,true,false));
+    molSpecies.put("24:6_20:4_16:0", new ReferenceInfoVO("24:6_20:4_16:0",33.9,true,false));
+    molSpecies.put("22:5_20:3_18:2", new ReferenceInfoVO("22:5_20:3_18:2",33.9,true,false));
+    molSpecies.put("22:4_20:4_18:2", new ReferenceInfoVO("22:4_20:4_18:2",33.9,true,false));
+    molSpecies.put("22:5_20:4_18:1", new ReferenceInfoVO("22:5_20:4_18:1",33.9,true,false));
+    molSpecies.put("20:4_20:3_20:3", new ReferenceInfoVO("20:4_20:3_20:3",33.9,true,false));
+    molSpecies.put("22:5_22:5_16:0", new ReferenceInfoVO("22:5_22:5_16:0",33.9,true,false));
+    species.put("60:10", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6_20:4_18:1", new ReferenceInfoVO("22:6_20:4_18:1",33.6,true,false));
+    molSpecies.put("22:6_22:5_16:0", new ReferenceInfoVO("22:6_22:5_16:0",33.6,true,false));
+    molSpecies.put("22:6_20:3_18:2", new ReferenceInfoVO("22:6_20:3_18:2",33.6,true,false));
+    molSpecies.put("22:5_20:4_18:2", new ReferenceInfoVO("22:5_20:4_18:2",33.6,true,false));
+    molSpecies.put("20:4_20:4_20:3", new ReferenceInfoVO("20:4_20:4_20:3",33.6,true,false));
+    species.put("60:11", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6_22:6_16:0", new ReferenceInfoVO("22:6_22:6_16:0",33.3,true,false));
+    molSpecies.put("22:6_20:4_18:2", new ReferenceInfoVO("22:6_20:4_18:2",33.3,true,false));
+    molSpecies.put("20:4/20:4/20:4", new ReferenceInfoVO("20:4/20:4/20:4",33.3,true,false));
+    molSpecies.put("20:5_20:4_20:3", new ReferenceInfoVO("20:5_20:4_20:3",33.3,true,false));
+    molSpecies.put("22:6_22:5_16:1", new ReferenceInfoVO("22:6_22:5_16:1",33.3,true,false));
+    molSpecies.put("22:6_20:5_18:1", new ReferenceInfoVO("22:6_20:5_18:1",33.3,true,false));
+    molSpecies.put("22:5_20:4_18:3", new ReferenceInfoVO("22:5_20:4_18:3",33.3,true,false));
+    molSpecies.put("22:5_20:5_18:2", new ReferenceInfoVO("22:5_20:5_18:2",33.6,true,false));
+    species.put("60:12", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6_22:4_18:2", new ReferenceInfoVO("22:6_22:4_18:2",33.6,true,false));
+    molSpecies.put("22:6_22:5_18:1", new ReferenceInfoVO("22:6_22:5_18:1",33.6,true,false));
+    species.put("62:12", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6_22:6_18:1", new ReferenceInfoVO("22:6_22:6_18:1",33.3,true,false));
+    molSpecies.put("22:6_22:5_18:2", new ReferenceInfoVO("22:6_22:5_18:2",33.3,true,false));
+    species.put("62:13", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:6_22:6_18:2", new ReferenceInfoVO("22:6_22:6_18:2",32.9,true,false));
+    molSpecies.put("22:6_20:4_20:4", new ReferenceInfoVO("22:6_20:4_20:4",32.9,true,false));
+    species.put("62:14", molSpecies);
+    
+    return species;
+  }
 
-  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getSMSpecies(){
+
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getSMSpeciesOrbitrap(){
     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
     LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
      
@@ -1808,4 +3575,1026 @@ public class FoundBiologicalSpecies
   }
 
 
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getSMSpecies4000QTRAP(){
+    LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
+    LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+     
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("14:0", new ReferenceInfoVO("14:0",19.3d,true,false));
+    species.put("14:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("15:0", new ReferenceInfoVO("15:0",22.8d,true,false));
+    species.put("15:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0", new ReferenceInfoVO("16:0",23.8d,true,false));
+    species.put("16:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:1", new ReferenceInfoVO("16:1",22.4d,true,false));
+    species.put("16:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("17:0", new ReferenceInfoVO("17:0",24.1d,true,false));
+    species.put("17:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0", new ReferenceInfoVO("18:0",24.5d,true,false));
+    species.put("18:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("20:0", new ReferenceInfoVO("20:0",25.2d,true,false));
+    species.put("20:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("21:0", new ReferenceInfoVO("21:0",27.2d,true,false));
+    species.put("21:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:0", new ReferenceInfoVO("22:0",29.3d,true,false));
+    species.put("22:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("22:1", new ReferenceInfoVO("22:1",26.4d,true,false));
+    species.put("22:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("23:0", new ReferenceInfoVO("23:0",30.4d,true,false));
+    species.put("23:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("23:1", new ReferenceInfoVO("23:1",28.8d,true,false));
+    species.put("23:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("24:0", new ReferenceInfoVO("24:0",31.1d,true,false));
+    species.put("24:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("24:1", new ReferenceInfoVO("24:1",29.5d,true,false));
+    species.put("24:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("24:2", new ReferenceInfoVO("24:2",28.6d,true,false));
+    species.put("24:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("25:0", new ReferenceInfoVO("25:0",32.7d,true,false));
+    species.put("25:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("25:1", new ReferenceInfoVO("25:1",31.1d,true,false));
+    species.put("25:1", molSpecies);
+  
+    return species;
+  }
+
+  public static Hashtable<String,LinkedHashMap<String,String>> getOrbitrapCIDModifications(){
+    Hashtable<String,LinkedHashMap<String,String>> mods = new Hashtable<String,LinkedHashMap<String,String>>();
+    
+    LinkedHashMap<String,String> modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("NH4","+");
+    modsOfClass.put("-H","-");
+    mods.put("PI", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    mods.put("P-PC", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("P-PE", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-OH","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-CH3","-");
+    mods.put("LPC", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("LPE", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    modsOfClass.put("Na-H2","-");
+    mods.put("PS", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    mods.put("LPS", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-CH3","-");
+    mods.put("PC", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PE", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    mods.put("PG", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("NH4","+");
+    mods.put("DG", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("NH4","+");
+    modsOfClass.put("Na","+");
+    mods.put("TG", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    mods.put("SM", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-OH","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("Cl","-");
+    modsOfClass.put("-H","-");
+    mods.put("Cer", modsOfClass);
+    return mods;
+  }
+  
+
+  public static Hashtable<String,LinkedHashMap<String,String>> getQTOFG6550Modifications(){
+    Hashtable<String,LinkedHashMap<String,String>> mods = new Hashtable<String,LinkedHashMap<String,String>>();
+    
+    LinkedHashMap<String,String> modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("NH4","+");
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PI", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    mods.put("P-PC", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("P-PE", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-CH3","-");
+    mods.put("LPC", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("LPE", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    modsOfClass.put("Na-H2","-");
+    mods.put("PS", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    mods.put("LPS", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-CH3","-");
+    mods.put("PC", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PE", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PG", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("NH4","+");
+    mods.put("DG", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("NH4","+");
+    modsOfClass.put("Na","+");
+    mods.put("TG", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    mods.put("SM", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-OH","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("Cl","-");
+    modsOfClass.put("-H","-");
+    mods.put("Cer", modsOfClass);
+    return mods;
+  }
+  
+  public static Hashtable<String,LinkedHashMap<String,String>> getOrbitrapEliteModifications(){
+    Hashtable<String,LinkedHashMap<String,String>> mods = new Hashtable<String,LinkedHashMap<String,String>>();
+    
+    LinkedHashMap<String,String> modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PI", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    mods.put("P-PC", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("P-PE", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-CH3","-");
+    mods.put("LPC", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    mods.put("LPE", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    modsOfClass.put("Na-H2","-");
+    mods.put("PS", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    mods.put("LPS", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-CH3","-");
+    mods.put("PC", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PE", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PG", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    mods.put("DG", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("NH4","+");
+    modsOfClass.put("Na","+");
+    mods.put("TG", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    mods.put("SM", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("-OH","+");
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-H","-");
+    modsOfClass.put("Cl","-");
+    mods.put("Cer", modsOfClass);
+    return mods;
+  }
+  
+  public static Hashtable<String,LinkedHashMap<String,String>> getOrbitrapHCDModifications(){
+    Hashtable<String,LinkedHashMap<String,String>> mods = new Hashtable<String,LinkedHashMap<String,String>>();
+    
+    LinkedHashMap<String,String> modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("NH4","+");
+    modsOfClass.put("-H","-");
+    mods.put("PI", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    mods.put("P-PC", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("P-PE", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-CH3","-");
+    mods.put("LPC", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("LPE", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    mods.put("PS", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    mods.put("LPS", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-CH3","-");
+    mods.put("PC", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PE", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    mods.put("PG", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("NH4","+");
+    mods.put("DG", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("NH4","+");
+    modsOfClass.put("Na","+");
+    mods.put("TG", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    mods.put("SM", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-OH","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("Cl","-");
+    modsOfClass.put("-H","-");
+    mods.put("Cer", modsOfClass);
+    return mods;
+  }
+  
+  public static Hashtable<String,LinkedHashMap<String,String>> getQExactiveModifications(){
+    Hashtable<String,LinkedHashMap<String,String>> mods = new Hashtable<String,LinkedHashMap<String,String>>();
+    
+    LinkedHashMap<String,String> modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("NH4","+");
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PI", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    mods.put("P-PC", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("P-PE", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-OH","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-CH3","-");
+    mods.put("LPC", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("LPE", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    modsOfClass.put("Na-H2","-");
+    mods.put("PS", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    mods.put("LPS", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-CH3","-");
+    mods.put("PC", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PE", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    mods.put("PG", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("NH4","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("H","+");
+    mods.put("DG", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("NH4","+");
+    modsOfClass.put("Na","+");
+    mods.put("TG", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    mods.put("SM", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-OH","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-H","-");
+    mods.put("Cer", modsOfClass);
+    return mods;
+  }
+
+
+  public static Hashtable<String,LinkedHashMap<String,String>> get4000QTRAPModifications(){
+    Hashtable<String,LinkedHashMap<String,String>> mods = new Hashtable<String,LinkedHashMap<String,String>>();
+    
+    LinkedHashMap<String,String> modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PI", modsOfClass);
+   
+    //this class has to be excluded for the biological experiment
+//    modsOfClass = new LinkedHashMap<String,String>();
+//    modsOfClass.put("H","+");
+//    modsOfClass.put("Na","+");
+//    modsOfClass.put("HCOO","-");
+//    mods.put("P-PC", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("P-PE", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-OH","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-CH3","-");
+    mods.put("LPC", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("LPE", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    mods.put("PS", modsOfClass);
+    
+    //this class has to be excluded for the biological experiment
+//    modsOfClass = new LinkedHashMap<String,String>();
+//    modsOfClass.put("H","+");
+//    modsOfClass.put("-H","-");
+//    mods.put("LPS", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-CH3","-");
+    mods.put("PC", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PE", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PG", modsOfClass);
+
+    //this class has to be excluded for the biological experiment
+//    modsOfClass = new LinkedHashMap<String,String>();
+//    modsOfClass.put("Na","+");
+//    mods.put("DG", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("NH4","+");
+    modsOfClass.put("Na","+");
+    mods.put("TG", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    mods.put("SM", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-OH","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-H","-");
+    mods.put("Cer", modsOfClass);
+    return mods;
+  }
+
+
+  public static Hashtable<String,LinkedHashMap<String,String>> getQTRAP6500Modifications(){
+    Hashtable<String,LinkedHashMap<String,String>> mods = new Hashtable<String,LinkedHashMap<String,String>>();
+    
+    LinkedHashMap<String,String> modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PI", modsOfClass);
+    
+  //this class has to be excluded for the biological experiment
+//    modsOfClass = new LinkedHashMap<String,String>();
+//    modsOfClass.put("H","+");
+//    modsOfClass.put("Na","+");
+//    modsOfClass.put("HCOO","-");
+//    mods.put("P-PC", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("P-PE", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-OH","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-CH3","-");
+    mods.put("LPC", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("-H","-");
+    mods.put("LPE", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("-H","-");
+    mods.put("PS", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    mods.put("LPS", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-CH3","-");
+    mods.put("PC", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PE", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PG", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("NH4","+");
+    mods.put("DG", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("NH4","+");
+    modsOfClass.put("Na","+");
+    mods.put("TG", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    mods.put("SM", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("-OH","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("H","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-H","-");
+    mods.put("Cer", modsOfClass);
+    return mods;
+  }
+
+  
+  public static Hashtable<String,LinkedHashMap<String,String>> getSynaptG1Modifications(){
+    Hashtable<String,LinkedHashMap<String,String>> mods = new Hashtable<String,LinkedHashMap<String,String>>();
+    
+    LinkedHashMap<String,String> modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PI", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    mods.put("P-PC", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    mods.put("P-PE", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-CH3","-");
+    mods.put("LPC", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("LPE", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    mods.put("PS", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("-H","-");
+    mods.put("LPS", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("-CH3","-");
+    mods.put("PC", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PE", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("PG", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("NH4","+");
+    mods.put("DG", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("NH4","+");
+    modsOfClass.put("Na","+");
+    mods.put("TG", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("HCOO","-");
+    mods.put("SM", modsOfClass);
+
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("-OH","+");
+    modsOfClass.put("Na","+");
+    modsOfClass.put("-H","-");
+    mods.put("Cer", modsOfClass);
+    return mods;
+  }
+
+  
+  public static Hashtable<String,Range> getOrbitrapCIDPreElutionRanges(){
+    Hashtable<String,Range> ranges = new Hashtable<String,Range>();
+    return ranges;
+  }
+
+  
+  public static Hashtable<String,Range> getQTOFG6550PreElutionRanges(){
+    Hashtable<String,Range> ranges = new Hashtable<String,Range>();
+    ranges.put("LPC", new Range(1.3f,2.3f));    
+    ranges.put("LPE", new Range(1.3f,2.3f));
+    ranges.put("LPS", new Range(1.3f,2.3f));
+    return ranges;
+  }
+
+
+  public static Hashtable<String,Range> getOrbitrapElitePreElutionRanges(){
+    Hashtable<String,Range> ranges = new Hashtable<String,Range>();
+    ranges.put("LPC", new Range(1.6f,2.2f));    
+    ranges.put("LPE", new Range(1.6f,2.2f));
+    ranges.put("LPS", new Range(1.6f,2.2f));
+    ranges.put("PS", new Range(1.7f,2.3f));
+    //the next line has to be commented in case of the negative evaluation!!!!
+    //ranges.put("PE", new Range(1.7f,2.3f));
+    return ranges;
+  }
+
+  
+  public static String getIonisation(String adduct){
+    if (adductIonisations.containsKey(adduct)) return adductIonisations.get(adduct);
+    else{
+      System.out.println("FounBiologicalSpecies: The \"adductIonisations\" lookup does not contain the adduct "+adduct);
+      return "";
+    }    
+  }
+  
+  public static Hashtable<String,Range> getOrbitrapHCDPreElutionRanges(){
+    Hashtable<String,Range> ranges = new Hashtable<String,Range>();
+    return ranges;
+  }
+
+  public static Hashtable<String,Range> getQExactivePreElutionRanges(){
+    Hashtable<String,Range> ranges = new Hashtable<String,Range>();
+    return ranges;
+  }
+
+  public static Hashtable<String,Range> get4000QTRAPPreElutionRanges(){
+    Hashtable<String,Range> ranges = new Hashtable<String,Range>();
+    return ranges;
+  }
+
+  public static Hashtable<String,Range> getQTRAP6500PreElutionRanges(){
+    Hashtable<String,Range> ranges = new Hashtable<String,Range>();
+    return ranges;
+  }
+
+  public static Hashtable<String,Range> getSynaptG1PreElutionRanges(){
+    Hashtable<String,Range> ranges = new Hashtable<String,Range>();
+    return ranges;
+  }
+
+  
+//  public static String getIonModeOfAdduct(String adduct){
+//    if (modToIonisationMode.containsKey(adduct)) return modToIonisationMode.get(adduct);
+//    else{
+//      System.out.println("FounBiologicalSpecies: The \"modToIonisationMode\" lookup does not contain the adduct "+adduct);
+//      return "";
+//    }
+//    
+//  }
+
+  public static LinkedHashMap<String,LinkedHashMap<String,String>> getNovelSpecies(){
+    LinkedHashMap<String,LinkedHashMap<String,String>> classes = new LinkedHashMap<String,LinkedHashMap<String,String>>();
+    
+    LinkedHashMap<String,String> species = new LinkedHashMap<String,String>();
+    species.put("PE (P-18:1/18:1)", "P-PE 36:2");
+    species.put("PE (P-18:1/20:4)", "P-PE 38:5");
+    species.put("PE (P-18:1/22:4)", "P-PE 40:5");
+    classes.put("P-PE", species);
+    
+    species = new LinkedHashMap<String,String>();
+    species.put("PE 17:0/17:0", "PE 34:0");
+    classes.put("PE", species);
+
+    species = new LinkedHashMap<String,String>();
+    species.put("DG 16:0_0:0/18:2", "DG 34:2");
+    species.put("DG 16:0_0:0/18:3", "DG 34:3");
+    species.put("DG 18:0_0:0/18:1", "DG 36:1");
+    species.put("DG 18:1_0:0/18:1", "DG 36:2");
+    species.put("DG 18:0_0:0/18:2", "DG 36:2");
+    species.put("DG 18:1_0:0/22:6", "DG 40:7");
+    classes.put("DG", species);
+
+    species = new LinkedHashMap<String,String>();
+    species.put("PC 16:0_19:2", "PC 35:2");
+    species.put("PC 16:0/19:4", "PC 35:4");
+    species.put("PC 18:0/19:2", "PC 37:2");
+    species.put("PC 16:0_24:6", "PC 40:6");
+    species.put("PC 18:1_24:6", "PC 42:7");
+    species.put("PC 18:2_24:6", "PC 42:8");
+    classes.put("PC", species);
+    
+    species = new LinkedHashMap<String,String>();
+    species.put("Cer 24:2", "Cer 24:2");
+    classes.put("Cer", species);
+
+    species = new LinkedHashMap<String,String>();
+    species.put("TG 14:0_12:0_8:0", "TG 34:0");
+    species.put("TG 17:0_15:0_2:0", "TG 34:0");
+    species.put("TG 16:0_16:0_2:0", "TG 34:0");
+    species.put("TG 16:0_14:0_4:0", "TG 34:0");
+    species.put("TG 18:0_14:0_2:0", "TG 34:0");
+    species.put("TG 18:0_12:0_4:0", "TG 34:0");
+    species.put("TG 18:0_10:0_6:0", "TG 34:0");
+    species.put("TG 14:0_14:0_6:0", "TG 34:0");
+    
+    species.put("TG 18:0_16:0_2:0", "TG 36:0");
+    species.put("TG 18:0_14:0_4:0", "TG 36:0");
+    species.put("TG 18:0_12:0_6:0", "TG 36:0");
+    species.put("TG 14:0_14:0_8:0", "TG 36:0");
+    species.put("TG 16:0_16:0_4:0", "TG 36:0");
+    species.put("TG 16:0_14:0_6:0", "TG 36:0");
+    species.put("TG 16:0_12:0_8:0", "TG 36:0");
+    species.put("TG 18:0_10:0_8:0", "TG 36:0");
+    species.put("TG 17:0_15:0_4:0", "TG 36:0");
+    
+    species.put("TG 18:0_14:0_8:0", "TG 40:0");
+    species.put("TG 16:0_16:0_8:0", "TG 40:0");
+
+    species.put("TG 16:0_16:0_11:0", "TG 43:0");
+
+    species.put("TG 18:0_16:1_10:0", "TG 44:1");
+    species.put("TG 17:0_16:1_11:0", "TG 44:1");
+
+    species.put("TG 18:0_16:1_11:0", "TG 45:1");
+    
+    species.put("TG 18:1_16:2_14:0", "TG 48:3");
+    species.put("TG 18:2_18:1_12:0", "TG 48:3");
+
+    species.put("TG 18:2_16:2_16:1", "TG 50:5");
+    species.put("TG 18:3_16:2_16:0", "TG 50:5");
+    species.put("TG 18:3_18:0_14:2", "TG 50:5");
+    species.put("TG 20:3_16:2_14:0", "TG 50:5");
+
+    species.put("TG 19:2_17:1_15:0", "TG 51:3");
+
+    species.put("TG 18:3_18:1_16:2", "TG 52:6");
+
+    species.put("TG 24:0_16:0_13:0", "TG 53:0");
+    species.put("TG 26:0_14:0_13:0", "TG 53:0");
+    species.put("TG 23:0_17:0_13:0", "TG 53:0");
+    species.put("TG 23:0_15:0_15:0", "TG 53:0");
+    species.put("TG 25:0_15:0_13:0", "TG 53:0");
+    species.put("TG 24:0_17:0_12:0", "TG 53:0");
+    species.put("TG 23:0_16:0_14:0", "TG 53:0");
+
+    species.put("TG 19:2_17:1_17:0", "TG 53:3");
+    
+    species.put("TG 19:3_17:1_17:0", "TG 53:4");
+
+    species.put("TG 19:2_17:2_17:1", "TG 53:5");
+    species.put("TG 19:3_17:1_17:1", "TG 53:5");
+
+    species.put("TG 22:6_16:2_16:0", "TG 54:8");
+
+    species.put("TG 24:0_17:0_14:0", "TG 55:0");
+    species.put("TG 23:0_16:0_16:0", "TG 55:0");
+    species.put("TG 26:0_16:0_13:0", "TG 55:0");
+    species.put("TG 23:0_17:0_15:0", "TG 55:0");
+
+    species.put("TG 21:1_18:1_16:0", "TG 55:2");
+    
+    species.put("TG 19:2_18:1_18:0", "TG 55:3");
+
+    species.put("TG 19:2_18:1_18:1", "TG 55:4");
+
+    species.put("TG 19:2_18:2_18:1", "TG 55:5");
+    species.put("TG 21:3_18:2_16:0", "TG 55:5");
+
+    species.put("TG 23:0_17:0_16:0", "TG 56:0");
+    species.put("TG 24:0_17:0_15:0", "TG 56:0");
+
+    species.put("TG 26:0_16:1_14:0", "TG 56:1");
+    species.put("TG 23:0_17:1_16:0", "TG 56:1");
+    species.put("TG 24:0_18:1_14:0", "TG 56:1");
+    species.put("TG 23:0_17:0_16:1", "TG 56:1");
+    species.put("TG 25:0_16:1_15:0", "TG 56:1");
+    species.put("TG 24:0_17:1_15:0", "TG 56:1");
+    species.put("TG 23:0_18:1_15:0", "TG 56:1");
+    species.put("TG 25:0_16:0_15:1", "TG 56:1");
+    species.put("TG 25:0_18:1_13:0", "TG 56:1");
+
+    species.put("TG 22:6_18:1_16:2", "TG 56:9");
+
+    species.put("TG 25:0_17:0_15:0", "TG 57:0");
+    species.put("TG 24:0_17:0_16:0", "TG 57:0");
+    species.put("TG 23:0_18:0_16:0", "TG 57:0");
+
+    species.put("TG 24:0_18:0_16:0", "TG 58:0");
+    species.put("TG 27:0_16:0_15:0", "TG 58:0");
+    species.put("TG 26:0_16:0_16:0", "TG 58:0");
+    species.put("TG 28:0_16:0_14:0", "TG 58:0");
+    species.put("TG 25:0_17:0_16:0", "TG 58:0");
+
+    species.put("TG 24:2_18:1_16:0", "TG 58:3");
+    species.put("TG 24:1_18:1_16:1", "TG 58:3");
+
+    species.put("TG 24:3_18:1_16:0", "TG 58:4");
+    species.put("TG 24:2_18:1_16:1", "TG 58:4");
+
+    species.put("TG 24:4_18:1_16:0", "TG 58:5");
+
+    species.put("TG 24:5_18:2_16:0", "TG 58:7");
+
+    species.put("TG 24:5_18:1_18:0", "TG 60:6");
+    species.put("TG 26:5_18:1_16:0", "TG 60:6");
+    species.put("TG 24:4_18:2_18:0", "TG 60:6");
+    species.put("TG 24:4_18:1_18:1", "TG 60:6");
+    species.put("TG 24:4_20:2_16:0", "TG 60:6");
+    species.put("TG 24:5_20:1_16:0", "TG 60:6");
+
+    species.put("TG 24:5_18:1_18:1", "TG 60:7");
+    species.put("TG 24:4_18:2_18:1", "TG 60:7");
+    species.put("TG 24:5_20:2_16:0", "TG 60:7");
+    species.put("TG 24:6_18:1_18:0", "TG 60:7");
+    species.put("TG 24:5_18:2_18:0", "TG 60:7");
+
+    species.put("TG 24:6_20:2_16:0", "TG 60:8");
+    species.put("TG 24:5_20:3_16:0", "TG 60:8");
+    species.put("TG 24:6_18:2_18:0", "TG 60:8");
+    species.put("TG 24:6_18:1_18:1", "TG 60:8");
+    species.put("TG 24:5_18:3_18:0", "TG 60:8");
+    species.put("TG 24:5_18:2_18:1", "TG 60:8");
+
+    species.put("TG 24:6_20:3_16:0", "TG 60:9");
+    species.put("TG 22:6_21:0_17:3", "TG 60:9");
+    species.put("TG 24:6_18:3_18:0", "TG 60:9");
+    species.put("TG 24:5_18:2_18:2", "TG 60:9");
+
+    species.put("TG 24:6_20:4_16:0", "TG 60:10");
+        
+    classes.put("TG", species);
+    return classes;
+  }
 }

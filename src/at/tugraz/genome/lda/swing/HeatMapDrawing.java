@@ -565,25 +565,40 @@ public class HeatMapDrawing extends JPanel implements ActionListener
           }      
         }
       }
-    } else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_MZTAB)) {
+    } else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_MZTAB) || actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_RDB)) {
     	// get the directory where to store the mzTab files (1 per experiment)
       exportFileChooser_.setFileSelectionMode(JFileChooser.FILES_ONLY);
       int equalPartsAtBeginning = StaticUtils.detectNameUnequalitiesBeforeAndAfter(experimentNames_)[0];
-      String fileName = "export-mztab.txt";
+      String fileName = "";
+      String extension = "";
+      String confirmDialogTitle = "";
+      FileNameExtensionFilter filter = null;
+      if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_MZTAB)){
+        fileName = "export-mztab.txt";
+        extension = "mztab.txt";
+        filter = new FileNameExtensionFilter("Text (*.txt)","txt");
+        confirmDialogTitle = "mzTab export";
+      }else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_RDB)){
+        fileName = "unified.tab";
+        extension = "unified.tab";
+        filter = new FileNameExtensionFilter("Tab (*.tab)","tab");
+        confirmDialogTitle = "RDB export";
+      }
       if (equalPartsAtBeginning>0){
         fileName = experimentNames_.get(0).substring(0,equalPartsAtBeginning);
         if (!fileName.endsWith("-")&&!fileName.endsWith("_")) fileName += "-";
-        fileName += "mztab.txt";
+        fileName += extension;
       }
       exportFileChooser_.setSelectedFile(new File(fileName));
-      exportFileChooser_.setFileFilter(new FileNameExtensionFilter("Text (*.txt)","txt"));
-      if (JOptionPane.showConfirmDialog(this, "Only selected analytes with the current isotopes selected will be exported! Continue?","mzTab export",JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){
+      exportFileChooser_.setFileFilter(filter);
+      if (JOptionPane.showConfirmDialog(this, "Only selected analytes with the current isotopes selected will be exported! Continue?",confirmDialogTitle,JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){
         int returnVal = exportFileChooser_.showSaveDialog(new JFrame());	
     	    if (returnVal != JFileChooser.APPROVE_OPTION)
     	      return;
     	
     	    File exportFile = exportFileChooser_.getSelectedFile();
-    	    heatMapListener_.exportMzTab(exportFile);
+    	    if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_MZTAB)) heatMapListener_.exportMzTab(exportFile);
+    	    else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_RDB)) heatMapListener_.exportRdb(exportFile);
       }
       exportFileChooser_.setSelectedFile(new File(""));
     	
@@ -1182,7 +1197,10 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   }
   
   public int getSelectedIsotope(){
-    return new Integer((String)maxIsotopes_.getSelectedItem());
+    int isotope = 0;
+    if (maxIsotopes_.getSelectedItem()!=null)
+      isotope = new Integer((String)maxIsotopes_.getSelectedItem()); 
+    return isotope;
   }
   
   private Vector<String> getDisplayNames(){
