@@ -337,15 +337,17 @@ public class MSnAnalyzer
   /**
    * verifies the evidence for the lipid class, the chain composition, and the position at the backbone
    * according to the defined fragmentation rules
+   * @param msLevelsFromSpectralData the MS-levels that might be possible due to the available spectra
    * @throws RulesException specifies in detail which rule has been infringed
    * @throws IOException exception if there is something wrong about the file
    * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
    * @throws CgException errors from the quantitation process
    * @throws NoRuleException thrown if the rules are not there
    */
-  private void checkMSnEvidence(Hashtable<Integer,Boolean> msLevels) throws RulesException, IOException, SpectrummillParserException, CgException, NoRuleException {
-    probesWithMSnSpectra_ = performStandardInitialProcesses(msLevels);
-    if (probesWithMSnSpectra_==null || probesWithMSnSpectra_.size()<1){
+  private void checkMSnEvidence(Hashtable<Integer,Boolean> msLevelsFromSpectralData) throws RulesException, IOException, SpectrummillParserException, CgException, NoRuleException {
+    probesWithMSnSpectra_ = performStandardInitialProcesses(msLevelsFromSpectralData);
+    Hashtable<Integer,Boolean> msLevels = fragCalc_.correctMsLevelsForExistingFragments(msLevelsFromSpectralData,probesWithMSnSpectra_);
+    if (probesWithMSnSpectra_==null || probesWithMSnSpectra_.size()<1 || msLevels.size()<1){
       this.status_ = LipidomicsMSnSet.NO_MSN_PRESENT;
       return;
     }

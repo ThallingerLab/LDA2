@@ -32,4 +32,4 @@ Name=NL_Ketene		Formula=$PRECURSOR-$CHAIN+H2O		Charge=1	MSLevel=2	mandatory=fals
 Name=NL_Carboxy-Na	Formula=$PRECURSOR-$CHAIN+H-Na		Charge=1	MSLevel=2	mandatory=false
 Name=NL_Ketene-Head	Formula=$PRECURSOR-$CHAIN+H2O-C3H9N	Charge=1	MSLevel=2	mandatory=false
 Name=NL_Carboxy_Head	Formula=$PRECURSOR-$CHAIN-NC3H9		Charge=1	MSLevel=2	mandatory=false
-Name=NL_Carboxy_Head_Na	Formula=$PRECURSOR-$CHAIN-NC3H9Na	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Carboxy_Head_Na	Formula=$PRECURSOR-$CHAIN-NC3H8Na	Charge=1	MSLevel=2	mandatory=false

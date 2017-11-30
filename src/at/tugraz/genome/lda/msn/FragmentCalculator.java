@@ -33,6 +33,7 @@ import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.parser.FragRuleParser;
@@ -131,10 +132,10 @@ public class FragmentCalculator
     if (amountOfChains>0){
       String chainLib = RulesContainer.getChainlibrary(ruleName_,rulesDir_);
       try{
-        Hashtable<Integer,Hashtable<Integer,FattyAcidVO>> availableFragments = FattyAcidsContainer.getFattyAcidChains(chainLib);
+        Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> availableChains = checkChainsForPlausibility(FattyAcidsContainer.getFattyAcidChains(chainLib));
         int cAtoms = getIntValueFromParsingRule(RulesContainer.getCAtomsFromNamePattern(ruleName_,rulesDir_), analyteName_, ruleName_, FragRuleParser.GENERAL_CATOMS_PARSE);
         int dbs = getIntValueFromParsingRule(RulesContainer.getDoubleBondsFromNamePattern(ruleName_,rulesDir_), analyteName_, ruleName_, FragRuleParser.GENERAL_DBOND_PARSE);
-        potentialChainCombinations_ = extractPotentialChainCombinations(amountOfChains,cAtoms,dbs,availableFragments);
+        potentialChainCombinations_ = extractPotentialChainCombinations(amountOfChains,cAtoms,dbs,availableChains);
         alkylAlkenylCombinations_ = alkylAlkenylPermutations(Integer.valueOf(RulesContainer.getAmountOfChains(ruleName_, rulesDir_)),
             Integer.valueOf(RulesContainer.getAmountOfAlkylChains(ruleName_,rulesDir_)),Integer.valueOf(RulesContainer.getAmountOfAlkenylChains(ruleName_, rulesDir_)));
       } catch (NoRuleException nrx){
@@ -148,26 +149,28 @@ public class FragmentCalculator
    * @param chains how many chains has the object
    * @param cs number of total C atoms
    * @param dbs number of total double bonds
-   * @param availableFragments available fatty acid chains
+   * @param availableChains available fatty acid chains
    * @return hash table containing the permuted chain combinations - first key: identifier for combination; values: vector containing detailed info about the involved chains
    */
-  private Hashtable<String,Vector<FattyAcidVO>> extractPotentialChainCombinations(int chains, int cs, int dbs, Hashtable<Integer,Hashtable<Integer,FattyAcidVO>> availableFragments){
+  private Hashtable<String,Vector<FattyAcidVO>> extractPotentialChainCombinations(int chains, int cs, int dbs, Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> availableChains){
     Hashtable<String,Vector<FattyAcidVO>> combinations = new Hashtable<String,Vector<FattyAcidVO>>();
-    List<Integer> availableCs = new ArrayList<Integer>(availableFragments.keySet());
+    List<Integer> availableCs = new ArrayList<Integer>(availableChains.keySet());
     Hashtable<Integer,List<Integer>> availableCHash = new Hashtable<Integer,List<Integer>>();
     for (int i=0; i!=chains; i++) availableCHash.put((i+1), availableCs);
     Vector<Vector<Integer>> combis = getCombinations(cs, chains, availableCHash, new Vector<Integer>(), 0,false);
     // this hash table is for filtering permuted double entries
     Hashtable<String,String> permutedCombinations = new Hashtable<String,String>();
+    int[] isotopicLabels = new int[chains];
+    int[] divisors = new int[chains];
     for (Vector<Integer> cCombis : combis){
       Hashtable<Integer,List<Integer>> availableDbsHash = new Hashtable<Integer,List<Integer>>();
       boolean doubleBonds = true;
-      if (availableFragments.get(cCombis.get(0)).size()==1 && availableFragments.get(cCombis.get(0)).keySet().iterator().next()==-1)
+      if (availableChains.get(cCombis.get(0)).size()==1 && availableChains.get(cCombis.get(0)).keySet().iterator().next()==-1)
         doubleBonds = false;
       Vector<Vector<Integer>> dbCombis = new Vector<Vector<Integer>>();
       if (doubleBonds){
         for (int i=0; i!=chains; i++){
-          availableDbsHash.put(chains-i, new ArrayList<Integer>(availableFragments.get(cCombis.get(i)).keySet()));
+          availableDbsHash.put(chains-i, new ArrayList<Integer>(availableChains.get(cCombis.get(i)).keySet()));
         }
         dbCombis = getCombinations(dbs, chains, availableDbsHash, new Vector<Integer>(), 0, true);
       }else{
@@ -176,31 +179,78 @@ public class FragmentCalculator
         dbCombis.add(noDbsCombis);
       }
       for (Vector<Integer> dbCombi : dbCombis){
-        String combiName = "";
-        Vector<FattyAcidVO> valueVOs = new Vector<FattyAcidVO>();
-        Vector<String> singleCombiParts = new Vector<String>();
+        //the same CAtoms:DbsCombination may be isotopically labelled
+        //to support several labels, this a little bit more complicated code was introduced
+        //first, it is evaluated how many different options are present for each chain position
         for (int i=0; i!=chains; i++){
           int cAtoms = cCombis.get(i);
           int dBonds = dbCombi.get(i);
-          String partName = StaticUtils.generateLipidNameString(String.valueOf(cAtoms), dBonds);
-          combiName += partName+FA_SEPARATOR;
-          valueVOs.add(availableFragments.get(cAtoms).get(dBonds));
-          singleCombiParts.add(partName);
+          Hashtable<String,FattyAcidVO> faVOs = availableChains.get(cAtoms).get(dBonds);
+          isotopicLabels[i] = faVOs.size();
         }
-        combiName = combiName.substring(0,combiName.length()-1);
-        //this is for filtering permuted double entries
-        Vector<String> permutedNames = getPermutedNames(singleCombiParts);
-        boolean isThere = false;
-        for (String permutedName : permutedNames){
-          if (permutedCombinations.containsKey(permutedName)){
-            isThere = true;
-            break;
+        //second, it is calculated how many combinations of the different label are possible
+        //the divisor is necessary to use a modulo operation to get the correct index for each
+        //fatty acid position. The different labels are indexed in the following way:
+        //let's assume that we have 3 fatty acid positions, where the first can contain 4 different
+        //labels, the second three, and the third two. The indexing would be as follows:
+        //Iteration       index1     index2    index3
+        //        0            0          0         0
+        //        1            0          0         1
+        //        2            0          1         0
+        //        3            0          1         1
+        //        4            0          2         0
+        //        5            0          2         1
+        //        6            1          0         0
+        //       ....
+        //       22            3          2         0
+        //       23            3          2         1
+        // Thus, the index i of each fatty acid chain i is calculated as (j/divisors[i])%isotopicLabels,
+        // where divisors[i] is the multiplication of number of possibilities at the higher chain position
+        // E.g for 22: the first index is (22/6=3)%4 -> 3
+        //             the second index is (22/2=11)%3 -> 2
+        //             the third index is (22/1=22)%2 -> 0
+
+        int iterations = 1;
+        for (int i=(isotopicLabels.length-1); i!=-1; i--){
+          divisors[i] = iterations;
+          iterations = iterations*isotopicLabels[i];
+        }
+        for (int j=0; j!=iterations; j++){
+          String combiName = "";
+          Vector<FattyAcidVO> valueVOs = new Vector<FattyAcidVO>();
+          Vector<String> singleCombiParts = new Vector<String>();
+          for (int i=0; i!=chains; i++){
+            int cAtoms = cCombis.get(i);
+            int dBonds = dbCombi.get(i);
+            Hashtable<String,FattyAcidVO> faVOs = availableChains.get(cAtoms).get(dBonds);
+            int currentIndex = (j/divisors[i])%isotopicLabels[i];
+            int k=0;
+            for (String prefix : faVOs.keySet()){
+              if (k==currentIndex){
+                String partName = StaticUtils.generateLipidNameString(prefix+String.valueOf(cAtoms), dBonds);
+                combiName += partName+FA_SEPARATOR;
+                valueVOs.add(faVOs.get(prefix));
+                singleCombiParts.add(partName);
+                break;
+              }
+              k++;
+            }
           }
-        }
-        if (!isThere){
-          for (String permutedName : permutedNames) permutedCombinations.put(permutedName, permutedName);
-          combinations.put(combiName, valueVOs);
-        }
+          combiName = combiName.substring(0,combiName.length()-1);
+          //this is for filtering permuted double entries
+          Vector<String> permutedNames = getPermutedNames(singleCombiParts);
+          boolean isThere = false;
+          for (String permutedName : permutedNames){
+            if (permutedCombinations.containsKey(permutedName)){
+              isThere = true;
+              break;
+            }
+          }
+          if (!isThere){
+            for (String permutedName : permutedNames) permutedCombinations.put(permutedName, permutedName);
+            combinations.put(combiName, valueVOs);
+          }
+        }        
       }
     }
     return combinations;
@@ -721,6 +771,40 @@ public class FragmentCalculator
   }
   
   /**
+   * this method checks whether there are MS1 probes found for available ms levels, and whether there are fragments defined for this level
+   * when both checks are OK, this msLevel is regarded valid
+   * @param oldMsLevels the msLevels to check
+   * @param probesWithMSnSpectra the identified probes
+   * @return the checked msLevels for further rule checks
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public Hashtable<Integer,Boolean> correctMsLevelsForExistingFragments(Hashtable<Integer,Boolean> oldMsLevels, Hashtable<Integer,Vector<CgProbe>> probesWithMSnSpectra) throws RulesException, NoRuleException, IOException, SpectrummillParserException{
+    Hashtable<Integer,Boolean> usableLevels = new Hashtable<Integer,Boolean>();
+    for (Integer msLevel : oldMsLevels.keySet()){
+      if (!probesWithMSnSpectra.containsKey(msLevel)) continue;
+      boolean found = false;
+      for (FragmentRuleVO ruleVO : RulesContainer.getHeadFragmentRules(ruleName_,rulesDir_).values()){
+        if (ruleVO.getMsLevel()==msLevel){
+          found = true;
+          break;
+        }
+      }
+      for (FragmentRuleVO ruleVO : RulesContainer.getChainFragmentRules(ruleName_,rulesDir_).values()){
+        if (ruleVO.getMsLevel()==msLevel){
+          found = true;
+          break;
+        }
+      }
+      if (found) usableLevels.put(msLevel, true);
+    }
+    return usableLevels;
+  }
+
+  
+  /**
    * returns the acyl/alkyl/alkenyl common name for an arbitrary fatty acid chain
    * @param faName name of fatty acid 
    * @param chainType type of chain ACYL_CHAIN/ALKYL_CHAIN/ALKENYL_CHAIN
@@ -777,6 +861,42 @@ public class FragmentCalculator
     } catch (NumberFormatException nfx){
       throw new RulesException("The rule \""+rule+"\" of the class "+lClass+" is not correct, since it returns for the "+analyte+" the non-integer value \""+valueString+"\"!");
     }
+  }
+  
+  /**
+   * checks whether the chains might be possible for the given analyte (e.g. no deuterated chains are possible for lipids containing no deuterium in their chemical formula)
+   * @param possibleChains the chains fromt the Excel file
+   * @return the chains that shall be checked
+   * @throws RulesException RulesException thrown if there is somehting wrong
+   */
+  private Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> checkChainsForPlausibility(Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> possibleChains) throws RulesException{
+    Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> chains = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>();
+    try{
+      Hashtable<String,Integer> formulaAmounts = StaticUtils.categorizeFormula(this.analyteFormula_);
+      for (Integer cAtoms : possibleChains.keySet()){
+        Hashtable<Integer,Hashtable<String,FattyAcidVO>> sameCAtoms = new Hashtable<Integer,Hashtable<String,FattyAcidVO>>();
+        for (Integer dbs : possibleChains.get(cAtoms).keySet()){
+          Hashtable<String,FattyAcidVO> sameDbs = new Hashtable<String,FattyAcidVO>();
+          for (String prefix : possibleChains.get(cAtoms).get(dbs).keySet()){
+            FattyAcidVO fa = possibleChains.get(cAtoms).get(dbs).get(prefix);
+            Hashtable<String,Integer> faElements = StaticUtils.categorizeFormula(fa.getFormula());
+            boolean isOk = true;
+            for (String element : faElements.keySet()){
+              if (!formulaAmounts.containsKey(element) || formulaAmounts.get(element)<faElements.get(element)){
+                isOk = false;
+                break;
+              }
+            }
+            if (isOk) sameDbs.put(prefix, fa);
+          }
+          if (sameDbs.size()>0) sameCAtoms.put(dbs, sameDbs);
+        }
+        if (sameCAtoms.size()>0) chains.put(cAtoms, sameCAtoms);
+      }
+    } catch (ChemicalFormulaException e) {
+      throw new RulesException("The formula "+analyteFormula_+" contains fragments that have not been defined before! Fragments have to be defined in previous columns, before they can be used!");
+    }
+    return chains;
   }
 }
 

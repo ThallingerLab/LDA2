@@ -764,7 +764,7 @@ public class QuantificationThread extends Thread
         for (String name : fragments.keySet()){
           chainRow = sheet.createRow(count);
           count++;
-          String displayName = name+"("+faName+")";
+          String displayName = StaticUtils.getChainFragmentDisplayName(name,faName);
           int formulaSize = writeMSnFragment(chainRow,displayName,param.getMSnMzTolerance(),fragments.get(name));
           if (formulaSize>longestFormula) longestFormula=formulaSize;          
         }
@@ -877,7 +877,7 @@ public class QuantificationThread extends Thread
     count++;
     return count;
   }
-  
+    
   /**
    * writes the header row for subsequent fragment evidence
    * @param row Excel row that shall be used for writing
@@ -2473,8 +2473,9 @@ public class QuantificationThread extends Thread
             status = LipidomicsMSnSet.HEAD_GROUP_DETECTED;
           }else if (chainFragmentActive){
             status = LipidomicsMSnSet.FRAGMENTS_DETECTED;
-            String faName = fragmentName.substring(fragmentName.lastIndexOf("(")+1,fragmentName.lastIndexOf(")"));
-            fragmentName =  fragmentName.substring(0,fragmentName.lastIndexOf("("));
+            String[] faAndFragment = StaticUtils.parseChainFaAndFragmentNameFromExcel(fragmentName);
+            String faName = faAndFragment[0];
+            fragmentName =  faAndFragment[1];
             Hashtable<String,CgProbe> fragments = new Hashtable<String,CgProbe>();
             if (chainFragments.containsKey(faName)) fragments = chainFragments.get(faName);
             fragments.put(fragmentName, probe);

@@ -33,6 +33,8 @@ import at.tugraz.genome.lda.utils.StaticUtils;
  */
 public class FattyAcidVO
 {
+  // prefix to separate fatty acid
+  private String prefix_;
   // number of C atoms
   private int cAtoms_;
   // number of double bonds
@@ -49,11 +51,22 @@ public class FattyAcidVO
    * @param mass mass value
    * @param formula chemical formula
    */
-  public FattyAcidVO(int cAtoms, int doubleBonds, double mass, String formula){
+  public FattyAcidVO(String prefix, int cAtoms, int doubleBonds, double mass, String formula){
+    this.prefix_ = prefix;
     this.cAtoms_ = cAtoms;
     this.mass_ = mass;
     this.doubleBonds_ = doubleBonds;
     this.formula_ = formula;
+  }
+  
+  
+  /**
+   * 
+   * @return the prefix
+   */
+  public String getPrefix()
+  {
+    return prefix_;
   }
 
   /**
@@ -97,7 +110,7 @@ public class FattyAcidVO
    * @return name consisting of number of C atoms : number of double bonds
    */
   public String getName(){
-    return StaticUtils.generateLipidNameString(String.valueOf(cAtoms_),doubleBonds_);
+    return StaticUtils.generateLipidNameString(prefix_+String.valueOf(cAtoms_),doubleBonds_);
   }
   
   /**

@@ -35,6 +35,7 @@ import java.util.Vector;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.FattyAcidsContainer;
 import at.tugraz.genome.lda.msn.RulesContainer;
@@ -460,8 +461,9 @@ public class FragRuleParser
     String name = null;
     String formula = null;
     StringTokenizer tokenizer = new StringTokenizer(line,"\t ");
+    if (Settings.useAlex()) tokenizer = new StringTokenizer(line,"\t");
     while (tokenizer.hasMoreTokens()){
-      String kvPair = tokenizer.nextToken();
+      String kvPair = tokenizer.nextToken().trim();
       if (kvPair.indexOf("=")==-1) throw new RulesException("The "+FRAGMENT_SUBSECTION_NAME+" are key/value pairs seperated by \"=\"! There is no \"=\" in \""+kvPair+"\"at line "+lineNumber+"!");
       String key = kvPair.substring(0,kvPair.indexOf("="));
       String value = kvPair.substring(kvPair.indexOf("=")+1);
@@ -538,9 +540,10 @@ public class FragRuleParser
     if (line.length()==0) return;
     boolean mandatory = false;
     StringTokenizer tokenizer = new StringTokenizer(line,"\t ");
+    if (Settings.useAlex()) tokenizer = new StringTokenizer(line,"\t");
     IntensityRuleVO ruleVO = null;
     while (tokenizer.hasMoreTokens()){
-      String kvPair = tokenizer.nextToken();
+      String kvPair = tokenizer.nextToken().trim();
       String key = kvPair.substring(0,kvPair.indexOf("="));
       String value = kvPair.substring(kvPair.indexOf("=")+1);
       if (key.equalsIgnoreCase(INTENSITY_EQUATION)){
@@ -644,19 +647,29 @@ public class FragRuleParser
   private static ExpressionForComparisonVO parseIntensityFragment(String originalValue, int lineNumber, int currentSection, String comp, Integer amountOfChains, Hashtable<String,String> headFragments, Hashtable<String,String> chainFragments, Hashtable<String,String> missed) throws RulesException{
     String globalMultiplier = "1";
     String value = new String(originalValue);
+    Vector<String> lengthSortedFragmentNames = FragmentRuleVO.getLengthSortedFragmentNames(headFragments.keySet(),chainFragments.keySet(),missed.keySet());
     //if there is a bracket, we can assume that there is a change in the global multiplier
     if (originalValue.indexOf("(")!=-1 || originalValue.indexOf(")")!=-1){
       if (originalValue.indexOf("(")==-1) throw new RulesException("An \""+INTENSITY_EQUATION+"\" containing an opening bracket must contain a closing bracket! The equation \""+value+"\" at line "+lineNumber+" does not!");
       if (originalValue.indexOf(")")==-1) throw new RulesException("An \""+INTENSITY_EQUATION+"\" containing a closing bracket must contain an opening bracket! The equation \""+value+"\" at line "+lineNumber+" does not!");
       if (originalValue.indexOf("(")>originalValue.indexOf(")")) throw new RulesException("An \""+INTENSITY_EQUATION+"\" must not start with a closing bracket before an opening bracket! The equation \""+value+"\" at line "+lineNumber+" does!");
-      value = originalValue.substring(originalValue.indexOf("(")+1,originalValue.indexOf(")")).trim();
-      String prevFragment = originalValue.substring(0,originalValue.indexOf("(")).trim();
-      String pastFragment = originalValue.substring(originalValue.indexOf(")")+1).trim();
-      String[] results = extractMultiplicationFactor(prevFragment, pastFragment, value, originalValue, lineNumber, currentSection, comp,amountOfChains);
-      globalMultiplier = results[0];
+      boolean isMathematicalBracket = true;
+      if (Settings.useAlex()){
+        for (String fragment : lengthSortedFragmentNames){
+          if (fragment.indexOf("(")==-1 || originalValue.indexOf(fragment)==-1) continue;
+          if (originalValue.indexOf("(")!=originalValue.indexOf(fragment)+fragment.indexOf("(")) continue;
+          isMathematicalBracket=false;
+        }
+      }
+      if (isMathematicalBracket){
+        value = originalValue.substring(originalValue.indexOf("(")+1,originalValue.lastIndexOf(")")).trim();
+        String prevFragment = originalValue.substring(0,originalValue.indexOf("(")).trim();
+        String pastFragment = originalValue.substring(originalValue.lastIndexOf(")")+1).trim();
+        String[] results = extractMultiplicationFactor(prevFragment, pastFragment, value, originalValue, lineNumber, currentSection, comp,amountOfChains);
+        globalMultiplier = results[0];
+      }
     }
     
-    Vector<String> lengthSortedFragmentNames = FragmentRuleVO.getLengthSortedFragmentNames(headFragments.keySet(),chainFragments.keySet(),missed.keySet());
     Vector<FragmentMultVO> fragments = new Vector<FragmentMultVO>();
     int position = -1;
     

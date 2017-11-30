@@ -28,6 +28,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Hashtable;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.FattyAcidsContainer;
@@ -54,7 +56,7 @@ public class FALibParser
   // hash containing the result of the parsing
   // the first integer is the amount of carbon atoms
   // the second integer is the amount of double bonds
-  private Hashtable<Integer,Hashtable<Integer,FattyAcidVO>> result_;
+  private Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> result_;
   
   /**
    * Constructor specifying the Excel file to parse
@@ -81,7 +83,7 @@ public class FALibParser
    * @throws IOException general exception if a file is not there
    */
   public void parseFile() throws RulesException, IOException{
-    result_ = new Hashtable<Integer,Hashtable<Integer,FattyAcidVO>>();
+    result_ = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>();
     InputStream myxls = null;
     try{
       myxls = new FileInputStream(inputFile_);
@@ -101,8 +103,10 @@ public class FALibParser
       int massColumn = -1;
       boolean foundColumns = false;
       Hashtable<Integer,String> elementColumns = new  Hashtable<Integer,String>();
+      Pattern prefixPattern =  Pattern.compile("\\D*(\\d+)");
       for (int rowCount=0;rowCount!=(sheet.getLastRowNum()+1);rowCount++){
         Row row = sheet.getRow(rowCount);
+        String prefix = "";
         int cAtoms = -1;
         int dbs = -1;
         double mass = -1d;
@@ -145,8 +149,17 @@ public class FALibParser
 
           }else{
             if (i==cAtomsColumn&&contents!=null&&contents.length()>0){
-              if (numeric==null) throw new RulesException("A fatty acid chain library must have integer values in the \"Name\" column! There is the entry \""+contents+"\" at line number "+(rowCount+1)+"!");
-              cAtoms = numeric.intValue();
+              if (numeric==null){
+                Matcher prefixMatcher = prefixPattern.matcher(contents);
+                if (prefixMatcher.matches()){
+                  prefix = prefixMatcher.group(0);
+                  String cAtomsString = prefixMatcher.group(1);
+                  prefix = contents.substring(0,contents.indexOf(cAtomsString));
+                  cAtoms = Integer.parseInt(cAtomsString);
+                }
+              }else{
+                cAtoms = numeric.intValue();
+              }
               if (cAtoms<1) throw new RulesException("A fatty acid chain library must have integer values greater or equal 1 in the \"Name\" column! There is the value "+cAtoms+" at line number "+(rowCount+1)+"!");
             }
             if (i==dbsColumn&&contents!=null&&contents.length()>0){
@@ -193,11 +206,14 @@ public class FALibParser
             chemicalFormula+=element+String.valueOf(amount);
           }
 
-          FattyAcidVO faVO = new FattyAcidVO(cAtoms,dbs,mass,chemicalFormula);
-          Hashtable<Integer,FattyAcidVO> fasWithSameC = new Hashtable<Integer,FattyAcidVO>();
+          FattyAcidVO faVO = new FattyAcidVO(prefix,cAtoms,dbs,mass,chemicalFormula);
+          Hashtable<Integer,Hashtable<String,FattyAcidVO>> fasWithSameC = new Hashtable<Integer,Hashtable<String,FattyAcidVO>>();
           if (result_.containsKey(cAtoms)) fasWithSameC = result_.get(cAtoms);
-          if (fasWithSameC.containsKey(dbs)) throw new RulesException("A fatty acid chain library must contain the same elements twice! The entry "+faVO.getName()+" at line number "+(rowCount+1)+" is there for the second time!");
-          fasWithSameC.put(dbs, faVO);
+          Hashtable<String,FattyAcidVO> fasWithSameDbs = new Hashtable<String,FattyAcidVO>();
+          if (fasWithSameC.containsKey(dbs)) fasWithSameDbs = fasWithSameC.get(dbs);
+          if (fasWithSameDbs.containsKey(prefix)) throw new RulesException("A fatty acid chain library must not contain the same elements twice! The entry "+faVO.getName()+" at line number "+(rowCount+1)+" is there for the second time!");
+          fasWithSameDbs.put(prefix, faVO);
+          fasWithSameC.put(dbs, fasWithSameDbs);
           result_.put(cAtoms, fasWithSameC);
         }
       }
@@ -209,9 +225,9 @@ public class FALibParser
   
   /**
    * Fetches the results of the parsing - parseFile() has to be called before
-   * @return the result hash - first integer is the amount of carbon atoms; second integer is the amount of double bonds
+   * @return the result hash - first integer is the amount of carbon atoms; second integer is the amount of double bonds; third key is the prefix
    */
-  public Hashtable<Integer,Hashtable<Integer,FattyAcidVO>> getFattyAcids(){
+  public Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getFattyAcids(){
     return result_;
   }
 }

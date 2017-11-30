@@ -36,7 +36,7 @@ Equation=NL_trimethylamine_59+NL_PChead_183>NL_PE43_wrong+NL_PE141_wrong mandato
 Name=NL_Carboxy		Formula=$PRECURSOR-$CHAIN		Charge=1	MSLevel=2	mandatory=false
 Name=NL_Carboxy_Na	Formula=$PRECURSOR-$CHAIN+H-Na		Charge=1	MSLevel=2	mandatory=false
 Name=NL_Carboxy_Head	Formula=$PRECURSOR-$CHAIN-NC3H9		Charge=1	MSLevel=2	mandatory=true
-Name=NL_Carboxy_Head_Na	Formula=$PRECURSOR-$CHAIN-NC3H9Na	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Carboxy_Head_Na	Formula=$PRECURSOR-$CHAIN-NC3H8Na	Charge=1	MSLevel=2	mandatory=false
 
 [POSITION]
 !INTENSITIES

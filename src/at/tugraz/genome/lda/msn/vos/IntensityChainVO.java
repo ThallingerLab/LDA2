@@ -26,6 +26,8 @@ package at.tugraz.genome.lda.msn.vos;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.utils.StaticUtils;
+
 /**
  * Value object containing all necessary information for a rule for intensity comparison
  * plus the fatty acid the comparision concerned
@@ -86,12 +88,12 @@ public class IntensityChainVO extends IntensityRuleVO
   public String getReadableRuleInterpretation() {
     Hashtable<String,String> originalToReplacementBigger = new Hashtable<String,String>();
     for (String name : getBiggerNonBasePeakNames()){
-      String value = name+"("+biggerFA_+")";
+      String value = StaticUtils.getChainFragmentDisplayName(name, biggerFA_);
       originalToReplacementBigger.put(name, value);
     }
     Hashtable<String,String> originalToReplacementSmaller = new Hashtable<String,String>();
     for (String name : getSmallerNonBasePeakNames()){
-      String value = name+"("+smallerFA_+")";
+      String value = StaticUtils.getChainFragmentDisplayName(name, smallerFA_);
       originalToReplacementSmaller.put(name, value);
     }
     String[] biggerSmaller = splitToBiggerAndSmallerPart(equation_);
@@ -145,9 +147,14 @@ public class IntensityChainVO extends IntensityRuleVO
    * @param names the possible fragment names
    * @return the name of the fatty acid
    */
-  private static String extractFANames(String rulePart, Vector<String> names){
+  public static String extractFANames(String rulePart, Vector<String> names){
     String fa = null;
-    if (rulePart.indexOf("(")!=-1){
+    char[] chars = rulePart.toCharArray();
+    //this is for Alex123 annotation
+    if (rulePart.indexOf("FA ")!=-1 && rulePart.length()>(rulePart.indexOf("FA ")+4) && (Character.isDigit(chars[rulePart.indexOf("FA ")+3])||
+        (chars[rulePart.indexOf("FA ")+4])=='-' && (chars[rulePart.indexOf("FA ")+3]=='P'||chars[rulePart.indexOf("FA ")+3]=='O'))){
+      fa = extracFANamesFromAlex123Annotation(rulePart);
+    } else if (rulePart.indexOf("(")!=-1){
       for (String name : names){
         if (rulePart.indexOf(name)==-1) continue;
         String subPart = rulePart.substring(rulePart.indexOf(name)+name.length());
@@ -155,6 +162,24 @@ public class IntensityChainVO extends IntensityRuleVO
         break;
       }
     }
+    return fa;
+  }
+  
+  private static String extracFANamesFromAlex123Annotation(String rulePart){
+    int start = rulePart.indexOf("FA ")+3;
+    int stop = start;
+    boolean isChain = true;
+    char[] chars = rulePart.toCharArray();
+    if (chars.length>(start+1) && chars[start+1]=='-' && (chars[start]=='O' || chars[start]=='P')){
+      stop = stop+2;
+    }
+    while (isChain && stop<rulePart.length()){
+      if (Character.isDigit(chars[stop]) || chars[stop]==':')
+        stop++;
+      else
+        isChain=false;
+    }
+    String fa = rulePart.substring(start,stop);
     return fa;
   }
   

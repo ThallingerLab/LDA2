@@ -56,8 +56,9 @@ public class FattyAcidsContainer
    * first key: Excel library name
    * second key: amount of carbon atoms of chain
    * third key: amount of double bonds of key
+   * fourth key: prefix
    */
-  private Hashtable<String,Hashtable<Integer,Hashtable<Integer,FattyAcidVO>>> fattyAcids_;
+  private Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> fattyAcids_;
   
   
   /**
@@ -68,7 +69,7 @@ public class FattyAcidsContainer
    */
   private FattyAcidsContainer(String faDir) throws RulesException, IOException {
     faDir_ = faDir;
-    fattyAcids_ = new Hashtable<String,Hashtable<Integer,Hashtable<Integer,FattyAcidVO>>>();
+    fattyAcids_ = new Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>();
     extractFattyAcids();
   }
 
@@ -120,7 +121,7 @@ public class FattyAcidsContainer
    * @throws NoRuleException thrown if the library is not there
    * @throws IOException exception if there is something wrong about the file
    */
-  public static Hashtable<Integer,Hashtable<Integer,FattyAcidVO>> getFattyAcidChains(String faLib) throws RulesException, NoRuleException, IOException {
+  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getFattyAcidChains(String faLib) throws RulesException, NoRuleException, IOException {
     return getFattyAcidChains(faLib, faDir_);
   }
 
@@ -134,7 +135,7 @@ public class FattyAcidsContainer
    * @throws NoRuleException thrown if the library is not there
    * @throws IOException exception if there is something wrong about the file
    */
-  public static Hashtable<Integer,Hashtable<Integer,FattyAcidVO>> getFattyAcidChains(String faLibName, String faLibDir) throws RulesException, NoRuleException, IOException {
+  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getFattyAcidChains(String faLibName, String faLibDir) throws RulesException, NoRuleException, IOException {
     checkIfFALibExists(faLibName,faLibDir);
     return instance_.fattyAcids_.get(faLibName);
   }

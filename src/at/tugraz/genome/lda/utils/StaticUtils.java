@@ -42,6 +42,7 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 
+import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.msn.FragmentCalculator;
@@ -855,7 +856,9 @@ public class StaticUtils
           Color color = getFragemntColor(colorCount);
           for (String key : frags.keySet()){
             String fragmentName = key;
-            if (!fragmentName.contains(faStored)) fragmentName += " ("+faStored+")";
+            if (!fragmentName.contains(faStored)){              
+              fragmentName = StaticUtils.getChainFragmentDisplayName(fragmentName, faStored);
+            }
             if (usedFAs.containsKey(fragmentName))continue;
             usedFAs.put(fragmentName, fragmentName);
             CgProbe probe = frags.get(key);
@@ -1051,5 +1054,68 @@ public class StaticUtils
     }
     return faString;
   }
+  
+  /**
+   * creates the corresponding display name - for Alex123, the position of the fatty acid is different
+   * @param name name of the fragment
+   * @param faName name of the fatty acyl chain
+   * @return the display name of the chain fragment
+   */
+  public static String getChainFragmentDisplayName(String name, String faName){
+    String displayName = name+"("+faName+")";
+    // this is an extension to support the Alex123 nomenclature
+    if (Settings.useAlex() && (name.equals("FA") || name.startsWith("FA ")) || (name.startsWith("-FA "))){
+      if (name.equals("FA"))
+        displayName = "FA "+faName;
+      else if (name.startsWith("FA "))
+        displayName = "FA "+faName+name.substring("FA ".length());
+      else if (name.startsWith("-FA "))
+        displayName = "-FA "+faName+name.substring("-FA ".length());
+    }
+    return displayName;
+  }
+  
+  /**
+   * extracts the fatty acyl chain name and the fragment name from the readable name
+   * @param readableFragmentName the readable name containing fragment name and fatty acyl name
+   * @return [0] fatty acyl name; [1] fragment name
+   */
+  public static String[] parseChainFaAndFragmentNameFromExcel(String readableFragmentName){
+    String[] result = new String[2];
+    String faName = "";
+    String fragmentName = "";
+    //this is for Alex123 naming
+    if (readableFragmentName.startsWith("FA ")||readableFragmentName.startsWith("-FA ")){
+      int start = 0;
+      if (readableFragmentName.startsWith("FA ")){
+        fragmentName = "FA ";
+        start = "FA ".length();
+      }else{
+        fragmentName = "-FA ";
+        start = "-FA ".length();        
+      }
+      boolean isChain = true;
+      int stop = start;
+      char[] chars = readableFragmentName.toCharArray();
+      if (chars.length>(start+1) && chars[start+1]=='-' && (chars[start]=='O' || chars[start]=='P')){
+        stop = stop+2;
+      }
+      while (isChain && stop<readableFragmentName.length()){
+        if (Character.isDigit(chars[stop]) || chars[stop]==':')
+          stop++;
+        else
+          isChain=false;
+      }
+      faName = readableFragmentName.substring(start,stop);
+      fragmentName += readableFragmentName.substring(stop);
+    }else{
+      faName = readableFragmentName.substring(readableFragmentName.lastIndexOf("(")+1,readableFragmentName.lastIndexOf(")"));
+      fragmentName = readableFragmentName.substring(0,readableFragmentName.lastIndexOf("("));
+    }
+    result[0] = faName;
+    result[1] = fragmentName.trim();
+    return result;
+  }
+
 
 }

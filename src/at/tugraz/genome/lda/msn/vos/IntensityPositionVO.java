@@ -26,6 +26,7 @@ package at.tugraz.genome.lda.msn.vos;
 import java.util.Hashtable;
 
 import at.tugraz.genome.lda.exception.RulesException;
+import at.tugraz.genome.lda.utils.StaticUtils;
 
 /**
  * Value object containing all necessary information for a rule for intensity comparison
@@ -79,13 +80,13 @@ public class IntensityPositionVO extends IntensityRuleVO
     Hashtable<String,String> originalToReplacementBigger = new Hashtable<String,String>();
     for (String name : getBiggerNonBasePeakNames()){
       String nameString = name+"["+getBiggerPosition()+"]";
-      String value = name+"("+biggerFA_+")"+"["+getBiggerPosition()+"]";
+      String value = StaticUtils.getChainFragmentDisplayName(name,biggerFA_)+"["+getBiggerPosition()+"]";
       originalToReplacementBigger.put(nameString, value);
     }
     Hashtable<String,String> originalToReplacementSmaller = new Hashtable<String,String>();
     for (String name : getSmallerNonBasePeakNames()){
       String nameString = name+"["+getSmallerPosition()+"]";
-      String value = name+"("+smallerFA_+")"+"["+getSmallerPosition()+"]";
+      String value = StaticUtils.getChainFragmentDisplayName(name,smallerFA_)+"["+getSmallerPosition()+"]";
       originalToReplacementSmaller.put(nameString, value);
     }
     String[] biggerSmaller = splitToBiggerAndSmallerPart(equation_);
@@ -143,12 +144,21 @@ public class IntensityPositionVO extends IntensityRuleVO
       derivedPosition = Integer.parseInt(derivedString);
       rule = rule.substring(rule.indexOf("BECAUSE NOT FULFILLED: ")+"BECAUSE NOT FULFILLED: ".length());
     }
-    int biggerIndex = rule.indexOf("["+ruleVO.getBiggerPosition()+"]");
-    int smallerIndex = rule.indexOf("["+ruleVO.getSmallerPosition()+"]");
-    String biggerFA = rule.substring(0,biggerIndex);
-    biggerFA = biggerFA.substring(biggerFA.lastIndexOf("(")+1,biggerFA.lastIndexOf(")"));
-    String smallerFA = rule.substring(0,smallerIndex);
-    smallerFA = smallerFA.substring(smallerFA.lastIndexOf("(")+1,smallerFA.lastIndexOf(")"));
+    String ruleBigger = "";
+    String ruleSmaller = "";
+    if (rule.indexOf(">")!=-1){
+      ruleBigger = rule.substring(0,rule.indexOf(">"));
+      ruleSmaller = rule.substring(rule.indexOf(">")+1);
+    }else if (rule.indexOf("<")!=-1){
+      ruleSmaller = rule.substring(0,rule.indexOf("<"));
+      ruleBigger = rule.substring(rule.indexOf("<")+1);
+    }
+    int biggerIndex = ruleBigger.indexOf("["+ruleVO.getBiggerPosition()+"]");
+    int smallerIndex = ruleSmaller.indexOf("["+ruleVO.getSmallerPosition()+"]");
+    String biggerFA = ruleBigger.substring(0,biggerIndex);
+    biggerFA = IntensityChainVO.extractFANames(biggerFA,ruleVO.getBiggerNonBasePeakNames());
+    String smallerFA = ruleSmaller.substring(0,smallerIndex);
+    smallerFA = IntensityChainVO.extractFANames(smallerFA,ruleVO.getSmallerNonBasePeakNames());
     IntensityPositionVO posVO = new IntensityPositionVO(ruleVO,biggerFA,smallerFA);
     if (derivedPosition>-1) posVO = createNegatedVO(posVO, derivedPosition);
     return posVO;
