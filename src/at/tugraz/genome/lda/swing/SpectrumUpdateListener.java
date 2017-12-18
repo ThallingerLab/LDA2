@@ -46,7 +46,7 @@ public interface SpectrumUpdateListener
    * 
    * @return the number of the selected spectrum (consecutive numbers starting with 1)
    */
-  public int getSelectedSpectrumNumber();
+  public int getMs2LevelSpectrumSelected();
   
   public void updateCurrentSpectrum();
   

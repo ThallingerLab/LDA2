@@ -1642,15 +1642,58 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
   }
   
   public void nextSpectrum(){}
-  public void nextSpectrum(LipidParameterSet param, Vector<RangeColor> rangeColors){}
+  
+  /**
+   * selects the next spectrum (this method is only available for Lipidomics2DSpectraChromPainter)
+   * @param param a result set specifying the range which spectra shall be used (e.g. for MS3 spectra, always a set of one MS2 scan and several MS3 scans is selected)
+   * @param rangeColors the colors of the identified fragments; first key: MS-level; value: the ranges and the corresponding colors
+   */
+  public void nextSpectrum(LipidParameterSet param, Hashtable<Integer,Vector<RangeColor>> rangeColors){}
   public void previousSpectrum(){}
-  public void previousSpectrum(LipidParameterSet param, Vector<RangeColor> rangeColors){}
-  public void refresh(LipidParameterSet param, Vector<RangeColor> rangeColors){}
+  
+  /**
+   * selects the previous spectrum (this method is only available for Lipidomics2DSpectraChromPainter)
+   * @param param a result set specifying the range which spectra shall be used (e.g. for MS3 spectra, always a set of one MS2 scan and several MS3 scans is selected)
+   * @param rangeColors the colors of the identified fragments; first key: MS-level; value: the ranges and the corresponding colors
+   */  
+  public void previousSpectrum(LipidParameterSet param, Hashtable<Integer,Vector<RangeColor>> rangeColors){}
+  
+  /**
+   * refreshes the spectrum view, e.g. when the fragmentation rules changed (this method is only available for Lipidomics2DSpectraChromPainter)
+   * @param param a result set specifying the range which spectra shall be used (e.g. for MS3 spectra, always a set of one MS2 scan and several MS3 scans is selected)
+   * @param rangeColors the colors of the identified fragments; first key: MS-level; value: the ranges and the corresponding colors
+   */    
+  public void refresh(LipidParameterSet param, Hashtable<Integer,Vector<RangeColor>> rangeColors){}
   public String getSpectSelectedText(){return null;}
   public String getRtSelectedText(){return null;}
-  public String getPrecursorMassSelected(){return null;}
+  
+  /**
+   * this method is only available for Lipidomics2DSpectraChromPainter
+   * @return the precursor masses of the current spectrum (starting with the lowest MS-level)
+   */
+  public Vector<Double> getPrecursorMassSelected(){return new Vector<Double>();}
+  
+  /**
+   * this method is only available for Lipidomics2DSpectraChromPainter
+   * @return the MS-level of the currently displayed scan
+   */
+  public String getMsLevelSelected(){return null;}
+  
   public float[] getRTRange(){return new float[2];}
   public int getSpectrumSelected(){return -1;};
+  /**
+   * this method is only available for Lipidomics2DSpectraChromPainter
+   * @return previous (or current) scan number of MS2 scan closest to the currently selected scan - the scan number is a sequential number where only MS2 scans are counted
+   */
+  public int getMs2LevelSpectrumSelected(){return -1;};
+  
+  /**
+   * this method is only available for Lipidomics2DSpectraChromPainter
+   * @param specNr a sorted number containing all MS-levels
+   * @return previous (or current) scan number of MS2 scan closest to specNr - the scan number is a sequential number where only MS2 scans are counted
+   */
+  public int getMs2LevelSpectrumSelected(int specNr){return -1;};
+  
   public void clearRangeColors(){};
   public void setAnnotationThreshold(double cutoff){};
   

@@ -324,7 +324,7 @@ public class RawToChromThread extends Thread  implements AddScan
     }
 
     float intensity;
-    if (((this.lowerThreshInt_)/lowestResolution_) % elementsForBatchCalculation_!=0){
+    if (((this.lowerThreshInt_-lowestMz_)/lowestResolution_) % elementsForBatchCalculation_!=0){
       int startValue = this.lowerThreshInt_-((this.lowerThreshInt_-lowestMz_) % (elementsForBatchCalculation_*lowestResolution_));
       for (String key : headerHash_.keySet()){
         for (int j=0; j<m_scanCount_.get(key); j++){
@@ -438,7 +438,7 @@ public class RawToChromThread extends Thread  implements AddScan
           }
         }
         //new the scans are sorted according to their precursor mass
-        Collections.sort(scansOfOneLevel,new GeneralComparator("at.tugraz.genome.maspectras.quantification.MsMsScan", "getPrecursorMz", "java.lang.Float"));
+        Collections.sort(scansOfOneLevel,new GeneralComparator("at.tugraz.genome.maspectras.quantification.MsMsScan", "getMs1PrecursorMz", "java.lang.Float"));
         LinkedHashMap<String,Vector<MsMsScan>> sortedScans = new LinkedHashMap<String,Vector<MsMsScan>>();
         for (MsMsScan scan : scansOfOneLevel){
           Vector<MsMsScan> samePrecursorMass = new Vector<MsMsScan>();
@@ -474,6 +474,7 @@ public class RawToChromThread extends Thread  implements AddScan
    */
   private void writeChrom2(Hashtable<String,Vector<BufferedOutputStream>> msmsChromStreams, Hashtable<String,Vector<DataOutputStream>> msmsIndexStreams, Hashtable<String,Vector<LinkedHashMap<String,Vector<MsMsScan>>>> msmsScans,Hashtable<String,Hashtable<Integer,Integer>> mzIndices,Hashtable<String,Hashtable<Integer,Long>> bytesIndices,
       Float lowerThreshold, Float upperThreshold) throws IOException{
+    String ms1PrecMzString = null;
     for (String key:headerHash_.keySet()){
       Hashtable<Integer,Integer> mzIndicesOneMzxml  = mzIndices.get(key);
       Hashtable<Integer,Long> byteIndicesOneMzxml = bytesIndices.get(key);
@@ -484,7 +485,9 @@ public class RawToChromThread extends Thread  implements AddScan
         int mzIndex = mzIndices.get(key).get(i);
         long bytesIndex = bytesIndices.get(key).get(i);
         for (String scanKey : scans.keySet()){
-          Float mzValue = new Float(scanKey);
+          ms1PrecMzString = scanKey;
+          if (scanKey.indexOf(" ")!=-1) ms1PrecMzString = scanKey.substring(0,scanKey.indexOf(" "));
+          Float mzValue = new Float(ms1PrecMzString);
           if (lowerThreshold!=null && mzValue<lowerThreshold) continue;
         // there are the same amount of index entries as in the normal chrom format
         // e.g. if you have a file from 400-1800Da, a multiplicationFactorForInt_=1000 and a lowestResolution_=2;
@@ -494,7 +497,7 @@ public class RawToChromThread extends Thread  implements AddScan
         // this calculates the difference in lines to the last lowest mass value (in our case 400Da);
         // e.g. if you have a mass value 402.51Da and the settings with lowestResolution_=2 the calculation would be
         // (402.51*1000-400000)/2=1255 line in the hypothetical chrom file; that means this entry would be after the 2nd index entry (count starts with zero)
-          int currentResDiffToLowest = (Math.round(Calculator.roundFloat((Float.parseFloat(scanKey))*(float)this.multiplicationFactorForInt_, 0,BigDecimal.ROUND_UP))-lowestMz_)/lowestResolution_;
+          int currentResDiffToLowest = (Math.round(Calculator.roundFloat((Float.parseFloat(ms1PrecMzString))*(float)this.multiplicationFactorForInt_, 0,BigDecimal.ROUND_UP))-lowestMz_)/lowestResolution_;
         //if the current entry exceeds the value of the next index entry -> write the index entry and increase the index-value
           while (currentResDiffToLowest>=mzIndex && (mzIndex*lowestResolution_)<(upperThreshInt_-lowestMz_)){
             streamIndex.writeInt(mzIndex);

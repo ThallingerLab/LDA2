@@ -66,20 +66,53 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
   private int pixelsForPeakDescription_ = 5;
   
   private Hashtable<Integer,String> spectra_;
-  private Hashtable<Integer,Double> precursors_;
+  /** the MS2 precursor masses; key is the scan number; value is a vector of precorsor masses (higher MS levels have more than one precursor mass)*/
+  private Hashtable<Integer,Vector<Double>> precursors_;
+  /** lookup showing the MS-level for each scan number*/
+  private Hashtable<Integer,Integer> levels_;
   private List<Integer> spectraSequence_;
+  /** a list of scan numbers for MS2 spectra (higher MS-levels are not in this list)*/
+  private List<Integer> ms2SpectraSequence_;
   
   private int spectrumSelected_;
   
+  /** the default MS-level that is shown in the 3D-view*/
+  private final static int DEFAULT_MS_LEVEL = 2;
+  
   /** ranges where the spectrum has to be painted in a different color */
-  private Vector<RangeColor> rangeColors_;
+  private Hashtable<Integer,Vector<RangeColor>> rangeColors_;
+  
   /** MS1 time ranges - checks if the colors shall be applied - if outside the range -> no coloring*/
   private Vector<Range> timeRanges_;
   
   private double annotationCutoff_;
   
     
-  public Lipidomics2DSpectraChromPainter(LipidomicsAnalyzer analyzer, Hashtable<Integer,String> rtNrSpectrumHash, Hashtable<Integer,Double> rtNrPrecursorHash, Hashtable<Integer,Float> retentionTimes, float precRt, float mzStart, float mzStop, int resolutionFactor,float stepSize, ActionListener listener,
+  /**
+   * 
+   * @param analyzer object for operations on the chrom data
+   * @param rtNrSpectrumHash lookup table containing spectra in Base64 format; key is the scan number
+   * @param rtNrPrecursorHash lookup table containing a vector of precursor masses for a scan; key is the scan number
+   * @param scanNrLevelHash lookup table containing the MS-level the scan originates of; key is the scan number
+   * @param retentionTimes lookup table containing the retention time of the scan; key is the scan number
+   * @param precRt retention time of the MS-1 peak summit
+   * @param mzStart for extracting chromatograms from raw data - here obsolete
+   * @param mzStop for extracting chromatograms from raw data - here obsolete
+   * @param resolutionFactor for extracting chromatograms from raw data - here obsolete
+   * @param stepSize for extracting chromatograms from raw data - here obsolete
+   * @param listener the listener who executes the commands
+   * @param start for extracting chromatograms from raw data - here obsolete
+   * @param stop for extracting chromatograms from raw data - here obsolete
+   * @param raw applies for chromatograms - here obsolete
+   * @param storedProbes applies for chromatograms - here obsolete
+   * @param selectedProbes applies for chromatograms - here obsolete
+   * @param isotopeNumber applies for chromatograms - here obsolete
+   * @param charge applies for chromatograms - here obsolete
+   * @param relativeIntensity show intensity in relative or absolute values
+   * @param annotationCutoff the relative value where spectra peaks should not be annotated anymore
+   */
+  public Lipidomics2DSpectraChromPainter(LipidomicsAnalyzer analyzer, Hashtable<Integer,String> rtNrSpectrumHash, Hashtable<Integer,Vector<Double>> rtNrPrecursorHash, 
+      Hashtable<Integer, Integer> scanNrLevelHash, Hashtable<Integer,Float> retentionTimes, float precRt, float mzStart, float mzStop, int resolutionFactor,float stepSize, ActionListener listener,
       float start, float stop, boolean raw, Vector<CgProbe> storedProbes, Vector<CgProbe> selectedProbes,int isotopeNumber, int charge,
       boolean relativeIntensity, double annotationCutoff){
     //TODO: The 2DSpectraChromPainter is currently not dedicated for storing areas - thus there is just 1 used as msLevel of the super constructor
@@ -89,12 +122,27 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
     m_txtMz = null;
     spectra_ = rtNrSpectrumHash;
     precursors_ = rtNrPrecursorHash;
+    levels_ = scanNrLevelHash;
     spectraSequence_ = new ArrayList<Integer>(spectra_.keySet());
+    ms2SpectraSequence_ = new ArrayList<Integer>();
     Collections.sort(spectraSequence_);
+    //only MS2 spectra are used for the sum spectrum
+    for (Integer scanNr : spectraSequence_){
+      if (scanNrLevelHash.get(scanNr)==2) ms2SpectraSequence_.add(scanNr);
+    }
     spectrumSelected_ = -1;
     float diff = Float.MAX_VALUE;
+    boolean containsDefaultLevel = false;
+    for (Integer level : levels_.values()){
+      if (level==DEFAULT_MS_LEVEL){
+        containsDefaultLevel = true;
+        break;
+      }
+    }
     for (int i=0; i!=spectraSequence_.size(); i++){
       int rtNr = spectraSequence_.get(i);
+      if (containsDefaultLevel && levels_.get(rtNr)!=DEFAULT_MS_LEVEL)
+        continue;
       float rt = retentionTimes_.get(rtNr);      
       if (Math.abs(rt-precRt)<diff){
         diff = Math.abs(rt-precRt);
@@ -126,14 +174,15 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
    * constructor to create a Lipidomics2DSpectraChromPainter object - includes time ranges where spectrum is painted in a different color
    * @param analyzer analyzer to be used for peak calculation
    * @param rtNrSpectrumHash hash containing the spectra - key: scan number in chrom2 format; value: spectrum in Base64
-   * @param rtNrPrecursorHash hash containing the precursor m/z values of a spectrum - key scan number in chrom2 format; value: precursor m/z
-   * @param retentionTimes retention time lookup - key scan number in chrom 2 format; value: retention time
+   * @param rtNrPrecursorHash lookup table containing a vector of precursor masses for a scan; key is the scan number
+   * @param scanNrLevelHash lookup table containing the MS-level the scan originates of; key is the scan number
+   * @param retentionTimes retention time lookup - key is the scan number; value: retention time
    * @param precRt retention time of the precursor
    * @param mzStart for extracting chromatograms from raw data - here obsolete 
    * @param mzStop for extracting chromatograms from raw data - here obsolete
    * @param resolutionFactor for extracting chromatograms from raw data - here obsolete
    * @param stepSize for extracting chromatograms from raw data - here obsolete
-   * @param listener the listener who executest the commands
+   * @param listener the listener who executes the commands
    * @param start for extracting chromatograms from raw data - here obsolete
    * @param stop for extracting chromatograms from raw data - here obsolete
    * @param raw applies for chromatograms - here obsolete
@@ -144,17 +193,18 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
    * @param relativeIntensity show intensity in relative or absolute values
    * @param param the detected LipidParameterSet to be displayed
    * @param rangeColors the m/z ranges that shall be painted in a different color
-   * @param annotationCutoff the relative value where spectras peaks should not be annotated anymore
+   * @param annotationCutoff the relative value where spectra peaks should not be annotated anymore
    */
-  public Lipidomics2DSpectraChromPainter(LipidomicsAnalyzer analyzer, Hashtable<Integer,String> rtNrSpectrumHash, Hashtable<Integer,Double> rtNrPrecursorHash, Hashtable<Integer,Float> retentionTimes, float precRt, float mzStart, float mzStop, int resolutionFactor,float stepSize, ActionListener listener,
+  public Lipidomics2DSpectraChromPainter(LipidomicsAnalyzer analyzer, Hashtable<Integer,String> rtNrSpectrumHash, Hashtable<Integer,Vector<Double>> rtNrPrecursorHash,
+      Hashtable<Integer, Integer> scanNrLevelHash, Hashtable<Integer,Float> retentionTimes, float precRt, float mzStart, float mzStop, int resolutionFactor,float stepSize, ActionListener listener,
       float start, float stop, boolean raw, Vector<CgProbe> storedProbes, Vector<CgProbe> selectedProbes,int isotopeNumber, int charge,
-      boolean relativeIntensity, LipidParameterSet param, Vector<RangeColor> rangeColors, double annotationCutoff){
-    this(analyzer, rtNrSpectrumHash, rtNrPrecursorHash, retentionTimes, precRt, mzStart, mzStop, resolutionFactor, stepSize, listener,
+      boolean relativeIntensity, LipidParameterSet param, Hashtable<Integer,Vector<RangeColor>> rangeColors, double annotationCutoff){
+    this(analyzer, rtNrSpectrumHash, rtNrPrecursorHash, scanNrLevelHash, retentionTimes, precRt, mzStart, mzStop, resolutionFactor, stepSize, listener,
         start, stop, raw, storedProbes, selectedProbes, isotopeNumber, charge, relativeIntensity, annotationCutoff);
     setRangeColors(param,rangeColors);
   }
   
-  private void setRangeColors(LipidParameterSet param, Vector<RangeColor> rangeColors){
+  private void setRangeColors(LipidParameterSet param, Hashtable<Integer,Vector<RangeColor>> rangeColors){
     if (param instanceof LipidomicsMSnSet){
       rangeColors_ = rangeColors;
       timeRanges_ = new Vector<Range>();
@@ -257,7 +307,12 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
 //    paint2dAreas(paintableProbes, Color.RED);
 //    paint2dAreas(this.selectedProbes_, Color.GREEN);
     Vector<RangeColor> rColors = null;
-    if (isSpectrumInIdentfiedRegion()) rColors = rangeColors_;
+    if (isSpectrumInIdentfiedRegion()){
+      int msLevel = DEFAULT_MS_LEVEL;
+      if (spectrumSelected_>-1)
+        msLevel = levels_.get(spectraSequence_.get(spectrumSelected_));
+      rColors = rangeColors_.get(msLevel);
+    }
     draw2DDiagram(gx, cr_, x0,y0,w0,h0, m_minDispTime2d_, m_maxDispTime2d_,maxIntensity_,m_2dGain_,
         DISPLAY_TIME_MZ, 1, raw_,true,relativeIntensity_,true,null,rColors,false);
     drawSpectrumLegend(gx,cr_,0.5f,x0,y0,w0,h0,m_minDispTime2d_, m_maxDispTime2d_,maxIntensity_,m_2dGain_,
@@ -356,8 +411,8 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
       //check if it is a found hit
       boolean isAnnotatedPeak = false;
       RangeColor color = null;
-      if (rangeColors_!=null){
-        for (RangeColor rc : rangeColors_){
+      if (rColors!=null){
+        for (RangeColor rc : rColors){
           if (!highestIntPos.containsKey(rc.getName())) continue;
            float rt = cr.Value[pos][0];
           float highestRt = cr.Value[highestIntPos.get(rc.getName())][0];
@@ -376,8 +431,8 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
         if (isAnnotatedPeak) gx.setColor(Color.BLACK);
       }  
     }
-    if (rangeColors_!=null){
-      for (RangeColor rc : rangeColors_){
+    if (rColors!=null){
+      for (RangeColor rc : rColors){
         if (!highestIntPos.containsKey(rc.getName())) continue;
         int[] coords = getCoordinatesInDiagram(cr.Value, highestIntPos.get(rc.getName()), x0, y0, w0, h0,
             mzStart, mzStop, maxIntensity, m_2dGain, raw, relativeValue,false);
@@ -403,7 +458,7 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
     return 0;
   }
   
-  public void nextSpectrum(LipidParameterSet param, Vector<RangeColor> rangeColors){
+  public void nextSpectrum(LipidParameterSet param, Hashtable<Integer,Vector<RangeColor>> rangeColors){
     setRangeColors(param,rangeColors);
     selectSpectrum(this.spectrumSelected_+1);
   }
@@ -412,12 +467,12 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
     selectSpectrum(this.spectrumSelected_+1);
   }
   
-  public void previousSpectrum(LipidParameterSet param, Vector<RangeColor> rangeColors){
+  public void previousSpectrum(LipidParameterSet param, Hashtable<Integer,Vector<RangeColor>> rangeColors){
     setRangeColors(param,rangeColors);
     previousSpectrum();
   }
 
-  public void refresh(LipidParameterSet param, Vector<RangeColor> rangeColors){
+  public void refresh(LipidParameterSet param, Hashtable<Integer,Vector<RangeColor>> rangeColors){
     setRangeColors(param,rangeColors);
     selectSpectrum(this.spectrumSelected_);
   }
@@ -427,7 +482,7 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
    * the new LipidParameterSet is not of type LipidomicsMSnSet
    */
   public void clearRangeColors(){
-    rangeColors_ = new Vector<RangeColor>();
+    rangeColors_ = new Hashtable<Integer,Vector<RangeColor>>();
     timeRanges_ = new Vector<Range>();
     selectSpectrum(this.spectrumSelected_);
   }
@@ -441,17 +496,19 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
     if (spectrumSelected_>=this.spectra_.size()) this.spectrumSelected_ = -1;
     if (spectrumSelected_<-1) this.spectrumSelected_ = this.spectra_.size()-1;
     maxIntensity_ = 0;
-    if (spectrumSelected_==-1) cr_ = mergeSpectra(this.spectraSequence_);
-    else{
+    if (spectrumSelected_==-1){
+      cr_ = mergeSpectra(this.ms2SpectraSequence_);
+    } else{
       Vector<Integer> scanNumbers = new Vector<Integer>();
-      scanNumbers.add(spectraSequence_.get(spectrumSelected_));
+      int scanNr = spectraSequence_.get(spectrumSelected_);
+      scanNumbers.add(scanNr);
       cr_ = mergeSpectra(scanNumbers);
     }
     this.repaint();
   }
   
   public String getSpectSelectedText(){
-    if (spectrumSelected_==-1) return "Sum("+String.valueOf(this.spectra_.size())+")";
+    if (spectrumSelected_==-1) return "Sum("+String.valueOf(this.ms2SpectraSequence_.size())+")";
     else return String.valueOf(this.spectrumSelected_+1)+"/"+this.spectra_.size();
   }
   
@@ -462,28 +519,67 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
     }
   }
   
-  public String getPrecursorMassSelected(){
+  public Vector<Double> getPrecursorMassSelected(){
+    if (spectrumSelected_==-1) return new Vector<Double>();
+    else{
+      return precursors_.get(spectraSequence_.get(spectrumSelected_));
+    }
+  }
+
+  public String getMsLevelSelected(){
     if (spectrumSelected_==-1) return "";
     else{
-      return String.valueOf(Calculator.roundDBL(precursors_.get(spectraSequence_.get(spectrumSelected_)),4));
+      return String.valueOf(levels_.get(spectraSequence_.get(spectrumSelected_)));
     }
   }
 
   
   public float[] getRTRange(){
     if (spectrumSelected_==-1)return(new float[]{0f,0f});
-    int rtNr = spectraSequence_.get(spectrumSelected_);
     float[] range = new float[2];
-    if (rtNr<1) range[0] = retentionTimes_.get(0);
-    else range[0] = retentionTimes_.get(rtNr-1);
-    if (rtNr>=(retentionTimes_.size()-1)) range[1] = retentionTimes_.get(retentionTimes_.size()-1);
-    else range[1] =  retentionTimes_.get(rtNr+1);
+    int startSpectrumNr = spectrumSelected_;
+    while (startSpectrumNr!=0 && levels_.get(spectraSequence_.get(startSpectrumNr))!=DEFAULT_MS_LEVEL)
+      startSpectrumNr--;
+    if (startSpectrumNr<1) range[0] = retentionTimes_.get(spectraSequence_.get(0));
+    else{
+      startSpectrumNr--;
+      while (startSpectrumNr!=0 && levels_.get(spectraSequence_.get(startSpectrumNr))!=DEFAULT_MS_LEVEL)
+        startSpectrumNr--;
+      range[0] = retentionTimes_.get(spectraSequence_.get(startSpectrumNr));
+    }
+    int stopSpectrumNr = spectrumSelected_;
+    while (stopSpectrumNr!=(spectraSequence_.size()-1) && levels_.get(spectraSequence_.get(stopSpectrumNr))!=DEFAULT_MS_LEVEL)
+      stopSpectrumNr++;
+    if (stopSpectrumNr>=(spectraSequence_.size()-1)) range[1] = retentionTimes_.get(spectraSequence_.get(spectraSequence_.size()-1));
+    else{
+      stopSpectrumNr++;
+      while (stopSpectrumNr!=(spectraSequence_.size()-1) && levels_.get(spectraSequence_.get(stopSpectrumNr))!=DEFAULT_MS_LEVEL)
+        stopSpectrumNr++;
+      range[1] = retentionTimes_.get(spectraSequence_.get(stopSpectrumNr));
+    }    
     return range;
   }
   
   public int getSpectrumSelected(){
     return this.spectrumSelected_;
-  };
+  }
+  
+  public int getMs2LevelSpectrumSelected(){
+    return getMs2LevelSpectrumSelected(spectrumSelected_);
+  }
+  
+  public int getMs2LevelSpectrumSelected(int specNr){
+    int ms2Number = -1;
+    int nr = specNr;
+    if (nr>=this.spectra_.size()) nr = -1;
+    if (nr<-1) nr = this.spectra_.size()-1;
+    for (int i=0; i!=(nr+1); i++){
+      if (levels_.get(spectraSequence_.get(i))!=DEFAULT_MS_LEVEL)
+        continue;
+      ms2Number++;
+    }
+    return ms2Number;
+  }
   
   public void setAnnotationThreshold(double cutoff){
     this.annotationCutoff_ = cutoff;

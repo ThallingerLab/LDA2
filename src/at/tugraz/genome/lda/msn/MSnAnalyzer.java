@@ -1715,7 +1715,9 @@ public class MSnAnalyzer
   private static boolean isSpectrumCovered(LipidomicsAnalyzer analyzer, LipidParameterSet set, Hashtable<Integer,Boolean> msLevels, Vector<CgProbe> foundHits, Vector<CgProbe> notCountedHits, float bpCutoff, float coverageMin, boolean ignoreAbsolute, boolean debug, MSnDebugVO debugVO) throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException {
     Vector<Integer> levels = new Vector<Integer>();
     for (int level : msLevels.keySet()){
-      if (msLevels.get(level)) levels.add(level);
+      //TODO: spectrum coverage is currently only allowed for MS-level: 2
+      //to extend this, spectrum coverage values have to be added to be added for each MS-Level in the [GENERAL] section of the fragmentation rules
+      if (msLevels.get(level) && level==2) levels.add(level);
     }
     Hashtable<Integer,Float> coverages = analyzer.calculateSpectrumCoverage(set.getIsotopicProbes().get(0), foundHits, notCountedHits, levels,
         bpCutoff);

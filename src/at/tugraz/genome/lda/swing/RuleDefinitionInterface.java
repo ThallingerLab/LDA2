@@ -3269,7 +3269,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @throws CgException errors from the quantitation process
    */
   private MSnAnalyzer updateMSnAnalyzerToCurrentSettings() throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException{
-    return this.updateMSnAnalyzerToCurrentSettings(spectrumUpdater_.getSelectedSpectrumNumber());
+    return this.updateMSnAnalyzerToCurrentSettings(spectrumUpdater_.getMs2LevelSpectrumSelected());
   }
   
   /**

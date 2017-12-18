@@ -784,19 +784,19 @@ public class StaticUtils
    * @param paramUncasted the identification not casted in a LipidomicsMSnSet
    * @param selectedMSn shall only a certain MSn identifcation be displayed
    * @param isAlex123 do the fragments originate from an Alex123 target list
-   * @return m/z ranges for coloring from an MSn identification
+   * @return m/z ranges for coloring from an MSn identification - the first key is the MS-level
    */
   @SuppressWarnings("unchecked")
-  public static Vector<RangeColor> createRangeColorVOs(LipidParameterSet paramUncasted, String selectedMSn, boolean isAlex123){
+  public static Hashtable<Integer,Vector<RangeColor>> createRangeColorVOs(LipidParameterSet paramUncasted, String selectedMSn, boolean isAlex123){
     String selected = null;
     if (selectedMSn!=null && selectedMSn.length()>0){
       selected = new String(selectedMSn);
       selected = (String)cleanEmptyFAPositions(selected)[0];
     }
-    Vector<RangeColor> rangeColors = null;
+    Hashtable<Integer,Vector<RangeColor>> rangeColorLevels = null;
     if (paramUncasted instanceof LipidomicsMSnSet){
       LipidomicsMSnSet param = (LipidomicsMSnSet)paramUncasted;
-      rangeColors = new Vector<RangeColor>();
+      rangeColorLevels = new Hashtable<Integer,Vector<RangeColor>>();
       Hashtable<String,CgProbe> headFrags = new Hashtable<String,CgProbe>(param.getHeadGroupFragments());
       while (headFrags.size()>0){
         String highestArea = "";
@@ -809,7 +809,11 @@ public class StaticUtils
         }
         CgProbe probe = headFrags.get(highestArea);
         RangeColor vo = new RangeColor(highestArea,MSMapViewer.COLOR_BROWN,probe,probe.Mz-probe.LowerMzBand,probe.Mz+probe.UpperMzBand);
+        Vector<RangeColor> rangeColors = new Vector<RangeColor>();
+        if (rangeColorLevels.containsKey(probe.getMsLevel()))
+          rangeColors = rangeColorLevels.get(probe.getMsLevel());
         rangeColors.add(vo);
+        rangeColorLevels.put(probe.getMsLevel(), rangeColors);
         headFrags.remove(highestArea);
       }
       Hashtable<String,Hashtable<String,CgProbe>> chainFrags =  param.getChainFragments();
@@ -863,14 +867,17 @@ public class StaticUtils
             usedFAs.put(fragmentName, fragmentName);
             CgProbe probe = frags.get(key);
             RangeColor vo = new RangeColor(fragmentName,color,probe,probe.Mz-probe.LowerMzBand,probe.Mz+probe.UpperMzBand);
+            Vector<RangeColor> rangeColors = new Vector<RangeColor>();
+            if (rangeColorLevels.containsKey(probe.getMsLevel()))
+              rangeColors = rangeColorLevels.get(probe.getMsLevel());
             rangeColors.add(vo);
-            
+            rangeColorLevels.put(probe.getMsLevel(), rangeColors);
           }
           colorCount++;
         }
       }
     }
-    return rangeColors;
+    return rangeColorLevels;
   }
   
   public static String getStoredFAName(String fa, Hashtable<String,Hashtable<String,CgProbe>> chainFrags){

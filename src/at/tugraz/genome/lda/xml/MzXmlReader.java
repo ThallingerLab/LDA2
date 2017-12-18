@@ -84,6 +84,12 @@ public class MzXmlReader implements XmlSpectraReader
   //the maximally allowed m/z range provided by all the AddScan interfaces
   private Range maxRange_ = null;
   
+  /** the precursor m/z values of the current spectrum*/
+  private Vector<String> precursorMz_;
+  
+  /** the MS-level of the previous scan*/
+  private int lastMsLevel_;
+  
 
   /**
    * @param callbacks
@@ -215,6 +221,7 @@ public class MzXmlReader implements XmlSpectraReader
   {
     int i;
     int eventType;
+    lastMsLevel_ = 0;
     
     myHeader_ = new CgScanHeader();
     myHeader_.highestMSLevel = 1;
@@ -461,7 +468,6 @@ public class MzXmlReader implements XmlSpectraReader
     float basePeakIntensity = 0;
     float totIonCurrent = 0;
     float precursorIntensity = 0;
-    String precursorMz = "0";
     boolean lowMzFound = false;
     boolean highMzFound = false;
 
@@ -494,6 +500,15 @@ public class MzXmlReader implements XmlSpectraReader
     }
     boolean foundMzBorders = false;
     if (lowMzFound&&highMzFound) foundMzBorders = true;
+    
+    if (msLevel<3){
+      precursorMz_ = new Vector<String>();
+    } else if (lastMsLevel_>=msLevel){
+      for (i=(lastMsLevel_+1); i!=msLevel; i--){
+        precursorMz_.remove(precursorMz_.size()-1);
+      }
+    }
+    lastMsLevel_ = msLevel;
     
     // =========================================================
     // Now we read the peaks:
@@ -557,16 +572,15 @@ public class MzXmlReader implements XmlSpectraReader
                 }
                 if (baseScans.size()>0){
                   if (parseMsMs_) {
-
                     MsMsScan msmsSc = new MsMsScan(peaksCount, num, msLevel, retentionTime,
                         lowMz, highMz, basePeakMz, basePeakIntensity,
-                        totIonCurrent, precursorMz, precursorIntensity);
+                        totIonCurrent, getPrecursorMzString(precursorMz_), precursorIntensity);
                     Vector<CgScan> qualifiedBaseScans = new Vector<CgScan>();
                     Vector<Range> qualifiedRanges = new Vector<Range>();
                     Vector<CgScan> ms2Scans = new Vector<CgScan>();
                     for (int j=0; j!=baseScans.size(); j++){
                       Range range = scanRanges.get(j);
-                      float precMz = Float.valueOf(precursorMz);
+                      float precMz = msmsSc.getMs1PrecursorMz();//Float.valueOf(precursorMz);
                       if (precMz<range.getStart() || range.getStop()<=precMz) continue;
                       //if (!range.insideRange(Float.valueOf(precursorMz))) continue;
                       qualifiedBaseScans.add(baseScans.get(j));
@@ -599,7 +613,7 @@ public class MzXmlReader implements XmlSpectraReader
                     String childNode = rdr_.getText().trim();
                     if (childNode != null) {
                       Float.parseFloat(childNode);
-                      precursorMz = childNode;
+                      precursorMz_.add(childNode);
                       break;
                     }
                   }
@@ -852,6 +866,21 @@ public class MzXmlReader implements XmlSpectraReader
       if (adder.getUpperThreshold()>highest) highest = adder.getUpperThreshold();
     }
     this.maxRange_ = new Range(lowest,highest);
+  }
+  
+  /**
+   * generates an "empty space" separated string containing the precursor m/z values of the current spectrum
+   * @param precursorMzs the single precursor m/z values
+   * @return the "empty space" separated string containing the precursor m/z values of the current spectrum
+   */
+  private String getPrecursorMzString (Vector<String> precursorMzs){
+    if (precursorMzs.size()==1) return precursorMzs.get(0);
+    StringBuilder bd = new StringBuilder();
+    for (int i=0 ; i!=precursorMzs.size(); i++){
+      bd.append(precursorMzs.get(i));
+      if (i!=(precursorMzs.size()-1)) bd.append(" ");
+    }
+    return bd.toString();
   }
 
 }
