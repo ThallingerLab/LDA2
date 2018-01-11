@@ -62,7 +62,7 @@ public class Settings
 {
   private static Settings instance_ = null;
 
-  public final static String VERSION = "2.6.1";
+  public final static String VERSION = "2.6.1_1";
   
   public final static String SETTINGS_FILE = ".settings";
   

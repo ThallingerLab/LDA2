@@ -5267,7 +5267,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       float[] timeStartStop = getMSn3DTimeStartStopValues(retTimes,bordersThreeD[2],bordersThreeD[3],params.getIsotopicProbes().get(0));
       MSMapViewer viewer = MSMapViewerFactory.getMSMapViewer(chroms, retTimes,
           bordersThreeD[0],bordersThreeD[1],timeStartStop[0],timeStartStop[1],LipidomicsConstants.getMs2ChromMultiplicationFactorForInt(),1f,this,MSMapViewer.DISPLAY_TIME_MINUTES,true);
-      viewer.setMulticolorProbes(StaticUtils.get3DColorHash(rangeColors.get(threeDMsLevel)));
+      if (rangeColors!=null)
+        viewer.setMulticolorProbes(StaticUtils.get3DColorHash(rangeColors.get(threeDMsLevel)));
       viewer.setViewerSettings(true, true, true,LipidomicsConstants.getThreeDViewerMs2DefaultMZResolution(),LipidomicsConstants.getThreeDViewerMs2DefaultTimeResolution_());
       try{
         viewer.init();
