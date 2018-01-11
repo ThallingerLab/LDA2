@@ -705,63 +705,71 @@ public class MSnAnalyzer
     
     // remove hits that cannot occur in any combination
     // and count if the FA occurs in more than one combination
-    Hashtable<String,String> allowedFAs = new Hashtable<String,String>();
-    Hashtable<String,Integer> faChainOccurrences = new Hashtable<String,Integer>();
-    for (Vector<String> combiFAs : combis.values()){
-      for (String combiFA : combiFAs){
-        allowedFAs.put(combiFA, combiFA);
-        int count = 0;
-        if (faChainOccurrences.containsKey(combiFA)) count = faChainOccurrences.get(combiFA);
-        count++;
-        faChainOccurrences.put(combiFA,count);
+    int removedKeys = 1;
+    // the while is necessary for classes with more than 2 fatty acyls where on chain fragment might be shared by several combinations
+    while (removedKeys>0){
+      validChainCombinations_ = new Vector<String>();
+      removedKeys = 0;
+      Hashtable<String,String> allowedFAs = new Hashtable<String,String>();
+      Hashtable<String,Integer> faChainOccurrences = new Hashtable<String,Integer>();
+      for (Vector<String> combiFAs : combis.values()){
+        for (String combiFA : combiFAs){
+          allowedFAs.put(combiFA, combiFA);
+          int count = 0;
+          if (faChainOccurrences.containsKey(combiFA)) count = faChainOccurrences.get(combiFA);
+          count++;
+          faChainOccurrences.put(combiFA,count);
+        }
       }
-    }
-    this.removeNotNecessaryFragments(allowedFAs,true);
-    this.removeNotNecessaryDiffIntensityRules(combis.keySet());
-    if (combis.size()==0) return;
-    // area values for each fragment
-    Hashtable<String,Double> areas = new Hashtable<String,Double>();
-    // calculate a total area for each chain fragment
-    for (String key : chainFragments_.keySet()){
-      double area = 0f;
-      for (CgProbe probe : chainFragments_.get(key).values()){
-        double oneArea = (double)probe.Area;
-        area += oneArea;
+      this.removeNotNecessaryFragments(allowedFAs,true);
+      this.removeNotNecessaryDiffIntensityRules(combis.keySet());
+      if (combis.size()==0) return;
+      // area values for each fragment
+      Hashtable<String,Double> areas = new Hashtable<String,Double>();
+      // calculate a total area for each chain fragment
+      for (String key : chainFragments_.keySet()){
+        double area = 0f;
+        for (CgProbe probe : chainFragments_.get(key).values()){
+          double oneArea = (double)probe.Area;
+          area += oneArea;
+        }
+        areas.put(key, area);
       }
-      areas.put(key, area);
-    }
     
-    Hashtable<String,Double> combiAreas = new Hashtable<String,Double>();
-    double highestIntensity = 0d;
-    for (String key : combis.keySet()){
-      double relative = 0d;
-      for (String combiFA : combis.get(key)){
-        if (areas.containsKey(combiFA))
-          relative += areas.get(combiFA)/((double)faChainOccurrences.get(combiFA));
+      Hashtable<String,Double> combiAreas = new Hashtable<String,Double>();
+      double highestIntensity = 0d;
+      for (String key : combis.keySet()){
+        double relative = 0d;
+        for (String combiFA : combis.get(key)){
+          if (areas.containsKey(combiFA))
+            relative += areas.get(combiFA)/((double)faChainOccurrences.get(combiFA));
+        }
+        if (relative>highestIntensity) highestIntensity = relative;
+        combiAreas.put(key, relative);
       }
-      if (relative>highestIntensity) highestIntensity = relative;
-      combiAreas.put(key, relative);
-    }
 //    double totalArea = 0d;
-    for (String key: new Vector<String>(combiAreas.keySet())){
-      double intensity = combiAreas.get(key);
-      if (intensity>(relativeChainCutoff_*highestIntensity)){
+      for (String key: new Vector<String>(combiAreas.keySet())){
+        double intensity = combiAreas.get(key);
+        if (intensity>=(relativeChainCutoff_*highestIntensity)){
 //        totalArea+=intensity;
-      }else{
-        if (debug_) debugVO_.addViolatedCombinations(key, MSnDebugVO.COMBINATION_LOWER_CHAIN_CUTOFF);
-        combiAreas.remove(key);
+        }else{
+          if (debug_) debugVO_.addViolatedCombinations(key, MSnDebugVO.COMBINATION_LOWER_CHAIN_CUTOFF);
+          removedKeys++;
+          combiAreas.remove(key);
+          combis.remove(key);
+        }
       }
-    }
-    allowedFAs = new Hashtable<String,String>();
-    for (String key: new Vector<String>(combiAreas.keySet())){
-      validChainCombinations_.add(key);
+      allowedFAs = new Hashtable<String,String>();
+      for (String key: new Vector<String>(combiAreas.keySet())){
+        validChainCombinations_.add(key);
 //      relativeIntensityOfCombination_.put(key, combiAreas.get(key)/totalArea);
-      for (String combiFA : combis.get(key)){
-        allowedFAs.put(combiFA, combiFA);
-      }      
+        for (String combiFA : combis.get(key)){
+          allowedFAs.put(combiFA, combiFA);
+        }      
+      }
+      removeNotNecessaryFragments(allowedFAs,false);
+      this.removeNotNecessaryDiffIntensityRules(combiAreas.keySet());
     }
-    removeNotNecessaryFragments(allowedFAs,false);
-    this.removeNotNecessaryDiffIntensityRules(combiAreas.keySet());
     if (status_!=LipidomicsMSnSet.DISCARD_HIT) this.status_ = LipidomicsMSnSet.FRAGMENTS_DETECTED;
   }
   
