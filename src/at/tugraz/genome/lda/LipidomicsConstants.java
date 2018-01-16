@@ -43,7 +43,6 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 
 import at.tugraz.genome.lda.utils.ExcelUtils;
-
 import uk.ac.ebi.pride.jmztab.model.Contact;
 import uk.ac.ebi.pride.jmztab.model.Instrument;
 import uk.ac.ebi.pride.jmztab.model.Param;
@@ -84,6 +83,15 @@ public class LipidomicsConstants
   public final static String EXCEL_MSN_INTENSITY_ORIGINAL = "Original";
   public final static String EXCEL_MSN_INTENSITY_VALUES = "Values";
   public final static String EXCEL_MSN_INTENSITY_MISSED = "Missed";
+  
+  /** prefix for alkyl linked fatty acid chains */
+  public final static String ALKYL_PREFIX = "O-";
+
+  /** prefix for alkenyl linked fatty acid chains */
+  public final static String ALKENYL_PREFIX = "P-";
+  
+  /** the separator to distinguish between several fatty acids*/
+  public final static String FA_SEPARATOR = "_";
 
   
   public static String LDA_PROPERTIES_FILE = "LipidDataAnalyzer.properties";

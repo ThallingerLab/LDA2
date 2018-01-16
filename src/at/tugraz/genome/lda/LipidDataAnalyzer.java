@@ -40,7 +40,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.math.BigDecimal;
@@ -89,12 +88,6 @@ import javax.xml.transform.TransformerException;
 
 import org.apache.batik.dom.GenericDOMImplementation;
 import org.apache.batik.svggen.SVGGraphics2D;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 
@@ -132,7 +125,6 @@ import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.exception.SettingsException;
 import at.tugraz.genome.lda.interfaces.ColorChangeListener;
 import at.tugraz.genome.lda.listeners.AnnotationThresholdListener;
-import at.tugraz.genome.lda.msn.FragmentCalculator;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.MSnAnalyzer;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
@@ -182,7 +174,6 @@ import at.tugraz.genome.lda.quantification.LipidomicsDefines;
 import at.tugraz.genome.maspectras.quantification.CgException;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.maspectras.quantification.ChromatogramReader;
-import at.tugraz.genome.maspectras.quantification.Probe3D;
 import at.tugraz.genome.maspectras.utils.Calculator;
 import at.tugraz.genome.maspectras.utils.StringUtils;
 import at.tugraz.genome.voutils.GeneralComparator;
@@ -1039,7 +1030,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     text.setFont(new Font("Arial",Font.PLAIN, 12));
     logoPanel.add(text,new GridBagConstraints(0, 4, 3, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
-    text = new JLabel("Copyright \u00A9 2017 J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger");
+    text = new JLabel("Copyright \u00A9 2018 J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger");
     text.setFont(new Font("Arial",Font.PLAIN, 12));
     logoPanel.add(text,new GridBagConstraints(0, 5, 3, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
@@ -3324,399 +3315,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private void readResultFile(String filePath,boolean keepOrder) throws ExcelInputFileException{
     resultsShowModification_ = new Hashtable<String,Boolean>();
     if (!keepOrder) orderResultsType_ = new Hashtable<String,Integer>();
-    result_ = readResultFile(filePath,  resultsShowModification_);
+    result_ = LDAResultReader.readResultFile(filePath,  resultsShowModification_);
 
   }
   
-  public static QuantificationResult readResultFile(String filePath, Hashtable<String,Boolean> showModifications) throws ExcelInputFileException{
-    Hashtable<String,Vector<LipidParameterSet>> resultParams = new Hashtable<String,Vector<LipidParameterSet>>();
-    Hashtable<String,Integer> msLevels = new Hashtable<String,Integer>();
-    LipidomicsConstants readConstants = null;
-    String suffix = "";
-    if (filePath!=null && filePath.length()>3)
-      suffix = filePath.substring(filePath.lastIndexOf("."));
-    if (!(suffix.equalsIgnoreCase(".xls")||(suffix.equalsIgnoreCase(".xlsx")))){
-      new WarningMessage(new JFrame(), "ERROR", "The specified file is not Microsoft Excel!");
-      throw new ExcelInputFileException("The specified file is not Microsoft Excel!");
-    } 
-    try {
-      InputStream myxls = new FileInputStream(filePath);
-      Workbook workbook  = null;
-      if (suffix.equalsIgnoreCase(".xlsx")) workbook = new XSSFWorkbook(myxls);
-      else if (suffix.equalsIgnoreCase(".xls")) workbook  = new HSSFWorkbook(myxls);
-      //Workbook workbook = Workbook.getWorkbook(new File(filePath));
-      
-      for (int sheetNumber=0;sheetNumber!=workbook.getNumberOfSheets();sheetNumber++){       
-        Sheet sheet = workbook.getSheetAt(sheetNumber);
-        if (!sheet.getSheetName().contains("Overview")&&!sheet.getSheetName().endsWith(QuantificationThread.OVERVIEW_SHEET_ADDUCT)&&
-            !sheet.getSheetName().endsWith(QuantificationThread.MSN_SHEET_ADDUCT) && !sheet.getSheetName().equalsIgnoreCase(QuantificationThread.CONSTANTS_SHEET)){
-          Vector<LipidParameterSet> resultPrms = new Vector<LipidParameterSet>();
-          int nameColumn = -1;
-          int dbsColumn = -1;
-          int modificationColumn = -1;
-          int formulaColumn = -1;
-          int modFormulaColumn = -1;
-          int rtColumn = -1;
-          int isotopeColumn = -1;
-          int areaColumn = -1;
-          int areaErrorColumn = -1;
-          int backgroundColumn = -1;
-          int chargeColumn = -1;
-          int mzColumn = -1;
-          int mzToleranceColumn = -1;
-          int peakColumn = -1;
-          int lowerValleyColumn = -1;
-          int upperValleyColumn = -1;
-          int lowMzColumn = -1;
-          int upMzColumn = -1;
-          int ellipseTimePosColumn = -1;
-          int ellipseMzPosColumn = -1;
-          int ellipseTimeStretchColumn = -1;
-          int ellipseMzStretchColumn = -1;
-          int lowerHardLimitColumn = -1;
-          int upperHardLimitColumn = -1;
-          int percentalSplitColumn = -1;
-          int apexIntensityColumn = -1;
-          int lowerValley10PcColumn = -1;
-          int lowerValley50PcColumn = -1;
-          int upperValley10PcColumn = -1;
-          int upperValley50PcColumn = -1;
-          int lowerMz10PcColumn = -1;
-          int lowerMz50PcColumn = -1;
-          int upperMz10PcColumn = -1;
-          int upperMz50PcColumn = -1;
-
-
-          
-          int msLevel=1;
-          LipidParameterSet params = null;
-          boolean showModification = false;
-          Hashtable<String,String> analyteNames = new Hashtable<String,String>();
-          for (int rowCount=0;rowCount!=(sheet.getLastRowNum()+1);rowCount++){
-            Row row = sheet.getRow(rowCount);
-            String name = null;
-            int dbs = -1;
-            int paramCharge = 1;
-            String modification = null;
-            String formula = null;
-            String modFormula = null;
-            String rtString = "";
-            float area = 0f;
-            float areaError = 0f;
-            float background = 0f; 
-            int charge = -1;
-            float mz = 0f;
-            float mzTolerance = 0f;
-            float peak = 0f;
-            float lowerValley = 0f;
-            float upperValley = 0f;
-            float apexIntensity = 0f;
-            float lowerValley10Pc = 0f;
-            float upperValley10Pc = 0f;
-            float lowerValley50Pc = 0f;
-            float upperValley50Pc = 0f;
-            float lowerMz10Pc = -1f;
-            float upperMz10Pc = -1f;
-            float lowerMz50Pc = -1f;
-            float upperMz50Pc = -1f;
-
-            int isotope = -1;
-            float lowMz = -1;
-            float upMz = -1;
-            float ellipseTimePosition = -1f;
-            float ellipseMzPosition = -1f;
-            float ellipseTimeStretch = -1f;
-            float ellipseMzStretch = -1f;
-            float lowerRtHardLimit = -1f;
-            float upperRtHardLimit = -1f;
-            float percentalSplit = -1f;
-            for (int i=0;  row!=null && i!=(row.getLastCellNum()+1);i++){
-              Cell cell = row.getCell(i);
-              String contents = "";
-              Double numeric = null;
-              int cellType = -1;
-              if (cell!=null) cellType = cell.getCellType();
-              if (cellType==Cell.CELL_TYPE_STRING){
-                contents = cell.getStringCellValue();
-                try{ numeric = new Double(contents);}catch(NumberFormatException nfx){};
-              }else if (cellType==Cell.CELL_TYPE_NUMERIC || cellType==Cell.CELL_TYPE_FORMULA){
-               numeric = cell.getNumericCellValue();
-               contents = String.valueOf(numeric);
-              }
-              
-              if (cellType == Cell.CELL_TYPE_STRING)
-                contents = cell.getStringCellValue();
-              else if (cellType == Cell.CELL_TYPE_NUMERIC){
-                double cellValue = -1;
-                cellValue = cell.getNumericCellValue();
-                contents = String.valueOf(cellValue);
-              }  
-              if (rowCount==0){
-                if (contents.equalsIgnoreCase("Name"))
-                  nameColumn = i;
-                if (contents.equalsIgnoreCase("Dbs"))
-                  dbsColumn = i;
-                if (contents.equalsIgnoreCase("Modification"))
-                  modificationColumn = i;
-                if (contents.equalsIgnoreCase("Formula"))
-                  formulaColumn = i;
-                if (contents.equalsIgnoreCase("Mod-Formula"))
-                  modFormulaColumn = i;
-                if (contents.equalsIgnoreCase("RT"))
-                  rtColumn = i;
-                if (contents.equalsIgnoreCase("Isotope"))
-                  isotopeColumn = i;            
-                if (contents.equalsIgnoreCase("Area"))
-                  areaColumn = i;            
-                if (contents.equalsIgnoreCase("AreaError"))
-                  areaErrorColumn = i;
-                if (contents.equalsIgnoreCase("Background"))
-                  backgroundColumn = i;
-                if (contents.equalsIgnoreCase("Charge"))
-                  chargeColumn = i;
-                if (contents.equalsIgnoreCase("Mz"))
-                  mzColumn = i;
-                if (contents.equalsIgnoreCase("MzTolerance"))
-                  mzToleranceColumn = i;
-                if (contents.equalsIgnoreCase("Peak"))
-                  peakColumn = i;
-                if (contents.equalsIgnoreCase("LowerValley"))
-                  lowerValleyColumn = i;
-                if (contents.equalsIgnoreCase("UpperValley"))
-                  upperValleyColumn = i;
-                if (contents.equalsIgnoreCase("LowMz"))
-                  lowMzColumn = i;
-                if (contents.equalsIgnoreCase("UpMz"))
-                  upMzColumn = i;
-                if (contents.equalsIgnoreCase("EllCentTime"))
-                  ellipseTimePosColumn = i;
-                if (contents.equalsIgnoreCase("EllCentMz"))
-                  ellipseMzPosColumn = i;
-                if (contents.equalsIgnoreCase("EllStretchTime"))
-                  ellipseTimeStretchColumn = i;
-                if (contents.equalsIgnoreCase("EllStretchMz"))
-                  ellipseMzStretchColumn = i;
-                if (contents.equalsIgnoreCase("LowerRtHardLimit"))
-                  lowerHardLimitColumn = i;
-                if (contents.equalsIgnoreCase("UpperRtHardLimit"))
-                  upperHardLimitColumn = i;
-                if (contents.equalsIgnoreCase("PercentalSplit"))
-                  percentalSplitColumn = i;
-                if (contents.startsWith("level=")){
-                  String levelString = contents.substring("level=".length()).trim();
-                  msLevel = Integer.valueOf(levelString);
-                }else if (contents.equalsIgnoreCase(QuantificationThread.COLUMN_APEX_INTENSITY)){
-                  apexIntensityColumn = i;
-                }else if (contents.equalsIgnoreCase(QuantificationThread.COLUMN_LOWER_VALLEY10PC)){
-                  lowerValley10PcColumn = i;
-                }else if (contents.equalsIgnoreCase(QuantificationThread.COLUMN_LOWER_VALLEY50PC)){
-                  lowerValley50PcColumn = i;
-                }else if (contents.equalsIgnoreCase(QuantificationThread.COLUMN_UPPER_VALLEY10PC)){
-                  upperValley10PcColumn = i;
-                }else if (contents.equalsIgnoreCase(QuantificationThread.COLUMN_UPPER_VALLEY50PC)){
-                  upperValley50PcColumn = i;
-                }else if (contents.equalsIgnoreCase(QuantificationThread.COLUMN_LOWER_MZ10PC)){
-                  lowerMz10PcColumn = i;
-                }else if (contents.equalsIgnoreCase(QuantificationThread.COLUMN_LOWER_MZ50PC)){
-                  lowerMz50PcColumn = i;
-                }else if (contents.equalsIgnoreCase(QuantificationThread.COLUMN_UPPER_MZ10PC)){
-                  upperMz10PcColumn = i;
-                }else if (contents.equalsIgnoreCase(QuantificationThread.COLUMN_UPPER_MZ50PC)){
-                  upperMz50PcColumn = i;
-                }
-              }else{
-                if (i==nameColumn)
-                  name = contents;
-                if (i==dbsColumn&&contents!=null&&contents.length()>0){
-                  dbs = numeric.intValue();
-                }if (i==modificationColumn)
-                  modification = contents;
-                if (i==formulaColumn)
-                  formula = contents;
-                if (i==modFormulaColumn)
-                  modFormula = contents;
-                if (i==rtColumn)
-                  rtString = contents;
-                if (i==isotopeColumn && contents!=null&&contents.length()>0){
-                  isotope = numeric.intValue();
-                }  
-                if (i==chargeColumn&&contents!=null&&contents.length()>0)
-                  paramCharge = numeric.intValue();
-                if (i==areaColumn && contents!=null && contents.length()>0)
-                  area = numeric.floatValue();
-                if (i==areaErrorColumn && contents!=null && contents.length()>0)
-                  areaError = numeric.floatValue();
-                if (i==backgroundColumn && contents!=null && contents.length()>0)
-                  background = numeric.floatValue();
-                if (i==chargeColumn && contents!=null && contents.length()>0){
-                  charge = numeric.intValue();
-                }  
-                if (i==mzColumn && contents!=null && contents.length()>0)
-                  mz = numeric.floatValue();
-                if (i==mzToleranceColumn && contents!=null && contents.length()>0)
-                  mzTolerance = numeric.floatValue();
-                if (i==peakColumn && contents!=null && contents.length()>0)
-                  peak = numeric.floatValue();;
-                if (i==lowerValleyColumn && contents!=null && contents.length()>0)
-                  lowerValley = numeric.floatValue();
-                if (i==apexIntensityColumn && contents!=null && contents.length()>0)
-                  apexIntensity = numeric.floatValue();
-                if (i==lowerValley10PcColumn && contents!=null && contents.length()>0)
-                  lowerValley10Pc = numeric.floatValue();
-                if (i==lowerValley50PcColumn && contents!=null && contents.length()>0)
-                  lowerValley50Pc = numeric.floatValue();
-                if (i==upperValley10PcColumn && contents!=null && contents.length()>0)
-                  upperValley10Pc = numeric.floatValue();
-                if (i==upperValley50PcColumn && contents!=null && contents.length()>0)
-                  upperValley50Pc = numeric.floatValue();               
-                if (i==lowerMz10PcColumn && contents!=null && contents.length()>0)
-                  lowerMz10Pc = numeric.floatValue();
-                if (i==lowerMz50PcColumn && contents!=null && contents.length()>0)
-                  lowerMz50Pc = numeric.floatValue();
-                if (i==upperMz10PcColumn && contents!=null && contents.length()>0)
-                  upperMz10Pc = numeric.floatValue();
-                if (i==upperMz50PcColumn && contents!=null && contents.length()>0)
-                  upperMz50Pc = numeric.floatValue();               
-                
-                if (i==upperValleyColumn && contents!=null && contents.length()>0)
-                  upperValley = numeric.floatValue();
-                if (i==lowMzColumn && contents!=null && contents.length()>0)
-                  lowMz = numeric.floatValue();;
-                if (i==upMzColumn && contents!=null && contents.length()>0)
-                  upMz = numeric.floatValue();
-                if (i==ellipseTimePosColumn && contents!=null && contents.length()>0)
-                  ellipseTimePosition = numeric.floatValue();
-                if (i==ellipseMzPosColumn && contents!=null && contents.length()>0)
-                  ellipseMzPosition = numeric.floatValue();
-                if (i==ellipseTimeStretchColumn && contents!=null && contents.length()>0)
-                  ellipseTimeStretch = numeric.floatValue();
-                if (i==ellipseMzStretchColumn && contents!=null && contents.length()>0)
-                  ellipseMzStretch = numeric.floatValue();
-                
-                if (i==lowerHardLimitColumn && contents!=null && contents.length()>0)
-                  lowerRtHardLimit = numeric.floatValue();
-                if (i==upperHardLimitColumn && contents!=null && contents.length()>0)
-                  upperRtHardLimit = numeric.floatValue();
-                if (i==percentalSplitColumn && contents!=null && contents.length()>0)
-                  percentalSplit = numeric.floatValue();
-
-              }
-            }
-            if (name!=null&&name.length()>0){
-              if (params!=null){
-                // this is for backward compatibility
-                if (params.ProbeCount()>0)
-                  params.setCharge(params.Probe(0).Charge);
-                resultPrms.add(params);
-                if (analyteNames.containsKey(params.getNameString())) showModification = true;
-                analyteNames.put(params.getNameString(), params.getNameString());
-              }
-              //this is for backward compatibility
-              if (modificationColumn==-1 || formulaColumn==-1 || modFormulaColumn==-1){
-                Object[] components = ComparativeNameExtractor.splitOldNameStringToComponents(name);
-                name = (String)components[0];
-                dbs = (Integer)components[1];
-                formula = (String)components[2];
-                modification = "";
-                modFormula = "";
-              }
-              params = new LipidParameterSet(mz, name, dbs, modification, rtString, formula, modFormula,paramCharge);
-              if (lowerRtHardLimit>=0) params.setLowerRtHardLimit(lowerRtHardLimit);
-              if (upperRtHardLimit>=0) params.setUpperRtHardLimit(upperRtHardLimit);
-              if (percentalSplit>=0) params.setPercentalSplit(percentalSplit);
-              params.Area = area;
-              params.LowerMzBand = mzTolerance;
-              params.UpperMzBand = mzTolerance;
-            }else{
-              if (params!=null){
-                if (charge!=-1){
-                  CgProbe probe = new CgProbe(0,charge);
-                  if (area>0 || params.getLowerRtHardLimit()>=0 || params.getUpperRtHardLimit()>=0){
-                    probe.AreaStatus = CgAreaStatus.OK;
-                    probe.Area = area;
-                    probe.AreaError = areaError;
-                    probe.Background = background;
-                    probe.Peak = peak;
-                    probe.LowerValley = lowerValley;
-                    probe.UpperValley = upperValley;
-                    if (upperValley10Pc>0f){
-                      probe.setApexIntensity(apexIntensity);
-                      probe.setLowerValley10(lowerValley10Pc);
-                      probe.setLowerValley50(lowerValley50Pc);
-                      probe.setUpperValley10(upperValley10Pc);
-                      probe.setUpperValley50(upperValley50Pc);
-                    }
-                  }else{
-                    probe.AreaStatus = CgAreaStatus.TooSmall;
-                  }            
-                  probe.Mz = mz;
-                  probe.LowerMzBand = mzTolerance;
-                  probe.UpperMzBand = mzTolerance;
-                  probe.isotopeNumber = isotope;
-                  if (ellipseTimePosition>0&&ellipseMzPosition>0&&ellipseTimeStretch>0&&ellipseMzStretch>0&&
-                      lowMz>0&&upMz>0){
-                    Probe3D probe3D = new Probe3D(probe,ellipseTimePosition,ellipseMzPosition,
-                        ellipseTimeStretch,ellipseMzStretch,-1f,-1f,lowerMz10Pc,upperMz10Pc,lowerMz50Pc,upperMz50Pc);
-                    probe3D.LowerMzBand = lowMz;
-                    probe3D.UpperMzBand = upMz;
-                    if (params.getLowerRtHardLimit()>=0) probe3D.setLowerHardRtLimit(params.getLowerRtHardLimit());
-                    if (params.getUpperRtHardLimit()>=0) probe3D.setUpperHardRtLimit(params.getUpperRtHardLimit());
-                    params.AddProbe(probe3D);
-                  }else
-                    params.AddProbe(probe);
-                }
-              }
-            }
-        
-          }
-          if (params!=null){
-            // this is for backward compatibility
-            if (params.ProbeCount()>0)
-              params.setCharge(params.Probe(0).Charge);
-            resultPrms.add(params);
-            if (analyteNames.containsKey(params.getNameString())) showModification = true;
-            analyteNames.put(params.getNameString(), params.getNameString());
-          }
-          if (!showModification){
-            String modificationString = null;
-            for (LipidParameterSet set : resultPrms){
-              if (modificationString==null) modificationString = set.getModificationName();
-              if (!modificationString.equalsIgnoreCase(set.getModificationName())){
-                showModification = true;
-                break;
-              }
-            }
-          }
-          resultParams.put(sheet.getSheetName(), resultPrms);
-          showModifications.put(sheet.getSheetName(), showModification);
-          msLevels.put(sheet.getSheetName(), msLevel);
-        } else if (sheet.getSheetName().equalsIgnoreCase(QuantificationThread.CONSTANTS_SHEET)){
-          readConstants = LipidomicsConstants.readSettingsFromExcel(sheet);
-        }
-      }
-      for (int sheetNumber=0;sheetNumber!=workbook.getNumberOfSheets();sheetNumber++){       
-        Sheet sheet = workbook.getSheetAt(sheetNumber);
-        if (sheet.getSheetName().endsWith(QuantificationThread.MSN_SHEET_ADDUCT)){
-          String lipidClass = sheet.getSheetName().substring(0,sheet.getSheetName().lastIndexOf(QuantificationThread.MSN_SHEET_ADDUCT));
-          Vector<LipidParameterSet> resultPrms = resultParams.get(lipidClass);
-          resultPrms = QuantificationThread.readMSnEvidence(sheet,resultPrms,readConstants);
-          resultParams.put(lipidClass,resultPrms);
-        }
-      }  
-      myxls.close();
-    }
-    catch (IOException e) {
-      e.printStackTrace();
-      new WarningMessage(new JFrame(), "ERROR", e.getMessage()+"; it does not seem to be Microsoft Excel");
-      throw new ExcelInputFileException(e);
-    } catch (Exception e) {
-      e.printStackTrace();
-      new WarningMessage(new JFrame(), "ERROR", e.getMessage());
-      throw new ExcelInputFileException(e);
-    }
-    QuantificationResult result = new QuantificationResult(resultParams,readConstants,msLevels);
-    return result;
-  }
   
   private void initANewViewer(LipidParameterSet params){
     this.initANewViewer(params,null);
@@ -3911,7 +3513,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     String titleString = "Lipid Data Analyzer "+Settings.VERSION+"   "+LipidomicsConstants.getCurrentMSMachine()+" settings ";
     String fragSelected = Settings.getFragmentSettingsString();
     if (fragSelected!=null) titleString += " "+fragSelected;    
-    titleString += "         \u00A9 2017 - J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger - GNU GPL v3 license";
+    titleString += "         \u00A9 2018 - J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger - GNU GPL v3 license";
     return titleString;
   }
 
@@ -4805,7 +4407,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       Hashtable<String,Boolean> showMods = new Hashtable<String,Boolean>();
       Hashtable<String,String> modHash = new Hashtable<String,String>();
       for (String modName : selectedMods) modHash.put(modName, modName);
-      QuantificationResult result1 = readResultFile(absFilePathStartEx, showMods);
+      QuantificationResult result1 = LDAResultReader.readResultFile(absFilePathStartEx, showMods);
       Hashtable<String,LipidParameterSet> paramOfInterest = getParamByAnalyteName(analyteName, result1.getIdentifications().get(groupName), modHash);
       String[] nameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(analyteName);
       if (nameAndRt[1]==null) nameAndRt[1] = "";
@@ -4815,7 +4417,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         for (String updateablePath : foundUpdateables){
           Hashtable<String,Boolean> updateShowMods = new Hashtable<String,Boolean>();
           try{
-            QuantificationResult result2 = readResultFile(updateablePath, updateShowMods);
+            QuantificationResult result2 = LDAResultReader.readResultFile(updateablePath, updateShowMods);
             Vector<LipidParameterSet> updateParams = result2.getIdentifications().get(groupName);
             Hashtable<String,Vector<LipidParameterSet>> paramsToSelectOne = new Hashtable<String,Vector<LipidParameterSet>>();
             Vector<Integer> updateToRemove = new Vector<Integer>();
@@ -4936,12 +4538,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     Hashtable<String,String> modHash = new Hashtable<String,String>();
     for (String modName : selectedMods) modHash.put(modName, modName);
     try{
-      QuantificationResult result1 = readResultFile(absFilePathStartEx, showMods);
+      QuantificationResult result1 = LDAResultReader.readResultFile(absFilePathStartEx, showMods);
       Hashtable<String,LipidParameterSet> paramsOfInterest = getParamByAnalyteName(analyteName, result1.getIdentifications().get(groupName), modHash);
       if (paramsOfInterest.size()>0){
         for (AutoAnalyteAddVO addVO : updateableAndAnalyteBefore){
           try {
-            QuantificationResult result2 = readResultFile(addVO.getResultFilePath(), new Hashtable<String,Boolean>());
+            QuantificationResult result2 = LDAResultReader.readResultFile(addVO.getResultFilePath(), new Hashtable<String,Boolean>());
             boolean hasRtInfo = QuantificationThread.hasRtInfo(result2.getIdentifications());
             Vector<LipidParameterSet> updateParams = result2.getIdentifications().get(groupName);
             Vector<LipidParameterSet> updateParamsWOZeroAnalyte = new Vector<LipidParameterSet>();
@@ -5078,7 +4680,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         nameRtHash.put(nameAndRt[0], rts);
       }
       try{
-        QuantificationResult result = readResultFile(updateablePath, showMods);
+        QuantificationResult result = LDAResultReader.readResultFile(updateablePath, showMods);
         Vector<LipidParameterSet> oldParams = result.getIdentifications().get(groupName);
         Vector<LipidParameterSet> newParams = new Vector<LipidParameterSet>();
         for (LipidParameterSet param : oldParams){
@@ -5700,7 +5302,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 
       for (int i=0; i!=analysisModule_.getExpNamesInSequence().size(); i++) {
         String exp = analysisModule_.getExpNamesInSequence().get(i);
-        QuantificationResult result = LipidDataAnalyzer.readResultFile(analysisModule_.getFullFilePath(exp).getAbsolutePath(),  new Hashtable<String,Boolean>());
+        QuantificationResult result = LDAResultReader.readResultFile(analysisModule_.getFullFilePath(exp).getAbsolutePath(),  new Hashtable<String,Boolean>());
         Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>> resultsOfExp = new Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>();
         for (String className : result.getIdentifications().keySet()){
           Hashtable<String,Vector<LipidomicsMSnSet>> msnFound = new Hashtable<String,Vector<LipidomicsMSnSet>>();
@@ -5929,7 +5531,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                       if (set.getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED){
                         String faName = nameString.replaceAll("/","_");
                         if (faName.indexOf("|")>-1) faName = faName.substring(0,faName.indexOf("|"));
-                        String[] fas = FragmentCalculator.getFAsFromCombiName(faName);
+                        String[] fas = StaticUtils.getFAsFromCombiName(faName);
                         for (int j=0; j!= fas.length; j++){
                           String fa = fas[j];
                           if (!set.getChainFragments().containsKey(fa)) continue;

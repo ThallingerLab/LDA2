@@ -222,4 +222,109 @@
 
 	</target>
 	
+	<target name="copyLibsToInstaller">
+		<copy todir="${installer.tuLibs.dir}">
+			<fileset dir="${dist.dir}/tuLibs"/>
+		</copy>
+		<copy todir="${installer.thirdParty.dir}">
+			<fileset dir="${dist.dir}/thirdParty"/>
+		</copy>
+	</target>
+	
+	<target name="mgf-sorter">
+    	<mkdir dir="${classes.mgf.dir}"/>
+	  	<javac debug="true"
+	         destdir="${classes.mgf.dir}"
+	         includes="**/*.java"
+	         includeAntRuntime="false">
+	  		<src path="${src.mgf.dir}" />
+	      <classpath refid="distri.class.path" />
+	  	</javac>
+	    <unjar src="${maspectras.lib.dir}/maspectras-lipidomics.jar" dest="${classes.mgf.dir}">
+	        <patternset>
+	          <include name="at/tugraz/genome/voutils/GeneralComparator.class"/>
+	        </patternset>
+	    </unjar>
+	  	<jar jarfile="${dist.dir}/MgfSorter.jar">
+			<manifest>
+				<attribute name="Main-Class" value="at.tugraz.genome.MgfSorter" />
+			</manifest>
+	        <fileset dir="${classes.mgf.dir}" includes="**/*.*"/> 
+	    </jar>
+	    <delete includeEmptyDirs="true" >
+	       <fileset dir="${classes.mgf.dir}" />
+	    </delete>
+	</target>
+	
+	<target name="fa-converter">
+		<mkdir dir="${classes.faConverter.dir}"/>
+	  	<javac debug="true"
+	         destdir="${classes.faConverter.dir}"
+	         includes="**/*.java"
+	         includeAntRuntime="false">
+	  		<src path="${src.faConverter.dir}" />
+	      <classpath refid="distri.class.path" />
+	  	</javac>
+		<unjar src="${excel.lib.dir}/poi-3.12-20150511.jar" dest="${classes.faConverter.dir}" />
+		<unjar src="${excel.lib.dir}/poi-ooxml-3.12-20150511.jar" dest="${classes.faConverter.dir}" />
+		<unjar src="${excel.lib.dir}/poi-ooxml-schemas-3.12-20150511.jar" dest="${classes.faConverter.dir}" />
+		<unjar src="${xml.lib.dir}/xmlbeans-2.3.0.jar" dest="${classes.faConverter.dir}" />
+	    <unjar src="${mztab.lib.dir}/jmztab.jar" dest="${classes.faConverter.dir}">
+	        <patternset>
+	          <include name="uk/ac/ebi/pride/jmztab/model/*.*"/>
+	        </patternset>
+	    </unjar>
+
+	    <unjar src="${maspectras.lib.dir}/maspectras-lipidomics.jar" dest="${classes.faConverter.dir}">
+	        <patternset>
+	          <include name="at/tugraz/genome/maspectras/parser/exceptions/SpectrummillParserException.class"/>
+	          <include name="at/tugraz/genome/maspectras/parser/spectrummill/ElementConfigParser.class"/>
+	          <include name="at/tugraz/genome/maspectras/parser/spectrummill/vos/SmIsotopeVO.class"/>
+		      <include name="at/tugraz/genome/maspectras/parser/spectrummill/vos/SmChemicalElementVO.class"/>
+	          <include name="at/tugraz/genome/maspectras/parser/XMLFileLoader.class"/>
+	          <include name="at/tugraz/genome/maspectras/quantification/CgAreaStatus.class"/>
+	          <include name="at/tugraz/genome/maspectras/quantification/CgDefines.class"/>
+	          <include name="at/tugraz/genome/maspectras/quantification/CgException.class"/>
+	          <include name="at/tugraz/genome/maspectras/quantification/CgParameterSet.class"/>
+	          <include name="at/tugraz/genome/maspectras/quantification/CgProbe.class"/>
+	          <include name="at/tugraz/genome/maspectras/quantification/Probe3D.class"/>
+		      <include name="at/tugraz/genome/maspectras/utils/Calculator.class"/>
+	          <include name="at/tugraz/genome/voutils/GeneralComparator.class"/>
+	        </patternset>
+	    </unjar>
+	    <unjar src="${dist.dir}/LipidDataAnalyzer.jar" dest="${classes.faConverter.dir}">
+	        <patternset>
+	          <include name="at/tugraz/genome/lda/LDAResultReader.class"/>
+	          <include name="at/tugraz/genome/lda/LipidomicsConstants.class"/>
+	          <include name="at/tugraz/genome/lda/QuantificationThread.class"/>
+	          <include name="at/tugraz/genome/lda/Settings.class"/>
+		      <include name="at/tugraz/genome/lda/exception/ChemicalFormulaException.class"/>
+	          <include name="at/tugraz/genome/lda/exception/ExcelInputFileException.class"/>
+	          <include name="at/tugraz/genome/lda/exception/NoRuleException.class"/>
+	          <include name="at/tugraz/genome/lda/exception/RulesException.class"/>
+	          <include name="at/tugraz/genome/lda/exception/SettingsException.class"/>
+	          <include name="at/tugraz/genome/lda/msn/RulesContainer.class"/>
+	          <include name="at/tugraz/genome/lda/msn/LipidomicsMSnSet.class"/>
+	          <include name="at/tugraz/genome/lda/msn/parser/FragRuleParser.class"/>
+	          <include name="at/tugraz/genome/lda/msn/vos/ExpressionForComparisonVO.class"/>
+	          <include name="at/tugraz/genome/lda/msn/vos/Fragment*.*"/>
+	          <include name="at/tugraz/genome/lda/msn/vos/Intensity*.*"/>
+		      <include name="at/tugraz/genome/lda/quantification/LipidParameterSet.class"/>
+			  <include name="at/tugraz/genome/lda/quantification/QuantificationResult.class"/>
+			  <include name="at/tugraz/genome/lda/utils/ExcelUtils.class"/>
+	          <include name="at/tugraz/genome/lda/utils/RangeInteger.class"/>
+	          <include name="at/tugraz/genome/lda/utils/StaticUtils.class"/>
+	        </patternset>
+	    </unjar>
+	  	<jar jarfile="${dist.dir}/FaIntensityConverter.jar">
+			<manifest>
+				<attribute name="Main-Class" value="at.tugraz.genome.FaIntensityConverter" />
+			</manifest>
+	        <fileset dir="${classes.faConverter.dir}" includes="**/*.*"/> 
+	    </jar>
+	    <delete includeEmptyDirs="true">
+	       <fileset dir="${classes.faConverter.dir}" />
+	    </delete>
+	</target>	
+
 </project>

@@ -6,6 +6,7 @@
 	<classpathentry kind="src" path="src-ttest"/>
 	<classpathentry kind="src" path="test"/>
 	<classpathentry kind="src" path="src-merger"/>
+	<classpathentry kind="src" path="src-faIntensityConverter"/>
 	<classpathentry kind="lib" path="lib/maspectras/maspectras-lipidomics.jar"/>
 	<classpathentry kind="lib" path="lib/xml/xpp3-1.1.3.4.C.jar"/>
 	<classpathentry kind="lib" path="lib/svg/batik-svggen.jar"/>

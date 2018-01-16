@@ -277,7 +277,7 @@ public class ChromExportThread extends Thread
       try {
         ChromatogramReader reader_ = new ChromatogramReader(filePaths[1], filePaths[2],filePaths[3], filePaths[0],LipidomicsConstants.isSparseData(),LipidomicsConstants.getChromSmoothRange());
         Hashtable<String,Boolean> showMods = new Hashtable<String,Boolean>();
-        QuantificationResult result = LipidDataAnalyzer.readResultFile(resultsToUse.get(i), showMods);
+        QuantificationResult result = LDAResultReader.readResultFile(resultsToUse.get(i), showMods);
         Vector<LipidParameterSet> params = result.getIdentifications().get(lipidClass_);
         Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>> resultHash = new Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>();
         for (LipidParameterSet set:params){

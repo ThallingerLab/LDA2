@@ -42,10 +42,10 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
-import at.tugraz.genome.lda.msn.FragmentCalculator;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.swing.RangeColor;
@@ -772,7 +772,7 @@ public class StaticUtils
     String[] fas = LipidomicsMSnSet.getFAsFromCombiName(one);
     Vector<String> fasVector = new Vector<String>();
     for (String fa : fas) fasVector.add(fa);
-    Vector<String> permuted = FragmentCalculator.getPermutedNames(fasVector);
+    Vector<String> permuted = StaticUtils.getPermutedChainNames(fasVector);
     for (String combi : permuted){
       if (combi.equalsIgnoreCase(two)) return true;
     }
@@ -1056,7 +1056,7 @@ public class StaticUtils
     
     String faString = "";
     for (Integer faNr : assignedFAs){
-      if (faString.length()>0) faString += FragmentCalculator.FA_SEPARATOR;
+      if (faString.length()>0) faString += LipidomicsConstants.FA_SEPARATOR;
       faString += fas[faNr];
     }
     return faString;
@@ -1124,5 +1124,49 @@ public class StaticUtils
     return result;
   }
 
+  /**
+   * returns the individual fatty acid chain from a fatty acid chain combination
+   * @param combiName fatty acid chain combination
+   * @return the individual fatty acid chain from a fatty acid chain combination
+   */
+  public static String[] getFAsFromCombiName(String combiName){
+    return combiName.split(LipidomicsConstants.FA_SEPARATOR);
+  }
+  
+  /**
+   * returns a list of all permuted name variants of the presented input vector
+   * the permuted names are separated by FA_SEPARATOR
+   * the method checks and removes duplicate name entries
+   * @param singleCombiParts vector containing the names to be permuted
+   * @return all permuted name variants of the presented input vector - permuted names are separated by FA_SEPARATOR
+   */
+  public static Vector<String> getPermutedChainNames(Vector<String> singleCombiParts){
+    String currentName = "";
+    Vector<String> permutedNames = addPermutedPart(currentName, singleCombiParts);
+    return permutedNames;
+  }
+  
+  /**
+   * recursive call to assign the individual names to the permuted name string
+   * @param currentName value that is assigned to the name until now
+   * @param singleCombiParts remaining individual names that have to be assigned
+   * @return the permuted name
+   */
+  private static Vector<String> addPermutedPart(String currentName, Vector<String> singleCombiParts){
+    Vector<String> permutedNames = new Vector<String>();
+    for (int i=0;i!=singleCombiParts.size();i++){
+      String name = new String(currentName);
+      name+=singleCombiParts.get(i)+LipidomicsConstants.FA_SEPARATOR;
+      Vector<String> subCombiParts = new Vector<String>(singleCombiParts);
+      subCombiParts.remove(i);
+      if (subCombiParts.size()>0){
+        permutedNames.addAll(addPermutedPart(name,subCombiParts));
+      }else{
+        name = name.substring(0,name.length()-1);
+        permutedNames.add(name);
+      }
+    }
+    return permutedNames;
+  }
 
 }

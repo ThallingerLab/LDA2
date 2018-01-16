@@ -26,10 +26,12 @@ package at.tugraz.genome.lda.msn;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.msn.vos.IntensityChainVO;
 import at.tugraz.genome.lda.msn.vos.IntensityPositionVO;
 import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
+import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 
 /**
@@ -244,7 +246,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
       for (int i=(definedPositions.size()+unassignedFAs.size()); i<numberOfPositions_;i++){
         unassigned.add("-");
       }
-      Vector<String> permutedNames = FragmentCalculator.getPermutedNames(unassigned);
+      Vector<String> permutedNames = StaticUtils.getPermutedChainNames(unassigned);
       for (String permutedName : permutedNames){
         if (!combis.containsKey(permutedName)) combis.put(permutedName, permutedName);
       }
@@ -349,7 +351,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
    * @return individual lipid species names
    */
   public static String[] getFAsFromCombiName(String combiName){
-    return FragmentCalculator.getFAsFromCombiName(combiName.replaceAll("/", FragmentCalculator.FA_SEPARATOR));
+    return StaticUtils.getFAsFromCombiName(combiName.replaceAll("/", LipidomicsConstants.FA_SEPARATOR));
   }
 
   private double getAreaOfOneChain(String faName){
@@ -492,10 +494,10 @@ public class LipidomicsMSnSet extends LipidParameterSet
     else if (faName!=null && faName.length()>0 && chainFragments!=null){
       if (chainFragments.containsKey(faName) && chainFragments.get(faName).containsKey(name)){
         fragment = chainFragments.get(faName).get(name);
-      }else if (chainFragments.containsKey(FragmentCalculator.ALKYL_PREFIX.concat(faName)) && chainFragments.get(FragmentCalculator.ALKYL_PREFIX.concat(faName)).containsKey(name)){
-        fragment = chainFragments.get(FragmentCalculator.ALKYL_PREFIX.concat(faName)).get(name);
-      }else if (chainFragments.containsKey(FragmentCalculator.ALKENYL_PREFIX.concat(faName)) && chainFragments.get(FragmentCalculator.ALKENYL_PREFIX.concat(faName)).containsKey(name)){
-        fragment = chainFragments.get(FragmentCalculator.ALKENYL_PREFIX.concat(faName)).get(name);
+      }else if (chainFragments.containsKey(LipidomicsConstants.ALKYL_PREFIX.concat(faName)) && chainFragments.get(LipidomicsConstants.ALKYL_PREFIX.concat(faName)).containsKey(name)){
+        fragment = chainFragments.get(LipidomicsConstants.ALKYL_PREFIX.concat(faName)).get(name);
+      }else if (chainFragments.containsKey(LipidomicsConstants.ALKENYL_PREFIX.concat(faName)) && chainFragments.get(LipidomicsConstants.ALKENYL_PREFIX.concat(faName)).containsKey(name)){
+        fragment = chainFragments.get(LipidomicsConstants.ALKENYL_PREFIX.concat(faName)).get(name);
       }
     }
     return fragment;

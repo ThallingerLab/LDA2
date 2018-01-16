@@ -116,6 +116,7 @@ import JSci.maths.statistics.ChiSqrDistribution;
 import JSci.maths.statistics.TDistribution;
 import at.tugraz.genome.dbutilities.SimpleValueObject;
 import at.tugraz.genome.exception.LipidBLASTException;
+import at.tugraz.genome.lda.LDAResultReader;
 import at.tugraz.genome.lda.LipidDataAnalyzer;
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.MzxmlToChromThread;
@@ -155,6 +156,7 @@ import at.tugraz.genome.lda.utils.RangeInteger;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.lda.xml.AbsoluteQuantSettingsWholeReader;
+import at.tugraz.genome.lda.xml.AddScan;
 import at.tugraz.genome.lda.xml.MzXmlReader;
 import at.tugraz.genome.lda.xml.RawToChromTranslator;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
@@ -223,6 +225,7 @@ import at.tugraz.genome.voutils.GeneralComparator;
 
 
 
+
 import com.sun.j3d.utils.applet.MainFrame;
 import com.sun.org.apache.xerces.internal.util.URI;
 
@@ -236,7 +239,7 @@ import com.sun.org.apache.xerces.internal.util.URI;
  * @author Juergen Hartler
  *
  */
-public class TestClass extends JApplet implements CgIAddScan
+public class TestClass extends JApplet implements AddScan
 {
   public static void main(String[] args)
   {
@@ -1646,15 +1649,15 @@ public class TestClass extends JApplet implements CgIAddScan
     Hashtable<String,Boolean> resultsShowModification6 = new Hashtable<String,Boolean>();
     Hashtable<String,Boolean> resultsShowModification7 = new Hashtable<String,Boolean>();
     try {
-      QuantificationResult result1 = LipidDataAnalyzer.readResultFile(filePath1,  resultsShowModification1);
+      QuantificationResult result1 = LDAResultReader.readResultFile(filePath1,  resultsShowModification1);
 //      Hashtable<String,Vector<LipidParameterSet>> resultParams2 = new Hashtable<String,Vector<LipidParameterSet>>();
 //      Hashtable<String,Integer> msLevels2 = new Hashtable<String,Integer>();
-      QuantificationResult result2 = LipidDataAnalyzer.readResultFile(filePath2,  resultsShowModification2);
-      QuantificationResult result3 = LipidDataAnalyzer.readResultFile(filePath3,  resultsShowModification3);
-      QuantificationResult result4 = LipidDataAnalyzer.readResultFile(filePath4,  resultsShowModification4);
-      QuantificationResult result5 = LipidDataAnalyzer.readResultFile(filePath5,  resultsShowModification5);
-      QuantificationResult result6 = LipidDataAnalyzer.readResultFile(filePath6,  resultsShowModification6);
-      QuantificationResult result7 = LipidDataAnalyzer.readResultFile(filePath7,  resultsShowModification7);
+      QuantificationResult result2 = LDAResultReader.readResultFile(filePath2,  resultsShowModification2);
+      QuantificationResult result3 = LDAResultReader.readResultFile(filePath3,  resultsShowModification3);
+      QuantificationResult result4 = LDAResultReader.readResultFile(filePath4,  resultsShowModification4);
+      QuantificationResult result5 = LDAResultReader.readResultFile(filePath5,  resultsShowModification5);
+      QuantificationResult result6 = LDAResultReader.readResultFile(filePath6,  resultsShowModification6);
+      QuantificationResult result7 = LDAResultReader.readResultFile(filePath7,  resultsShowModification7);
       Hashtable<String,Vector<String>> correctAnalyteSequence = (Hashtable<String,Vector<String>>)QuantificationThread.getCorrectAnalyteSequence("E:\\Marlene\\201403_untargeted\\Clemantis_compounds.xls",false).get(1);
       
       QuantificationResult mergedResults = mergeResults(result1,result2,correctAnalyteSequence);
@@ -3164,7 +3167,7 @@ public void testTabFile() throws Exception {
     String filePath = "D:\\lipidomics\\20150617\\05_Wolfrum_pos.xlsx";
     try {
       Hashtable<String,Boolean> showMods = new  Hashtable<String,Boolean>();
-      QuantificationResult result = LipidDataAnalyzer.readResultFile(filePath, showMods);
+      QuantificationResult result = LDAResultReader.readResultFile(filePath, showMods);
 //      for (String cl : showMods.keySet()) System.out.println(cl+" ; "+showMods.get(cl));
       for (String key : result.getIdentifications().keySet()){
         for (LipidParameterSet set : result.getIdentifications().get(key)){
@@ -3942,7 +3945,7 @@ public void testTabFile() throws Exception {
   
   private void doPostQuantProcessing(){
     try {
-      Hashtable<String,Vector<LipidParameterSet>> results = LipidDataAnalyzer.readResultFile("E:\\lipidomicsMS2\\20140218\\neg\\030_Liver1_Neg_PI.xlsx", new Hashtable<String,Boolean>()).getIdentifications();
+      Hashtable<String,Vector<LipidParameterSet>> results = LDAResultReader.readResultFile("E:\\lipidomicsMS2\\20140218\\neg\\030_Liver1_Neg_PI.xlsx", new Hashtable<String,Boolean>()).getIdentifications();
       //Hashtable<String,Vector<LipidParameterSet>> results = LipidDataAnalyzer.readResultFile("E:\\lipidomicsMS2\\20140220\\001_LD1_TG_all.xlsx", new Hashtable<String,Boolean>()).getIdentifications();
       //Hashtable<String,Vector<LipidParameterSet>> results = LipidDataAnalyzer.readResultFile("E:\\lipidomicsMS2\\testTGold\\20100126_TAG-34_TG_all.xlsx", new Hashtable<String,Boolean>()).getIdentifications();
       Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>> ms2Removed = new Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>>();
@@ -4893,7 +4896,7 @@ public void testTabFile() throws Exception {
     for (String file : files){
       Row row = sheet.createRow(rowCount);
       String fileName = file.substring(file.lastIndexOf("\\")+1);
-      Hashtable<String,Vector<LipidParameterSet>> result = LipidDataAnalyzer.readResultFile(file, new Hashtable<String,Boolean>()).getIdentifications();
+      Hashtable<String,Vector<LipidParameterSet>> result = LDAResultReader.readResultFile(file, new Hashtable<String,Boolean>()).getIdentifications();
       Cell cell = row.createCell(0);
       cell.setCellType(Cell.CELL_TYPE_STRING);
       cell.setCellValue(fileName);
@@ -5579,7 +5582,7 @@ public void testTabFile() throws Exception {
       BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream("D:\\Experiment1\\LipidBLAST\\HepatocytesPositiveEvaluation.xlsxn"));
       Workbook resultWorkbook = new XSSFWorkbook();
       CellStyle headerStyle = getHeaderStyle(resultWorkbook);
-      Hashtable<String,Vector<LipidParameterSet>> results = LipidDataAnalyzer.readResultFile("D:\\Experiment1\\LipidBLAST\\014_Ex1_Orbitrap_CID_pos_50_DG_LPC_LPE_PC_PE_PG_PS_TG.xlsx", new Hashtable<String,Boolean>()).getIdentifications();
+      Hashtable<String,Vector<LipidParameterSet>> results = LDAResultReader.readResultFile("D:\\Experiment1\\LipidBLAST\\014_Ex1_Orbitrap_CID_pos_50_DG_LPC_LPE_PC_PE_PG_PS_TG.xlsx", new Hashtable<String,Boolean>()).getIdentifications();
       for (String lClass : results.keySet()){
         Sheet sheet = resultWorkbook.createSheet(lClass);
         int rowCount = 0;
@@ -5724,7 +5727,7 @@ public void testTabFile() throws Exception {
       CellStyle percentageStyle = getPercentageStyle(resultWorkbook);
       leftHeaderStyle.cloneStyleFrom(headerStyle);
       leftHeaderStyle.setAlignment(CellStyle.ALIGN_LEFT);
-      Hashtable<String,Vector<LipidParameterSet>> resultsLDA = LipidDataAnalyzer.readResultFile(ldaFile, new Hashtable<String,Boolean>()).getIdentifications();
+      Hashtable<String,Vector<LipidParameterSet>> resultsLDA = LDAResultReader.readResultFile(ldaFile, new Hashtable<String,Boolean>()).getIdentifications();
       LipidBLASTParser lBlastParser = new LipidBLASTParser(lbFile);
       lBlastParser.parse();
       Hashtable<String,Hashtable<String,Hashtable<String,LipidBLASTIdentificationVO>>> resultsLB = lBlastParser.getResults_();
@@ -6799,7 +6802,7 @@ public void testTabFile() throws Exception {
       CellStyle faFoundStyle = getFAFoundStyle(resultWorkbook);
       CellStyle ms1FoundStyle = getMS1FoundStyle(resultWorkbook);
       CellStyle notFoundStyle = getNotFoundStyle(resultWorkbook);
-      Hashtable<String,Vector<LipidParameterSet>> resultsLDA = LipidDataAnalyzer.readResultFile(ldaFile, new Hashtable<String,Boolean>()).getIdentifications();
+      Hashtable<String,Vector<LipidParameterSet>> resultsLDA = LDAResultReader.readResultFile(ldaFile, new Hashtable<String,Boolean>()).getIdentifications();
       LipidBLASTParser lBlastParser = new LipidBLASTParser(lbFile);
       lBlastParser.parse();
       Hashtable<String,Hashtable<String,Hashtable<String,LipidBLASTIdentificationVO>>> resultsLB = lBlastParser.getResults_();
@@ -9055,7 +9058,7 @@ public void testTabFile() throws Exception {
       String[] chromPaths = StringUtils.getChromFilePaths("D:\\ABSciex\\20150501\\D_2.chrom");   
       LipidomicsAnalyzer analyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
 
-      Hashtable<String,Vector<LipidParameterSet>> idents = LipidDataAnalyzer.readResultFile("D:\\ABSciex\\20150501\\D_2_TG_DG_PC_PE_SM_sent.xlsx", new Hashtable<String,Boolean>()).getIdentifications();
+      Hashtable<String,Vector<LipidParameterSet>> idents = LDAResultReader.readResultFile("D:\\ABSciex\\20150501\\D_2_TG_DG_PC_PE_SM_sent.xlsx", new Hashtable<String,Boolean>()).getIdentifications();
       long time = System.currentTimeMillis();
       for (String className : idents.keySet()){
         for (LipidParameterSet set : idents.get(className)){
@@ -9093,7 +9096,7 @@ public void testTabFile() throws Exception {
         File file = files[i];
         if (!file.isFile()) continue;
         if (!file.getName().endsWith(".xlsx")) continue;
-        Hashtable<String,Vector<LipidParameterSet>> idents = LipidDataAnalyzer.readResultFile(file.getAbsolutePath(), new Hashtable<String,Boolean>()).getIdentifications();
+        Hashtable<String,Vector<LipidParameterSet>> idents = LDAResultReader.readResultFile(file.getAbsolutePath(), new Hashtable<String,Boolean>()).getIdentifications();
         for (String className : idents.keySet()){
           Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>> analytes = new Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>>();
           if (results.containsKey(className)) analytes = results.get(className);
@@ -9259,7 +9262,7 @@ public void testTabFile() throws Exception {
     Hashtable<String,String> ms2Idents= new Hashtable<String,String>();
     try {
       Hashtable<String,Boolean> showMods = new  Hashtable<String,Boolean>();
-      QuantificationResult result = LipidDataAnalyzer.readResultFile(filePath, showMods);
+      QuantificationResult result = LDAResultReader.readResultFile(filePath, showMods);
       for (String key : result.getIdentifications().keySet()){
         if (!key.equalsIgnoreCase("TG")) continue;
         for (LipidParameterSet set : result.getIdentifications().get(key)){
@@ -9305,7 +9308,7 @@ public void testTabFile() throws Exception {
       Hashtable<String,Hashtable<String,Hashtable<String,String>>> rtsPerModAndSpecies = new Hashtable<String,Hashtable<String,Hashtable<String,String>>>();
       try {
         Hashtable<String,Boolean> showMods = new  Hashtable<String,Boolean>();
-        Vector<LipidParameterSet> result = LipidDataAnalyzer.readResultFile(basePath+fileName, showMods).getIdentifications().get("TG");
+        Vector<LipidParameterSet> result = LDAResultReader.readResultFile(basePath+fileName, showMods).getIdentifications().get("TG");
         allResults.put(fileName, result);
         for (LipidParameterSet set : result){
           if (!(set instanceof LipidomicsMSnSet)) continue;
@@ -9849,7 +9852,9 @@ public void testTabFile() throws Exception {
   
   private void tryXmlStax(){
     long time = System.currentTimeMillis();
-/****    CgReader reader = new MzXmlReader(this,false,100);
+    /*    AddScan[] adders = new AddScan[1];
+    adders[0] = this;
+    CgReader reader = new MzXmlReader(adders,true,700);
     try {
       reader.ReadFile("D:\\testMzXML\\bruker\\Mix25_RD1_01_1360.mzXML");
       System.out.println(reader.getLowestMz()+";"+reader.getHighestMz());
@@ -10396,7 +10401,7 @@ public void testTabFile() throws Exception {
       for (String polarity : ldaFilesIonMode.keySet()){
         for (String ldaFile : ldaFilesIonMode.get(polarity)){
           String fileName = ldaFile.substring(ldaFile.lastIndexOf("\\")+1);
-          QuantificationResult quantResult = LipidDataAnalyzer.readResultFile(ldaFile,  new Hashtable<String,Boolean>());
+          QuantificationResult quantResult = LDAResultReader.readResultFile(ldaFile,  new Hashtable<String,Boolean>());
           if (quantResult.getConstants().getShift()==0d) appliedMzCorrection.put(fileName, "0");
           else{
             System.out.println(quantResult.getConstants().getShift());
@@ -10804,7 +10809,7 @@ public void testTabFile() throws Exception {
       for (String polarity : ldaFilesIonMode.keySet()){
         for (String ldaFile : ldaFilesIonMode.get(polarity)){
           String fileName = ldaFile.substring(ldaFile.lastIndexOf("\\")+1);
-          QuantificationResult quantResult = LipidDataAnalyzer.readResultFile(ldaFile,  new Hashtable<String,Boolean>());
+          QuantificationResult quantResult = LDAResultReader.readResultFile(ldaFile,  new Hashtable<String,Boolean>());
           if (quantResult.getConstants().getShift()==0d) appliedMzCorrection.put(fileName, "0");
           else{
             System.out.println(quantResult.getConstants().getShift());
@@ -11068,7 +11073,7 @@ public void testTabFile() throws Exception {
       for (String polarity : ldaFilesIonMode.keySet()){
         for (String ldaFile : ldaFilesIonMode.get(polarity)){
           String fileName = ldaFile.substring(ldaFile.lastIndexOf("\\")+1);
-          QuantificationResult quantResult = LipidDataAnalyzer.readResultFile(ldaFile,  new Hashtable<String,Boolean>());
+          QuantificationResult quantResult = LDAResultReader.readResultFile(ldaFile,  new Hashtable<String,Boolean>());
           if (quantResult.getConstants().getShift()==0d) appliedMzCorrection.put(fileName, "0");
           else{
             System.out.println(quantResult.getConstants().getShift());
@@ -11359,7 +11364,7 @@ public void testTabFile() throws Exception {
       for (String polarity : ldaFilesIonMode.keySet()){
         for (String ldaFile : ldaFilesIonMode.get(polarity)){
           String fileName = ldaFile.substring(ldaFile.lastIndexOf("\\")+1);
-          QuantificationResult quantResult = LipidDataAnalyzer.readResultFile(ldaFile,  new Hashtable<String,Boolean>());
+          QuantificationResult quantResult = LDAResultReader.readResultFile(ldaFile,  new Hashtable<String,Boolean>());
           if (quantResult.getConstants().getShift()==0d) appliedMzCorrection.put(fileName, "0");
           else{
             System.out.println(quantResult.getConstants().getShift());
@@ -13537,7 +13542,7 @@ public void testTabFile() throws Exception {
       aaParser.parse();
       lAnalyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
 
-      Vector<LipidParameterSet> hits = LipidDataAnalyzer.readResultFile(excelFile, new Hashtable<String,Boolean>()).getIdentifications().get("DG");
+      Vector<LipidParameterSet> hits = LDAResultReader.readResultFile(excelFile, new Hashtable<String,Boolean>()).getIdentifications().get("DG");
       for (LipidParameterSet setOld : hits){
         
         for (CgProbe probe : setOld.getIsotopicProbes().get(0)){
@@ -13729,7 +13734,7 @@ public void testTabFile() throws Exception {
       ElementConfigParser aaParser = Settings.getElementParser();
 //      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> idealMasses = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile("D:\\Christer\\20170531\\quant\\positive_LPC_PC_PE_TG.xlsx",  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
       aaParser.parse();
-      Hashtable<String,Vector<LipidParameterSet>> classes = LipidDataAnalyzer.readResultFile(file,new Hashtable<String,Boolean>()).getIdentifications();
+      Hashtable<String,Vector<LipidParameterSet>> classes = LDAResultReader.readResultFile(file,new Hashtable<String,Boolean>()).getIdentifications();
       List<IsotopicRatioDeviationVO> ratios = new ArrayList<IsotopicRatioDeviationVO>();
       for (String className : classes.keySet()){
         Vector<LipidParameterSet> analytes = classes.get(className);
@@ -14088,6 +14093,20 @@ public void testTabFile() throws Exception {
     }catch(Exception ex){
       ex.printStackTrace();
     }
+  }
+
+  @Override
+  public float getLowerThreshold()
+  {
+    // TODO Auto-generated method stub
+    return 0;
+  }
+
+  @Override
+  public float getUpperThreshold()
+  {
+    // TODO Auto-generated method stub
+    return 0;
   }
 
 }

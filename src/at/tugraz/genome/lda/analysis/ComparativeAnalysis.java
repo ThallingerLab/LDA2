@@ -33,7 +33,8 @@ import java.util.List;
 import java.util.Vector;
 
 
-import at.tugraz.genome.lda.LipidDataAnalyzer;
+
+import at.tugraz.genome.lda.LDAResultReader;
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
@@ -1187,7 +1188,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
   protected void parseResultFile(File resultFile, String fileName) throws ExcelInputFileException{
     Hashtable<String,Vector<LipidParameterSet>> results = new Hashtable<String,Vector<LipidParameterSet>>();
     Hashtable<String,Boolean> showMods = new Hashtable<String,Boolean>();
-    results = LipidDataAnalyzer.readResultFile(resultFile.getAbsolutePath(), showMods).getIdentifications();
+    results = LDAResultReader.readResultFile(resultFile.getAbsolutePath(), showMods).getIdentifications();
 
     Hashtable<String,Vector<Hashtable<String,ResultAreaVO>>> areaSheetVOs = new Hashtable<String,Vector<Hashtable<String,ResultAreaVO>>>();    
     ElementConfigParser elementParser = Settings.getElementParser();

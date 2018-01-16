@@ -801,7 +801,7 @@ public class MSnAnalyzer
     for (String combi : allowedCombis) allowed.put(combi, combi);
     Vector<String> combisToRemove = new Vector<String>();
     for (String key : fulfilledChainIntensityRules_.keySet()){
-      if (key.indexOf(FragmentCalculator.FA_SEPARATOR)==-1) continue;
+      if (key.indexOf(LipidomicsConstants.FA_SEPARATOR)==-1) continue;
       if (!allowed.containsKey(key)) combisToRemove.add(key);
     }
     
@@ -927,7 +927,7 @@ public class MSnAnalyzer
     }
     boolean foundOnePosition = false;
     for (String combiKey : validChainCombinations_){
-      String[] fas = FragmentCalculator.getFAsFromCombiName(combiKey);
+      String[] fas = StaticUtils.getFAsFromCombiName(combiKey);
       Hashtable<String,Integer> chainOccurenceInCombi = new Hashtable<String,Integer>();
       for (String fa: fas){
         int count = 0;

@@ -34,7 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Vector;
 
-import at.tugraz.genome.lda.LipidDataAnalyzer;
+import at.tugraz.genome.lda.LDAResultReader;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.alex123.vos.TargetlistEntry;
 import at.tugraz.genome.lda.alex123.vos.TargetlistFloatStringVO;
@@ -723,7 +723,7 @@ public class RdbOutputWriter
     for (int i=0; i!=analysisModule.getExpNamesInSequence().size(); i++) {
       String exp = analysisModule.getExpNamesInSequence().get(i);
       File resultFile = analysisModule.getFullFilePath(exp);
-      QuantificationResult result = LipidDataAnalyzer.readResultFile(resultFile.getAbsolutePath(),  new Hashtable<String,Boolean>());
+      QuantificationResult result = LDAResultReader.readResultFile(resultFile.getAbsolutePath(),  new Hashtable<String,Boolean>());
       results.add(result);
       fileLookup.put(result.hashCode(), resultFile);
     }

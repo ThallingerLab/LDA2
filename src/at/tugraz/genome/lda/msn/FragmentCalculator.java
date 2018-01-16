@@ -33,6 +33,7 @@ import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
@@ -69,15 +70,7 @@ public class FragmentCalculator
   /** Vector storing the various alkyl-alkenyl combinations possible by the fatty acids*/ 
   private Vector<Vector<Integer>> alkylAlkenylCombinations_;
   
-  /** prefix for alkyl linked fatty acid chains */
-  public final static String ALKYL_PREFIX = "O-";
 
-  /** prefix for alkenyl linked fatty acid chains */
-  public final static String ALKENYL_PREFIX = "P-";
-  
-  /** the separator to distinguish between several fatty acids*/
-  public final static String FA_SEPARATOR = "_";
-  
   /**
    * constructor requiring information about the MS1 analyte -
    * fetch of rule information is immediately started
@@ -228,7 +221,7 @@ public class FragmentCalculator
             for (String prefix : faVOs.keySet()){
               if (k==currentIndex){
                 String partName = StaticUtils.generateLipidNameString(prefix+String.valueOf(cAtoms), dBonds);
-                combiName += partName+FA_SEPARATOR;
+                combiName += partName+LipidomicsConstants.FA_SEPARATOR;
                 valueVOs.add(faVOs.get(prefix));
                 singleCombiParts.add(partName);
                 break;
@@ -238,7 +231,7 @@ public class FragmentCalculator
           }
           combiName = combiName.substring(0,combiName.length()-1);
           //this is for filtering permuted double entries
-          Vector<String> permutedNames = getPermutedNames(singleCombiParts);
+          Vector<String> permutedNames = StaticUtils.getPermutedChainNames(singleCombiParts);
           boolean isThere = false;
           for (String permutedName : permutedNames){
             if (permutedCombinations.containsKey(permutedName)){
@@ -256,41 +249,6 @@ public class FragmentCalculator
     return combinations;
   }
   
-  /**
-   * returns a list of all permuted name variants of the presented input vector
-   * the permuted names are separated by FA_SEPARATOR
-   * the method checks and removes duplicate name entries
-   * @param singleCombiParts vector containing the names to be permuted
-   * @return all permuted name variants of the presented input vector - permuted names are separated by FA_SEPARATOR
-   */
-  public static Vector<String> getPermutedNames(Vector<String> singleCombiParts){
-    String currentName = "";
-    Vector<String> permutedNames = addPermutedPart(currentName, singleCombiParts);
-    return permutedNames;
-  }
-  
-  /**
-   * recursive call to assign the individual names to the permuted name string
-   * @param currentName value that is assigned to the name until now
-   * @param singleCombiParts remaining individual names that have to be assigned
-   * @return the permuted name
-   */
-  private static Vector<String> addPermutedPart(String currentName, Vector<String> singleCombiParts){
-    Vector<String> permutedNames = new Vector<String>();
-    for (int i=0;i!=singleCombiParts.size();i++){
-      String name = new String(currentName);
-      name+=singleCombiParts.get(i)+FA_SEPARATOR;
-      Vector<String> subCombiParts = new Vector<String>(singleCombiParts);
-      subCombiParts.remove(i);
-      if (subCombiParts.size()>0){
-        permutedNames.addAll(addPermutedPart(name,subCombiParts));
-      }else{
-        name = name.substring(0,name.length()-1);
-        permutedNames.add(name);
-      }
-    }
-    return permutedNames;
-  }
   
   /**
    * recursive method to distribute the total number of C atoms/double bonds to the chains (number of chains can be defined)
@@ -619,7 +577,7 @@ public class FragmentCalculator
             } else oneFAIsThere = true;
           } else {
           }
-          newKey += faName+FA_SEPARATOR;
+          newKey += faName+LipidomicsConstants.FA_SEPARATOR;
         }
         if (mandatoryFound.size()>0){
           boolean allTrue = true;
@@ -728,7 +686,7 @@ public class FragmentCalculator
     Vector<Vector<Integer>> cleanedResults = new Vector<Vector<Integer>>();
     for (Vector<Integer> combi:results){
       String key = "";
-      for (Integer type:combi) key += String.valueOf(type)+FA_SEPARATOR;
+      for (Integer type:combi) key += String.valueOf(type)+LipidomicsConstants.FA_SEPARATOR;
       if (key.length()>0) key = key.substring(0,key.length()-1);
       if (usedCombis.containsKey(key)) continue;
       usedCombis.put(key, key);
@@ -812,8 +770,8 @@ public class FragmentCalculator
    */
   public static String getAcylAlkylOrAlkenylName(String faName, Integer chainType){
     String chainName = new String(faName);
-    if (chainType==FragmentRuleVO.ALKYL_CHAIN) chainName = ALKYL_PREFIX+chainName;
-    else if (chainType==FragmentRuleVO.ALKENYL_CHAIN) chainName = ALKENYL_PREFIX+chainName;
+    if (chainType==FragmentRuleVO.ALKYL_CHAIN) chainName = LipidomicsConstants.ALKYL_PREFIX+chainName;
+    else if (chainType==FragmentRuleVO.ALKENYL_CHAIN) chainName = LipidomicsConstants.ALKENYL_PREFIX+chainName;
     return chainName;
   }
   
@@ -829,15 +787,6 @@ public class FragmentCalculator
     return RulesContainer.getAllowedChainPositions(ruleName_,rulesDir_);
   }
 
-  
-  /**
-   * returns the individual fatty acid chain from a fatty acid chain combination
-   * @param combiName fatty acid chain combination
-   * @return the individual fatty acid chain from a fatty acid chain combination
-   */
-  public static String[] getFAsFromCombiName(String combiName){
-    return combiName.split(FA_SEPARATOR);
-  }
   
   /**
    * This method takes a Java regular expression and a lipid species name to extract from this

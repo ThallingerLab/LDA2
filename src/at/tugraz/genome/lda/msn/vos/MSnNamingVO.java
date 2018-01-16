@@ -27,9 +27,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
 
-import at.tugraz.genome.lda.msn.FragmentCalculator;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.swing.Range;
+import at.tugraz.genome.lda.utils.StaticUtils;
 
 /**
  * value object holding the various MSn identification names and providing
@@ -114,7 +114,7 @@ public class MSnNamingVO
     String[] faArray = nm.split("_");
     Vector<String> fas = new Vector<String>();
     for (String fa : faArray) fas.add(fa);
-    faNames_.addAll(FragmentCalculator.getPermutedNames(fas));
+    faNames_.addAll(StaticUtils.getPermutedChainNames(fas));
   }
   
   /**

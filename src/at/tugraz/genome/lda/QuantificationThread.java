@@ -35,12 +35,9 @@ import java.util.Collections;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.StringTokenizer;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.swing.JFrame;
 
@@ -65,7 +62,6 @@ import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.PostQuantificationProcessor;
 import at.tugraz.genome.lda.msn.RulesContainer;
-import at.tugraz.genome.lda.msn.parser.FragRuleParser;
 import at.tugraz.genome.lda.msn.vos.IntensityChainVO;
 import at.tugraz.genome.lda.msn.vos.IntensityPositionVO;
 import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
@@ -149,8 +145,6 @@ public class QuantificationThread extends Thread
   private final static int STATUS_CALCULATING = 1;
   private final static int STATUS_FINISHED = 2;
   
-  private final static int MSN_ROW_FRAGMENT_NAME = 0;
-  private final static int MSN_ROW_FRAGMENT_FORMULA = 1;
   private final static int MSN_ROW_FRAGMENT_MSLEVEL = 2;
   private final static int MSN_ROW_FRAGMENT_CHARGE = 3;
   private final static int MSN_ROW_FRAGMENT_MZ = 4;
@@ -170,19 +164,6 @@ public class QuantificationThread extends Thread
   private final static int MSN_ROW_INTENSITY_ORIGINAL = 1;
   private final static int MSN_ROW_INTENSITY_VALUES = 2;
   private final static int MSN_ROW_INTENSITY_MISSED = 3;
-  
-  public final static String COLUMN_APEX_INTENSITY = "Raw Apex";
-  public final static String COLUMN_LOWER_VALLEY10PC = "LValley10%";
-  public final static String COLUMN_LOWER_VALLEY50PC = "LValley50%";
-  public final static String COLUMN_UPPER_VALLEY10PC = "UValley10%";
-  public final static String COLUMN_UPPER_VALLEY50PC = "UValley50%";
-  
-  public final static String COLUMN_LOWER_MZ10PC = "LMz10%";
-  public final static String COLUMN_LOWER_MZ50PC = "LMz50%";
-  public final static String COLUMN_UPPER_MZ10PC = "UMz10%";
-  public final static String COLUMN_UPPER_MZ50PC = "UMz50%";
-  
-  private final static String ALEX123_MSN_TARGETS_USED = "AlexMSnTargetsUsed";
   
     
   public QuantificationThread(String chromFile,String quantFile,String resultFile,//float mzTolerance, 
@@ -458,31 +439,31 @@ public class QuantificationThread extends Thread
       label.setCellValue("level="+String.valueOf(msLevel));
       label.setCellStyle(headerStyle);
       label = row.createCell(26+rtPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(COLUMN_APEX_INTENSITY);
+      label.setCellValue(LDAResultReader.COLUMN_APEX_INTENSITY);
       label.setCellStyle(headerStyle);
       label = row.createCell(27+rtPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(COLUMN_LOWER_VALLEY10PC);
+      label.setCellValue(LDAResultReader.COLUMN_LOWER_VALLEY10PC);
       label.setCellStyle(headerStyle);
       label = row.createCell(28+rtPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(COLUMN_LOWER_VALLEY50PC);
+      label.setCellValue(LDAResultReader.COLUMN_LOWER_VALLEY50PC);
       label.setCellStyle(headerStyle);
       label = row.createCell(29+rtPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(COLUMN_UPPER_VALLEY50PC);
+      label.setCellValue(LDAResultReader.COLUMN_UPPER_VALLEY50PC);
       label.setCellStyle(headerStyle);
       label = row.createCell(30+rtPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(COLUMN_UPPER_VALLEY10PC);
+      label.setCellValue(LDAResultReader.COLUMN_UPPER_VALLEY10PC);
       label.setCellStyle(headerStyle);
       label = row.createCell(31+rtPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(COLUMN_LOWER_MZ10PC);
+      label.setCellValue(LDAResultReader.COLUMN_LOWER_MZ10PC);
       label.setCellStyle(headerStyle);
       label = row.createCell(32+rtPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(COLUMN_LOWER_MZ50PC);
+      label.setCellValue(LDAResultReader.COLUMN_LOWER_MZ50PC);
       label.setCellStyle(headerStyle);
       label = row.createCell(33+rtPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(COLUMN_UPPER_MZ50PC);
+      label.setCellValue(LDAResultReader.COLUMN_UPPER_MZ50PC);
       label.setCellStyle(headerStyle);
       label = row.createCell(34+rtPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(COLUMN_UPPER_MZ10PC);
+      label.setCellValue(LDAResultReader.COLUMN_UPPER_MZ10PC);
       label.setCellStyle(headerStyle);
 
 
@@ -507,7 +488,7 @@ public class QuantificationThread extends Thread
         msnRowCount++;
         Cell cell = msnRow.createCell(0);
         cell.setCellStyle(headerStyle);
-        cell.setCellValue(ALEX123_MSN_TARGETS_USED+"=true");
+        cell.setCellValue(LDAResultReader.ALEX123_MSN_TARGETS_USED+"=true");
       }
       for (LipidParameterSet param : params){
         if (param instanceof LipidomicsMSnSet){
@@ -867,10 +848,10 @@ public class QuantificationThread extends Thread
     
     int nameColumnWidth = (int)((LipidomicsConstants.EXCEL_MSN_SECTION_HEAD_FRAGMENTS.length()*256)*ExcelUtils.BOLD_MULT);
     if ((longestName+1)*256>nameColumnWidth) nameColumnWidth =  (longestName+1)*256;
-    sheet.setColumnWidth(MSN_ROW_FRAGMENT_NAME,nameColumnWidth); 
+    sheet.setColumnWidth(LDAResultReader.MSN_ROW_FRAGMENT_NAME,nameColumnWidth); 
     int formulaColumnWidth = (int)((LipidomicsConstants.EXCEL_MSN_FRAGMENT_FORMULA.length()*256)*ExcelUtils.BOLD_MULT);
     if ((longestFormula+1)*256>formulaColumnWidth) formulaColumnWidth =  (longestFormula+1)*256;
-    sheet.setColumnWidth(MSN_ROW_FRAGMENT_FORMULA, formulaColumnWidth);
+    sheet.setColumnWidth(LDAResultReader.MSN_ROW_FRAGMENT_FORMULA, formulaColumnWidth);
     int ruleValueWidth = (int)((LipidomicsConstants.EXCEL_MSN_FRAGMENT_MSLEVEL.length()*256)*ExcelUtils.BOLD_MULT);
     if ((longestRuleValue+1)*256> ruleValueWidth)  ruleValueWidth =  (longestRuleValue+1)*256;
     sheet.setColumnWidth(MSN_ROW_INTENSITY_VALUES,ruleValueWidth);
@@ -884,10 +865,10 @@ public class QuantificationThread extends Thread
    * @param headerStyle style for the header row
    */
   private static void writeMSnFragmentHeader(Row row, CellStyle headerStyle){
-    Cell cell = row.createCell(MSN_ROW_FRAGMENT_NAME,Cell.CELL_TYPE_STRING);
+    Cell cell = row.createCell(LDAResultReader.MSN_ROW_FRAGMENT_NAME,Cell.CELL_TYPE_STRING);
     cell.setCellStyle(headerStyle);
     cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_NAME);
-    cell = row.createCell(MSN_ROW_FRAGMENT_FORMULA,Cell.CELL_TYPE_STRING);
+    cell = row.createCell(LDAResultReader.MSN_ROW_FRAGMENT_FORMULA,Cell.CELL_TYPE_STRING);
     cell.setCellStyle(headerStyle);
     cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_FORMULA);
     cell = row.createCell(MSN_ROW_FRAGMENT_MSLEVEL,Cell.CELL_TYPE_STRING);
@@ -944,9 +925,9 @@ public class QuantificationThread extends Thread
    * @return
    */
   private static int writeMSnFragment(Row row, String name, float mzTolerance, CgProbe probe){
-    Cell cell = row.createCell(MSN_ROW_FRAGMENT_NAME,Cell.CELL_TYPE_STRING);
+    Cell cell = row.createCell(LDAResultReader.MSN_ROW_FRAGMENT_NAME,Cell.CELL_TYPE_STRING);
     cell.setCellValue(name);
-    cell = row.createCell(MSN_ROW_FRAGMENT_FORMULA,Cell.CELL_TYPE_STRING);
+    cell = row.createCell(LDAResultReader.MSN_ROW_FRAGMENT_FORMULA,Cell.CELL_TYPE_STRING);
     //TODO: this is only here because of a damaged Alex123 file - delete in future version!
     String formula = "";
     if (probe.getFormula()!=null) formula = probe.getFormula().replaceAll("\\+", "").trim();
@@ -2087,632 +2068,7 @@ public class QuantificationThread extends Thread
     }
     return highestArea;
   }
-  
-  /**
-   * reads MSn evidence from Excel sheet - where applicable, the results are stored in an LipidomicsMSnSet - LipidParameterSets and LipidomicsMSnSets are returned in the vector
-   * @param sheet the Excel sheet to be read
-   * @param ms1Results the results from MS1 Excel reading
-   * @param readConstants the lipidomics constants used for this file (for checking if this file was quantified using an Alex123 target list)
-   * @return Vector containing MS1 (LipidParameterSet) and  MS2 (LipidomicsMSnSe) results
-   * @throws RulesException
-   */
-  public static Vector<LipidParameterSet> readMSnEvidence(Sheet sheet, Vector<LipidParameterSet> ms1Results, LipidomicsConstants readConstants) throws RulesException {
-    Hashtable<String,LipidParameterSet> msHash = new Hashtable<String,LipidParameterSet>();
-    for (LipidParameterSet ms1 : ms1Results){
-      msHash.put(ms1.getNamePlusModHumanReadable(), ms1);
-    }
     
-    LipidParameterSet addingMSnEvidence = null;
-    Hashtable<Integer,String> columnToIdentification = new Hashtable<Integer,String>();
-    Hashtable<String,Double> relativeAreas = new Hashtable<String,Double>();
-    String regex = "MS(\\d+) scan RTs";
-    Pattern msLevelPattern =  Pattern.compile(regex);
-    Hashtable<Integer,Vector<Float>> msnRetentionTimes = new Hashtable<Integer,Vector<Float>>();
-    boolean checkMSnAreas = false;
-    boolean headGroupFragmentActive = false;
-    boolean headGroupRules = false;
-    boolean chainFragmentActive = false;
-    boolean chainRules = false;
-    boolean positionRules = false;
-    String combiKey = "";
-    
-    // is the header row read and the column indices initialized 
-    boolean headerRowRead = false;
-    // the header row has to be read
-    boolean readFragmentHeaderRow = false;
-    
-    // is the intensity header read and the column indices initialized 
-    boolean intensityHeaderRead = false;
-    // the intensity header row has to be read
-    boolean readIntensityHeaderRow = false;
-    
-    
-    // column indices for the fragment information rows
-    int nameColumn = -1;
-    int formulaColumn = -1;
-    int msLevelColumn = -1;
-    int chargeColumn = -1;
-    int mzColumn = -1;
-    int mzTolColumn = -1;
-    int areaColumn = -1;
-    int peakColumn = -1;
-    int startTimeColumn = -1;
-    int stopTimeColumn = -1;
-    int startMzColumn = -1;
-    int stopMzColumn = -1;
-    int ellTimeColumn = -1;
-    int ellMzColumn = -1;
-    int ellTimeRangeColumn = -1;
-    int ellMzRangeColumn = -1;
-    
-    // column indices for the intensity information
-    int ruleColumn = -1;
-    int originalRuleColumn = -1;
-    int ruleValuesColumn = -1;
-    int ruleMissedColumn = -1;
-
-        
-    // the information to be written into the returning VO
-    int status = LipidomicsMSnSet.NO_MSN_PRESENT;
-    float mzTolerance = -1f;
-    Hashtable<String,CgProbe> headGroupFragments = new Hashtable<String,CgProbe>();
-    Hashtable<String,IntensityRuleVO> headIntensityRules = new Hashtable<String,IntensityRuleVO>();
-    Hashtable<String,Hashtable<String,CgProbe>> chainFragments = new Hashtable<String,Hashtable<String,CgProbe>>();
-    Hashtable<String,Hashtable<String,IntensityChainVO>> chainIntensityRules = new Hashtable<String,Hashtable<String,IntensityChainVO>>();
-    Vector<String> validChainCombinations = new Vector<String>();
-    Hashtable<String,Hashtable<Integer,Integer>> positionDefinition = new Hashtable<String,Hashtable<Integer,Integer>>();
-    Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>> positionEvidence = new Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>>();
-    Hashtable<Integer,Float> basePeakValues = new Hashtable<Integer,Float>();
-    
-    Hashtable<String,String> uniqueRules = new Hashtable<String,String>();
-    int numberOfPositions = -1;
-    boolean usedAlexMsnTargets = false;
-    
-    for (int rowCount=0;rowCount!=(sheet.getLastRowNum()+1);rowCount++){
-      Hashtable<Integer,Object> cellEntries =  ExcelUtils.getEntriesOfOneRow(sheet.getRow(rowCount),false);
-      // check if an Alex123 target list was used for the MSn fragments of this class
-      if (addingMSnEvidence==null && cellEntries.containsKey(MSN_ROW_FRAGMENT_NAME) && (cellEntries.get(MSN_ROW_FRAGMENT_NAME) instanceof String) &&
-          ((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)).trim().startsWith(ALEX123_MSN_TARGETS_USED)){
-        StringTokenizer tokenizer = new StringTokenizer(((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)),"=");
-        if (tokenizer.countTokens()!=2) continue;
-        tokenizer.nextToken();
-        String value = tokenizer.nextToken().trim();
-        if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("yes"))
-          usedAlexMsnTargets = true;
-      // reading the first row, containing the sum formula, and the individual identifications
-      } else if (addingMSnEvidence==null && cellEntries.containsKey(MSN_ROW_FRAGMENT_NAME) && cellEntries.containsKey(MSN_ROW_FRAGMENT_FORMULA)){
-        // for every new lipid MS1 species, the parameters holding the information have to be initialized
-        status = LipidomicsMSnSet.NO_MSN_PRESENT;
-        mzTolerance = -1f;
-        headGroupFragments = new Hashtable<String,CgProbe>();
-        headIntensityRules = new Hashtable<String,IntensityRuleVO>();
-        chainFragments = new Hashtable<String,Hashtable<String,CgProbe>>();
-        chainIntensityRules = new Hashtable<String,Hashtable<String,IntensityChainVO>>();
-        validChainCombinations = new Vector<String>();
-        positionDefinition = new Hashtable<String,Hashtable<Integer,Integer>>();
-        positionEvidence = new Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>>();
-        basePeakValues = new Hashtable<Integer,Float>();
-        
-        columnToIdentification = new Hashtable<Integer,String>();        
-        String speciesName = (String)cellEntries.get(MSN_ROW_FRAGMENT_NAME);
-        addingMSnEvidence = msHash.get(speciesName);
-        int count = MSN_ROW_FRAGMENT_NAME+1;
-        numberOfPositions = -1;
-        while (cellEntries.containsKey(count)){
-          String lipidIdentification = (String)cellEntries.get(count);
-          if (lipidIdentification!=null && lipidIdentification.length()>0){
-            columnToIdentification.put(count, lipidIdentification);
-            // this if was extended by "lipidIdentification.indexOf(":")!=-1" to support single chains - I hope this has no negative side effects
-            if (lipidIdentification.indexOf("/")!=-1||lipidIdentification.indexOf("_")!=-1||lipidIdentification.indexOf(":")!=-1){
-              //if there is a ";", the next character after the following numbers must be a ":"; if there is a "/" or a "_" it is the OH index of an Alex123 notation
-              if (usedAlexMsnTargets){
-                if (lipidIdentification.indexOf(";")!=-1){
-                  boolean makeSubstring = false;
-                  char[] chars = lipidIdentification.toCharArray();
-                  for (int i=lipidIdentification.indexOf(";")+1; i!=chars.length; i++){
-                    if (chars[i]=='-' || Character.isDigit(chars[i]))
-                      continue;
-                    //it is the OH index of an Alex123 notation
-                    else if (chars[i]=='/' || chars[i]=='_')
-                      break;
-                    //it is an LDA identification where the position is unknown -> cut
-                    else if (chars[i]==':'){
-                      makeSubstring = true;
-                      break;
-                    }else{
-                      System.out.println("Warning: such a character is not possible for a lipid name containing a \";\"; detected in "+sheet.getSheetName()+" "+addingMSnEvidence.getNameString());
-                    }    
-                  }
-                  if (makeSubstring)
-                    lipidIdentification = lipidIdentification.substring(0,lipidIdentification.indexOf(";"));
-                }
-              }else{
-                if (lipidIdentification.indexOf(";")!=-1)lipidIdentification = lipidIdentification.substring(0,lipidIdentification.indexOf(";"));
-              }
-              Object[] nameAndNumberOfPos = StaticUtils.cleanEmptyFAPositions(lipidIdentification);
-              if (usedAlexMsnTargets && lipidIdentification.indexOf("/")!=-1)
-                validChainCombinations.add(lipidIdentification);
-              else
-                validChainCombinations.add((String)nameAndNumberOfPos[0]);
-              int posNr = (Integer)nameAndNumberOfPos[1];
-              if (posNr>numberOfPositions) numberOfPositions = posNr;
-            }
-          }
-          count++;
-        }
-        checkMSnAreas = true;
-        headGroupFragmentActive = false;
-        headGroupRules = false;
-        chainFragmentActive = false;
-        chainRules = false;
-        positionRules = false;
-
-      }
-      // reading the second row, containing the relative areas of the analytes and the retention times
-      else if (checkMSnAreas && addingMSnEvidence!=null){
-        relativeAreas = new Hashtable<String,Double>();
-        msnRetentionTimes = new Hashtable<Integer,Vector<Float>>();
-        double totalArea = (Double)cellEntries.get(MSN_ROW_FRAGMENT_NAME);
-        for (Integer column : columnToIdentification.keySet()){
-          String lipidIdentification = columnToIdentification.get(column);
-          //this is for the retention times
-          Matcher msLevelMatcher = msLevelPattern.matcher(lipidIdentification);
-          if (msLevelMatcher.matches()){
-            int msLevel =  Integer.parseInt(msLevelMatcher.group(1));
-            Vector<Float> rts = new Vector<Float>();
-            StringTokenizer rtTokenizer = null;
-            if (cellEntries.get(column) instanceof Double)
-              rtTokenizer = new StringTokenizer(((Double)cellEntries.get(column)).toString(),";");
-            else 
-              rtTokenizer = new StringTokenizer((String)cellEntries.get(column),";");
-            while (rtTokenizer.hasMoreTokens()) rts.add(new Float(rtTokenizer.nextToken()));
-            msnRetentionTimes.put(msLevel, rts);
-          //this is for the relative areas
-          }else
-            relativeAreas.put(lipidIdentification, ((Double)cellEntries.get(column))/totalArea);
-        }
-        checkMSnAreas = false;
-      }
-      // the following if is for activating the head group fragments section
-      else if (!headGroupFragmentActive && addingMSnEvidence!=null && cellEntries.containsKey(MSN_ROW_FRAGMENT_NAME)
-          && cellEntries.get(MSN_ROW_FRAGMENT_NAME) instanceof String 
-          && ((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)).trim().equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_SECTION_HEAD_FRAGMENTS)){
-        headGroupFragmentActive = true;
-        headGroupRules = false;
-        chainFragmentActive = false;
-        chainRules = false;
-        positionRules = false;
-        readFragmentHeaderRow = true;
-        headerRowRead = false;
-        intensityHeaderRead = false;
-      } 
-      // the following if is for activating the head group rules section
-      else if (!headGroupRules && addingMSnEvidence!=null && cellEntries.containsKey(MSN_ROW_FRAGMENT_NAME)
-          && cellEntries.get(MSN_ROW_FRAGMENT_NAME) instanceof String 
-          && ((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)).trim().equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_SECTION_HEAD_INTENSITIES)){
-        headGroupFragmentActive = false;
-        headGroupRules = true;
-        chainFragmentActive = false;
-        chainRules = false;
-        positionRules = false;
-        headerRowRead = false;
-        readIntensityHeaderRow = true;
-        intensityHeaderRead = false;
-        uniqueRules = new Hashtable<String,String>();
-      }
-
-      // the following if is for activating the chain fragments section
-      else if (!chainFragmentActive && addingMSnEvidence!=null && cellEntries.containsKey(MSN_ROW_FRAGMENT_NAME)
-          && cellEntries.get(MSN_ROW_FRAGMENT_NAME) instanceof String 
-          && ((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)).trim().equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_SECTION_CHAIN_FRAGMENTS)){
-        headGroupFragmentActive = false;
-        headGroupRules = false;
-        chainFragmentActive = true;
-        chainRules = false;
-        positionRules = false;
-        readFragmentHeaderRow = true;
-        headerRowRead = false; 
-        intensityHeaderRead = false;
-      }
-      // the following if is for activating the chain fragments section
-      else if (!chainRules && addingMSnEvidence!=null && cellEntries.containsKey(MSN_ROW_FRAGMENT_NAME)
-          && cellEntries.get(MSN_ROW_FRAGMENT_NAME) instanceof String 
-          && ((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)).trim().equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_SECTION_CHAIN_INTENSITIES)){
-        headGroupFragmentActive = false;
-        headGroupRules = false;
-        chainFragmentActive = false;
-        chainRules = true;
-        positionRules = false;
-        headerRowRead = false;
-        readIntensityHeaderRow = true;
-        intensityHeaderRead = false;  
-        uniqueRules = new Hashtable<String,String>();
-      }
-      // the following ifs are for activating the position information section
-      else if (addingMSnEvidence!=null && cellEntries.containsKey(MSN_ROW_FRAGMENT_NAME)
-          && cellEntries.get(MSN_ROW_FRAGMENT_NAME) instanceof String 
-          && ((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)).trim().startsWith(LipidomicsConstants.EXCEL_MSN_SECTION_POSITION_INTENSITIES)){
-        headGroupFragmentActive = false;
-        headGroupRules = false;
-        chainFragmentActive = false;
-        chainRules = false;
-        positionRules = true;
-        headerRowRead = false;
-        readIntensityHeaderRow = true;
-        intensityHeaderRead = false;
-        combiKey = ((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)).trim().substring(LipidomicsConstants.EXCEL_MSN_SECTION_POSITION_INTENSITIES.length());
-        combiKey = combiKey.substring(combiKey.indexOf("(")+1,combiKey.indexOf(")"));
-        if (combiKey.indexOf(";")!=-1) combiKey = combiKey.substring(0,combiKey.indexOf(";"));
-        validChainCombinations = correctUndefinedChainCombinations(combiKey,validChainCombinations);
-        Hashtable<String,Integer> chainOccurenceInCombi = new Hashtable<String,Integer>();
-        String[] fas = LipidomicsMSnSet.getFAsFromCombiName(combiKey.replaceAll("/", "_"));
-        for (String fa: fas){
-          int count = 0;
-          if (chainOccurenceInCombi.containsKey(fa)) count = chainOccurenceInCombi.get(fa);
-          count++;
-          chainOccurenceInCombi.put(fa, count);
-        }
-        // there is only one type of fatty acid chain
-        if (chainOccurenceInCombi.size()==1 && fas.length==numberOfPositions){
-          Hashtable<Integer,Integer> definitions = new Hashtable<Integer,Integer>();
-          for (int i=0; i!=fas.length;i++){
-            definitions.put(i, i);
-          }
-          positionDefinition.put(combiKey, definitions);
-          positionEvidence.put(combiKey, new Hashtable<Integer,Vector<IntensityPositionVO>>());
-          uniqueRules = new Hashtable<String,String>();
-          continue;
-        }
-      }
-      // the final procedure for creating a LipidomicsMSnSet after the information was read
-      else if (addingMSnEvidence!=null && !cellEntries.containsKey(MSN_ROW_FRAGMENT_NAME)){
-        String speciesName = addingMSnEvidence.getNamePlusModHumanReadable();
-//        for (positionDefinition)
-        positionDefinition = cleanPositionDefinition(positionDefinition);
-        if (isDefinitionPresent(positionDefinition)) status = LipidomicsMSnSet.POSITION_DETECTED;
-        addingMSnEvidence = new LipidomicsMSnSet(addingMSnEvidence, status, mzTolerance,headGroupFragments, headIntensityRules,
-        chainFragments, chainIntensityRules, validChainCombinations, positionDefinition,positionEvidence, numberOfPositions, basePeakValues,
-        msnRetentionTimes);
-        msHash.put(speciesName,addingMSnEvidence);
-        addingMSnEvidence=null;
-      }
-      // reading the fragment header row for assigning the columns
-      else if (readFragmentHeaderRow){
-        for (Integer columnId : cellEntries.keySet()){
-          if (cellEntries.get(columnId)==null || ((String)cellEntries.get(columnId)).length()==0) continue;
-          String entry = (String)cellEntries.get(columnId);
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_NAME)) nameColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_FORMULA)) formulaColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_MSLEVEL)) msLevelColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_CHARGE)) chargeColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ)) mzColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ_TOLERANCE)) mzTolColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_AREA)) areaColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_PEAK)) peakColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_TIME_LOWER)) startTimeColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_TIME_UPPER)) stopTimeColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ_LOWER)) startMzColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ_UPPER)) stopMzColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_TIME)) ellTimeColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_MZ)) ellMzColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_TIME_RANGE)) ellTimeRangeColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_MZ_RANGE)) ellMzRangeColumn = columnId;
-        }
-        readFragmentHeaderRow = false;
-        headerRowRead = true;
-      }
-      // reading the fragment header row for assigning the columns
-      else if (readIntensityHeaderRow){
-        for (Integer columnId : cellEntries.keySet()){
-          if (cellEntries.get(columnId)==null || ((String)cellEntries.get(columnId)).length()==0) continue;
-          String entry = (String)cellEntries.get(columnId);
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_INTENSITY_RULE)) ruleColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_INTENSITY_ORIGINAL)) originalRuleColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_INTENSITY_VALUES)) ruleValuesColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_INTENSITY_MISSED)) ruleMissedColumn = columnId;
-        }
-        readIntensityHeaderRow = false;
-        intensityHeaderRead = true;
-      } 
-      // reading information about the fragment
-      else if (addingMSnEvidence!=null && headerRowRead && (headGroupFragmentActive||chainFragmentActive)){
-        String fragmentName = null;
-        if (nameColumn>-1 && cellEntries.containsKey(nameColumn)) fragmentName = (String)cellEntries.get(nameColumn);
-        String formula = null;
-        if (formulaColumn>-1 && cellEntries.containsKey(formulaColumn)) formula = "+"+((String)cellEntries.get(formulaColumn)).trim().replaceAll(" ", " \\+");
-        int msLevel = -1;
-        if (msLevelColumn>-1 && cellEntries.containsKey(msLevelColumn)) msLevel = (int)Math.rint((Double)cellEntries.get(msLevelColumn));
-        int charge = -1;
-        if (chargeColumn>-1 && cellEntries.containsKey(chargeColumn)) charge = (int)Math.rint((Double)cellEntries.get(chargeColumn));
-        float mz = -1f;
-        if (mzColumn>-1 && cellEntries.containsKey(mzColumn)) mz = ((Double)cellEntries.get(mzColumn)).floatValue();
-        if (mzTolerance<0 && mzTolColumn>-1 && cellEntries.containsKey(mzTolColumn)) mzTolerance = ((Double)cellEntries.get(mzTolColumn)).floatValue();
-        float area = -1f;
-        if (areaColumn>-1 && cellEntries.containsKey(areaColumn)) area = ((Double)cellEntries.get(areaColumn)).floatValue();
-        float peak = -1f;
-        if (peakColumn>-1 && cellEntries.containsKey(peakColumn)) peak = ((Double)cellEntries.get(peakColumn)).floatValue();
-        float startTime = -1f;
-        if (startTimeColumn>-1 && cellEntries.containsKey(startTimeColumn)) startTime = ((Double)cellEntries.get(startTimeColumn)).floatValue();
-        float stopTime = -1f;
-        if (stopTimeColumn>-1 && cellEntries.containsKey(stopTimeColumn)) stopTime = ((Double)cellEntries.get(stopTimeColumn)).floatValue();
-        float startMz = -1f;
-        if (startMzColumn>-1 && cellEntries.containsKey(startMzColumn)) startMz = ((Double)cellEntries.get(startMzColumn)).floatValue();
-        float stopMz = -1f;
-        if (stopMzColumn>-1 && cellEntries.containsKey(stopMzColumn)) stopMz = ((Double)cellEntries.get(stopMzColumn)).floatValue();
-        float ellipseTimePosition = -1f;
-        if (ellTimeColumn>-1 && cellEntries.containsKey(ellTimeColumn)) ellipseTimePosition = ((Double)cellEntries.get(ellTimeColumn)).floatValue();
-        float ellipseMzPosition = -1f;
-        if (ellMzColumn>-1 && cellEntries.containsKey(ellMzColumn)) ellipseMzPosition = ((Double)cellEntries.get(ellMzColumn)).floatValue();
-        float ellipseTimeStretch = -1f;
-        if (ellTimeRangeColumn>-1 && cellEntries.containsKey(ellTimeRangeColumn)) ellipseTimeStretch = ((Double)cellEntries.get(ellTimeRangeColumn)).floatValue();
-        float ellipseMzStretch = -1f;
-        if (ellMzRangeColumn>-1 && cellEntries.containsKey(ellMzRangeColumn)) ellipseMzStretch = ((Double)cellEntries.get(ellMzRangeColumn)).floatValue();
-        //TODO: formula is only excluded for the damaged Alex123 target list
-        if (fragmentName!=null && fragmentName.length()>0 && /*formula!=null && formula.length()>0 &&*/ msLevel>0 && charge>0 && mz>0f && mzTolerance>0f
-            && area>0f && peak>0f && startTime>-1f && stopTime>0f){
-          CgProbe probe = new CgProbe(-1, charge, msLevel, formula);
-          probe.AreaStatus = CgAreaStatus.OK;
-          probe.Mz = mz;
-          probe.Area = area;
-          probe.AreaError = 0f;
-          probe.Background = 0f;
-          probe.Peak = peak;
-          probe.LowerValley = startTime;
-          probe.UpperValley = stopTime;
-          probe.LowerMzBand = mzTolerance;
-          probe.UpperMzBand = mzTolerance;
-          probe.isotopeNumber = 0;
-          if (startMz>0f && stopMz>0f && ellipseTimePosition>0f && ellipseMzPosition>0f && ellipseTimeStretch>0f && ellipseMzStretch>0f){
-            probe = new Probe3D(probe,ellipseTimePosition,ellipseMzPosition,
-                ellipseTimeStretch,ellipseMzStretch,-1f,-1f,-1f,-1f,-1f,-1f);
-            probe.LowerMzBand = startMz;
-            probe.UpperMzBand = stopMz;
-          }
-          if (headGroupFragmentActive){
-            headGroupFragments.put(fragmentName, probe);
-            status = LipidomicsMSnSet.HEAD_GROUP_DETECTED;
-          }else if (chainFragmentActive){
-            status = LipidomicsMSnSet.FRAGMENTS_DETECTED;
-            String[] faAndFragment = StaticUtils.parseChainFaAndFragmentNameFromExcel(fragmentName);
-            String faName = faAndFragment[0];
-            fragmentName =  faAndFragment[1];
-            Hashtable<String,CgProbe> fragments = new Hashtable<String,CgProbe>();
-            if (chainFragments.containsKey(faName)) fragments = chainFragments.get(faName);
-            fragments.put(fragmentName, probe);
-            chainFragments.put(faName,fragments);
-          }
-        }
-      }
-      // reading information about intensity rules
-      else if (addingMSnEvidence!=null && intensityHeaderRead && (headGroupRules||chainRules||positionRules)){
-        String readableRuleInterpretation = null;
-        if (ruleColumn>-1 && cellEntries.containsKey(ruleColumn)) readableRuleInterpretation = (String)cellEntries.get(ruleColumn);
-        String rule = null;
-        if (originalRuleColumn>-1 && cellEntries.containsKey(originalRuleColumn)) rule = (String)cellEntries.get(originalRuleColumn);
-        String ruleValueInterpretation = null;
-        if (ruleValuesColumn>-1 && cellEntries.containsKey(ruleValuesColumn)) ruleValueInterpretation = (String)cellEntries.get(ruleValuesColumn);
-        if (readableRuleInterpretation!=null && readableRuleInterpretation.length()>0 && rule!=null && rule.length()>0 &&
-            ruleValueInterpretation!=null && ruleValueInterpretation.length()>0){
-          String uniqueRuleString = readableRuleInterpretation+";"+rule+";"+ruleValueInterpretation;
-          String missedString = "";
-          if (ruleMissedColumn>-1 && cellEntries.containsKey(ruleMissedColumn)) missedString = (String)cellEntries.get(ruleMissedColumn);
-          Hashtable<String,String> missed = new Hashtable<String,String>();
-          StringTokenizer tokenizer = new StringTokenizer(missedString,";");
-          while (tokenizer.hasMoreTokens()){
-            String token = tokenizer.nextToken();
-            missed.put(token, token);
-          }
-          if (uniqueRules.containsKey(uniqueRuleString)) continue;
-          uniqueRules.put(uniqueRuleString, uniqueRuleString);
-          int currentSection = -1;
-          if (headGroupRules) currentSection = FragRuleParser.HEAD_SECTION;
-          else if (chainRules) currentSection = FragRuleParser.CHAINS_SECTION;
-          else if (positionRules) currentSection = FragRuleParser.POSITION_SECTION;
-          Hashtable<String,String> head = new Hashtable<String,String>();
-          for (String key : headGroupFragments.keySet()) head.put(key,key);
-          Hashtable<String,String> chain = new Hashtable<String,String>();
-          for (Hashtable<String,CgProbe> fragments : chainFragments.values()){
-            for (String name : fragments.keySet()) chain.put(name, name);
-          }
-          IntensityRuleVO ruleVO = FragRuleParser.extractIntensityVOFromEquation(rule, -1, currentSection, head, chain, null, missed);
-          if (chainRules || positionRules){
-            IntensityRuleVO ruleInst = null;
-            if (chainRules) ruleInst = IntensityChainVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO);
-            else if (positionRules) ruleInst = IntensityPositionVO.getFattyAcidsFromReadableRule(readableRuleInterpretation, ruleVO);
-            if (ruleInst!=null) ruleVO = ruleInst;
-          }
-          if (ruleVO.containsBasePeak()){
-            Hashtable<String,Float> values = LipidomicsMSnSet.getFragmentAreas(ruleVO,headGroupFragments,chainFragments);
-            for (String name : values.keySet()){
-              if (values.get(name)<0) values.put(name, 0f);
-            }
-            float basePeak = ruleVO.extractBasePeakValue(ruleValueInterpretation,values);
-            int msLevel = ruleVO.getMSLevel(headGroupFragments, chainFragments, ruleVO.getBiggerFA(), ruleVO.getSmallerFA());
-            if (msLevel>1) basePeakValues.put(msLevel, basePeak);
-          }
-          if (ruleVO!=null && headGroupRules) headIntensityRules.put(ruleVO.getRuleIdentifier(), ruleVO);
-          else if (ruleVO!=null && chainRules){
-            IntensityChainVO chainVO =  IntensityChainVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO);
-            if (!chainVO.getBiggerFA().equalsIgnoreCase(chainVO.getSmallerFA())) chainVO.setChainType(IntensityChainVO.DIFF_CHAIN_TYPES);
-            Hashtable<String,IntensityChainVO> rules = new Hashtable<String,IntensityChainVO>();
-            String id = "";
-            if (chainVO.getChainType()==IntensityChainVO.DIFF_CHAIN_TYPES){
-              String[] poss = getChainCombination(chainVO.getBiggerFA(),chainVO.getSmallerFA());
-              if (chainIntensityRules.containsKey(poss[0])) id = poss[0];
-              else id = poss[1];
-            } else id = chainVO.getBiggerFA();
-            if (chainIntensityRules.containsKey(id)) rules = chainIntensityRules.get(id);
-            rules.put(ruleVO.getRuleIdentifier(), chainVO);
-            chainIntensityRules.put(id, rules);
-          } else if (ruleVO!=null && positionRules){
-            IntensityPositionVO posVO = IntensityPositionVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO);
-            Hashtable<Integer,Integer> defs = new Hashtable<Integer,Integer>();
-            Hashtable<Integer,Vector<IntensityPositionVO>> evidence = new Hashtable<Integer,Vector<IntensityPositionVO>>();
-            if (positionDefinition.containsKey(combiKey)) defs = positionDefinition.get(combiKey);
-            if (positionEvidence.containsKey(combiKey)) evidence = positionEvidence.get(combiKey);
-            String[] fas = LipidomicsMSnSet.getFAsFromCombiName(combiKey);
-            Hashtable<String,String> usedFAs = new Hashtable<String,String>();
-            for (int i=0;i!=fas.length;i++){
-              String fa = fas[i];
-              int position = posVO.getPositionByFA(fa);
-              if ( position<0 || usedFAs.containsKey(fa)) continue;
-              if (defs.containsKey(i)){
-                // if the stored assignment is not the same -> no position can be assigned
-                if (defs.get(i)!=(position-1)){
-                  boolean otherSameFAAtPositionOrUndefined = false;
-                  //check if there is the same FA more than once, and this position is assigned or undefined
-                  for (int j=0;j!=fas.length;j++){
-                    if (i==j || !fa.equalsIgnoreCase(fas[j]))continue;
-                    if (!defs.containsKey(j)||defs.get(i)==(position-1)||defs.get(j)==(position-1)) otherSameFAAtPositionOrUndefined=true;
-                  }
-                  if (!otherSameFAAtPositionOrUndefined) defs.remove(i);
-                }
-              }else{
-                //if several rules are fulfilled for the same FA, and this FA exists more than once, the
-                //defs would store the same position twice and would not allow another rule with another
-                //position for the correct assignment
-                boolean sameFaAlreadySamePosition = false;
-                for (int j=0; j!=i; j++){
-                  if (!fa.equalsIgnoreCase(fas[j])) continue;
-                  if (defs.get(j)==(position-1)) sameFaAlreadySamePosition = true;
-                }
-                if (!sameFaAlreadySamePosition){
-                  defs.put(i, (position-1));
-                  usedFAs.put(fa, fa);
-                }
-              }
-              Vector<IntensityPositionVO> rules = new Vector<IntensityPositionVO>();
-              if (evidence.containsKey(position)) rules = evidence.get(position);
-              boolean ruleIsThere = false;
-              for (IntensityPositionVO other : rules){
-                if (other.getReadableRuleInterpretation().equalsIgnoreCase(posVO.getReadableRuleInterpretation())){
-                  ruleIsThere = true;
-                  break;
-                }
-              }
-              if (!ruleIsThere)rules.add(posVO);
-              
-              evidence.put(position, rules);
-            }
-            positionDefinition.put(combiKey, defs);
-            positionEvidence.put(combiKey, evidence);
-          }
-        }
-      }
-
-      // if in the next row the fragment head row has to be read - the column indices have to be initialized
-      if (readFragmentHeaderRow){
-        nameColumn = -1;
-        formulaColumn = -1;
-        msLevelColumn = -1;
-        chargeColumn = -1;
-        mzColumn = -1;
-        mzTolColumn = -1;
-        areaColumn = -1;
-        peakColumn = -1;
-        startTimeColumn = -1;
-        stopTimeColumn = -1;
-        startMzColumn = -1;
-        stopMzColumn = -1;
-        ellTimeColumn = -1;
-        ellMzColumn = -1;
-        ellTimeRangeColumn = -1;
-        ellMzRangeColumn = -1;
-      }
-      // if in the next row the intensity head row has to be read - the column indices have to be initialized
-      if (readIntensityHeaderRow){
-        ruleColumn = -1;
-        originalRuleColumn = -1;
-        ruleValuesColumn = -1;
-      }
-    }
-    if (addingMSnEvidence!=null && (addingMSnEvidence instanceof LipidParameterSet)){
-      String speciesName = addingMSnEvidence.getNamePlusModHumanReadable();
-      positionDefinition = cleanPositionDefinition(positionDefinition);
-      if (isDefinitionPresent(positionDefinition)) status = LipidomicsMSnSet.POSITION_DETECTED;
-      addingMSnEvidence = new LipidomicsMSnSet(addingMSnEvidence, status, mzTolerance,headGroupFragments, headIntensityRules,
-      chainFragments, chainIntensityRules, validChainCombinations, positionDefinition,positionEvidence, numberOfPositions, basePeakValues,
-      msnRetentionTimes);
-      msHash.put(speciesName,addingMSnEvidence);
-    }
-    
-    String lipidClass = sheet.getSheetName().substring(0,sheet.getSheetName().lastIndexOf(QuantificationThread.MSN_SHEET_ADDUCT));
-    if (usedAlexMsnTargets) readConstants.getAlexTargetlistUsed().put(lipidClass,true);
-    Vector<LipidParameterSet> msnResults = new Vector<LipidParameterSet>();
-    for (LipidParameterSet ms1 : ms1Results){
-      msnResults.add(msHash.get(ms1.getNamePlusModHumanReadable()));
-    }
-    return msnResults;
-  }
-  
-  /**
-   * returns the various permutations of two fatty acid chains
-   * @param fa1 fatty acid chain 1
-   * @param fa2 fatty acid chain 2
-   * @return
-   */
-  private static String[] getChainCombination(String fa1, String fa2){
-    String[] poss = new String[2];
-    poss[0] = fa1+"_"+fa2;
-    poss[1] = fa2+"_"+fa1;
-    return poss;
-  }
-  
-  /**
-   * the parser adds found chain combinations by replacing the "/" by "_", where the sequence of the fatty acids may
-   * be different than in the stored values - this method corrects the sequence to be exactly as in the stored Excel
-   * @param combiKey fa combination String as it should be
-   * @param validChainCombinations the currently available chain combinations
-   * @return the corrected available chain combinations
-   */
-  private static Vector<String> correctUndefinedChainCombinations(String combiKey, Vector<String> validChainCombinations){
-    Vector<String> corrected = new Vector<String>();
-    for (String combi : validChainCombinations){
-      if (StaticUtils.isAPermutedVersion(combiKey,combi)) corrected.add(combiKey);
-      else corrected.add(combi);
-    }
-    return corrected;
-  }
-  
-  /**
-   * cleans unidentified position definitions from the position definition hash (-1 corresponds to unidentified)
-   * @param posDefs the uncleaned position definition hash
-   * @return cleaned position definition hash
-   */
-  private static Hashtable<String,Hashtable<Integer,Integer>> cleanPositionDefinition (Hashtable<String,Hashtable<Integer,Integer>> posDefs){
-    Hashtable<String,Hashtable<Integer,Integer>> cleaned = new Hashtable<String,Hashtable<Integer,Integer>>();
-    for (String combi : posDefs.keySet()){
-      Hashtable<Integer,Integer> posss = posDefs.get(combi);
-      Hashtable<Integer,Integer> possCleaned = new Hashtable<Integer,Integer>();
-      Hashtable<Integer,Integer> usedPositions = new Hashtable<Integer,Integer>();
-      for (Integer stringPos : posss.keySet()){
-        if (posss.get(stringPos)>-1){
-          if (usedPositions.containsKey(posss.get(stringPos))){
-            //the same position is referenced more than once -> no evidence remove it
-            if (possCleaned.containsKey(usedPositions.get(posss.get(stringPos))))possCleaned.remove(usedPositions.get(posss.get(stringPos)));
-          }else{
-            possCleaned.put(stringPos, posss.get(stringPos));
-            usedPositions.put(posss.get(stringPos), stringPos);
-          }
-        }
-      }
-      cleaned.put(combi, possCleaned);
-    }
-    return cleaned;
-  }
-  
-  /**
-   * checks if the position definition hash contains any defined position
-   * @param posDefs position definition hash
-   * @return true if definitions are present
-   */
-  private static boolean isDefinitionPresent(Hashtable<String,Hashtable<Integer,Integer>> posDefs){
-    for (Hashtable<Integer,Integer> posss : posDefs.values()){
-      if (posss.size()>0) return true;
-    }
-    return false;
-  }
-  
   /**
    * checks if the quantitation file contains any isobaric species - if so, this information is stored in the QuantVO
    * @param classSequence the lipid classes in sequence
