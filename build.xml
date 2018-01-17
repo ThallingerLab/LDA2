@@ -297,7 +297,6 @@
 	          <include name="at/tugraz/genome/lda/LDAResultReader.class"/>
 	          <include name="at/tugraz/genome/lda/LipidomicsConstants.class"/>
 	          <include name="at/tugraz/genome/lda/QuantificationThread.class"/>
-	          <include name="at/tugraz/genome/lda/Settings.class"/>
 		      <include name="at/tugraz/genome/lda/exception/ChemicalFormulaException.class"/>
 	          <include name="at/tugraz/genome/lda/exception/ExcelInputFileException.class"/>
 	          <include name="at/tugraz/genome/lda/exception/NoRuleException.class"/>

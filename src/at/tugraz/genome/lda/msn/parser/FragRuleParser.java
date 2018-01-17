@@ -138,6 +138,10 @@ public class FragRuleParser
   
   public final static String NO_HEAD_AND_CHAINS_SECTION = "The rules file must contain a "+HEAD_SECTION_NAME+" or a "+CHAINS_SECTION_NAME+" section!";
   
+  private static boolean useAlex_ = false;
+  
+  private static boolean alexSet_ = false;
+  
   /**
    * Constructor requires and ElementConfig parser only - for evaluating the chemical formulas
    * @param elementParser for evaluating the chemical formulas
@@ -461,7 +465,7 @@ public class FragRuleParser
     String name = null;
     String formula = null;
     StringTokenizer tokenizer = new StringTokenizer(line,"\t ");
-    if (Settings.useAlex()) tokenizer = new StringTokenizer(line,"\t");
+    if (useAlex()) tokenizer = new StringTokenizer(line,"\t");
     while (tokenizer.hasMoreTokens()){
       String kvPair = tokenizer.nextToken().trim();
       if (kvPair.indexOf("=")==-1) throw new RulesException("The "+FRAGMENT_SUBSECTION_NAME+" are key/value pairs seperated by \"=\"! There is no \"=\" in \""+kvPair+"\"at line "+lineNumber+"!");
@@ -540,7 +544,7 @@ public class FragRuleParser
     if (line.length()==0) return;
     boolean mandatory = false;
     StringTokenizer tokenizer = new StringTokenizer(line,"\t ");
-    if (Settings.useAlex()) tokenizer = new StringTokenizer(line,"\t");
+    if (useAlex()) tokenizer = new StringTokenizer(line,"\t");
     IntensityRuleVO ruleVO = null;
     while (tokenizer.hasMoreTokens()){
       String kvPair = tokenizer.nextToken().trim();
@@ -654,7 +658,7 @@ public class FragRuleParser
       if (originalValue.indexOf(")")==-1) throw new RulesException("An \""+INTENSITY_EQUATION+"\" containing a closing bracket must contain an opening bracket! The equation \""+value+"\" at line "+lineNumber+" does not!");
       if (originalValue.indexOf("(")>originalValue.indexOf(")")) throw new RulesException("An \""+INTENSITY_EQUATION+"\" must not start with a closing bracket before an opening bracket! The equation \""+value+"\" at line "+lineNumber+" does!");
       boolean isMathematicalBracket = true;
-      if (Settings.useAlex()){
+      if (useAlex()){
         for (String fragment : lengthSortedFragmentNames){
           if (fragment.indexOf("(")==-1 || originalValue.indexOf(fragment)==-1) continue;
           if (originalValue.indexOf("(")!=originalValue.indexOf(fragment)+fragment.indexOf("(")) continue;
@@ -1310,6 +1314,17 @@ public class FragRuleParser
     if(rule.isMandatory()) mandatory = "true";
     bw.write("Equation=" + rule.getRuleIdentifier() + "\t" + "mandatory=" + mandatory + "\n");            
 
+  }
+  
+  private static boolean useAlex(){
+    if (!alexSet_){
+      alexSet_=true;
+      try {
+        Class.forName( "at.tugraz.genome.lda.Settings");
+        useAlex_ = Settings.useAlex(); 
+      } catch( ClassNotFoundException e ) { }
+    }
+    return useAlex_;
   }
   
 }

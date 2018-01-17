@@ -1070,8 +1070,13 @@ public class StaticUtils
    */
   public static String getChainFragmentDisplayName(String name, String faName){
     String displayName = name+"("+faName+")";
+    boolean useAlex = false;
     // this is an extension to support the Alex123 nomenclature
-    if (Settings.useAlex() && (name.equals("FA") || name.startsWith("FA ")) || (name.startsWith("-FA "))){
+    try {
+      Class.forName( "at.tugraz.genome.lda.Settings");
+      useAlex = Settings.useAlex(); 
+    } catch( ClassNotFoundException e ) { }
+    if (useAlex  && (name.equals("FA") || name.startsWith("FA ")) || (name.startsWith("-FA "))){
       if (name.equals("FA"))
         displayName = "FA "+faName;
       else if (name.startsWith("FA "))
