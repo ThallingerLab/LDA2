@@ -36,6 +36,8 @@ public class MzxmlToChromThread extends Thread
   private boolean finished_ = false;
   private String errorString_;
   private int numberOfThreads_;
+  /** true when the mzXML file contains polarity switched data*/
+  private boolean polaritySwitched_;
   
   public MzxmlToChromThread(String filePath, int numberOfThreads){
     this.filePath_ = filePath;
@@ -44,7 +46,8 @@ public class MzxmlToChromThread extends Thread
   
   public void run(){
     try{
-      MzxmlToChromThread.translateToChrom(filePath_,numberOfThreads_);
+      polaritySwitched_ = false;
+      translateToChrom(filePath_,numberOfThreads_);
     } catch (Exception ex){
       ex.printStackTrace();
       errorString_ = ex.toString();     
@@ -60,11 +63,22 @@ public class MzxmlToChromThread extends Thread
     return this.errorString_;
   }
   
-  public static void translateToChrom(String filePath, int numberOfThreads) throws Exception{
+  private void translateToChrom(String filePath, int numberOfThreads) throws Exception{
     RawToChromTranslator translator = new RawToChromTranslator(filePath,"mzXML", LipidomicsConstants.getmMaxFileSizeForChromTranslationAtOnceInMB(),
         numberOfThreads,LipidomicsConstants.getChromMultiplicationFactorForInt(),LipidomicsConstants.getChromLowestResolution(),LipidomicsConstants.isMS2());
       translator.translateToChromatograms();
+      polaritySwitched_ = translator.isPolaritySwitched();
   }
+
+  /**
+   * 
+   * @return true when the mzXML file contains polarity switched data
+   */
+  public boolean isPolaritySwitched()
+  {
+    return polaritySwitched_;
+  }
+  
   
   
 }

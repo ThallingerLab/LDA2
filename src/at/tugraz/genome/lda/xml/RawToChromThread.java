@@ -59,8 +59,8 @@ public class RawToChromThread extends Thread  implements AddScan
   private boolean finished_;
   /** the error string if something goes wrong*/
   private String errorString_;
-  /** the directory where the chrom files have to be stored*/
-  private String dir_;
+  /** the directories where the chrom files have to be stored*/
+  private String[] directories_;
   /** the lower m/z threshold for translating the data in integer format*/
   private Integer lowerThreshInt_;
   /** the upper m/z threshold for translating the data in integer format*/
@@ -72,10 +72,14 @@ public class RawToChromThread extends Thread  implements AddScan
 
   /** actual Scan Count (used as index) */
   private Hashtable<String,Integer> m_scanCount_;
+  /** actual polarity scan count (used as index) */
+  private Hashtable<String,Hashtable<Integer,Integer>> polarity_scanCount_;
   /** the header information*/
   private Hashtable<String,CgScanHeader> headerHash_;
   /** the individual scans*/
   private Hashtable<String,CgScan[]> scanHash_;
+  /** polarity sorted scans*/
+  private Hashtable<String,Hashtable<Integer,CgScan[]>> polarityScans_;
   /** the arraysize for reading m/z ranges in batch mode*/
   private int elementsForBatchCalculation_;
   
@@ -96,8 +100,8 @@ public class RawToChromThread extends Thread  implements AddScan
   private int highestMsLevel_;
   /** in my opinion, the msMsExclusionList was necessary because the scans were read overlapping - since the threaded version, this hashtable should be obsolete*/
   private Hashtable<String,Hashtable<Integer,Integer>> msMsExclusionList_;
-  /** contains the amount of MSn scans*/
-  private Hashtable<String,Hashtable<Integer,Integer>> numberOfMs2Scans_;
+  /** contains the amount of MSn scans - first key: file key; second key: polarity; third key: MS-level*/
+  private Hashtable<String,Hashtable<Integer,Hashtable<Integer,Integer>>> numberOfMs2Scans_;
   
   /** the data file name (in case of merged data) that is currently read by the reader*/ 
   private String currentFileName_;
@@ -109,12 +113,28 @@ public class RawToChromThread extends Thread  implements AddScan
   private final static float ALLOWED_OVERLAP = 1f;
 
   
-  /** the name of the chromatography file*/
-  private Hashtable<String,String> chromFileName_;
+  /** the name of the chromatography file(s)*/
+  private Hashtable<String,String[]> chromFileName_;
   /** the name of the index file*/
-  private Hashtable<String,String> indexFileName_;
-  /** the name of the retention-time file*/
-  private Hashtable<String,String> retentionTimeFileName_;
+  private Hashtable<String,String[]> indexFileName_;
+  /** the name of the retention-time file(s)*/
+  private Hashtable<String,String[]> retentionTimeFileName_;
+  
+  /** MSn scans require an MS1 scan before. For polarity switched data,
+   * a dummy positive MS1 scan might be added when scans start with negative MS1 scans,
+   * and a positive MSn scan comes before an positve MS1 scan
+   */
+  private CgScan positiveDummyMS1Scan_;
+  /** MSn scans require an MS1 scan before. For polarity switched data,
+   * a dummy negative MS1 scan might be added when scans start with positive MS1 scans,
+   * and a negative MSn scan comes before an negatve MS1 scan
+   */
+  private CgScan negativeDummyMS1Scan_;
+  
+  /** the suffix to be added to the positive chrom file of polarity switched data*/
+  public final static String FILE_SUFFIX_POLARITY_POSITIVE = "_positive";
+  /** the suffix to be added to the negative chrom file of polarity switched data*/
+  public final static String FILE_SUFFIX_POLARITY_NEGATIVE = "_negative";
 
   /**
    * this constructor sets default values and inits required hash tables
@@ -123,10 +143,12 @@ public class RawToChromThread extends Thread  implements AddScan
     finished_ = false;
     errorString_ = null;
     msMsExclusionList_ = new Hashtable<String,Hashtable<Integer,Integer>>();
-    this.chromFileName_ = new Hashtable<String,String>();
-    this.indexFileName_ = new Hashtable<String,String>();
-    this.retentionTimeFileName_ = new Hashtable<String,String>();
+    this.chromFileName_ = new Hashtable<String,String[]>();
+    this.indexFileName_ = new Hashtable<String,String[]>();
+    this.retentionTimeFileName_ = new Hashtable<String,String[]>();
     this.msms_ = false;
+    positiveDummyMS1Scan_ = null;
+    negativeDummyMS1Scan_ = null;
   }
   
   /**
@@ -176,12 +198,14 @@ public class RawToChromThread extends Thread  implements AddScan
   
   /**
    * sets the storage directory and the lower/upper m/z threshold for translating the data in integer format
-   * @param dir the directory where the chrom files have to be stored
+   * @param directories the directories where the chrom files have to be stored; for polarity switching,
+   * the first directory is the positive, and the second the negative one; otherwise, only the first directory
+   * must be filled out and the second one must be "null"
    * @param lowerThreshold the lower m/z threshold for translating the data in integer format
    * @param upperThreshold the upper m/z threshold for translating the data in integer format
    */
-  public void setRequiredInformation(String dir, Integer lowerThreshold, Integer upperThreshold){
-    this.dir_ = dir;
+  public void setRequiredInformation(String[] directories, Integer lowerThreshold, Integer upperThreshold){
+    this.directories_ = directories;
     this.lowerThreshInt_ = lowerThreshold;
     this.lowerThresholdTol_ = lowerThreshold.floatValue()/(float)this.multiplicationFactorForInt_-ALLOWED_OVERLAP;
     int lowerThreshIntTol = getCorrespondingIntValue(this.lowerThresholdTol_, multiplicationFactorForInt_);
@@ -202,6 +226,7 @@ public class RawToChromThread extends Thread  implements AddScan
     if (scanHash_.get(currentFileName_).length==m_scanCount_.get(currentFileName_)) return;
     scanHash_.get(currentFileName_)[m_scanCount_.get(currentFileName_)] = sx;
     m_scanCount_.put(currentFileName_, m_scanCount_.get(currentFileName_)+1);
+    polarity_scanCount_.get(currentFileName_).put(sx.getPolarity(),polarity_scanCount_.get(currentFileName_).get(sx.getPolarity())+1);
   }
 
   public void AddHeader(CgScanHeader hx) throws CgException
@@ -211,6 +236,12 @@ public class RawToChromThread extends Thread  implements AddScan
     headerHash_.put(currentFileName_, hx);
     scanHash_.put(currentFileName_, new CgScan[hx.ScanCount]);
     m_scanCount_.put(currentFileName_, 0);
+    
+    Hashtable<Integer,Integer> polarityScans = new Hashtable<Integer,Integer>();
+    polarityScans.put(CgDefines.POLARITY_NO, 0);
+    polarityScans.put(CgDefines.POLARITY_POSITIVE, 0);
+    polarityScans.put(CgDefines.POLARITY_NEGATIVE, 0);
+    polarity_scanCount_.put(currentFileName_, polarityScans);
   }
 
   public void setStartStopHeader(CgScanHeader hx) throws CgException
@@ -239,11 +270,14 @@ public class RawToChromThread extends Thread  implements AddScan
       scanHash_.remove(currentFileName_);
       Integer count = m_scanCount_.get(currentFileName_);
       m_scanCount_.remove(currentFileName_);
+      Hashtable<Integer,Integer> polarityCount = polarity_scanCount_.get(currentFileName_);
+      polarity_scanCount_.remove(currentFileName_);
       currentFileName_ = fileName;
       header.fileName = fileName;
       headerHash_.put(currentFileName_, header);
       scanHash_.put(currentFileName_, scans);
       m_scanCount_.put(currentFileName_, count);
+      polarity_scanCount_.put(currentFileName_, polarityCount);
     }
   }
 
@@ -264,13 +298,36 @@ public class RawToChromThread extends Thread  implements AddScan
     m_scanCount_ = new Hashtable<String,Integer>();
     scanHash_ = new Hashtable<String,CgScan[]>();
     headerHash_ = new Hashtable<String,CgScanHeader>();
+    polarity_scanCount_ = new Hashtable<String,Hashtable<Integer,Integer>>();
   }
 
-  /** translates the read scans to the chrom file or a subset chrom file*/
+  /**
+   * translates the read scans to the chrom file or a subset chrom file
+   * @throws IOException thrown when there is something wrong with the file/directory access
+   */
   public void writeToChrom() throws IOException{
+    if (directories_[1]==null){
+      writeToChrom(directories_[0],CgDefines.POLARITY_NO);
+    }else{
+      sortPolaritySwitchedScans();
+      writeToChrom(directories_[0],CgDefines.POLARITY_POSITIVE);
+      writeToChrom(directories_[1],CgDefines.POLARITY_NEGATIVE);
+    }
+ 
+  }  
 
+  /**
+   * the individual translation (in the case of polarity switched data, this method is called twice)
+   * @param dir the chrom directory to store the files in
+   * @param polarity the current polarity of the translation
+   * @throws IOException thrown when there is something wrong with the file/directory access
+   */
+  private void writeToChrom(String dir, int polarity) throws IOException{
+    int filePosition = 0;
+    if (polarity == CgDefines.POLARITY_NEGATIVE) filePosition = 1;
+    
     Hashtable<String,Vector<Hashtable<Integer,Float>>> msmsRetentionTimes = buildHeaderInformation();
-    Hashtable<String,Vector<LinkedHashMap<String,Vector<MsMsScan>>>> msmsScans = groupTheMsMsScans(msmsRetentionTimes);
+    Hashtable<String,Vector<LinkedHashMap<String,Vector<MsMsScan>>>> msmsScans = groupTheMsMsScans(msmsRetentionTimes,polarity);
     
     Hashtable<String,BufferedOutputStream> stream = new Hashtable<String,BufferedOutputStream>();
     Hashtable<String,DataOutputStream> streamIndex = new Hashtable<String,DataOutputStream>();
@@ -288,8 +345,8 @@ public class RawToChromThread extends Thread  implements AddScan
     }
     
     for (String key : headerHash_.keySet()){
-      stream.put(key, new BufferedOutputStream(new FileOutputStream(dir_+chromFileName_.get(key))));
-      streamIndex.put(key,new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dir_+indexFileName_.get(key)))));
+      stream.put(key, new BufferedOutputStream(new FileOutputStream(dir+chromFileName_.get(key)[filePosition])));
+      streamIndex.put(key,new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dir+indexFileName_.get(key)[filePosition]))));
       // this is for the MSMS
       msmsChromStreams.put(key, new Vector<BufferedOutputStream>());
       msmsIndexStreams.put(key, new Vector<DataOutputStream>());
@@ -297,9 +354,9 @@ public class RawToChromThread extends Thread  implements AddScan
       bytesIndices.put(key, new Hashtable<Integer,Long>());
       if (msms_&&!msmsInSeveralFiles_){
         for (int i=2; i<=highestMsLevel_;i++){
-          BufferedOutputStream streamChrom2 = new BufferedOutputStream(new FileOutputStream(dir_+chromFileName_.get(key)+String.valueOf(i)));
+          BufferedOutputStream streamChrom2 = new BufferedOutputStream(new FileOutputStream(dir+chromFileName_.get(key)[filePosition]+String.valueOf(i)));
           msmsChromStreams.get(key).add(streamChrom2);
-          DataOutputStream streamIndex2 = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dir_+indexFileName_.get(key)+String.valueOf(i))));
+          DataOutputStream streamIndex2 = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dir+indexFileName_.get(key)[filePosition]+String.valueOf(i))));
           msmsIndexStreams.get(key).add(streamIndex2);
           int currentResDiffToLowest = 0;
           if (lowerThreshInt_!=null && lowerThreshInt_>0){
@@ -320,30 +377,32 @@ public class RawToChromThread extends Thread  implements AddScan
     Hashtable<String,Long> bytesIndex = new Hashtable<String,Long>();
     for (String key : headerHash_.keySet()){
       bytesIndex.put(key, 0l);
-      intensityValuesSection.put(key, createIntensityArray(m_scanCount_.get(key),elementsForBatchCalculation_));
+      intensityValuesSection.put(key, createIntensityArray(getCorrectScanCount(key,polarity),elementsForBatchCalculation_));
     }
 
     float intensity;
     if (((this.lowerThreshInt_-lowestMz_)/lowestResolution_) % elementsForBatchCalculation_!=0){
       int startValue = this.lowerThreshInt_-((this.lowerThreshInt_-lowestMz_) % (elementsForBatchCalculation_*lowestResolution_));
       for (String key : headerHash_.keySet()){
-        for (int j=0; j<m_scanCount_.get(key); j++){
-          scanHash_.get(key)[j].fillIntensitiyArray(intensityValuesSection.get(key)[j],(Float.parseFloat((String.valueOf(startValue)))/(float)multiplicationFactorForInt_),(Float.parseFloat((String.valueOf(startValue+elementsForBatchCalculation_*lowestResolution_)))/(float)multiplicationFactorForInt_),elementsForBatchCalculation_);
+        CgScan[] scans = getCorrectScans(key, polarity);
+        for (int j=0; j<getCorrectScanCount(key,polarity); j++){
+          scans[j].fillIntensitiyArray(intensityValuesSection.get(key)[j],(Float.parseFloat((String.valueOf(startValue)))/(float)multiplicationFactorForInt_),(Float.parseFloat((String.valueOf(startValue+elementsForBatchCalculation_*lowestResolution_)))/(float)multiplicationFactorForInt_),elementsForBatchCalculation_);
         }
       }      
     }
     for (int i=this.lowerThreshInt_; i<this.upperThreshInt_; i+=lowestResolution_){
       if (((i-lowestMz_)/lowestResolution_) % elementsForBatchCalculation_==0){
         for (String key : headerHash_.keySet()){
-          for (int j=0; j<m_scanCount_.get(key); j++){
-            scanHash_.get(key)[j].fillIntensitiyArray(intensityValuesSection.get(key)[j],(Float.parseFloat((String.valueOf(i)))/(float)multiplicationFactorForInt_),(Float.parseFloat((String.valueOf(i+elementsForBatchCalculation_*lowestResolution_)))/(float)multiplicationFactorForInt_),elementsForBatchCalculation_);
+          CgScan[] scans = getCorrectScans(key, polarity);
+          for (int j=0; j<getCorrectScanCount(key,polarity); j++){
+            scans[j].fillIntensitiyArray(intensityValuesSection.get(key)[j],(Float.parseFloat((String.valueOf(i)))/(float)multiplicationFactorForInt_),(Float.parseFloat((String.valueOf(i+elementsForBatchCalculation_*lowestResolution_)))/(float)multiplicationFactorForInt_),elementsForBatchCalculation_);
           }
         }
       }
       for (String key : headerHash_.keySet()){
         Vector<Integer> scanNumbers = new Vector<Integer>();
         Vector<Float> intensities = new Vector<Float>();
-        for (int j=0; j<m_scanCount_.get(key); j++){
+        for (int j=0; j<getCorrectScanCount(key,polarity); j++){
           intensity = intensityValuesSection.get(key)[j][((i-lowestMz_)/lowestResolution_) % elementsForBatchCalculation_];
           if (intensity>0){
             scanNumbers.add(new Integer(j));
@@ -371,15 +430,18 @@ public class RawToChromThread extends Thread  implements AddScan
       }
     }
     
-    numberOfMs2Scans_ = new Hashtable<String,Hashtable<Integer,Integer>>();
+    if (numberOfMs2Scans_==null)
+      numberOfMs2Scans_ = new Hashtable<String,Hashtable<Integer,Hashtable<Integer,Integer>>>();
     for (String key : headerHash_.keySet()){
       stream.get(key).close();
       stream.get(key).flush();
       streamIndex.get(key).close();
       streamIndex.get(key).flush();
       if (msms_&&!msmsInSeveralFiles_){
-        numberOfMs2Scans_.put(key, new Hashtable<Integer,Integer>());
-        writeMs2RetentionTimes(dir_,msmsRetentionTimes.get(key),numberOfMs2Scans_.get(key),key);
+        if (!numberOfMs2Scans_.containsKey(key))
+          numberOfMs2Scans_.put(key, new Hashtable<Integer,Hashtable<Integer,Integer>>());
+        numberOfMs2Scans_.get(key).put(filePosition, new Hashtable<Integer,Integer>());
+        writeMs2RetentionTimes(dir,msmsRetentionTimes.get(key),numberOfMs2Scans_.get(key).get(filePosition),key,filePosition);
         for (int i=0; i<highestMsLevel_-1;i++){
           BufferedOutputStream streamChrom2 = msmsChromStreams.get(key).get(i);
           streamChrom2.close();
@@ -391,6 +453,34 @@ public class RawToChromThread extends Thread  implements AddScan
       }
     }
     intensityValuesSection = null;
+  }
+  
+  /**
+   * returns the adequate scans for this chrom generation (in case of polarity switched data, only the 
+   * corresponding polarity is returned)
+   * @param key the file key
+   * @param polarity the polarity according to CgDefines
+   * @return the adequate scans for this chrom generation (in case of polarity switched data, only the corresponding polarity is returned)
+   */
+  private CgScan[] getCorrectScans(String key, int polarity){
+    if (polarity==CgDefines.POLARITY_POSITIVE || polarity==CgDefines.POLARITY_NEGATIVE)
+      return polarityScans_.get(key).get(polarity);
+    else
+      return scanHash_.get(key);
+  }
+  
+  /**
+   * returns the adequate scan count for this chrom generation (in case of polarity switched data, only the 
+   * corresponding polarity is returned)
+   * @param key the file key
+   * @param polarity the polarity according to CgDefines
+   * @return the adequate scan count for this chrom generation (in case of polarity switched data, only the corresponding polarity is returned)
+   */
+  private int getCorrectScanCount(String key, int polarity){
+    if (polarity==CgDefines.POLARITY_POSITIVE || polarity==CgDefines.POLARITY_NEGATIVE)
+      return polarity_scanCount_.get(key).get(polarity);
+    else
+      return m_scanCount_.get(key);    
   }
   
   /**
@@ -413,10 +503,11 @@ public class RawToChromThread extends Thread  implements AddScan
   /**
    * groups the MSn scans correspondingly
    * @param retentionTimes the retention time hash to be filled
+   * @param the polarity of the current chrom translation according to the definition in CgDefines
    * @return the grouped MSn scans
    */
   @SuppressWarnings("unchecked")
-  private Hashtable<String,Vector<LinkedHashMap<String,Vector<MsMsScan>>>> groupTheMsMsScans(Hashtable<String,Vector<Hashtable<Integer,Float>>> retentionTimes){
+  private Hashtable<String,Vector<LinkedHashMap<String,Vector<MsMsScan>>>> groupTheMsMsScans(Hashtable<String,Vector<Hashtable<Integer,Float>>> retentionTimes, int polarity){
     Hashtable<String,Vector<LinkedHashMap<String,Vector<MsMsScan>>>> msmsScans = new Hashtable<String,Vector<LinkedHashMap<String,Vector<MsMsScan>>>> ();
     for (String key : this.headerHash_.keySet()){
       Vector<LinkedHashMap<String,Vector<MsMsScan>>> scansOfOneMzXML = new Vector<LinkedHashMap<String,Vector<MsMsScan>>>();
@@ -424,19 +515,19 @@ public class RawToChromThread extends Thread  implements AddScan
       for (int i=2; i<=highestMsLevel_;i++){
         List<MsMsScan> scansOfOneLevel = new ArrayList<MsMsScan>();
         Hashtable<Integer,Float> rets = retentionTimes.get(key).get(i-2);
-        for (CgScan msScan : scanHash_.get(key)){
-        //this is because there is too much space allocated in the array
-          if (msScan!=null){
-            for (CgScan subScan : msScan.getFullSubScans()){
-              //the msMsExclusionList is necessary because the scans are read overlapping, if there are several iterations
-              if (subScan.MsLevel==i && !exclusionList.containsKey(subScan.Num)){
-                scansOfOneLevel.add(((MsMsScan)subScan));
-                rets.put(subScan.Num, subScan.RetentionTime);
-                exclusionList.put(subScan.Num, subScan.Num);
-              }
-            }
-          }
-        }
+        CgScan[] scans = null;
+        if (polarity==CgDefines.POLARITY_POSITIVE){
+          scans = polarityScans_.get(key).get(CgDefines.POLARITY_POSITIVE);
+          if (this.positiveDummyMS1Scan_!=null)
+            addSubScansToLists(positiveDummyMS1Scan_,i,scansOfOneLevel,rets,exclusionList);
+        } else if (polarity==CgDefines.POLARITY_NEGATIVE){
+          scans = polarityScans_.get(key).get(CgDefines.POLARITY_NEGATIVE);
+          if (this.negativeDummyMS1Scan_!=null)
+            addSubScansToLists(negativeDummyMS1Scan_,i,scansOfOneLevel,rets,exclusionList);
+        } else
+          scans = scanHash_.get(key);
+        for (CgScan msScan : scans)
+          addSubScansToLists(msScan,i,scansOfOneLevel,rets,exclusionList);
         //new the scans are sorted according to their precursor mass
         Collections.sort(scansOfOneLevel,new GeneralComparator("at.tugraz.genome.maspectras.quantification.MsMsScan", "getMs1PrecursorMz", "java.lang.Float"));
         LinkedHashMap<String,Vector<MsMsScan>> sortedScans = new LinkedHashMap<String,Vector<MsMsScan>>();
@@ -452,6 +543,27 @@ public class RawToChromThread extends Thread  implements AddScan
       msmsScans.put(key, scansOfOneMzXML);
     }
     return msmsScans;
+  }
+  
+  /**
+   * reads the corresponding values of the subscans and adds them to a subscan list (of one MS-level), a retention time lookup, and an exclusion list to avoid overlaps
+   * @param msScan the MS1 scan where the subscans shall be added
+   * @param msLevel the allowed MS-level of the subscans to be added
+   * @param scansOfOneLevel the subscan list where scans of the selected level shall be added 
+   * @param rets the retention times of the subscans of this level
+   * @param exclusionList the exclusion list to avoid overlaps
+   */
+  private void addSubScansToLists(CgScan msScan, int msLevel, List<MsMsScan> scansOfOneLevel, Hashtable<Integer,Float> rets, Hashtable<Integer,Integer> exclusionList){
+    //this is because there is too much space allocated in the array
+    if (msScan==null) return;
+    for (CgScan subScan : msScan.getFullSubScans()){
+      //the msMsExclusionList is necessary because the scans are read overlapping, if there are several iterations
+      if (subScan.MsLevel==msLevel && !exclusionList.containsKey(subScan.Num)){
+        scansOfOneLevel.add(((MsMsScan)subScan));
+        rets.put(subScan.Num, subScan.RetentionTime);
+        exclusionList.put(subScan.Num, subScan.Num);
+      }
+    }
   }
   
   /** reserves space for an intensity array of a certain size -
@@ -549,9 +661,10 @@ public class RawToChromThread extends Thread  implements AddScan
    * @param msmsRetentionTimes the MSn retention times
    * @param numberOfMs2Scans the respective amount of MSn scans
    * @param fileName key for merged files
+   * @param filePosition which one of the two files in the array shall be taken (two files are necessary for polarity switching)
    * @throws IOException
    */
-  private void writeMs2RetentionTimes(String directory, Vector<Hashtable<Integer,Float>> msmsRetentionTimes, Hashtable<Integer,Integer> numberOfMs2Scans, String fileName)throws IOException{
+  private void writeMs2RetentionTimes(String directory, Vector<Hashtable<Integer,Float>> msmsRetentionTimes, Hashtable<Integer,Integer> numberOfMs2Scans, String fileName, int filePosition)throws IOException{
     for (int i=2; i<=highestMsLevel_;i++){
       Hashtable<Integer,Float> rets = msmsRetentionTimes.get(i-2);
       DataOutputStream streamRetTime = null;
@@ -561,7 +674,7 @@ public class RawToChromThread extends Thread  implements AddScan
       Collections.sort(scans);
       try{
         int count = 0;
-        streamRetTime = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(directory+this.retentionTimeFileName_.get(fileName)+String.valueOf(i))));
+        streamRetTime = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(directory+this.retentionTimeFileName_.get(fileName)[filePosition]+String.valueOf(i))));
         for (Integer key : scans){
           streamRetTime.writeInt(key);
           streamRetTime.writeFloat(rets.get(key));
@@ -584,23 +697,29 @@ public class RawToChromThread extends Thread  implements AddScan
    * @param elementsForBatchCalculation the arraysize for reading m/z ranges in batch mode
    * @param lowestMz the lowest possible m/z value
    * @param highestMz the highest possible m/z value
-   * @param chromFileName the names of the chrom files
-   * @param indexFileName the names of the index files
-   * @param retentionTimeFileName the names of the retention time files
+   * @param chromFileName the name(s) of the chrom files
+   * @param indexFileName the name(s) of the index files
+   * @param retentionTimeFileName the name(s) of the retention time files
    */
   public void setStaticInformation(int elementsForBatchCalculation, int lowestMz, int highestMz, 
-      Hashtable<String,String> chromFileName, Hashtable<String,String> indexFileName, Hashtable<String,String> retentionTimeFileName)
+      Hashtable<String,String[]> chromFileName, Hashtable<String,String[]> indexFileName, Hashtable<String,String[]> retentionTimeFileName)
   {
     this.elementsForBatchCalculation_ = elementsForBatchCalculation;
     this.lowestMz_ = lowestMz;
     this.highestMz_ = highestMz;
     for (String key : chromFileName.keySet()){
-      String name = StringUtils.getJustFileName(chromFileName.get(key));
-      this.chromFileName_.put(key, name);
-      name = StringUtils.getJustFileName(indexFileName.get(key));
-      this.indexFileName_.put(key, name);
-      name = StringUtils.getJustFileName(retentionTimeFileName.get(key));
-      this.retentionTimeFileName_.put(key, name);
+      String[] chromFiles = new String[2];
+      chromFiles[0] = StringUtils.getJustFileName(chromFileName.get(key)[0]);
+      if (chromFileName.get(key)[1]!=null) chromFiles[1] = StringUtils.getJustFileName(chromFileName.get(key)[1]);
+      this.chromFileName_.put(key, chromFiles);
+      String[] indexFiles = new String[2];
+      indexFiles[0] = StringUtils.getJustFileName(indexFileName.get(key)[0]);
+      if (indexFileName.get(key)[1]!=null) indexFiles[1] = StringUtils.getJustFileName(indexFileName.get(key)[1]);
+      this.indexFileName_.put(key, indexFiles);
+      String[] retentionTimeFiles = new String[2];
+      retentionTimeFiles[0] = StringUtils.getJustFileName(retentionTimeFileName.get(key)[0]);
+      if (retentionTimeFileName.get(key)[1]!=null) retentionTimeFiles[1] = StringUtils.getJustFileName(retentionTimeFileName.get(key)[1]);
+      this.retentionTimeFileName_.put(key, retentionTimeFiles);
     }    
   }
   
@@ -610,11 +729,14 @@ public class RawToChromThread extends Thread  implements AddScan
    * @param headerHash the header information
    * @param scanHash the individual scans
    * @param m_scanCount actual Scan Count (used as index)
+   * @param polarity_scanCount the polarity sorted scan counts (used as index)
    */
-  public void setReadXmlContent(Hashtable<String,CgScanHeader> headerHash, Hashtable<String,CgScan[]> scanHash,Hashtable<String,Integer> m_scanCount){
+  public void setReadXmlContent(Hashtable<String,CgScanHeader> headerHash, Hashtable<String,CgScan[]> scanHash,Hashtable<String,Integer> m_scanCount,
+      Hashtable<String,Hashtable<Integer,Integer>> polarity_scanCount){
     this.headerHash_ = headerHash;
     this.scanHash_ = scanHash;
     this.m_scanCount_ = m_scanCount;
+    this.polarity_scanCount_ = polarity_scanCount;
   }
   
   public Hashtable<String,Integer> getm_scanCount()
@@ -623,33 +745,51 @@ public class RawToChromThread extends Thread  implements AddScan
   }
   
   /**
-   * writes the retention-time file
-   * @throws IOException
+   * writes the retention-time file(s)
+   * @param the file names of the retention time files - first key: file key
+   * @param polaritySwitching use true when polarity switched data was used
+   * @throws IOException thrown when there is something wrong with the file/directory access
    */
-  public void writeRetentionTimeFile(Hashtable<String,String> retentionTimeFileName) throws IOException{
+  public void writeRetentionTimeFile(Hashtable<String,String[]> retentionTimeFileName, boolean polaritySwitching) throws IOException{
     for (String key : retentionTimeFileName.keySet()){
-      DataOutputStream streamRetTime = null;
-      try{
-        streamRetTime = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(retentionTimeFileName.get(key))));
-        for (int i=0; i<m_scanCount_.get(key); i++){
-          streamRetTime.writeInt(this.scanHash_.get(key)[i].Num);
-          streamRetTime.writeFloat(this.scanHash_.get(key)[i].RetentionTime);
-        }
-      }catch (IOException iox){
-        iox.printStackTrace();
-      }finally{
-        if (streamRetTime!=null){
-          streamRetTime.close();
-          streamRetTime.flush();
-        }
+      if (polaritySwitching){
+        this.writeRetentionTimeFile(retentionTimeFileName.get(key)[0], this.getCorrectScanCount(key, CgDefines.POLARITY_POSITIVE), this.getCorrectScans(key, CgDefines.POLARITY_POSITIVE));
+        this.writeRetentionTimeFile(retentionTimeFileName.get(key)[1], this.getCorrectScanCount(key, CgDefines.POLARITY_NEGATIVE), this.getCorrectScans(key, CgDefines.POLARITY_NEGATIVE));        
+      }else{
+        this.writeRetentionTimeFile(retentionTimeFileName.get(key)[0], this.getCorrectScanCount(key, CgDefines.POLARITY_NO), this.getCorrectScans(key, CgDefines.POLARITY_NO));
       }
     }
   }
 
-  /** returns the amount of MS2 scans*/
-  public Hashtable<String,Hashtable<Integer,Integer>> getNumberOfMs2Scans()
+  /** returns the amount of MS2 scans - first key: file key; second key: polarity; third key: MS-level*/
+  public Hashtable<String,Hashtable<Integer,Hashtable<Integer,Integer>>> getNumberOfMs2Scans()
   {
     return numberOfMs2Scans_;
+  }
+  
+  /**
+   * writes the retention-time file
+   * @param retFile the file name
+   * @param scanCount the amount of scans
+   * @param scans the scan array
+   * @throws IOException thrown when there is something wrong with the file/directory access
+   */
+  private void writeRetentionTimeFile(String retFile, int scanCount, CgScan[] scans) throws IOException{
+    DataOutputStream streamRetTime = null;
+    try{
+      streamRetTime = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(retFile)));
+      for (int i=0; i<scanCount; i++){
+        streamRetTime.writeInt(scans[i].Num);
+        streamRetTime.writeFloat(scans[i].RetentionTime);
+      }
+    }catch (IOException iox){
+      iox.printStackTrace();
+    }finally{
+      if (streamRetTime!=null){
+        streamRetTime.close();
+        streamRetTime.flush();
+      }
+    }
   }
   
   /**
@@ -682,7 +822,13 @@ public class RawToChromThread extends Thread  implements AddScan
       header = null;
       Hashtable<Integer,Integer> exclusion = msMsExclusionList_.get(key);
       exclusion = null;
-      Hashtable<Integer,Integer> numberOfMs2 = numberOfMs2Scans_.get(key);
+      Hashtable<Integer,Hashtable<Integer,Integer>> numberOfMs2 = numberOfMs2Scans_.get(key);
+      if (numberOfMs2!=null){
+        for (Integer fileId : numberOfMs2.keySet()){
+          Hashtable<Integer,Integer> ms2Ids = numberOfMs2.get(fileId);
+          ms2Ids = null;
+        }
+      }
       numberOfMs2 = null;
     }
     scanHash_ = null;
@@ -701,5 +847,84 @@ public class RawToChromThread extends Thread  implements AddScan
     return (int)Calculator.roundFloat((mzValue*(float)multiplicationFactorForInt),0,BigDecimal.ROUND_DOWN);
   }
 
+  /**
+   * in the case of polarity switching, this method groups the scans in positive and negative polarity scans 
+   */
+  private void sortPolaritySwitchedScans(){
+    polarityScans_ = new Hashtable<String,Hashtable<Integer,CgScan[]>>();
+    for (String key : scanHash_.keySet()){
+      int nrOfScans = m_scanCount_.get(key);
+      CgScan[] allScans = scanHash_.get(key);
+      Hashtable<Integer,CgScan[]> polarities = new Hashtable<Integer,CgScan[]>();
+      CgScan lastPositiveMS1Scan = null;
+      CgScan lastNegativeMS1Scan = null;
+      CgScan[] positives = new CgScan[polarity_scanCount_.get(key).get(CgDefines.POLARITY_POSITIVE)];
+      CgScan[] negatives = new CgScan[polarity_scanCount_.get(key).get(CgDefines.POLARITY_NEGATIVE)];
+
+      //checking if a dummy scan is required;
+      int currentPolarity = allScans[0].getPolarity();
+      int scanCount = 0;
+      boolean requiresDummyScan = false;
+      while (currentPolarity==allScans[scanCount].getPolarity()){
+        CgScan scan = allScans[scanCount];
+        for (CgScan subScan : scan.getFullSubScans()){
+          if (subScan.getPolarity()!=currentPolarity){
+            requiresDummyScan = true;
+            break;
+          }
+        }
+        scanCount++;
+      }
+      // create a dummy scan for the other polarity to hold the MSn scans
+      if (requiresDummyScan){
+        CgScan dummyScan = new CgScan(0);
+        dummyScan.setDummyScan(true);
+        if (currentPolarity==CgDefines.POLARITY_POSITIVE){
+          dummyScan.setPolarity(CgDefines.POLARITY_NEGATIVE);
+          lastNegativeMS1Scan = dummyScan;
+          negativeDummyMS1Scan_ = dummyScan;
+        }else if (currentPolarity==CgDefines.POLARITY_NEGATIVE){
+          dummyScan.setPolarity(CgDefines.POLARITY_POSITIVE);
+          lastPositiveMS1Scan = dummyScan;
+          positiveDummyMS1Scan_ = dummyScan;          
+        }
+      }
+      
+      int positiveCount = 0;
+      int negativeCount = 0;      
+      for (int i=0; i!=nrOfScans; i++){
+        CgScan scan = allScans[i];
+        if (scan.getPolarity()==CgDefines.POLARITY_POSITIVE){
+          positives[positiveCount] = scan;
+          lastPositiveMS1Scan = scan;
+          positiveCount++;
+        }else if (scan.getPolarity()==CgDefines.POLARITY_NEGATIVE){
+          negatives[negativeCount] = scan;
+          lastNegativeMS1Scan = scan;
+          negativeCount++;
+        }
+        ArrayList<CgScan> subScans = new ArrayList<CgScan>(scan.getFullSubScans());
+        scan.cleanSubscans();
+        for (CgScan subScan : subScans){
+          if (subScan.getPolarity()==CgDefines.POLARITY_POSITIVE){
+            lastPositiveMS1Scan.AddSubscan(subScan);
+          }else if (subScan.getPolarity()==CgDefines.POLARITY_NEGATIVE){
+            lastNegativeMS1Scan.AddSubscan(subScan);
+          }
+        }
+      }
+      
+      polarities.put(CgDefines.POLARITY_POSITIVE, positives);
+      polarities.put(CgDefines.POLARITY_NEGATIVE, negatives);
+      polarityScans_.put(key, polarities);
+    }
+  }
   
+  /**
+   * returns actual polarity scan count (used as index)
+   * @return actual polarity scan count (used as index)
+   */
+  public Hashtable<String,Hashtable<Integer,Integer>> getPolarityScanCount(){
+    return polarity_scanCount_;
+  }
 }

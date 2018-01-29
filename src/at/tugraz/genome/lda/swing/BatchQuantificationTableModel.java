@@ -23,6 +23,7 @@
 
 package at.tugraz.genome.lda.swing;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -236,6 +237,18 @@ public class BatchQuantificationTableModel extends AbstractTableModel
       fireTableDataChanged();
       numFilesLeft--;
     }
+  }
+  
+  /**
+   * updates the raw file part of the table entry
+   * @param file the quantification pair in its old form
+   * @param newRawFile the new raw file
+   */
+  public void updateRawFile(RawQuantificationPairVO file, File newRawFile){
+    final Integer status = (Integer) fileStatusMap.get(file);
+    fileStatusMap.remove(file);
+    file.setRawFile(newRawFile);
+    fileStatusMap.put(file, status);
   }
   
   public RawQuantificationPairVO getDataByRow(int row){

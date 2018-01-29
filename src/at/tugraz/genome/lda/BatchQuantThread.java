@@ -26,7 +26,6 @@ package at.tugraz.genome.lda;
 import java.io.File;
 import java.util.Timer;
 import java.util.TimerTask;
-
 import java.util.Vector;
 
 import javax.swing.JLabel;
@@ -37,6 +36,8 @@ import at.tugraz.genome.lda.swing.BatchQuantificationTable;
 import at.tugraz.genome.lda.swing.BatchQuantificationTableModel;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.RawQuantificationPairVO;
+import at.tugraz.genome.lda.xml.RawToChromThread;
+import at.tugraz.genome.maspectras.GlobalConstants;
 import at.tugraz.genome.maspectras.utils.StringUtils;
 
 /**
@@ -165,21 +166,35 @@ public class BatchQuantThread extends Thread
           quantTableModel_.fileQuantificationError(filePair);
           this.currentLine_++;
         }else{
-          filePair.setStatus("Quantifying");
-          this.quantifyingLabel_.setText("Quantifying "+filePair.getRawFileName()+" with "+filePair.getQuantFileName());
-          this.progressBar_.setValue((this.currentLine_*100)/this.quantTableModel_.getRowCount()+2*oneThird_);
-          quantThread_ = new QuantificationThread(filePair.getRawFile().getAbsolutePath(), filePair.getQuantFile().getAbsolutePath(),
-              LipidDataAnalyzer.getResultFilePath(filePair.getRawFile().getAbsolutePath(), filePair.getQuantFile().getAbsolutePath()),
-              //this.mzTolerance_,
-              minusTime_,plusTime_,this.amountOfIsotopes_,this.isotopesMustMatch_,this.searchUnknownTime_,this.basePeakCutoff_,rtShift_, 
-              numberOfProcessors_,ionMode_);
-          quantThread_.start();
+          //delete the mzXML file when raw data was used
+          if (readFromRaw_ || filePair.isFromWiff()){
+            this.readFromRaw_ = false;
+            RawToMzxmlThread.deleteMzXMLFiles(filePair.getRawFile().getAbsolutePath().substring(0,filePair.getRawFile().getAbsolutePath().lastIndexOf("."))+".mzXML");
+          }
+          //when there is polarity switched data, the file name changes
+          boolean quantPossible = true;
+          if (mzThread_.isPolaritySwitched()){
+            adaptTableToPolaritySwitchedData();
+            filePair = quantTableModel_.getDataByRow((this.currentLine_));
+            if (filePair.getStatus()!=null && filePair.getStatus().startsWith("ERROR")){
+              currentLine_++;
+              quantPossible = false;
+            } else
+              this.quantTable_.getSelectionModel().setSelectionInterval(this.currentLine_, this.currentLine_);
+          }
+          if (quantPossible){
+            filePair.setStatus("Quantifying");
+            this.quantifyingLabel_.setText("Quantifying "+filePair.getRawFileName()+" with "+filePair.getQuantFileName());
+            this.progressBar_.setValue((this.currentLine_*100)/this.quantTableModel_.getRowCount()+2*oneThird_);
+            quantThread_ = new QuantificationThread(filePair.getRawFile().getAbsolutePath(), filePair.getQuantFile().getAbsolutePath(),
+                LipidDataAnalyzer.getResultFilePath(filePair.getRawFile().getAbsolutePath(), filePair.getQuantFile().getAbsolutePath()),
+                //this.mzTolerance_,
+                minusTime_,plusTime_,this.amountOfIsotopes_,this.isotopesMustMatch_,this.searchUnknownTime_,this.basePeakCutoff_,rtShift_, 
+                numberOfProcessors_,ionMode_);
+            quantThread_.start();
+          }
         }
         this.mzThread_ = null;
-        if (readFromRaw_ || filePair.isFromWiff()){
-          this.readFromRaw_ = false;
-          RawToMzxmlThread.deleteMzXMLFiles(filePair.getRawFile().getAbsolutePath().substring(0,filePair.getRawFile().getAbsolutePath().lastIndexOf("."))+".mzXML");
-        }
       }
       if (this.quantThread_!=null && !this.quantThread_.finished() && 
           (this.quantThread_.getErrorString()==null||this.quantThread_.getErrorString().length()==0)){   
@@ -207,7 +222,9 @@ public class BatchQuantThread extends Thread
         this.progressBar_.setValue((this.currentLine_*100)/this.quantTableModel_.getRowCount());
         this.currentLine_ = this.currentLine_+1;
       }
-      if (this.currentLine_<this.quantTableModel_.getRowCount()&& this.rawmzThread_ == null && this.mzThread_==null && this.quantThread_ == null){
+      if (this.currentLine_<this.quantTableModel_.getRowCount() && quantTableModel_.getDataByRow(this.currentLine_).getStatus()!=null && quantTableModel_.getDataByRow(this.currentLine_).getStatus().startsWith("ERROR")){
+        currentLine_++;
+      } else if (this.currentLine_<this.quantTableModel_.getRowCount()&& this.rawmzThread_ == null && this.mzThread_==null && this.quantThread_ == null){
         readFromRaw_ = false;
         boolean threadStarted = false;
         RawQuantificationPairVO filePair = quantTableModel_.getDataByRow((this.currentLine_));
@@ -361,6 +378,34 @@ public class BatchQuantThread extends Thread
       }
     }
     return filesToTranslate;
+  }
+  
+  /**
+   * changes the display table of the quantification progress to the multiple chrom files of polarity switched data
+   */
+  private void adaptTableToPolaritySwitchedData(){
+    String fileName = quantTableModel_.getDataByRow((this.currentLine_)).getRawFileName();
+    for (int i=this.currentLine_; i!=quantTableModel_.getRowCount(); i++){
+      RawQuantificationPairVO filePair = quantTableModel_.getDataByRow(i);
+      if (!filePair.getRawFileName().equalsIgnoreCase(fileName)) continue;
+      String quantName = filePair.getQuantFileName();
+      if (quantName.indexOf(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_POSITIVE)!=-1){
+        String newRawName = filePair.getRawFile().getAbsolutePath();
+        newRawName = newRawName.substring(0,newRawName.lastIndexOf("."))+RawToChromThread.FILE_SUFFIX_POLARITY_POSITIVE+".chrom";
+        File newRawFile = new File (newRawName);
+        quantTableModel_.updateRawFile(filePair, newRawFile);
+      } else if (quantName.indexOf(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_NEGATIVE)!=-1){
+        System.out.println("I have a negative file");
+        String newRawName = filePair.getRawFile().getAbsolutePath();
+        newRawName = newRawName.substring(0,newRawName.lastIndexOf("."))+RawToChromThread.FILE_SUFFIX_POLARITY_NEGATIVE+".chrom";
+        File newRawFile = new File (newRawName);
+        quantTableModel_.updateRawFile(filePair, newRawFile);
+      } else {
+        filePair.setStatus("ERROR: Quant file must contain "+GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_POSITIVE+" or "+GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_NEGATIVE+"in the file name for polarity switched data");
+        quantTableModel_.fileQuantificationError(filePair);
+      }
+    }
+    quantTableModel_.fireTableDataChanged();
   }
 
 }

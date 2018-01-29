@@ -90,7 +90,12 @@ public class MzXmlReader implements XmlSpectraReader
   /** the MS-level of the previous scan*/
   private int lastMsLevel_;
   
-
+  /** the polarity of the current scan*/
+  private int currentPolarity_ = CgDefines.POLARITY_NO;
+  
+  /** was polarity switching used*/
+  private boolean polaritySwitching_ = false;
+  
   /**
    * @param callbacks
    *          Pass an array of objects implementing this interface. The methods will be
@@ -104,6 +109,8 @@ public class MzXmlReader implements XmlSpectraReader
     adders_ = callbacks;
     this.parseMsMs_ = parseMsMs;
     lowestMz_ = 1000000 * CgDefines.mzMultiplicationFactorForInt;
+    currentPolarity_ = CgDefines.POLARITY_NO;
+    polaritySwitching_ = false;
   }
   
   /**
@@ -292,15 +299,20 @@ public class MzXmlReader implements XmlSpectraReader
     int i;
     int eventType;
 
+    int num = -1;
     int msLevel = 0;
     float lowMz = 0;
     float highMz = 0;
     boolean lowMzFound = false;
     boolean highMzFound = false;
+    String polarityString = "";
+    int polarity = CgDefines.POLARITY_NO;
     int peaksCount = 0;
 
     for (i = 0; i < rdr_.getAttributeCount(); i++) {
-      if (rdr_.getAttributeLocalName(i) == "msLevel") {
+      if (rdr_.getAttributeLocalName(i) == "num") {
+        num = Integer.parseInt(rdr_.getAttributeValue(i));
+      } else if (rdr_.getAttributeLocalName(i) == "msLevel") {
         msLevel = Integer.parseInt(rdr_.getAttributeValue(i));
       } else if (rdr_.getAttributeLocalName(i) == "lowMz") {
         lowMz = Float.parseFloat(rdr_.getAttributeValue(i));
@@ -310,13 +322,27 @@ public class MzXmlReader implements XmlSpectraReader
         highMzFound=true;
       } else if (rdr_.getAttributeLocalName(i) == "peaksCount") {
         peaksCount = Integer.parseInt(rdr_.getAttributeValue(i));
-  
+      } else if (rdr_.getAttributeLocalName(i) == "polarity") {
+        polarityString = rdr_.getAttributeValue(i);
+        if (polarityString.equalsIgnoreCase("+"))
+          polarity = CgDefines.POLARITY_POSITIVE;
+        else if (polarityString.equalsIgnoreCase("-"))
+          polarity = CgDefines.POLARITY_NEGATIVE;
+        else
+          throw new CgException("The scan contains an unknown polarity \""+polarityString+"\" at scan number: "+num);
       }
-
     }
     boolean foundMzBorders = false;
     if (lowMzFound&&highMzFound) foundMzBorders = true;
 
+    if (polarity!=CgDefines.POLARITY_NO){
+      if (currentPolarity_==CgDefines.POLARITY_NO)
+        currentPolarity_ = polarity;
+      // if the polarity is suddenly different, polarity switching is used
+      else if (currentPolarity_!=polarity)
+        polaritySwitching_ = true;
+    }
+    
     try {
       eventType = rdr_.next();
       do {
@@ -468,6 +494,8 @@ public class MzXmlReader implements XmlSpectraReader
     float basePeakIntensity = 0;
     float totIonCurrent = 0;
     float precursorIntensity = 0;
+    String polarityString = "";
+    int polarity = CgDefines.POLARITY_NO;
     boolean lowMzFound = false;
     boolean highMzFound = false;
 
@@ -496,10 +524,27 @@ public class MzXmlReader implements XmlSpectraReader
         basePeakIntensity = Float.parseFloat(rdr_.getAttributeValue(i));
       } else if (rdr_.getAttributeLocalName(i) == "totIonCurrent") {
         totIonCurrent = Float.parseFloat(rdr_.getAttributeValue(i));
+      } else if (rdr_.getAttributeLocalName(i) == "polarity") {
+        polarityString = rdr_.getAttributeValue(i);
+        if (polarityString.equalsIgnoreCase("+"))
+          polarity = CgDefines.POLARITY_POSITIVE;
+        else if (polarityString.equalsIgnoreCase("-"))
+          polarity = CgDefines.POLARITY_NEGATIVE;
+        else
+          throw new CgException("The scan contains an unknown polarity \""+polarityString+"\" at scan number: "+num);
       }
     }
     boolean foundMzBorders = false;
     if (lowMzFound&&highMzFound) foundMzBorders = true;
+    
+    if (polarity!=CgDefines.POLARITY_NO){
+      if (currentPolarity_==CgDefines.POLARITY_NO)
+        currentPolarity_ = polarity;
+      // if the polarity is suddenly different, polarity switching is used
+      else if (currentPolarity_!=polarity)
+        polaritySwitching_ = true;
+    }
+
     
     if (msLevel<3){
       precursorMz_ = new Vector<String>();
@@ -532,6 +577,7 @@ public class MzXmlReader implements XmlSpectraReader
                 sc.BasePeakMz = basePeakMz;
                 sc.BasePeakIntensity = basePeakIntensity;
                 sc.TotIonCurrent = totIonCurrent;
+                sc.setPolarity(polarity);
                 if (adders_ != null && adders_.length>0){                  
                   Vector<CgScan> scans = new Vector<CgScan>();
                   Vector<Range> ranges = new Vector<Range>();
@@ -560,7 +606,7 @@ public class MzXmlReader implements XmlSpectraReader
                   throw new CgException(
                       "No adder for Header and Scans defined.");
               } else {
-                if (baseScans==null){ 
+                if (baseScans==null){
                   baseScans = new Vector<CgScan>();
                   scanRanges = new Vector<Range>();
                   for (AddScan adder : this.adders_){
@@ -574,7 +620,8 @@ public class MzXmlReader implements XmlSpectraReader
                   if (parseMsMs_) {
                     MsMsScan msmsSc = new MsMsScan(peaksCount, num, msLevel, retentionTime,
                         lowMz, highMz, basePeakMz, basePeakIntensity,
-                        totIonCurrent, getPrecursorMzString(precursorMz_), precursorIntensity);
+                        totIonCurrent, getPrecursorMzString(precursorMz_), precursorIntensity,
+                        polarity);
                     Vector<CgScan> qualifiedBaseScans = new Vector<CgScan>();
                     Vector<Range> qualifiedRanges = new Vector<Range>();
                     Vector<CgScan> ms2Scans = new Vector<CgScan>();
@@ -881,6 +928,11 @@ public class MzXmlReader implements XmlSpectraReader
       if (i!=(precursorMzs.size()-1)) bd.append(" ");
     }
     return bd.toString();
+  }
+
+  public boolean usesPolaritySwitching()
+  {
+    return this.polaritySwitching_;
   }
 
 }

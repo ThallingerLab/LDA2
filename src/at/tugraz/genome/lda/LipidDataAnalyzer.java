@@ -166,6 +166,8 @@ import at.tugraz.genome.lda.xml.AbsoluteQuantSettingsWholeReader;
 import at.tugraz.genome.lda.xml.AbsoluteQuantSettingsWholeWriter;
 import at.tugraz.genome.lda.xml.CutoffSettingsReader;
 import at.tugraz.genome.lda.xml.CutoffSettingsWriter;
+import at.tugraz.genome.lda.xml.RawToChromThread;
+import at.tugraz.genome.maspectras.GlobalConstants;
 import at.tugraz.genome.maspectras.chromaviewer.MSMapViewer;
 import at.tugraz.genome.maspectras.chromaviewer.MSMapViewerFactory;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
@@ -173,9 +175,11 @@ import at.tugraz.genome.maspectras.quantification.CgAreaStatus;
 import at.tugraz.genome.lda.quantification.LipidomicsDefines;
 import at.tugraz.genome.maspectras.quantification.CgException;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
+import at.tugraz.genome.maspectras.quantification.ChromatogramHeaderFileReader;
 import at.tugraz.genome.maspectras.quantification.ChromatogramReader;
 import at.tugraz.genome.maspectras.utils.Calculator;
 import at.tugraz.genome.maspectras.utils.StringUtils;
+import at.tugraz.genome.util.index.IndexFileException;
 import at.tugraz.genome.voutils.GeneralComparator;
 
 import com.sun.j3d.utils.applet.MainFrame;
@@ -2286,16 +2290,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           }
           if (Settings.useAlex() && containsTxtFiles)
             quantFiles.add(quantDir);
-          if (rawFiles.size()>0 && quantFiles.size()>0){
+          Vector<RawQuantificationPairVO> pairs = new Vector<RawQuantificationPairVO>();
+          if (rawFiles.size()>0 && quantFiles.size()>0 && (pairs = generateQuantificationPairVOs(rawFiles,quantFiles)).size()>0){
             boolean ionMode = false;
             if (this.ionModeBatch_!=null && ((String)ionModeBatch_.getSelectedItem()).equalsIgnoreCase("+"))
               ionMode = true;
-            Vector<RawQuantificationPairVO> pairs = new Vector<RawQuantificationPairVO>();
-            for (File rawFile: rawFiles){
-              for (File quantFile: quantFiles){
-                pairs.add(new RawQuantificationPairVO(rawFile,quantFile));
-              }
-            }
             this.batchQuantTableModel_.clearFiles();
             this.batchQuantTableModel_.addFiles(pairs);
             this.quantifyingBatchLabel_.setText("Quantifying");
@@ -2317,6 +2316,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
               @SuppressWarnings("unused")
               WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "In the specified quant directory are no quantifyable files");
             }
+            if (rawFiles.size()>0 && quantFiles.size()>0)
+              new WarningMessage(new JFrame(), "Warning", "In the specified directories are no quantifyable raw/quant pairs");
           }
         }else{
           if (!rawDir.exists()||!rawDir.isDirectory()){
@@ -3617,6 +3618,27 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         this.startQuantification.setEnabled(true);
         spinnerLabel_.setVisible(false);
       }
+      if (readFromRaw_){
+        this.readFromRaw_ = false;
+        RawToMzxmlThread.deleteMzXMLFiles(selectedMzxmlFile.getText().substring(0,selectedMzxmlFile.getText().lastIndexOf("."))+".mzXML");
+      }
+
+      boolean ok = true;
+      if (mzToChromThread_.isPolaritySwitched()){
+        if (selectedQuantFile.getText().indexOf(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_POSITIVE)!=-1){
+          String newRawName = selectedMzxmlFile.getText();
+          newRawName = newRawName.substring(0,newRawName.lastIndexOf("."))+RawToChromThread.FILE_SUFFIX_POLARITY_POSITIVE+".chrom";
+          selectedMzxmlFile.setText(newRawName);
+        } else if (selectedQuantFile.getText().indexOf(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_NEGATIVE)!=-1){
+          String newRawName = selectedMzxmlFile.getText();
+          newRawName = newRawName.substring(0,newRawName.lastIndexOf("."))+RawToChromThread.FILE_SUFFIX_POLARITY_NEGATIVE+".chrom";
+          selectedMzxmlFile.setText(newRawName);
+        } else {
+          ok = false;
+          new WarningMessage(new JFrame(), "Error", "This is polarity switched data! It is not clear which of the two generated chrom files shall be quantified! Please use "+GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_POSITIVE+" or "+GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_NEGATIVE+" in the file name!");
+          this.quantifyingPanel_.setVisible(false);
+        }
+      }
       this.mzToChromThread_ = null;
       this.quantifyingLabel_.setText("Quantifying");
       System.out.println("Quantifying from thread");
@@ -3627,7 +3649,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         amountOfIsotopes = Integer.parseInt(this.amountOfIsotopes_.getText());
         isotopesMustMatch = Integer.parseInt(this.amountOfMatchingSearchIsotopes_.getText());
       }      
-      boolean ok = true;
       float cutoff = 0f;
       float rtShift = 0f;
       try{
@@ -3646,10 +3667,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
             Float.parseFloat(this.singleTimeMinusTol_.getText()),Float.parseFloat(this.singleTimePlusTol_.getText()),amountOfIsotopes,isotopesMustMatch,this.searchUnknownTime_.isSelected(),
             cutoff,rtShift,Integer.parseInt(this.nrProcessors_.getText()),ionMode);
         quantThread_.start();
-        if (readFromRaw_){
-          this.readFromRaw_ = false;
-          RawToMzxmlThread.deleteMzXMLFiles(selectedMzxmlFile.getText().substring(0,selectedMzxmlFile.getText().lastIndexOf("."))+".mzXML");
-        }
       }else{
         this.startQuantification.setEnabled(true);
         spinnerLabel_.setVisible(false);
@@ -6128,6 +6145,100 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 //    }
 //    
 //  }
+  
+  /**
+   * generates the quantification pair VOs for the progress display table of the quantification
+   * this method respects whether there is polarity switched data and assigns the quantification files correspondingly
+   * @param rawFiles the MS data files
+   * @param quantFiles the quantification files
+   * @return the MS data/quantification file pairs
+   */
+  private  Vector<RawQuantificationPairVO> generateQuantificationPairVOs(Vector<File> rawFiles, Vector<File> quantFiles){
+    Vector<RawQuantificationPairVO> pairs = new Vector<RawQuantificationPairVO>();
+    Vector<File> positivePolarity = new Vector<File>();
+    Vector<File> negativePolarity = new Vector<File>();
+    Hashtable<String,String> usedFiles = new Hashtable<String,String>();
+    //extract the polarity switched files
+    for (File rawFile: rawFiles){
+      if (!rawFile.getAbsolutePath().endsWith(".chrom") || !rawFile.isDirectory())
+        continue;
+      File headerFile = new File(StringUtils.getChromFilePaths(rawFile.getAbsolutePath())[1]);
+      if (headerFile.exists() && headerFile.isFile()){
+        ChromatogramHeaderFileReader headerReader = new ChromatogramHeaderFileReader(headerFile.getAbsolutePath());
+        try {
+          headerReader.readFile();
+          String polarity = headerReader.getPolaritySwitched();
+          if (polarity==null) continue;
+          if (polarity.equalsIgnoreCase(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_POSITIVE) ||
+              polarity.equalsIgnoreCase(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_NEGATIVE)){
+            usedFiles.put(rawFile.getAbsolutePath(), rawFile.getAbsolutePath());
+            if (polarity.equalsIgnoreCase(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_POSITIVE))
+              positivePolarity.add(rawFile);
+            else if (polarity.equalsIgnoreCase(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_NEGATIVE))
+              negativePolarity.add(rawFile);
+          }
+        } catch (IndexFileException | CgException e) {e.printStackTrace();}
+      }
+    }
+    
+    //exclude raw files that produced polarity switched files
+    for (File rawFile: rawFiles){
+      if (usedFiles.containsKey(rawFile.getAbsolutePath()))
+        continue;
+      String fileSuffix = rawFile.getAbsolutePath().substring(rawFile.getAbsolutePath().lastIndexOf("."));
+      for (File posFile : positivePolarity){
+        String comparePath = posFile.getAbsolutePath().substring(0,posFile.getAbsolutePath().length()-".chrom".length()-RawToChromThread.FILE_SUFFIX_POLARITY_POSITIVE.length());
+        if (rawFile.getAbsolutePath().equalsIgnoreCase(comparePath+fileSuffix)){
+          usedFiles.put(rawFile.getAbsolutePath(), rawFile.getAbsolutePath());
+          break;
+        }
+      }
+      for (File negFile : negativePolarity){
+        String comparePath = negFile.getAbsolutePath().substring(0,negFile.getAbsolutePath().length()-".chrom".length()-RawToChromThread.FILE_SUFFIX_POLARITY_NEGATIVE.length());
+        if (rawFile.getAbsolutePath().equalsIgnoreCase(comparePath+fileSuffix)){
+          usedFiles.put(rawFile.getAbsolutePath(), rawFile.getAbsolutePath());
+          break;
+        }
+      }
+
+    }
+    
+    //add the positive ones
+    for (File posFile : positivePolarity){
+      boolean foundPositive = false;
+      for (File quantFile: quantFiles){
+        if (quantFile.getName().indexOf(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_POSITIVE)==-1)
+          continue;
+        pairs.add(new RawQuantificationPairVO(posFile,quantFile));
+        foundPositive = true;
+      }
+      if (!foundPositive)
+        new WarningMessage(new JFrame(), "Warning", "The file: "+posFile+" is of positive polarity, but no adequate quant file exist (must contain "+GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_POSITIVE+" in the name)");
+    }
+    //add the negative ones
+    for (File negFile : negativePolarity){
+      boolean foundNegative = false;
+      for (File quantFile: quantFiles){
+        if (quantFile.getName().indexOf(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_NEGATIVE)==-1)
+          continue;
+        pairs.add(new RawQuantificationPairVO(negFile,quantFile));
+        foundNegative = true;
+      }
+      if (!foundNegative)
+        new WarningMessage(new JFrame(), "Warning", "The file: "+negFile+" is of negative polarity, but no adequate quant file exist (must contain "+GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_NEGATIVE+" in the name)");
+    }
+    
+    //add the rest
+    for (File rawFile: rawFiles){
+      if (usedFiles.containsKey(rawFile.getAbsolutePath()))
+        continue;
+      for (File quantFile: quantFiles){
+        pairs.add(new RawQuantificationPairVO(rawFile,quantFile));
+      }
+    }
+    return pairs;
+  }
+
   
 }
   

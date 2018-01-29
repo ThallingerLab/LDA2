@@ -270,7 +270,7 @@ public class TestClass extends JApplet implements AddScan
     //this.shortenMSList();
     //this.calculateTheoreticalMass();
     //calculateByKnownMassesAndCAtoms();
-    this.calculateIntensityDistribution();
+    //this.calculateIntensityDistribution();
     //this.justMzValues();
     //this.ttest();
     //this.ttestFromExcel();
@@ -326,7 +326,7 @@ public class TestClass extends JApplet implements AddScan
     //this.countMS2();
     //this.mergeTGRessults();
     //this.detectLBNotDetected();
-    //this.tryXmlStax();
+    this.tryXmlStax();
     //this.generateDetailsBiologicalExperiment();
     //this.generateDetailsExperiment1();
     //this.generateDetailsExperiment2();
@@ -339,6 +339,7 @@ public class TestClass extends JApplet implements AddScan
     //this.readAlex123File();
     //this.startQuantitationWithAlex123File();
     //this.readIndexFile();
+    //this.readRttFile();
     //this.detectMsnByAlex123();
     //this.mergeIdx2();
   }
@@ -2501,82 +2502,100 @@ public class TestClass extends JApplet implements AddScan
 //      param.AddProbe(probe1);
 
       
-      LipidParameterSet param = new LipidParameterSet(608.524841308593f, "36", 3, "-H", "", "H68 O5 C35", "-H",1);
+//      LipidParameterSet param = new LipidParameterSet(608.524841308593f, "36", 3, "-H", "", "H68 O5 C35", "-H",1);
+//
+//      CgProbe probe1 = new CgProbe(0,1);
+//      probe1.AreaStatus = CgAreaStatus.OK;
+//      probe1.Area = 93738096f;
+//      probe1.AreaError = 5153103f;
+//      probe1.Background = 42592.51172f;
+//      probe1.Peak = 1719.85998535156f;
+//      probe1.LowerValley = 1690.17004394531f;
+//      probe1.UpperValley = 1787.47998046875f;
+//      probe1.Mz = 608.522888183593f;
+//      probe1.LowerMzBand = 0.013f;
+//      probe1.UpperMzBand = 0.013f;
+//      probe1.isotopeNumber = 0;
+//      param.AddProbe(probe1);
+      
+      LipidParameterSet param = new LipidParameterSet(874.785827636718f, "52", 3, "HH4", "", "H100 O6 C55", "+NH4",1);
 
       CgProbe probe1 = new CgProbe(0,1);
       probe1.AreaStatus = CgAreaStatus.OK;
-      probe1.Area = 93738096f;
-      probe1.AreaError = 5153103f;
-      probe1.Background = 42592.51172f;
-      probe1.Peak = 1719.85998535156f;
-      probe1.LowerValley = 1690.17004394531f;
-      probe1.UpperValley = 1787.47998046875f;
-      probe1.Mz = 608.522888183593f;
+      probe1.Area = 3016949760f;
+      probe1.AreaError = 743906944f;
+      probe1.Background = 1286404.5f;
+      probe1.Peak = 1277.55004882812f;
+      probe1.LowerValley = 1262.55004882812f;
+      probe1.UpperValley = 1292.75f;
+      probe1.Mz = 874.789855957031f;
       probe1.LowerMzBand = 0.013f;
       probe1.UpperMzBand = 0.013f;
       probe1.isotopeNumber = 0;
       param.AddProbe(probe1);
+
       
       //String[] chromPaths = StringUtils.getChromFilePaths("E:\\lipidomicsMS2\\20140220\\001_LD1.chrom");
       //String[] chromPaths = StringUtils.getChromFilePaths("E:\\lipidomicsMS2\\20140220\\002_LD2.chrom");
-      String[] chromPaths = StringUtils.getChromFilePaths("D:\\Experiment1\\LipidBLAST\\002_liver_pos_CID50.chrom");
+      //String[] chromPaths = StringUtils.getChromFilePaths("D:\\Experiment1\\LipidBLAST\\002_liver_pos_CID50.chrom");
       ////String[] chromPaths = StringUtils.getChromFilePaths("E:\\lipidomicsMS2\\20141030\\neg\\004_neg_CID_50.chrom");
+      String[] chromPaths = StringUtils.getChromFilePaths("D:\\Evelyn\\20171006\\SRM1950_1.chrom");
       
       System.out.println(chromPaths[1]);
       LipidomicsAnalyzer lAnalyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
       setStandardParameters(lAnalyzer);
-      MSnAnalyzer analyzer = new MSnAnalyzer(null,"DG","NH4",param,lAnalyzer,null,false,true,true);
-      MSnDebugVO debugInfo = analyzer.getDebugInfo();
-      System.out.println("Debug-Status: "+debugInfo.getStatus());
-      Hashtable<String, Integer> discHeads = debugInfo.getDiscardedHeadGroupFragments();
-      System.out.println("Discarded-Heads-Size: "+discHeads.size());
-      for (String fragment: discHeads.keySet()){
-        System.out.println("Head-Discarded: "+fragment+"\t"+discHeads.get(fragment));
-      }
-      Hashtable<String,IntensityRuleVO> violHeadRules = debugInfo.getViolatedHeadRules();
-      System.out.println("Violated head rules size: "+violHeadRules.size());
-      for (IntensityRuleVO ruleVO : violHeadRules.values()){
-        System.out.println(ruleVO.getReadableRuleInterpretation());
-      }
-      Hashtable<String,Hashtable<String,Object>> violChainRules = debugInfo.getViolatedChainRules();
-      System.out.println("Violated chain rules size: "+violChainRules.size());
-      for (String faName : violChainRules.keySet()){
-        Hashtable<String,Object> violRule = violChainRules.get(faName);
-        for (String ruleName : violRule.keySet()){
-          Object rule = violRule.get(ruleName);
-          if (rule instanceof Integer){
-            int status = (Integer)rule;
-            System.out.println("Chain Discarded: "+faName+"\t"+ruleName+"\t"+status);
-          } else if (rule instanceof IntensityRuleVO){
-            IntensityRuleVO ruleVO = (IntensityRuleVO)rule;
-            System.out.println("Violated chain rule: "+faName+"\t"+ruleVO.getReadableRuleInterpretation());
-          }
-        }
-      }
-      Hashtable<String,Integer> violCombis = debugInfo.getViolatedCombinations();
-      System.out.println("Violated combinations: "+violCombis.size());
-      for (String combi : violCombis.keySet()){
-        System.out.println("Violated combi: "+combi+"\t"+violCombis.get(combi));
-      }
-      System.out.println("Spectrum sufficiently covered: "+debugInfo.isSpectrumCoverageFulfilled());
-      Hashtable<String,Hashtable<String,IntensityRuleVO>> unfulfilledPosRules = debugInfo.getUnfulfilledPositionRules();
-      System.out.println("Unfulfilled rules: "+unfulfilledPosRules.size());
-      for (String combiName : unfulfilledPosRules.keySet()){
-        Hashtable<String,IntensityRuleVO> unfulfilled = unfulfilledPosRules.get(combiName);
-        for (IntensityRuleVO ruleVO : unfulfilled.values()){
-          System.out.println(combiName+":\tNOT "+ruleVO.getReadableRuleInterpretation());
-        }
-      }
-      Hashtable<String,Vector<Vector<IntensityRuleVO>>> contradictingPositionRules  = debugInfo.getContradictingPositionRules();
-      System.out.println("Any contradicting position rules: "+contradictingPositionRules.size());
-      for (String combiName : contradictingPositionRules.keySet()){
-        Vector<Vector<IntensityRuleVO>> rulePairs = contradictingPositionRules.get(combiName);
-        for (Vector<IntensityRuleVO> rulePair : rulePairs){
-          IntensityRuleVO rule1 = rulePair.get(0);
-          IntensityRuleVO rule2 = rulePair.get(1);
-          System.out.println(combiName+":\t"+rule1.getReadableRuleInterpretation()+"\t!=\t"+rule2.getReadableRuleInterpretation());
-        }
-      }
+      MSnAnalyzer analyzer = new MSnAnalyzer(null,"TG","NH4",param,lAnalyzer,null,false,true,true);
+//      MSnDebugVO debugInfo = analyzer.getDebugInfo();
+//      System.out.println("Debug-Status: "+debugInfo.getStatus());
+//      Hashtable<String, Integer> discHeads = debugInfo.getDiscardedHeadGroupFragments();
+//      System.out.println("Discarded-Heads-Size: "+discHeads.size());
+//      for (String fragment: discHeads.keySet()){
+//        System.out.println("Head-Discarded: "+fragment+"\t"+discHeads.get(fragment));
+//      }
+//      Hashtable<String,IntensityRuleVO> violHeadRules = debugInfo.getViolatedHeadRules();
+//      System.out.println("Violated head rules size: "+violHeadRules.size());
+//      for (IntensityRuleVO ruleVO : violHeadRules.values()){
+//        System.out.println(ruleVO.getReadableRuleInterpretation());
+//      }
+//      Hashtable<String,Hashtable<String,Object>> violChainRules = debugInfo.getViolatedChainRules();
+//      System.out.println("Violated chain rules size: "+violChainRules.size());
+//      for (String faName : violChainRules.keySet()){
+//        Hashtable<String,Object> violRule = violChainRules.get(faName);
+//        for (String ruleName : violRule.keySet()){
+//          Object rule = violRule.get(ruleName);
+//          if (rule instanceof Integer){
+//            int status = (Integer)rule;
+//            System.out.println("Chain Discarded: "+faName+"\t"+ruleName+"\t"+status);
+//          } else if (rule instanceof IntensityRuleVO){
+//            IntensityRuleVO ruleVO = (IntensityRuleVO)rule;
+//            System.out.println("Violated chain rule: "+faName+"\t"+ruleVO.getReadableRuleInterpretation());
+//          }
+//        }
+//      }
+//      Hashtable<String,Integer> violCombis = debugInfo.getViolatedCombinations();
+//      System.out.println("Violated combinations: "+violCombis.size());
+//      for (String combi : violCombis.keySet()){
+//        System.out.println("Violated combi: "+combi+"\t"+violCombis.get(combi));
+//      }
+//      System.out.println("Spectrum sufficiently covered: "+debugInfo.isSpectrumCoverageFulfilled());
+//      Hashtable<String,Hashtable<String,IntensityRuleVO>> unfulfilledPosRules = debugInfo.getUnfulfilledPositionRules();
+//      System.out.println("Unfulfilled rules: "+unfulfilledPosRules.size());
+//      for (String combiName : unfulfilledPosRules.keySet()){
+//        Hashtable<String,IntensityRuleVO> unfulfilled = unfulfilledPosRules.get(combiName);
+//        for (IntensityRuleVO ruleVO : unfulfilled.values()){
+//          System.out.println(combiName+":\tNOT "+ruleVO.getReadableRuleInterpretation());
+//        }
+//      }
+//      Hashtable<String,Vector<Vector<IntensityRuleVO>>> contradictingPositionRules  = debugInfo.getContradictingPositionRules();
+//      System.out.println("Any contradicting position rules: "+contradictingPositionRules.size());
+//      for (String combiName : contradictingPositionRules.keySet()){
+//        Vector<Vector<IntensityRuleVO>> rulePairs = contradictingPositionRules.get(combiName);
+//        for (Vector<IntensityRuleVO> rulePair : rulePairs){
+//          IntensityRuleVO rule1 = rulePair.get(0);
+//          IntensityRuleVO rule2 = rulePair.get(1);
+//          System.out.println(combiName+":\t"+rule1.getReadableRuleInterpretation()+"\t!=\t"+rule2.getReadableRuleInterpretation());
+//        }
+//      }
       
       
       System.out.println("Status: "+analyzer.checkStatus());
@@ -2585,6 +2604,15 @@ public class TestClass extends JApplet implements AddScan
         for (String fragmentName : headFragments.keySet()){
           CgProbe probe = headFragments.get(fragmentName);
           System.out.println(fragmentName+": \t"+probe.Mz+"\t"+probe.Area);
+        }
+        Hashtable<String,Hashtable<String,CgProbe>> chainFragments = analyzer.getChainFragments();
+        for (String chain : chainFragments.keySet()){
+          System.out.println("1. "+chain);
+          Hashtable<String,CgProbe> frags = chainFragments.get(chain);
+          for (String frag : frags.keySet()){
+            CgProbe probe = frags.get(frag);
+            System.out.println(frag+": \t"+probe.Mz+"\t"+probe.Area);
+          }
         }
 //        Hashtable<String,Double> intensities = analyzer.getChainCombinationRelativeAreas();
 //        for (String key : intensities.keySet()){
@@ -9854,33 +9882,44 @@ public void testTabFile() throws Exception {
     long time = System.currentTimeMillis();
     /*    AddScan[] adders = new AddScan[1];
     adders[0] = this;
-    CgReader reader = new MzXmlReader(adders,true,700);
+    CgReader reader = new MzXmlReader(adders,true,1000);
     try {
-      reader.ReadFile("D:\\testMzXML\\bruker\\Mix25_RD1_01_1360.mzXML");
+      reader.ReadFile("D:\\Evelyn\\20171006\\SRM1950_1.mzXML");
+      //reader.ReadFile("D:\\Kristaps\\20171129\\TG quant NIST\\MCC007_Lipid01_NIST1_20171124.mzXML",true);
+      
       System.out.println(reader.getLowestMz()+";"+reader.getHighestMz());
+      System.out.println(reader.usesPolaritySwitching());
     }
     catch (Exception e) {
       e.printStackTrace();
     }*/
     
     //String filePath = "D:\\testMzXML\\bruker\\Mix25_RD1_01_1360.mzXML";
-    //String filePath = "D:\\testMzXML\\thermo\\Schev_Meth_test_mono-iso-CID_120731120418.mzXML";
-    String filePath = "D:\\testMzXML\\waters\\20151103_GNR_LDA_Exp3_1_01.mzXML";
+    String filePath = "D:\\testMzXML\\thermo\\Schev_Meth_test_mono-iso-CID_120731120418.mzXML";
+    //String filePath = "D:\\testMzXML\\waters\\20151103_GNR_LDA_Exp3_1_01.mzXML";
     //String filePath = "D:\\testMzXML\\absciex\\Data20141110_versch_CE_pos+neg1-022b.mzXML";
     //String filePath = "D:\\testMzXML\\agilent\\Sample1_pos_01.mzXML";
 //    String filePath = "D:\\positionIsomers\\test\\Mix_5uM-95min-1.mzXML";
+    //String filePath = "D:\\Kristaps\\20171129\\TG quant NIST\\MCC007_Lipid01_NIST1_20171124.mzXML";
     //System.out.println(this.getPiecesForChromTranslation(filePath));
 //    RawToChromTranslator translator = new RawToChromTranslator(filePath,"mzXML",600,7,
 //        100,1,false);
-//    RawToChromTranslator translator = new RawToChromTranslator(filePath,"mzXML",1,7,
-//        1000,1,true);
-    RawToChromTranslator translator = new RawToChromTranslator(filePath,"mzXML",10,7,
+    RawToChromTranslator translator = new RawToChromTranslator(filePath,"mzXML",1,7,
         1000,1,true);
+//    RawToChromTranslator translator = new RawToChromTranslator(filePath,"mzXML",10,7,
+//        1000,1,true);
 //    RawToChromTranslator translator = new RawToChromTranslator(filePath,"mzXML",50,7,
 //        1000,5,true);
 //    RawToChromTranslator translator = new RawToChromTranslator(filePath,"mzXML",50,7,
 //        1000,1,true);
 
+//    String filePath = "D:\\Evelyn\\20171006\\SRM1950_1.mzXML";
+//    RawToChromTranslator translator = new RawToChromTranslator(filePath,"mzXML",100,7,
+//        1000,1,true);
+
+//    RawToChromTranslator translator = new RawToChromTranslator(filePath,"mzXML",800,7,
+//        1000,1,true);
+    
     try {
       translator.translateToChromatograms();
       Set<String> fileNames = translator.getOriginalFileNames();
@@ -13962,7 +14001,7 @@ public void testTabFile() throws Exception {
   private void readIndexFile(){
     //String indexFilePath = "D:\\positionIsomers\\experiment\\Mix_5uM-95min-1.chrom\\Mix_5uM-95min-1.idx2";
 //    String indexFilePath = "D:\\positionIsomers\\test\\Mix_5uM-95min-1.chrom\\Mix_5uM-95min-1.idx2";
-    String indexFilePath = "D:\\testMzXML\\absciex\\Data20141110_versch_CE_pos+neg1-022b.chrom\\Data20141110_versch_CE_pos+neg1-022b.idx2";
+    String indexFilePath = "D:\\Kristaps\\20171129\\TG quant NIST\\MCC007_Lipid01_NIST1_20171124_negative.chrom\\MCC007_Lipid01_NIST1_20171124_negative.idx2";
     DataInputStream inStream = null;
     try{
       inStream = new DataInputStream(new FileInputStream(indexFilePath));
@@ -13971,6 +14010,28 @@ public void testTabFile() throws Exception {
         int currentLine = inStream.readInt();
         long bytesToSkip = inStream.readLong();
         System.out.println(currentLine+": "+bytesToSkip);
+//          cachedLine.put(new Integer(count), new Integer(currentLine));
+//          cachedIndex.put(new Integer(count), new Long(bytesToSkip));
+        count++;
+      }
+    }catch(Exception iox){
+      iox.printStackTrace();;
+    }finally{
+      if (inStream!=null)
+        try {inStream.close();}catch (IOException iox){iox.printStackTrace();}
+    }
+  }
+  
+  private void readRttFile(){
+    String rttFilePath = "D:\\Kristaps\\20171129\\TG quant NIST\\MCC007_Lipid01_NIST1_20171124_negative.chrom\\MCC007_Lipid01_NIST1_20171124_negative.rtt";
+    DataInputStream inStream = null;
+    try{
+      inStream = new DataInputStream(new FileInputStream(rttFilePath));
+      int count = 0;
+      while (inStream.available()>0){
+        int currentLine = inStream.readInt();
+        float time = inStream.readFloat();
+        System.out.println(currentLine+": "+time);
 //          cachedLine.put(new Integer(count), new Integer(currentLine));
 //          cachedIndex.put(new Integer(count), new Long(bytesToSkip));
         count++;

@@ -90,5 +90,16 @@ public class RawQuantificationPairVO
   {
     return fromWiff_;
   }
+
+  /**
+   * sets the name of the new rawFile
+   * @param rawFile the new raw file
+   */
+  public void setRawFile(File rawFile)
+  {
+    this.rawFile = rawFile;
+  }
+  
+  
   
 }

@@ -62,20 +62,22 @@ public class RawToChromTranslator implements AddScan
   
   /** actual Scan Count (used as index) */
   private Hashtable<String,Integer> m_scanCount;
+  /** actual polarity scan count (used as index) */
+  private Hashtable<String,Hashtable<Integer,Integer>> polarity_scanCount_;
   /** The mzXml File Name */
   private String m_fileName;
   /** the lowest possible mz value*/
   private int lowestMz;
   /** the highest possible mz value*/
   private int highestMz;
-  /** the name of the chromatography file*/
-  private Hashtable<String,String> chromFileName_;
-  /** the name of the index file*/
-  private Hashtable<String,String> indexFileName_;
-  /** the name of the header file*/
-  private Hashtable<String,String> headerFileName_;
-  /** the name of the retention-time file*/
-  private Hashtable<String,String> retentionTimeFileName_;
+  /** the name of the chromatography file(s)*/
+  private Hashtable<String,String[]> chromFileName_;
+  /** the name of the index file(s)*/
+  private Hashtable<String,String[]> indexFileName_;
+  /** the name of the header file(s)*/
+  private Hashtable<String,String[]> headerFileName_;
+  /** the name of the retention-time file(s)*/
+  private Hashtable<String,String[]> retentionTimeFileName_;
   
   /** the lower and upper m/z thresholds for every thread*/
   private Hashtable<Integer,Hashtable<Integer,RangeInteger>> threadBoundaries_;
@@ -102,8 +104,8 @@ public class RawToChromTranslator implements AddScan
   private boolean msms_;
   /** the highest MSn level in the data file*/
   private int highestMsLevel_;
-  /** contains the amount of MSn scans*/
-  private Hashtable<String,Hashtable<Integer,Integer>> numberOfMs2Scans_;
+  /** contains the amount of MSn scans - first key: file key; second key: polarity; third key: MS-level*/
+  private Hashtable<String,Hashtable<Integer,Hashtable<Integer,Integer>>> numberOfMs2Scans_;
   
   /** is MSn information distributed in several files, such as in Waters MSE data*/
   private boolean msmsInSeveralFiles_;
@@ -116,13 +118,15 @@ public class RawToChromTranslator implements AddScan
   private Hashtable<Integer,Integer> highestMzs_;
   /** the number of scans for each MSn level*/
   private Hashtable<Integer,Hashtable<String,Integer>> scanCounts_;
+  /** the number of scans for each MSn level, classified in polarities*/
+  private Hashtable<Integer,Hashtable<String,Hashtable<Integer,Integer>>> polarityScanCounts_;
   
   /** the header information*/
   private Hashtable<String,CgScanHeader> headerHash_;
   /** the individual scans*/
   private Hashtable<String,CgScan[]> scanHash_;
-  /** the highest MSn level depending on separate data files in one physical file*/
-  private Hashtable<String,Integer> highestMsLevelHash_;
+  /** the highest MSn level depending on separate data files in one physical file, and the polarity*/
+  private Hashtable<String,Hashtable<Integer,Integer>> highestMsLevelHash_;
   
   /** the data file name (in case of merged data) that is currently read by the reader*/ 
   private String currentFileName_;
@@ -155,8 +159,10 @@ public class RawToChromTranslator implements AddScan
   private float upperThreshold_ = 1000000;
   /** the required chrom iterations, due to memory consumption*/
   private int numberOfIterations_;
-    
-
+  
+  /** was polarity switching used*/
+  private boolean polaritySwitching_ = false;
+  
   /**
    * constructor for the translation
    * @param mzXmlPath the original file
@@ -189,7 +195,7 @@ public class RawToChromTranslator implements AddScan
     fileType_ = fileType;
     maxMBForChromTranslation_ = maxMBForChromTranslation;
     msms_ = false;
-    highestMsLevelHash_ = new Hashtable<String,Integer>();    
+    highestMsLevelHash_ = new Hashtable<String,Hashtable<Integer,Integer>>();    
     initStoreHashes();
     highestMsLevel_ = 1;
     numberOfThreads_ = 1;
@@ -220,6 +226,12 @@ public class RawToChromTranslator implements AddScan
     headerHash_.put(currentFileName_, hx);
     scanHash_.put(currentFileName_, new CgScan[hx.ScanCount]);
     m_scanCount.put(currentFileName_, 0);
+    
+    Hashtable<Integer,Integer> polarityScans = new Hashtable<Integer,Integer>();
+    polarityScans.put(CgDefines.POLARITY_NO, 0);
+    polarityScans.put(CgDefines.POLARITY_POSITIVE, 0);
+    polarityScans.put(CgDefines.POLARITY_NEGATIVE, 0);
+    polarity_scanCount_.put(currentFileName_, polarityScans);    
   }
 
   public void AddScan(CgScan sx) throws CgException
@@ -228,6 +240,7 @@ public class RawToChromTranslator implements AddScan
     if (scanHash_.get(currentFileName_).length==m_scanCount.get(currentFileName_)) return;
     scanHash_.get(currentFileName_)[m_scanCount.get(currentFileName_)] = sx;
     m_scanCount.put(currentFileName_, m_scanCount.get(currentFileName_)+1);
+    polarity_scanCount_.get(currentFileName_).put(sx.getPolarity(),polarity_scanCount_.get(currentFileName_).get(sx.getPolarity())+1);
   }
 
   public void setStartStopHeader(CgScanHeader hx) throws CgException
@@ -254,11 +267,14 @@ public class RawToChromTranslator implements AddScan
       scanHash_.remove(currentFileName_);
       Integer count = m_scanCount.get(currentFileName_);
       m_scanCount.remove(currentFileName_);
+      Hashtable<Integer,Integer> polarityCount = polarity_scanCount_.get(currentFileName_);
+      polarity_scanCount_.remove(currentFileName_);
       currentFileName_ = fileName;
       header.fileName = fileName;
       headerHash_.put(currentFileName_, header);
       scanHash_.put(currentFileName_, scans);
       m_scanCount.put(currentFileName_, count);
+      polarity_scanCount_.put(currentFileName_, polarityCount);
     }
   }
   
@@ -272,6 +288,7 @@ public class RawToChromTranslator implements AddScan
     lowestMzs_ = new Hashtable<Integer,Integer>();
     highestMzs_  = new Hashtable<Integer,Integer>();
     scanCounts_ = new Hashtable<Integer,Hashtable<String,Integer>>();
+    polarityScanCounts_ = new Hashtable<Integer,Hashtable<String,Hashtable<Integer,Integer>>>();
     oneIterationFinished_ = false;
     errorString_ = null;
     if (msms_){
@@ -311,7 +328,7 @@ public class RawToChromTranslator implements AddScan
   private void translateToChromatograms(int msLevel) throws CgException{
     long time = System.currentTimeMillis();
     this.readHeaderInformation(msLevel);
-    
+        
     if (this.numberOfIterations_>1 || this.numberOfThreads_>1){
       m_scanCount = new Hashtable<String,Integer>();
     }
@@ -323,15 +340,16 @@ public class RawToChromTranslator implements AddScan
       this.quantStatus_ = new Hashtable<Integer,Integer>();
       for (int j=0; j!=this.numberOfThreads_; j++){
         RangeInteger threshold = this.getLowerUpperThreshold(i, j);
-        String dir = m_fileName.substring(0,m_fileName.lastIndexOf("."))+".chrom/";
-        int currentPiece = i*numberOfThreads_+j;
-        if (currentPiece>0){
-          dir +=String.valueOf(currentPiece)+"/";
-          File dirFile = new File(dir);
-          dirFile.mkdir();
+        String[] directories = new String[2];
+        if (polaritySwitching_){
+          directories[0] = getCorrespondingThreadDirectory(CgDefines.POLARITY_POSITIVE, i, j);
+          directories[1] = getCorrespondingThreadDirectory(CgDefines.POLARITY_NEGATIVE, i, j);
+        }else{
+          directories[0] = getCorrespondingThreadDirectory(CgDefines.POLARITY_NO, i, j);
+          directories[1] = null;
         }
         RawToChromThread thread = new RawToChromThread(this.translators_.get(j));
-        thread.setRequiredInformation(dir,threshold.getStart(),threshold.getStop()); 
+        thread.setRequiredInformation(directories,threshold.getStart(),threshold.getStop()); 
         this.translators_.put(j, thread);
         this.quantStatus_.put(j, STATUS_WAITING);
       }
@@ -340,7 +358,7 @@ public class RawToChromTranslator implements AddScan
       if (this.numberOfIterations_>1 || this.numberOfThreads_>1){
         this.m_reader.ReadFile(m_fileName+suffix);
       }else{
-        this.translators_.get(0).setReadXmlContent(headerHash_,scanHash_,m_scanCount);
+        this.translators_.get(0).setReadXmlContent(headerHash_,scanHash_,m_scanCount,polarity_scanCount_);
       }
     
       if (this.numberOfThreads_>1){
@@ -375,9 +393,11 @@ public class RawToChromTranslator implements AddScan
           singleThread.writeToChrom();   
           if (i==0){
             m_scanCount = singleThread.getm_scanCount();
+            polarity_scanCount_ = singleThread.getPolarityScanCount();
             scanCounts_.put(msLevel, m_scanCount);
+            polarityScanCounts_.put(msLevel, polarity_scanCount_);
             try{
-              singleThread.writeRetentionTimeFile(retentionTimeFileName_);
+              singleThread.writeRetentionTimeFile(retentionTimeFileName_,polaritySwitching_);
             } catch (IOException iox){
               iox.printStackTrace();
               errorString_ = iox.getMessage();
@@ -399,93 +419,144 @@ public class RawToChromTranslator implements AddScan
 
     if (errorString_!=null) throw new CgException(errorString_);
       
-      
-    //merge the results
-    if (this.numberOfIterations_>1 || this.numberOfThreads_>1){
-      int totalSlices = this.numberOfIterations_*this.numberOfThreads_;
-      numberOfMs2Scans_ = new Hashtable<String,Hashtable<Integer,Integer>>();
-      try{
-        for (String key:headerHash_.keySet()){
-          String baseDir = getBaseDir();
-          if (msms_&&!msmsInSeveralFiles_){
-            numberOfMs2Scans_.put(key, new Hashtable<Integer,Integer>());
-          }
-          for (int i=1; i<=highestMsLevel_;i++){
-            String levelSuffix = "";
-            if (i>1) levelSuffix = String.valueOf(i);
-            //merge index
-            Hashtable<Integer,Integer> lines = new Hashtable<Integer,Integer>();
-            Hashtable<Integer,Long> indices = new Hashtable<Integer,Long>();
-            int count = 0;
-            long previousLength = 0;
-            DataInputStream indexStream = new DataInputStream(new FileInputStream(indexFileName_.get(key)+levelSuffix));
-            count = readIndexFile(indexStream,lines,indices,count,previousLength);
-            indexStream.close();
-            previousLength += (new File (chromFileName_.get(key)+levelSuffix)).length();
-            for (int j=1; j!=totalSlices; j++){
-              String dir = baseDir+String.valueOf(j)+"/";
-              String indexFileName = dir+StringUtils.getJustFileName(indexFileName_.get(key))+levelSuffix;
-              DataInputStream in = new DataInputStream(new FileInputStream(indexFileName));
-              count = readIndexFile(in,lines,indices,count,previousLength);
-              in.close();
-              previousLength += (new File(dir+StringUtils.getJustFileName(chromFileName_.get(key))+levelSuffix)).length();
-            }
-            DataOutputStream streamIndex2 = new DataOutputStream(new FileOutputStream(indexFileName_.get(key)+levelSuffix));
-            for (int j=0; j!=count; j++){
-              streamIndex2.writeInt(lines.get(j));
-              streamIndex2.writeLong(indices.get(j));
-            }
-            streamIndex2.close();
-              //merge retention times
-            if (i>1){
-              Hashtable<Integer,Float> retentionTimes = new Hashtable<Integer,Float>();
-              DataInputStream rttStream = new DataInputStream(new FileInputStream(retentionTimeFileName_.get(key)+levelSuffix));
-              readRetentionTimeFile(rttStream,retentionTimes);
-              rttStream.close();
-              for (int j=1; j!=totalSlices; j++){
-                String dir = baseDir+String.valueOf(j)+"/";
-                String rttFileName = dir+StringUtils.getJustFileName(retentionTimeFileName_.get(key))+levelSuffix;
-                DataInputStream in = new DataInputStream(new FileInputStream(rttFileName));
-                readRetentionTimeFile(in,retentionTimes);
-                in.close();
-              }
-              List<Integer> scanNumbers = new ArrayList<Integer>(retentionTimes.keySet());
-              Collections.sort(scanNumbers);
-              DataOutputStream streamRtt2 = new DataOutputStream(new FileOutputStream(retentionTimeFileName_.get(key)+levelSuffix));
-              for (Integer scanNumber : scanNumbers){
-                streamRtt2.writeInt(scanNumber);
-                streamRtt2.writeFloat(retentionTimes.get(scanNumber));
-              }
-              streamRtt2.close();
-              numberOfMs2Scans_.get(key).put(i, scanNumbers.size());
-            }
-            //merge chrom files
-            BufferedOutputStream streamChrom2 = new BufferedOutputStream(new FileOutputStream(chromFileName_.get(key)+levelSuffix,true));
-            for (int j=1; j!=totalSlices; j++){
-              String dir = baseDir+String.valueOf(j)+"/";
-              BufferedInputStream in = new BufferedInputStream(new FileInputStream(dir+StringUtils.getJustFileName(chromFileName_.get(key))+levelSuffix));
-              RawToChromTranslator.append(in,streamChrom2);
-              in.close();
-            }
-            streamChrom2.close();
-
-          }
-          for (int j=1; j!=totalSlices; j++){
-            String dir = baseDir+String.valueOf(j)+"/";
-            File dirFile = new File(dir);
-            for (File file : dirFile.listFiles()){
-              file.delete();
-            }
-            dirFile.delete();
-          }
-        }
-      }catch(IOException iox){
-        iox.printStackTrace();
-      }
+    mergeResults();
+    try {
+      checkHighestMsLevel();
+    }
+    catch (IOException e) {
+      e.printStackTrace();
     }
     System.out.println("Total time: "+((System.currentTimeMillis()-time)/1000)+" secs");
   }
 
+  /**
+   * merges the different chrom translations in a single file - when the file was translated in several slices
+   */
+  private void mergeResults(){
+    if (this.numberOfIterations_>1 || this.numberOfThreads_>1){
+      numberOfMs2Scans_ = new Hashtable<String,Hashtable<Integer,Hashtable<Integer,Integer>>>();
+      mergeResults(0);
+      if (polaritySwitching_)
+        mergeResults(1);
+    }
+  }
+  
+  /**
+   * merges the different chrom translations in a single file - when the file was translated in several slices
+   * @param filePosition when polarity switching is used, two chrom directories are generated - the file position is which one shall be merged
+   */
+  private void mergeResults(int filePosition){
+    int totalSlices = this.numberOfIterations_*this.numberOfThreads_;    
+    try{
+      for (String key:headerHash_.keySet()){
+        String baseDir = getBaseDir(filePosition);
+        if (msms_&&!msmsInSeveralFiles_){
+          Hashtable<Integer,Hashtable<Integer,Integer>> msmsScans = new Hashtable<Integer,Hashtable<Integer,Integer>>();
+          if (numberOfMs2Scans_.containsKey(key))
+            msmsScans = numberOfMs2Scans_.get(key);
+          msmsScans.put(filePosition, new Hashtable<Integer,Integer>());
+          numberOfMs2Scans_.put(key, msmsScans);
+        }
+        for (int i=1; i<=highestMsLevel_;i++){
+          String levelSuffix = "";
+          if (i>1) levelSuffix = String.valueOf(i);
+          //merge index
+          Hashtable<Integer,Integer> lines = new Hashtable<Integer,Integer>();
+          Hashtable<Integer,Long> indices = new Hashtable<Integer,Long>();
+          int count = 0;
+          long previousLength = 0;
+          DataInputStream indexStream = new DataInputStream(new FileInputStream(indexFileName_.get(key)[filePosition]+levelSuffix));
+          count = readIndexFile(indexStream,lines,indices,count,previousLength);
+          indexStream.close();
+          previousLength += (new File (chromFileName_.get(key)[filePosition]+levelSuffix)).length();
+          for (int j=1; j!=totalSlices; j++){
+            String dir = baseDir+String.valueOf(j)+"/";
+            String indexFileName = dir+StringUtils.getJustFileName(indexFileName_.get(key)[filePosition])+levelSuffix;
+            DataInputStream in = new DataInputStream(new FileInputStream(indexFileName));
+            count = readIndexFile(in,lines,indices,count,previousLength);
+            in.close();
+            previousLength += (new File(dir+StringUtils.getJustFileName(chromFileName_.get(key)[filePosition])+levelSuffix)).length();
+          }
+          DataOutputStream streamIndex2 = new DataOutputStream(new FileOutputStream(indexFileName_.get(key)[filePosition]+levelSuffix));
+          for (int j=0; j!=count; j++){
+            streamIndex2.writeInt(lines.get(j));
+            streamIndex2.writeLong(indices.get(j));
+          }
+          streamIndex2.close();
+            //merge retention times
+          if (i>1){
+            Hashtable<Integer,Float> retentionTimes = new Hashtable<Integer,Float>();
+            DataInputStream rttStream = new DataInputStream(new FileInputStream(retentionTimeFileName_.get(key)[filePosition]+levelSuffix));
+            readRetentionTimeFile(rttStream,retentionTimes);
+            rttStream.close();
+            for (int j=1; j!=totalSlices; j++){
+              String dir = baseDir+String.valueOf(j)+"/";
+              String rttFileName = dir+StringUtils.getJustFileName(retentionTimeFileName_.get(key)[filePosition])+levelSuffix;
+              DataInputStream in = new DataInputStream(new FileInputStream(rttFileName));
+              readRetentionTimeFile(in,retentionTimes);
+              in.close();
+            }
+            List<Integer> scanNumbers = new ArrayList<Integer>(retentionTimes.keySet());
+            Collections.sort(scanNumbers);
+            DataOutputStream streamRtt2 = new DataOutputStream(new FileOutputStream(retentionTimeFileName_.get(key)[filePosition]+levelSuffix));
+            for (Integer scanNumber : scanNumbers){
+              streamRtt2.writeInt(scanNumber);
+              streamRtt2.writeFloat(retentionTimes.get(scanNumber));
+            }
+            streamRtt2.close();
+            numberOfMs2Scans_.get(key).get(filePosition).put(i, scanNumbers.size());
+          }
+          //merge chrom files
+          BufferedOutputStream streamChrom2 = new BufferedOutputStream(new FileOutputStream(chromFileName_.get(key)[filePosition]+levelSuffix,true));
+          for (int j=1; j!=totalSlices; j++){
+            String dir = baseDir+String.valueOf(j)+"/";
+            BufferedInputStream in = new BufferedInputStream(new FileInputStream(dir+StringUtils.getJustFileName(chromFileName_.get(key)[filePosition])+levelSuffix));
+            RawToChromTranslator.append(in,streamChrom2);
+            in.close();
+          }
+          streamChrom2.close();
+
+        }
+        for (int j=1; j!=totalSlices; j++){
+          String dir = baseDir+String.valueOf(j)+"/";
+          File dirFile = new File(dir);
+          for (File file : dirFile.listFiles()){
+            file.delete();
+          }
+          dirFile.delete();
+        }
+      }
+    }catch(IOException iox){
+      iox.printStackTrace();
+    }    
+  }
+  
+  /**
+   * checks if for this chrom file really all MS-levels are present - otherwise, the additional (empty) files are deleted 
+   * @throws IOException thrown when there is something wrong with the file access
+   */
+  private void checkHighestMsLevel() throws IOException{
+    for (String key:headerHash_.keySet()){
+      Hashtable<Integer,Integer> polarityMsLevels =  highestMsLevelHash_.get(key);
+      for (Integer filePosition : polarityMsLevels.keySet()){
+        int highestMsLevel = polarityMsLevels.get(filePosition);
+        while (highestMsLevel>1){
+          String levelSuffix = String.valueOf(highestMsLevel);
+          File rttFile = new File(retentionTimeFileName_.get(key)[filePosition]+levelSuffix);
+          //the file at this level is not empty, stop the procedure
+          if (rttFile.length()!=0l)
+            break;
+          File indexFile = new File(indexFileName_.get(key)[filePosition]+levelSuffix);
+          File chromFile = new File(chromFileName_.get(key)[filePosition]+levelSuffix);
+          chromFile.delete();
+          indexFile.delete();
+          rttFile.delete();
+          highestMsLevel--;
+        }
+        polarityMsLevels.put(filePosition,highestMsLevel);
+      }
+    }
+  }
 
   /**
    * reads the header information of the corresponding file
@@ -493,10 +564,10 @@ public class RawToChromTranslator implements AddScan
    */
   private void readHeaderInformation(int msLevel){
     String suffix = "";
-    chromFileName_ = new Hashtable<String,String>();
-    indexFileName_ = new Hashtable<String,String>();
-    headerFileName_ = new Hashtable<String,String>();
-    retentionTimeFileName_ = new Hashtable<String,String>();
+    chromFileName_ = new Hashtable<String,String[]>();
+    indexFileName_ = new Hashtable<String,String[]>();
+    headerFileName_ = new Hashtable<String,String[]>();
+    retentionTimeFileName_ = new Hashtable<String,String[]>();
     if (msLevel>1) suffix = String.valueOf(msLevel);
     m_scanCount = new Hashtable<String,Integer>();
     threadBoundaries_ = new Hashtable<Integer,Hashtable<Integer,RangeInteger>>();
@@ -538,15 +609,15 @@ public class RawToChromTranslator implements AddScan
         }else{
           m_reader.ReadFile(m_fileName+suffix);
         }
+        polaritySwitching_ = m_reader.usesPolaritySwitching();
         if (this.headerHash_.size()==1){
           String justTheName = StringUtils.getJustFileName(justFileName);
-          String chromDirPath = justFileName+".chrom";
-          generateChromFileNames(justTheName, chromDirPath, headerHash_.keySet().iterator().next(), suffix);
+          generateChromDirectoryAndFiles(justFileName,justTheName,headerHash_.keySet().iterator().next(), suffix);
         } else if (this.headerHash_.size()>1){
           String directory = StringUtils.extractDirName(m_fileName);
           for (String name : headerHash_.keySet()){
-            String chromDirPath = directory+File.separator+name+".chrom";
-            generateChromFileNames(name, chromDirPath, name, suffix);
+            String chromDirName = directory+File.separator+name;
+            generateChromDirectoryAndFiles(chromDirName,name,name,suffix);
           }
         }
         this.highestMz = m_reader.getHighestMz();
@@ -593,7 +664,11 @@ public class RawToChromTranslator implements AddScan
     for (String fileName: headerHash_.keySet()){
       if (headerHash_.get(fileName).highestMSLevel>highestMsLevel_)
         highestMsLevel_ = headerHash_.get(fileName).highestMSLevel;
-      highestMsLevelHash_.put(fileName, headerHash_.get(fileName).highestMSLevel);
+      Hashtable<Integer,Integer> polarityMsLevels = new Hashtable<Integer,Integer>();
+      polarityMsLevels.put(0, headerHash_.get(fileName).highestMSLevel);
+      if (polaritySwitching_)
+        polarityMsLevels.put(1, headerHash_.get(fileName).highestMSLevel);
+      highestMsLevelHash_.put(fileName, polarityMsLevels);
     }
   }
   
@@ -615,41 +690,70 @@ public class RawToChromTranslator implements AddScan
    */
   private void writeHeaderFile() throws IOException {
     for (String key : this.headerFileName_.keySet()){
-      Properties props = new Properties();
-      props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_MZ_MULTIPLICATION_FACTOR, String.valueOf(multiplicationFactorForInt_));
-      props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_LOWEST_RESOLUTION,String.valueOf(lowestResolution_));
-      props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_LOWEST_MZ, String.valueOf(this.lowestMz));
-      props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_HIGHEST_MZ, String.valueOf(this.highestMz));
-      props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_NUMBER_SCANS, String.valueOf(m_scanCount.get(key)));   
-      props.put(BioUtilsConstants.INDEX_HEADER_FILE_NUMBER_OF_ENTRIES_FOR_INDEX, String.valueOf(CgDefines.numberOfEntriesForIndex));
-      props.put(BioUtilsConstants.INDEX_HEADER_FILE_INDEX_FILE, this.indexFileName_.get(key));
-      props.put(BioUtilsConstants.INDEX_HEADER_FILE_INDEXED_FILE, this.chromFileName_.get(key));
-      props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_RETENTION_TIME, this.retentionTimeFileName_.get(key));
-      int highestLevel = this.highestMsLevelHash_.get(key);
-      if (msmsInSeveralFiles_) highestLevel = msmsSeveralFilesHighestLevel_;
-      props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_MS_LEVEL, String.valueOf(highestLevel));
-      if (this.msms_ && highestLevel>1){
+      if (polaritySwitching_){
+        this.writeHeaderFile(headerFileName_.get(key)[0],key,CgDefines.POLARITY_POSITIVE);
+        this.writeHeaderFile(headerFileName_.get(key)[1],key,CgDefines.POLARITY_NEGATIVE);
+      }else{
+        this.writeHeaderFile(headerFileName_.get(key)[0],key,CgDefines.POLARITY_NO);      
+      }
+    }
+//    for (String key : this.headerFileName_.keySet()){
+//    }
+  }
+  
+  /**
+   * writes the header file - in the case of polarity switching, more than one header file has to be written
+   * @param fileName the path to the header file
+   * @param key the file key
+   * @param polarity the current polarity to be written (as defined in CgDefines)
+   * @throws IOException when there is something wrong with the file access
+   */
+  private void writeHeaderFile(String fileName, String key, int polarity) throws IOException{
+    int filePosition = 0;
+    if (polarity == CgDefines.POLARITY_NEGATIVE) filePosition = 1;
+    Properties props = new Properties();
+    props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_MZ_MULTIPLICATION_FACTOR, String.valueOf(multiplicationFactorForInt_));
+    props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_LOWEST_RESOLUTION,String.valueOf(lowestResolution_));
+    props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_LOWEST_MZ, String.valueOf(this.lowestMz));
+    props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_HIGHEST_MZ, String.valueOf(this.highestMz));
+    props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_NUMBER_SCANS, String.valueOf(this.getCorrectScanCount(key, polarity)));   
+    props.put(BioUtilsConstants.INDEX_HEADER_FILE_NUMBER_OF_ENTRIES_FOR_INDEX, String.valueOf(CgDefines.numberOfEntriesForIndex));
+    props.put(BioUtilsConstants.INDEX_HEADER_FILE_INDEX_FILE, this.indexFileName_.get(key)[filePosition]);
+    props.put(BioUtilsConstants.INDEX_HEADER_FILE_INDEXED_FILE, this.chromFileName_.get(key)[filePosition]);
+    props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_RETENTION_TIME, this.retentionTimeFileName_.get(key)[filePosition]);
+    int highestLevel = this.highestMsLevelHash_.get(key).get(filePosition);
+    if (msmsInSeveralFiles_) highestLevel = msmsSeveralFilesHighestLevel_;
+    props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_MS_LEVEL, String.valueOf(highestLevel));
+    if (this.msms_ && highestLevel>1){
+      if (msmsInSeveralFiles_){
+        props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_MSMS_TYPE, ChromatogramReader.CHROMATOGRAM_HEADER_FILE_MSMS_TYPE_FULL);
+      } else
+        props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_MSMS_TYPE, ChromatogramReader.CHROMATOGRAM_HEADER_FILE_MSMS_TYPE_PRECURSOR);
+      for (int i=2; i<=highestLevel;i++){
+        props.put(BioUtilsConstants.INDEX_HEADER_FILE_INDEX_FILE+String.valueOf(i), this.indexFileName_.get(key)[filePosition]+String.valueOf(i));
+        props.put(BioUtilsConstants.INDEX_HEADER_FILE_INDEXED_FILE+String.valueOf(i), this.chromFileName_.get(key)[filePosition]+String.valueOf(i));
+        props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_RETENTION_TIME+String.valueOf(i), this.retentionTimeFileName_.get(key)[filePosition]+String.valueOf(i));
         if (msmsInSeveralFiles_){
-          props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_MSMS_TYPE, ChromatogramReader.CHROMATOGRAM_HEADER_FILE_MSMS_TYPE_FULL);
-        } else
-          props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_MSMS_TYPE, ChromatogramReader.CHROMATOGRAM_HEADER_FILE_MSMS_TYPE_PRECURSOR);
-        for (int i=2; i<=highestLevel;i++){
-          props.put(BioUtilsConstants.INDEX_HEADER_FILE_INDEX_FILE+String.valueOf(i), this.indexFileName_.get(key)+String.valueOf(i));
-          props.put(BioUtilsConstants.INDEX_HEADER_FILE_INDEXED_FILE+String.valueOf(i), this.chromFileName_.get(key)+String.valueOf(i));
-          props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_RETENTION_TIME+String.valueOf(i), this.retentionTimeFileName_.get(key)+String.valueOf(i));
-          if (msmsInSeveralFiles_){
-            props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_LOWEST_MZ+String.valueOf(i), String.valueOf(this.lowestMzs_.get(i)));
-            props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_HIGHEST_MZ+String.valueOf(i), String.valueOf(this.highestMzs_.get(i)));
-            props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_NUMBER_SCANS+String.valueOf(i), String.valueOf(scanCounts_.get(i).get(key)));   
-          }else{
-            props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_NUMBER_SCANS+String.valueOf(i), String.valueOf(this.numberOfMs2Scans_.get(key).get(i)));          
-          }
+          props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_LOWEST_MZ+String.valueOf(i), String.valueOf(this.lowestMzs_.get(i)));
+          props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_HIGHEST_MZ+String.valueOf(i), String.valueOf(this.highestMzs_.get(i)));
+          props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_NUMBER_SCANS+String.valueOf(i), String.valueOf(this.getCorrectScanCountMsMsSeveralFiles(i, key, polarity)));   
+        }else{
+          props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_NUMBER_SCANS+String.valueOf(i), String.valueOf(this.numberOfMs2Scans_.get(key).get(filePosition).get(i)));          
         }
       }
-      FileOutputStream stream = new FileOutputStream(headerFileName_.get(key));
-      props.store(stream, "Header");
-      stream.close();
     }
+    if (polaritySwitching_){
+      String polarityString = null;
+      if (polarity==CgDefines.POLARITY_POSITIVE)
+        polarityString = GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_POSITIVE;
+      else if (polarity==CgDefines.POLARITY_NEGATIVE)
+        polarityString = GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_NEGATIVE;
+      props.put(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_SWITCHED, polarityString);
+    }
+    FileOutputStream stream = new FileOutputStream(fileName);
+    props.store(stream, "Header");
+    stream.close();
+
   }
   
   /**
@@ -665,20 +769,67 @@ public class RawToChromTranslator implements AddScan
   
   /**
    * generates the chrom directory and the individual file names
+   * @param chromDirName the name and path of the directory that locates the files (without the ".chrom" suffix)
+   * @param fileName the name of the file to be translated 
+   * @param key the original raw file name (if the raw file contains merged data)
+   * @param suffix for MSE files, a suffix is added for the level
+   */
+  private void generateChromDirectoryAndFiles(String chromDirName, String fileName, String key, String suffix){
+    if (polaritySwitching_){
+      generateChromFileNames(fileName+RawToChromThread.FILE_SUFFIX_POLARITY_POSITIVE, chromDirName+RawToChromThread.FILE_SUFFIX_POLARITY_POSITIVE+".chrom", key, suffix, 0);
+      generateChromFileNames(fileName+RawToChromThread.FILE_SUFFIX_POLARITY_NEGATIVE, chromDirName+RawToChromThread.FILE_SUFFIX_POLARITY_NEGATIVE+".chrom", key, suffix, 1);
+    }else{
+      generateChromFileNames(fileName, chromDirName+".chrom", key, suffix, 0);
+    }
+  }
+  
+  /**
+   * generates the chrom directory and the individual file names
    * @param fileName the name of the file to be translated
    * @param chromDirPath the chrom directory that locates the files
    * @param key the original raw file name (if the raw file contains merged data)
    * @param suffix for MSE files, a suffix is added for the level
+   * @param the file position (for polarity switching, two files are there)
    */
-  private void generateChromFileNames(String fileName, String chromDirPath, String key, String suffix){
+  private void generateChromFileNames(String fileName, String chromDirPath, String key, String suffix, int position){
     File chromDir = new File(chromDirPath);
     chromDir.mkdir();
     String filePath = chromDir.getAbsolutePath()+File.separator+fileName;
-    chromFileName_.put(key,filePath+".chrom"+suffix);
-    indexFileName_.put(key,filePath+".idx"+suffix);
-    headerFileName_.put(key,filePath+".head");
-    retentionTimeFileName_.put(key,filePath+".rtt"+suffix);
-
+    String[] chromFiles = new String[]{null,null};
+    String[] indexFiles = new String[]{null,null};
+    String[] headerFiles = new String[]{null,null};
+    String[] rtFiles = new String[]{null,null};
+    if (chromFileName_.containsKey(key)){
+      chromFiles = chromFileName_.get(key);
+      indexFiles = indexFileName_.get(key);
+      headerFiles = headerFileName_.get(key);
+      rtFiles = retentionTimeFileName_.get(key);      
+    }
+    chromFiles[position] = filePath+".chrom"+suffix;
+    indexFiles[position] = filePath+".idx"+suffix;
+    headerFiles[position] = filePath+".head"+suffix;
+    rtFiles[position] = filePath+".rtt"+suffix;
+    
+    chromFileName_.put(key,chromFiles);
+    indexFileName_.put(key,indexFiles);
+    headerFileName_.put(key,headerFiles);
+    retentionTimeFileName_.put(key,rtFiles);
+  }
+  
+  private String getCorrespondingThreadDirectory(int polarity, int iteration, int threadNr){
+    String dir = m_fileName.substring(0,m_fileName.lastIndexOf("."));
+    if (polarity==CgDefines.POLARITY_POSITIVE)
+      dir += RawToChromThread.FILE_SUFFIX_POLARITY_POSITIVE;
+    else if (polarity==CgDefines.POLARITY_NEGATIVE)
+      dir += RawToChromThread.FILE_SUFFIX_POLARITY_NEGATIVE;
+    dir += ".chrom/";
+    int currentPiece = iteration*numberOfThreads_+threadNr;
+    if (currentPiece>0){
+      dir +=String.valueOf(currentPiece)+"/";
+      File dirFile = new File(dir);
+      dirFile.mkdir();
+    }
+    return dir;
   }
 
   
@@ -698,6 +849,7 @@ public class RawToChromTranslator implements AddScan
   private void initStoreHashes(){
     scanHash_ = new Hashtable<String,CgScan[]>();
     headerHash_ = new Hashtable<String,CgScanHeader>();
+    polarity_scanCount_ = new Hashtable<String,Hashtable<Integer,Integer>>();
   }
 
   /**
@@ -713,11 +865,19 @@ public class RawToChromTranslator implements AddScan
   }
   
   /**
-   * 
+   * @param the position of the file
    * @return the chrom directory
    */
-  private String getBaseDir (){
-    return this.m_fileName.substring(0,this.m_fileName.lastIndexOf("."))+".chrom/";
+  private String getBaseDir (int filePosition){
+    if (polaritySwitching_){
+      if (filePosition==0)
+        return (this.m_fileName.substring(0,this.m_fileName.lastIndexOf("."))+RawToChromThread.FILE_SUFFIX_POLARITY_POSITIVE+".chrom/");
+      else if (filePosition==1)
+        return (this.m_fileName.substring(0,this.m_fileName.lastIndexOf("."))+RawToChromThread.FILE_SUFFIX_POLARITY_NEGATIVE+".chrom/");
+      else
+        return null;
+    }else
+      return this.m_fileName.substring(0,this.m_fileName.lastIndexOf("."))+".chrom/";
   }
 
   /**
@@ -842,9 +1002,11 @@ public class RawToChromTranslator implements AddScan
         else{
           if (i==0){
             m_scanCount = singleThread.getm_scanCount();
+            polarity_scanCount_ = singleThread.getPolarityScanCount();
             scanCounts_.put(msLevel, m_scanCount);
+            polarityScanCounts_.put(msLevel, polarity_scanCount_);
             try{
-              singleThread.writeRetentionTimeFile(retentionTimeFileName_);
+              singleThread.writeRetentionTimeFile(retentionTimeFileName_,polaritySwitching_);
             } catch (IOException iox){
               iox.printStackTrace();
               errorString_ = iox.getMessage();
@@ -883,6 +1045,43 @@ public class RawToChromTranslator implements AddScan
       }
       oneIterationFinished_ = true;
     }
+  }
+  
+  /**
+   * returns the adequate scan count for this chrom generation (in case of polarity switched data, only the 
+   * corresponding polarity is returned)
+   * @param key the file key
+   * @param polarity the polarity according to CgDefines
+   * @return the adequate scan count for this chrom generation (in case of polarity switched data, only the corresponding polarity is returned)
+   */
+  private int getCorrectScanCount(String key, int polarity){
+    if (polarity==CgDefines.POLARITY_POSITIVE || polarity==CgDefines.POLARITY_NEGATIVE)
+      return polarity_scanCount_.get(key).get(polarity);
+    else
+      return m_scanCount.get(key);    
+  }
+
+  /**
+   * returns the adequate scan count for this chrom generation for the MSn levels (in case of polarity switched data, only the 
+   * corresponding polarity is returned)
+   * @param msLevel the MSn level
+   * @param key file key
+   * @param polarity the polarity according to CgDefines
+   * @return the adequate scan count for this chrom generation for the MSn levels (in case of polarity switched data, only the corresponding polarity is returned)
+   */
+  private int getCorrectScanCountMsMsSeveralFiles(int msLevel, String key, int polarity){
+    if (polarity==CgDefines.POLARITY_POSITIVE || polarity==CgDefines.POLARITY_NEGATIVE)
+      return polarityScanCounts_.get(msLevel).get(key).get(polarity);
+    else
+      return scanCounts_.get(msLevel).get(key);
+  }
+  
+  /**
+   * 
+   * @return true when the mzXML file contains polarity switched data
+   */
+  public boolean isPolaritySwitched(){
+    return this.polaritySwitching_;
   }
   
 }
