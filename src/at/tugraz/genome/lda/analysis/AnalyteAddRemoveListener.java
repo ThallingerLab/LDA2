@@ -40,4 +40,16 @@ public interface AnalyteAddRemoveListener
   public void listSelectionChanged(int leadIndex);
   public void changeListSorting(int sortType);
   public void newRule(int position);
+  /**
+   * re-evaluates the assigned MSn identification
+   * according to the currently set rules
+   * @param position the position in the JTable
+   */
+  public void recalculateMSn (int position);
+  
+  /**
+   * pops up a menu for Rt editing
+   * @param position the position in the JTable
+   */
+  public void editRt(int position);
 }

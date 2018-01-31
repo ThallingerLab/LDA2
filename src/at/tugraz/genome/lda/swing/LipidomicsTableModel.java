@@ -224,4 +224,15 @@ public class LipidomicsTableModel extends DefaultTableModel implements TableMode
     if (StaticUtils.checkMS2Evidence(param)==StaticUtils.PERCENTAL_SPLIT) return true;
     return false;
   }
+
+  /**
+   * 
+   * @return is show MSn selected
+   */
+  public boolean isShowMSn()
+  {
+    return showMSn_;
+  }
+  
+  
 }

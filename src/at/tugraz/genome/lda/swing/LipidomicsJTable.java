@@ -69,8 +69,13 @@ public class LipidomicsJTable extends JTable implements ActionListener
   private int lastSelectedIndex_;
   
   private final static String LABEL_EDIT_RULES = "Edit MSn rule";
+  /** display text for recalculating an MSn identification of a hit*/
+  private final static String LABEL_RECALCULATE_MSN = "Recalculate MSn";
+  /** display text for editing the retention time of a hit*/
+  private final static String LABEL_EDIT_RT = "Edit Rt";
 
-  public LipidomicsJTable(LipidomicsTableModel model,TableCellRenderer renderer,boolean showMs2,int orderType,boolean showRtInAddDialog,AnalyteAddRemoveListener parentListener)  {
+  public LipidomicsJTable(LipidomicsTableModel model,TableCellRenderer renderer,boolean showMs2,int orderType,boolean showRtInAddDialog,
+      AnalyteAddRemoveListener parentListener)  {
 //    super(rowData,columnNames);
     super(model);
     parentListener_ = parentListener;
@@ -110,7 +115,18 @@ public class LipidomicsJTable extends JTable implements ActionListener
     item = new JMenuItem(LABEL_EDIT_RULES);
     item.addActionListener(this);
     addItemPopup_.add(item);
-        
+
+    //Recalculate an MSn identification
+    if (!model.isShowMSn()){
+      item = new JMenuItem(LABEL_RECALCULATE_MSN);
+      item.addActionListener(this);
+      addItemPopup_.add(item);
+      
+      item = new JMenuItem(LABEL_EDIT_RT);
+      item.addActionListener(this);
+      addItemPopup_.add(item);
+    }
+    
     this.add(addItemPopup_);
     controlDown_ = false;
     shiftDown_ = false;
@@ -211,8 +227,13 @@ public class LipidomicsJTable extends JTable implements ActionListener
       parentListener_.changeListSorting(ORDER_TYPE_INTENSITY);
     } else if (actionCommand.equalsIgnoreCase(LABEL_EDIT_RULES)){
       int position = getSelectionModel().getLeadSelectionIndex();
-      parentListener_.newRule(position);
-      
+      parentListener_.newRule(position);     
+    } else if (actionCommand.equalsIgnoreCase(LABEL_RECALCULATE_MSN)){
+      int position = getSelectionModel().getLeadSelectionIndex();
+      parentListener_.recalculateMSn(position);     
+    } else if (actionCommand.equalsIgnoreCase(LABEL_EDIT_RT)){
+      int position = getSelectionModel().getLeadSelectionIndex();
+      parentListener_.editRt(position);     
     }
   }
   

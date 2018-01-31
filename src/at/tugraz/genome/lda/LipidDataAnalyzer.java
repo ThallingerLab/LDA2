@@ -137,6 +137,7 @@ import at.tugraz.genome.lda.swing.BatchQuantificationTableModel;
 import at.tugraz.genome.lda.swing.ClassesOverviewPanel;
 import at.tugraz.genome.lda.swing.ColorChooserDialog;
 import at.tugraz.genome.lda.swing.CutoffSettingsPanel;
+import at.tugraz.genome.lda.swing.EditRtDialog;
 import at.tugraz.genome.lda.swing.ExportPanel;
 import at.tugraz.genome.lda.swing.GroupsPanel;
 import at.tugraz.genome.lda.swing.HeatMapDrawing;
@@ -146,6 +147,7 @@ import at.tugraz.genome.lda.swing.LipidomicsJTable;
 import at.tugraz.genome.lda.swing.LipidomicsTableCellRenderer;
 import at.tugraz.genome.lda.swing.LipidomicsTableModel;
 import at.tugraz.genome.lda.swing.RangeColor;
+import at.tugraz.genome.lda.swing.RecalculateMSnDialog;
 import at.tugraz.genome.lda.swing.ResultDisplaySettings;
 import at.tugraz.genome.lda.swing.ResultSelectionSettings;
 import at.tugraz.genome.lda.swing.RuleDefinitionInterface;
@@ -439,6 +441,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private final static String DEFAULT_ANNOTATION_CUTOFF = "5";
   
   private final static Font SELECT_FIELD_FONT = new Font("Helvetica",Font.PLAIN,10);
+  
+  /** a dialog field showing the new MSn assignment*/
+  private RecalculateMSnDialog recalcDialog_;
+  
+  /** a dialog field for changing the retention time of a hit*/
+  private EditRtDialog editRtDialog_;
   
   public LipidDataAnalyzer(){
     this.createDisplayTopMenu();
@@ -3058,7 +3066,47 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           }catch (IOException ex){ new WarningMessage(new JFrame(), "Error", ex.getMessage());}
         }  
       }      
-    }  }
+    }else if (command.equalsIgnoreCase("AcceptMSnRecalculation")){
+      updateLipidParameterSet(recalcDialog_.getResult(), currentMs2Position_);
+      recalcDialog_ = null;
+    }else if (command.equalsIgnoreCase("DeclineMSnRecalculation")){
+      recalcDialog_ = null;
+    }else if (command.equalsIgnoreCase("AcceptChangedRT")){
+      LipidParameterSet set = getAnalyteInTableAtPosition(currentMs2Position_);
+      set.setRt(editRtDialog_.getRt());
+      storeResultsToExcel();
+      editRtDialog_ = null;
+    }else if (command.equalsIgnoreCase("DeclineChangedRT")){
+      editRtDialog_ = null;
+    }    
+  }
+  
+  /**
+   * updates and saves a LipidParameterSet object at a certain position in the displayed table
+   * @param newOne the new LipidParameterSet object
+   * @param position the position in the table where the object shall be updated
+   */
+  private void updateLipidParameterSet(LipidParameterSet newOne, int position){
+    int originalPosition = resultPositionToOriginalLoopkup_.get(currentMs2Position_);
+    result_.getIdentifications().get(currentSelectedSheet_).remove(originalPosition);
+    result_.getIdentifications().get(currentSelectedSheet_).add(originalPosition,newOne);
+    storeResultsToExcel();
+  }
+  
+  /**
+   * stores the current results back to the Excel file
+   */
+  private void storeResultsToExcel(){
+    try {
+      QuantificationThread.writeResultsToExcel(selectedResultFile.getText(), result_);
+      this.readResultFile(selectedResultFile.getText(),true);
+      this.updateResultListSelectionTable();
+      this.displayTable.changeSelection(this.currentSelected_, 1, false, false);
+      listSelectionChanged(this.currentSelected_);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }    
+  }
   
   private void selectCorrespondingSpectrum(boolean next){
     RuleDefinitionInterface rdi = null;
@@ -4173,7 +4221,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
               String rtInTableString = moleculeInTable.substring(moleculeName.length()+1);
               if (rtInTableString.indexOf("_")!=-1) rtInTableString = rtInTableString.substring(0,rtInTableString.indexOf("_"));
               try{
-                System.out.println(rt+";"+rtInTableString);
                 if (analysisModule_.isWithinRtGroupingBoundaries(Double.valueOf(rtInTableString), Double.valueOf(rt))){
                   found=true;
 //                  rtInTableName = rtInTableString;
@@ -6239,6 +6286,25 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     return pairs;
   }
 
+  public void recalculateMSn(int position)
+  {
+    LipidParameterSet data = new LipidParameterSet(getAnalyteInTableAtPosition(position));
+    currentMs2Position_ = position;
+    try {
+      String className = (String)selectedSheet_.getSelectedItem();
+      MSnAnalyzer analyzer = new MSnAnalyzer(null,className,data.getModificationName(),data,analyzer_);
+      recalcDialog_ = new RecalculateMSnDialog(className,analyzer,this);
+    } catch (RulesException | IOException | SpectrummillParserException | CgException e) {
+      e.printStackTrace();
+      new WarningMessage(new JFrame(), "ERROR", e.getMessage());
+    }
+  }
+
+  public void editRt(int position){
+    currentMs2Position_ = position;
+    String rt = getAnalyteInTableAtPosition(position).getRt();
+    editRtDialog_ = new EditRtDialog(rt,this);
+  }
   
 }
   
