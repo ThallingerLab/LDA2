@@ -314,8 +314,8 @@ public class MSnAnalyzer
         probe.LowerValley = range.getStart();
         probe.UpperValley = range.getStop();
         probe.Mz = set_.Mz[0];
-        probe.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance();
-        probe.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance();
+        probe.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance(set_.Mz[0]);
+        probe.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance(set_.Mz[0]);
         probe.isotopeNumber = 0;
         probes.add(probe);
         set_.setProbes(probes);

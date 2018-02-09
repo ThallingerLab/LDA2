@@ -192,13 +192,13 @@ public class LipidomicsJTable extends JTable implements ActionListener
       LipidParameterSet params = parentListener_.getAnalyteInTableAtPosition(positionToAddNewAnalyte);
       String displayString = params.getNameString();
       if (params.getModificationName()!=null&&params.getModificationName().length()>0)displayString+="_"+params.getModificationName();
-      new AddAnalyteDialog(new JFrame(),"Enter new analyte", "Add a new analyte before "+displayString,params.getNameString(),params.getAnalyteFormula(),params.getModificationName(),params.getModificationFormula(),positionToAddNewAnalyte,showRt_,parentListener_);
+      new AddAnalyteDialog(new JFrame(),"Enter new analyte", "Add a new analyte before "+displayString,params.getNameString(),params.Mz[0],params.getAnalyteFormula(),params.getModificationName(),params.getModificationFormula(),positionToAddNewAnalyte,showRt_,parentListener_);
     } else if (actionCommand.equalsIgnoreCase("Add analyte after")){
       int positionToAddNewAnalyte = getSelectionModel().getLeadSelectionIndex()+1;
       LipidParameterSet params = parentListener_.getAnalyteInTableAtPosition(positionToAddNewAnalyte-1);
       String displayString = params.getNameString();
       if (params.getModificationName()!=null&&params.getModificationName().length()>0)displayString+="_"+params.getModificationName();
-      new AddAnalyteDialog(new JFrame(),"Enter new analyte", "Add a new analyte after "+displayString,params.getNameString(),params.getAnalyteFormula(),params.getModificationName(),params.getModificationFormula(),positionToAddNewAnalyte,showRt_,parentListener_);
+      new AddAnalyteDialog(new JFrame(),"Enter new analyte", "Add a new analyte after "+displayString,params.getNameString(),params.Mz[0],params.getAnalyteFormula(),params.getModificationName(),params.getModificationFormula(),positionToAddNewAnalyte,showRt_,parentListener_);
     } else if (actionCommand.equalsIgnoreCase("Delete analyte")){
       int[] indices = getSelectedRows();
       String displayString = "\n";

@@ -161,24 +161,26 @@ public class LipidParameterSet extends CgParameterSet
   
   public String getRt()
   {
-    if (rt_!=null && rt_.length()>0) return rt_;
-    else{
-      // this else is for backward compatibility
-      String rt = null;
-      Vector<Vector<CgProbe>> isotopes = this.getIsotopicProbes();
-      if (isotopes.size()>0){
-        Vector<CgProbe> probes = isotopes.get(0);
-        rt = "0.0";
-        float highestArea = 0f;
-        for (CgProbe probe:probes){
-          if (probe.Area>highestArea){
-            highestArea = probe.Area;
-            rt = String.valueOf(probe.Peak/60f);
-          }
-        }
-      }
-      return rt;
-    }
+// this backward compatibility was removed in the course of the shotgun extension
+//    if (rt_!=null && rt_.length()>0) return rt_;
+//    else{
+//      // this else is for backward compatibility
+//      String rt = null;
+//      Vector<Vector<CgProbe>> isotopes = this.getIsotopicProbes();
+//      if (isotopes.size()>0){
+//        Vector<CgProbe> probes = isotopes.get(0);
+//        rt = "0.0";
+//        float highestArea = 0f;
+//        for (CgProbe probe:probes){
+//          if (probe.Area>highestArea){
+//            highestArea = probe.Area;
+//            rt = String.valueOf(probe.Peak/60f);
+//          }
+//        }
+//      }
+//      return rt;
+//    }
+    return rt_;
   }
   
 

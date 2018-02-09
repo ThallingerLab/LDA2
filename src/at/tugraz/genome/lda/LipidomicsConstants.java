@@ -42,6 +42,8 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 
+import at.tugraz.genome.lda.exception.SettingsException;
+import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.utils.ExcelUtils;
 import uk.ac.ebi.pride.jmztab.model.Contact;
 import uk.ac.ebi.pride.jmztab.model.Instrument;
@@ -214,6 +216,13 @@ public class LipidomicsConstants
   /** retention time in minutes that define a peak to be farer away, so that the ms2IsobarSCFarExclusionRatio can be used*/
   private float ms2IsobaricOtherRtDifference_;
   
+  /** true when the LDA shall run in shotgun mode*/
+  private boolean shotgun_;
+  /** the unit of the m/z values (available for shotgun only)*/
+  private String mzUnit_;
+  /** the way to acquire shotgun intensities (possible values are "mean", "median", "sum")*/
+  private int shotgunProcessing_;
+  
   private final static String LDA_VERSION = "LDA-version";
   private final static String RAW_FILE = "rawFile";
   private final static String BASE_PEAK_CUTOFF = "basePeakCutoff";
@@ -383,7 +392,33 @@ public class LipidomicsConstants
   private final static int EXCEL_KEY_COLUMN = 0;
   private final static String EXCEL_VALUE = "Value";
   private final static int EXCEL_VALUE_COLUMN = 1;
-
+  
+  /** the shotgun parameter - true/false is allowed*/
+  private final static String SHOTGUN = "shotgun";
+  /** the input unit (for shotgan data only) - allowed are ppm, Da, Dalton, Th, Thompson, m/z*/
+  private final static String MZUNIT = "mzUnit";
+  /** the shotgun processing type - allowed are mean, median, sum*/
+  private final static String SHOTGUN_PROCESSING = "shotgunProcessing";
+  
+  /** possible input parameter for MZUNIT*/ 
+  public final static String MZUNIT_PPM = "ppm";
+  /** possible input parameter for MZUNIT*/ 
+  public final static String MZUNIT_DA = "Da";
+  /** possible input parameter for MZUNIT*/
+  private final static String MZUNIT_DALTON = "Dalton";
+  /** possible input parameter for MZUNIT*/
+  private final static String MZUNIT_THOMPSON = "Thompson";
+  /** possible input parameter for MZUNIT*/
+  private final static String MZUNIT_TH = "Th";
+  /** possible input parameter for MZUNIT*/
+  private final static String MZUNIT_MZ = "m/z";
+  
+  /** possible input parameter for SHOTGUN_PROCESSING*/
+  private final static String SHOTGUN_PROCESSING_MEAN = "mean";
+  /** possible input parameter for SHOTGUN_PROCESSING*/
+  private final static String SHOTGUN_PROCESSING_MEDIAN = "median";
+  /** possible input parameter for SHOTGUN_PROCESSING*/
+  private final static String SHOTGUN_PROCESSING_SUM = "sum";
   
   public static LipidomicsConstants getInstance() {
     if (instance_ == null) {
@@ -416,7 +451,7 @@ public class LipidomicsConstants
     }    
   }
   
-  private void setVariables(Properties properties){
+  private void setVariables(Properties properties) throws SettingsException{
     
     String cutoff = properties.getProperty(BASE_PEAK_CUTOFF, BASE_PEAK_CUTOFF_DEFAULT);
     try{
@@ -588,6 +623,31 @@ public class LipidomicsConstants
     mzTabInstrumentSource_ = extractEBIParam(MZTAB_IONSOURCE,properties);
     mzTabInstrumentAnalyzer_ = extractEBIParam(MZTAB_MSANALYZER,properties);
     mzTabInstrumentDetector_ = extractEBIParam(MZTAB_DETECTOR,properties);
+    
+    String shotgunString = properties.getProperty(SHOTGUN,"false");
+    shotgun_ = false;
+    if (shotgunString!=null&&(shotgunString.equalsIgnoreCase("true")||shotgunString.equalsIgnoreCase("yes")))
+      shotgun_ = true;
+    String mzUnitString = properties.getProperty(MZUNIT,MZUNIT_PPM);
+    mzUnit_= MZUNIT_PPM;
+    if (!shotgun_ || mzUnitString.equalsIgnoreCase(MZUNIT_DA) || mzUnitString.equalsIgnoreCase(MZUNIT_DALTON) ||
+        mzUnitString.equalsIgnoreCase(MZUNIT_THOMPSON) || mzUnitString.equalsIgnoreCase(MZUNIT_TH) ||
+        mzUnitString.equalsIgnoreCase(MZUNIT_MZ))
+      mzUnit_ = MZUNIT_DA;
+    shotgunProcessing_ = LipidomicsAnalyzer.SHOTGUN_TYPE_MEAN;
+    if (shotgun_){
+      String processingString = properties.getProperty(SHOTGUN_PROCESSING);
+      if (processingString==null)
+        throw new SettingsException("When there is shotgun data, the \""+SHOTGUN_PROCESSING+"\" has to be set!");
+      else if (processingString.equalsIgnoreCase(SHOTGUN_PROCESSING_MEAN))
+        shotgunProcessing_ = LipidomicsAnalyzer.SHOTGUN_TYPE_MEAN;
+      else if (processingString.equalsIgnoreCase(SHOTGUN_PROCESSING_MEDIAN))
+        shotgunProcessing_ = LipidomicsAnalyzer.SHOTGUN_TYPE_MEDIAN;
+      else if (processingString.equalsIgnoreCase(SHOTGUN_PROCESSING_SUM))
+        shotgunProcessing_ = LipidomicsAnalyzer.SHOTGUN_TYPE_SUM;
+      else
+        throw new SettingsException("The shotgun processing type \""+processingString+"\" is unknown! Please use "+SHOTGUN_PROCESSING_MEAN+", "+SHOTGUN_PROCESSING_MEDIAN+", or "+SHOTGUN_PROCESSING_SUM+" instead!");
+    }
   }
   
   /**
@@ -602,10 +662,10 @@ public class LipidomicsConstants
   /**
    * @return the m/z tolerance for the first coarse chromatogram
    */
-  public static float getCoarseChromMzTolerance()
+  public static float getCoarseChromMzTolerance(float mz)
   {
     if (instance_ == null) LipidomicsConstants.getInstance();
-    return instance_.coarseChromMzTolerance_;
+    return getCorrectMzTolerance(instance_.coarseChromMzTolerance_,instance_.mzUnit_,mz);
   }
   
   public static double getMassShift()
@@ -1199,6 +1259,34 @@ public class LipidomicsConstants
   
   /**
    * 
+   * @return true when the settings are for a shotgun experiment
+   */
+  public static boolean isShotgun(){
+    if (instance_ == null) LipidomicsConstants.getInstance();
+    return instance_.shotgun_;
+  }
+  
+  /**
+   * 
+   * @return the unit type of the m/z value
+   */
+  public static String getMzUnit(){
+    if (instance_ == null) LipidomicsConstants.getInstance();
+    return instance_.mzUnit_;    
+  }
+  
+  /**
+   * 
+   * @return the shotgun processing type according to the definitions in LipidomicsAnalyzer
+   */
+  public static int getShogunProcessing(){
+    if (instance_ == null) LipidomicsConstants.getInstance();
+    return instance_.shotgunProcessing_;    
+  }
+  
+  
+  /**
+   * 
    * @return relative cutoff threshold for fatty acid chain detection - it is in relation to the most intense chain
    */
   public static double getChainCutoffValue(){
@@ -1441,25 +1529,14 @@ public class LipidomicsConstants
     rowCount = createPropertyRow(sheet,rowCount,COARSE_CHROM_MZ_TOL,String.valueOf(coarseChromMzTolerance_));
     if (COARSE_CHROM_MZ_TOL.length()>longestKey) longestKey = COARSE_CHROM_MZ_TOL.length();
     if (String.valueOf(coarseChromMzTolerance_).length()>longestValue) longestValue = String.valueOf(coarseChromMzTolerance_).length();
-    rowCount = createPropertyRow(sheet,rowCount,CHROM_SMOOTH_RANGE,String.valueOf(chromSmoothRange_));
-    if (CHROM_SMOOTH_RANGE.length()>longestKey) longestKey = CHROM_SMOOTH_RANGE.length();
-    if (String.valueOf(chromSmoothRange_).length()>longestValue) longestValue = String.valueOf(chromSmoothRange_).length();
-    rowCount = createPropertyRow(sheet,rowCount,CHROM_SMOOTH_REPEATS,String.valueOf(chromSmoothRepeats_));
-    if (CHROM_SMOOTH_REPEATS.length()>longestKey) longestKey = CHROM_SMOOTH_REPEATS.length();
-    if (String.valueOf(chromSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(chromSmoothRepeats_).length();
-    rowCount = createPropertyRow(sheet,rowCount,USE_3D,String.valueOf(use3D_));
-    if (USE_3D.length()>longestKey) longestKey = USE_3D.length();
-    if (String.valueOf(use3D_).length()>longestValue) longestValue = String.valueOf(use3D_).length();
     rowCount = createPropertyRow(sheet,rowCount,MS2,String.valueOf(ms2_));
     if (MS2.length()>longestKey) longestKey = MS2.length();
     if (String.valueOf(ms2_).length()>longestValue) longestValue = String.valueOf(ms2_).length();
-    if (relativeMS1BasePeakCutoff_!=null)
+    if (relativeMS1BasePeakCutoff_!=null){
       rowCount = createPropertyRow(sheet,rowCount,BASE_PEAK_CUTOFF,String.valueOf(relativeMS1BasePeakCutoff_));
-    if (BASE_PEAK_CUTOFF.length()>longestKey) longestKey = BASE_PEAK_CUTOFF.length();    
+      if (BASE_PEAK_CUTOFF.length()>longestKey) longestKey = BASE_PEAK_CUTOFF.length();
+    }
     if (String.valueOf(basePeakDefaultCutoff_).length()>longestValue) longestValue = String.valueOf(basePeakDefaultCutoff_).length();
-    rowCount = createPropertyRow(sheet,rowCount,ISOTOPE_CORRECTION,String.valueOf(isotopeCorrection_));
-    if (ISOTOPE_CORRECTION.length()>longestKey) longestKey = ISOTOPE_CORRECTION.length();    
-    if (String.valueOf(isotopeCorrection_).length()>longestValue) longestValue = String.valueOf(isotopeCorrection_).length();
     rowCount = createPropertyRow(sheet,rowCount,MASS_SHIFT,String.valueOf(massShift_));
     if (MASS_SHIFT.length()>longestKey) longestKey = MASS_SHIFT.length();
     if (String.valueOf(massShift_).length()>longestValue) longestValue = String.valueOf(massShift_).length();
@@ -1505,167 +1582,199 @@ public class LipidomicsConstants
     rowCount = createPropertyRow(sheet,rowCount,CHROM_RESOLUTION_LOWEST,String.valueOf(chromLowestResolution_));
     if (CHROM_RESOLUTION_LOWEST.length()>longestKey) longestKey = CHROM_RESOLUTION_LOWEST.length();
     if (String.valueOf(chromLowestResolution_).length()>longestValue) longestValue = String.valueOf(chromLowestResolution_).length();
-    rowCount = createPropertyRow(sheet,rowCount,REMOVE_FROM_OTHER_ISOTOPE,String.valueOf(removeFromOtherIsotopes_));
-    if (REMOVE_FROM_OTHER_ISOTOPE.length()>longestKey) longestKey = REMOVE_FROM_OTHER_ISOTOPE.length();
-    if (String.valueOf(removeFromOtherIsotopes_).length()>longestValue) longestValue = String.valueOf(removeFromOtherIsotopes_).length();
-    rowCount = createPropertyRow(sheet,rowCount,RESPECT_ISO_DISTRI,String.valueOf(respectIsotopicDistribution_));
-    if (RESPECT_ISO_DISTRI.length()>longestKey) longestKey = RESPECT_ISO_DISTRI.length();
-    if (String.valueOf(respectIsotopicDistribution_).length()>longestValue) longestValue = String.valueOf(respectIsotopicDistribution_).length();
-    rowCount = createPropertyRow(sheet,rowCount,NOISE_CUTOFF,String.valueOf(useNoiseCutoff_));
-    if (NOISE_CUTOFF.length()>longestKey) longestKey = NOISE_CUTOFF.length();
-    if (String.valueOf(useNoiseCutoff_).length()>longestValue) longestValue = String.valueOf(useNoiseCutoff_).length();
-    rowCount = createPropertyRow(sheet,rowCount,NOISE_DEVIATION,String.valueOf(noiseCutoffDeviationValue_));
-    if (NOISE_DEVIATION.length()>longestKey) longestKey = NOISE_DEVIATION.length();
-    if (String.valueOf(noiseCutoffDeviationValue_).length()>longestValue) longestValue = String.valueOf(noiseCutoffDeviationValue_).length();
-    if (minimumRelativeIntensity_!=null) rowCount = createPropertyRow(sheet,rowCount,NOISE_MIN_INTENSITY,minimumRelativeIntensity_.toString());
-    rowCount = createPropertyRow(sheet,rowCount,SCAN_STEP,String.valueOf(scanStep_));
-    if (SCAN_STEP.length()>longestKey) longestKey = SCAN_STEP.length();
-    if (String.valueOf(scanStep_).length()>longestValue) longestValue = String.valueOf(scanStep_).length();  
-    rowCount = createPropertyRow(sheet,rowCount,PROFILE_MZ_RANGE,String.valueOf(profileMzRange_*2));
-    if (PROFILE_MZ_RANGE.length()>longestKey) longestKey = PROFILE_MZ_RANGE.length();
-    if (String.valueOf(profileMzRange_*2).length()>longestValue) longestValue = String.valueOf(profileMzRange_*2).length();
-    rowCount = createPropertyRow(sheet,rowCount,PROFILE_TIME_TOL,String.valueOf(profileTimeTolerance_));
-    if (PROFILE_TIME_TOL.length()>longestKey) longestKey = PROFILE_TIME_TOL.length();
-    if (String.valueOf(profileTimeTolerance_).length()>longestValue) longestValue = String.valueOf(profileTimeTolerance_).length();
-    rowCount = createPropertyRow(sheet,rowCount,PROFILE_INT_THRESHOLD,String.valueOf(profileIntThreshold_));
-    if (PROFILE_INT_THRESHOLD.length()>longestKey) longestKey = PROFILE_INT_THRESHOLD.length();
-    if (String.valueOf(profileIntThreshold_).length()>longestValue) longestValue = String.valueOf(profileIntThreshold_).length();   
-    rowCount = createPropertyRow(sheet,rowCount,PROFILE_BROADER_TIME_TOL,String.valueOf(broaderProfileTimeTolerance_));
-    if (PROFILE_BROADER_TIME_TOL.length()>longestKey) longestKey = PROFILE_BROADER_TIME_TOL.length();
-    if (String.valueOf(broaderProfileTimeTolerance_).length()>longestValue) longestValue = String.valueOf(broaderProfileTimeTolerance_).length();   
-    rowCount = createPropertyRow(sheet,rowCount,PROFILE_SMOOTH_RANGE,String.valueOf(profileSmoothRange_));
-    if (PROFILE_SMOOTH_RANGE.length()>longestKey) longestKey = PROFILE_SMOOTH_RANGE.length();
-    if (String.valueOf(profileSmoothRange_).length()>longestValue) longestValue = String.valueOf(profileSmoothRange_).length();
-    rowCount = createPropertyRow(sheet,rowCount,PROFILE_SMOOTH_REPEATS,String.valueOf(profileSmoothRepeats_));
-    if (PROFILE_SMOOTH_REPEATS.length()>longestKey) longestKey = PROFILE_SMOOTH_REPEATS.length();
-    if (String.valueOf(profileSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(profileSmoothRepeats_).length();
-    rowCount = createPropertyRow(sheet,rowCount,PROFILE_MEAN_SMOOTH_REPEATS,String.valueOf(profileMeanSmoothRepeats_));
-    if (PROFILE_MEAN_SMOOTH_REPEATS.length()>longestKey) longestKey = PROFILE_MEAN_SMOOTH_REPEATS.length();
-    if (String.valueOf(profileMeanSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(profileMeanSmoothRepeats_).length();
-    rowCount = createPropertyRow(sheet,rowCount,PROFILE_MZ_MIN_RANGE,String.valueOf(profileMzMinRange_));
-    if (PROFILE_MZ_MIN_RANGE.length()>longestKey) longestKey = PROFILE_MZ_MIN_RANGE.length();
-    if (String.valueOf(profileMzMinRange_).length()>longestValue) longestValue = String.valueOf(profileMzMinRange_).length();
-    rowCount = createPropertyRow(sheet,rowCount,PROFILE_STEEPNESS_CHANGE_1,String.valueOf(profileSteepnessChange1_));
-    if (PROFILE_STEEPNESS_CHANGE_1.length()>longestKey) longestKey = PROFILE_STEEPNESS_CHANGE_1.length();
-    if (String.valueOf(profileSteepnessChange1_).length()>longestValue) longestValue = String.valueOf(profileSteepnessChange1_).length();
-    rowCount = createPropertyRow(sheet,rowCount,PROFILE_STEEPNESS_CHANGE_2,String.valueOf(profileSteepnessChange2_));
-    if (PROFILE_STEEPNESS_CHANGE_2.length()>longestKey) longestKey = PROFILE_STEEPNESS_CHANGE_2.length();
-    if (String.valueOf(profileSteepnessChange2_).length()>longestValue) longestValue = String.valueOf(profileSteepnessChange2_).length();   
-    rowCount = createPropertyRow(sheet,rowCount,PROFILE_INT_CUTOFF_1,String.valueOf(profileIntensityCutoff1_));
-    if (PROFILE_INT_CUTOFF_1.length()>longestKey) longestKey = PROFILE_INT_CUTOFF_1.length();
-    if (String.valueOf(profileIntensityCutoff1_).length()>longestValue) longestValue = String.valueOf(profileIntensityCutoff1_).length();   
-    rowCount = createPropertyRow(sheet,rowCount,PROFILE_INT_CUTOFF_2,String.valueOf(profileIntensityCutoff2_));
-    if (PROFILE_INT_CUTOFF_2.length()>longestKey) longestKey = PROFILE_INT_CUTOFF_2.length();
-    if (String.valueOf(profileIntensityCutoff2_).length()>longestValue) longestValue = String.valueOf(profileIntensityCutoff2_).length();      
-    rowCount = createPropertyRow(sheet,rowCount,PROFILE_GENERAL_INT_CUTOFF,String.valueOf(profileGeneralIntCutoff_));
-    if (PROFILE_GENERAL_INT_CUTOFF.length()>longestKey) longestKey = PROFILE_GENERAL_INT_CUTOFF.length();
-    if (String.valueOf(profileGeneralIntCutoff_).length()>longestValue) longestValue = String.valueOf(profileGeneralIntCutoff_).length();      
-    rowCount = createPropertyRow(sheet,rowCount,PROFILE_PEAK_ACCEPTANCE_RANGE,String.valueOf(profilePeakAcceptanceRange_));
-    if (PROFILE_PEAK_ACCEPTANCE_RANGE.length()>longestKey) longestKey = PROFILE_PEAK_ACCEPTANCE_RANGE.length();
-    if (String.valueOf(profilePeakAcceptanceRange_).length()>longestValue) longestValue = String.valueOf(profilePeakAcceptanceRange_).length();
-    rowCount = createPropertyRow(sheet,rowCount,PROFILE_SMOOTHING_CORRECTION,String.valueOf(profileSmoothingCorrection_));
-    if (PROFILE_SMOOTHING_CORRECTION.length()>longestKey) longestKey = PROFILE_SMOOTHING_CORRECTION.length();
-    if (String.valueOf(profileSmoothingCorrection_).length()>longestValue) longestValue = String.valueOf(profileSmoothingCorrection_).length();
-    rowCount = createPropertyRow(sheet,rowCount,PROFILE_MZ_MAX_RANGE,String.valueOf(profileMaxRange_));
-    if (PROFILE_MZ_MAX_RANGE.length()>longestKey) longestKey = PROFILE_MZ_MAX_RANGE.length();
-    if (String.valueOf(profileMaxRange_).length()>longestValue) longestValue = String.valueOf(profileMaxRange_).length();  
-    rowCount = createPropertyRow(sheet,rowCount,SMALL_CHROM_MZ_RANGE,String.valueOf(smallChromMzRange_));
-    if (SMALL_CHROM_MZ_RANGE.length()>longestKey) longestKey = SMALL_CHROM_MZ_RANGE.length();
-    if (String.valueOf(smallChromMzRange_).length()>longestValue) longestValue = String.valueOf(smallChromMzRange_).length();  
-    rowCount = createPropertyRow(sheet,rowCount,SMALL_CHROM_SMOOTH_REPEATS,String.valueOf(smallChromSmoothRepeats_));
-    if (SMALL_CHROM_SMOOTH_REPEATS.length()>longestKey) longestKey = SMALL_CHROM_SMOOTH_REPEATS.length();
-    if (String.valueOf(smallChromSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(smallChromSmoothRepeats_).length();      
-    rowCount = createPropertyRow(sheet,rowCount,SMALL_CHROM_MEAN_SMOOTH_REPEATS,String.valueOf(smallChromMeanSmoothRepeats_));
-    if (SMALL_CHROM_MEAN_SMOOTH_REPEATS.length()>longestKey) longestKey = SMALL_CHROM_MEAN_SMOOTH_REPEATS.length();
-    if (String.valueOf(smallChromMeanSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(smallChromMeanSmoothRepeats_).length();
-    rowCount = createPropertyRow(sheet,rowCount,SMALL_CHROM_SMOOTH_RANGE,String.valueOf(smallChromSmoothRange_));
-    if (SMALL_CHROM_SMOOTH_RANGE.length()>longestKey) longestKey = SMALL_CHROM_SMOOTH_RANGE.length();
-    if (String.valueOf(smallChromSmoothRange_).length()>longestValue) longestValue = String.valueOf(smallChromSmoothRange_).length();
-    rowCount = createPropertyRow(sheet,rowCount,SMALL_CHROM_INT_CUTOFF,String.valueOf(smallChromIntensityCutoff_));
-    if (SMALL_CHROM_INT_CUTOFF.length()>longestKey) longestKey = SMALL_CHROM_INT_CUTOFF.length();
-    if (String.valueOf(smallChromIntensityCutoff_).length()>longestValue) longestValue = String.valueOf(smallChromIntensityCutoff_).length();
-    rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_SMOOTH_REPEATS,String.valueOf(broadChromSmoothRepeats_));
-    if (BROAD_CHROM_SMOOTH_REPEATS.length()>longestKey) longestKey = BROAD_CHROM_SMOOTH_REPEATS.length();
-    if (String.valueOf(broadChromSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(broadChromSmoothRepeats_).length();
-    rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_MEAN_SMOOTH_REPEATS,String.valueOf(broadChromMeanSmoothRepeats_));
-    if (BROAD_CHROM_MEAN_SMOOTH_REPEATS.length()>longestKey) longestKey = BROAD_CHROM_MEAN_SMOOTH_REPEATS.length();
-    if (String.valueOf(broadChromMeanSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(broadChromMeanSmoothRepeats_).length();
-    rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_SMOOTH_RANGE,String.valueOf(broadChromSmoothRange_));
-    if (BROAD_CHROM_SMOOTH_RANGE.length()>longestKey) longestKey = BROAD_CHROM_SMOOTH_RANGE.length();
-    if (String.valueOf(broadChromSmoothRange_).length()>longestValue) longestValue = String.valueOf(broadChromSmoothRange_).length();
-    rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_INT_CUTOFF,String.valueOf(broadChromIntensityCutoff_));
-    if (BROAD_CHROM_INT_CUTOFF.length()>longestKey) longestKey = BROAD_CHROM_INT_CUTOFF.length();
-    if (String.valueOf(broadChromIntensityCutoff_).length()>longestValue) longestValue = String.valueOf(broadChromIntensityCutoff_).length();
-    rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_STEEPNESS_CHANGE_NO_SMALL,String.valueOf(broadChromSteepnessChangeNoSmall_));
-    if (BROAD_CHROM_STEEPNESS_CHANGE_NO_SMALL.length()>longestKey) longestKey = BROAD_CHROM_STEEPNESS_CHANGE_NO_SMALL.length();
-    if (String.valueOf(broadChromSteepnessChangeNoSmall_).length()>longestValue) longestValue = String.valueOf(broadChromSteepnessChangeNoSmall_).length();  
-    rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_INT_CUTOFF_NO_SMALL,String.valueOf(broadChromIntensityCutoffNoSmall_));
-    if (BROAD_CHROM_INT_CUTOFF_NO_SMALL.length()>longestKey) longestKey = BROAD_CHROM_INT_CUTOFF_NO_SMALL.length();
-    if (String.valueOf(broadChromIntensityCutoffNoSmall_).length()>longestValue) longestValue = String.valueOf(broadChromIntensityCutoffNoSmall_).length();  
-    rowCount = createPropertyRow(sheet,rowCount,FINAL_PROBE_TIME_COMP_TOL,String.valueOf(finalProbeTimeCompTolerance_));
-    if (FINAL_PROBE_TIME_COMP_TOL.length()>longestKey) longestKey = FINAL_PROBE_TIME_COMP_TOL.length();
-    if (String.valueOf(finalProbeTimeCompTolerance_).length()>longestValue) longestValue = String.valueOf(finalProbeTimeCompTolerance_).length();   
-    rowCount = createPropertyRow(sheet,rowCount,FINAL_PROBE_MZ_COMP_TOL,String.valueOf(finalProbeMzCompTolerance_));
-    if (FINAL_PROBE_MZ_COMP_TOL.length()>longestKey) longestKey = FINAL_PROBE_MZ_COMP_TOL.length();
-    if (String.valueOf(finalProbeMzCompTolerance_).length()>longestValue) longestValue = String.valueOf(finalProbeMzCompTolerance_).length();    
-    rowCount = createPropertyRow(sheet,rowCount,OVERLAP_DIST_DEV_FACTOR,String.valueOf(overlapDistanceDeviationFactor_));
-    if (OVERLAP_DIST_DEV_FACTOR.length()>longestKey) longestKey = OVERLAP_DIST_DEV_FACTOR.length();
-    if (String.valueOf(overlapDistanceDeviationFactor_).length()>longestValue) longestValue = String.valueOf(overlapDistanceDeviationFactor_).length();
-    rowCount = createPropertyRow(sheet,rowCount,OVERLAP_INT_THRESHOLD,String.valueOf(overlapPossibleIntensityThreshold_));
-    if (OVERLAP_INT_THRESHOLD.length()>longestKey) longestKey = OVERLAP_INT_THRESHOLD.length();
-    if (String.valueOf(overlapPossibleIntensityThreshold_).length()>longestValue) longestValue = String.valueOf(overlapPossibleIntensityThreshold_).length();
-    rowCount = createPropertyRow(sheet,rowCount,OVERLAP_INT_SURE_THRESHOLD,String.valueOf(overlapSureIntensityThreshold_));
-    if (OVERLAP_INT_SURE_THRESHOLD.length()>longestKey) longestKey = OVERLAP_INT_SURE_THRESHOLD.length();
-    if (String.valueOf(overlapSureIntensityThreshold_).length()>longestValue) longestValue = String.valueOf(overlapSureIntensityThreshold_).length();
-    rowCount = createPropertyRow(sheet,rowCount,OVERLAP_PEAK_DIST_DIVISOR,String.valueOf(overlapPeakDistanceDivisor_));
-    if (OVERLAP_PEAK_DIST_DIVISOR.length()>longestKey) longestKey = OVERLAP_PEAK_DIST_DIVISOR.length();
-    if (String.valueOf(overlapPeakDistanceDivisor_).length()>longestValue) longestValue = String.valueOf(overlapPeakDistanceDivisor_).length();
-    rowCount = createPropertyRow(sheet,rowCount,OVERLAP_FULL_DIST_DIVISOR,String.valueOf(overlapFullDistanceDivisor_));
-    if (OVERLAP_FULL_DIST_DIVISOR.length()>longestKey) longestKey = OVERLAP_FULL_DIST_DIVISOR.length();
-    if (String.valueOf(overlapFullDistanceDivisor_).length()>longestValue) longestValue = String.valueOf(overlapFullDistanceDivisor_).length();   
-    rowCount = createPropertyRow(sheet,rowCount,PEAK_DISCARD_AREA_FACTOR,String.valueOf(peakDiscardingAreaFactor_));
-    if (PEAK_DISCARD_AREA_FACTOR.length()>longestKey) longestKey = PEAK_DISCARD_AREA_FACTOR.length();
-    if (String.valueOf(peakDiscardingAreaFactor_).length()>longestValue) longestValue = String.valueOf(peakDiscardingAreaFactor_).length();
-    rowCount = createPropertyRow(sheet,rowCount,ISO_IN_BETWEEN_TIME,String.valueOf(isotopeInBetweenTime_));
-    if (ISO_IN_BETWEEN_TIME.length()>longestKey) longestKey = ISO_IN_BETWEEN_TIME.length();
-    if (String.valueOf(isotopeInBetweenTime_).length()>longestValue) longestValue = String.valueOf(isotopeInBetweenTime_).length();
-    rowCount = createPropertyRow(sheet,rowCount,ISO_IN_BETWEEN_AREA_FACTOR,String.valueOf(isoInBetweenAreaFactor_));
-    if (ISO_IN_BETWEEN_AREA_FACTOR.length()>longestKey) longestKey = ISO_IN_BETWEEN_AREA_FACTOR.length();
-    if (String.valueOf(isoInBetweenAreaFactor_).length()>longestValue) longestValue = String.valueOf(isoInBetweenAreaFactor_).length();
-    rowCount = createPropertyRow(sheet,rowCount,ISO_NEAR_NORMAL_PROBE_TIME,String.valueOf(isoNearNormalProbeTime_));
-    if (ISO_NEAR_NORMAL_PROBE_TIME.length()>longestKey) longestKey = ISO_NEAR_NORMAL_PROBE_TIME.length();
-    if (String.valueOf(isoNearNormalProbeTime_).length()>longestValue) longestValue = String.valueOf(isoNearNormalProbeTime_).length();
-    rowCount = createPropertyRow(sheet,rowCount,RELATIVE_AREA_CUTOFF,String.valueOf(relativeAreaCutoff_));
-    if (RELATIVE_AREA_CUTOFF.length()>longestKey) longestKey = RELATIVE_AREA_CUTOFF.length();
-    if (String.valueOf(relativeAreaCutoff_).length()>longestValue) longestValue = String.valueOf(relativeAreaCutoff_).length();   
-    rowCount = createPropertyRow(sheet,rowCount,RELATIVE_AREA_FAR_CUTOFF,String.valueOf(relativeFarAreaCutoff_));
-    if (RELATIVE_AREA_FAR_CUTOFF.length()>longestKey) longestKey = RELATIVE_AREA_FAR_CUTOFF.length();
-    if (String.valueOf(relativeFarAreaCutoff_).length()>longestValue) longestValue = String.valueOf(relativeFarAreaCutoff_).length();  
-    rowCount = createPropertyRow(sheet,rowCount,RELATIVE_AREA_FAR_TIME_SPACE,String.valueOf(relativeFarAreaTimeSpace_));
-    if (RELATIVE_AREA_FAR_TIME_SPACE.length()>longestKey) longestKey = RELATIVE_AREA_FAR_TIME_SPACE.length();
-    if (String.valueOf(relativeFarAreaTimeSpace_).length()>longestValue) longestValue = String.valueOf(relativeFarAreaTimeSpace_).length();  
-    rowCount = createPropertyRow(sheet,rowCount,RELATIVE_ISO_INBETWEEN_CUTOFF,String.valueOf(relativeIsoInBetweenCutoff_));
-    if (RELATIVE_ISO_INBETWEEN_CUTOFF.length()>longestKey) longestKey = RELATIVE_ISO_INBETWEEN_CUTOFF.length();
-    if (String.valueOf(relativeIsoInBetweenCutoff_).length()>longestValue) longestValue = String.valueOf(relativeIsoInBetweenCutoff_).length();
-    rowCount = createPropertyRow(sheet,rowCount,ISO_IN_BETWEEN_TIME_MAX,String.valueOf(isoInBetweenMaxTimeDistance_));
-    if (ISO_IN_BETWEEN_TIME_MAX.length()>longestKey) longestKey = ISO_IN_BETWEEN_TIME_MAX.length();
-    if (String.valueOf(isoInBetweenMaxTimeDistance_).length()>longestValue) longestValue = String.valueOf(isoInBetweenMaxTimeDistance_).length();
-    rowCount = createPropertyRow(sheet,rowCount,TWIN_PEAK_MZ_TOL,String.valueOf(twinPeakMzTolerance_));
-    if (TWIN_PEAK_MZ_TOL.length()>longestKey) longestKey = TWIN_PEAK_MZ_TOL.length();
-    if (String.valueOf(twinPeakMzTolerance_).length()>longestValue) longestValue = String.valueOf(twinPeakMzTolerance_).length(); 
-    rowCount = createPropertyRow(sheet,rowCount,PEAK_CLOSE_TIME_TOL,String.valueOf(closePeakTimeTolerance_));
-    if (PEAK_CLOSE_TIME_TOL.length()>longestKey) longestKey = PEAK_CLOSE_TIME_TOL.length();
-    if (String.valueOf(closePeakTimeTolerance_).length()>longestValue) longestValue = String.valueOf(closePeakTimeTolerance_).length(); 
-    rowCount = createPropertyRow(sheet,rowCount,TWIN_INBETWEEN_CUTOFF,String.valueOf(twinInBetweenCutoff_));
-    if (TWIN_INBETWEEN_CUTOFF.length()>longestKey) longestKey = TWIN_INBETWEEN_CUTOFF.length();
-    if (String.valueOf(twinInBetweenCutoff_).length()>longestValue) longestValue = String.valueOf(twinInBetweenCutoff_).length();
-    rowCount = createPropertyRow(sheet,rowCount,UNION_INBETWEEN_CUTOFF,String.valueOf(unionInBetweenCutoff_));
-    if (UNION_INBETWEEN_CUTOFF.length()>longestKey) longestKey = UNION_INBETWEEN_CUTOFF.length();
-    if (String.valueOf(unionInBetweenCutoff_).length()>longestValue) longestValue = String.valueOf(unionInBetweenCutoff_).length();
-    rowCount = createPropertyRow(sheet,rowCount,SPARSE_DATA,String.valueOf(sparseData_));
-    if (SPARSE_DATA.length()>longestKey) longestKey = SPARSE_DATA.length();
-    if (String.valueOf(sparseData_).length()>longestValue) longestValue = String.valueOf(sparseData_).length();
 
+      
+    if (shotgun_){
+      rowCount = createPropertyRow(sheet,rowCount,SHOTGUN,String.valueOf(shotgun_));
+      if (SHOTGUN.length()>longestKey) longestKey = SHOTGUN.length();
+      if (String.valueOf(shotgun_).length()>longestValue) longestValue = String.valueOf(shotgun_).length();
+      rowCount = createPropertyRow(sheet,rowCount,MZUNIT,mzUnit_);
+      if (MZUNIT.length()>longestKey) longestKey = MZUNIT.length();
+      if (mzUnit_.length()>longestValue) longestValue = mzUnit_.length();
+      String shotgunProcessingString = null;
+      if (shotgunProcessing_ == LipidomicsAnalyzer.SHOTGUN_TYPE_MEAN)
+        shotgunProcessingString = SHOTGUN_PROCESSING_MEAN;
+      else if (shotgunProcessing_ == LipidomicsAnalyzer.SHOTGUN_TYPE_MEDIAN)
+        shotgunProcessingString = SHOTGUN_PROCESSING_MEDIAN;
+      else if (shotgunProcessing_ == LipidomicsAnalyzer.SHOTGUN_TYPE_SUM)
+        shotgunProcessingString = SHOTGUN_PROCESSING_SUM;
+      rowCount = createPropertyRow(sheet,rowCount,SHOTGUN_PROCESSING,shotgunProcessingString);
+      if (SHOTGUN_PROCESSING.length()>longestKey) longestKey = SHOTGUN_PROCESSING.length();
+      if (shotgunProcessingString.length()>longestValue) longestValue = shotgunProcessingString.length();
+    }else{
+      rowCount = createPropertyRow(sheet,rowCount,CHROM_SMOOTH_RANGE,String.valueOf(chromSmoothRange_));
+      if (CHROM_SMOOTH_RANGE.length()>longestKey) longestKey = CHROM_SMOOTH_RANGE.length();
+      if (String.valueOf(chromSmoothRange_).length()>longestValue) longestValue = String.valueOf(chromSmoothRange_).length();
+      rowCount = createPropertyRow(sheet,rowCount,CHROM_SMOOTH_REPEATS,String.valueOf(chromSmoothRepeats_));
+      if (CHROM_SMOOTH_REPEATS.length()>longestKey) longestKey = CHROM_SMOOTH_REPEATS.length();
+      if (String.valueOf(chromSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(chromSmoothRepeats_).length();
+      rowCount = createPropertyRow(sheet,rowCount,USE_3D,String.valueOf(use3D_));
+      if (USE_3D.length()>longestKey) longestKey = USE_3D.length();
+      if (String.valueOf(use3D_).length()>longestValue) longestValue = String.valueOf(use3D_).length();
+      rowCount = createPropertyRow(sheet,rowCount,ISOTOPE_CORRECTION,String.valueOf(isotopeCorrection_));
+      if (ISOTOPE_CORRECTION.length()>longestKey) longestKey = ISOTOPE_CORRECTION.length();    
+      if (String.valueOf(isotopeCorrection_).length()>longestValue) longestValue = String.valueOf(isotopeCorrection_).length();
+      rowCount = createPropertyRow(sheet,rowCount,REMOVE_FROM_OTHER_ISOTOPE,String.valueOf(removeFromOtherIsotopes_));
+      if (REMOVE_FROM_OTHER_ISOTOPE.length()>longestKey) longestKey = REMOVE_FROM_OTHER_ISOTOPE.length();
+      if (String.valueOf(removeFromOtherIsotopes_).length()>longestValue) longestValue = String.valueOf(removeFromOtherIsotopes_).length();
+      rowCount = createPropertyRow(sheet,rowCount,RESPECT_ISO_DISTRI,String.valueOf(respectIsotopicDistribution_));
+      if (RESPECT_ISO_DISTRI.length()>longestKey) longestKey = RESPECT_ISO_DISTRI.length();
+      if (String.valueOf(respectIsotopicDistribution_).length()>longestValue) longestValue = String.valueOf(respectIsotopicDistribution_).length();
+      rowCount = createPropertyRow(sheet,rowCount,NOISE_CUTOFF,String.valueOf(useNoiseCutoff_));
+      if (NOISE_CUTOFF.length()>longestKey) longestKey = NOISE_CUTOFF.length();
+      if (String.valueOf(useNoiseCutoff_).length()>longestValue) longestValue = String.valueOf(useNoiseCutoff_).length();
+      rowCount = createPropertyRow(sheet,rowCount,NOISE_DEVIATION,String.valueOf(noiseCutoffDeviationValue_));
+      if (NOISE_DEVIATION.length()>longestKey) longestKey = NOISE_DEVIATION.length();
+      if (String.valueOf(noiseCutoffDeviationValue_).length()>longestValue) longestValue = String.valueOf(noiseCutoffDeviationValue_).length();
+      if (minimumRelativeIntensity_!=null) rowCount = createPropertyRow(sheet,rowCount,NOISE_MIN_INTENSITY,minimumRelativeIntensity_.toString());
+      rowCount = createPropertyRow(sheet,rowCount,SCAN_STEP,String.valueOf(scanStep_));
+      if (SCAN_STEP.length()>longestKey) longestKey = SCAN_STEP.length();
+      if (String.valueOf(scanStep_).length()>longestValue) longestValue = String.valueOf(scanStep_).length();  
+      rowCount = createPropertyRow(sheet,rowCount,PROFILE_MZ_RANGE,String.valueOf(profileMzRange_*2));
+      if (PROFILE_MZ_RANGE.length()>longestKey) longestKey = PROFILE_MZ_RANGE.length();
+      if (String.valueOf(profileMzRange_*2).length()>longestValue) longestValue = String.valueOf(profileMzRange_*2).length();
+      rowCount = createPropertyRow(sheet,rowCount,PROFILE_TIME_TOL,String.valueOf(profileTimeTolerance_));
+      if (PROFILE_TIME_TOL.length()>longestKey) longestKey = PROFILE_TIME_TOL.length();
+      if (String.valueOf(profileTimeTolerance_).length()>longestValue) longestValue = String.valueOf(profileTimeTolerance_).length();
+      rowCount = createPropertyRow(sheet,rowCount,PROFILE_INT_THRESHOLD,String.valueOf(profileIntThreshold_));
+      if (PROFILE_INT_THRESHOLD.length()>longestKey) longestKey = PROFILE_INT_THRESHOLD.length();
+      if (String.valueOf(profileIntThreshold_).length()>longestValue) longestValue = String.valueOf(profileIntThreshold_).length();   
+      rowCount = createPropertyRow(sheet,rowCount,PROFILE_BROADER_TIME_TOL,String.valueOf(broaderProfileTimeTolerance_));
+      if (PROFILE_BROADER_TIME_TOL.length()>longestKey) longestKey = PROFILE_BROADER_TIME_TOL.length();
+      if (String.valueOf(broaderProfileTimeTolerance_).length()>longestValue) longestValue = String.valueOf(broaderProfileTimeTolerance_).length();   
+      rowCount = createPropertyRow(sheet,rowCount,PROFILE_SMOOTH_RANGE,String.valueOf(profileSmoothRange_));
+      if (PROFILE_SMOOTH_RANGE.length()>longestKey) longestKey = PROFILE_SMOOTH_RANGE.length();
+      if (String.valueOf(profileSmoothRange_).length()>longestValue) longestValue = String.valueOf(profileSmoothRange_).length();
+      rowCount = createPropertyRow(sheet,rowCount,PROFILE_SMOOTH_REPEATS,String.valueOf(profileSmoothRepeats_));
+      if (PROFILE_SMOOTH_REPEATS.length()>longestKey) longestKey = PROFILE_SMOOTH_REPEATS.length();
+      if (String.valueOf(profileSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(profileSmoothRepeats_).length();
+      rowCount = createPropertyRow(sheet,rowCount,PROFILE_MEAN_SMOOTH_REPEATS,String.valueOf(profileMeanSmoothRepeats_));
+      if (PROFILE_MEAN_SMOOTH_REPEATS.length()>longestKey) longestKey = PROFILE_MEAN_SMOOTH_REPEATS.length();
+      if (String.valueOf(profileMeanSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(profileMeanSmoothRepeats_).length();
+      rowCount = createPropertyRow(sheet,rowCount,PROFILE_MZ_MIN_RANGE,String.valueOf(profileMzMinRange_));
+      if (PROFILE_MZ_MIN_RANGE.length()>longestKey) longestKey = PROFILE_MZ_MIN_RANGE.length();
+      if (String.valueOf(profileMzMinRange_).length()>longestValue) longestValue = String.valueOf(profileMzMinRange_).length();
+      rowCount = createPropertyRow(sheet,rowCount,PROFILE_STEEPNESS_CHANGE_1,String.valueOf(profileSteepnessChange1_));
+      if (PROFILE_STEEPNESS_CHANGE_1.length()>longestKey) longestKey = PROFILE_STEEPNESS_CHANGE_1.length();
+      if (String.valueOf(profileSteepnessChange1_).length()>longestValue) longestValue = String.valueOf(profileSteepnessChange1_).length();
+      rowCount = createPropertyRow(sheet,rowCount,PROFILE_STEEPNESS_CHANGE_2,String.valueOf(profileSteepnessChange2_));
+      if (PROFILE_STEEPNESS_CHANGE_2.length()>longestKey) longestKey = PROFILE_STEEPNESS_CHANGE_2.length();
+      if (String.valueOf(profileSteepnessChange2_).length()>longestValue) longestValue = String.valueOf(profileSteepnessChange2_).length();   
+      rowCount = createPropertyRow(sheet,rowCount,PROFILE_INT_CUTOFF_1,String.valueOf(profileIntensityCutoff1_));
+      if (PROFILE_INT_CUTOFF_1.length()>longestKey) longestKey = PROFILE_INT_CUTOFF_1.length();
+      if (String.valueOf(profileIntensityCutoff1_).length()>longestValue) longestValue = String.valueOf(profileIntensityCutoff1_).length();   
+      rowCount = createPropertyRow(sheet,rowCount,PROFILE_INT_CUTOFF_2,String.valueOf(profileIntensityCutoff2_));
+      if (PROFILE_INT_CUTOFF_2.length()>longestKey) longestKey = PROFILE_INT_CUTOFF_2.length();
+      if (String.valueOf(profileIntensityCutoff2_).length()>longestValue) longestValue = String.valueOf(profileIntensityCutoff2_).length();      
+      rowCount = createPropertyRow(sheet,rowCount,PROFILE_GENERAL_INT_CUTOFF,String.valueOf(profileGeneralIntCutoff_));
+      if (PROFILE_GENERAL_INT_CUTOFF.length()>longestKey) longestKey = PROFILE_GENERAL_INT_CUTOFF.length();
+      if (String.valueOf(profileGeneralIntCutoff_).length()>longestValue) longestValue = String.valueOf(profileGeneralIntCutoff_).length();      
+      rowCount = createPropertyRow(sheet,rowCount,PROFILE_PEAK_ACCEPTANCE_RANGE,String.valueOf(profilePeakAcceptanceRange_));
+      if (PROFILE_PEAK_ACCEPTANCE_RANGE.length()>longestKey) longestKey = PROFILE_PEAK_ACCEPTANCE_RANGE.length();
+      if (String.valueOf(profilePeakAcceptanceRange_).length()>longestValue) longestValue = String.valueOf(profilePeakAcceptanceRange_).length();
+      rowCount = createPropertyRow(sheet,rowCount,PROFILE_SMOOTHING_CORRECTION,String.valueOf(profileSmoothingCorrection_));
+      if (PROFILE_SMOOTHING_CORRECTION.length()>longestKey) longestKey = PROFILE_SMOOTHING_CORRECTION.length();
+      if (String.valueOf(profileSmoothingCorrection_).length()>longestValue) longestValue = String.valueOf(profileSmoothingCorrection_).length();
+      rowCount = createPropertyRow(sheet,rowCount,PROFILE_MZ_MAX_RANGE,String.valueOf(profileMaxRange_));
+      if (PROFILE_MZ_MAX_RANGE.length()>longestKey) longestKey = PROFILE_MZ_MAX_RANGE.length();
+      if (String.valueOf(profileMaxRange_).length()>longestValue) longestValue = String.valueOf(profileMaxRange_).length();  
+      rowCount = createPropertyRow(sheet,rowCount,SMALL_CHROM_MZ_RANGE,String.valueOf(smallChromMzRange_));
+      if (SMALL_CHROM_MZ_RANGE.length()>longestKey) longestKey = SMALL_CHROM_MZ_RANGE.length();
+      if (String.valueOf(smallChromMzRange_).length()>longestValue) longestValue = String.valueOf(smallChromMzRange_).length();  
+      rowCount = createPropertyRow(sheet,rowCount,SMALL_CHROM_SMOOTH_REPEATS,String.valueOf(smallChromSmoothRepeats_));
+      if (SMALL_CHROM_SMOOTH_REPEATS.length()>longestKey) longestKey = SMALL_CHROM_SMOOTH_REPEATS.length();
+      if (String.valueOf(smallChromSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(smallChromSmoothRepeats_).length();      
+      rowCount = createPropertyRow(sheet,rowCount,SMALL_CHROM_MEAN_SMOOTH_REPEATS,String.valueOf(smallChromMeanSmoothRepeats_));
+      if (SMALL_CHROM_MEAN_SMOOTH_REPEATS.length()>longestKey) longestKey = SMALL_CHROM_MEAN_SMOOTH_REPEATS.length();
+      if (String.valueOf(smallChromMeanSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(smallChromMeanSmoothRepeats_).length();
+      rowCount = createPropertyRow(sheet,rowCount,SMALL_CHROM_SMOOTH_RANGE,String.valueOf(smallChromSmoothRange_));
+      if (SMALL_CHROM_SMOOTH_RANGE.length()>longestKey) longestKey = SMALL_CHROM_SMOOTH_RANGE.length();
+      if (String.valueOf(smallChromSmoothRange_).length()>longestValue) longestValue = String.valueOf(smallChromSmoothRange_).length();
+      rowCount = createPropertyRow(sheet,rowCount,SMALL_CHROM_INT_CUTOFF,String.valueOf(smallChromIntensityCutoff_));
+      if (SMALL_CHROM_INT_CUTOFF.length()>longestKey) longestKey = SMALL_CHROM_INT_CUTOFF.length();
+      if (String.valueOf(smallChromIntensityCutoff_).length()>longestValue) longestValue = String.valueOf(smallChromIntensityCutoff_).length();
+      rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_SMOOTH_REPEATS,String.valueOf(broadChromSmoothRepeats_));
+      if (BROAD_CHROM_SMOOTH_REPEATS.length()>longestKey) longestKey = BROAD_CHROM_SMOOTH_REPEATS.length();
+      if (String.valueOf(broadChromSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(broadChromSmoothRepeats_).length();
+      rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_MEAN_SMOOTH_REPEATS,String.valueOf(broadChromMeanSmoothRepeats_));
+      if (BROAD_CHROM_MEAN_SMOOTH_REPEATS.length()>longestKey) longestKey = BROAD_CHROM_MEAN_SMOOTH_REPEATS.length();
+      if (String.valueOf(broadChromMeanSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(broadChromMeanSmoothRepeats_).length();
+      rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_SMOOTH_RANGE,String.valueOf(broadChromSmoothRange_));
+      if (BROAD_CHROM_SMOOTH_RANGE.length()>longestKey) longestKey = BROAD_CHROM_SMOOTH_RANGE.length();
+      if (String.valueOf(broadChromSmoothRange_).length()>longestValue) longestValue = String.valueOf(broadChromSmoothRange_).length();
+      rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_INT_CUTOFF,String.valueOf(broadChromIntensityCutoff_));
+      if (BROAD_CHROM_INT_CUTOFF.length()>longestKey) longestKey = BROAD_CHROM_INT_CUTOFF.length();
+      if (String.valueOf(broadChromIntensityCutoff_).length()>longestValue) longestValue = String.valueOf(broadChromIntensityCutoff_).length();
+      rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_STEEPNESS_CHANGE_NO_SMALL,String.valueOf(broadChromSteepnessChangeNoSmall_));
+      if (BROAD_CHROM_STEEPNESS_CHANGE_NO_SMALL.length()>longestKey) longestKey = BROAD_CHROM_STEEPNESS_CHANGE_NO_SMALL.length();
+      if (String.valueOf(broadChromSteepnessChangeNoSmall_).length()>longestValue) longestValue = String.valueOf(broadChromSteepnessChangeNoSmall_).length();  
+      rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_INT_CUTOFF_NO_SMALL,String.valueOf(broadChromIntensityCutoffNoSmall_));
+      if (BROAD_CHROM_INT_CUTOFF_NO_SMALL.length()>longestKey) longestKey = BROAD_CHROM_INT_CUTOFF_NO_SMALL.length();
+      if (String.valueOf(broadChromIntensityCutoffNoSmall_).length()>longestValue) longestValue = String.valueOf(broadChromIntensityCutoffNoSmall_).length();  
+      rowCount = createPropertyRow(sheet,rowCount,FINAL_PROBE_TIME_COMP_TOL,String.valueOf(finalProbeTimeCompTolerance_));
+      if (FINAL_PROBE_TIME_COMP_TOL.length()>longestKey) longestKey = FINAL_PROBE_TIME_COMP_TOL.length();
+      if (String.valueOf(finalProbeTimeCompTolerance_).length()>longestValue) longestValue = String.valueOf(finalProbeTimeCompTolerance_).length();   
+      rowCount = createPropertyRow(sheet,rowCount,FINAL_PROBE_MZ_COMP_TOL,String.valueOf(finalProbeMzCompTolerance_));
+      if (FINAL_PROBE_MZ_COMP_TOL.length()>longestKey) longestKey = FINAL_PROBE_MZ_COMP_TOL.length();
+      if (String.valueOf(finalProbeMzCompTolerance_).length()>longestValue) longestValue = String.valueOf(finalProbeMzCompTolerance_).length();    
+      rowCount = createPropertyRow(sheet,rowCount,OVERLAP_DIST_DEV_FACTOR,String.valueOf(overlapDistanceDeviationFactor_));
+      if (OVERLAP_DIST_DEV_FACTOR.length()>longestKey) longestKey = OVERLAP_DIST_DEV_FACTOR.length();
+      if (String.valueOf(overlapDistanceDeviationFactor_).length()>longestValue) longestValue = String.valueOf(overlapDistanceDeviationFactor_).length();
+      rowCount = createPropertyRow(sheet,rowCount,OVERLAP_INT_THRESHOLD,String.valueOf(overlapPossibleIntensityThreshold_));
+      if (OVERLAP_INT_THRESHOLD.length()>longestKey) longestKey = OVERLAP_INT_THRESHOLD.length();
+      if (String.valueOf(overlapPossibleIntensityThreshold_).length()>longestValue) longestValue = String.valueOf(overlapPossibleIntensityThreshold_).length();
+      rowCount = createPropertyRow(sheet,rowCount,OVERLAP_INT_SURE_THRESHOLD,String.valueOf(overlapSureIntensityThreshold_));
+      if (OVERLAP_INT_SURE_THRESHOLD.length()>longestKey) longestKey = OVERLAP_INT_SURE_THRESHOLD.length();
+      if (String.valueOf(overlapSureIntensityThreshold_).length()>longestValue) longestValue = String.valueOf(overlapSureIntensityThreshold_).length();
+      rowCount = createPropertyRow(sheet,rowCount,OVERLAP_PEAK_DIST_DIVISOR,String.valueOf(overlapPeakDistanceDivisor_));
+      if (OVERLAP_PEAK_DIST_DIVISOR.length()>longestKey) longestKey = OVERLAP_PEAK_DIST_DIVISOR.length();
+      if (String.valueOf(overlapPeakDistanceDivisor_).length()>longestValue) longestValue = String.valueOf(overlapPeakDistanceDivisor_).length();
+      rowCount = createPropertyRow(sheet,rowCount,OVERLAP_FULL_DIST_DIVISOR,String.valueOf(overlapFullDistanceDivisor_));
+      if (OVERLAP_FULL_DIST_DIVISOR.length()>longestKey) longestKey = OVERLAP_FULL_DIST_DIVISOR.length();
+      if (String.valueOf(overlapFullDistanceDivisor_).length()>longestValue) longestValue = String.valueOf(overlapFullDistanceDivisor_).length();   
+      rowCount = createPropertyRow(sheet,rowCount,PEAK_DISCARD_AREA_FACTOR,String.valueOf(peakDiscardingAreaFactor_));
+      if (PEAK_DISCARD_AREA_FACTOR.length()>longestKey) longestKey = PEAK_DISCARD_AREA_FACTOR.length();
+      if (String.valueOf(peakDiscardingAreaFactor_).length()>longestValue) longestValue = String.valueOf(peakDiscardingAreaFactor_).length();
+      rowCount = createPropertyRow(sheet,rowCount,ISO_IN_BETWEEN_TIME,String.valueOf(isotopeInBetweenTime_));
+      if (ISO_IN_BETWEEN_TIME.length()>longestKey) longestKey = ISO_IN_BETWEEN_TIME.length();
+      if (String.valueOf(isotopeInBetweenTime_).length()>longestValue) longestValue = String.valueOf(isotopeInBetweenTime_).length();
+      rowCount = createPropertyRow(sheet,rowCount,ISO_IN_BETWEEN_AREA_FACTOR,String.valueOf(isoInBetweenAreaFactor_));
+      if (ISO_IN_BETWEEN_AREA_FACTOR.length()>longestKey) longestKey = ISO_IN_BETWEEN_AREA_FACTOR.length();
+      if (String.valueOf(isoInBetweenAreaFactor_).length()>longestValue) longestValue = String.valueOf(isoInBetweenAreaFactor_).length();
+      rowCount = createPropertyRow(sheet,rowCount,ISO_NEAR_NORMAL_PROBE_TIME,String.valueOf(isoNearNormalProbeTime_));
+      if (ISO_NEAR_NORMAL_PROBE_TIME.length()>longestKey) longestKey = ISO_NEAR_NORMAL_PROBE_TIME.length();
+      if (String.valueOf(isoNearNormalProbeTime_).length()>longestValue) longestValue = String.valueOf(isoNearNormalProbeTime_).length();
+      rowCount = createPropertyRow(sheet,rowCount,RELATIVE_AREA_CUTOFF,String.valueOf(relativeAreaCutoff_));
+      if (RELATIVE_AREA_CUTOFF.length()>longestKey) longestKey = RELATIVE_AREA_CUTOFF.length();
+      if (String.valueOf(relativeAreaCutoff_).length()>longestValue) longestValue = String.valueOf(relativeAreaCutoff_).length();   
+      rowCount = createPropertyRow(sheet,rowCount,RELATIVE_AREA_FAR_CUTOFF,String.valueOf(relativeFarAreaCutoff_));
+      if (RELATIVE_AREA_FAR_CUTOFF.length()>longestKey) longestKey = RELATIVE_AREA_FAR_CUTOFF.length();
+      if (String.valueOf(relativeFarAreaCutoff_).length()>longestValue) longestValue = String.valueOf(relativeFarAreaCutoff_).length();  
+      rowCount = createPropertyRow(sheet,rowCount,RELATIVE_AREA_FAR_TIME_SPACE,String.valueOf(relativeFarAreaTimeSpace_));
+      if (RELATIVE_AREA_FAR_TIME_SPACE.length()>longestKey) longestKey = RELATIVE_AREA_FAR_TIME_SPACE.length();
+      if (String.valueOf(relativeFarAreaTimeSpace_).length()>longestValue) longestValue = String.valueOf(relativeFarAreaTimeSpace_).length();  
+      rowCount = createPropertyRow(sheet,rowCount,RELATIVE_ISO_INBETWEEN_CUTOFF,String.valueOf(relativeIsoInBetweenCutoff_));
+      if (RELATIVE_ISO_INBETWEEN_CUTOFF.length()>longestKey) longestKey = RELATIVE_ISO_INBETWEEN_CUTOFF.length();
+      if (String.valueOf(relativeIsoInBetweenCutoff_).length()>longestValue) longestValue = String.valueOf(relativeIsoInBetweenCutoff_).length();
+      rowCount = createPropertyRow(sheet,rowCount,ISO_IN_BETWEEN_TIME_MAX,String.valueOf(isoInBetweenMaxTimeDistance_));
+      if (ISO_IN_BETWEEN_TIME_MAX.length()>longestKey) longestKey = ISO_IN_BETWEEN_TIME_MAX.length();
+      if (String.valueOf(isoInBetweenMaxTimeDistance_).length()>longestValue) longestValue = String.valueOf(isoInBetweenMaxTimeDistance_).length();
+      rowCount = createPropertyRow(sheet,rowCount,TWIN_PEAK_MZ_TOL,String.valueOf(twinPeakMzTolerance_));
+      if (TWIN_PEAK_MZ_TOL.length()>longestKey) longestKey = TWIN_PEAK_MZ_TOL.length();
+      if (String.valueOf(twinPeakMzTolerance_).length()>longestValue) longestValue = String.valueOf(twinPeakMzTolerance_).length(); 
+      rowCount = createPropertyRow(sheet,rowCount,PEAK_CLOSE_TIME_TOL,String.valueOf(closePeakTimeTolerance_));
+      if (PEAK_CLOSE_TIME_TOL.length()>longestKey) longestKey = PEAK_CLOSE_TIME_TOL.length();
+      if (String.valueOf(closePeakTimeTolerance_).length()>longestValue) longestValue = String.valueOf(closePeakTimeTolerance_).length(); 
+      rowCount = createPropertyRow(sheet,rowCount,TWIN_INBETWEEN_CUTOFF,String.valueOf(twinInBetweenCutoff_));
+      if (TWIN_INBETWEEN_CUTOFF.length()>longestKey) longestKey = TWIN_INBETWEEN_CUTOFF.length();
+      if (String.valueOf(twinInBetweenCutoff_).length()>longestValue) longestValue = String.valueOf(twinInBetweenCutoff_).length();
+      rowCount = createPropertyRow(sheet,rowCount,UNION_INBETWEEN_CUTOFF,String.valueOf(unionInBetweenCutoff_));
+      if (UNION_INBETWEEN_CUTOFF.length()>longestKey) longestKey = UNION_INBETWEEN_CUTOFF.length();
+      if (String.valueOf(unionInBetweenCutoff_).length()>longestValue) longestValue = String.valueOf(unionInBetweenCutoff_).length();
+      rowCount = createPropertyRow(sheet,rowCount,SPARSE_DATA,String.valueOf(sparseData_));
+      if (SPARSE_DATA.length()>longestKey) longestKey = SPARSE_DATA.length();
+      if (String.valueOf(sparseData_).length()>longestValue) longestValue = String.valueOf(sparseData_).length();
+    }
     if (mzTabInstrumentName_!=null){
       String value = getStringFromEBIParam(mzTabInstrumentName_);
       if (MZTAB_INSTRUMENT.length()>longestKey) longestKey = MZTAB_INSTRUMENT.length();
@@ -1769,9 +1878,10 @@ public class LipidomicsConstants
    * creates a LipidomicsConstants object from an Excel sheet - this cannot be done in a separate
    * class, since the parameters to be set are private
    * @param sheet Excel sheet to read the parameters from
+   * @throws SettingsException thrown when a settings combination is not possible
    * @return LipidomicsConstants object containing the parameters that were read
    */
-  public static LipidomicsConstants readSettingsFromExcel(Sheet sheet){
+  public static LipidomicsConstants readSettingsFromExcel(Sheet sheet) throws SettingsException{
     Properties properties = new Properties();
     int keyColumn = -1;
     int valueColumn = -1;
@@ -1865,5 +1975,26 @@ public class LipidomicsConstants
     this.alexTargetlistUsed_ = alexTargetlistUsed;
   }
 
+  /**
+   * 
+   * @return true when this is a shotgun instance
+   */
+  public boolean getShotgun(){
+    return this.shotgun_;
+  }
   
+  /**
+   * 
+   * @param tolerance the tolerance value in its original unit
+   * @param mz the m/z value to refer to
+   * @return the tolerance value in Da
+   */
+  private static float getCorrectMzTolerance(float tolerance, String mzUnit, float mz){
+    if (mzUnit.equalsIgnoreCase(LipidomicsConstants.MZUNIT_DA))
+      return tolerance;
+    else if (mzUnit.equalsIgnoreCase(LipidomicsConstants.MZUNIT_PPM))
+      return (tolerance*mz)/1000000f;
+    else
+      return tolerance;
+  }
 }

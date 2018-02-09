@@ -549,7 +549,6 @@ public class QuantificationThread extends Thread
           label.setCellStyle(headerStyle);
         }
         Vector<Vector<CgProbe>> isotopicProbes = param.getIsotopicProbes();
-        
         for (int j=0;j!=isotopicProbes.size();j++){
           resultRowCount++;
           row = resultSheet.createRow(resultRowCount);
@@ -1047,7 +1046,10 @@ public class QuantificationThread extends Thread
   }
   
   public static void setAnalyzerProperties(LipidomicsAnalyzer analyzer){
-    analyzer.set3DParameters(LipidomicsConstants.getCoarseChromMzTolerance(),LipidomicsConstants.getChromSmoothRange(),LipidomicsConstants.getChromSmoothRepeats(),
+    if (LipidomicsConstants.isShotgun()){
+      analyzer.setShotgunParameters(LipidomicsConstants.getShogunProcessing());
+    }else{
+      analyzer.set3DParameters(LipidomicsConstants.getChromSmoothRange(),LipidomicsConstants.getChromSmoothRepeats(),
         LipidomicsConstants.removeIfOtherIsotopePresent(),LipidomicsConstants.useNoiseCutoff(), LipidomicsConstants.getNoiseCutoffDeviationValue(),
         LipidomicsConstants.getMinimumRelativeIntensity(), LipidomicsConstants.getScanStep(),
         LipidomicsConstants.getProfileMzRange(), LipidomicsConstants.getProfileTimeTolerance_(),
@@ -1074,6 +1076,7 @@ public class QuantificationThread extends Thread
         LipidomicsConstants.getRelativeIsoInBetweenCutoff(),LipidomicsConstants.getTwinPeakMzTolerance(),
         LipidomicsConstants.getClosePeakTimeTolerance(),LipidomicsConstants.getTwinInBetweenCutoff(), LipidomicsConstants.getUnionInBetweenCutoff(),
         LipidomicsConstants.getMs2MzTolerance());
+    }
   }
   
   public static String[] extractFormulaAndAdductName(String contents) throws ExcelInputFileException{
@@ -1567,10 +1570,14 @@ public class QuantificationThread extends Thread
               for (String rt : hitsOfOneMod.keySet()){
                 LipidParameterSet set = hitsOfOneMod.get(rt);
                 boolean insideAllowedMz = false;
-                for (CgProbe probe : set.getIsotopicProbes().get(0)){
-                  if (((float)oneQuant.getAnalyteMass()-LipidomicsConstants.getProfilePeakAcceptanceRange())<=probe.Mz && probe.Mz<=((float)oneQuant.getAnalyteMass()+LipidomicsConstants.getProfilePeakAcceptanceRange())){
-                    insideAllowedMz = true;
-                    break;
+                if (LipidomicsConstants.isShotgun()){
+                  insideAllowedMz = true;
+                } else {
+                  for (CgProbe probe : set.getIsotopicProbes().get(0)){
+                    if (((float)oneQuant.getAnalyteMass()-LipidomicsConstants.getProfilePeakAcceptanceRange())<=probe.Mz && probe.Mz<=((float)oneQuant.getAnalyteMass()+LipidomicsConstants.getProfilePeakAcceptanceRange())){
+                      insideAllowedMz = true;
+                      break;
+                    }
                   }
                 }
                 if (insideAllowedMz) newHits.put(rt, set);
@@ -1956,11 +1963,15 @@ public class QuantificationThread extends Thread
         for (String mod : analyteQuant.keySet()){
           if (results_.containsKey(className) && results_.get(className).containsKey(analyteName) && results_.get(className).get(analyteName).containsKey(mod)&&(results_.get(className).get(analyteName).get(mod)!=null)){
             Hashtable<String,LipidParameterSet> hitsOfOneMod = results_.get(className).get(analyteName).get(mod);
-            List<DoubleStringVO> keys = new ArrayList<DoubleStringVO>();
-            for (String key:hitsOfOneMod.keySet())keys.add(new DoubleStringVO(key,Double.valueOf(key)));
-            Collections.sort(keys,new GeneralComparator("at.tugraz.genome.lda.vos.DoubleStringVO", "getValue", "java.lang.Double"));
-            for (DoubleStringVO key : keys){
-              params.add(hitsOfOneMod.get(key.getKey()));
+            if (LipidomicsConstants.isShotgun()){
+              for (String key:hitsOfOneMod.keySet()) params.add(hitsOfOneMod.get(key));
+            }else{
+              List<DoubleStringVO> keys = new ArrayList<DoubleStringVO>();
+              for (String key:hitsOfOneMod.keySet())keys.add(new DoubleStringVO(key,Double.valueOf(key)));
+              Collections.sort(keys,new GeneralComparator("at.tugraz.genome.lda.vos.DoubleStringVO", "getValue", "java.lang.Double"));
+              for (DoubleStringVO key : keys){
+                params.add(hitsOfOneMod.get(key.getKey()));
+              }
             }
           }  
         }
@@ -1977,37 +1988,41 @@ public class QuantificationThread extends Thread
       Vector<LipidParameterSet> corrected = new Vector<LipidParameterSet>();
       for (LipidParameterSet param : params){
         boolean acceptProbe = false;
-        if (param.getIsotopicProbes().size()>0){
-          Vector<CgProbe> newIsoProbes = new Vector<CgProbe>();
-          Vector<CgProbe> removedProbes = new Vector<CgProbe>();
-          for (CgProbe probe : param.getIsotopicProbes().get(0)){
-            if (probe.Area>cutOffValue)
-              newIsoProbes.add(probe);
-            else
-              removedProbes.add(probe);
-          }
-          if (newIsoProbes.size()==param.getIsotopicProbes().get(0).size()){
-            acceptProbe = true;
-          }else if (removedProbes.size()==param.getIsotopicProbes().get(0).size()){
-          }else{
-            Vector<Vector<CgProbe>> isotopicProbes = new Vector<Vector<CgProbe>>();
-            isotopicProbes.add(newIsoProbes);
-            if (param.getIsotopicProbes().size()>1){
-              for (int i=1;i!=param.getIsotopicProbes().size();i++){
-                Vector<CgProbe> newProbes = new Vector<CgProbe>();
-                for (CgProbe probe : param.getIsotopicProbes().get(i)){
-                  if (!isWithinRemovedBoundaries(probe,removedProbes))
-                    newProbes.add(probe);
-                  else {
-                    if (isWithinRemovedBoundaries(probe,newIsoProbes))
-                      newProbes.add(probe);
-                  }
-                }
-                isotopicProbes.add(newProbes);
-              }  
+        if (LipidomicsConstants.isShotgun()){
+          acceptProbe = true;
+        }else{
+          if (param.getIsotopicProbes().size()>0){
+            Vector<CgProbe> newIsoProbes = new Vector<CgProbe>();
+            Vector<CgProbe> removedProbes = new Vector<CgProbe>();
+            for (CgProbe probe : param.getIsotopicProbes().get(0)){
+              if (probe.Area>cutOffValue)
+                newIsoProbes.add(probe);
+              else
+                removedProbes.add(probe);
             }
-            param.setIsotopicProbes(isotopicProbes);
-            acceptProbe = true;
+            if (newIsoProbes.size()==param.getIsotopicProbes().get(0).size()){
+              acceptProbe = true;
+            }else if (removedProbes.size()==param.getIsotopicProbes().get(0).size()){
+            }else{
+              Vector<Vector<CgProbe>> isotopicProbes = new Vector<Vector<CgProbe>>();
+              isotopicProbes.add(newIsoProbes);
+              if (param.getIsotopicProbes().size()>1){
+                for (int i=1;i!=param.getIsotopicProbes().size();i++){
+                  Vector<CgProbe> newProbes = new Vector<CgProbe>();
+                  for (CgProbe probe : param.getIsotopicProbes().get(i)){
+                    if (!isWithinRemovedBoundaries(probe,removedProbes))
+                      newProbes.add(probe);
+                    else {
+                      if (isWithinRemovedBoundaries(probe,newIsoProbes))
+                        newProbes.add(probe);
+                    }
+                  }
+                  isotopicProbes.add(newProbes);
+                }  
+              }
+              param.setIsotopicProbes(isotopicProbes);
+              acceptProbe = true;
+            }
           }
         }
         if (acceptProbe)
@@ -2081,8 +2096,7 @@ public class QuantificationThread extends Thread
   private static void checkForIsobaricSpecies(LinkedHashMap<String,Integer> classSequence, Hashtable<String,Vector<String>> analyteSequence,
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects) throws RulesException, IOException, SpectrummillParserException{
     Vector<String> classes = new Vector<String>(classSequence.keySet());
-    float tol = LipidomicsConstants.getCoarseChromMzTolerance();
-    float sameTol = tol/5f;
+
     // first, the analytes are put in 10Da bins
     Hashtable<Integer,Vector<QuantVO>> tenDaIsobaricClusters = new Hashtable<Integer,Vector<QuantVO>>();
     for (int i=0; i!=classes.size(); i++){
@@ -2114,6 +2128,8 @@ public class QuantificationThread extends Thread
         Hashtable<String,QuantVO> quantAnal = quantClass.get(anal);
         for (String mod : quantAnal.keySet()){
           QuantVO quant1 = quantAnal.get(mod);
+          float tol = LipidomicsConstants.getCoarseChromMzTolerance((float)quant1.getAnalyteMass());
+          float sameTol = tol/5f;
           boolean noMS21 = false;
           try{ RulesContainer.getAmountOfChains(StaticUtils.getRuleName(quant1.getAnalyteClass(), quant1.getModName())); } catch (NoRuleException nrx){
             noMS21 = true;

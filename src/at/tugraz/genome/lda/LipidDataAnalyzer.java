@@ -447,6 +447,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   
   /** a dialog field for changing the retention time of a hit*/
   private EditRtDialog editRtDialog_;
+  /** true for the display of shotgun data*/
+  private boolean shotgunIsDisplayed_;
   
   public LipidDataAnalyzer(){
     this.createDisplayTopMenu();
@@ -455,6 +457,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     this.createResultsMenu();
     this.initL2dPanel();
     displaysMs2_ = false;
+    shotgunIsDisplayed_ = false;
 
     JPanel displayTolerancePanel = new JPanel();
     displayTolerancePanel.setLayout(new GridBagLayout());    
@@ -3365,7 +3368,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     resultsShowModification_ = new Hashtable<String,Boolean>();
     if (!keepOrder) orderResultsType_ = new Hashtable<String,Integer>();
     result_ = LDAResultReader.readResultFile(filePath,  resultsShowModification_);
-
+    if (result_.getConstants().getShotgun())
+      disableChromatographyFeatures();
+    else
+      enableChromatographyFeatures();
   }
   
   
@@ -3408,7 +3414,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         Lipidomics2DPainter l2DPainter = new Lipidomics2DPainter(analyzer_,rawLines, rtTimes, reader_.getRetentionTimes(),
             startFloat,stopFloat,reader_.getMultiplicationFactorForInt_()/reader_.getLowestResolution_(),params_.LowerMzBand*2,this,
             MSMapViewer.DISPLAY_TIME_MINUTES,currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand, false,
-            storedProbes,selectedProbes,Integer.parseInt((String)this.isotope_.getSelectedItem()),charge,result_.getMsLevels().get(currentSelectedSheet_));
+            storedProbes,selectedProbes,Integer.parseInt((String)this.isotope_.getSelectedItem()),charge,result_.getMsLevels().get(currentSelectedSheet_),
+            shotgunIsDisplayed_);
         l2DPainter.preChromatogramExtraxtion(currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand);
         this.makeDisplayRemoveOperations();
         this.viewer_ = viewer;
@@ -3426,7 +3433,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         majorSplitPane_.setDividerLocation(0.75);
       
 
-        l2DPainter_.draw2DDiagram(currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand, false);
+        l2DPainter_.draw2DDiagram(currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand, m_chkRaw_.isSelected());
 
       //      l2DPainter_.paint(l2DPainter_.getGraphics());
         majorSplitPane_.repaint();
@@ -3872,11 +3879,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
    
   
   private void change2DTypeState(ItemEvent e, String command){
-    if (command.equalsIgnoreCase("DisplayModeRaw")){
+    if (command.equalsIgnoreCase("DisplayModeRaw") && this.l2DPainter_!=null){
       this.l2DPainter_.setRaw(true);
       this.l2DPainter_.repaint();
     }
-    if (command.equalsIgnoreCase("DisplayModeSmooth")){
+    if (command.equalsIgnoreCase("DisplayModeSmooth") && this.l2DPainter_!=null){
       this.l2DPainter_.setRaw(false);
       this.l2DPainter_.repaint();
     }
@@ -4781,11 +4788,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   
   public void addAnalyte(int position, AddAnalyteVO analyteDescrVO){
 
-    LipidParameterSet set = new LipidParameterSet(new Float(analyteDescrVO.getExactMass()), analyteDescrVO.getName(), 
+    Float exactMass = new Float(analyteDescrVO.getExactMass());
+    LipidParameterSet set = new LipidParameterSet(exactMass, analyteDescrVO.getName(), 
         analyteDescrVO.getDoubleBonds(), analyteDescrVO.getModName(), analyteDescrVO.getRt(), analyteDescrVO.getFormula(), 
         analyteDescrVO.getModFormula(), new Integer(analyteDescrVO.getCharge()) );
-      set.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance();
-      set.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance();
+      set.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance(exactMass);
+      set.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance(exactMass);
       set.Area = 0;
       result_.getIdentifications().get(this.currentSelectedSheet_).add(position, set);
       try {
@@ -5012,7 +5020,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
             Lipidomics2DPainter l2DPainter = new Lipidomics2DPainter(analyzer_,rawLines, rtTimes,
                 startFloat,stopFloat,reader_.getMultiplicationFactorForInt_()/reader_.getLowestResolution_(),params_.LowerMzBand*2,this,
                 MSMapViewer.DISPLAY_TIME_MINUTES,currentIsotopicMass-params_.LowerMzBand, currentIsotopicMass+params_.UpperMzBand, false,
-                storedProbes,selectedProbes,Integer.parseInt((String)this.isotope_.getSelectedItem()),charge,result_.getMsLevels().get(currentSelectedSheet_));
+                storedProbes,selectedProbes,Integer.parseInt((String)this.isotope_.getSelectedItem()),charge,result_.getMsLevels().get(currentSelectedSheet_),
+                shotgunIsDisplayed_);
             l2DPainter.preChromatogramExtraxtion(currentIsotopicMass-params_.LowerMzBand, currentIsotopicMass+params_.UpperMzBand);
             l2DPainter_ = l2DPainter;
             l2DPainter_.setBackground(Color.WHITE);
@@ -5937,7 +5946,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         Lipidomics2DPainter l2DPainter = new Lipidomics2DPainter(analyzer_,rawLines, rtTimes,
             startFloat,stopFloat,reader_.getMultiplicationFactorForInt_()/reader_.getLowestResolution_(),pr.LowerMzBand*2,this,
             MSMapViewer.DISPLAY_TIME_MINUTES,currentIsotopicMass-pr.LowerMzBand, currentIsotopicMass+pr.UpperMzBand, false,
-            storedProbes,selectedProbes,Integer.parseInt((String)this.isotope_.getSelectedItem()),charge,result_.getMsLevels().get(currentSelectedSheet_));
+            storedProbes,selectedProbes,Integer.parseInt((String)this.isotope_.getSelectedItem()),charge,result_.getMsLevels().get(currentSelectedSheet_),
+            shotgunIsDisplayed_);
         l2DPainter.preChromatogramExtraxtion(currentIsotopicMass-pr.LowerMzBand, currentIsotopicMass+pr.UpperMzBand);
         l2DPainter_ = l2DPainter;
         l2DPainter_.setBackground(Color.WHITE);
@@ -6304,6 +6314,32 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     currentMs2Position_ = position;
     String rt = getAnalyteInTableAtPosition(position).getRt();
     editRtDialog_ = new EditRtDialog(rt,this);
+  }
+  
+  /**
+   * disables input fields specific for chromatography based data
+   */
+  private void disableChromatographyFeatures(){
+    switchChromatographyFeatures(false);
+  }
+
+  /**
+   * enables input fields specific for chromatography based data
+   */
+  private void enableChromatographyFeatures(){
+    switchChromatographyFeatures(true);    
+  }
+  
+  /**
+   * enables/disables input fields specific for chromatography based data
+   * @param enable enabling when true, otherwise disabling
+   */
+  private void switchChromatographyFeatures(boolean enable){
+    if (!enable){
+      m_chkRaw_.setSelected(true);
+    }
+    m_chkSmooth_.setEnabled(enable);
+    shotgunIsDisplayed_ = !enable;
   }
   
 }

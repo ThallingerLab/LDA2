@@ -199,6 +199,14 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
   
   private float msnMzTolerance_ = 0.2f;
 
+  /** the shotgun intensity value is a mean of the scans*/
+  public final static int SHOTGUN_TYPE_MEAN = 0;
+  /** the shotgun intensity value is a median of the scans*/
+  public final static int SHOTGUN_TYPE_MEDIAN = 1;
+  /** the shotgun intensity value is the sum of the scan intensities*/
+  public final static int SHOTGUN_TYPE_SUM = 2;
+  /** which intensity type shall be used for shotgun data*/;
+  private int shotgunType_;
 
   private void init(){
     useSameCgHashFor3D_ = false;
@@ -264,7 +272,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     this.msnMzTolerance_ = 0.2f;
   }
   
-  public void set3DParameters(float coarseChromMzTolerance, float chromSmoothRange, int chromSmoothRepeats, boolean removeIfOtherIsotopePresent,
+  public void set3DParameters(float chromSmoothRange, int chromSmoothRepeats, boolean removeIfOtherIsotopePresent,
       boolean useNoiseCutoff, float noiseCutoffDeviationValue, Float minimumRelativeIntensity, int scanStep, float profileMzRange, float profileTimeTolerance,
       float profileIntThreshold, float broaderProfileTimeTolerance,
       float profileSmoothRange, int profileSmoothRepeats, int profileMeanSmoothRepeats, float profileMzMinRange, float profileSteepnessChange1, float profileSteepnessChange2,
@@ -278,7 +286,6 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
       float relativeAreaCutoff, float relativeFarAreaCutoff, int relativeFarAreaTimeSpace,
       float relativeIsoInBetweenCutoff, float twinPeakMzTolerance, int closePeakTimeTolerance, float twinInBetweenCutoff, float unionInBetweenCutoff,
       float msnMzTolerance){
-    this.coarseChromMzTolerance_ = coarseChromMzTolerance;
     this.chromSmoothRange_= chromSmoothRange;
     this.removeIfOtherIsotopePresent_ = removeIfOtherIsotopePresent;
     this.chromSmoothRepeats_ = chromSmoothRepeats;
@@ -334,6 +341,14 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     this.twinInBetweenCutoff_ = twinInBetweenCutoff;
     this.unionInBetweenCutoff_ = unionInBetweenCutoff;
     this.msnMzTolerance_ = msnMzTolerance;
+  }
+  
+  /**
+   * sets the parameters necessary for processing shotgun data
+   * @param mzTolerance the mzTolerance
+   */
+  public void setShotgunParameters(int shotgunType){
+    this.shotgunType_ = shotgunType;
   }
     
 
@@ -403,10 +418,80 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
   public Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> processByMzProbabsAndPossibleRetentionTime(float mz, int charge, Vector<Float> retentionTimes, float prevTimeTolerance, float afterTimeTolerance, int timeType, Vector<Double>probabs, Vector<Double>possibleProbabs,int msLevel, boolean negative) throws CgException{
     return this.processByMzProbabsAndPossibleRetentionTime(mz, charge, -1f, retentionTimes, prevTimeTolerance, afterTimeTolerance, timeType, probabs, possibleProbabs, msLevel, negative);
   }
+  
+  /**
+   * 
+   * @param mz the m/z value of the analyte
+   * @param charge the charge of the analyte
+   * @param msLevel the MS-level
+   * @param nrOfIsotopes how many isotopes shall be quantified (starting with 0)
+   * @return the detected results
+   * @throws CgException
+   */
+  public Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> processShotgunData(float mz, int charge, int msLevel, int nrOfIsotopes) throws CgException{
+    float mzTolerance = LipidomicsConstants.getCoarseChromMzTolerance(mz);
+    CgProbe probe = calculateAShotgunIntensity(mz,mzTolerance,charge,msLevel);
+    if (!(probe.Area>0f))
+      return null;
+    Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> result = new Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>>();
+    Hashtable<Integer,Vector<CgProbe>> oneResult = new  Hashtable<Integer,Vector<CgProbe>>();
+    Vector<CgProbe> probes = new Vector<CgProbe>();
+    probes.add(probe);
+    oneResult.put(0, probes);
+    if (nrOfIsotopes>1){
+      for (int i=1; i!=nrOfIsotopes; i++){
+        probe = calculateAShotgunIntensity(mz+i*LipidomicsConstants.getNeutronMass()/(float)charge,mzTolerance,charge,msLevel);
+        if (probe.Area==0f)
+          break;
+        else{
+          probes = new Vector<CgProbe>();
+          probes.add(probe);
+          oneResult.put(i, probes);
+        }
+      }
+    }
+    result.put(0, oneResult);
+    return result;
+  }
 
+  /**
+   * calculates a shotgun intensity
+   * @param mz the m/z value of the analyte
+   * @param mzTolerance the m/z tolerance for the extraction
+   * @param charge the charge of the analyte
+   * @param msLevel the MS-level
+   * @return the detected VO
+   * @throws CgException
+   */
+  private CgProbe calculateAShotgunIntensity(float mz, float mzTolerance, int charge, int msLevel) throws CgException{
+    CgChromatogram cgChrom = readAChromatogram(mz, mzTolerance, mzTolerance, msLevel, 0f, 0);
+    return calculateAShotgunIntensity(cgChrom, charge, msLevel, shotgunType_);
+  }
+  
+  /**
+   * calculates a shotgun intensity
+   * @param cgChrom the chromatogram
+   * @param charge the charge of the analyte
+   * @param msLevel the MS-level
+   * @param shotgunType the type of shotgun processing (i.e. SHOTGUN_TYPE_MEAN, SHOTGUN_TYPE_MEDIAN, or SHOTGUN_TYPE_SUM)
+   * @return the detected VO
+   */
+  public static CgProbe calculateAShotgunIntensity(CgChromatogram cgChrom, int charge, int msLevel, int shotgunType) {
+    CgProbe probe = new CgProbe(0,charge);
+    probe.Area = calculateShotgunIntensity(cgChrom,shotgunType);
+    probe.AreaStatus = CgAreaStatus.OK;
+    probe.LowerMzBand = cgChrom.LowerMzBand;
+    probe.UpperMzBand = cgChrom.UpperMzBand;
+    probe.LowerValley = cgChrom.Value[0][0];
+    probe.UpperValley = cgChrom.Value[cgChrom.Value.length-1][0];
+    probe.Peak = (probe.LowerValley+probe.UpperValley)/2f;
+    probe.Mz = cgChrom.Mz;
+    return probe;
+  }
   
   @SuppressWarnings("unchecked")
   private Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> processByMzProbabsAndPossibleRetentionTime(float mz, int charge, float retentionTime, Vector<Float> retentionTimes, float prevTimeTolerance, float afterTimeTolerance, int timeType, Vector<Double>probabs, Vector<Double>possibleProbabs,int msLevel, boolean negative) throws CgException{
+    coarseChromMzTolerance_ = LipidomicsConstants.getCoarseChromMzTolerance(mz);
     useSameCgHashFor3D_ = true;
     this.initCacheHashes();
     float massToAdd = LipidomicsConstants.getNeutronMass();
@@ -977,6 +1062,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
   public Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> processByMzAndRetentionTime(float mz, int charge, //float mzTolerance, 
       float retentionTime, float prevTimeTolerance, float afterTimeTolerance, int timeType, Vector<Double>probabs,
       Vector<Double>possibleProbabs, int msLevel, boolean negative) throws CgException{
+    this.coarseChromMzTolerance_ = LipidomicsConstants.getCoarseChromMzTolerance(mz);
     float massToAdd = LipidomicsConstants.getNeutronMass();
     if (negative) massToAdd*=-1;
 //    return this.processByMzProbabsAndPossibleRetentionTime(mz, //mzTolerance, 
@@ -1461,6 +1547,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
       Vector<Double>probabs, Vector<Double>possibleProbabs, int msLevel, boolean negative) throws CgException{
 //    return this.processByMzProbabsAndPossibleRetentionTime(mz, //mzTolerance, 
 //        -1, -1, -1, -1, probabs, possibleProbabs);
+    this.coarseChromMzTolerance_ = LipidomicsConstants.getCoarseChromMzTolerance(mz);
     float massToAdd = LipidomicsConstants.getNeutronMass();
     LipidomicsChromatogram mainChrom = new LipidomicsChromatogram(readAChromatogram(mz, this.coarseChromMzTolerance_, this.coarseChromMzTolerance_, msLevel, chromSmoothRange_,chromSmoothRepeats_));
     mainChrom.GetMaximumAndAverage();
@@ -4637,7 +4724,6 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
   private LipidomicsChromatogram readASingleProfile(CgProbe aProbe, int msLevel, boolean smooth) throws CgException{
     Vector<CgProbe> theProbes = new Vector<CgProbe>();
     theProbes.add(aProbe);
-    //System.out.println("aProbe.Mz: "+aProbe.Mz);
     // here the raw profile is extracted from the file and smoothed 
     float mzRange = this.profileMzRange_;
     Vector<CgChromatogram> profiles = this.readProfiles(theProbes, mzRange, this.profileTimeTolerance_,5f,
@@ -4696,5 +4782,29 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     }
     return availableLevels;
   }
-    
+  
+  
+  /**
+   * calculates the shotgun intensity out of one chromatogram
+   * @param cgChrom
+   * @param shotgunType the type of shotgun processing (i.e. SHOTGUN_TYPE_MEAN, SHOTGUN_TYPE_MEDIAN, or SHOTGUN_TYPE_SUM)
+   * @return calculated value
+   */
+  private static float calculateShotgunIntensity(CgChromatogram cgChrom, int shotgunType){
+    float intensity = 0f;
+    float[] intValues = new float[cgChrom.Value.length];
+    float sum = 0f;
+    for (int i=0; i!=cgChrom.Value.length; i++){
+      intValues[i] = cgChrom.Value[i][1];
+      sum += intValues[i];
+    }
+    if (shotgunType==SHOTGUN_TYPE_MEAN)
+      intensity = Calculator.mean(intValues);
+    else if (shotgunType==SHOTGUN_TYPE_MEDIAN)
+      intensity = Calculator.median(intValues);
+    else if (shotgunType==SHOTGUN_TYPE_SUM)
+      intensity = sum;
+    return intensity;
+  }
+  
 }

@@ -132,7 +132,7 @@ public class IsotopeCorrector
   private static IsoLocationSpaces checkIsotopicOverlap(ElementConfigParser elementParser, LipidParameterSet toCheck, LipidParameterSet overlapping, String overlapGroup) throws SpectrummillParserException{
 //    IsoOverlapVO over = new IsoOverlapVO(uniqueId(overlapGroup,overlapping.getNameIncludingModification()),ISO_MAX_CORRECTION);
     IsoLocationSpaces over = new IsoLocationSpaces(uniqueId(overlapGroup,overlapping.getNameIncludingModification()),ISO_MAX_CORRECTION);
-    if ((toCheck.Mz[0]+ISO_MAX_CORRECTION*LipidomicsConstants.getNeutronMass()+LipidomicsConstants.getCoarseChromMzTolerance())>overlapping.Mz[0]&&(toCheck.Mz[0]-ISO_MAX_CORRECTION*LipidomicsConstants.getNeutronMass()-LipidomicsConstants.getCoarseChromMzTolerance())<overlapping.Mz[0]){
+    if ((toCheck.Mz[0]+ISO_MAX_CORRECTION*LipidomicsConstants.getNeutronMass()+LipidomicsConstants.getCoarseChromMzTolerance(toCheck.Mz[0]))>overlapping.Mz[0]&&(toCheck.Mz[0]-ISO_MAX_CORRECTION*LipidomicsConstants.getNeutronMass()-LipidomicsConstants.getCoarseChromMzTolerance(toCheck.Mz[0]))<overlapping.Mz[0]){
       boolean negative = false;
       Vector<Vector<Double>> bothDistris = elementParser.calculateChemicalFormulaIntensityDistribution(overlapping.getChemicalFormula(), ISO_MAX_CORRECTION, false);
       Vector<Double> distri = bothDistris.get(0);
@@ -144,7 +144,7 @@ public class IsotopeCorrector
         }
       }
       // the max range is already checked in the previous if and does not need to be checked here again
-      if ((!negative&&toCheck.Mz[0]>(overlapping.Mz[0]+LipidomicsConstants.getCoarseChromMzTolerance()))||(negative&&(toCheck.Mz[0]<(overlapping.Mz[0]-LipidomicsConstants.getCoarseChromMzTolerance())))){
+      if ((!negative&&toCheck.Mz[0]>(overlapping.Mz[0]+LipidomicsConstants.getCoarseChromMzTolerance(toCheck.Mz[0])))||(negative&&(toCheck.Mz[0]<(overlapping.Mz[0]-LipidomicsConstants.getCoarseChromMzTolerance(toCheck.Mz[0]))))){
         over.setParameterSet(overlapping,distri,negative);
         over.determineOverlappingParts(toCheck);
       }  

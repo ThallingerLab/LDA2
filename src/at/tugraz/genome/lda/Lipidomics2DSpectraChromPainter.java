@@ -117,7 +117,7 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
       boolean relativeIntensity, double annotationCutoff){
     //TODO: The 2DSpectraChromPainter is currently not dedicated for storing areas - thus there is just 1 used as msLevel of the super constructor
     super(analyzer,new String[0], retentionTimes, mzStart, mzStop, resolutionFactor, stepSize, listener, DISPLAY_TIME_MZ,
-        start, stop, raw, storedProbes, selectedProbes, isotopeNumber, charge,1);
+        start, stop, raw, storedProbes, selectedProbes, isotopeNumber, charge,1,false);
     remove(m_txtMz);
     m_txtMz = null;
     spectra_ = rtNrSpectrumHash;

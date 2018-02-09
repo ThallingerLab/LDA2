@@ -2805,7 +2805,7 @@ public class TestClass extends JApplet implements AddScan
   }
   
   private void setStandardParameters(LipidomicsAnalyzer lAnalyzer){
-    lAnalyzer.set3DParameters(LipidomicsConstants.getCoarseChromMzTolerance(),LipidomicsConstants.getChromSmoothRange(),LipidomicsConstants.getChromSmoothRepeats(),
+    lAnalyzer.set3DParameters(LipidomicsConstants.getChromSmoothRange(),LipidomicsConstants.getChromSmoothRepeats(),
         LipidomicsConstants.removeIfOtherIsotopePresent(),LipidomicsConstants.useNoiseCutoff(), LipidomicsConstants.getNoiseCutoffDeviationValue(), 
         LipidomicsConstants.getMinimumRelativeIntensity(), LipidomicsConstants.getScanStep(),
         LipidomicsConstants.getProfileMzRange(), LipidomicsConstants.getProfileTimeTolerance_(),

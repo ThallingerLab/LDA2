@@ -157,7 +157,9 @@ public class SingleQuantThread extends Thread
       }
 
     } else {
-      if (quantSet.getIsobaricRetTime_()>0){
+      if (LipidomicsConstants.isShotgun()){
+        isotopicProbes = analyzer.processShotgunData((float)quantSet.getAnalyteMass(),quantSet.getCharge(),msLevel,quantSet.getProbabs().size());
+      } else if (quantSet.getIsobaricRetTime_()>0){
         if (LipidomicsConstants.use3D()){
           isotopicProbes = analyzer.processByMzProbabsAndPossibleRetentionTime((float)quantSet.getAnalyteMass(),quantSet.getCharge(),
             quantSet.getIsobaricRetTime_(), quantSet.getIsobaricMinusTime_(), quantSet.getUsedPlusTime(), LipidomicsDefines.MINUTES, 
@@ -187,10 +189,15 @@ public class SingleQuantThread extends Thread
           LipidParameterSet param = createLipidParameterSet(oneHit,oneSet.getNegativeStartValue(), (float)oneSet.getAnalyteMass(),
               oneSet.getAnalyteName(), oneSet.getDbs(), oneSet.getModName(), oneSet.getAnalyteFormula(), oneSet.getModFormula(), 
               oneSet.getCharge());
-          String rt = param.getRt();
-          float rtValue = Float.parseFloat(rt);
-          if (oneSet.getRetTime()>0 && ((rtValue<(oneSet.getRetTime()-oneSet.getUsedMinusTime()))||(rtValue>(oneSet.getRetTime()+oneSet.getUsedPlusTime())))) continue;
-          isobars.put(oneSet, param);
+          if (LipidomicsConstants.isShotgun()){
+            adaptMzValuesOfShotgunHits(param);
+            isobars.put(oneSet, param);
+          }else{
+            String rt = param.getRt();
+            float rtValue = Float.parseFloat(rt);
+            if (oneSet.getRetTime()>0 && ((rtValue<(oneSet.getRetTime()-oneSet.getUsedMinusTime()))||(rtValue>(oneSet.getRetTime()+oneSet.getUsedPlusTime())))) continue;
+            isobars.put(oneSet, param);
+          }
         }
         if (isobars.size()>0) isobarsOfAllSpecies.put(key, isobars);
       }
@@ -202,12 +209,17 @@ public class SingleQuantThread extends Thread
           float stopMz = (float)oneSet.getAnalyteMass()+LipidomicsConstants.getMs2PrecursorTolerance();
           float lowestTime = Float.MAX_VALUE;
           float highestTime = 0f;
-          for (Hashtable<QuantVO,LipidParameterSet> isobars : isobarsOfAllSpecies.values()){
-            if (!isobars.containsKey(oneSet)) continue;
-            LipidParameterSet param = isobars.get(oneSet);
-            float[] startStop = analyzer_.getStartStopTimeFromProbes(param.getIsotopicProbes().get(0));
-            if (startStop[0]<lowestTime) lowestTime = startStop[0];
-            if (startStop[1]>highestTime) highestTime = startStop[1];
+          if (LipidomicsConstants.isShotgun()){
+            lowestTime = 0f;
+            highestTime = Float.MAX_VALUE;
+          }else{
+            for (Hashtable<QuantVO,LipidParameterSet> isobars : isobarsOfAllSpecies.values()){
+              if (!isobars.containsKey(oneSet)) continue;
+              LipidParameterSet param = isobars.get(oneSet);
+              float[] startStop = analyzer_.getStartStopTimeFromProbes(param.getIsotopicProbes().get(0));
+              if (startStop[0]<lowestTime) lowestTime = startStop[0];
+              if (startStop[1]>highestTime) highestTime = startStop[1];
+            }
           }
           // third, prepare the spectral cache
           analyzer.prepareMSnSpectraCache(startMz, stopMz, lowestTime, highestTime);
@@ -242,7 +254,7 @@ public class SingleQuantThread extends Thread
             if (addHit) sameRt.put(key, param);
             else {
               try{
-                if (RulesContainer.isRtPostprocessing(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName())) && 
+                if (!LipidomicsConstants.isShotgun() && RulesContainer.isRtPostprocessing(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName())) && 
                     RulesContainer.correctRtForParallelModel(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName()))){
                   String rt = param.getRt();
                   ms2RemovedHits_.get(oneSet).put(rt, param);
@@ -325,7 +337,10 @@ public class SingleQuantThread extends Thread
           LipidParameterSet set = isobarHitsOfOneSpecies.get(quant);
           Hashtable<String,LipidParameterSet> hitsOfOneMod = new Hashtable<String,LipidParameterSet>();
           if (hitsAccordingToQuant.containsKey(quant)) hitsOfOneMod = hitsAccordingToQuant.get(quant);
-          hitsOfOneMod.put(set.getRt(), set);
+          String rt = "";
+          if (!LipidomicsConstants.isShotgun())
+            rt = set.getRt();
+          hitsOfOneMod.put(rt, set);
           hitsAccordingToQuant.put(quant, hitsOfOneMod);
         }
       }
@@ -823,17 +838,20 @@ public class SingleQuantThread extends Thread
             probe.isotopeNumber *= -1;
           if (probe!=null&&probe.AreaStatus==CgAreaStatus.OK){
             totalArea += probe.Area;
-            rts.add((double)probe.Peak);
+            if (!LipidomicsConstants.isShotgun())
+              rts.add((double)probe.Peak);
           }
         }
-        if (k==0){
+        if (!LipidomicsConstants.isShotgun() && k==0){
           rt = Calculator.FormatNumberToString(Calculator.mean(rts)/60d,2d);
         }
       }
     }
+    if (LipidomicsConstants.isShotgun())
+      rt = null;
     LipidParameterSet param = new LipidParameterSet(analyteMass, analyteName, dbs, modName, rt, analyteFormula, modFormula,charge);
-    param.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance();
-    param.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance();
+    param.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance(analyteMass);
+    param.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance(analyteMass);
     param.Area = totalArea;
     param.setIsotopicProbes(isotopicProbes2);
     return param;
@@ -1302,6 +1320,31 @@ public class SingleQuantThread extends Thread
   public Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> getPeaksBeforeSplit()
   {
     return peaksBeforeSplit_;
+  }
+  
+  /**
+   * sets corresponding m/z values for the shotgun hits
+   * @param param the LipidParameterSet
+   */
+  private void adaptMzValuesOfShotgunHits(LipidParameterSet param){
+    Vector<Vector<CgProbe>> isoProbes = param.getIsotopicProbes();
+    Vector<Vector<CgProbe>> correctedProbes = new Vector<Vector<CgProbe>>();
+    float mzTolerance = 0f;
+    for (int i=0; i!=isoProbes.size(); i++){
+      Vector<CgProbe> probes = isoProbes.get(i);
+      Vector<CgProbe> corrected = new Vector<CgProbe>();
+      float mz = param.Mz[0]+i*LipidomicsConstants.getNeutronMass()/(float)param.getCharge();
+      for (CgProbe aProbe : probes){
+        mzTolerance = aProbe.LowerMzBand;
+        CgProbe probe = new CgProbe(aProbe);
+        probe.Mz = mz;
+        corrected.add(probe);
+      }
+      correctedProbes.add(corrected);
+    }
+    param.setIsotopicProbes(correctedProbes);
+    param.LowerMzBand = mzTolerance;
+    param.UpperMzBand = mzTolerance;
   }
   
   

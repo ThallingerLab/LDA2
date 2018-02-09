@@ -502,11 +502,11 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
             
             data_.setNameString(nameClassField.getText());
             
-                        
-            data_ = new LipidParameterSet(Float.parseFloat(precursorClassField.getText()), data_.getName(), data_.getDoubleBonds(), adductClassField.getText(),
+            Float mz = Float.parseFloat(precursorClassField.getText());
+            data_ = new LipidParameterSet(mz, data_.getName(), data_.getDoubleBonds(), adductClassField.getText(),
                 data_.getRt(), "", "",1);
-            data_.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance();
-            data_.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance();
+            data_.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance(mz);
+            data_.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance(mz);
             
             refreshMiddleWithoutCurrentGenerals(0);
             paintNewSpectra(true);     
@@ -3321,8 +3321,8 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     probe.AreaError = 0f;
     probe.Background = 0f;
     probe.Mz = mz;
-    probe.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance();
-    probe.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance();
+    probe.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance(mz);
+    probe.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance(mz);
     probe.isotopeNumber = 0;
     return probe;
   }

@@ -47,9 +47,11 @@ import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.verifier.DoubleVerifier;
 import at.tugraz.genome.lda.verifier.IntegerVerifier;
+import at.tugraz.genome.lda.verifier.MzInputVerifierForTolerance;
 import at.tugraz.genome.lda.vos.AddAnalyteVO;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
+import at.tugraz.genome.maspectras.utils.Calculator;
 
 /**
  * 
@@ -72,7 +74,7 @@ public class AddAnalyteDialog extends JDialog implements ActionListener
   private int positionToAddNewAnalyte_;
   private AnalyteAddRemoveListener parentListener_;
 
-  public AddAnalyteDialog(JFrame parent, String title, String message, String analyteName, String analyteFormula,
+  public AddAnalyteDialog(JFrame parent, String title, String message, String analyteName, float mz, String analyteFormula,
       String modName, String modFormula, int positionToAddNewAnalyte, boolean showRt, AnalyteAddRemoveListener parentListener) {
     super(parent, title, true);
     parentListener_ = parentListener;
@@ -133,7 +135,7 @@ public class AddAnalyteDialog extends JDialog implements ActionListener
     mzTolerance_ = new JTextField(5);
     mzTolerance_.setHorizontalAlignment(JTextField.RIGHT);
     mzTolerance_.setInputVerifier(new DoubleVerifier());
-    mzTolerance_.setText(String.valueOf(LipidomicsConstants.getCoarseChromMzTolerance()));
+    mzTolerance_.setText(String.valueOf(Calculator.roundFloat(LipidomicsConstants.getCoarseChromMzTolerance(mz),5)));
     mzTolerance_.setToolTipText(TooltipTexts.DISPLAY_ADD_ANALYTE_MZ);
     inputPane.add(mzTolerance_,new GridBagConstraints(1, 2, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
@@ -143,7 +145,7 @@ public class AddAnalyteDialog extends JDialog implements ActionListener
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     exactMass_ = new JTextField(10);
     exactMass_.setHorizontalAlignment(JTextField.RIGHT);
-    exactMass_.setInputVerifier(new DoubleVerifier());
+    exactMass_.setInputVerifier(new MzInputVerifierForTolerance(mzTolerance_));
     exactMass_.setToolTipText(TooltipTexts.DISPLAY_ADD_ANALYTE_MASS);
     inputPane.add(exactMass_,new GridBagConstraints(3, 2, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));

@@ -141,15 +141,18 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
   
   /** interpolate data points, where MS1 measurements are sparse */
   private boolean doSparseCorrection_ = false;
+  /** indicating whether shotgun data was used*/
+  private boolean shotgun_ = false;
 
   public Lipidomics2DPainter(LipidomicsAnalyzer analyzer,String[] dataStrings, Hashtable<Integer,Float> retentionTimes, float mzStart, float mzStop, int resolutionFactor,float stepSize, ActionListener listener,int displayTime,
-      float start, float stop, boolean raw, Vector<CgProbe> storedProbes, Vector<CgProbe> selectedProbes,int isotopeNumber, int charge, int msLevel){
-    this(analyzer,dataStrings, retentionTimes, null, mzStart, mzStop, resolutionFactor, stepSize, listener, displayTime, start, stop, raw, storedProbes, selectedProbes, isotopeNumber, charge, msLevel);
+      float start, float stop, boolean raw, Vector<CgProbe> storedProbes, Vector<CgProbe> selectedProbes,int isotopeNumber, int charge, int msLevel, boolean shotgun){
+    this(analyzer,dataStrings, retentionTimes, null, mzStart, mzStop, resolutionFactor, stepSize, listener, displayTime, start, stop, raw, storedProbes, selectedProbes, isotopeNumber, charge, msLevel,
+         shotgun);
   }
 
   
   public Lipidomics2DPainter(LipidomicsAnalyzer analyzer,String[] dataStrings, Hashtable<Integer,Float> retentionTimes,  Hashtable<Integer,Float> rTimesInterpolated, float mzStart, float mzStop, int resolutionFactor,float stepSize, ActionListener listener,int displayTime,
-      float start, float stop, boolean raw, Vector<CgProbe> storedProbes, Vector<CgProbe> selectedProbes,int isotopeNumber, int charge, int msLevel){
+      float start, float stop, boolean raw, Vector<CgProbe> storedProbes, Vector<CgProbe> selectedProbes,int isotopeNumber, int charge, int msLevel, boolean shotgun){
     super();
     this.analyzer_ = analyzer;
     this.dataStrings_ = dataStrings;
@@ -187,6 +190,8 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
     relativeIntensity_ = false;
     this.leftMouseClickLocationX_ = -1;
     this.leftMouseClickLocationY_ = -1;
+    this.raw_ = raw;
+    this.shotgun_ = shotgun;
     this.initialize();
   }
   
@@ -240,21 +245,26 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
     
 
     m_popup = new PopupMenu("Peak selection");
-    m_addUserProbe4 = new MenuItem("Determine Area (3D)");
-    m_addUserProbe4.addActionListener(this.superiorListener_);
-    m_popup.add(m_addUserProbe4);
+    if (!shotgun_){
+      m_addUserProbe4 = new MenuItem("Determine Area (3D)");
+      m_addUserProbe4.addActionListener(this.superiorListener_);
+      m_popup.add(m_addUserProbe4);
+    }
     m_addUserProbe1 = new MenuItem("Determine Area");
     m_addUserProbe1.addActionListener(this.superiorListener_);
     m_popup.add(m_addUserProbe1);
-    m_addUserProbe2 = new MenuItem("Determine Area (Col)");
-    m_addUserProbe2.addActionListener(this.superiorListener_);
-    m_popup.add(m_addUserProbe2);
-    m_addUserProbe3 = new MenuItem("Determine Area (Greedy)");
-    m_addUserProbe3.addActionListener(this.superiorListener_);
-    m_popup.add(m_addUserProbe3);
-    m_enterUserProbe = new MenuItem("Enter probe borders");
-    m_enterUserProbe.addActionListener(this);
-    m_popup.add(m_enterUserProbe);    
+    if (!shotgun_){
+      m_addUserProbe2 = new MenuItem("Determine Area (Col)");
+      m_addUserProbe2.addActionListener(this.superiorListener_);
+      m_popup.add(m_addUserProbe2);
+      m_addUserProbe3 = new MenuItem("Determine Area (Greedy)");
+      m_addUserProbe3.addActionListener(this.superiorListener_);
+      m_popup.add(m_addUserProbe3);
+
+      m_enterUserProbe = new MenuItem("Enter probe borders");
+      m_enterUserProbe.addActionListener(this);
+      m_popup.add(m_enterUserProbe);
+    }
     m_popup.addSeparator();
     m_deleteUserProbe = new MenuItem("Delete Area");
     m_deleteUserProbe.addActionListener(this.superiorListener_);
@@ -347,7 +357,6 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
     //this is for exporting chromatograms
     ////paint2dAreas(g,paintableProbes, Color.RED);
     paint2dAreas(this.selectedProbes_, Color.GREEN);
-
     draw2DDiagram(g, cr_, x0,y0,w0,h0, m_minDispTime2d_, m_maxDispTime2d_,maxIntensity_,m_2dGain_,
         displayTime_, timeCorrectionFactor_, raw_,true,relativeIntensity_,false,this.ms2Position_,false);
     currentStart_ = startAsInt;
@@ -1009,9 +1018,11 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
       boolean sysPr = this.anySystemProbeThere(e.getX());
       m_deleteUserProbe.setEnabled(usrPr || sysPr);
       m_addUserProbe1.setEnabled(sysPr == false && usrPr == false);
-      m_addUserProbe2.setEnabled(sysPr == false && usrPr == false);
-      m_addUserProbe3.setEnabled(sysPr == false && usrPr == false);
-      m_addUserProbe4.setEnabled(sysPr == false && usrPr == false);
+      if (!shotgun_){
+        m_addUserProbe2.setEnabled(sysPr == false && usrPr == false);
+        m_addUserProbe3.setEnabled(sysPr == false && usrPr == false);
+        m_addUserProbe4.setEnabled(sysPr == false && usrPr == false);
+      }
 
       this.setCursor(Cursor.getDefaultCursor());
       lastPopupX = e.getX();
@@ -1398,7 +1409,9 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
   {
     float t = getRetentionTime(x);
     CgProbe cx = null;
-    if (method==LipidomicsDefines.Valley3DMethod){
+    if (shotgun_){
+      cx = LipidomicsAnalyzer.calculateAShotgunIntensity(cr_, charge_, msLevel_, LipidomicsConstants.getShogunProcessing());
+    } else if (method==LipidomicsDefines.Valley3DMethod){
       try {
         cx = analyzer_.detectPeakThreeD(cr_,LipidomicsAnalyzer.findIndexByTime(t, cr_),false,charge_,msLevel_);
       } catch (CgException e) {
