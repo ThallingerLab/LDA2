@@ -1385,6 +1385,9 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     ResultDisplaySettingsVO settings = new ResultDisplaySettingsVO(settingsVO_);
     //TODO: this is set since I do not know about the output options of mzTab - maybe use the real settingsVO_ in future
     settings.setType("relative value");
-    return HeatMapDrawing.extractValuesOfInterest(resultsOfOneGroup_, Integer.parseInt((String)maxIsotopes_.getSelectedItem()), settings, null, expOptions,modifications_);
+    if (maxIsotopes_.getItemCount()>0)
+      return HeatMapDrawing.extractValuesOfInterest(resultsOfOneGroup_, Integer.parseInt((String)maxIsotopes_.getSelectedItem()), settings, null, expOptions,modifications_);
+    else
+      return null;
   }
 }
