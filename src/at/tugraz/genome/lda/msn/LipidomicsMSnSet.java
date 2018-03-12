@@ -397,6 +397,12 @@ public class LipidomicsMSnSet extends LipidParameterSet
     return posEvidence;
   }
   
+  
+  /**
+   * returns the MS-levels where detections were made for a certain (molecular) lipid species - or all levles in the case of MSLEVEL_ALL_IDENTIFIER
+   * @param fullName the molecular species name; or MSLEVEL_HEAD_IDENTIFIER, or MSLEVEL_ALL_IDENTIFIER
+   * @return the MS-levels where detections were made for a certain (molecular) lipid species - or all levles in the case of MSLEVEL_ALL_IDENTIFIER
+   */
   public Set<Integer> getMSLevels(String fullName){
     Set<Integer> msLevels = null;
     if (fullName.equalsIgnoreCase(MSLEVEL_HEAD_IDENTIFIER)||fullName.equalsIgnoreCase(MSLEVEL_ALL_IDENTIFIER) ||
@@ -418,8 +424,6 @@ public class LipidomicsMSnSet extends LipidParameterSet
     }
     return msLevels;
   }
-  
-  //private Hashtable<String,Set<Integer>> msLevels_;
   
   /**
    * general method for splitting the id of fatty acid combinations to the individual lipid species

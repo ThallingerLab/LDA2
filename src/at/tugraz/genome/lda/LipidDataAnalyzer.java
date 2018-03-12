@@ -5284,8 +5284,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	      OutputStreamWriter outwriter = new OutputStreamWriter(new FileOutputStream(exportFile.getAbsolutePath()), StandardCharsets.UTF_8);
 	      writer.write(outwriter, mzTabFile);
 	      outwriter.close();
-	      ////writer.write(Paths.get(exportFile.getAbsolutePath()), mzTabFile);
-	      //stream.close();
 	    }
 	    catch (IOException e) {
 	      e.printStackTrace();
@@ -5298,16 +5296,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	      // TODO Auto-generated catch block
 	      e.printStackTrace();
 	    }
-//  catch (ExcelInputFileException e) {
-//    // TODO Auto-generated catch block
-//    e.printStackTrace();
-//  }
-	    catch (ExcelInputFileException e) {
-	      // TODO Auto-generated catch block
+    catch (ExcelInputFileException e) {
 	      e.printStackTrace();
 	    }
     catch (MZTabException e) {
-        // TODO Auto-generated catch block
         e.printStackTrace();
     }
       catch (SpectrummillParserException e) {
