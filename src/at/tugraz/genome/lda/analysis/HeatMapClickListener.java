@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2018 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -47,12 +47,23 @@ public interface HeatMapClickListener extends SampleLookup
   
   public void changeISStatus(String groupName, boolean isGrouped, boolean value);
   public void changeESStatus(String groupName, boolean isGrouped, boolean value);
-//  public void changeDoublePeakStatus(String groupName, boolean value);
   public void changeIsotopesUsed(String groupName, boolean isGrouped, int value);
   public void eliminateDoublePeaks(String groupName, String analyteName, String absFilePathStartExp, Vector<String> selectedMods, Vector<String> foundUpdateables);
   public void eliminateAnalyteEverywhere(String groupName, Hashtable<String,String> selectedAnalytes, Vector<String> selectedMods, Vector<String> foundUpdateables);
   public void addAnalyteEverywhereAtPosition(String groupName, String analyteName, String absFilePathStartExp, Vector<String> selectedMods, Vector<AutoAnalyteAddVO> updateableAndAnalyteBefore, int maxIsotope, boolean exactProbePosition);
-  public void exportMzTab(File exportFile);
+  
+  /**
+   * exports the contents of the heat map to mzTab
+   * @param exportFile the file where mzTab shall be written
+   * @param speciesType which species shall be exported - for details see LipidomicsConstants.EXPORT_ANALYTE_TYPE
+   */
+  public void exportMzTab(File exportFile, short speciesType);
   public void exportRdb(File exportFile);
   public void exportMaf(File exportFile);
+  
+  /**
+   * callback to show the settings dialog for exporting
+   * @param grouped is it the export settings for the grouped heat map
+   */
+  public void showExportSettingsDialog(boolean grouped);
 }

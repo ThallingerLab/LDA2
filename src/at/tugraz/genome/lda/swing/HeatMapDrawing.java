@@ -79,6 +79,7 @@ import org.w3c.dom.Document;
 
 import at.tugraz.genome.lda.ChromExportThread;
 import at.tugraz.genome.lda.LipidDataAnalyzer;
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.TooltipTexts;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.analysis.HeatMapClickListener;
@@ -174,7 +175,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       Vector<String> modifications, JLabel statusText, HeatMapClickListener listener, String groupName, boolean isGrouped,
       boolean isAvailability, boolean esAvailability, boolean absoluteSettings, boolean hasProtein,
       boolean hasNeutralLipid, ResultDisplaySettings displaySettings, ResultSelectionSettings selectionSettings,
-      ResultSelectionSettings combinedChartSettings, Double rtTolerance){
+      ResultSelectionSettings combinedChartSettings, ExportSettingsPanel exportSettings, Double rtTolerance){
     selectedMolecules_ = new Hashtable<String,String>();
     parentAction_ = true;
     this.rtTolerance_ = rtTolerance;
@@ -255,6 +256,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     exportButton.addActionListener(this);
     exportButton.setMargin(new Insets(1,5,1,5));
     exportButton.setActionCommand("exportSelectionDialog");
+    
     exportButton.setToolTipText(TooltipTexts.HEATMAP_EXPORT_OPTIONS);
     buttonsPanel2.add(exportButton);
       
@@ -304,7 +306,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     combinedChartSettings_ = combinedChartSettings;
 //    selectionSettings_ = new ResultSelectionSettings(moleculeNames_,true,this);
 //    combinedChartSettings_ = new ResultSelectionSettings(moleculeNames_,false,this);
-    exportSettings_ = new ExportSettingsPanel(isGrouped_,this);
+    exportSettings_ = exportSettings;
     
     exportFileChooser_ = new JFileChooser();
     exportFileChooser_.setPreferredSize(new Dimension(600,500));
@@ -416,7 +418,6 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         actionCommand.equalsIgnoreCase("AcceptDisplaySettings")){
       settingsVO_ = displaySettings_.getSettingsVO();
       selectionSettings_.setVisible(false);
-      exportSettings_.setVisible(false);
       boolean update = true;    
       if (combinedDialogOpen_){
         update = false;
@@ -462,8 +463,6 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       displaySettings_.setVisible(true);
     } else if (actionCommand.equalsIgnoreCase("openSelectionDialog")){
       selectionSettings_.setVisible(true);
-    } else if (actionCommand.equalsIgnoreCase("exportSelectionDialog")){
-      exportSettings_.setVisible(true);
     } else if (actionCommand.equalsIgnoreCase("openCombinedDialog")){
       combinedChartSettings_.setVisible(true);
       combinedDialogOpen_ = true;
@@ -508,9 +507,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       }      
     } else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_EXCEL)||
         actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_TEXT)){
-      ExportOptionsVO expOptions = new ExportOptionsVO(ExportOptionsVO.EXPORT_NO_DEVIATION,null,true,false,false,6);
-      if (exportSettings_ != null)
-        expOptions = exportSettings_.getSettings();
+      ExportOptionsVO expOptions = getExportOptions();
       if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_EXCEL)||actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_TEXT)){
         Hashtable<String,String> expIdToString = new Hashtable<String,String>();
         for (String expId : experimentNames_)
@@ -595,9 +592,9 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         int returnVal = exportFileChooser_.showSaveDialog(new JFrame());	
     	    if (returnVal != JFileChooser.APPROVE_OPTION)
     	      return;
-    	
+    	    ExportOptionsVO expOptions = getExportOptions();
     	    File exportFile = exportFileChooser_.getSelectedFile();
-    	    if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_MZTAB)) heatMapListener_.exportMzTab(exportFile);
+    	    if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_MZTAB)) heatMapListener_.exportMzTab(exportFile, expOptions.getSpeciesType());
     	    else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_RDB)) heatMapListener_.exportRdb(exportFile);
       }
       exportFileChooser_.setSelectedFile(new File(""));
@@ -805,6 +802,8 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       this.updateUI();
     } else if (actionCommand.equalsIgnoreCase("stopChromExport")){
       chromExportThread_.stopThread();
+    } else if (actionCommand.equalsIgnoreCase("exportSelectionDialog")){
+      heatMapListener_.showExportSettingsDialog(this.isGrouped_);
     }
   }
   
@@ -1378,16 +1377,38 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     timer_ = null;
   }
   
-  public Hashtable<String,Hashtable<String,Vector<Double>>> getResultValues() throws NumberFormatException, CalculationNotPossibleException{
+  public Hashtable<String,Hashtable<String,Vector<Double>>> getResultValues(String valueType) throws NumberFormatException, CalculationNotPossibleException{
     int exportType = ExportOptionsVO.EXPORT_NO_DEVIATION;
     if (isGrouped_) exportType = ExportOptionsVO.EXPORT_SD_DEV_AND_ERROR;
-    ExportOptionsVO expOptions = new ExportOptionsVO(exportType,"1", false, true, false, 0);
+    ExportOptionsVO expOptions = new ExportOptionsVO(exportType,"1", false, true, false, 0, LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES);
     ResultDisplaySettingsVO settings = new ResultDisplaySettingsVO(settingsVO_);
-    //TODO: this is set since I do not know about the output options of mzTab - maybe use the real settingsVO_ in future
     settings.setType("relative value");
+    if (valueType!=null && valueType.length()>0)
+      settings.setType(valueType);
     if (maxIsotopes_.getItemCount()>0)
       return HeatMapDrawing.extractValuesOfInterest(resultsOfOneGroup_, Integer.parseInt((String)maxIsotopes_.getSelectedItem()), settings, null, expOptions,modifications_);
     else
       return null;
+  }
+  
+  
+  /** returns the currently set export options, or the default settings if the
+   * panel was not activated
+   * @return the currently set export options, or the default settings if the panel was not activated
+   */
+  private ExportOptionsVO getExportOptions(){
+    ExportOptionsVO expOptions = new ExportOptionsVO(ExportOptionsVO.EXPORT_NO_DEVIATION,null,true,false,false,6,LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES);
+    if (exportSettings_ != null)
+      expOptions = exportSettings_.getSettings();
+    return expOptions;
+  }
+  
+  
+  /**
+   * 
+   * @return the type of export value used
+   */
+  public String getValueType(){
+    return this.settingsVO_.getType();
   }
 }

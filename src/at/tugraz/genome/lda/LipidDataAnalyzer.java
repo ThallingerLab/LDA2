@@ -42,8 +42,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.math.BigDecimal;
-import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
@@ -91,24 +90,7 @@ import org.apache.batik.svggen.SVGGraphics2D;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 
-import uk.ac.ebi.pride.jmztab.model.Assay;
-import uk.ac.ebi.pride.jmztab.model.CVParam;
-import uk.ac.ebi.pride.jmztab.model.MZTabColumnFactory;
-import uk.ac.ebi.pride.jmztab.model.Metadata;
-import uk.ac.ebi.pride.jmztab.model.MZTabFile;
-import uk.ac.ebi.pride.jmztab.model.MZTabDescription;
-import uk.ac.ebi.pride.jmztab.model.Contact;
-import uk.ac.ebi.pride.jmztab.model.Instrument;
-import uk.ac.ebi.pride.jmztab.model.Modification;
-import uk.ac.ebi.pride.jmztab.model.MsRun;
-import uk.ac.ebi.pride.jmztab.model.Param;
-import uk.ac.ebi.pride.jmztab.model.PublicationItem;
-import uk.ac.ebi.pride.jmztab.model.Section;
-import uk.ac.ebi.pride.jmztab.model.SmallMolecule;
-import uk.ac.ebi.pride.jmztab.model.SmallMoleculeColumn;
-import uk.ac.ebi.pride.jmztab.model.Software;
-import uk.ac.ebi.pride.jmztab.model.StudyVariable;
-import uk.ac.ebi.pride.jmztab.model.UserParam;
+import uk.ac.ebi.pride.jmztab1_1.utils.errors.MZTabException;
 import at.tugraz.genome.lda.alex123.RdbOutputWriter;
 import at.tugraz.genome.lda.analysis.AnalyteAddRemoveListener;
 import at.tugraz.genome.lda.analysis.ClassNamesExtractor;
@@ -123,10 +105,13 @@ import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RdbWriterException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.exception.SettingsException;
+import at.tugraz.genome.lda.export.LDAExporter;
 import at.tugraz.genome.lda.interfaces.ColorChangeListener;
 import at.tugraz.genome.lda.listeners.AnnotationThresholdListener;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.MSnAnalyzer;
+import at.tugraz.genome.lda.mztab.MztabUtils;
+import at.tugraz.genome.lda.mztab.SmallMztabMolecule;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
@@ -139,6 +124,7 @@ import at.tugraz.genome.lda.swing.ColorChooserDialog;
 import at.tugraz.genome.lda.swing.CutoffSettingsPanel;
 import at.tugraz.genome.lda.swing.EditRtDialog;
 import at.tugraz.genome.lda.swing.ExportPanel;
+import at.tugraz.genome.lda.swing.ExportSettingsPanel;
 import at.tugraz.genome.lda.swing.GroupsPanel;
 import at.tugraz.genome.lda.swing.HeatMapDrawing;
 import at.tugraz.genome.lda.swing.InputDialog;
@@ -161,7 +147,6 @@ import at.tugraz.genome.lda.vos.AutoAnalyteAddVO;
 import at.tugraz.genome.lda.vos.IntegerStringVO;
 import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.lda.vos.RawQuantificationPairVO;
-import at.tugraz.genome.lda.vos.ResultAreaVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
 import at.tugraz.genome.lda.xml.AbsoluteQuantSettingsWholeReader;
@@ -185,6 +170,25 @@ import at.tugraz.genome.util.index.IndexFileException;
 import at.tugraz.genome.voutils.GeneralComparator;
 
 import com.sun.j3d.utils.applet.MainFrame;
+
+import de.isas.lipidomics.jmztabm.io.MzTabWriter;
+import de.isas.mztab1_1.model.Assay;
+import de.isas.mztab1_1.model.CV;
+import de.isas.mztab1_1.model.ColumnParameterMapping;
+import de.isas.mztab1_1.model.Contact;
+import de.isas.mztab1_1.model.Database;
+import de.isas.mztab1_1.model.Instrument;
+import de.isas.mztab1_1.model.Metadata;
+import de.isas.mztab1_1.model.MsRun;
+import de.isas.mztab1_1.model.MzTab;
+import de.isas.mztab1_1.model.Parameter;
+import de.isas.mztab1_1.model.Sample;
+import de.isas.mztab1_1.model.SampleProcessing;
+import de.isas.mztab1_1.model.SmallMoleculeEvidence;
+import de.isas.mztab1_1.model.SmallMoleculeFeature;
+import de.isas.mztab1_1.model.SmallMoleculeSummary;
+import de.isas.mztab1_1.model.Software;
+import de.isas.mztab1_1.model.StudyVariable;
 
 /**
  * 
@@ -449,6 +453,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private EditRtDialog editRtDialog_;
   /** true for the display of shotgun data*/
   private boolean shotgunIsDisplayed_;
+  
+  /** joined panel for exporting things from heat maps*/
+  private ExportSettingsPanel exportSettings_ = null;
+  /** joined panel for exporting things from group heat maps*/
+  private ExportSettingsPanel exportSettingsGroup_ = null;
+
   
   public LipidDataAnalyzer(){
     this.createDisplayTopMenu();
@@ -1542,7 +1552,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     
     JPanel groupRtPanel = new JPanel();
     groupRtPanel.setLayout(new GridBagLayout());  
-    JLabel sepRtLabel = new JLabel("Show hits with same RT separately: ");
+    JLabel sepRtLabel = new JLabel("Show hits with different RT separately: ");
     sepRtLabel.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
     groupRtPanel.add(sepRtLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
@@ -3081,7 +3091,18 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       editRtDialog_ = null;
     }else if (command.equalsIgnoreCase("DeclineChangedRT")){
       editRtDialog_ = null;
-    }    
+    } else if (command.equalsIgnoreCase("AcceptExportSettings")){
+      exportSettings_.setVisible(false);
+      if (exportSettingsGroup_!=null)
+        exportSettingsGroup_.setVisible(false);
+    }
+  }
+  
+  public void showExportSettingsDialog(boolean grouped){
+    if (grouped)
+      exportSettingsGroup_.setVisible(true);
+    else
+      exportSettings_.setVisible(true);
   }
   
   /**
@@ -3257,6 +3278,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     
     colorChooserDialog_ = new ColorChooserDialog(new JFrame(),"",expNames,groupsPanel_.getGroups(),this);
     int groupCount = 0;
+    exportSettings_ = new ExportSettingsPanel(false,this);
+    exportSettingsGroup_ = null;
+    if (this.groupsPanel_.getGroups().size()>0)
+      exportSettingsGroup_ = new ExportSettingsPanel(true,this);
+
     for (String molGroup : analysisResults.keySet()){
       JPanel aResultsViewPanel = new JPanel(new BorderLayout());
       JTabbedPane resultsViewTabs= new JTabbedPane();
@@ -3299,9 +3325,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       ResultDisplaySettings displaySettings = new ResultDisplaySettings(analysisModule_.getISAvailability().get(molGroup),analysisModule_.getESAvailability().get(molGroup),isLookup,esLookup,hasAbs,
           hasSampleWeight,hasProtein,hasNeutralLipid);
       ResultSelectionSettings selectionSettings = new ResultSelectionSettings(null,molNames,true);
-      ResultSelectionSettings combinedChartSettings = new ResultSelectionSettings(null,molNames,false);      
+      ResultSelectionSettings combinedChartSettings = new ResultSelectionSettings(null,molNames,false);
       HeatMapDrawing drawing = new HeatMapDrawing(molGroup,resultsOfOneGroup, expNames,molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,false,
-          analysisModule_.getISAvailability().get(molGroup),analysisModule_.getESAvailability().get(molGroup),hasAbs, hasProtein, hasNeutralLipid, displaySettings,selectionSettings,combinedChartSettings,
+          analysisModule_.getISAvailability().get(molGroup),analysisModule_.getESAvailability().get(molGroup),hasAbs, hasProtein, hasNeutralLipid, displaySettings,selectionSettings,combinedChartSettings,exportSettings_,
           analysisModule_.getRtTolerance());
       displaySettings.addActionListener(drawing);
       selectionSettings.addActionListener(drawing);
@@ -3324,7 +3350,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         JPanel groupPanel = new JPanel();
         groupPanel.setLayout(new BorderLayout());
         HeatMapDrawing groupDrawing = new HeatMapDrawing(molGroup,groupedResultsOfOneGroup, this.groupsPanel_.getGroups(),molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,true,
-            analysisModule_.getISAvailability().get(molGroup),analysisModule_.getESAvailability().get(molGroup),hasAbs,hasProtein, hasNeutralLipid, displaySettings,selectionSettings,combinedChartSettings,analysisModule_.getRtTolerance());
+            analysisModule_.getISAvailability().get(molGroup),analysisModule_.getESAvailability().get(molGroup),hasAbs,hasProtein, hasNeutralLipid, displaySettings,selectionSettings,combinedChartSettings,exportSettingsGroup_,analysisModule_.getRtTolerance());
         displaySettings.addActionListener(groupDrawing);
         selectionSettings.addActionListener(groupDrawing);
         combinedChartSettings.addActionListener(groupDrawing);
@@ -3347,7 +3373,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     }
     if (analysisResults.size()>0)
       resultTabs_.setSelectedIndex(1);
-    if (analysisResults.size()>1){     
+    if (analysisResults.size()>1){
       classOverviewPanel_ = new ClassesOverviewPanel(expNames,this,analysisModule_,displaySettingHash,heatmaps_,corrTypeISLookup,corrTypeESLookup,analysisResults,colorChooserDialog_);
       resultTabs_.addTab("Overview", classOverviewPanel_);
       resultTabs_.setToolTipTextAt(groupCount+1, TooltipTexts.TABS_RESULTS_OVERVIEW);
@@ -3368,7 +3394,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     resultsShowModification_ = new Hashtable<String,Boolean>();
     if (!keepOrder) orderResultsType_ = new Hashtable<String,Integer>();
     result_ = LDAResultReader.readResultFile(filePath,  resultsShowModification_);
-    if (result_.getConstants().getShotgun())
+    if (result_.getConstants()!=null && result_.getConstants().getShotgun())
       disableChromatographyFeatures();
     else
       enableChromatographyFeatures();
@@ -5076,232 +5102,218 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     return allProbes;
   }
   
-  public void exportMzTab(File exportFile)
+  public void exportMzTab(File exportFile, short speciesType)
   {
-	  // save the internal and external standard prefix
-	  String internalStandardPref = internalStandardSelection_.getText();
-	  String externalStandardPref = externalStandardSelection_.getText();
-	  
-	  // use the same param list as search engine identifier for all
-	  // identifications
-  MZTabDescription tabDescription = new MZTabDescription(MZTabDescription.Mode.Complete,MZTabDescription.Type.Quantification);
-	  Metadata metadata = new Metadata(tabDescription);
-	  Software software = new Software(1);
-  software.setParam(new UserParam("LipidDataAnalyzer", Settings.VERSION));
-  metadata.addSoftware(software);
-  CVParam quantificationMethod = new CVParam("MS","MS:1002038","unlabeled sample",null);
-  metadata.setQuantificationMethod(quantificationMethod);
-  Instrument instrument = LipidomicsConstants.getMzTabInstrument();
-  if (instrument!=null)
-    metadata.addInstrument(instrument);
-  
-  for (Contact contact : LipidomicsConstants.getMzTabContacts()){
-    metadata.addContact(contact);
-  }
-  List<Param> processings = LipidomicsConstants.getMzTabSampleprocessings();
-  for (int i=0; i!=processings.size();i++){
-    metadata.addSampleProcessingParam((i+1), processings.get(i));
-  }
-  List<String> pubmedIds = LipidomicsConstants.getMzTabPubmedIds();
-  for (int i=0; i!=pubmedIds.size();i++){
-    metadata.addPublicationItem(i+1, PublicationItem.Type.PUBMED, pubmedIds.get(i));
-  }
-  List<String> dois = LipidomicsConstants.getMzTabDOIs();
-  for (int i=0; i!=dois.size();i++){
-    metadata.addPublicationItem(i+1, PublicationItem.Type.DOI, dois.get(i));
-  }
-  
-  String taxId = null;
-  String species = null;
-  if (LipidomicsConstants.getMzTabSpecies()!=null){
-    metadata.addSampleSpecies(1, LipidomicsConstants.getMzTabSpecies());
-    taxId = LipidomicsConstants.getMzTabSpecies().getAccession();
-    species = LipidomicsConstants.getMzTabSpecies().getName();
-  }  
-  if (LipidomicsConstants.getMzTabTissue()!=null)
-    metadata.addSampleTissue(1, LipidomicsConstants.getMzTabTissue());
-  if (LipidomicsConstants.getMzTabCelltype()!=null)
-    metadata.addSampleCellType(1, LipidomicsConstants.getMzTabCelltype());
+	    // save the internal and external standard prefix
+    String internalStandardPref = internalStandardSelection_.getText();
+	    String externalStandardPref = externalStandardSelection_.getText();
+	    
+	    System.out.println("SpeciesType: "+speciesType);
+	    // use the same param list as search engine identifier for all
+	    // identifications
+	    /****  MZTabDescription tabDescription = new MZTabDescription(MZTabDescription.Mode.Complete,MZTabDescription.Type.Quantification);*/
+	    Metadata metadata = new Metadata();
+    metadata.setIdConfidenceMeasure(new ArrayList<Parameter>());
+	    //TODO: this has to be generated somehow differently
+	    metadata.setMzTabVersion("1.1");
+	    //TODO: this has to be generated somehow differently
+	    metadata.setMzTabID("1");
+	    Software software = new Software();
+	    software.setId(1);
+	    software.setParameter(new Parameter().name("LipidDataAnalyzer").value(Settings.VERSION));
+	    metadata.addSoftwareItem(software);
+	    Parameter quantMethod = new Parameter().cvLabel("MS").cvAccession("MS:1002038").name("unlabeled sample").value(null);
+	    Vector<Parameter> quantMethods = new Vector<Parameter>();
+	    quantMethods.add(quantMethod);
+	    metadata.setQuantificationMethod(quantMethods);
+	    List<CV> cvs = new ArrayList<CV>();
+	    CV label = new CV().id(1).label("MS").fullName("PSI-MS controlled vocabulary").version("4.0.9").url("https://raw.githubusercontent.com/HUPO-PSI/psi-ms-CV/master/psi-ms.obo");
+	    cvs.add(label);
+	    metadata.setCv(cvs);
+	    List<Database> databases = new ArrayList<Database>();
+	    Database database = new Database().id(1).param(new Parameter().name("no database").value("null"));
+	    database.setPrefix("nd");
+	    database.setVersion("none");
+	    database.setUrl("none");
+	    databases.add(database);
+	    metadata.setDatabase(databases);
+	    
+	    List<Instrument> instruments = new ArrayList<Instrument>();
+	    Instrument instrument = LipidomicsConstants.getMzTabInstrument();
+	    instruments.add(instrument);
+	    if (instrument!=null)
+	      metadata.setInstruments(instruments);
 
-  metadata.setSmallMoleculeQuantificationUnit(new CVParam("PRIDE", "PRIDE:0000330", "Arbitrary quantification unit", null));
-  metadata.addSmallMoleculeColUnit(SmallMoleculeColumn.RETENTION_TIME, new CVParam("UO", "UO:0000031", "minute", null));
-  
-  MZTabColumnFactory factory = MZTabColumnFactory.getInstance(Section.Small_Molecule);
-  try {
-    Hashtable<String,Integer> expToMsRun = new Hashtable<String,Integer>();
-   for (int i=0; i!=analysisModule_.getExpNamesInSequence().size(); i++) {
-	      String exp = analysisModule_.getExpNamesInSequence().get(i);
-	      String chromFileBase = StaticUtils.extractChromBaseName(analysisModule_.getFullFilePath(exp).getAbsolutePath(),exp);
-	      metadata.addMsRunLocation((i+1),new URL("file://"+chromFileBase+".chrom"));
-	      Assay assay = new Assay(i+1);
-	      assay.setQuantificationReagent(quantificationMethod);
-	      assay.setMsRun(new MsRun(i+1));
-	      metadata.addAssay(assay);
-	      expToMsRun.put(exp, (i+1));
-	      factory.addAbundanceOptionalColumn(assay);
+	    for (Contact contact : LipidomicsConstants.getMzTabContacts()){
+	      metadata.addContactsItem(contact);
 	    }
-    if (analysisModule_.getGroupNames()!=null && analysisModule_.getGroupNames().size()>0){
-      for (int i=0; i!=analysisModule_.getGroupNames().size(); i++){
-        String group = analysisModule_.getGroupNames().get(i);
-        StudyVariable studyVariable = new StudyVariable(i+1);
-        studyVariable.setDescription(group);
-        for (String exp : analysisModule_.getExpsOfGroup(group)){
-          studyVariable.addAssay(metadata.getAssayMap().get(expToMsRun.get(exp)));
-        }
-        metadata.addStudyVariable(studyVariable);
-        factory.addAbundanceOptionalColumn(studyVariable);
-      }
-    }  
-    MZTabFile mztabFile = new MZTabFile(metadata);
-    mztabFile.setSmallMoleculeColumnFactory(factory);
-    Hashtable<String,Vector<String>> correctAnalyteSequence = this.analysisModule_.getAllMoleculeNames();
-    for (String molGroup:this.heatmaps_.keySet()) {
-      Hashtable<String,String> selectedMolHash = new Hashtable<String,String>();
-      HeatMapDrawing heatmap = this.heatmaps_.get(molGroup);
-      HeatMapDrawing groupHeatmap = null;
-      if (analysisModule_.getGroupNames()!=null && analysisModule_.getGroupNames().size()>0) groupHeatmap = this.groupHeatmaps_.get(molGroup);
-      for (String molName: heatmap.getSelectedMoleculeNames()){
-        selectedMolHash.put(molName, molName);
-      }
-      Hashtable<String,Hashtable<String,Vector<Double>>> results = heatmap.getResultValues();
-      Hashtable<String,Hashtable<String,Vector<Double>>> resultsGroup = null;
-      if (groupHeatmap!=null) resultsGroup = groupHeatmap.getResultValues();
-      for (String molName: correctAnalyteSequence.get(molGroup)){
-        if (selectedMolHash.containsKey(molName)){
-          Hashtable<String,Vector<Double>> resultsMol = results.get(molName);
-          Hashtable<String,Vector<Double>> resultsGroupMol = null;
-          if (resultsGroup != null) resultsGroupMol = resultsGroup.get(molName);
-          SmallMolecule sm = new SmallMolecule(factory, metadata);
-          // build the lipid's identifier
-          String identifier = null;
-
-          if (molName.startsWith(internalStandardPref))
-            identifier = "IS_" + molGroup + molName.substring(internalStandardPref.length());
-          else if (molName.startsWith(externalStandardPref))
-            identifier = "ES_" + molGroup + molName.substring(externalStandardPref.length());
-          else
-            identifier = molGroup + molName;
-
-          sm.setIdentifier(identifier);
-          Hashtable<String,ResultAreaVO> expResults = new Hashtable<String,ResultAreaVO>();
-          Vector<String> modifications = this.analysisModule_.getModifications().get(molGroup);
-          Hashtable<String,String> modFormulas = new Hashtable<String,String>();
-          Hashtable<String,Integer> modCharges = new Hashtable<String,Integer>();
-          Hashtable<String,Double> calcMasses = new Hashtable<String,Double>();
-          Hashtable<String,Vector<Double>> expMasses = new Hashtable<String,Vector<Double>>();
-          for (String expName : analysisModule_.getExpNamesInSequence()){
-            ResultAreaVO areaVO = analysisModule_.getResultAreaVO(molGroup,molName,expName);
-            if (areaVO!=null){
-              expResults.put(expName, areaVO);
-              for (String mod : modifications){
-                if (!modFormulas.containsKey(mod)&&areaVO.hasModification(mod)){
-                  modFormulas.put(mod, areaVO.getModificationFormula(mod));
-                  modCharges.put(mod, areaVO.getCharge(mod));
-                  calcMasses.put(mod, areaVO.getTheoreticalMass(mod));
-                }
-                if (areaVO.hasModification(mod)){
-                  Vector<Double> expMass = new Vector<Double>();
-                  if (expMasses.containsKey(mod)) expMass = expMasses.get(mod);
-                  expMass.add(areaVO.getExperimentalMass(mod));
-                  expMasses.put(mod, expMass);
-                }
-              }
-            }
-          }
-         for (String modFormula : modFormulas.values()){
-            if (modFormula.length() > 0) {
-              String formattedMod = modFormula.replaceAll(" ", "");
-              if (formattedMod.startsWith("-")) {
-                formattedMod = formattedMod.replaceAll("-", "");
-                formattedMod = "-" + formattedMod;
-              } else {
-                formattedMod = "+" + formattedMod;
-              }
-              Modification mzTabMod = new Modification(Section.Small_Molecule,Modification.Type.CHEMMOD,formattedMod);
-              sm.addModification(mzTabMod);
-            }
-          }
-
-          //TODO: the parameters can be found in more than one charge state*/
-          ResultAreaVO firstInLine = expResults.values().iterator().next();
-          sm.setChemicalFormula(firstInLine.getChemicalFormulaBase().replaceAll(" ", ""));
-          //TODO: the area can consist of several modificiations - having different charge states, theoretical and experimental mass
-          //      however, mzTab does not support this until now!
-          String mod = modFormulas.keySet().iterator().next();
-          sm.setCharge(modCharges.get(mod));
-          sm.setCalcMassToCharge(calcMasses.get(mod));
-          Vector<Double> masses = expMasses.get(mod);
-          double sumMass = 0d;
-          for (Double mass : masses) sumMass += mass;
-          sm.setExpMassToCharge(sumMass/((double)masses.size()));
-              
-          String rt = null;
-          if (analysisModule_.getRtTolerance()!=null && !molName.startsWith(internalStandardPref) && !molName.startsWith(externalStandardPref)) rt = molName.substring(molName.lastIndexOf("_")+1);
-          if (rt!=null) sm.setRetentionTime(rt);
-          for (int i=0; i!=analysisModule_.getExpNamesInSequence().size(); i++) {
-            String exp = analysisModule_.getExpNamesInSequence().get(i);
-            if (!resultsMol.containsKey(exp)) continue;
-            Vector<Double> res = resultsMol.get(exp);
-            if (res.get(0)!=null && res.get(0)>0d){
-            		  sm.setAbundanceColumn(metadata.getAssayMap().get(expToMsRun.get(exp)), res.get(0));
-            		  if (rt==null){
-            		    Double rt2 = Calculator.roundDBL(res.get(1),2,BigDecimal.ROUND_HALF_UP);
-            		    if (rt2<0) rt2 = null;
-            		    sm.addRetentionTime(rt2);
-            		  }
-            }
-          }
-          if (resultsGroupMol!=null){
-            for (int i=0; i!=analysisModule_.getGroupNames().size(); i++){
-              String group = analysisModule_.getGroupNames().get(i);
-              Vector<Double> res = resultsGroupMol.get(group);
-              StudyVariable stdVar = metadata.getStudyVariableMap().get(i+1);
-              Double intensity = res.get(0);
-              Double stdev = res.get(1);
-              Double stderr = res.get(2);
-              if (intensity > 0)
-                sm.setAbundanceColumn(stdVar, intensity);
-              if (stdev > 0)
-                sm.setAbundanceStdevColumn(stdVar, stdev);
-              if (stderr > 0)
-                sm.setAbundanceStdErrorColumn(stdVar, stderr);
-            }
-          }
-          sm.setSearchEngine("[, , LipidDataAnalyzer, "+Settings.VERSION+"]");
-          if (taxId!=null){
-            try{sm.setTaxid(new Integer(taxId));}catch(NumberFormatException ex){}
-          }
-          if (species!=null){
-            sm.setSpecies(species);
-          }
-          mztabFile.addSmallMolecule(sm);
-
-        }
-      }
-
-    }
+  List<SampleProcessing> processings = LipidomicsConstants.getMzTabSampleprocessings();
+  metadata.setSampleProcessing(processings);
+  metadata.setPublications(LipidomicsConstants.getMzTabPublications());
+  if (LipidomicsConstants.getMzTabSample()!=null){
+    List<Sample> samples = new ArrayList<Sample>();
+    samples.add(LipidomicsConstants.getMzTabSample());
+    metadata.setSample(samples);
+  }
+  metadata.setSmallMoleculeQuantificationUnit(new Parameter().cvLabel("PRIDE").cvAccession("PRIDE:0000330").name("Arbitrary quantification unit"));
+  metadata.setSmallMoleculeFeatureQuantificationUnit(new Parameter().cvLabel("PRIDE").cvAccession("PRIDE:0000330").name("Arbitrary quantification unit"));
+  Vector<ColumnParameterMapping> colParMappings = new Vector<ColumnParameterMapping>();
+  ColumnParameterMapping colPar = new  ColumnParameterMapping().param(new Parameter().id(1).cvLabel("UO").cvAccession("UO:0000010").name("second"));
+  colParMappings.add(colPar);
+  metadata.setColunitSmallMolecule(colParMappings);
+    try {
+	      Hashtable<String,Integer> expToMsRun = new Hashtable<String,Integer>();
+	      resultsShowModification_ = new Hashtable<String,Boolean>();
     
-	    BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(exportFile));
-    mztabFile.printMZTab(stream);
-    stream.close();
-  }
-  catch (IOException e) {
-    // TODO Auto-generated catch block
-    e.printStackTrace();
-  }
-  catch (NumberFormatException e) {
-    // TODO Auto-generated catch block
-    e.printStackTrace();
-  }
-  catch (CalculationNotPossibleException e) {
-    // TODO Auto-generated catch block
-    e.printStackTrace();
-  }
+	      Hashtable<String,QuantificationResult> originalExcelResults = new Hashtable<String,QuantificationResult>();
+	      Hashtable<String,MsRun> msRuns = new Hashtable<String,MsRun>();
+	      for (int i=0; i!=analysisModule_.getExpNamesInSequence().size(); i++) {
+	        String exp = analysisModule_.getExpNamesInSequence().get(i);
+	        String chromFileBase = StaticUtils.extractChromBaseName(analysisModule_.getFullFilePath(exp).getAbsolutePath(),exp);
+	        MsRun run = new MsRun();
+	        run.setId((i+1));
+	        run.setLocation("file://"+chromFileBase+".chrom");
+	        Assay assay = new Assay();
+	        assay.setId(i+1);
+	        assay.setMsRunRef(run);
+	        msRuns.put(exp, run);
+////      assay.setQuantificationReagent(quantificationMethod);
+	        metadata.addAssayItem(assay);
+	        expToMsRun.put(exp, (i+1));
+	        metadata.addMsrunItem(run);
+	        originalExcelResults.put(exp, LDAResultReader.readResultFile(analysisModule_.getFullFilePath(exp).getAbsolutePath(), new Hashtable<String,Boolean>()));
+
+////	      factory.addAbundanceOptionalColumn(assay);
+	      }
+	      Hashtable<String,LinkedHashMap<String,Boolean>> adductsSortedByAbundance = LDAExporter.extractAdductsSortedByAbundance(this.heatmaps_.keySet(),originalExcelResults);
+      //check if the settings type is everywhere the same, otherwise, use "relative value"
+	      String valueType = null;
+	      boolean allTheSame = true;
+	      for (String molGroup : heatmaps_.keySet()){
+	        String type = heatmaps_.get(molGroup).getValueType();
+	        if (valueType==null)
+	          valueType = type;
+	        else if (!type.equalsIgnoreCase(valueType))
+	          allTheSame = false;
+      }
+	      if (!allTheSame)
+	        valueType = "relative value";
+	      System.out.println("Value Type: "+valueType);
+	      if (analysisModule_.getGroupNames()!=null && analysisModule_.getGroupNames().size()>0){
+	        for (int i=0; i!=analysisModule_.getGroupNames().size(); i++){
+	          String group = analysisModule_.getGroupNames().get(i);
+	          StudyVariable studyVariable = new StudyVariable();
+	          studyVariable.setId(i+1);
+	          studyVariable.setDescription(group);
+	          for (String exp : analysisModule_.getExpsOfGroup(group)){
+	            Integer assayId = expToMsRun.get(exp);
+	            for (Assay assay : metadata.getAssay()){
+	              if (assay.getId() == assayId)
+	                studyVariable.addAssayRefsItem(assay);
+	            }
+	          }
+	          metadata.addStudyVariableItem(studyVariable);
+////        factory.addAbundanceOptionalColumn(studyVariable);
+	        }
+	      }
+	  
+	  
+	      MzTab mzTabFile = new MzTab();
+	      mzTabFile.setMetadata(metadata);
+      Hashtable<String,Vector<String>> correctAnalyteSequence = this.analysisModule_.getAllMoleculeNames();
+//    int summaryId = 1;
+      int featureId = 1;
+      int evidenceId = 1;
+      int evidenceGroupingId = 1;
+	      for (String molGroup:this.heatmaps_.keySet()) {
+	        Hashtable<String,String> selectedMolHash = new Hashtable<String,String>();
+	        HeatMapDrawing heatmap = this.heatmaps_.get(molGroup);
+	//        HeatMapDrawing groupHeatmap = null;
+	//        if (analysisModule_.getGroupNames()!=null && analysisModule_.getGroupNames().size()>0) groupHeatmap = this.groupHeatmaps_.get(molGroup);
+	        for (String molName: heatmap.getSelectedMoleculeNames()){
+	          selectedMolHash.put(molName, molName);
+	        }
+	        Hashtable<String,Hashtable<String,Vector<Double>>> results = heatmap.getResultValues(valueType);
+	//        Hashtable<String,Hashtable<String,Vector<Double>>> resultsGroup = null;
+	//        if (groupHeatmap!=null) resultsGroup = groupHeatmap.getResultValues(valueType);
+        int maxIsotopes = heatmap.getSelectedIsotope();
+        LinkedHashMap<String,Boolean> adductsSorted = adductsSortedByAbundance.get(molGroup);
+        for (String molName: correctAnalyteSequence.get(molGroup)){
+          if (selectedMolHash.containsKey(molName)){
+            Hashtable<String,Vector<Double>> resultsMol = results.get(molName);
+//            Hashtable<String,Vector<Double>> resultsGroupMol = null;
+//	            if (resultsGroup != null) resultsGroupMol = resultsGroup.get(molName);
+//	            
+          
+	            boolean isInternalStandard = false;
+	            boolean isExternalStandard = false;
+	//            String identifier = null;
+	            if (molName.startsWith(internalStandardPref))
+	              isInternalStandard = true;
+	//              identifier = "IS_" + molGroup + molName.substring(internalStandardPref.length());
+	            else if (molName.startsWith(externalStandardPref))
+	              isExternalStandard = true;
+	 //             identifier = "ES_" + molGroup + molName.substring(externalStandardPref.length());
+	//            else
+	//              identifier = molGroup + molName;
+                  
+	            SmallMztabMolecule molecule = MztabUtils.createSmallMztabMolecule(speciesType, featureId, evidenceId, evidenceGroupingId,
+	                maxIsotopes,analysisModule_, msRuns, originalExcelResults, molGroup, molName, resultsMol, isInternalStandard,
+	                isExternalStandard, adductsSorted);
+	            if (molecule==null)
+	              continue;
+            featureId = molecule.getCurrentFeatureId();
+            evidenceId = molecule.getCurrentEvidenceId();
+            evidenceGroupingId = molecule.getCurrentEvGroupingId();
+            for (SmallMoleculeSummary summary : molecule.getSummary()){
+		              mzTabFile.addSmallMoleculeSummaryItem(summary);
+	            }
+	            for (SmallMoleculeFeature feature : molecule.getFeatures()){
+	              mzTabFile.addSmallMoleculeFeatureItem(feature);
+	            }
+	            for (SmallMoleculeEvidence evidence : molecule.getEvidence()){
+	              mzTabFile.addSmallMoleculeEvidenceItem(evidence);
+	            }
+	            
+          }
+	        }
+
+	      }
+	      //BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(exportFile));
+	      MzTabWriter writer = new MzTabWriter();
+	      OutputStreamWriter outwriter = new OutputStreamWriter(new FileOutputStream(exportFile.getAbsolutePath()), StandardCharsets.UTF_8);
+	      writer.write(outwriter, mzTabFile);
+	      outwriter.close();
+	      ////writer.write(Paths.get(exportFile.getAbsolutePath()), mzTabFile);
+	      //stream.close();
+	    }
+	    catch (IOException e) {
+	      e.printStackTrace();
+	    }
+	    catch (NumberFormatException e) {
+	      // TODO Auto-generated catch block
+	      e.printStackTrace();
+	    }
+	    catch (CalculationNotPossibleException e) {
+	      // TODO Auto-generated catch block
+	      e.printStackTrace();
+	    }
 //  catch (ExcelInputFileException e) {
 //    // TODO Auto-generated catch block
 //    e.printStackTrace();
 //  }
-
+	    catch (ExcelInputFileException e) {
+	      // TODO Auto-generated catch block
+	      e.printStackTrace();
+	    }
+    catch (MZTabException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+    }
+      catch (SpectrummillParserException e) {
+      e.printStackTrace();
+      new WarningMessage(new JFrame(), "Error", e.getMessage());
+    }
 	  }
   
   public void exportRdb(File exportFile){
@@ -5689,10 +5701,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                 line += "\t\""+"CHEMMOD:"+formattedMod+"\"";
                 line += "\t\""+chargeString+"\"";
                 line += "\t\""+rtString+"\"";
-                if (LipidomicsConstants.getMzTabSpecies().getAccession()!=null && LipidomicsConstants.getMzTabSpecies().getAccession().length()>0 &&
-                    LipidomicsConstants.getMzTabSpecies().getName()!=null && LipidomicsConstants.getMzTabSpecies().getName().length()>0){
-                  line += "\t\""+LipidomicsConstants.getMzTabSpecies().getAccession()+"\"";
-                  line += "\t\""+LipidomicsConstants.getMzTabSpecies().getName()+"\"";
+                if (LipidomicsConstants.getMzTabSample().getSpecies().get(0).getCvAccession()!=null && LipidomicsConstants.getMzTabSample().getSpecies().get(0).getCvAccession().length()>0 &&
+                    LipidomicsConstants.getMzTabSample().getSpecies().get(0).getName()!=null && LipidomicsConstants.getMzTabSample().getSpecies().get(0).getName().length()>0){
+                  line += "\t\""+LipidomicsConstants.getMzTabSample().getSpecies().get(0).getCvAccession()+"\"";
+                  line += "\t\""+LipidomicsConstants.getMzTabSample().getSpecies().get(0).getName()+"\"";
                 }else{
                   line += "\t\""+"\"";//+"taxid";
                   line += "\t\""+"\"";//+"species";                  

@@ -40,6 +40,7 @@ import javax.swing.JFrame;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.TooltipTexts;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.vos.ExportOptionsVO;
@@ -63,6 +64,13 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
   private JRadioButton columnExperiment_;
   protected JCheckBox exportRT_;
   protected JCheckBox exportRTDev_;
+  /** radio button indicating that the analytes shall be exported on the species level*/
+  private JRadioButton speciesLevel_;
+  /** radio button indicating that the analytes shall be exported on the chain level*/
+  private JRadioButton chainLevel_;
+  /** radio button indicating that the analytes shall be exported on the position level*/
+  private JRadioButton positionLevel_;
+
   
   private final static String CHANGE_SELECTION_STATUS = "changeSelectionStatus";
   public final static String CHANGE_RT_SELECTION_STATUS = "changeRTSelectionStatus";
@@ -134,10 +142,30 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
       this.add(exportRTDev_,new GridBagConstraints(0, 5, 2, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));      
     }
+    ButtonGroup speciesGroup = new ButtonGroup();
+    speciesLevel_ = new JRadioButton("species level");
+    speciesLevel_.setSelected(true);
+    speciesGroup.add(speciesLevel_);
+    speciesLevel_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_SPECIES);
+    this.add(speciesLevel_,new GridBagConstraints(0, 6, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));    
+    chainLevel_ = new JRadioButton("chain level (mzTab only)");
+    chainLevel_.setSelected(false);
+    speciesGroup.add(chainLevel_);
+    chainLevel_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_CHAIN);
+    this.add(chainLevel_,new GridBagConstraints(0, 7, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+    positionLevel_ = new JRadioButton("position level (mzTab only)");
+    positionLevel_.setSelected(false);
+    speciesGroup.add(positionLevel_);
+    positionLevel_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_POSITION);
+    this.add(positionLevel_,new GridBagConstraints(0, 8, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+
     JButton button = new JButton("OK");
-    button.setActionCommand("AcceptDisplaySettings");
+    button.setActionCommand("AcceptExportSettings");
     button.setToolTipText(TooltipTexts.ACCEPT_GENERAL);
-    this.add(button,new GridBagConstraints(0, 6, 3, 1, 0.0, 0.0
+    this.add(button,new GridBagConstraints(0, 9, 3, 1, 0.0, 0.0
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
     button.addActionListener(parent_);
     setVisible(false);
@@ -220,6 +248,13 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
     boolean exportRTDev = false;
     if (exportRTDev_!=null && exportRTDev_.isSelected())
       exportRTDev = true;
-    return new ExportOptionsVO(exportType,variationValue,columnAnalyte_.isSelected(),exportRT_.isSelected(),exportRTDev,6);
+    short speciesType = LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES;
+    if (speciesLevel_.isSelected())
+      speciesType = LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES;
+    else if (chainLevel_.isSelected())
+      speciesType = LipidomicsConstants.EXPORT_ANALYTE_TYPE_CHAIN;
+    else if (positionLevel_.isSelected())
+      speciesType = LipidomicsConstants.EXPORT_ANALYTE_TYPE_POSITION;    
+    return new ExportOptionsVO(exportType,variationValue,columnAnalyte_.isSelected(),exportRT_.isSelected(),exportRTDev,6,speciesType);
   }
 }

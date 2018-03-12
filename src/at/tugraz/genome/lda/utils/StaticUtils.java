@@ -1016,7 +1016,10 @@ public class StaticUtils
       Vector<Integer> lowestCarbonNumbers = new Vector<Integer>();
       int lowestCarbonNumber = Integer.MAX_VALUE;
       for (int i : unassignedFAs.keySet()){
-        int carbonNumber = Integer.parseInt(fas[i].substring(0,fas[i].indexOf(":")));
+        String carbonPart = fas[i].substring(0,fas[i].indexOf(":"));
+        while (carbonPart.length()>0 && !Character.isDigit(carbonPart.toCharArray()[0]))
+          carbonPart = carbonPart.substring(1);
+        int carbonNumber = Integer.parseInt(carbonPart);
         if (carbonNumber<lowestCarbonNumber ){
           lowestCarbonNumbers = new Vector<Integer>();
           lowestCarbonNumbers.add(i);
@@ -1172,6 +1175,24 @@ public class StaticUtils
       }
     }
     return permutedNames;
+  }
+  
+  
+  /**
+   * checks whether all of the detected chains have the same number of carbon atoms and double bonds 
+   * @param combiName the molecular species name
+   * @return true when all of the detected chains have the same number of carbon atoms and double bonds
+   */
+  public static boolean areAllChainsTheSame(String combiName){
+    String[] fas = getFAsFromCombiName(combiName.replaceAll("/", "_"));
+    boolean theSame = true;
+    for (int i=1; i!=fas.length; i++){
+      if (!fas[i].equalsIgnoreCase(fas[0])){
+        theSame = false;
+        break;
+      }
+    }
+    return theSame;
   }
 
 }

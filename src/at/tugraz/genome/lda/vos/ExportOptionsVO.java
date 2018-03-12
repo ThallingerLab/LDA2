@@ -37,19 +37,34 @@ public class ExportOptionsVO
   private boolean exportRT_;
   private boolean exportRTDev_;
   private int commaPositions_;
+  /** which type of species shall be exported*/
+  private short speciesType_;
   
   public static final int EXPORT_NO_DEVIATION = 0;
   public static final int EXPORT_SD_DEVIATION = 1;
   public static final int EXPORT_SD_ERROR = 2;
   public static final int EXPORT_SD_DEV_AND_ERROR = 3;
   
-  public ExportOptionsVO(int exportType,String sdValue, boolean analyteInColumn, boolean exportRT, boolean exportRTDev, int commaPositions){
+  
+  /**
+   * Constructor for object containing the user-selected export options
+   * @param exportType which values shall be exported (see ExportOptionsVO.EXPORT_ ...)
+   * @param sdValue the multiplicator for the standard deviation
+   * @param analyteInColumn true when analytes are in the columns, false when they are in the rows
+   * @param exportRT true when retention time values shall be exported
+   * @param exportRTDev true when standard deviation values of retention times shall be exported
+   * @param commaPositions the amounts of decimal places after the comma
+   * @param speciesType structural level of data export (lipid species, chain level, position level - for details see LipidomicsConstants.EXPORT_ANALYTE_TYPE)
+   */
+  public ExportOptionsVO(int exportType,String sdValue, boolean analyteInColumn, boolean exportRT, boolean exportRTDev, int commaPositions,
+      short speciesType){
     exportType_ = exportType;
     sdValue_ = sdValue;
     analyteInColumn_ = analyteInColumn;
     exportRT_ = exportRT;
     exportRTDev_ = exportRTDev;
     commaPositions_ = commaPositions;
+    speciesType_ = speciesType;
   }
 
 
@@ -88,7 +103,17 @@ public class ExportOptionsVO
   {
     return commaPositions_;
   }
-  
+
+
+  /**
+   * 
+   * @return which type of species shall be exported
+   */
+  public short getSpeciesType()
+  {
+    return speciesType_;
+  }
+
   
   
 }

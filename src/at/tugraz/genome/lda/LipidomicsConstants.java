@@ -42,14 +42,17 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 
+import de.isas.mztab1_1.model.Contact;
+import de.isas.mztab1_1.model.Instrument;
+import de.isas.mztab1_1.model.Parameter;
+import de.isas.mztab1_1.model.Publication;
+import de.isas.mztab1_1.model.PublicationItem;
+import de.isas.mztab1_1.model.PublicationItem.TypeEnum;
+import de.isas.mztab1_1.model.Sample;
+import de.isas.mztab1_1.model.SampleProcessing;
 import at.tugraz.genome.lda.exception.SettingsException;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.utils.ExcelUtils;
-import uk.ac.ebi.pride.jmztab.model.Contact;
-import uk.ac.ebi.pride.jmztab.model.Instrument;
-import uk.ac.ebi.pride.jmztab.model.Param;
-import uk.ac.ebi.pride.jmztab.model.CVParam;
-import uk.ac.ebi.pride.jmztab.model.UserParam;
 
 /**
  * 
@@ -86,6 +89,13 @@ public class LipidomicsConstants
   public final static String EXCEL_MSN_INTENSITY_VALUES = "Values";
   public final static String EXCEL_MSN_INTENSITY_MISSED = "Missed";
   
+  /** results shall be exported at the species level*/
+  public final static short EXPORT_ANALYTE_TYPE_SPECIES = 0;
+  /** results shall be exported at the chain level (no position)*/
+  public final static short EXPORT_ANALYTE_TYPE_CHAIN = 1;
+  /** results shall be exported at the chain position level*/
+  public final static short EXPORT_ANALYTE_TYPE_POSITION = 2;
+  
   /** prefix for alkyl linked fatty acid chains */
   public final static String ALKYL_PREFIX = "O-";
 
@@ -98,6 +108,9 @@ public class LipidomicsConstants
   
   public static String LDA_PROPERTIES_FILE = "LipidDataAnalyzer.properties";
   public static String MZTAB_PROPERTIES_FILE = "mzTab.properties";
+  
+  /** prefix for detectint addcut definitions in the MZTAB_PROPERTIES_FILE*/
+  private final static String MZTAB_ADDUCT_PREFIX = "adduct_";
   
   private static LipidomicsConstants instance_ = null;
   private String ldaVersion_;
@@ -188,18 +201,24 @@ public class LipidomicsConstants
   private String threeDViewerMs2DefaultTimeResolution_;
   private String threeDViewerMs2DefaultMZResolution_;
   
-  private Param mzTabInstrumentName_;
-  private Param mzTabInstrumentSource_;
-  private Param mzTabInstrumentAnalyzer_;
-  private Param mzTabInstrumentDetector_;
+  /** the name of the instrument in PSI controlled vocabulary*/
+  private Parameter mzTabInstrumentName_;
+  /** the name of the ion source in PSI controlled vocabulary*/
+  private Parameter mzTabInstrumentSource_;
+  /** the name of the m/z analyzer in PSI controlled vocabulary*/
+  private Parameter mzTabInstrumentAnalyzer_;
+  /** the name of the instrument detector in PSI controlled vocabulary*/
+  private Parameter mzTabInstrumentDetector_;
   
   private List<Contact> mzTabContacts_;
-  private Param mzTabSpecies_;
-  private Param mzTabTissue_;
-  private Param mzTabCelltype_;
-  private List<Param> mzTabSampleProcessings_;
-  private List<String> mzTabPubmeds_;
-  private List<String> mzTabDois_;
+  /** for mztab-exporting: the name of the sample*/
+  private Sample mzTabSample_;
+  /** for mztab-exporting: the name sample processing steps*/
+  private List<SampleProcessing> mzTabSampleProcessings_;
+  /** for mztab-exporting: the list of publications the data refers to*/
+  private List<Publication> mzTabPubs_;
+  /** for mztab-exporting: a lookup between the LDA adduct notation and the one proposed for the mzTab format*/
+  private Hashtable<String,String> mzTabAdductLookup_;
   
   private boolean chromExportShowLegend_;
   
@@ -1321,11 +1340,11 @@ public class LipidomicsConstants
   public static Instrument getMzTabInstrument(){
     LipidomicsConstants.getInstance();
     if (instance_.mzTabInstrumentName_!=null || instance_.mzTabInstrumentSource_!=null || instance_.mzTabInstrumentAnalyzer_!=null || instance_.mzTabInstrumentDetector_!=null){
-      Instrument instrument = new Instrument(1);
-      instrument.setAnalyzer(instance_.mzTabInstrumentAnalyzer_);
-      instrument.setDetector(instance_.mzTabInstrumentDetector_);
-      instrument.setName(instance_.mzTabInstrumentName_);
-      instrument.setSource(instance_.mzTabInstrumentSource_);
+      Instrument instrument = new Instrument().id(1);
+      instrument.addInstrumentAnalyzerItem(instance_.mzTabInstrumentAnalyzer_);
+      instrument.setInstrumentDetector(instance_.mzTabInstrumentDetector_);
+      instrument.setInstrumentName(instance_.mzTabInstrumentName_);
+      instrument.setInstrumentSource(instance_.mzTabInstrumentSource_);
       return instrument;
     }
     return null;
@@ -1336,35 +1355,55 @@ public class LipidomicsConstants
     return instance_.mzTabContacts_;
   }
 
-  public static List<Param> getMzTabSampleprocessings(){
+  /**
+   * 
+   * @return for mzTab-export: list of sample processing steps defined in the MZTAB_PROPERTIES_FILE
+   */
+  public static List<SampleProcessing> getMzTabSampleprocessings(){
     LipidomicsConstants.getInstance();
     return instance_.mzTabSampleProcessings_;
   }
 
-  public static List<String> getMzTabPubmedIds(){
+  /**
+   * 
+   * @return for mzTab-export: list of publications this data refers to
+   */
+  public static List<Publication> getMzTabPublications(){
     LipidomicsConstants.getInstance();
-    return instance_.mzTabPubmeds_;
+    return instance_.mzTabPubs_;
   }
 
-  public static List<String> getMzTabDOIs(){
+  /**
+   * 
+   * @return for mzTab-export: the sample this data originates of
+   */
+  public static Sample getMzTabSample(){
     LipidomicsConstants.getInstance();
-    return instance_.mzTabDois_;
+    return instance_.mzTabSample_;    
   }
-
-  public static Param getMzTabSpecies(){
+  
+  /**
+   * 
+   * @return true when this is a shotgun instance
+   */
+  public boolean getShotgun(){
     LipidomicsConstants.getInstance();
-    return instance_.mzTabSpecies_;
+    return this.shotgun_;
   }
-
-  public static Param getMzTabTissue(){
+  
+  /**
+   * checks the adduct lookup and returns the corresponding mzTab notation when present, null otherwise
+   * @param ldaAdduct the LDA adduct notation
+   * @return the mzTab notation
+   */
+  public static String getMzTabAdduct(String ldaAdduct){
     LipidomicsConstants.getInstance();
-    return instance_.mzTabTissue_;
+    String mzTabAdduct = null;
+    if (instance_.mzTabAdductLookup_.containsKey(ldaAdduct))
+      mzTabAdduct = instance_.mzTabAdductLookup_.get(ldaAdduct);
+    return mzTabAdduct;
   }
-
-  public static Param getMzTabCelltype(){
-    LipidomicsConstants.getInstance();
-    return instance_.mzTabCelltype_;
-  }
+  
   
   public static void switchToOtherConfFile(File newConfFile){
     instance_.readConstantsFile(newConfFile.getAbsolutePath());
@@ -1384,8 +1423,14 @@ public class LipidomicsConstants
     instance_.readConstantsFile(LDA_PROPERTIES_FILE);
   }
   
-  private static Param extractEBIParam(String key, Properties properties){
-    Param param = null;
+  /**
+   * parses a properties entry and returns the corresponding parameter in PSI notation
+   * @param key the key of the property
+   * @param properties the properties read from the file
+   * @return the corresponding parameter in PSI notation
+   */
+  private static Parameter extractEBIParam(String key, Properties properties){
+    Parameter param = null;
     String paramString = properties.getProperty(key,""); 
     if (paramString!=null && paramString.length()>0 && paramString.indexOf(",")!=-1){
       Vector<String> split = splitByComma(paramString);
@@ -1401,7 +1446,7 @@ public class LipidomicsConstants
         if (split.get(2)!=null && split.get(2).length()>0) name = split.get(2);
         String value = null;
         if (split.get(3)!=null && split.get(3).length()>0) value = split.get(3);
-        param = new CVParam(cvLabel,accession,name,value);
+        param = new Parameter().cvLabel(cvLabel).cvAccession(accession).name(name).value(value);
       }
     }
     return param;
@@ -1434,6 +1479,7 @@ public class LipidomicsConstants
   private void readmzTabConfFile(String fileName){
     try{
       File file = new File(fileName);
+      mzTabAdductLookup_ = new Hashtable<String,String>();
       if (file.exists()){
         FileInputStream inNew = new FileInputStream(file);
         Properties properties = new Properties();
@@ -1441,6 +1487,7 @@ public class LipidomicsConstants
         inNew.close();
         mzTabContacts_ = new ArrayList<Contact>();
         String propBase = "contact_";
+        String propBase2 = "";
         int count = 1;
         String contactString = "";
         while ((contactString = properties.getProperty(propBase+String.valueOf(count),""))!=null && contactString.length()>0){
@@ -1450,13 +1497,14 @@ public class LipidomicsConstants
           contactString = contactString.substring(contactString.indexOf(",")+1);
           String email = contactString.substring(0,contactString.indexOf(","));
           String affiliation = contactString.substring(contactString.indexOf(",")+1);
-          Contact contact = new Contact(count-1);
+          Contact contact = new Contact();
+          contact.setId(count-1);
           contact.setAffiliation(affiliation);
           contact.setEmail(email);
           contact.setName(name);
           mzTabContacts_.add(contact);
         }
-        mzTabSampleProcessings_ = new ArrayList<Param>();
+        mzTabSampleProcessings_ = new ArrayList<SampleProcessing>();
         String processingString = "";
         propBase = "sampleprocessing_";
         count = 1;
@@ -1464,33 +1512,73 @@ public class LipidomicsConstants
           count++;
           int commas = countComma(processingString);
           if (countComma(processingString)<1) continue;
+          SampleProcessing processing = new SampleProcessing().id(count-1);
+          Parameter procDetails = null;
           if (commas==1){
-            mzTabSampleProcessings_.add(new UserParam(processingString.substring(0,processingString.indexOf(",")),processingString.substring(processingString.indexOf(",")+1)));
+            procDetails = new Parameter().name(processingString.substring(0,processingString.indexOf(","))).value(processingString.substring(processingString.indexOf(",")+1));
           }else{
-            mzTabSampleProcessings_.add(extractEBIParam(propBase+String.valueOf(count-1),properties));
+            procDetails = extractEBIParam(propBase+String.valueOf(count-1),properties);
+          }
+          processing.addSampleProcessingItem(procDetails);
+          mzTabSampleProcessings_.add(processing);
+        }
+        mzTabPubs_ = new ArrayList<Publication>();
+        String publicationString1 = "";
+        String publicationString2 = "";
+        propBase = "pubmedid_";
+        propBase2 = "doi_";
+        count = 1;
+        while (((publicationString1 = properties.getProperty(propBase+String.valueOf(count),""))!=null && publicationString1.length()>0) |
+               ((publicationString2 = properties.getProperty(propBase2+String.valueOf(count),""))!=null && publicationString2.length()>0)){
+          count++;
+          
+          Publication pub = new Publication().id(count-1);
+          if (publicationString1!=null && publicationString1.length()>0){
+            PublicationItem item = new PublicationItem().accession(publicationString1).type(TypeEnum.PUBMED);
+            pub.addPublicationItemsItem(item);
+          }
+          if (publicationString2!=null && publicationString2.length()>0){
+            PublicationItem item = new PublicationItem().accession(publicationString2).type(TypeEnum.DOI);
+            pub.addPublicationItemsItem(item);            
+          }
+          mzTabPubs_.add(pub);
+        }
+        mzTabSample_ = null;
+        Parameter mzTabSpecies = extractEBIParam("species",properties);
+        Parameter mzTabTissue = extractEBIParam("tissue",properties);
+        Parameter mzTabCelltype = extractEBIParam("celltype",properties);
+        if (mzTabSpecies!=null || mzTabTissue!=null || mzTabCelltype!=null){
+          mzTabSample_ = new Sample().id(1);
+          if (mzTabSpecies!=null){
+            mzTabSample_.setSpecies(new Vector<Parameter>());
+            mzTabSample_.getSpecies().add(mzTabSpecies);
+          }
+          if (mzTabTissue!=null){
+            mzTabSample_.setTissue((new Vector<Parameter>()));
+            mzTabSample_.getTissue().add(mzTabTissue);
+          }
+          if (mzTabCelltype!=null){
+            mzTabSample_.setCellType((new Vector<Parameter>()));
+            mzTabSample_.getCellType().add(mzTabCelltype);
           }
         }
-        mzTabPubmeds_ = getStringPropertyList("pubmedid_",properties);
-        mzTabDois_ = getStringPropertyList("doi_",properties);
-        
-        mzTabSpecies_ = extractEBIParam("species",properties);
-        mzTabTissue_ = extractEBIParam("tissue",properties);
-        mzTabCelltype_ = extractEBIParam("celltype",properties);
+        String key;
+        String value;
+        String adductKey;
+        for (Object keyObject : properties.keySet()){
+          if (!(keyObject instanceof String))
+            continue;
+          key = (String) keyObject;
+          if (key.startsWith(MZTAB_ADDUCT_PREFIX)){
+            adductKey = key.substring(MZTAB_ADDUCT_PREFIX.length());
+            value = properties.getProperty(key);
+            mzTabAdductLookup_.put(adductKey,value);
+          }
+        }
       }
     }catch(Exception e){
       e.printStackTrace();
     }
-  }
-  
-  private static List<String> getStringPropertyList(String propBase, Properties properties){
-   List<String> list = new ArrayList<String>();
-   String aString = "";
-   int count = 1;
-   while ((aString = properties.getProperty(propBase+String.valueOf(count),""))!=null && aString.length()>0){
-     count++;
-     list.add(aString);
-   }
-   return list;
   }
   
   /**
@@ -1776,25 +1864,25 @@ public class LipidomicsConstants
       if (String.valueOf(sparseData_).length()>longestValue) longestValue = String.valueOf(sparseData_).length();
     }
     if (mzTabInstrumentName_!=null){
-      String value = getStringFromEBIParam(mzTabInstrumentName_);
+      String value = getStringFromMzTabParameter(mzTabInstrumentName_);
       if (MZTAB_INSTRUMENT.length()>longestKey) longestKey = MZTAB_INSTRUMENT.length();
       if (value.length()>longestValue) longestValue = value.length();
       rowCount = createPropertyRow(sheet,rowCount,MZTAB_INSTRUMENT,value);
     }
     if (mzTabInstrumentSource_!=null){
-      String value = getStringFromEBIParam(mzTabInstrumentSource_);
+      String value = getStringFromMzTabParameter(mzTabInstrumentSource_);
       if (MZTAB_IONSOURCE.length()>longestKey) longestKey = MZTAB_IONSOURCE.length();
       if (value.length()>longestValue) longestValue = value.length();
       rowCount = createPropertyRow(sheet,rowCount,MZTAB_IONSOURCE,value);
     }
     if (mzTabInstrumentAnalyzer_!=null){
-      String value = getStringFromEBIParam(mzTabInstrumentAnalyzer_);
+      String value = getStringFromMzTabParameter(mzTabInstrumentAnalyzer_);
       if (MZTAB_MSANALYZER.length()>longestKey) longestKey = MZTAB_MSANALYZER.length();
       if (value.length()>longestValue) longestValue = value.length();
       rowCount = createPropertyRow(sheet,rowCount,MZTAB_MSANALYZER,value);
     }
     if (mzTabInstrumentDetector_!=null){
-      String value = getStringFromEBIParam(mzTabInstrumentDetector_);
+      String value = getStringFromMzTabParameter(mzTabInstrumentDetector_);
       if (MZTAB_DETECTOR.length()>longestKey) longestKey = MZTAB_DETECTOR.length();
       if (value.length()>longestValue) longestValue = value.length();
       rowCount = createPropertyRow(sheet,rowCount,MZTAB_DETECTOR,value);
@@ -1818,10 +1906,10 @@ public class LipidomicsConstants
    * @param param the Param VO
    * @return the String representation of the VO
    */
-  private String getStringFromEBIParam(Param param){
+  private String getStringFromMzTabParameter(Parameter param){
     String returnString = param.getCvLabel()+",";
-    if (param.getAccession()!=null && param.getAccession().length()>0)
-      returnString += param.getAccession()+",";
+    if (param.getCvAccession()!=null && param.getCvAccession().length()>0)
+      returnString += param.getCvAccession()+",";
     if (param.getName()!=null && param.getName().length()>0)
       returnString += param.getName()+",";
     if (param.getValue()!=null && param.getValue().length()>0)
@@ -1975,14 +2063,6 @@ public class LipidomicsConstants
     this.alexTargetlistUsed_ = alexTargetlistUsed;
   }
 
-  /**
-   * 
-   * @return true when this is a shotgun instance
-   */
-  public boolean getShotgun(){
-    return this.shotgun_;
-  }
-  
   /**
    * 
    * @param tolerance the tolerance value in its original unit

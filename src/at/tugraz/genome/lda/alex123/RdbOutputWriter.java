@@ -493,12 +493,12 @@ public class RdbOutputWriter
                     msLevel = "ms/ms"; 
                     LipidomicsMSnSet msnSet = (LipidomicsMSnSet)set;
                     
-                    Hashtable<Integer,Vector<Float>> msnRets = msnSet.getMsnRetentionTimes();
+                    Hashtable<Integer,LinkedHashMap<Integer,Float>> msnRets = msnSet.getMsnRetentionTimes();
                     Hashtable<Integer,Integer> nrMSnSpectra = new Hashtable<Integer,Integer>();
                     Hashtable<Integer,String> msnRetStrings = new Hashtable<Integer,String>();
                     for (int j=2; j<=highestMSLevel; j++){
                       if (msnRets.containsKey(j)){
-                        Vector<Float> rts = msnRets.get(j);
+                        Vector<Float> rts =  new Vector<Float>(msnRets.get(j).values());
                         String rtsString = "";
                         for (Float rt : rts){
                           if (rtsString.length()>0) rtsString += "|";

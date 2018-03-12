@@ -26,6 +26,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Hashtable;
+import java.util.LinkedHashMap;
 import java.util.StringTokenizer;
 import java.util.Vector;
 import java.util.regex.Matcher;
@@ -491,7 +492,7 @@ public class LDAResultReader
     Hashtable<String,Double> relativeAreas = new Hashtable<String,Double>();
     String regex = "MS(\\d+) scan RTs";
     Pattern msLevelPattern =  Pattern.compile(regex);
-    Hashtable<Integer,Vector<Float>> msnRetentionTimes = new Hashtable<Integer,Vector<Float>>();
+    Hashtable<Integer,LinkedHashMap<Integer,Float>> msnRetentionTimes = new Hashtable<Integer,LinkedHashMap<Integer,Float>>();
     boolean checkMSnAreas = false;
     boolean headGroupFragmentActive = false;
     boolean headGroupRules = false;
@@ -635,7 +636,7 @@ public class LDAResultReader
       // reading the second row, containing the relative areas of the analytes and the retention times
       else if (checkMSnAreas && addingMSnEvidence!=null){
         relativeAreas = new Hashtable<String,Double>();
-        msnRetentionTimes = new Hashtable<Integer,Vector<Float>>();
+        msnRetentionTimes = new Hashtable<Integer,LinkedHashMap<Integer,Float>>();
         double totalArea = (Double)cellEntries.get(MSN_ROW_FRAGMENT_NAME);
         for (Integer column : columnToIdentification.keySet()){
           String lipidIdentification = columnToIdentification.get(column);
@@ -643,13 +644,30 @@ public class LDAResultReader
           Matcher msLevelMatcher = msLevelPattern.matcher(lipidIdentification);
           if (msLevelMatcher.matches()){
             int msLevel =  Integer.parseInt(msLevelMatcher.group(1));
-            Vector<Float> rts = new Vector<Float>();
+            LinkedHashMap<Integer,Float> rts = new LinkedHashMap<Integer,Float>();
             StringTokenizer rtTokenizer = null;
             if (cellEntries.get(column) instanceof Double)
               rtTokenizer = new StringTokenizer(((Double)cellEntries.get(column)).toString(),";");
             else 
               rtTokenizer = new StringTokenizer((String)cellEntries.get(column),";");
-            while (rtTokenizer.hasMoreTokens()) rts.add(new Float(rtTokenizer.nextToken()));
+            //this is for backward compatibility
+            int count = 1;
+            while (rtTokenizer.hasMoreTokens()){
+              String kvPairString = rtTokenizer.nextToken();
+              int scanNr = -1;
+              float rt = -1;
+              //this is for backward compatibility
+              if (kvPairString.indexOf("=")==-1){
+                scanNr = count;
+                rt = new Float(kvPairString);
+                count++;
+              }else{
+                String[] kvPair = kvPairString.split("=");
+                scanNr = Integer.parseInt(kvPair[0]);
+                rt = Float.parseFloat(kvPair[1]);
+              }
+              rts.put(scanNr, rt);
+            }
             msnRetentionTimes.put(msLevel, rts);
           //this is for the relative areas
           }else

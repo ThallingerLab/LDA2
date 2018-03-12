@@ -1277,7 +1277,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
             for (CgProbe probe : zeroIsos){
               sumMass += probe.Mz;
             }
-            areaVO.addResultPart(recentModification, param.getModificationFormula(), param.Mz[0], sumMass/((double)zeroIsos.size()), param.getCharge());
+            areaVO.addResultPart(recentModification, param.getModificationFormula(), param.Mz[0], sumMass/((double)zeroIsos.size()),
+                param.getCharge(),param.getRt());
             Hashtable<Integer,Boolean> moreThanOnePeak = new Hashtable<Integer,Boolean>();
             modifications.put(recentModification, recentModification);
             
@@ -3174,5 +3175,16 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
     if (this.allResultsHash_.containsKey(molGroup) && this.allResultsHash_.get(molGroup).containsKey(expName) && this.allResultsHash_.get(molGroup).get(expName).containsKey(molName))
       areaVO = allResultsHash_.get(molGroup).get(expName).get(molName);
     return areaVO;
+  }
+  
+  /**
+   * 
+   * @return true when the RT grouping parameter is set
+   */
+  public boolean isRtGrouped(){
+    if (this.expRtGroupingTime_>0)
+      return true;
+    else
+      return false;
   }
 }

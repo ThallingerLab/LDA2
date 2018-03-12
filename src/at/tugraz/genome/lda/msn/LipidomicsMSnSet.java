@@ -23,7 +23,10 @@
 
 package at.tugraz.genome.lda.msn;
 
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.LinkedHashMap;
+import java.util.Set;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
@@ -67,9 +70,16 @@ public class LipidomicsMSnSet extends LipidParameterSet
   private int numberOfPositions_;
   /** the intensities of the base peaks */
   private Hashtable<Integer,Float> basePeakValues_;
-  /** the retention times of the used MSn spectra; the key is the msLevel*/
-  private Hashtable<Integer,Vector<Float>> msnRetentionTimes_;
+  /** the retention times of the used MSn spectra; the first key is the msLevel; second key scan number; value: retention time*/
+  private Hashtable<Integer,LinkedHashMap<Integer,Float>> msnRetentionTimes_;
+  /** the MS-levels used for each molecular species; key: molecular species; value MS-levels used*/
+  private Hashtable<String,Set<Integer>> msLevels_;
   
+  /** identifier for msLevels_ for head group only*/
+  public final static String MSLEVEL_HEAD_IDENTIFIER = "head";
+  /** identifier for msLevels_ for all available molecular species (in a cumulative species export)*/
+  public final static String MSLEVEL_ALL_IDENTIFIER = "all";
+
   
   /** position definitions for fatty acid combinations - first key: id of the chain combination; second hash: lookup from the position of the fatty acid in the combination key to the assigned position*/
   private Hashtable<String,Hashtable<Integer,Integer>> positionDefinition_;
@@ -95,27 +105,49 @@ public class LipidomicsMSnSet extends LipidParameterSet
    * @param positionEvidence hash containing the fulfilled MSn evidence for a position assignment - first key: id of the chain combination; second key: position where evidence is provided; values: rules that are fulfilled by MSn evidence
    * @param numberOfPositions at how many positions the fatty acids may be assigned
    * @param basePeakValues found values for the base peak
-   * @param msnRetentionTimes the retention times of the used MSn spectra; the key is the msLevel
+   * @param msnRetentionTimes the retention times of the used MSn spectra; the first key is the msLevel; second key scan number; value: retention time
    */
   public LipidomicsMSnSet(LipidParameterSet set, int status, float mzTolerance, Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,IntensityRuleVO> headIntensityRules,
       Hashtable<String,Hashtable<String,CgProbe>> chainFragments, Hashtable<String,Hashtable<String,IntensityChainVO>> chainIntensityRules,
       Vector<String> validChainCombinations, Hashtable<String,Hashtable<Integer,Integer>> positionDefinition,
       Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>> positionEvidence, int numberOfPositions, 
-      Hashtable<Integer,Float> basePeakValues, Hashtable<Integer,Vector<Float>> msnRetentionTimes){
+      Hashtable<Integer,Float> basePeakValues, Hashtable<Integer,LinkedHashMap<Integer,Float>> msnRetentionTimes){
     super(set);
     status_ = status;
     mzTolerance_ = mzTolerance;
+    msLevels_ = new Hashtable<String,Set<Integer>>();
+    Set<Integer> headLevel = new HashSet<Integer>();
     headGroupFragments_ = new Hashtable<String,CgProbe>(headGroupFragments);
+    for (CgProbe probe : headGroupFragments_.values())
+      headLevel.add(probe.getMsLevel());
+    msLevels_.put(MSLEVEL_HEAD_IDENTIFIER, headLevel);
+    Set<Integer> allLevel = new HashSet<Integer>(headLevel);
+    Hashtable<String,Set<Integer>> faLevels = new Hashtable<String,Set<Integer>>();
     headIntensityRules_ =  new Hashtable<String,IntensityRuleVO>(headIntensityRules);
     chainFragments_ = new Hashtable<String,Hashtable<String,CgProbe>>();
     for (String fa : chainFragments.keySet()){
       chainFragments_.put(fa, new Hashtable<String,CgProbe>(chainFragments.get(fa)));
+      Set<Integer> faSpecificLevel = new HashSet<Integer>();
+      for (CgProbe probe : chainFragments.get(fa).values())
+        faSpecificLevel.add(probe.getMsLevel());
+      allLevel.addAll(faSpecificLevel);
+      faLevels.put(fa, faSpecificLevel);
     }
     chainIntensityRules_ = new Hashtable<String,Hashtable<String,IntensityChainVO>>();
     for (String key : chainIntensityRules.keySet()){
       chainIntensityRules_.put(key, new Hashtable<String,IntensityChainVO>(chainIntensityRules.get(key)));
     }
     validChainCombinations_ = new Vector<String>(validChainCombinations);
+    for (String combi : validChainCombinations_){
+      Set<Integer> combiLevel = new HashSet<Integer>();
+      for (String fa : StaticUtils.getFAsFromCombiName(combi)){
+        if (faLevels.containsKey(fa))
+          combiLevel.addAll(faLevels.get(fa));
+      }
+      msLevels_.put(combi, combiLevel);
+    }
+    msLevels_.put(MSLEVEL_ALL_IDENTIFIER, allLevel);
+    
     positionDefinition_ = new Hashtable<String,Hashtable<Integer,Integer>>();
     for (String key : positionDefinition.keySet()){
       positionDefinition_.put(key, new Hashtable<Integer,Integer>(positionDefinition.get(key)));
@@ -346,6 +378,50 @@ public class LipidomicsMSnSet extends LipidParameterSet
   }
   
   /**
+   * returns the position evidence information belonging to a certain lipid (molecular) species
+   * @param fullName the species name (without position information)
+   * @return the position evidence information belonging to a certain lipid (molecular) species
+   */
+  public Hashtable<Integer,Vector<IntensityPositionVO>> getPositionEvidence(String fullName){
+    Hashtable<Integer,Vector<IntensityPositionVO>> posEvidence = null;
+    if (!this.positionEvidence_.containsKey(fullName)){
+      for (String combiName : this.validChainCombinations_){
+        if (!positionDefinition_.containsKey(combiName)) continue;
+        Vector<String> posCombiNames = getPositionSpecificCombiNames(combiName);
+        for (String posCombiName : posCombiNames){
+          if (posCombiName.equalsIgnoreCase(fullName)) return positionEvidence_.get(combiName);
+        }
+      }      
+    }else
+      posEvidence = positionEvidence_.get(fullName);
+    return posEvidence;
+  }
+  
+  public Set<Integer> getMSLevels(String fullName){
+    Set<Integer> msLevels = null;
+    if (fullName.equalsIgnoreCase(MSLEVEL_HEAD_IDENTIFIER)||fullName.equalsIgnoreCase(MSLEVEL_ALL_IDENTIFIER) ||
+        msLevels_.containsKey(fullName))
+      msLevels = msLevels_.get(fullName);
+    else {
+      for (String combiName : this.validChainCombinations_){
+        if (!positionDefinition_.containsKey(combiName)) continue;
+        Vector<String> posCombiNames = getPositionSpecificCombiNames(combiName);
+        for (String posCombiName : posCombiNames){
+          if (posCombiName.equalsIgnoreCase(fullName)){
+            msLevels = msLevels_.get(combiName);
+            break;
+          }
+        }
+        if (msLevels!=null)
+          break;
+      }            
+    }
+    return msLevels;
+  }
+  
+  //private Hashtable<String,Set<Integer>> msLevels_;
+  
+  /**
    * general method for splitting the id of fatty acid combinations to the individual lipid species
    * @param combiName id of fatty acid combinations
    * @return individual lipid species names
@@ -381,9 +457,9 @@ public class LipidomicsMSnSet extends LipidParameterSet
   }
   
   /**
-   * @return the retention times of the used MSn spectra; the key is the msLevel
+   * @return the retention times of the used MSn spectra; the first key is the msLevel; second key scan number; value: retention time
    */
-  public Hashtable<Integer,Vector<Float>> getMsnRetentionTimes()
+  public Hashtable<Integer,LinkedHashMap<Integer,Float>> getMsnRetentionTimes()
   {
     return msnRetentionTimes_;
   }

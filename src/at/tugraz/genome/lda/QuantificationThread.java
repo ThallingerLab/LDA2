@@ -833,9 +833,9 @@ public class QuantificationThread extends Thread
     List<Integer> msLevels = new ArrayList<Integer>(param.getMsnRetentionTimes().keySet());
     Collections.sort(msLevels);
     for (int msLevel : msLevels){
-      Vector<Float> rts = param.getMsnRetentionTimes().get(msLevel);
+      LinkedHashMap<Integer,Float> rts = param.getMsnRetentionTimes().get(msLevel);
       String rtString = "";
-      for (float rt : rts) rtString += rt+";";
+      for (Integer scanNr : rts.keySet()) rtString += scanNr+"="+rts.get(scanNr)+";";
       if (rtString.length()>0) rtString = rtString.substring(0,rtString.length()-1);
       cell = row.createCell(cellCount);
       cell.setCellStyle(headerStyle);

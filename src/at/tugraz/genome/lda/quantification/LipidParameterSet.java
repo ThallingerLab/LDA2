@@ -299,10 +299,37 @@ public class LipidParameterSet extends CgParameterSet
   
   /**
    * 
-   * @return the are of the peak (if there is percental split - this method respects it)
+   * @return the area of the peak (if there is percental split - this method respects it)
    */
   public float getArea(){
     float area = super.Area;
+    return this.getArea(area);
+  }
+  
+  
+  /**
+   * 
+   * @param maxIsotope the highest isotope to use for the total area
+   * @return the area of the peak up to a certain isotope (if there is percental split - this method respects it)
+   */
+  public float getArea(int maxIsotope){
+    float area = 0f;
+    for (int i=0; i!=(maxIsotope+1) && i!=isotopicProbes_.size() ; i++){
+      for (CgProbe probe : this.isotopicProbes_.get(i)){
+        area += probe.Area;
+      }
+    }
+    return this.getArea(area);
+  }
+  
+  
+  /**
+   * returns the area itself or splits it in case there is a percentual split
+   * @param fullArea the area
+   * @return the area itself or splits it in case there is a percentual split
+   */
+  private float getArea(float fullArea){
+    float area = fullArea;
     if (this.percentalSplit_>=0) area=(area*this.percentalSplit_)/100f;
     return area;
   }

@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Hashtable;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Vector;
 
@@ -4285,10 +4286,10 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
    * returns the retention times of MSn spectra that are within the detected MS1 peaks
    * @param msLevel the MS-level of the spectra
    * @param probes the detected MS1 peaks
-   * @return the retention times of MSn spectra that are within the detected MS1 peaks
+   * @return the sorted retention times of MSn spectra that are within the detected MS1 peaks; first key scan number; value: retention time
    */
-  public Vector<Float> getMSnSpectraRetentionTimes(int msLevel, Vector<CgProbe> probes){
-    Vector<Float> rts = new Vector<Float>();
+  public LinkedHashMap<Integer,Float> getMSnSpectraRetentionTimes(int msLevel, Vector<CgProbe> probes){
+    LinkedHashMap<Integer,Float> rts = new LinkedHashMap<Integer,Float>();
     float[] startStopRt = this.getStartStopTimeFromProbes(probes);
     float lowestRt = startStopRt[0];
     float highestRt = startStopRt[1];
@@ -4300,8 +4301,9 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     Collections.sort(consScanNumbers);
     for (Integer consScanNumber : consScanNumbers){
       float rt = retTimes.get(consScanNumber);
+      int scanNumber = Integer.parseInt(spectra.get(consScanNumber).substring(0,spectra.get(consScanNumber).indexOf(" ")));
       if (lowestRt<rt && rt<=highestRt)
-        rts.add(rt);
+        rts.put(scanNumber, rt);
     }
     return rts;
   }

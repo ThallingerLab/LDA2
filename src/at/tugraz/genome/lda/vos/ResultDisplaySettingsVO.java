@@ -62,9 +62,9 @@ public class ResultDisplaySettingsVO
     return type_;
   }
   
-  public void setType(String type_)
+  public void setType(String type)
   {
-    this.type_ = type_;
+    this.type_ = type;
   }
 
   public int getISStandMethod()
@@ -89,9 +89,9 @@ public class ResultDisplaySettingsVO
     return percent_;
   }
 
-  public void setPercent(boolean percent_)
+  public void setPercent(boolean percent)
   {
-    this.percent_ = percent_;
+    this.percent_ = percent;
   }
 
   public String getDivisorMagnitude()

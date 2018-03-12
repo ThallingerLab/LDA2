@@ -69,6 +69,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.TooltipTexts;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.analysis.SampleLookup;
@@ -918,7 +919,8 @@ public class BarChartPainter extends JPanel implements ActionListener
       int roundValue = 6;
       if ((barChart_.getRoundValue()+2)>roundValue)
         roundValue = barChart_.getRoundValue()+2;
-      ExportOptionsVO exportVO = new ExportOptionsVO(exportType,sdValue,columnAnalyte_.isSelected(),exportRT,exportRTDev,roundValue);
+      ExportOptionsVO exportVO = new ExportOptionsVO(exportType,sdValue,columnAnalyte_.isSelected(),exportRT,exportRTDev,roundValue,
+          LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES);
       if (e.getActionCommand().equalsIgnoreCase(ExportPanel.EXPORT_EXCEL)){
         exportFileChooser_.setFileFilter(new FileNameExtensionFilter("Microsoft Office Excel Woorkbook (*.xlsx)","xlsx"));
         int returnVal = exportFileChooser_.showSaveDialog(new JFrame());

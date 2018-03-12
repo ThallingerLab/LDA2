@@ -252,6 +252,11 @@ public class TooltipTexts
   public final static String HEATMAP_EXPORT_COLUMN_EXPERIMENT = "<html>Table setup: experiments/groups in columns and analytes in rows</html>";
   public final static String HEATMAP_EXPORT_RT = "<html>Should the retention time be exported?</html>";
   public final static String HEATMAP_EXPORT_RT_SD = "<html>Should the standard deviation of the retention time be exported?</html>";
+  public final static String HEATMAP_EXPORT_SPECIES = "<html>The exported shall be on the species level</html>";
+  public final static String HEATMAP_EXPORT_CHAIN = "<html>The exported shall be on the chain level</html>";
+  public final static String HEATMAP_EXPORT_POSITION = "<html>The exported shall be on the position level.<br/>"
+      + "A position will be exported if a majority for a position is available<br/>"
+      + "and no contradicting evidence.</html>";
   
   public final static String BARCHART_VALUE_TYPE = "<html>The quantitative type that is used for the geration of the bar chart.<br/>" +
   "A detailed description about the types can be found in the user<br>" +

@@ -46,6 +46,8 @@ public class ResultAreaVO
   private Integer dbs_;
   private String expName_;
   private String rtOriginal_;
+  /** the original retention time values to have a lookup to the objects in the result files*/
+  private Hashtable<String,Hashtable<String,String>> allOriginalRts_ = new Hashtable<String,Hashtable<String,String>>();
   private String rt_;
   private Hashtable<String,Integer> chemicalFormula_;
   private Hashtable <String,Hashtable<String,Integer>> modFormulas_; 
@@ -64,6 +66,7 @@ public class ResultAreaVO
     this(name,dbs,expName,chemicalFormula,percentalSplit,neutralMass);
     this.rtOriginal_ = rt;
     this.rt_ = rt;
+    allOriginalRts_ = new Hashtable<String,Hashtable<String,String>>();
   }
     
   public ResultAreaVO(String name, Integer dbs, String expName, String chemicalFormula, float percentalSplit/*,String modName, String modFormula*/,double neutralMass) throws ChemicalFormulaException
@@ -87,9 +90,21 @@ public class ResultAreaVO
     if(percentalSplit>=1) percentalSplit_ = percentalSplit/100f;
   }
   
-  public void addResultPart(String modName, String modFormula,double mass,double expMass,int charge) throws ChemicalFormulaException{
+  
+  /**
+   * adds a result belonging to the same analyte species (e.g. another adduct/modification)
+   * @param modName the modification/adduct name
+   * @param modFormula the chemical formula of the modification/adduct
+   * @param mass the theoretical m/z value
+   * @param expMass the measured m/z value
+   * @param charge the presumed charge
+   * @param rt the retention time
+   * @throws ChemicalFormulaException
+   */
+  public void addResultPart(String modName, String modFormula,double mass,double expMass,int charge, String rt) throws ChemicalFormulaException{
     String modToAdd = getNotNullName(modName);
     // this is truly a new modification, otherwise this hit is just a peak with a different retention time; no new modification
+    Hashtable<String,String> rts = new Hashtable<String,String>();
     if (!modFormulas_.containsKey(modToAdd)){
       String modFormToAdd = getNotNullName(modFormula);
       modFormulas_.put(modToAdd, StaticUtils.categorizeFormula(modFormToAdd));
@@ -100,8 +115,15 @@ public class ResultAreaVO
       areas_.put(modToAdd, isoAreas);
       Vector<Boolean> isoMoreThanOne = new Vector<Boolean>();
       moreThanOnePeak_.put(modToAdd, isoMoreThanOne);
+    }else if (rt!=null) {
+      rts = allOriginalRts_.get(modName);
+    }
+    if (rt!=null){
+      rts.put(rt, rt);
+      allOriginalRts_.put(modToAdd, rts);
     }
   }
+  
   
   private String getNotNullName(String name){
     if (name!=null&&name.length()>0) return name;
@@ -378,7 +400,7 @@ public class ResultAreaVO
       float highestZeroArea = getHighestZeroIsoArea(mod);
       if (!this.mass_.containsKey(mod)){
         try {
-          this.addResultPart(mod, other.getChemicalFormula(mod), other.mass_.get(mod), other.expMass_.get(mod), other.charge_.get(mod));
+          this.addResultPart(mod, other.getChemicalFormula(mod), other.mass_.get(mod), other.expMass_.get(mod), other.charge_.get(mod), null);
         }
         catch (ChemicalFormulaException e) {
           e.printStackTrace();
@@ -399,6 +421,13 @@ public class ResultAreaVO
         }
       }
       setMoreThanOnePeak(mod,moreThanOnePeak);
+      
+      Hashtable<String,String> rts = new Hashtable<String,String>();
+      if (allOriginalRts_.containsKey(mod))
+        rts = allOriginalRts_.get(mod);
+      for (String rt : other.allOriginalRts_.get(mod).values())
+        rts.put(rt, rt);
+      allOriginalRts_.put(mod, rts);
     }
   }
 
@@ -431,6 +460,20 @@ public class ResultAreaVO
       }
     }
     return all;
+  }
+
+  
+  /**
+   * checks whether this retention time belongs to this ResultAreaVO (one rectangle in the heat map)
+   * @param rt the retention time to check
+   * @param mod the modification belonging to this retention time
+   * @return true when this retention time belongs to this ResultAreaVO
+   */
+  public boolean belongsRtToThisAreaVO(String rt, String mod){
+    if (allOriginalRts_.containsKey(mod) && allOriginalRts_.get(mod).containsKey(rt))
+      return true;
+    else
+      return false;
   }
   
 }

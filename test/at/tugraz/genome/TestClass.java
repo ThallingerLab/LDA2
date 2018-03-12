@@ -94,22 +94,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 //import org.jfree.data.xy.XYSeriesCollection;
 import org.xml.sax.SAXException;
 
-import uk.ac.ebi.pride.jmztab.model.Assay;
-import uk.ac.ebi.pride.jmztab.model.CVParam;
-import uk.ac.ebi.pride.jmztab.model.MZTabColumnFactory;
-import uk.ac.ebi.pride.jmztab.model.MZTabDescription;
-import uk.ac.ebi.pride.jmztab.model.MZTabFile;
-import uk.ac.ebi.pride.jmztab.model.Metadata;
-import uk.ac.ebi.pride.jmztab.model.MsRun;
-import uk.ac.ebi.pride.jmztab.model.PSMColumn;
-import uk.ac.ebi.pride.jmztab.model.PeptideColumn;
-import uk.ac.ebi.pride.jmztab.model.ProteinColumn;
-import uk.ac.ebi.pride.jmztab.model.PublicationItem;
-import uk.ac.ebi.pride.jmztab.model.Sample;
-import uk.ac.ebi.pride.jmztab.model.Section;
-import uk.ac.ebi.pride.jmztab.model.SmallMolecule;
-import uk.ac.ebi.pride.jmztab.model.SmallMoleculeColumn;
-import uk.ac.ebi.pride.jmztab.model.UserParam;
 
 ////import at.tugraz.genome.IndependentTwoSamplesTTest;
 import JSci.maths.statistics.ChiSqrDistribution;
@@ -226,8 +210,11 @@ import at.tugraz.genome.voutils.GeneralComparator;
 
 
 
+
 import com.sun.j3d.utils.applet.MainFrame;
 import com.sun.org.apache.xerces.internal.util.URI;
+
+import de.isas.mztab1_1.model.Metadata;
 
 //import com.sun.jna.Native;
 //import com.sun.jna.NativeLibrary;
@@ -2835,13 +2822,15 @@ public class TestClass extends JApplet implements AddScan
   }
   
   private Metadata getMetadata() throws Exception {
-    MZTabDescription tabDescription = new MZTabDescription(MZTabDescription.Mode.Summary, MZTabDescription.Type.Identification);
-    tabDescription.setId("PRIDE_1234");
-    Metadata mtd = new Metadata(tabDescription);
+    //MZTabDescription tabDescription = new MZTabDescription(MZTabDescription.Mode.Summary, MZTabDescription.Type.Identification);
+    //tabDescription.setId("PRIDE_1234");
+    //Metadata mtd = new Metadata(tabDescription);
+    Metadata mtd = new Metadata();
 
     mtd.setTitle("My first test experiment");
     mtd.setDescription("An experiment investigating the effects of Il-6.");
-
+    //the following lines were not updated in the course of the mzTab 1.1 update
+    /*
     mtd.addSampleProcessingParam(1, new CVParam("SEP", "SEP:00173", "SDS PAGE", null));
     mtd.addSampleProcessingParam(2, new CVParam("SEP", "SEP:00142", "enzyme digestion", null));
     mtd.addSampleProcessingParam(2, new CVParam("MS", "MS:1001251", "Trypsin", null));
@@ -2959,11 +2948,12 @@ public class TestClass extends JApplet implements AddScan
 
     mtd.addPSMColUnit(PSMColumn.RETENTION_TIME, new CVParam("UO", "UO:0000031", "minute", null));
     mtd.addSmallMoleculeColUnit(SmallMoleculeColumn.RETENTION_TIME, new CVParam("UO", "UO:0000031", "minute", null));
-
+*/
     return mtd;
 }
 
-private MZTabColumnFactory getSMH(Metadata metadata) {
+//the following lines were not updated in the course of the mzTab 1.1 update
+/*private MZTabColumnFactory getSMH(Metadata metadata) {
     MZTabColumnFactory factory = MZTabColumnFactory.getInstance(Section.Small_Molecule);
 
     // add optional columns which have stable order.
@@ -3038,7 +3028,7 @@ public void testTabFile() throws Exception {
     tabFile.printMZTab(stream);
     stream.close();
 }
-
+*/
   private void createN15MassList(){
 
 /*    try {
