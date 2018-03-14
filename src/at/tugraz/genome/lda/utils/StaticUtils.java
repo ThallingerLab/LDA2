@@ -1194,5 +1194,32 @@ public class StaticUtils
     }
     return theSame;
   }
+  
+  public static boolean checkChemicalFormula(String formula){
+    if (formula.contains("-")){
+      new WarningMessage(new JFrame(), "Error", "The formula "+formula+" must not contain any negative values!");
+      return false;
+    }
+    char[] formulaChars = formula.toCharArray();
+    String formulaToCheck = "";
+    boolean isPreviousDigit = false;
+    for (int i=0;i!=formulaChars.length;i++){
+      char currentChar = formulaChars[i];
+      if (isPreviousDigit && !Character.isDigit(currentChar)){
+        formulaToCheck+=" ";
+      }
+      formulaToCheck+=String.valueOf(currentChar);
+      isPreviousDigit = Character.isDigit(currentChar);
+    }
+    ElementConfigParser aaParser = Settings.getElementParser();
+    try {
+      aaParser.calculateTheoreticalMass(formulaToCheck, false);
+      return true;
+    }
+    catch (SpectrummillParserException e) {
+      new WarningMessage(new JFrame(), "Error", "The formula "+formula+" is not OK! "+e.getMessage());
+      return false;
+    } 
+  }
 
 }

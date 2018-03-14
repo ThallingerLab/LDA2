@@ -69,6 +69,7 @@ import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.msn.FragmentCalculator;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.MSnAnalyzer;
+import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.RulesContainer;
@@ -96,6 +97,7 @@ import at.tugraz.genome.maspectras.quantification.CgProbe;
 /**
  * Class builds the interface for new rules
  * @author Andreas Ziegl
+ * @author Juergen Hartler
  *
  */
 public class RuleDefinitionInterface extends JSplitPane implements GeneralSettingsPanelListener
@@ -136,6 +138,9 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
   
   /** Precursor value of the lipid */
   private  double lipidPrecursorValue_;
+  
+  /** Chemical formula of the lipid */
+  private String lipidFormula_;
   
   private GeneralSettingsVO generalSettingsVO_;
   
@@ -423,34 +428,48 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     adductClassField.setText(lipidAdduct_);  
     adductClassField.setToolTipText("Enter the adduct here!");
     
-    JLabel precursorClass = new JLabel( "  Precursor  " );
-    gridBayLayout_.setConstraints(precursorClass, new GridBagConstraints (0, 3, 1, 1, 0, 0, 
-    GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0 ));      
-    final JTextField precursorClassField = new JTextField();
-    gridBayLayout_.setConstraints(precursorClassField, new GridBagConstraints (1, 3, 1, 1, 1000, 0.0, 
-    GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0 ));
-    precursorClassField.setColumns( 15 );  
-    precursorClassField.setText(Double.toString(lipidPrecursorValue_));
-    precursorClassField.setEditable( true );
-    precursorClassField.setToolTipText("Enter the precursor here!");
-    
     JLabel nameClass = new JLabel( "  Name  " );
-    gridBayLayout_.setConstraints(nameClass, new GridBagConstraints (0, 4, 1, 1, 0, 0, 
+    gridBayLayout_.setConstraints(nameClass, new GridBagConstraints (0, 3, 1, 1, 0, 0, 
     GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0 ));      
     final JTextField nameClassField = new JTextField();
-    gridBayLayout_.setConstraints(nameClassField, new GridBagConstraints (1, 4, 1, 1, 1000, 0.0, 
+    gridBayLayout_.setConstraints(nameClassField, new GridBagConstraints (1, 3, 1, 1, 1000, 0.0, 
     GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0 ));
     nameClassField.setColumns( 15 ); 
     nameClassField.setText(lipidName_);
     nameClassField.setEditable( true );
     nameClassField.setToolTipText("Enter the full name with the _RT here!");
+
+    
+    JLabel precursorClass = new JLabel( "  Precursor  " );
+    gridBayLayout_.setConstraints(precursorClass, new GridBagConstraints (2, 1, 1, 1, 0, 0, 
+    GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0 ));      
+    final JTextField precursorClassField = new JTextField();
+    gridBayLayout_.setConstraints(precursorClassField, new GridBagConstraints (3, 1, 1, 1, 1000, 0.0, 
+    GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0 ));
+    precursorClassField.setColumns( 15 );  
+    precursorClassField.setText(Double.toString(lipidPrecursorValue_));
+    precursorClassField.setEditable( true );
+    precursorClassField.setToolTipText("Enter the precursor here!");
+
+    
+    JLabel formulaLabel = new JLabel( "  Neutral formula  " );
+    gridBayLayout_.setConstraints(formulaLabel, new GridBagConstraints (2, 2, 1, 1, 0, 0, 
+    GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0 ));      
+    final JTextField formulaField = new JTextField();
+    gridBayLayout_.setConstraints(formulaField, new GridBagConstraints (3, 2, 1, 1, 1000, 0.0, 
+    GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0 ));
+    formulaField.setColumns( 15 );  
+    formulaField.setText(lipidFormula_);
+    formulaField.setEditable( true );
+    formulaField.setToolTipText("Enter the precursor here!");
+
     
     JLabel spaceClass2 = new JLabel( "    " );
-    gridBayLayout_.setConstraints(spaceClass2, new GridBagConstraints (0, 5, 1, 1, 0, 0, 
+    gridBayLayout_.setConstraints(spaceClass2, new GridBagConstraints (0, 4, 1, 1, 0, 0, 
     GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0 ));    
     
     JButton changeSettingsClass = new JButton( "Change Settings" );
-    gridBayLayout_.setConstraints(changeSettingsClass, new GridBagConstraints (0, 6, 1, 1, 0, 0, 
+    gridBayLayout_.setConstraints(changeSettingsClass, new GridBagConstraints (0, 5, 1, 1, 0, 0, 
     GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0 ));   
     changeSettingsClass.setToolTipText("Changes the settings and refreshes the spectrum");
     changeSettingsClass.addActionListener(new ActionListener() 
@@ -496,20 +515,27 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
           if(error == false)
           {
             lipidClassName_ = lipidClassField.getText();
-            lipidAdduct_ = adductClassField.getText();  
-            lipidPrecursorValue_ = Double.parseDouble(precursorClassField.getText());  
-            lipidName_ = nameClassField.getText();
+            lipidAdduct_ = adductClassField.getText();
+            try{
+              lipidPrecursorValue_ = Double.parseDouble(precursorClassField.getText());  
+              lipidFormula_ = formulaField.getText();
+              lipidName_ = nameClassField.getText();
             
-            data_.setNameString(nameClassField.getText());
+              data_.setNameString(nameClassField.getText());
             
-            Float mz = Float.parseFloat(precursorClassField.getText());
-            data_ = new LipidParameterSet(mz, data_.getName(), data_.getDoubleBonds(), adductClassField.getText(),
-                data_.getRt(), "", "",1);
-            data_.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance(mz);
-            data_.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance(mz);
+              Float mz = Float.parseFloat(precursorClassField.getText());
+              if (StaticUtils.checkChemicalFormula(formulaField.getText())){
+                data_ = new LipidParameterSet(mz, data_.getName(), data_.getDoubleBonds(), adductClassField.getText(),
+                  data_.getRt(), formulaField.getText(), "",1);
+                data_.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance(mz);
+                data_.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance(mz);
             
-            refreshMiddleWithoutCurrentGenerals(0);
-            paintNewSpectra(true);     
+                refreshMiddleWithoutCurrentGenerals(0);
+                paintNewSpectra(true);
+              }
+            }catch(NumberFormatException nfx){
+              new WarningMessage(new JFrame(), "Error", "The entered precursor m/z value is not double format!");
+            }
           }          
         }
     }); 
@@ -520,7 +546,9 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     permanent.add(adductClass);
     permanent.add(adductClassField);    
     permanent.add(precursorClass);
-    permanent.add(precursorClassField);    
+    permanent.add(precursorClassField);
+    permanent.add(formulaLabel);
+    permanent.add(formulaField);
     permanent.add(nameClass);
     permanent.add(nameClassField);    
     permanent.add(spaceClass2);
@@ -3735,17 +3763,19 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @param lipidClassName the name of the lipid class
    * @param lipidName_ the name of the lipid
    * @param lipidPrecursorValue_ the current value of the precursor
+   * @throws ChemicalFormulaException 
    * @throws thrown if the rules are not there
    */
-  public RuleDefinitionInterface(String lipidClassName, LipidParameterSet data, LipidomicsAnalyzer analyzer, int highestMSLevel, SpectrumUpdateListener object) throws NoRuleException 
+  public RuleDefinitionInterface(String lipidClassName, LipidParameterSet data, LipidomicsAnalyzer analyzer, int highestMSLevel, SpectrumUpdateListener object) throws NoRuleException, ChemicalFormulaException 
   {    
     super(JSplitPane.VERTICAL_SPLIT);    
     showFragmentTabs_ = true;
     setDividerSize(0);    
     this.data_ = data;    
     this.lipidClassName_ = lipidClassName;    
-    this.lipidName_ = data.getNameString();    
-    this.lipidPrecursorValue_ = data.Mz[0];    
+    this.lipidName_ = data.getNameString();
+    this.lipidPrecursorValue_ = data.Mz[0];
+    this.lipidFormula_ = StaticUtils.getFormulaInHillNotation(StaticUtils.categorizeFormula(data.getAnalyteFormula()),true);
     this.lipidAdduct_ = data.getModificationName();    
     this.ruleClassIdentifier_ = StaticUtils.getRuleName(lipidClassName_, lipidAdduct_);
     this.analyzer_ = analyzer;

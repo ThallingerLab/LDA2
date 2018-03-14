@@ -207,7 +207,7 @@ public class AddAnalyteDialog extends JDialog implements ActionListener
         notFilledOutFields+="charge, ";
       if (notFilledOutFields.length()==0){
         try{
-          if (analyteFormula_.getText()!=null && analyteFormula_.getText().length()>0 && checkChemicalFormula(analyteFormula_.getText()) && 
+          if (analyteFormula_.getText()!=null && analyteFormula_.getText().length()>0 && StaticUtils.checkChemicalFormula(analyteFormula_.getText()) && 
             (modFormula_.getText()==null || modFormula_.getText().length()==0 || checkModFormula(analyteFormula_.getText(),modFormula_.getText()))){
             String modification = "";
             if (modName_.getText()!=null && modName_.getText().length()>0)
@@ -250,35 +250,7 @@ public class AddAnalyteDialog extends JDialog implements ActionListener
       }
       formulaWithMod+=element+String.valueOf(amount);
     }
-    return checkChemicalFormula(formulaWithMod);
+    return StaticUtils.checkChemicalFormula(formulaWithMod);
   }
-
-  private boolean checkChemicalFormula(String formula){
-    if (formula.contains("-")){
-      new WarningMessage(new JFrame(), "Error", "The formula "+formula+" must not contain any negative values!");
-      return false;
-    }
-    char[] formulaChars = formula.toCharArray();
-    String formulaToCheck = "";
-    boolean isPreviousDigit = false;
-    for (int i=0;i!=formulaChars.length;i++){
-      char currentChar = formulaChars[i];
-      if (isPreviousDigit && !Character.isDigit(currentChar)){
-        formulaToCheck+=" ";
-      }
-      formulaToCheck+=String.valueOf(currentChar);
-      isPreviousDigit = Character.isDigit(currentChar);
-    }
-    ElementConfigParser aaParser = Settings.getElementParser();
-    try {
-      aaParser.calculateTheoreticalMass(formulaToCheck, false);
-      return true;
-    }
-    catch (SpectrummillParserException e) {
-      new WarningMessage(new JFrame(), "Error", "The formula "+formula+" is not OK! "+e.getMessage());
-      return false;
-    } 
-  }
-
  
 }

@@ -6043,7 +6043,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       
     }
     catch (RulesException | IOException
-        | SpectrummillParserException | CgException e) {
+        | SpectrummillParserException | CgException
+        | ChemicalFormulaException e) {
       e.printStackTrace();
     }
   }
