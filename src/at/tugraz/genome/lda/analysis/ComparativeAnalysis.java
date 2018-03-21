@@ -27,9 +27,11 @@ package at.tugraz.genome.lda.analysis;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.Vector;
 
 
@@ -200,16 +202,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
   
   private double expRtGroupingTime_;
   
-  //private final static double TIME_MODIFICATION_TOLERANCE = 0.1d;
-  //TODO: This value has to be replaced by expRtGroupingTime_
-  //private final static double TIME_RT_TOLERANCE = 0.1d;
-
-  
-//  Hashtable<String,Hashtable<String,Hashtable<String,Integer>>> correctionTypeESLookupSingleCorr_;
-  
-  
-//  Hashtable<String,Hashtable<String,Vector<Double>>> esSingleRefAreasNoCorr_;
-//  Hashtable<String,Hashtable<String,Hashtable<String,Vector<Double>>>> esSingleCorrectiveFactorsNoCorr_;
   
   public ComparativeAnalysis(Vector<File> resultFiles, String isSelectionPrefix, String esSelectionPrefix, AbsoluteSettingsVO absSetting, Hashtable<String,Double> classCutoffs, int maxCutoffIsotope, 
       LinkedHashMap<String,Integer> classSequence, Hashtable<String,Vector<String>> correctAnalyteSequence, Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects,
@@ -258,127 +250,12 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
     }
   }
   
-  public void calculateStatistics() /*throws NoISForGroupFoundException,NoISFoundException*/ {
-//    try {
+  public void calculateStatistics()  {
     this.extractInternalStandardStatistics();
     this.extractExternalStandardStatistics();
-        
-//    }
-//    catch (NoISForGroupFoundException e) {
-//      this.calculateRelativeComparisonValues();
-//      throw e;
-//    }
-//    catch (NoISFoundException e) {
-//      throw e;
-//    }
     this.calculateRelativeComparisonValues();
-//    this.printRelevantValues();
-//    this.writeResultsToFile();
   }
   
-//  private void printRelevantValues(){
-//    for (String molGroupName : this.allResults_.keySet()){
-//      System.out.println("---------------------------"+molGroupName+"---------------------------");
-//      String mostReliableStandard = null;
-//      String bestExp = null;
-//      ResultAreaVO areaOfBestStandard = null;
-//      
-//      String mostReliableExtStandardNoCorr = null;
-//      String bestExpESNoCorr = null;
-//      ResultAreaVO areaOfBestStandardESNoCorr = null;
-//      String mostReliableExtStandardInternalCorr = null;
-//      String bestExpESInternalCorr = null;
-//      ResultAreaVO areaOfBestStandardESInternalCorr = null;
-//      String mostReliableExtStandardMedianCorr = null;
-//      String bestExpESMedianCorr = null;
-//      ResultAreaVO areaOfBestStandardESMedianCorr = null;
-//
-//      
-//      if (this.allISNames_.get(molGroupName).size()>0){
-//        mostReliableStandard = standardsOrderedConcerningReliability_.get(molGroupName).get(0);
-//        bestExp = bestExpForStandard_.get(molGroupName).get(mostReliableStandard);
-//        areaOfBestStandard = isResults_.get(molGroupName).get(mostReliableStandard).get(bestExp);
-//      }
-//      if (this.allESNames_.get(molGroupName).size()>0){
-//        mostReliableExtStandardNoCorr = extstandsOrderedConcerningReliability_.get(molGroupName).get(0);
-//        bestExpESNoCorr = bestExpForExtStandard_.get(molGroupName).get(mostReliableExtStandardNoCorr);
-//        areaOfBestStandardESNoCorr = esResults_.get(molGroupName).get(mostReliableExtStandardNoCorr).get(bestExpESNoCorr);
-//        if (this.isISAvailable()){
-//          mostReliableExtStandardInternalCorr = extstandsISCorrOrderedConcerningReliability_.get(molGroupName).get(0);
-//          bestExpESInternalCorr = bestExpForExtStandardISCorr_.get(molGroupName).get(mostReliableExtStandardInternalCorr);
-//          areaOfBestStandardESInternalCorr = esResults_.get(molGroupName).get(mostReliableExtStandardInternalCorr).get(bestExpESInternalCorr);
-//          mostReliableExtStandardMedianCorr = extstandsMedianCorrOrderedConcerningReliability_.get(molGroupName).get(0);
-//          bestExpESMedianCorr = bestExpForExtStandardMedianCorr_.get(molGroupName).get(mostReliableExtStandardMedianCorr);
-//          areaOfBestStandardESMedianCorr = esResults_.get(molGroupName).get(mostReliableExtStandardMedianCorr).get(bestExpESMedianCorr);          
-//        }
-//      }
-//      System.out.println("Best IS: "+mostReliableStandard+" ; "+bestExp+" ; "+correctAreaCorrespondingly(areaOfBestStandard.getTotalArea(2), molGroupName, bestExp, 2, correctionFactorsToBestIS_.get(molGroupName).get(mostReliableStandard), false, ResultCompVO.NO_STANDARD_CORRECTION)+";"+medianOfRatios_.get(molGroupName).get(bestExp).get(2-1));
-//      for (String expName : this.expNames_){
-//        if (this.allISNames_.get(molGroupName).size()>0){
-//          double correctionFactor = correctAreaCorrespondingly(areaOfBestStandard.getTotalArea(2), molGroupName, bestExp, 2, correctionFactorsToBestIS_.get(molGroupName).get(mostReliableStandard), false, ResultCompVO.NO_STANDARD_CORRECTION)/referenceValues_.get(molGroupName).get(expName).get(2-1);
-//          double medianCorrectionFactor = medianOfRatios_.get(molGroupName).get(bestExp).get(2-1)/medianOfRatios_.get(molGroupName).get(expName).get(2-1);
-//          System.out.println(expName+": "+correctionFactor+" "+medianCorrectionFactor);
-//        }
-//      }
-//      System.out.println("Best ES: "+mostReliableExtStandardNoCorr+" ; "+bestExpESNoCorr+" ; "+correctAreaCorrespondingly(areaOfBestStandardESNoCorr.getTotalArea(2), molGroupName, bestExpESNoCorr, 2, correctionFactorsToBestES_.get(molGroupName).get(mostReliableExtStandardNoCorr), true, ResultCompVO.NO_STANDARD_CORRECTION)+";"+medianOfESRatios_.get(molGroupName).get(bestExpESNoCorr).get(2-1));
-//      for (String expName : this.expNames_){
-//        if (this.allESNames_.get(molGroupName).size()>0){
-//          double correctionFactor = correctAreaCorrespondingly(areaOfBestStandardESNoCorr.getTotalArea(2), molGroupName, bestExpESNoCorr, 2, correctionFactorsToBestES_.get(molGroupName).get(mostReliableExtStandardNoCorr), true, ResultCompVO.NO_STANDARD_CORRECTION)/referenceValuesES_.get(molGroupName).get(expName).get(2-1);
-//          double medianCorrectionFactor = medianOfESRatios_.get(molGroupName).get(bestExpESNoCorr).get(2-1)/medianOfESRatios_.get(molGroupName).get(expName).get(2-1);
-//          System.out.println(expName+": "+correctionFactor+" "+medianCorrectionFactor);
-//        }
-//      }
-//      
-//      
-//      System.out.println("Best ES IS corr: "+mostReliableExtStandardInternalCorr+" ; "+bestExpESInternalCorr+" ; "+correctAreaCorrespondingly(areaOfBestStandardESInternalCorr.getTotalArea(2), molGroupName, bestExpESInternalCorr, 2, correctionFactorsToBestESISCorr_.get(molGroupName).get(mostReliableExtStandardInternalCorr), true, ResultCompVO.STANDARD_CORRECTION_INTERNAL)+";"+medianOfESRatiosISCorr_.get(molGroupName).get(bestExpESInternalCorr).get(2-1));
-//      for (String expName : this.expNames_){
-//        if (this.allESNames_.get(molGroupName).size()>0){
-//          double correctionFactor = correctAreaCorrespondingly(areaOfBestStandardESInternalCorr.getTotalArea(2), molGroupName, bestExpESInternalCorr, 2, correctionFactorsToBestESISCorr_.get(molGroupName).get(mostReliableExtStandardInternalCorr), true, ResultCompVO.STANDARD_CORRECTION_INTERNAL)/referenceValuesESISCorr_.get(molGroupName).get(expName).get(2-1);
-//          double medianCorrectionFactor = medianOfESRatiosISCorr_.get(molGroupName).get(bestExpESInternalCorr).get(2-1)/medianOfESRatiosISCorr_.get(molGroupName).get(expName).get(2-1);
-//          System.out.println(expName+": "+correctionFactor+" "+medianCorrectionFactor);
-//        }
-//      }
-//      System.out.println("Best ES Median corr: "+mostReliableExtStandardMedianCorr+" ; "+bestExpESMedianCorr+" ; "+correctAreaCorrespondingly(areaOfBestStandardESMedianCorr.getTotalArea(2), molGroupName, bestExpESMedianCorr, 2, correctionFactorsToBestESMedianCorr_.get(molGroupName).get(mostReliableExtStandardMedianCorr), true, ResultCompVO.STANDARD_CORRECTION_MEDIAN)+";"+medianOfESRatiosMedianCorr_.get(molGroupName).get(bestExpESMedianCorr).get(2-1));
-//      for (String expName : this.expNames_){
-//        if (this.allESNames_.get(molGroupName).size()>0){
-//          double correctionFactor = correctAreaCorrespondingly(areaOfBestStandardESMedianCorr.getTotalArea(2), molGroupName, bestExpESMedianCorr, 2, correctionFactorsToBestESMedianCorr_.get(molGroupName).get(mostReliableExtStandardMedianCorr), true, ResultCompVO.STANDARD_CORRECTION_MEDIAN)/referenceValuesESMedianCorr_.get(molGroupName).get(expName).get(2-1);
-//          double medianCorrectionFactor = medianOfESRatiosMedianCorr_.get(molGroupName).get(bestExpESMedianCorr).get(2-1)/medianOfESRatiosMedianCorr_.get(molGroupName).get(expName).get(2-1);
-//          System.out.println(expName+": "+correctionFactor+" "+medianCorrectionFactor);
-//        }
-//      }
-//    }
-//  }
-  
-//  private void writeResultsToFile(){
-//    try{
-//      for (String groupName : comparativeRatios_.keySet()){
-//        String toWrite = "";
-//        toWrite+=groupName+"\n";
-//        Hashtable<String,Hashtable<String,ResultCompVO>> molecules = comparativeRatios_.get(groupName);
-//        if (molecules.size()>0){
-//          for (String expName: expNames_){
-//            toWrite+="\t"+expName;
-//          }
-//        }
-//        toWrite+="\n";
-//        for (String molecule : allMoleculeNames_.get(groupName)){
-//          toWrite+=molecule;
-//          Hashtable<String,ResultCompVO> values = molecules.get(molecule);
-//          for (String expName: expNames_){
-//            toWrite+="\t"+values.get(expName).getRelativeValue();
-//          }
-//          toWrite+="\n";
-//        }
-//        BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream("F:\\lipidomics\\mohan\\"+groupName+".txt"));
-//        stream.write(toWrite.getBytes());
-//        stream.close();
-//      }
-//      
-//      
-//    }catch (Exception ex){
-//      ex.printStackTrace();
-//    }
-//  }
   
   private void extractExternalStandardStatistics(){
     esResults_ = new Hashtable<String,Hashtable<String,Hashtable<String,ResultAreaVO>>>();
@@ -389,115 +266,10 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
     selectMostReliableESStandard();
     getApplicableESStandardsForExperiment();
     selectBestComparableESProbeForStandard();
-//    System.out.println("extStand");
-//    for (Hashtable<String,String> bestStandGroup : bestExpForExtStandard_.values()){
-//      for (String expName: bestStandGroup.keySet()){
-//        System.out.println(expName+": "+bestStandGroup.get(expName));
-//      }
-//    }
-//    System.out.println("extStand IS corr");
-//    for (Hashtable<String,String> bestStandGroup : bestExpForExtStandardISCorr_.values()){
-//      for (String expName: bestStandGroup.keySet()){
-//        System.out.println(expName+": "+bestStandGroup.get(expName));
-//      }
-//    }
-//    System.out.println("extStand Median corr");
-//    for (Hashtable<String,String> bestStandGroup : bestExpForExtStandardMedianCorr_.values()){
-//      for (String expName: bestStandGroup.keySet()){
-//        System.out.println(expName+": "+bestStandGroup.get(expName));
-//      }
-//    }
     calculateRelativeCorrectiveValuesComparedToBestES();
-//    System.out.println("correction ext Stand ");
-//    for (Hashtable<String,Hashtable<String,Double>> groupCorrs: correctionFactorsToBestES_.values()){
-//      for (String standName : groupCorrs.keySet()){
-//        for (String expName: groupCorrs.get(standName).keySet())
-//          System.out.println(standName+" ; "+expName+" ; "+groupCorrs.get(standName).get(expName));
-//      }
-//    }
-//    System.out.println("correction ext Stand IS corr");
-//    for (Hashtable<String,Hashtable<String,Double>> groupCorrs: correctionFactorsToBestESISCorr_.values()){
-//      for (String standName : groupCorrs.keySet()){
-//        for (String expName: groupCorrs.get(standName).keySet())
-//          System.out.println(standName+" ; "+expName+" ; "+groupCorrs.get(standName).get(expName));
-//      }
-//    }
-//    System.out.println("correction ext Stand Median corr");
-//    for (Hashtable<String,Hashtable<String,Double>> groupCorrs: correctionFactorsToBestESMedianCorr_.values()){
-//      for (String standName : groupCorrs.keySet()){
-//        for (String expName: groupCorrs.get(standName).keySet())
-//          System.out.println(standName+" ; "+expName+" ; "+groupCorrs.get(standName).get(expName));
-//      }
-//    }
     calculateESMedians();
     extractESAmountValues();
-//    System.out.println("median ext Stand ");
-//    for (Hashtable<String,Hashtable<Integer,Double>> groupRatios : medianOfESRatios_.values()){
-//      for (String expName : groupRatios.keySet()){
-//        Hashtable<Integer,Double> medians = groupRatios.get(expName);
-//        List<Integer> isos = new ArrayList<Integer>(medians.keySet());
-//        Collections.sort(isos);
-//        String values = "";
-//        for (Integer iso : isos) values+=iso+": "+medians.get(iso)+"; ";
-//        System.out.println(expName+" ; "+values);
-//      }
-//    }
-//    System.out.println("median ext Stand is corr");
-//    for (Hashtable<String,Hashtable<Integer,Double>> groupRatios : medianOfESRatiosISCorr_.values()){
-//      for (String expName : groupRatios.keySet()){
-//        Hashtable<Integer,Double> medians = groupRatios.get(expName);
-//        List<Integer> isos = new ArrayList<Integer>(medians.keySet());
-//        Collections.sort(isos);
-//        String values = "";
-//        for (Integer iso : isos) values+=iso+": "+medians.get(iso)+"; ";
-//        System.out.println(expName+" ; "+values);
-//      }
-//    }
-//    System.out.println("median ext Stand median corr");
-//    for (Hashtable<String,Hashtable<Integer,Double>> groupRatios : medianOfESRatiosMedianCorr_.values()){
-//      for (String expName : groupRatios.keySet()){
-//        Hashtable<Integer,Double> medians = groupRatios.get(expName);
-//        List<Integer> isos = new ArrayList<Integer>(medians.keySet());
-//        Collections.sort(isos);
-//        String values = "";
-//        for (Integer iso : isos) values+=iso+": "+medians.get(iso)+"; ";
-//        System.out.println(expName+" ; "+values);
-//      }
-//    }
     calculateESReferenceValueForExperiments();
-//    System.out.println("ES refs");
-//    for (Hashtable<String,Hashtable<Integer,Double>> refGroup : referenceValuesES_.values()){
-//      for (String exp : refGroup.keySet()){
-//        Hashtable<Integer,Double> medians = refGroup.get(exp);
-//        List<Integer> isos = new ArrayList<Integer>(medians.keySet());
-//        Collections.sort(isos);
-//        String values = "";
-//        for (Integer iso : isos) values+=iso+": "+medians.get(iso)+"; ";
-//        System.out.println(exp+" ; "+values);
-//      }
-//    }
-//    System.out.println("ES refs IS corr");
-//    for (Hashtable<String,Hashtable<Integer,Double>> refGroup : referenceValuesESISCorr_.values()){
-//      for (String exp : refGroup.keySet()){
-//        Hashtable<Integer,Double> medians = refGroup.get(exp);
-//        List<Integer> isos = new ArrayList<Integer>(medians.keySet());
-//        Collections.sort(isos);
-//        String values = "";
-//        for (Integer iso : isos) values+=iso+": "+medians.get(iso)+"; ";
-//        System.out.println(exp+" ; "+values);
-//      }
-//    }
-//    System.out.println("ES refs Median corr");
-//    for (Hashtable<String,Hashtable<Integer,Double>> refGroup : referenceValuesESMedianCorr_.values()){
-//      for (String exp : refGroup.keySet()){
-//        Hashtable<Integer,Double> medians = refGroup.get(exp);
-//        List<Integer> isos = new ArrayList<Integer>(medians.keySet());
-//        Collections.sort(isos);
-//        String values = "";
-//        for (Integer iso : isos) values+=iso+": "+medians.get(iso)+"; ";
-//        System.out.println(exp+" ; "+values);
-//      }
-//    }
   }
   
   private void extractInternalStandardStatistics() /*throws NoISForGroupFoundException,NoISFoundException*/ {
@@ -527,8 +299,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
       int highestIsoValue = 0;
       for (String experimentName : resultsMoleculeGroup.keySet()){
         for (ResultAreaVO molecule : resultsMoleculeGroup.get(experimentName)){
-          //if (molecule.getAreas().size()>highestIsoValue)
-          //  highestIsoValue = molecule.getAreas().size();
           if (molecule.getMaxIsotope()>highestIsoValue)
             highestIsoValue = molecule.getMaxIsotope();
           if (selectionPrefix!=null && molecule.getMoleculeName().startsWith(selectionPrefix)){
@@ -615,7 +385,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
       float upperThreshold = Float.NaN;
       int amountIsotopesFoundInAll = 0;
       if (howOftenFound>0){
-        //amountIsotopesFoundInAll = standardElements.values().iterator().next().getAreas().size();
         amountIsotopesFoundInAll = standardElements.values().iterator().next().getMaxIsotope();
       }
       Hashtable<String,Double> correctiveFactors = correctionFactors.get(standardName);
@@ -628,8 +397,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
       }
       if (howOftenFound>1){
         for (ResultAreaVO resultVO : standardElements.values()){
-//          if (resultVO.getAreas().size()<amountIsotopesFoundInAll)
-//            amountIsotopesFoundInAll = resultVO.getAreas().size();
           if (resultVO.getMaxIsotope()<amountIsotopesFoundInAll)
             amountIsotopesFoundInAll = resultVO.getMaxIsotope();
         }
@@ -1070,7 +837,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
         }
         // the correction factor should be 1 here; it is just there for completeness
         double refValue =  (float)this.correctAreaCorrespondingly(standResults.get(mostReliableStandard).get(expEverythingHasToBeComparedTo).getTotalArea(isoToUse), moleculeGroup, expEverythingHasToBeComparedTo, isoToUse, correctionFactors.get(mostReliableStandard), respectDilution, standMethod,corrStandard); 
-        //*correctionFactors.get(mostReliableStandard).get(expEverythingHasToBeComparedTo);
         if (iso>stat.getAmountIsotopesFoundInAll()){
 //          String chemicalFormula = standResults.get(mostReliableStandard).get(expEverythingHasToBeComparedTo).getChemicalFormula();
           // the correction factor should be 1 here; it is just there for completeness
@@ -1221,8 +987,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
           }
           
           neutralMass -= massDiffToNeutral;
-          ////double massDiffToNeutral = 0d;
-          ////for ()
           
         //TODO: this was when I read directly from the Excel file; might be useful
 //        if (areaVO!=null){
@@ -1242,12 +1006,11 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
             Hashtable<String,ResultAreaVO> sameMoleculeDiffRet = areaVOs.get(analId);
             if (sameMoleculeDiffRet.size()==1 && sameMoleculeDiffRet.keySet().iterator().next().equalsIgnoreCase(""))
               areaVO = sameMoleculeDiffRet.values().iterator().next();
-            else if (rtDef!=null&&rtDef.length()>0){ 
-              areaVO = findAreaVoWithinRtBoundaries(rtDef,sameMoleculeDiffRet);
+            else if (rtDef!=null&&rtDef.length()>0){
+              areaVO = hasAreaSameRt(rtDef,sameMoleculeDiffRet);
               if (areaVO==null) areaVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass);
               // Juergen: I am not sure if this "if" and the setting of the retention time is required; for various charge states it seems to be counterproductive
               else /*if (areaVO.hasModification(param.getModificationName()))*/{
-                ////retentionTime = areaVO.getRetentionTime(param.getModificationName());
                 sameMoleculeDiffRet.remove(areaVO.getRt());
               }
             }  
@@ -1283,7 +1046,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
             modifications.put(recentModification, recentModification);
             
             for (Vector<CgProbe> probes : param.getIsotopicProbes()){
-//              int charge = probes.get(0).Charge;
               int isotope = probes.get(0).isotopeNumber;
               for (CgProbe probe : probes){
                 Hashtable<Integer,Boolean> mtp = areaVO.addArea(recentModification,isotope,probe.Area);
@@ -1333,6 +1095,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
       //first the retention times have to be normalized, for this purpose we have to know all the lipid classes and molecule names
       Hashtable<String,Hashtable<String,String>> groupAndMols = new Hashtable<String,Hashtable<String,String>>();
       Vector<String> fileNames = new Vector<String>();
+      //first key: file name; second key: analyte group; third key: molecule name; third key retention time; fifth key: modification
       Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,ResultAreaVO>>>> resultsInHash = new Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,ResultAreaVO>>>>();
       for (String fileName : unprocessedResults_.keySet()){
         fileNames.add(fileName);
@@ -1355,122 +1118,74 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
         }
         resultsInHash.put(fileName, fileResultInHash);
       }
-      //now correct the retention times
+      
+      
+      
+      
+      
       for (String groupName : groupAndMols.keySet()){
         for (String molName : groupAndMols.get(groupName).keySet()){
           int clusterId = 0;
-          Hashtable<Integer,Vector<ResultAreaVO>> rtClusters = new Hashtable<Integer,Vector<ResultAreaVO>>();
-          Hashtable<String,Hashtable<String,String>> alreadyInCluster = new Hashtable<String,Hashtable<String,String>>();
-          Hashtable<String,Hashtable<String,Integer>> areNotClosest = new Hashtable<String,Hashtable<String,Integer>>();
-          for (int i=0;i!=fileNames.size();i++){
-            String fileName1 = fileNames.get(i);
-            Hashtable<String,Hashtable<String,Hashtable<String,ResultAreaVO>>> fileResult = resultsInHash.get(fileName1);
-            if (fileResult.containsKey(groupName)&&fileResult.get(groupName).containsKey(molName)){
-              Hashtable<String,ResultAreaVO> diffTime1 = fileResult.get(groupName).get(molName);
-              if (!alreadyInCluster.containsKey(fileName1))alreadyInCluster.put(fileName1, new Hashtable<String,String>());
-              for (String rawRt1 : diffTime1.keySet()){
-                if (rawRt1.equalsIgnoreCase("")) continue;
-                String rt1 = new String(rawRt1);
-                ResultAreaVO vo1 = diffTime1.get(rt1);
-                if (!alreadyInCluster.get(fileName1).containsKey(rt1)){
-                  for (int j=i+1;j<fileNames.size();j++){
-                    String fileName2 = fileNames.get(j);
-                    Hashtable<String,Hashtable<String,Hashtable<String,ResultAreaVO>>> fileResult2 = resultsInHash.get(fileName2);
-                    if (fileResult2.containsKey(groupName)&&fileResult2.get(groupName).containsKey(molName)){
-                      Hashtable<String,ResultAreaVO> diffTime2 = fileResult2.get(groupName).get(molName);
-                      if (!alreadyInCluster.containsKey(fileName2))alreadyInCluster.put(fileName2, new Hashtable<String,String>());
-                      String closestRt = null;
-                      for (String rt2 : diffTime2.keySet()){
-                        Double r1 = Double.valueOf(rt1);
-                        Double r2 = Double.valueOf(rt2);
-                        if ((r2-expRtGroupingTime_)<r1 && r1<(r2+expRtGroupingTime_)){
-                          String notCloseRt = null;
-                          if (closestRt==null || (Math.abs(r1-r2)<Math.abs(r1-Double.valueOf(closestRt)))){
-                            if (closestRt!=null) notCloseRt = rt2;
-                            closestRt = rt2;
-                          } else if (closestRt!=null) notCloseRt = rt2;
-                          if (notCloseRt!=null){
-                            Hashtable<String,Integer> notClose = new Hashtable<String,Integer>();
-                            if (areNotClosest.containsKey(fileName2)) notClose = areNotClosest.get(fileName2);
-                            notClose.put(notCloseRt, clusterId);
-                            areNotClosest.put(fileName2, notClose);
-                          }
-                        }
-                      }
-                      if (closestRt != null){
-                        ResultAreaVO vo2 = diffTime2.get(closestRt);
-                        if (!alreadyInCluster.get(fileName2).containsKey(closestRt)){
-                          Double r1 = Double.valueOf(rt1);
-                          Double r2 = Double.valueOf(closestRt);
-                          // check the vicinity of the times
-                          if ((r2-expRtGroupingTime_)<r1 && r1<(r2+expRtGroupingTime_)){
-                            alreadyInCluster.get(fileName2).put(closestRt, closestRt);
-
-                            Vector<ResultAreaVO> vos = new Vector<ResultAreaVO>();
-                            if (rtClusters.containsKey(clusterId)) vos = rtClusters.get(clusterId);
-                            vos.add(vo2);
-                            rtClusters.put(clusterId, vos);
-                            //Juergen: I am not completely sure if I should do this - possibility of grouping too many
-                            Vector<Double> rts = new  Vector<Double>();
-                            for (ResultAreaVO vo:vos) rts.add(Double.valueOf(vo.getRtOriginal()));
-                            rts.add(Double.valueOf(vo1.getRtOriginal()));
-                            rt1 = Calculator.FormatNumberToString(Calculator.mean(rts),2);
-                          }
-                        }
-                      }
-                    }
-                  }
-                  alreadyInCluster.get(fileName1).put(rt1, rt1);
-                  Vector<ResultAreaVO> vos = new Vector<ResultAreaVO>();
-                  if (rtClusters.containsKey(clusterId)) vos = rtClusters.get(clusterId);
-                  // I did not find any matching VO in other files, and I had already the chance to match it to a cluster
-                  if (vos.size()==0 && areNotClosest.containsKey(fileName1) && areNotClosest.get(fileName1).containsKey(rt1)){
-                    Integer otherClusterId = areNotClosest.get(fileName1).get(rt1);
-                    vos = rtClusters.get(otherClusterId);
-                    vos.add(vo1);
-                    rtClusters.put(otherClusterId, vos);
-                  }else{
-                    vos.add(vo1);
-                    rtClusters.put(clusterId, vos);
-                    clusterId++;
-                  }
-                }
-              }
+          //first key: cluster id; second key: experiment name; third key: retention time of added VO; value; the assigned area VOs
+          Hashtable<Integer,Hashtable<String,Hashtable<String,ResultAreaVO>>> valuesInClusters = new  Hashtable<Integer,Hashtable<String,Hashtable<String,ResultAreaVO>>>();
+          Hashtable<String,Set<String>> usedRts = new Hashtable<String,Set<String>>();
+          Hashtable<Integer,Double> rtClusters = new Hashtable<Integer,Double>();
+          while (areThereHitsOutsideClusterRange(groupName, molName, fileNames, rtClusters, usedRts, resultsInHash)){
+            String[] fileNameAndRt = findStrongestHitOutsideExistingClusters(groupName, molName, fileNames, rtClusters, usedRts, resultsInHash);
+            String fileName = fileNameAndRt[0];
+            String rt = fileNameAndRt[1];
+            addClosestPeaksToCluster(clusterId, fileName, groupName, molName, rt, fileNames, usedRts, valuesInClusters, resultsInHash);
+            addAreaWeightedMeanRt(rtClusters,clusterId,valuesInClusters.get(clusterId));
+            clusterId++;
+          }
+          addRemainingPeaksToClosestClusters(rtClusters,valuesInClusters,usedRts,resultsInHash,groupName,molName,fileNames);
+          rtClusters = new Hashtable<Integer,Double>();
+          for (int cluster : valuesInClusters.keySet()){
+            addAreaWeightedMeanRt(rtClusters,cluster,valuesInClusters.get(cluster));
+          }
+          while (clusterOverlap(rtClusters)){
+            int[] overlapIds = detectClosestOverlap(rtClusters);
+            uniteTwoClusters(overlapIds[0],overlapIds[1],valuesInClusters);
+            rtClusters = new Hashtable<Integer,Double>();
+            for (int cluster : valuesInClusters.keySet()){
+              addAreaWeightedMeanRt(rtClusters,cluster,valuesInClusters.get(cluster));
             }
           }
-          //now we have clustered the results, now unify the rt
-          for (int i=0;i!=rtClusters.size();i++){
-            // first, we have to unite peaks that originat from the same experiment
-            Vector<ResultAreaVO> vos = rtClusters.get(i);
-            Vector<ResultAreaVO> united = new Vector<ResultAreaVO>();
-            Hashtable<String,Integer> sameExpPosition = new Hashtable<String,Integer>();
-            for (ResultAreaVO vo:vos){
-              if (!sameExpPosition.containsKey(vo.getExpName())){
-                sameExpPosition.put(vo.getExpName(), united.size());
-                united.add(vo);
-              }else{
-                //remove the VO we have to unite
+          
+          //unite the peaks in the unprocessedResults_
+          for (int i=0;i!=valuesInClusters.size();i++){
+            Hashtable<String,Hashtable<String,ResultAreaVO>> cluster = valuesInClusters.get(i);
+            String newRt = Calculator.FormatNumberToString(rtClusters.get(i),2);
+            for (String fileName : fileNames){
+              if (!cluster.containsKey(fileName))
+                continue;
+              Hashtable<String,ResultAreaVO> clusterOfFile = cluster.get(fileName);
+              //check for the strongest one
+              ResultAreaVO highestArea = null;
+              for (ResultAreaVO vo : clusterOfFile.values()){
+                if (highestArea==null || vo.getTotalArea(Integer.MAX_VALUE)>highestArea.getTotalArea(Integer.MAX_VALUE))
+                  highestArea = vo;
+              }
+              for (ResultAreaVO vo : clusterOfFile.values()){
+                if (highestArea.getRt().equalsIgnoreCase(vo.getRt()))
+                  continue;
                 Vector<Hashtable<String,ResultAreaVO>> resInSequence = unprocessedResults_.get(vo.getExpName()).get(groupName);
-                for (int j=0;j!=resInSequence.size();j++){
+                //now remove the vo that has to be united from the unprocessedResults_
+                for (int j=0; j!=resInSequence.size(); j++){
                   ResultAreaVO oneVO = resInSequence.get(j).values().iterator().next();
-                  if (oneVO.getMoleculeNameWoRT().equalsIgnoreCase(vo.getMoleculeNameWoRT())){
-                    resInSequence.get(j).remove(vo.getRt());
-                    break;
-                  }  
+                  if (!oneVO.getMoleculeNameWoRT().equalsIgnoreCase(vo.getMoleculeNameWoRT()))
+                    continue;
+                  resInSequence.get(j).remove(vo.getRt());
+                  break;
                 }
-                //unite the two VOs
-                united.get(sameExpPosition.get(vo.getExpName())).combineVOs(vo);
+                highestArea.combineVOs(vo);
               }
+              highestArea.setRt(newRt);
             }
-            
-            // calculate a mean RT
-            Vector<Double> rts = new  Vector<Double>();
-            for (ResultAreaVO vo:united) rts.add(Double.valueOf(vo.getRtOriginal()));
-            String meanRt = Calculator.FormatNumberToString(Calculator.mean(rts),2);
-            for (ResultAreaVO vo:united) vo.setRt(meanRt);
-          }
+          }          
         }
       }
+      
     }
     // now build the conventional Hashes
     for (String fileName : unprocessedResults_.keySet()){
@@ -1590,17 +1305,21 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
     return belowCutoff;
   }
   
-  private ResultAreaVO findAreaVoWithinRtBoundaries(String rtDef,Hashtable<String,ResultAreaVO> sameMoleculeDiffRet){
+  
+  /**
+   * checks whether an ResultAreaVO with the same retention time exists in the hash,
+   * and if yes, this VO will be returned
+   * @param rtDef the retention time string to look for 
+   * @param sameMoleculeDiffRet the hash containing the retention time objects
+   * @return the ResultAreaVO that has the same retention time, null otherwise
+   */
+  private ResultAreaVO hasAreaSameRt(String rtDef,Hashtable<String,ResultAreaVO> sameMoleculeDiffRet){
     ResultAreaVO found = null;
     if (rtDef==null||rtDef.length()<1)
       return found;
-    Double rt = Double.valueOf(rtDef);
     for (String refRt : sameMoleculeDiffRet.keySet()){
-      double refTime = Double.valueOf(refRt);
-      //if ((refTime-TIME_MODIFICATION_TOLERANCE)<rt && rt<(refTime+TIME_MODIFICATION_TOLERANCE))
-      // I am not sure if I should use here a separate grouping time within the experiment?
-      if (isWithinRtGroupingBoundaries(rt,refTime))
-        return sameMoleculeDiffRet.get(refRt);
+    	  if (rtDef.equalsIgnoreCase(refRt))
+    	    return sameMoleculeDiffRet.get(refRt);
     }
     return found;
   }
@@ -1886,10 +1605,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
       for (String molecule : moleculeNames){    
         Hashtable<String,ResultCompVO> relativeValues = new Hashtable<String,ResultCompVO>();
         int isoNr = 0;
-//        Double isVolume = null;
-//        Double isConcentration = null;
-//        Double esVolumeNoCorr = null;
-//        Double esConcentrationNoCorr = null;
         Double esVolumeInternalCorr = null;
         Double esConcentrationInternalCorr = null;
         Double esVolumeMedianCorr = null;
@@ -1901,15 +1616,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
         Hashtable<Integer,Double> esVolumeSingleCorr = new Hashtable<Integer,Double>();
         Hashtable<Integer,Double> esConcentrationSingleCorr = new Hashtable<Integer,Double>();
         Double dilutionFactor = 1d;
-//        if (absSetting_!=null && this.allISNames_.get(groupName).size()>0){
-//          VolumeConcVO concVO = absSetting_.getClassSettings().get(groupName).getIsStandards().get(mostReliableStandard).get(bestExp);
-//          isVolume = concVO.getVolume();
-//          isConcentration = concVO.getConcentration();
-//        }
         if (absSetting_!=null && this.allESNames_.get(groupName).size()>0){
           Hashtable<String,Hashtable<String,VolumeConcVO>> concVOs = absSetting_.getClassSettings().get(groupName).getEsStandards();
-//          esVolumeNoCorr = concVOs.get(mostReliableExtStandardNoCorr).get(bestExpESNoCorr).getVolume();
-//          esConcentrationNoCorr = concVOs.get(mostReliableExtStandardNoCorr).get(bestExpESNoCorr).getConcentration();
           if (isISAvailable()){
             esVolumeInternalCorr = concVOs.get(mostReliableExtStandardInternalCorr).get(bestExpESInternalCorr).getVolume();
             esConcentrationInternalCorr = concVOs.get(mostReliableExtStandardInternalCorr).get(bestExpESInternalCorr).getConcentration();
@@ -2198,7 +1906,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
         }
         compForOneGroup.put(molecule, relativeValues);
       }
-//      calculateSumAndHighestExp(maxIsotopesOfGroup_.get(groupName),compForOneGroup);
       comparativeRatios_.put(groupName, compForOneGroup);
     }
     calculateSumAndHighestExp(expNamesInSequence_,comparativeRatios_);
@@ -2225,7 +1932,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
         comparativeRatiosGroups_.put(molGroup, groupedCompForOneGroup);
       }
       calculateRatiosGroup(groups_,comparativeRatiosGroups_);
-//      calculateSumAndHighestExp(groups_,comparativeRatiosGroups_);
     }
   }
   
@@ -2241,8 +1947,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
         int maxIso = maxIsotopesOfGroup_.get(groupName);
         if (maxIso>highestIso)
           highestIso = maxIso;
-////        if (maxIso<highestIso)
-////          highestIso = maxIso;
         Hashtable<String,Hashtable<String,ResultCompVO>> results = resultsHash.get(groupName);
         Hashtable<Integer,Double> highestValues = new Hashtable<Integer,Double>();
         Hashtable<Integer,Double> sumValues = new Hashtable<Integer,Double>();
@@ -2278,8 +1982,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
         sumValuesGroup.put(groupName, sum);
         massValuesGroup.put(groupName, mass);
       }
-////      if (highestIso == Integer.MAX_VALUE)
-////        highestIso = 0;
       for (int i=0;i!=highestIso;i++){
         double highest = 0;
         double sum = 0;
@@ -2303,9 +2005,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
       }
       for (String groupName : resultsHash.keySet()){
         Hashtable<String,Hashtable<String,ResultCompVO>> results = resultsHash.get(groupName);
-//        if (groupName.equalsIgnoreCase("SM")){
-//          System.out.println("expName: "+expName+" ; "+sumValuesGroup.get(groupName));
-//        }
         for (String molecule : results.keySet()){
           ResultCompVO resultVO = results.get(molecule).get(expName);
           resultVO.setHighestGroupIntensity(highestValuesGroup.get(groupName));
@@ -2320,122 +2019,76 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
   
   private void calculateRatiosGroup(Vector<String> groupNames,Hashtable<String,Hashtable<String,Hashtable<String,ResultCompVO>>> groups){   
     for (String groupName : groupNames){
-////      int highestIso = Integer.MAX_VALUE;
       int highestIso = 0;
-//      Hashtable<String,Vector<Double>> highestMeans = new  Hashtable<String,Vector<Double>>();
-//      Hashtable<String,Vector<Double>> highestSds = new  Hashtable<String,Vector<Double>>();
       Hashtable<String,Vector<Double>> sumMeans = new  Hashtable<String,Vector<Double>>();
       Hashtable<String,Vector<Double>> sumSds = new  Hashtable<String,Vector<Double>>();
-//      Vector<Double> highestTotalMeans = new  Vector<Double>();
-//      Vector<Double> highestTotalSds = new  Vector<Double>();
       Vector<Double> sumTotalMeans = new  Vector<Double>();
       Vector<Double> sumTotalSds = new  Vector<Double>();
       
-//      Hashtable<Integer,Double> sumHighestTotalMean = new Hashtable<Integer,Double>();
       Hashtable<Integer,Double> sumSumTotalMean = new Hashtable<Integer,Double>();
-//      Vector<Hashtable<Integer,Double>> sdsHighestTotalMean = new Vector<Hashtable<Integer,Double>>();
       Vector<Hashtable<Integer,Double>> sdsSumTotalMean = new Vector<Hashtable<Integer,Double>>();
       for (String className : groups.keySet()){
         int maxIso = maxIsotopesOfGroup_.get(className);
-////        if (maxIso<highestIso)
         if (maxIso>highestIso)
           highestIso = maxIso;
         Hashtable<String,Hashtable<String,ResultCompVO>> groupOfClass = groups.get(className);
-//        Hashtable<Integer,Double> sumHighestMeanHash = new Hashtable<Integer,Double>();
         Hashtable<Integer,Double> sumSumMeanHash = new Hashtable<Integer,Double>();
-//        Vector<Hashtable<Integer,Double>> sdsHighestMean = new Vector<Hashtable<Integer,Double>>();
         Vector<Hashtable<Integer,Double>> sdsSumMean = new Vector<Hashtable<Integer,Double>>();
         for (String molName : groupOfClass.keySet()){
           ResultCompGroupVO compVO = (ResultCompGroupVO)groupOfClass.get(molName).get(groupName);
-//          Hashtable<Integer,Double> sdsHighestMeanMolecule = new Hashtable<Integer,Double>();
           Hashtable<Integer,Double> sdsSumMeanMolecule = new Hashtable<Integer,Double>();
-//          Hashtable<Integer,Double> sdsHighestTotalMeanMolecule = new Hashtable<Integer,Double>();
           Hashtable<Integer,Double> sdsSumTotalMeanMolecule = new Hashtable<Integer,Double>();
           if (compVO.getType() == ResultCompVO.ANALYTE_TYPE){
             for (int i=0;i!=maxIso;i++){
-//              double relativeHighestMean = compVO.getMeanOfRatioToHighestPeak(compVO.getAvailableIsotopeNr(i));
-//              double relativeHighestSD = compVO.getSDOfRatioToHighestPeak(compVO.getAvailableIsotopeNr(i));
               double relativeSumMean = compVO.getMeanOfRatioToTotalIntensity(compVO.getAvailableIsotopeNr(i));
               double relativeSumSD = compVO.getSDOfRatioToTotalIntensity(compVO.getAvailableIsotopeNr(i));
-//              double relativeHighestTotalMean = compVO.getMeanOfRatioToHighestFoundPeak(compVO.getAvailableIsotopeNr(i));
-//              double relativeHighestTotalSD = compVO.getSDOfRatioToHighestFoundPeak(compVO.getAvailableIsotopeNr(i));
               double relativeSumTotalMean = compVO.getMeanRatioToOverallGroupsIntensity(compVO.getAvailableIsotopeNr(i));
               double relativeSumTotalSD = compVO.getSDRatioToOverallGroupsIntensity(compVO.getAvailableIsotopeNr(i));
               
-//              double highestSumValue = 0;
               double sumSumValue = 0;
-//              double highestSumTotalValue = 0;
               double sumSumTotalValue = 0;
               if (sumSumMeanHash.containsKey(i)){
-//                highestSumValue = sumHighestMeanHash.get(i);
                 sumSumValue = sumSumMeanHash.get(i);
               }
               if (sumSumTotalMean.containsKey(i)){
-//                highestSumTotalValue = sumHighestTotalMean.get(i);
                 sumSumTotalValue = sumSumTotalMean.get(i);
               }
               
-//              highestSumValue += relativeHighestMean;
               sumSumValue += relativeSumMean;
-//              highestSumTotalValue += relativeHighestTotalMean;
               sumSumTotalValue += relativeSumTotalMean;
-//              sumHighestMeanHash.put(i, highestSumValue);
               sumSumMeanHash.put(i, sumSumValue);
-//              sumHighestTotalMean.put(i, highestSumTotalValue);
               sumSumTotalMean.put(i, sumSumTotalValue);
               
-//              sdsHighestMeanMolecule.put(i, relativeHighestSD);
               sdsSumMeanMolecule.put(i, relativeSumSD);
-//              sdsHighestTotalMeanMolecule.put(i, relativeHighestTotalSD);
               sdsSumTotalMeanMolecule.put(i, relativeSumTotalSD);
             }
-//            sdsHighestMean.add(sdsHighestMeanMolecule);
             sdsSumMean.add(sdsSumMeanMolecule);
-//            sdsHighestTotalMean.add(sdsHighestTotalMeanMolecule);
             sdsSumTotalMean.add(sdsSumTotalMeanMolecule);
           }
         }
-//        Vector<Double> sumHighestMean = new Vector<Double>();
         Vector<Double> sumSumMean = new Vector<Double>();
-//        Vector<Double> sdHighestMean = new Vector<Double>();
         Vector<Double> sdSumMean = new Vector<Double>();
         for (int i=0;i!=maxIso;i++){
-//          sumHighestMean.add(i,sumHighestMeanHash.get(i));
           sumSumMean.add(i,sumSumMeanHash.get(i));
-//          Vector<Double> stdevHighestIso = new Vector<Double>();
           Vector<Double> stdevSumIso = new Vector<Double>();
-//          for (Hashtable<Integer,Double> stdevOfMolecule : sdsHighestMean){
-//            stdevHighestIso.add(stdevOfMolecule.get(i));
-//          }
           for (Hashtable<Integer,Double> stdevOfMolecule : sdsSumMean){
             stdevSumIso.add(stdevOfMolecule.get(i));
           }
-//          double stdevHighestErrorPropagated = Calculator.calculateSumStdevErrorPropagated(stdevHighestIso);
           double stdevSumErrorPropagated = Calculator.calculateSumStdevErrorPropagated(stdevSumIso);
-//          sdHighestMean.add(stdevHighestErrorPropagated);
           sdSumMean.add(stdevSumErrorPropagated);
         }
-//        highestMeans.put(className, sumHighestMean);
-//        highestSds.put(className, sdHighestMean);
         sumMeans.put(className, sumSumMean);
         sumSds.put(className, sdSumMean);
       }
       for (int i=0;i!=highestIso;i++){
-//        highestTotalMeans.add(sumHighestTotalMean.get(i));
-////        sumTotalMeans.add(sumSumTotalMean.get(i));
         double aSumTotalMean = 0;
         if (i<sumSumTotalMean.size())
           aSumTotalMean = sumSumTotalMean.get(i);
         else if (sumSumTotalMean.size()>0)
           aSumTotalMean = sumSumTotalMean.get(sumSumTotalMean.size()-1);
         sumTotalMeans.add(aSumTotalMean);
-//        Vector<Double> stdevHighestIso = new Vector<Double>();
         Vector<Double> stdevSumIso = new Vector<Double>();
-//        for (Hashtable<Integer,Double> stdevOfMolecule : sdsHighestTotalMean ){
-//          stdevHighestIso.add(stdevOfMolecule.get(i));
-//        }
         for (Hashtable<Integer,Double> stdevOfMolecule : sdsSumTotalMean){      
-////          stdevSumIso.add(stdevOfMolecule.get(i));
           double aStdevSumIso = 0;
           if (i<stdevOfMolecule.size())
             aSumTotalMean = stdevOfMolecule.get(i);
@@ -2443,9 +2096,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
             aSumTotalMean = stdevOfMolecule.get(stdevOfMolecule.size()-1);
           stdevSumIso.add(aStdevSumIso);
         }        
-//        double stdevHighestErrorPropagated = Calculator.calculateSumStdevErrorPropagated(stdevHighestIso);
         double stdevSumErrorPropagated = Calculator.calculateSumStdevErrorPropagated(stdevSumIso);
-//        highestTotalSds.add(stdevHighestErrorPropagated);
         sumTotalSds.add(stdevSumErrorPropagated);
       }
       
@@ -2453,12 +2104,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
         Hashtable<String,Hashtable<String,ResultCompVO>> groupOfClass = groups.get(className);
         for (String molName : groupOfClass.keySet()){
           ResultCompGroupVO compVO = (ResultCompGroupVO)groupOfClass.get(molName).get(groupName);
-//          compVO.setHighestGroupMeans(highestMeans.get(className));
-//          compVO.setHighestGroupSds(highestSds.get(className));
           compVO.setSumGroupMeans(sumMeans.get(className));
           compVO.setSumGroupSds(sumSds.get(className));
-//          compVO.setHighestTotalMeans(highestTotalMeans);
-//          compVO.setHighestTotalSds(highestTotalSds);
           compVO.setSumTotalMeans(sumTotalMeans);
           compVO.setSumTotalSds(sumTotalSds);
         }
@@ -2523,21 +2170,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
   {
     return maxIsotopesOfGroup_.get(molGroupName);
   }
-  
-//  private double theoreticallyCorrectForAddIsotope(String chemicalFormula, double currentValue, double zeroIsoValue, int isosUsed, int isosDesired){
-//    double refValue = currentValue;
-//    try {
-//      Vector<Double> distris = elementParser_.calculateChemicalFormulaIntensityDistribution(chemicalFormula,isosDesired,false);
-//      for (int i=isosUsed; i!=isosDesired;i++){
-//        refValue += zeroIsoValue*distris.get(i);
-//      }
-//    }
-//    catch (SpectrummillParserException e) {
-//      e.printStackTrace();
-//    }
-//    return refValue;
-//
-//  }
   
   private void calculteESRelativeCorrectionFactors(){
     esCorrectionFactors_ = new Hashtable<String,Hashtable<String,Hashtable<String,Double>>>();
@@ -2694,7 +2326,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
           int isType = correctionTypeISLookup_.get(molGroupName).get(isName).intValue();
           Hashtable<String,Hashtable<Integer,Double>> medianOfRatiosExps = new Hashtable<String,Hashtable<Integer,Double>>();
           Hashtable<Integer,Vector<Double>> groupRefAreas = new Hashtable<Integer,Vector<Double>>();
-          Hashtable<String,Hashtable<Integer,Vector<Double>>> groupCorectiveFactors = new Hashtable<String,Hashtable<Integer,Vector<Double>>>();//          calculateRelativeCorrectiveValuesComparedToBestStandardGroup(molGroupName,esResults_.get(molGroupName),esCorrectionFactors_.get(molGroupName),
+          Hashtable<String,Hashtable<Integer,Vector<Double>>> groupCorectiveFactors = new Hashtable<String,Hashtable<Integer,Vector<Double>>>();
           if (allESNames_.get(molGroupName).size()>0 && bestExpForExtStandardSingleCorr_.get(molGroupName)!=null && bestExpForExtStandardSingleCorr_.get(molGroupName).get(isName)!=null){
 
             this.calculateMediansGroup(molGroupName, esResults_.get(molGroupName), correctionFactorsToBestESSingleCorr_.get(molGroupName).get(isName), 
@@ -2777,9 +2409,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
                   isosToTake = standardsStatistics.get(standardName).getAmountIsotopesFoundInAll();
                 double refValue = this.correctAreaCorrespondingly(oneIsSeveralExps.get(expName).getTotalArea(isosToTake), moleculeGroup, expName, isosToTake, correctionFactors.get(standardName), respectDilution, standMethod, corrStandard);
                 if (standardsStatistics.get(standardName).getAmountIsotopesFoundInAll()<i){
-//                  String chemicalFormula = oneIsSeveralExps.get(expName).getChemicalFormula();
-//                  double zeroIso = (float)this.correctAreaCorrespondingly(oneIsSeveralExps.get(expName).getTotalArea(1),moleculeGroup, expName, 1, correctionFactors.get(standardName), respectDilution, standMethod, corrStandard);
-//                  refValue =  this.theoreticallyCorrectForAddIsotope(chemicalFormula,refValue,zeroIso,standardsStatistics.get(standardName).getAmountIsotopesFoundInAll(),i);
                   refValue = correctAreaCorrespondingly(oneIsSeveralExps.get(expName).getTheoreticalIsotopeValue(elementParser_, i),moleculeGroup, expName, 1,
                       correctionFactors.get(standardName), respectDilution, standMethod, corrStandard);
 
@@ -2799,7 +2428,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
       boolean useExistingTypes = false;
       if (correctionType.size()>0)
         useExistingTypes = true;
-      // this is for the calcation of the corrections by single standards
+      // this is for the calculation of the corrections by single standards
       for (String standName : standResults.keySet()){
         currentType++;
         if (useExistingTypes)
@@ -2813,9 +2442,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
             isosToTake = standardsStatistics.get(standName).getAmountIsotopesFoundInAll();
           double refValue = this.correctAreaCorrespondingly(oneStandardSeveralExps.get(bestExp).getTotalArea(isosToTake), moleculeGroup, bestExp, isosToTake, correctionFactors.get(standName), respectDilution, standMethod, corrStandard);
           if (standardsStatistics.get(standName).getAmountIsotopesFoundInAll()<i){
-//            String chemicalFormula = oneStandardSeveralExps.get(bestExp).getChemicalFormula();
-//            double zeroIso = (float)this.correctAreaCorrespondingly(oneStandardSeveralExps.get(bestExp).getTotalArea(1),moleculeGroup, bestExp, 1, correctionFactors.get(standName), respectDilution, standMethod, corrStandard);
-//            refValue =  this.theoreticallyCorrectForAddIsotope(chemicalFormula,refValue,zeroIso,standardsStatistics.get(standName).getAmountIsotopesFoundInAll(),i);
             refValue = correctAreaCorrespondingly(oneStandardSeveralExps.get(bestExp).getTheoreticalIsotopeValue(elementParser_, i),moleculeGroup, bestExp, 1,
                 correctionFactors.get(standName), respectDilution, standMethod, corrStandard);
           }
@@ -2835,9 +2461,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
               isosToTake = standardsStatistics.get(standName).getAmountIsotopesFoundInAll();
             double expValue = this.correctAreaCorrespondingly(oneStandardSeveralExps.get(expName).getTotalArea(isosToTake), moleculeGroup, expName, isosToTake, correctionFactors.get(standName), respectDilution, standMethod, corrStandard);
             if (standardsStatistics.get(standName).getAmountIsotopesFoundInAll()<i){
-//              String chemicalFormula = oneStandardSeveralExps.get(expName).getChemicalFormula();
-//              double zeroIso = (float)this.correctAreaCorrespondingly(oneStandardSeveralExps.get(expName).getTotalArea(1),moleculeGroup, expName, 1, correctionFactors.get(standName), respectDilution, standMethod, corrStandard);
-//              expValue =  this.theoreticallyCorrectForAddIsotope(chemicalFormula,expValue,zeroIso,standardsStatistics.get(standName).getAmountIsotopesFoundInAll(),i);
               expValue = correctAreaCorrespondingly(oneStandardSeveralExps.get(expName).getTheoreticalIsotopeValue(elementParser_, i),moleculeGroup, expName, 1,
                   correctionFactors.get(standName), respectDilution, standMethod, corrStandard);
             }
@@ -2892,54 +2515,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
     
     return dilutionFactors;
   }  
-  
-//  public double getStandardAmount(boolean intern, String groupName, int correctionType){
-//    double amount = -1d;
-//    String standard = "";
-//    if (correctionType>ResultCompVO.EXTERNAL_STANDARD_TYPE){
-//      Hashtable<String,Hashtable<String,Integer>> correctionTypeLookup;
-//      if (intern)
-//        correctionTypeLookup = correctionTypeISLookup_;
-//      else
-//        correctionTypeLookup = correctionTypeESLookup_;
-//      if (correctionTypeLookup.containsKey(groupName)){
-//        Hashtable<String,Integer> lookup = correctionTypeLookup.get(groupName);
-//        for (String standName : lookup.keySet()){
-//          if (lookup.get(standName).intValue() == correctionType){
-//            standard = standName;
-//          }
-//        }
-//      }
-//    }else{
-//      Hashtable<String,Vector<String>> standardsConcernReliability = null;
-//      if (intern)
-//        standardsConcernReliability = standardsOrderedConcerningReliability_;
-//      else
-//        standardsConcernReliability = extstandsOrderedConcerningReliability_;
-//      if (standardsConcernReliability!=null && standardsConcernReliability.size()>0 && standardsConcernReliability.containsKey(groupName) && standardsConcernReliability.get(groupName).size()>0){
-//        standard = standardsConcernReliability.get(groupName).get(0);
-//      }
-//    }
-//    if (standard!=null&&standard.length()>0){
-//      if (this.absSetting_!=null){
-//        String exp = null;
-//        Hashtable<String,Hashtable<String,VolumeConcVO>> standSettings;
-//        if (intern){
-//          standSettings = absSetting_.getClassSettings().get(groupName).getIsStandards();
-//          exp = bestExpForStandard_.get(groupName).get(standard);
-//        }else{ 
-//          standSettings = absSetting_.getClassSettings().get(groupName).getEsStandards();
-//          exp = bestExpForExtStandard_.get(groupName).get(standard);
-//        }
-//        VolumeConcVO concVO = standSettings.get(standard).get(exp);
-//        amount = concVO.getAmount();
-//      }else{
-//        amount = 1;
-//      }
-//    }
-//
-//    return amount;
-//  }
+
   
   public boolean hasAbsoluteSettings(){
     if (absSetting_!=null)
@@ -3177,6 +2753,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
     return areaVO;
   }
   
+  
   /**
    * 
    * @return true when the RT grouping parameter is set
@@ -3187,4 +2764,332 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
     else
       return false;
   }
+  
+  
+  /**
+   * checks whether there are still hits that have not been assigned to one of the existing clusters, and are outside the influence region of a cluster
+   * @param groupName the analyte class
+   * @param molName the analyte name
+   * @param fileNames the names of the MS-runs
+   * @param rtClusters hash containing the cluster id and weighted retention time center; key: cluster ID; value: retention time center
+   * @param usedRts hits whose retention times were already added to clusters; key: file name; set: the retention time strings
+   * @param resultsInHash the available results; first key: name of MS-run; second key: analyte group; third key: analyte name; fourth key: retention times of hits 
+   * @return true when there are still outside the influence regions of existing clusters
+   */
+  private boolean areThereHitsOutsideClusterRange(String groupName, String molName, Vector<String> fileNames, Hashtable<Integer,Double> rtClusters,
+      Hashtable<String,Set<String>> usedRts, Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,ResultAreaVO>>>> resultsInHash){
+    boolean anyFound = false;
+    boolean outsideDetected = false;
+    for (String fileName : fileNames){
+      if (!resultsInHash.containsKey(fileName) || !resultsInHash.get(fileName).containsKey(groupName) ||
+          !resultsInHash.get(fileName).get(groupName).containsKey(molName) ||
+          resultsInHash.get(fileName).get(groupName).get(molName).size()==0)
+        continue;
+      anyFound = true;
+      Hashtable<String,ResultAreaVO> results = resultsInHash.get(fileName).get(groupName).get(molName);
+      for (String rtHitString : results.keySet()){
+        if (outsideDetected) break;
+        if (usedRts.containsKey(fileName) && usedRts.get(fileName).contains(rtHitString))
+          continue;
+        double rtHit = Double.parseDouble(rtHitString);
+        boolean insideACluster = false;
+        for (double rt : rtClusters.values()){
+          if (isWithinRtGroupingBoundaries(rtHit,rt)){
+            insideACluster = true;
+            break;
+          }
+        }
+        
+        if (!insideACluster){
+          outsideDetected = true;
+        }
+      }
+      if (outsideDetected) break;
+    }
+    if (!anyFound)
+      return false;
+    else
+      return outsideDetected;
+  }
+  
+  
+  /**
+   * detects the strongest detection that is outside the influence regions of existing clusters
+   * @param groupName the analyte class
+   * @param molName the analyte name
+   * @param fileNames the names of the MS-runs
+   * @param rtClusters hash containing the cluster id and weighted retention time center; key: cluster ID; value: retention time center
+   * @param usedRts hits whose retention times were already added to clusters; key: file name; set: the retention time strings
+   * @param resultsInHash the available results; first key: name of MS-run; second key: analyte group; third key: analyte name; fourth key: retention times of hits
+   * @return String[0]: fileName; String[1] retention time
+   */
+  private String[] findStrongestHitOutsideExistingClusters(String groupName, String molName, Vector<String> fileNames, Hashtable<Integer,Double> rtClusters,
+      Hashtable<String,Set<String>> usedRts, Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,ResultAreaVO>>>> resultsInHash){
+    String[] fileNameAndRt = new String[2];
+    double highestArea = 0d;
+    for (String fileName : fileNames){
+      if (!resultsInHash.containsKey(fileName) || !resultsInHash.get(fileName).containsKey(groupName) ||
+          !resultsInHash.get(fileName).get(groupName).containsKey(molName) ||
+          resultsInHash.get(fileName).get(groupName).get(molName).size()==0)
+        continue;
+      Hashtable<String,ResultAreaVO> results = resultsInHash.get(fileName).get(groupName).get(molName);
+      for (String rtHitString : results.keySet()){
+        if (usedRts.containsKey(fileName) && usedRts.get(fileName).contains(rtHitString))
+          continue;
+        double rtHit = Double.parseDouble(rtHitString);
+        boolean inCluster = false;
+        for (double rt : rtClusters.values()){
+          if (isWithinRtGroupingBoundaries(rtHit,rt)){
+            inCluster = true;
+            break;
+          }
+        }
+        if (inCluster)
+          continue;      
+        ResultAreaVO result = results.get(rtHitString);
+        double area = result.getTotalArea(Integer.MAX_VALUE);
+        if (area<highestArea)
+          continue;
+        highestArea = area;
+        fileNameAndRt[0] = fileName;
+        fileNameAndRt[1] = rtHitString;
+      }
+    }
+    return fileNameAndRt;
+  }
+  
+
+  /**
+   * this method searches for hits which are inside the influence region of the newly created clusters, and adds them
+   * only hits that are inside the region from the "strongest" hit to 1.2 times the median of the closest hits are added
+   * @param clusterId an identifier for the cluster in integer format
+   * @param strongestFile the name of the file for the strongest hit, i.e. the cluster founder
+   * @param groupName analyte class
+   * @param molName analyte name
+   * @param strongestRt the retention time of the file for the strongest hit, i.e. the cluster founder
+   * @param fileNames the names of the MS-runs
+   * @param usedRts hits whose retention times were already added to clusters; key: file name; set: the retention time strings
+   * @param clusters hash containing the clusters; first key: cluster id; second key: experiment name; third key: retention time of added VO; value; the assigned area VOs
+   * @param resultsInHash the available results; first key: name of MS-run; second key: analyte group; third key: analyte name; fourth key: retention times of hits
+   */
+  private void addClosestPeaksToCluster(int clusterId, String strongestFile, String groupName, String molName,
+      String strongestRt, Vector<String> fileNames, Hashtable<String,Set<String>> usedRts,
+      Hashtable<Integer,Hashtable<String,Hashtable<String,ResultAreaVO>>> clusters,
+      Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,ResultAreaVO>>>> resultsInHash){
+    ResultAreaVO strongestHit = resultsInHash.get(strongestFile).get(groupName).get(molName).get(strongestRt);
+    double strongRt = Double.parseDouble(strongestRt);
+    //first key: fileName; second key rt
+    Hashtable<String,Hashtable<String,ResultAreaVO>> closest = new Hashtable<String,Hashtable<String,ResultAreaVO>>();
+    //get hits within the tolerance and closest to strongest one
+    for (String fileName : fileNames){
+      if (fileName.equalsIgnoreCase(strongestFile))
+        continue;
+      if (!resultsInHash.containsKey(fileName) || !resultsInHash.get(fileName).containsKey(groupName) ||
+          !resultsInHash.get(fileName).get(groupName).containsKey(molName) ||
+          resultsInHash.get(fileName).get(groupName).get(molName).size()==0)
+        continue;
+      Hashtable<String,ResultAreaVO> results = resultsInHash.get(fileName).get(groupName).get(molName);
+      String closestRt = null;
+      for (String rtHitString : results.keySet()){
+        if (usedRts.containsKey(fileName) && usedRts.get(fileName).contains(rtHitString))
+          continue;
+        double rtHit = Double.parseDouble(rtHitString);
+        if (!isWithinRtGroupingBoundaries(rtHit,strongRt))
+          continue;
+        if (closestRt==null || (Math.abs(rtHit-strongRt)<Math.abs(Double.valueOf(closestRt)-strongRt))){
+          closestRt = rtHitString;
+        }
+      }
+      if (closestRt!=null){
+        Hashtable<String,ResultAreaVO> closestHash = new Hashtable<String,ResultAreaVO>();
+        closestHash.put(closestRt, results.get(closestRt));
+        closest.put(fileName, closestHash);
+      }
+    }
+    Hashtable<String,Hashtable<String,ResultAreaVO>> cluster = new Hashtable<String,Hashtable<String,ResultAreaVO>>();
+    Set<String> rts = new HashSet<String>();
+    Hashtable<String,ResultAreaVO> oneFile = new Hashtable<String,ResultAreaVO>();
+    oneFile.put(strongestRt,strongestHit);
+    rts.add(strongestRt);
+    cluster.put(strongestFile, oneFile);
+    usedRts.put(strongestFile, rts);
+    //calculate the median of the closest peaks
+    if (closest.size()>0){
+      float[] differenceToStrongest = new float[closest.size()];
+      int count = 0;
+      for (String fileName : closest.keySet()){
+        differenceToStrongest[count] = Math.abs(Float.parseFloat(closest.get(fileName).keySet().iterator().next())-(float)strongRt);
+        count++;
+      }
+      float medianDifference = Calculator.median(differenceToStrongest);
+      //add all hits to the cluster which are within the range of two times the median difference
+      for (String fileName : closest.keySet()){
+        String rt = closest.get(fileName).keySet().iterator().next();
+        float diff = Math.abs(Float.parseFloat(rt)-(float)strongRt);
+        if (diff>1.2d*medianDifference)
+          continue;
+        rts = new HashSet<String>();
+        oneFile = new Hashtable<String,ResultAreaVO>();
+        oneFile.put(rt,closest.get(fileName).get(rt));
+        rts.add(rt);
+        cluster.put(fileName, oneFile);
+        usedRts.put(fileName, rts);
+      }
+    }
+    clusters.put(clusterId, cluster);
+  }
+
+  
+  /**
+   * calculates an mean retention time that is weighted by the peak areas; this value is added to the rtClusters hash table
+   * @param rtClusters hash containing the cluster id and weighted retention time center; key: cluster ID; value: area weighted retention time center
+   * @param clusterId an identifier for the cluster in integer format
+   * @param cluster hash containing the VOs of one cluster;first key key: experiment name; second key: retention time of added VO; value: the assigned area VOs
+   */
+  private void addAreaWeightedMeanRt(Hashtable<Integer,Double> rtClusters, int clusterId, Hashtable<String,Hashtable<String,ResultAreaVO>> cluster){
+    double totalArea = 0d;
+    double rtTimesArea = 0d;
+    double rt;
+    double area;
+    for (Hashtable<String,ResultAreaVO> vos : cluster.values()){
+      for (ResultAreaVO vo : vos.values()){
+        rt = Double.parseDouble(vo.getRt());
+        area = vo.getTotalArea(Integer.MAX_VALUE);
+        totalArea += area;
+        rtTimesArea += area*rt;
+      }
+    }
+    rtClusters.put(clusterId, rtTimesArea/totalArea);
+  }
+  
+  
+  /**
+   * when there no more peaks outside the influence regions of the clusters, the remaining ones are added to the clusters that are closest
+   * @param rtClusters hash containing the cluster id and weighted retention time center; key: cluster ID; value: area weighted retention time center
+   * @param valuesInClusters hash containing the clusters; first key: cluster id; second key: experiment name; third key: retention time of added VO; value; the assigned area VOs
+   * @param usedRts hits whose retention times were already added to clusters; key: file name; set: the retention time strings
+   * @param resultsInHash the available results; first key: name of MS-run; second key: analyte group; third key: analyte name; fourth key: retention times of hits
+   * @param groupName analyte class
+   * @param molName analyte name
+   * @param fileNames the names of the MS-runs
+   */
+  private void addRemainingPeaksToClosestClusters(Hashtable<Integer,Double> rtClusters,
+      Hashtable<Integer,Hashtable<String,Hashtable<String,ResultAreaVO>>> valuesInClusters, Hashtable<String,Set<String>> usedRts,
+      Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,ResultAreaVO>>>> resultsInHash,
+      String groupName, String molName, Vector<String> fileNames){
+    double rtCluster;
+    double diff;
+    for (String fileName : fileNames){
+      if (!resultsInHash.containsKey(fileName) || !resultsInHash.get(fileName).containsKey(groupName) ||
+          !resultsInHash.get(fileName).get(groupName).containsKey(molName) ||
+          resultsInHash.get(fileName).get(groupName).get(molName).size()==0)
+        continue;
+      Hashtable<String,ResultAreaVO> results = resultsInHash.get(fileName).get(groupName).get(molName);
+      for (String rtHitString : results.keySet()){
+        if (usedRts.containsKey(fileName) && usedRts.get(fileName).contains(rtHitString))
+          continue;
+        double rtHit = Double.parseDouble(rtHitString);
+        int bestClusterId = -1;
+        double smallestDiff  = Double.MAX_VALUE;
+        for (Integer clusterId : rtClusters.keySet()){
+          rtCluster = rtClusters.get(clusterId);
+          diff = Math.abs(rtCluster-rtHit);
+          if (diff<smallestDiff){
+            smallestDiff = diff;
+            bestClusterId = clusterId;
+          }
+        }
+        //add areaVO to hash
+        ResultAreaVO areaVO = results.get(rtHitString);
+        Hashtable<String,Hashtable<String,ResultAreaVO>> oneCluster = valuesInClusters.get(bestClusterId);
+        Hashtable<String,ResultAreaVO> inCluster = new Hashtable<String,ResultAreaVO>();
+        if (oneCluster.containsKey(fileName)) inCluster = oneCluster.get(fileName);
+        inCluster.put(areaVO.getRt(),areaVO);
+        oneCluster.put(fileName, inCluster);
+        valuesInClusters.put(bestClusterId,oneCluster);
+        //add the used RT
+        Set<String> rts = new HashSet<String>();
+        if (usedRts.containsKey(fileName))
+          rts = usedRts.get(fileName);
+        usedRts.put(fileName, rts);
+      }
+    }  
+  }
+  
+  
+  /**
+   * checks whether cluster centers are within the other influence regions
+   * @param rtClusters hash containing the cluster id and weighted retention time center; key: cluster ID; value: area weighted retention time center
+   * @return true when cluster centers are overlapping with one another
+   */
+  private boolean clusterOverlap(Hashtable<Integer,Double> rtClusters){
+    for (int i=0; i!=rtClusters.size(); i++){
+      double firstRt = rtClusters.get(i);
+      for (int j=(i+1); j<(rtClusters.size()); j++){
+        double secondRt = rtClusters.get(j);
+        if (isWithinRtGroupingBoundaries(firstRt, secondRt)){
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  
+  
+  /**
+   * returns two cluster ids which have the closest overlap
+   * @param rtClusters hash containing the cluster id and weighted retention time center; key: cluster ID; value: area weighted retention time center
+   * @return int[0] the cluster id of the first one of the two overlapping clusters; int[1] the cluster id of the seceond one of the two overlapping clusters 
+   */
+  private int[] detectClosestOverlap(Hashtable<Integer,Double> rtClusters){
+    double lowestOverlap = this.expRtGroupingTime_;
+    int[] clusterIds = new int[2];
+    for (int i=0; i!=rtClusters.size(); i++){
+      double firstRt = rtClusters.get(i);
+      for (int j=(i+1); j<(rtClusters.size()); j++){
+        double secondRt = rtClusters.get(j);
+        if (!isWithinRtGroupingBoundaries(firstRt, secondRt))
+          continue;
+        double overlap = Math.abs(firstRt-secondRt);
+        if (overlap>lowestOverlap)
+          continue;
+        clusterIds[0] = i;
+        clusterIds[1] = j;
+      }
+    }
+    return clusterIds;
+  }
+
+  
+  /**
+   * unites two overlapping clusters
+   * @param id1 the cluster id of the first one of the two overlapping clusters
+   * @param id2 the cluster id of the second one of the two overlapping clusters
+   * @param valuesInClusters hash containing the clusters; first key: cluster id; second key: experiment name; third key: retention time of added VO; value; the assigned area VOs
+   */
+  private void uniteTwoClusters(int id1, int id2, Hashtable<Integer,Hashtable<String,Hashtable<String,ResultAreaVO>>> valuesInClusters){
+    int lower = id1;
+    int upper = id2;
+    if (lower>upper){
+      lower = id2;
+      upper = id1;
+    }
+    Hashtable<String,Hashtable<String,ResultAreaVO>> strongerCluster = valuesInClusters.get(lower);
+    Hashtable<String,Hashtable<String,ResultAreaVO>> weakerCluster = valuesInClusters.get(upper);
+    for (String fileName : weakerCluster.keySet()){
+      Hashtable<String,ResultAreaVO> toAdd = new Hashtable<String,ResultAreaVO>();
+      if (strongerCluster.containsKey(fileName)) toAdd = strongerCluster.get(fileName);
+      Hashtable<String,ResultAreaVO> toBeAdded = weakerCluster.get(fileName);
+      for (String rt : toBeAdded.keySet()) toAdd.put(rt,toBeAdded.get(rt));
+      strongerCluster.put(fileName, toAdd);
+    }
+    int count = upper;
+    //reorganize the clusterIds
+    while ((count+1)<valuesInClusters.size()){
+      valuesInClusters.put(count, valuesInClusters.get(count+1));
+      count++;
+    }
+    valuesInClusters.remove(valuesInClusters.size()-1);
+  }
+  
 }

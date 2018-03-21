@@ -76,7 +76,8 @@ public class MztabUtils extends LDAExporter
    * @param resultsMol the values according to the heat map selection
    * @param isInternalStandard is the analyte an internal standard (not used up to now)
    * @param isExternalStandard is the analyte an external standard (not used up to now)
-   * @param adductsSorted key: the adducts sorted in consecutive manner starting with the strongest representative; value: contains this adduct position information 
+   * @param adductsSorted key: the adducts sorted in consecutive manner starting with the strongest representative; value: contains this adduct position information
+   * @param expsOfGroup key: group name; value sorted vector of experiments
    * @return a combined object containing the various mzTab specific information
    * @throws MZTabException when there is something wrong
    * @throws SpectrummillParserException when there are elements missing in the elementconfig.xml
@@ -84,7 +85,7 @@ public class MztabUtils extends LDAExporter
   public static SmallMztabMolecule createSmallMztabMolecule(short speciesType, int currentFeatureId, int currentEvidenceId, int currentEvGroupingId,
       int maxIsotopes, ComparativeAnalysis analysisModule, Hashtable<String,MsRun> msruns, Hashtable<String,QuantificationResult> originalExcelResults,
       String molGroup, String molName, Hashtable<String,Vector<Double>> resultsMol, boolean isInternalStandard, boolean isExternalStandard,
-      LinkedHashMap<String,Boolean> adductsSorted)
+      LinkedHashMap<String,Boolean> adductsSorted, LinkedHashMap<String,Vector<String>> expsOfGroup)
           throws MZTabException, SpectrummillParserException{
     
     Hashtable<String,String> modFormulas = new Hashtable<String,String>();
@@ -95,12 +96,7 @@ public class MztabUtils extends LDAExporter
     ResultCompVO comp = analysisModule.getResults().get(molGroup).get(molName).values().iterator().next();
     int isotopes = comp.getAvailableIsotopeNr(maxIsotopes);
     boolean isRtGrouped = analysisModule.isRtGrouped();
-    LinkedHashMap<String,Vector<String>> expsOfGroup = new LinkedHashMap<String,Vector<String>>();
     Parameter identificationMethod = new Parameter().name("LipidDataAnalyzer").value(Settings.VERSION);
-    if (analysisModule.getGroupNames()!=null){
-      for (String studyGroup : analysisModule.getGroupNames())
-        expsOfGroup.put(studyGroup, analysisModule.getExpsOfGroup(studyGroup));
-    }
 ////    Hashtable<String,Vector<Double>> expMasses = new Hashtable<String,Vector<Double>>();
     for (String expName : analysisModule.getExpNamesInSequence()){
       ResultAreaVO areaVO = analysisModule.getResultAreaVO(molGroup,molName,expName);
@@ -161,11 +157,9 @@ public class MztabUtils extends LDAExporter
       summary.setAbundanceAssay(abundanceAssay);
       List<Double> abundanceStudyVariable = new ArrayList<Double>();
       List<Double> abundanceCoeffvarStudyVariable = new ArrayList<Double>();
-      if (analysisModule.getGroupNames()!=null){
-        for (String group : analysisModule.getGroupNames()){
-          abundanceStudyVariable.add(vo.getMeanArea(group));
-          abundanceCoeffvarStudyVariable.add(vo.getCoeffVar(group));
-        }
+      for (String group : expsOfGroup.keySet()){
+        abundanceStudyVariable.add(vo.getMeanArea(group));
+        abundanceCoeffvarStudyVariable.add(vo.getCoeffVar(group));
       }
       summary.setAbundanceStudyVariable(abundanceStudyVariable);      
       summary.setAbundanceCoeffvarStudyVariable(abundanceCoeffvarStudyVariable);

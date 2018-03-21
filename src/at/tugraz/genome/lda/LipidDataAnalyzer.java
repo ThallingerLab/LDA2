@@ -5199,13 +5199,15 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	      if (!allTheSame)
 	        valueType = "relative value";
 	      System.out.println("Value Type: "+valueType);
+	      LinkedHashMap<String,Vector<String>> expsOfGroup = new LinkedHashMap<String,Vector<String>>();
 	      if (analysisModule_.getGroupNames()!=null && analysisModule_.getGroupNames().size()>0){
 	        for (int i=0; i!=analysisModule_.getGroupNames().size(); i++){
 	          String group = analysisModule_.getGroupNames().get(i);
 	          StudyVariable studyVariable = new StudyVariable();
 	          studyVariable.setId(i+1);
 	          studyVariable.setDescription(group);
-	          for (String exp : analysisModule_.getExpsOfGroup(group)){
+	          expsOfGroup.put(group, analysisModule_.getExpsOfGroup(group));
+	          for (String exp : expsOfGroup.get(group)){
 	            Integer assayId = expToMsRun.get(exp);
 	            for (Assay assay : metadata.getAssay()){
 	              if (assay.getId() == assayId)
@@ -5213,8 +5215,22 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	            }
 	          }
 	          metadata.addStudyVariableItem(studyVariable);
-////        factory.addAbundanceOptionalColumn(studyVariable);
-	        }
+        }
+	      //when there are no groups defined -> make one "undefined" group where all experiments belong to
+	      }else{
+        String group = "undefined";
+        StudyVariable studyVariable = new StudyVariable();
+        studyVariable.setId(1);
+        studyVariable.setDescription(group);
+        expsOfGroup.put(group, analysisModule_.getExpNamesInSequence());
+        for (String exp : expsOfGroup.get(group)){
+          Integer assayId = expToMsRun.get(exp);
+          for (Assay assay : metadata.getAssay()){
+            if (assay.getId() == assayId)
+              studyVariable.addAssayRefsItem(assay);
+          }
+        }
+        metadata.addStudyVariableItem(studyVariable);
 	      }
 	  
 	  
@@ -5259,7 +5275,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                   
 	            SmallMztabMolecule molecule = MztabUtils.createSmallMztabMolecule(speciesType, featureId, evidenceId, evidenceGroupingId,
 	                maxIsotopes,analysisModule_, msRuns, originalExcelResults, molGroup, molName, resultsMol, isInternalStandard,
-	                isExternalStandard, adductsSorted);
+	                isExternalStandard, adductsSorted, expsOfGroup);
 	            if (molecule==null)
 	              continue;
             featureId = molecule.getCurrentFeatureId();
