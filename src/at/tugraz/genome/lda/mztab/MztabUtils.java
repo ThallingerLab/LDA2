@@ -64,6 +64,7 @@ public class MztabUtils extends LDAExporter
   /**
    * extracts the combined information of several experiments according to selections in the heat maps plus detailed data from LDA result files
    * @param speciesType structural level of data export (lipid species, chain level, position level - for details see LipidomicsConstants.EXPORT_ANALYTE_TYPE)
+   * @param currentSummaryId a running unique identifier
    * @param currentFeatureId a running unique identifier
    * @param currentEvidenceId a running unique identifier
    * @param currentEvGroupingId a running identifier for evidence originating from the same spectra
@@ -82,10 +83,10 @@ public class MztabUtils extends LDAExporter
    * @throws MZTabException when there is something wrong
    * @throws SpectrummillParserException when there are elements missing in the elementconfig.xml
    */
-  public static SmallMztabMolecule createSmallMztabMolecule(short speciesType, int currentFeatureId, int currentEvidenceId, int currentEvGroupingId,
-      int maxIsotopes, ComparativeAnalysis analysisModule, Hashtable<String,MsRun> msruns, Hashtable<String,QuantificationResult> originalExcelResults,
-      String molGroup, String molName, Hashtable<String,Vector<Double>> resultsMol, boolean isInternalStandard, boolean isExternalStandard,
-      LinkedHashMap<String,Boolean> adductsSorted, LinkedHashMap<String,Vector<String>> expsOfGroup)
+  public static SmallMztabMolecule createSmallMztabMolecule(short speciesType, int currentSummaryId, int currentFeatureId, int currentEvidenceId,
+      int currentEvGroupingId, int maxIsotopes, ComparativeAnalysis analysisModule, Hashtable<String,MsRun> msruns,
+      Hashtable<String,QuantificationResult> originalExcelResults, String molGroup, String molName, Hashtable<String,Vector<Double>> resultsMol,
+      boolean isInternalStandard, boolean isExternalStandard, LinkedHashMap<String,Boolean> adductsSorted, LinkedHashMap<String,Vector<String>> expsOfGroup)
           throws MZTabException, SpectrummillParserException{
     
     Hashtable<String,String> modFormulas = new Hashtable<String,String>();
@@ -119,17 +120,16 @@ public class MztabUtils extends LDAExporter
         }
       }
     }
-    SpeciesExportVO exportVO =  extractExportableSummaryInformation(speciesType,  true, currentFeatureId, true, currentEvidenceId,
+    SpeciesExportVO exportVO =  extractExportableSummaryInformation(speciesType,  true, currentSummaryId, currentFeatureId, true, currentEvidenceId,
         currentEvGroupingId, isRtGrouped, adductsSorted, analysisModule.getExpNamesInSequence(),expsOfGroup,  molGroup, molName, resultsMol,
         relevantOriginals, isotopes);
 //    System.out.println("------------------------------------------");
     //generates the mzTab SmallMoleculeSummary section
     Vector<SmallMoleculeSummary> summaries = new Vector<SmallMoleculeSummary>();
     for (SummaryVO vo : exportVO.getSummaries()){
-      String id = vo.getMolecularId()!=null ? vo.getSpeciesId()+"|"+vo.getMolecularId() : vo.getSpeciesId();
 //      System.out.println(id+": "+vo.getNeutralMass());
       SmallMoleculeSummary summary = new SmallMoleculeSummary();
-      summary.setSmlId(id);
+      summary.setSmlId(String.valueOf(vo.getId()));
       List<String> featureRefs = new ArrayList<String>();
       for (Integer featureRef : vo.getFeatureRefs())
         featureRefs.add(featureRef.toString());
@@ -163,6 +163,13 @@ public class MztabUtils extends LDAExporter
       }
       summary.setAbundanceStudyVariable(abundanceStudyVariable);      
       summary.setAbundanceCoeffvarStudyVariable(abundanceCoeffvarStudyVariable);
+
+      List<OptColumnMapping> optList = new ArrayList<OptColumnMapping>();
+      optList.add(new OptColumnMapping().identifier("lipid_species").value(molGroup+" "+vo.getSpeciesId()));
+      String bestId = molGroup+" ";
+      bestId += vo.getMolecularId()!=null ? vo.getMolecularId() : isRtGrouped ? vo.getSpeciesId().substring(0,vo.getSpeciesId().lastIndexOf("_")) : vo.getSpeciesId();
+      optList.add(new OptColumnMapping().identifier("lipid_best_id_level").value(bestId));
+      summary.setOpt(optList);
       ////summary.setExpMassToCharge(vo.getNeutralMass());      
       summaries.add(summary);
     }
@@ -238,7 +245,7 @@ public class MztabUtils extends LDAExporter
       }
     }
     
-    SmallMztabMolecule result = new SmallMztabMolecule(summaries,exportVO.getCurrentFeatureId(),features,
+    SmallMztabMolecule result = new SmallMztabMolecule(exportVO.getCurrentSummaryId(),summaries,exportVO.getCurrentFeatureId(),features,
         exportVO.getCurrentEvidenceId(),exportVO.getCurrentEvGroupingId(),evidences); 
     return result;
   }

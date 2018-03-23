@@ -34,6 +34,8 @@ import java.util.Vector;
 
 public class SpeciesExportVO
 {
+  /** the next unique feature id to use*/ 
+  private int currentSummaryId_;
   /** sorted vector containing cumulative information across the various aspects*/
   private Vector<SummaryVO> summaries_;
   /** the next unique feature id to use*/ 
@@ -49,6 +51,7 @@ public class SpeciesExportVO
   
   /**
    * constructor for creating the composite SpeciesExportVO
+   * @param currentSummaryId the next unique summary id to use
    * @param summaries sorted vector containing cumulative information across the various aspects
    * @param currentFeatureId the next unique feature id to use
    * @param features the detected feature information
@@ -56,16 +59,27 @@ public class SpeciesExportVO
    * @param currentEvGroupingId the next unique identifier for an evidence group, i.e. an identifier for evidence originating from the same spectra
    * @param evidence the detected evidence information
    */
-  public SpeciesExportVO(Vector<SummaryVO> summaries, int currentFeatureId, Vector<FeatureVO> features,
+  public SpeciesExportVO(int currentSummaryId, Vector<SummaryVO> summaries, int currentFeatureId, Vector<FeatureVO> features,
       int currentEvidenceId, int currentEvGroupingId, Vector<EvidenceVO> evidence)
   {
     super();
+    this.currentSummaryId_ = currentSummaryId;
     this.summaries_ = summaries;
     this.currentFeatureId_ = currentFeatureId;
     this.features_ = features;
     this.currentEvidenceId_ = currentEvidenceId;
     this.currentEvGroupingId_ = currentEvGroupingId;
     this.evidence_ = evidence;
+  }
+  
+  
+  /**
+   * 
+   * @return the next unique summary id to use
+   */
+  public int getCurrentSummaryId()
+  {
+    return currentSummaryId_;
   }
 
 

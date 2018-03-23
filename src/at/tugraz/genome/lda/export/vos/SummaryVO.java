@@ -37,6 +37,8 @@ import at.tugraz.genome.maspectras.utils.Calculator;
 
 public class SummaryVO
 {
+  /** a unique identifier that must be different between the detected FeatureVOs*/
+  private Integer id_;
   /** a unique identifier for this species*/
   private String speciesId_;
   /** ids referring to FeatureVOs that belong to this summary*/
@@ -63,6 +65,7 @@ public class SummaryVO
   
   /**
    * constructor for creating cumulative class containing information across the various aspects
+   * @param id a unique identifier that must be different between the detected SummaryVOs
    * @param speciesId a unique identifier for this species
    * @param molecularId structural information of this SummaryVO; if none present, this value is null
    * @param featureRefs ids referring to FeatureVOs that belong to this summary
@@ -74,10 +77,11 @@ public class SummaryVO
    * @param areas the mean area for each selected group (heat map); key: group name; value: mean area
    * @param expsOfGroup key: group name; value: experiments belonging to this group
    */
-  public SummaryVO(String speciesId, String molecularId, Vector<Integer> featureRefs, String chemFormula,
+  public SummaryVO(Integer id, String speciesId, String molecularId, Vector<Integer> featureRefs, String chemFormula,
       Double neutralMass, Float rt, Vector<String> mods, int mzTabReliability, Hashtable<String,Double> areas,
       LinkedHashMap<String,Vector<String>> expsOfGroup)
   {
+    this.id_ = id;
     this.speciesId_ = speciesId;
     this.featureRefs_ = featureRefs;
     this.molecularId_ = molecularId;
@@ -110,8 +114,48 @@ public class SummaryVO
       }
     }
   }
+  
+  /**
+   * constructor for creating cumulative class containing information across the various aspects
+   * @param speciesId a unique identifier for this species
+   * @param molecularId structural information of this SummaryVO; if none present, this value is null
+   * @param featureRefs ids referring to FeatureVOs that belong to this summary
+   * @param chemFormula the chemical formula of the neutral molecule
+   * @param neutralMass the theoretical mass of this object
+   * @param rt the retention time of the strongest detection peak across all experiments
+   * @param mods sorted (by abundance) vector of modifications/adducts
+   * @param mzTabReliability a reliability score specific to mzTab
+   * @param areas the mean area for each selected group (heat map); key: group name; value: mean area
+   * @param expsOfGroup key: group name; value: experiments belonging to this group
+   */
+  public SummaryVO(String speciesId, String molecularId, Vector<Integer> featureRefs, String chemFormula,
+      Double neutralMass, Float rt, Vector<String> mods, int mzTabReliability, Hashtable<String,Double> areas,
+      LinkedHashMap<String,Vector<String>> expsOfGroup)
+  {
+    this(null,speciesId,molecularId,featureRefs,chemFormula,neutralMass,rt,mods,mzTabReliability,areas,expsOfGroup);
+  }
 
   
+  /**
+   * 
+   * @return the unique identifier for this summary
+   */
+  public Integer getId()
+  {
+    return id_;
+  }
+
+  
+  /**
+   * sets the unique identifier (in cases where sorting is required)
+   * @param id the he unique identifier for this summary
+   */
+  public void setId(Integer id)
+  {
+    this.id_ = id;
+  }
+
+
   /**
    * 
    * @return a unique identifier for this species

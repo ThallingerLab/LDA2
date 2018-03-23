@@ -5109,14 +5109,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	    String externalStandardPref = externalStandardSelection_.getText();
 	    
 	    System.out.println("SpeciesType: "+speciesType);
-	    // use the same param list as search engine identifier for all
-	    // identifications
-	    /****  MZTabDescription tabDescription = new MZTabDescription(MZTabDescription.Mode.Complete,MZTabDescription.Type.Quantification);*/
 	    Metadata metadata = new Metadata();
     metadata.setIdConfidenceMeasure(new ArrayList<Parameter>());
-	    //TODO: this has to be generated somehow differently
-	    metadata.setMzTabVersion("1.1");
-	    //TODO: this has to be generated somehow differently
+    //TODO: this has to be generated somehow differently
 	    metadata.setMzTabID("1");
 	    Software software = new Software();
 	    software.setId(1);
@@ -5237,7 +5232,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	      MzTab mzTabFile = new MzTab();
 	      mzTabFile.setMetadata(metadata);
       Hashtable<String,Vector<String>> correctAnalyteSequence = this.analysisModule_.getAllMoleculeNames();
-//    int summaryId = 1;
+      int summaryId = 1;
       int featureId = 1;
       int evidenceId = 1;
       int evidenceGroupingId = 1;
@@ -5273,11 +5268,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	//            else
 	//              identifier = molGroup + molName;
                   
-	            SmallMztabMolecule molecule = MztabUtils.createSmallMztabMolecule(speciesType, featureId, evidenceId, evidenceGroupingId,
-	                maxIsotopes,analysisModule_, msRuns, originalExcelResults, molGroup, molName, resultsMol, isInternalStandard,
-	                isExternalStandard, adductsSorted, expsOfGroup);
+	            SmallMztabMolecule molecule = MztabUtils.createSmallMztabMolecule(speciesType, summaryId, featureId, evidenceId,
+	                evidenceGroupingId, maxIsotopes,analysisModule_, msRuns, originalExcelResults, molGroup, molName, resultsMol,
+	                isInternalStandard, isExternalStandard, adductsSorted, expsOfGroup);
 	            if (molecule==null)
 	              continue;
+	            summaryId = molecule.getCurrentSummaryId();
             featureId = molecule.getCurrentFeatureId();
             evidenceId = molecule.getCurrentEvidenceId();
             evidenceGroupingId = molecule.getCurrentEvGroupingId();

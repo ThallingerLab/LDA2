@@ -202,6 +202,7 @@ public abstract class LDAExporter
    * @param extractFeatures should the features information be included in the exported data
    * @param currentFeatureId a running unique identifier
    * @param extractEvidence should the evidence information information be included in the exported data (only possible when features are included)
+   * @param currentSummaryId a running unique identifier
    * @param currentEvidenceId a running unique identifier
    * @param currentEvGroupingId a running identifier for evidence originating from the same spectra
    * @param isRtGrouped is there only one entry for each species, or are the species grouped be retention time
@@ -217,10 +218,11 @@ public abstract class LDAExporter
    * @throws MZTabException when there is something wrong
    * @throws SpectrummillParserException when there are elements missing in the elementconfig.xml
    */
-  protected static SpeciesExportVO extractExportableSummaryInformation(short speciesType, boolean extractFeatures, int currentFeatureId,
-      boolean extractEvidence, int currentEvidenceId, int currentEvGroupingId, boolean isRtGrouped, LinkedHashMap<String,Boolean> adductsSorted, Vector<String> expNames,
-      LinkedHashMap<String,Vector<String>> expsOfGroup, String group, String molName, Hashtable<String,Vector<Double>> resultsMol, 
-      Hashtable<String,Hashtable<String,Vector<LipidParameterSet>>> relevantOriginals, int maxIsotope)
+  protected static SpeciesExportVO extractExportableSummaryInformation(short speciesType, boolean extractFeatures, int currentSummaryId,
+      int currentFeatureId, boolean extractEvidence, int currentEvidenceId, int currentEvGroupingId, boolean isRtGrouped,
+      LinkedHashMap<String,Boolean> adductsSorted, Vector<String> expNames, LinkedHashMap<String,Vector<String>> expsOfGroup, String group,
+      String molName, Hashtable<String,Vector<Double>> resultsMol, Hashtable<String,Hashtable<String,Vector<LipidParameterSet>>> relevantOriginals,
+      int maxIsotope)
           throws MZTabException, SpectrummillParserException{
     if (extractEvidence && !extractFeatures)
       throw new MZTabException("It is not possible to extract the evidence without extracting the features");
@@ -331,8 +333,7 @@ public abstract class LDAExporter
     }
 
     if (speciesType==LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES){
-      String displayName = group+molName;
-      Hashtable<String,Double> areas = calculateRelativeAreas(displayName,resultsMol,null);
+      Hashtable<String,Double> areas = calculateRelativeAreas(null,resultsMol,null);
       String strongestExp = getStrongestExp(areas);
       //detect the found modifications for this hit
       //detect the reliability of the hit 2 for MS/MS verification; 3 for MS1 only
@@ -364,9 +365,10 @@ public abstract class LDAExporter
         }
       }
       Vector<String> adducts = getSortedModifications(adductsSorted,foundMods);
-      Vector<Integer> featureRefs = getFeatureRefs(displayName,adducts,features);
-      SummaryVO sumVO = new SummaryVO(displayName,null,featureRefs,chemFormula,neutralMassTheoretical,rTime,
+      Vector<Integer> featureRefs = getFeatureRefs(molName,adducts,features);
+      SummaryVO sumVO = new SummaryVO(currentSummaryId,molName,null,featureRefs,chemFormula,neutralMassTheoretical,rTime,
           adducts,mzTabReliability,areas,expsOfGroup);
+      currentSummaryId++;
       speciesSummaries.add(sumVO);
     } else if (speciesType==LipidomicsConstants.EXPORT_ANALYTE_TYPE_CHAIN || speciesType==LipidomicsConstants.EXPORT_ANALYTE_TYPE_POSITION){
       //this is a Vector containing species names only if there is no molecular species found in this result file
@@ -538,12 +540,11 @@ public abstract class LDAExporter
             splitsForExp.put(molSpecies, totalAreasOfMolSpecies.get(molSpecies)/totalArea);
           percentalSplits.put(expName, splitsForExp);
         }else{
-          String displayName = group+molName;
           if (species.size()==0){
-            species.add(displayName);
+            species.add(molName);
           }
           Hashtable<String,Double> splitsForExp = new Hashtable<String,Double>();
-          splitsForExp.put(displayName, 1d);
+          splitsForExp.put(molName, 1d);
           percentalSplits.put(expName, splitsForExp);
           //for the retention time
           float highestArea = 0f;
@@ -558,14 +559,14 @@ public abstract class LDAExporter
             if (set instanceof LipidomicsMSnSet && ((LipidomicsMSnSet)set).getStatus()>=LipidomicsMSnSet.HEAD_GROUP_DETECTED)
               mzTabReliabilityOfSumSpecies = 2;
           }
-          rtOfHighestArea.put(displayName, rtOfHighest);
+          rtOfHighestArea.put(molName, rtOfHighest);
           //for the found modifications
           Hashtable<String,String> mods = new Hashtable<String,String>();
-          if (modsOfSpecies.containsKey(displayName))
-            mods = modsOfSpecies.get(displayName);
+          if (modsOfSpecies.containsKey(molName))
+            mods = modsOfSpecies.get(molName);
           for (String aMod : allMods.keySet())
             mods.put(aMod, aMod);
-          modsOfSpecies.put(displayName, mods);
+          modsOfSpecies.put(molName, mods);
 
         }
         highestRts.put(expName, rtOfHighestArea);
@@ -582,9 +583,10 @@ public abstract class LDAExporter
         Float rTime = getRtOfHighestPeak(aSpecies,areas,highestRts);
         Vector<String> adducts = getSortedModifications(adductsSorted,modsOfSpecies.get(aSpecies));
         Vector<Integer> featureRefs = getFeatureRefs(aSpecies,adducts,features);
-        SummaryVO sumVO = new SummaryVO(aSpecies,null,featureRefs,chemFormula,neutralMassTheoretical,rTime,
+        SummaryVO sumVO = new SummaryVO(currentSummaryId,aSpecies,null,featureRefs,chemFormula,neutralMassTheoretical,rTime,
             adducts,mzTabReliabilityOfSumSpecies,
             areas,expsOfGroup);
+        currentSummaryId++;
         speciesSummaries.add(sumVO);
       }
       
@@ -596,7 +598,7 @@ public abstract class LDAExporter
         Float rTime = getRtOfHighestPeak(speciesInHash,areas,highestRts);
         Vector<String> adducts = getSortedModifications(adductsSorted,modsOfSpecies.get(speciesInHash));
         Vector<Integer> featureRefs = getFeatureRefs(aSpecies,adducts,features);
-        SummaryVO sumVO = new SummaryVO(group+molName,aSpecies,featureRefs,chemFormula,neutralMassTheoretical,rTime,
+        SummaryVO sumVO = new SummaryVO(molName,aSpecies,featureRefs,chemFormula,neutralMassTheoretical,rTime,
             adducts,2,areas,expsOfGroup);
         summariesMolSpecies.put(aSpecies, sumVO);
         double totalArea = 0d;
@@ -606,7 +608,10 @@ public abstract class LDAExporter
       //sort the areas from the higher to the lower abundant molecular species
       Collections.sort(molSpeciesTotalAreas,new GeneralComparator("at.tugraz.genome.lda.vos.DoubleStringVO", "getValue", "java.lang.Double"));
       for (int i=(molSpeciesTotalAreas.size()-1); i!=-1; i--){
-        speciesSummaries.add(summariesMolSpecies.get(molSpeciesTotalAreas.get(i).getKey()));
+        SummaryVO sumVO = summariesMolSpecies.get(molSpeciesTotalAreas.get(i).getKey());
+        sumVO.setId(currentSummaryId);
+        currentSummaryId++;
+        speciesSummaries.add(sumVO);
       }
     }
     
@@ -784,8 +789,8 @@ public abstract class LDAExporter
       }      
     }
        
-    SpeciesExportVO exportVO = new SpeciesExportVO(speciesSummaries,currentFeatureId,new Vector<FeatureVO>(features.values()),
-        currentEvidenceId,currentEvGroupingId,evidence);
+    SpeciesExportVO exportVO = new SpeciesExportVO(currentSummaryId,speciesSummaries,currentFeatureId,
+        new Vector<FeatureVO>(features.values()),currentEvidenceId,currentEvGroupingId,evidence);
     return exportVO;
   }
 

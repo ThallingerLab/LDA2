@@ -37,6 +37,8 @@ import de.isas.mztab1_1.model.SmallMoleculeSummary;
  */
 public class SmallMztabMolecule
 {
+  /** the next unique summary id to use*/
+  private int currentSummaryId_;
   /** exportable mzTab-specific SML objects*/
   private Vector<SmallMoleculeSummary> summary_;
   /** the next unique feature id to use*/
@@ -53,6 +55,7 @@ public class SmallMztabMolecule
   
   /**
    * Constructor for generating object containing exportable information in mzTab-specific format
+   * @param currentSummaryId the next unique summary id to use
    * @param summary exportable mzTab-specific SML objects
    * @param currentFeatureId the next unique feature id to use
    * @param features exportable mzTab-specific SMF objects
@@ -60,9 +63,10 @@ public class SmallMztabMolecule
    * @param currentEvGroupingId the next unique identifier for an evidence group, i.e. an identifier for evidence originating from the same spectra
    * @param evidence exportable mzTab-specific SME objects
    */
-  public SmallMztabMolecule(Vector<SmallMoleculeSummary> summary, int currentFeatureId,
+  public SmallMztabMolecule(int currentSummaryId, Vector<SmallMoleculeSummary> summary, int currentFeatureId,
       Vector<SmallMoleculeFeature> features, int currentEvidenceId, int currentEvGroupingId,
       Vector<SmallMoleculeEvidence> evidence){
+      this.currentSummaryId_ = currentSummaryId;
      summary_ = summary;
      this.currentFeatureId_ = currentFeatureId;
      this.features_ = features;
@@ -72,6 +76,16 @@ public class SmallMztabMolecule
   }
 
   
+  /**
+   * 
+   * @return the next unique summary id to use
+   */
+  public int getCurrentSummaryId()
+  {
+    return currentSummaryId_;
+  }
+
+
   /**
    * 
    * @return exportable mzTab-specific SML objects
