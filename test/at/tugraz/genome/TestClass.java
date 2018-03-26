@@ -313,7 +313,7 @@ public class TestClass extends JApplet implements AddScan
     //this.countMS2();
     //this.mergeTGRessults();
     //this.detectLBNotDetected();
-    this.tryXmlStax();
+    //this.tryXmlStax();
     //this.generateDetailsBiologicalExperiment();
     //this.generateDetailsExperiment1();
     //this.generateDetailsExperiment2();
@@ -329,6 +329,7 @@ public class TestClass extends JApplet implements AddScan
     //this.readRttFile();
     //this.detectMsnByAlex123();
     //this.mergeIdx2();
+    this.faSummaryConverter();
   }
 
   private void testExportPanel()
@@ -14160,4 +14161,13 @@ public void testTabFile() throws Exception {
     return 0;
   }
 
+  private void faSummaryConverter(){
+    LDAToFASummaryConverter converter = new LDAToFASummaryConverter("D:\\Experiment1\\Orbitrap_CID\\positive\\50");
+    try {
+      converter.convert();
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
 }

@@ -169,30 +169,7 @@ public abstract class LDAExporter
     return newValues;
   }
   
-  /**
-   * in a group of peaks, there is one peak with chain information sufficent to split the
-   * areas according to this information
-   * @param sets the group of lipid parameter sets
-   * @return true when there is chain information present
-   */
-  protected static boolean isThereChainInformationAvailable(String speciesName,Vector<LipidParameterSet> sets){
-    boolean available = false;
-    for (LipidParameterSet set : sets){
-      if (set instanceof LipidomicsMSnSet && ((LipidomicsMSnSet)set).getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED){
-        LipidomicsMSnSet msn = (LipidomicsMSnSet)set;
-        boolean isSelfIdentification = false;
-        if (msn.getMSnIdentificationNames().size()==1 && (msn.getMSnIdentificationNames().get(0) instanceof String) &&
-            ((String)msn.getMSnIdentificationNames().get(0)).equalsIgnoreCase(speciesName)){
-          isSelfIdentification = true;
-        }
-        if (!isSelfIdentification){
-          available = true;
-          break;
-        }
-      }
-    }
-    return available;
-  }
+
   
   
   @SuppressWarnings("unchecked")
@@ -405,13 +382,13 @@ public abstract class LDAExporter
         
         
         //when there are hits where there is no chain information available, the "analyte species" has to be added;
-        if (isThereChainInformationAvailable(molNameWORt,allSets)){
+        if (StaticUtils.isThereChainInformationAvailable(molNameWORt,allSets)){
           Hashtable<String,Double> totalAreasOfMolSpecies = new Hashtable<String,Double>();
           Vector<String> modsWoChainAssignment = new Vector<String>();
           for (String mod : adductsSorted.keySet()){
             if (!allMods.containsKey(mod))
               continue;
-            if (!isThereChainInformationAvailable(molNameWORt,allMods.get(mod)))
+            if (!StaticUtils.isThereChainInformationAvailable(molNameWORt,allMods.get(mod)))
               modsWoChainAssignment.add(mod);
           }
           for (String mod : adductsSorted.keySet()){
@@ -667,10 +644,10 @@ public abstract class LDAExporter
             boolean evaluate = false;
             if (molecularSpecies==null){
               //when the species is the base species, there must not be any molecular identifications present to be reported here
-              if (speciesType==LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES || !isThereChainInformationAvailable(molNameWORt,sets))
+              if (speciesType==LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES || !StaticUtils.isThereChainInformationAvailable(molNameWORt,sets))
                 evaluate = true;
             }else{
-              if (isThereChainInformationAvailable(molNameWORt,sets))
+              if (StaticUtils.isThereChainInformationAvailable(molNameWORt,sets))
                 evaluate = true;
             }
             // do not evaluate a species that contains chain information,
@@ -735,7 +712,7 @@ public abstract class LDAExporter
                   Set<Integer> msnLevels = msn.getMSLevels(LipidomicsMSnSet.MSLEVEL_ALL_IDENTIFIER);
                   msLevels.addAll(msnLevels);
                   addMsnScanNrsToHash(expName,msnLevels,msn.getMsnRetentionTimes(),scanNrs);
-                } else if (!isThereChainInformationAvailable(molNameWORt,sets)){
+                } else if (!StaticUtils.isThereChainInformationAvailable(molNameWORt,sets)){
                   Set<Integer> msnLevels = msn.getMSLevels(LipidomicsMSnSet.MSLEVEL_HEAD_IDENTIFIER);
                   msLevels.addAll(msnLevels);
                   addMsnScanNrsToHash(expName,msnLevels,msn.getMsnRetentionTimes(),scanNrs);

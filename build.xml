@@ -268,9 +268,9 @@
 		<unjar src="${excel.lib.dir}/poi-ooxml-3.12-20150511.jar" dest="${classes.faConverter.dir}" />
 		<unjar src="${excel.lib.dir}/poi-ooxml-schemas-3.12-20150511.jar" dest="${classes.faConverter.dir}" />
 		<unjar src="${xml.lib.dir}/xmlbeans-2.3.0.jar" dest="${classes.faConverter.dir}" />
-	    <unjar src="${mztab.lib.dir}/jmztab.jar" dest="${classes.faConverter.dir}">
+	    <unjar src="${mztab.lib.dir}/jmztabm-api.jar" dest="${classes.faConverter.dir}">
 	        <patternset>
-	          <include name="uk/ac/ebi/pride/jmztab/model/*.*"/>
+	          <include name="de/isas/mztab1_1/model/*.*"/>
 	        </patternset>
 	    </unjar>
 
@@ -312,6 +312,7 @@
 			  <include name="at/tugraz/genome/lda/utils/ExcelUtils.class"/>
 	          <include name="at/tugraz/genome/lda/utils/RangeInteger.class"/>
 	          <include name="at/tugraz/genome/lda/utils/StaticUtils.class"/>
+	          <include name="at/tugraz/genome/lda/vos/FloatStringVO.class"/>
 	        </patternset>
 	    </unjar>
 	  	<jar jarfile="${dist.dir}/FaIntensityConverter.jar">

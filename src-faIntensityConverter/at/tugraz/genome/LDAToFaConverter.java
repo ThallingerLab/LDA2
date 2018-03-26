@@ -26,16 +26,11 @@ import java.io.BufferedOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Hashtable;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Vector;
 
-import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -46,16 +41,14 @@ import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
-import at.tugraz.genome.lda.utils.ExcelUtils;
-import at.tugraz.genome.maspectras.quantification.CgProbe;
-import at.tugraz.genome.maspectras.utils.Calculator;
+import at.tugraz.genome.lda.utils.StaticUtils;
 
 /**
  * 
  * @author Juergen Hartler
  *
  */
-public class LDAToFaConverter
+public class LDAToFaConverter extends ConverterBase
 {
   
   private String fileName_;
@@ -64,25 +57,6 @@ public class LDAToFaConverter
     fileName_ = fileName;
   }
   
-  private final static int COLUMN_LIPID_SPECIES = 0;
-  private final static int COLUMN_ADDUCT = 1;
-  private final static int COLUMN_RT = 2;
-  private final static int COLUMN_LIPID_SPECIES_INTENSITY = 3;
-  private final static int COLUMN_CHAIN = 4;
-  private final static int COLUMN_CHAIN_PERCENT = 5;
-  private final static int COLUMN_CHAIN_INTENSITY = 6;
-  private final static int COLUMN_MOLECULAR_SPECIES = 7;
-  
-  private final static String TEXT_LIPID_SPECIES = "Lipid species";
-  private final static String TEXT_ADDUCT = "Adduct";
-  private final static String TEXT_RT = "RT";
-  private final static String TEXT_LIPID_SPECIES_INTENSITY = "Intensity";
-  private final static String TEXT_CHAIN = "Chain";
-  private final static String TEXT_CHAIN_PERCENT = "Percent";
-  private final static String TEXT_CHAIN_INTENSITY = "Intensity";
-  private final static String TEXT_MOLECULAR_SPECIES = "Molecular species";
-  
-  @SuppressWarnings("unchecked")
   public void convert() throws ExcelInputFileException, FileNotFoundException{
     QuantificationResult returnParam = LDAResultReader.readResultFile(fileName_, new Hashtable<String,Boolean>());
     if (returnParam==null){
@@ -138,55 +112,17 @@ public class LDAToFaConverter
           if (set.getIsotopicProbes().size()==0) continue;
           String displayName = set.getNameStringWithoutRt();
           String rt = set.getRt();
-          float ms1Area = 0f;
-          // intensity of MS1
-          for (CgProbe probe : set.getIsotopicProbes().get(0))
-            ms1Area += probe.Area;
+          float ms1Area = getMS1Area(set);
           String ms1AreaString = String.valueOf(ms1Area);
           String mod = String.valueOf(set.getModificationName());
-          if (set instanceof LipidomicsMSnSet && ((LipidomicsMSnSet)set).getStatus()>=LipidomicsMSnSet.FRAGMENTS_DETECTED){
+          if (StaticUtils.isThereChainInformationAvailable(displayName, set)){
             LipidomicsMSnSet msn = (LipidomicsMSnSet) set;
-            Hashtable<String,Hashtable<String,CgProbe>> chainFrags = msn.getChainFragments();
-            float totalIntensity = 0f;
-            Hashtable<String,Float> faIntensities = new Hashtable<String,Float>();
-            for (String fa : chainFrags.keySet()){
-              Hashtable<String,CgProbe> fragments = chainFrags.get(fa);
-              float faArea = 0f;
-              for (CgProbe fragment : fragments.values()){
-                faArea += fragment.Area;
-              }
-              totalIntensity += faArea;
-              faIntensities.put(fa, faArea);
-            }            
-            Vector<String> sortedFAs = sortFAsInAscendingOrder(faIntensities.keySet());
-            for (String fa : sortedFAs){
-              float faIntensity = faIntensities.get(fa);
-              String percent = "100.00";
-              String faAreaString = ms1AreaString;
-              if (sortedFAs.size()!=1){
-                float relativeValue = faIntensity/totalIntensity;
-                percent = String.valueOf(Calculator.roundFloat(100f*relativeValue, 2));
-                faAreaString = String.valueOf(ms1Area*relativeValue);
-              }
-              StringBuilder combiNames = new StringBuilder();
-              for (Object combi : msn.getMSnIdentificationNames()){
-                String toAdd = "";
-                if (combi instanceof String){
-                  if (isFaPresent(fa, (String)combi)) toAdd = (String)combi;
-                }else if (combi instanceof Vector){
-                  for (String onePoss : (Vector<String>)combi){
-                    if (!isFaPresent(fa, (String)onePoss)) continue;
-                    if (toAdd.length()>0) toAdd+="|";
-                    toAdd += onePoss;
-                  }
-                }
-                if (toAdd.length()>0){
-                  if (combiNames.length()!=0) combiNames.append(";");
-                  combiNames.append(toAdd);
-                }
-              }
-              String combiName = combiNames.toString();
-              
+            LinkedHashMap<String,String[]> faDetails = extractFaIntensityDetails(msn, ms1AreaString, ms1Area);
+            for (String fa : faDetails.keySet()){
+              String[] areaResults = faDetails.get(fa);
+              String percent = areaResults[1];
+              String faAreaString = areaResults[2];
+              String combiName = areaResults[3];
               row = sheet.createRow(rowCount);
               rowCount++;
               createCell(row, null, COLUMN_LIPID_SPECIES, displayName);
@@ -249,87 +185,4 @@ public class LDAToFaConverter
     }
   }
   
-  private static CellStyle getHeaderStyle(Workbook wb){
-    CellStyle arial12style = wb.createCellStyle();
-    Font arial12font = wb.createFont();
-    arial12font.setBoldweight(Font.BOLDWEIGHT_BOLD);
-    arial12font.setFontName("Arial");
-    arial12font.setFontHeightInPoints((short)12);
-    arial12style.setFont(arial12font);
-    arial12style.setAlignment(CellStyle.ALIGN_CENTER);
-    return arial12style;
-  }
-  
-  private void setColumnWidth(Sheet sheet, int column, String headerValue, int longestValue){
-    int columnWidth = (int)((headerValue.length()*256)*ExcelUtils.BOLD_MULT);
-    if ((longestValue+1)*256>columnWidth) columnWidth =  (longestValue+1)*256;
-    sheet.setColumnWidth(column,columnWidth); 
-  }
-  
-  private Cell createNumericCell(Row row, CellStyle style, int pos, String value){
-    Cell cell = createNumericCell(row, style, pos, Double.valueOf(value));
-    return cell;
-  }
-  
-  private Cell createNumericCell(Row row, CellStyle style, int pos, double value){
-    Cell cell = createCell(row, style, pos, null);
-    cell.setCellType(Cell.CELL_TYPE_NUMERIC);
-    cell.setCellValue(value);
-    return cell;
-  }
-  
-  private Cell createCell(Row row, CellStyle style, int pos, String value){
-    Cell cell = row.createCell(pos);
-    cell.setCellValue(value);
-    if (cell!=null) cell.setCellStyle(style);
-    return cell;
-  }
-
-  private Vector<String> sortFAsInAscendingOrder(Collection<String> unsorted){
-    Vector<String> sorted = new Vector<String>();
-    List<Integer> carbonNumbers = new ArrayList<Integer>();
-    Hashtable<Integer,Hashtable<Integer,List<String>>> carbonHash = new Hashtable<Integer,Hashtable<Integer,List<String>>>();
-    for (String fa : unsorted){
-      int prefix = 0;
-      char[] chars = fa.toCharArray();
-      while (!Character.isDigit(chars[prefix]))
-        prefix++;
-      int carbons = Integer.parseInt(fa.substring(prefix,fa.indexOf(":")));
-      int doubleBonds = Integer.parseInt(fa.substring(fa.indexOf(":")+1));
-      Hashtable<Integer,List<String>> sameCarbons = new Hashtable<Integer,List<String>>();
-      if (carbonHash.containsKey(carbons)){
-        sameCarbons = carbonHash.get(carbons);
-      } else {
-        carbonNumbers.add(carbons);        
-      }
-      List<String> sameCandDb = new ArrayList<String>();
-      if (sameCarbons.containsKey(doubleBonds)) sameCandDb = sameCarbons.get(doubleBonds);
-      sameCandDb.add(fa);
-      sameCarbons.put(doubleBonds, sameCandDb);
-      carbonHash.put(carbons, sameCarbons);
-    }
-    Collections.sort(carbonNumbers);
-    for (Integer carbon : carbonNumbers){
-      Hashtable<Integer,List<String>> sameCarbons = carbonHash.get(carbon);
-      List<Integer> doubleBonds = new ArrayList<Integer>(sameCarbons.keySet());
-      Collections.sort(doubleBonds);
-      for (Integer db : doubleBonds){
-        List<String> sameCandDb = sameCarbons.get(db);
-        Collections.sort(sameCandDb);
-        for (String fa : sameCandDb){
-          sorted.add(fa);
-        }
-      }
-    }
-    return sorted;
-  }
-  
-  private boolean isFaPresent(String fa, String combiName){
-    String[] fas = LipidomicsMSnSet.getFAsFromCombiName(combiName);
-    for (String oneFa : fas){
-      if (oneFa.equalsIgnoreCase(fa))
-        return true;
-    }
-    return false;
-  }
 }

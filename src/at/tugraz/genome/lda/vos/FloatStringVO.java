@@ -50,4 +50,14 @@ public class FloatStringVO
     return value_;
   }
 
+  /**
+   * adds the float value in the argument to the one in the value object
+   * @param value the float value to add
+   */
+  public void addValue(float value)
+  {
+    this.value_ += value;
+  }
+
+  
 }

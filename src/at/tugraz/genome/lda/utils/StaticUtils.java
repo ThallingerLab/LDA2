@@ -1221,5 +1221,42 @@ public class StaticUtils
       return false;
     } 
   }
+  
+  /**
+   * in a group of peaks, there is one peak with chain information sufficient to split the
+   * areas according to this information
+   * @param speciesName the name of the lipid species (not the molecular species)
+   * @param sets the group of lipid parameter sets
+   * @return true when there is chain information present
+   */
+  public static boolean isThereChainInformationAvailable(String speciesName,Vector<LipidParameterSet> sets){
+    boolean available = false;
+    for (LipidParameterSet set : sets){
+      if (isThereChainInformationAvailable(speciesName,set)){
+        available = true;
+        break;
+      }
+    }
+    return available;
+  }
 
+  /**
+   * checks whether a peak contains chain information
+   * @param set the lipid parameter set
+   * @return true when there is chain information present
+   */
+  public static boolean isThereChainInformationAvailable(String speciesName,LipidParameterSet set){
+    if (set instanceof LipidomicsMSnSet && ((LipidomicsMSnSet)set).getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED){
+      LipidomicsMSnSet msn = (LipidomicsMSnSet)set;
+      boolean isSelfIdentification = false;
+      if (msn.getMSnIdentificationNames().size()==1 && (msn.getMSnIdentificationNames().get(0) instanceof String) &&
+          ((String)msn.getMSnIdentificationNames().get(0)).equalsIgnoreCase(speciesName)){
+        isSelfIdentification = true;
+      }
+      if (!isSelfIdentification){
+        return true;
+      }
+    }
+    return false;
+  }
 }
