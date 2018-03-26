@@ -594,7 +594,14 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     	      return;
     	    ExportOptionsVO expOptions = getExportOptions();
     	    File exportFile = exportFileChooser_.getSelectedFile();
-    	    if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_MZTAB)) heatMapListener_.exportMzTab(exportFile, expOptions.getSpeciesType());
+    	    if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_MZTAB)){
+          File fileToStore = exportFileChooser_.getSelectedFile();
+          @SuppressWarnings("rawtypes")
+          Vector results = this.checkFileStorage(fileToStore,"txt");
+          fileToStore = (File)results.get(0);
+          if ((Boolean)results.get(1))
+    	        heatMapListener_.exportMzTab(fileToStore, expOptions.getSpeciesType());
+    	    }
     	    else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_RDB)) heatMapListener_.exportRdb(exportFile);
       }
       exportFileChooser_.setSelectedFile(new File(""));
