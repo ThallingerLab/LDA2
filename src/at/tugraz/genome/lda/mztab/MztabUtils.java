@@ -229,11 +229,11 @@ public class MztabUtils extends LDAExporter
         evidence.setSpectraRef(spectraNrs);
         
         List<OptColumnMapping> optList = new ArrayList<OptColumnMapping>();
-        optList.add(new OptColumnMapping().identifier("lda_identification").value(vo.getLdaId()));
+        optList.add(new OptColumnMapping().identifier("lda_identification").value(molGroup+" "+vo.getLdaId()));
         int count = 1;
         for (String expName : analysisModule.getExpNamesInSequence()){
           String bestLdaIdentification = vo.getBestIdentification(expName);
-          optList.add(new OptColumnMapping().identifier("lda_id_ms_run["+count+"]").value(bestLdaIdentification!=null ? molGroup+bestLdaIdentification : ""));
+          optList.add(new OptColumnMapping().identifier("lda_id_ms_run["+count+"]").value(bestLdaIdentification!=null ? molGroup+" "+bestLdaIdentification : ""));
           count++;
         }
         evidence.setOpt(optList);

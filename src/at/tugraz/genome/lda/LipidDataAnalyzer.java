@@ -5162,6 +5162,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     
 	      Hashtable<String,QuantificationResult> originalExcelResults = new Hashtable<String,QuantificationResult>();
 	      Hashtable<String,MsRun> msRuns = new Hashtable<String,MsRun>();
+	      boolean isotopicDistributionChecked = true;
 	      for (int i=0; i!=analysisModule_.getExpNamesInSequence().size(); i++) {
 	        String exp = analysisModule_.getExpNamesInSequence().get(i);
 	        String chromFileBase = StaticUtils.extractChromBaseName(analysisModule_.getFullFilePath(exp).getAbsolutePath(),exp);
@@ -5177,9 +5178,13 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	        expToMsRun.put(exp, (i+1));
 	        metadata.addMsrunItem(run);
 	        originalExcelResults.put(exp, LDAResultReader.readResultFile(analysisModule_.getFullFilePath(exp).getAbsolutePath(), new Hashtable<String,Boolean>()));
-
+	        if (!originalExcelResults.get(exp).getConstants().getRespectIsotopicDistribution())
+	          isotopicDistributionChecked = false;
 ////	      factory.addAbundanceOptionalColumn(assay);
 	      }
+	      if (isotopicDistributionChecked)
+	        software.addSettingItem("isotope_pattern_checked");
+	      
 	      Hashtable<String,LinkedHashMap<String,Boolean>> adductsSortedByAbundance = LDAExporter.extractAdductsSortedByAbundance(this.heatmaps_.keySet(),originalExcelResults);
       //check if the settings type is everywhere the same, otherwise, use "relative value"
 	      String valueType = null;

@@ -2062,6 +2062,13 @@ public class LipidomicsConstants
   {
     this.alexTargetlistUsed_ = alexTargetlistUsed;
   }
+  
+  /**
+   *  returns whether for this search the isotopic distribution has to match for a valid hit
+   */
+  public boolean getRespectIsotopicDistribution(){
+    return respectIsotopicDistribution_;
+  }
 
   /**
    * 

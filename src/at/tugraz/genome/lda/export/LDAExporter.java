@@ -613,7 +613,7 @@ public abstract class LDAExporter
         boolean foundMsn = false;
         for (String species : speciesToCheck){
           String molecularSpecies = null;
-          String ldaId = new String(group+molName);
+          String ldaId = new String(molName);
           if (speciesToSummary.containsKey(species) && speciesToSummary.get(species).getMolecularId()!=null)
             molecularSpecies = speciesToSummary.get(species).getMolecularId();
           String noPosition = null;
@@ -687,7 +687,7 @@ public abstract class LDAExporter
                     if (nameObject instanceof Vector){
                       identification = "";
                       for (String name : (Vector<String>)nameObject){
-                        if (identification.length()>0) identification += "|";
+                        if (identification.length()>0) identification += " | ";
                         identification += name;
                       }
                     }
@@ -733,15 +733,18 @@ public abstract class LDAExporter
               totalArea += areaOfOnePeak;
               areaTimesMz += weightedMeanArea*areaOfOnePeak;
             }
-            if (bestIdentification!=null)
+            if (bestIdentification!=null){
+              if (bestIdentification.indexOf("/")==-1)
+                bestIdentification = StaticUtils.sortFASequenceUnassigned(bestIdentification);
               highestLDAStructuralEv.put(expName, bestIdentification);
+            }
           }
           if (foundOneHit){
             if (molecularSpecies!=null){
               if (containsPositionInfo && !hasHitPositionInfo)
-                ldaId += "|"+noPosition;
+                ldaId += " | "+noPosition;
               else
-                ldaId += "|"+molecularSpecies;
+                ldaId += " | "+molecularSpecies;
             }
             weightedMz = areaTimesMz/totalArea;          
             String chemFormulaInclAdduct = null; 
