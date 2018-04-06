@@ -149,13 +149,13 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
     speciesLevel_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_SPECIES);
     this.add(speciesLevel_,new GridBagConstraints(0, 6, 2, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));    
-    chainLevel_ = new JRadioButton("chain level (mzTab only)");
+    chainLevel_ = new JRadioButton("chain level");
     chainLevel_.setSelected(false);
     speciesGroup.add(chainLevel_);
     chainLevel_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_CHAIN);
     this.add(chainLevel_,new GridBagConstraints(0, 7, 2, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
-    positionLevel_ = new JRadioButton("position level (mzTab only)");
+    positionLevel_ = new JRadioButton("position level");
     positionLevel_.setSelected(false);
     speciesGroup.add(positionLevel_);
     positionLevel_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_POSITION);

@@ -82,8 +82,28 @@ public class LDAResultReader
   public final static String ALEX123_MSN_TARGETS_USED = "AlexMSnTargetsUsed";
   
 
-
-  public static QuantificationResult readResultFile(String filePath, Hashtable<String,Boolean> showModifications) throws ExcelInputFileException{
+  /**
+   * reads an LDA results file in Excel format
+   * @param filePath the absolute path to the Excel file
+   * @param showModifications this hash is filled by the method and gives information whether there are more than one modifications present; key: lipid class
+   * @return the contents of the Excel file stored in the corresponding value object
+   * @throws ExcelInputFileException when there is something wrong with the Excel file
+   */
+  public static QuantificationResult readResultFile(String filePath, Hashtable<String,Boolean> showModifications)
+      throws ExcelInputFileException{
+    return LDAResultReader.readResultFile(filePath, showModifications, null);
+  }
+  
+  /**
+   * reads an LDA results file in Excel format
+   * @param filePath filePath the absolute path to the Excel file
+   * @param showModifications this hash is filled by the method and gives information whether there are more than one modifications present; key: lipid class
+   * @param specificClass filter for parsing only the results of one analyte class; enter null when no filter is required
+   * @return the contents of the Excel file stored in the corresponding value object
+   * @throws ExcelInputFileException when there is something wrong with the Excel file
+   */
+  public static QuantificationResult readResultFile(String filePath, Hashtable<String,Boolean> showModifications,
+      String specificClass) throws ExcelInputFileException{
     Hashtable<String,Vector<LipidParameterSet>> resultParams = new Hashtable<String,Vector<LipidParameterSet>>();
     Hashtable<String,Integer> msLevels = new Hashtable<String,Integer>();
     LipidomicsConstants readConstants = null;
@@ -105,6 +125,9 @@ public class LDAResultReader
         Sheet sheet = workbook.getSheetAt(sheetNumber);
         if (!sheet.getSheetName().contains("Overview")&&!sheet.getSheetName().endsWith(QuantificationThread.OVERVIEW_SHEET_ADDUCT)&&
             !sheet.getSheetName().endsWith(QuantificationThread.MSN_SHEET_ADDUCT) && !sheet.getSheetName().equalsIgnoreCase(QuantificationThread.CONSTANTS_SHEET)){
+          if (specificClass!=null && !sheet.getSheetName().equalsIgnoreCase(specificClass))
+            continue;
+         
           Vector<LipidParameterSet> resultPrms = new Vector<LipidParameterSet>();
           int nameColumn = -1;
           int dbsColumn = -1;
@@ -452,6 +475,8 @@ public class LDAResultReader
       for (int sheetNumber=0;sheetNumber!=workbook.getNumberOfSheets();sheetNumber++){       
         Sheet sheet = workbook.getSheetAt(sheetNumber);
         if (sheet.getSheetName().endsWith(QuantificationThread.MSN_SHEET_ADDUCT)){
+          if (specificClass!=null && !sheet.getSheetName().equalsIgnoreCase((specificClass+QuantificationThread.MSN_SHEET_ADDUCT)))
+            continue;
           String lipidClass = sheet.getSheetName().substring(0,sheet.getSheetName().lastIndexOf(QuantificationThread.MSN_SHEET_ADDUCT));
           Vector<LipidParameterSet> resultPrms = resultParams.get(lipidClass);
           resultPrms = readMSnEvidence(sheet,resultPrms,readConstants);

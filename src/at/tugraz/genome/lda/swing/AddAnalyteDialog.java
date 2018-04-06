@@ -39,7 +39,6 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
-import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.TooltipTexts;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.analysis.AnalyteAddRemoveListener;
@@ -49,8 +48,6 @@ import at.tugraz.genome.lda.verifier.DoubleVerifier;
 import at.tugraz.genome.lda.verifier.IntegerVerifier;
 import at.tugraz.genome.lda.verifier.MzInputVerifierForTolerance;
 import at.tugraz.genome.lda.vos.AddAnalyteVO;
-import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
-import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
 import at.tugraz.genome.maspectras.utils.Calculator;
 
 /**

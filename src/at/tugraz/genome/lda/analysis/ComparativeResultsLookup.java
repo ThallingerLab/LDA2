@@ -19,39 +19,34 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.analysis;
 
-import java.util.LinkedHashMap;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.vos.ResultAreaVO;
+
 /**
+ * the lookup to the comparative values over several LDA results (used in Statistical Analysis section)
  * 
  * @author Juergen Hartler
  *
  */
-public interface SampleLookup
+public interface ComparativeResultsLookup
 {
-  public String getDisplayName(String sampleName);
-  public void setDisplayName(String sampleName, String displayName);
+  /**
+   * returns the corresponding ResultAreaVO of a heat map
+   * @param molGroup the analyte group
+   * @param molName the analyte name (including the retention time if appropriate)
+   * @param expName the name of the experiment
+   * @return
+   */
+  public ResultAreaVO getResultAreaVO (String molGroup, String molName, String expName);
   
   /**
    * 
-   * @return a sorted hash map containing the full file paths of the LDA-results; key: abbreviated experiment name; value: full file path
+   * @return the experiment names in the sequence they are selected by the user
    */
-  public LinkedHashMap<String,String> getSampleResultFullPaths();
-  
-  /**
-   * 
-   * @return a sorted hash map containing the sample groups as key, and the abbreviated experiment names belonging to this group as values
-   */
-  public LinkedHashMap<String,Vector<String>> getSamplesOfGroups();
-  
-  /**
-   * 
-   * @return the lookup to the comparative values; i.e. the (RT-grouped) result area VOs, and the original experiment names
-   */
-  public ComparativeResultsLookup getComparativeResultsLookup();
-  
+  public Vector<String> getExpNamesInSequence();
 }

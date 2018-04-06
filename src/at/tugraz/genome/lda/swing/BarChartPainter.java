@@ -38,7 +38,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.reflect.Method;
@@ -61,11 +60,6 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.batik.dom.GenericDOMImplementation;
 import org.apache.batik.svggen.SVGGraphics2D;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 
@@ -74,11 +68,15 @@ import at.tugraz.genome.lda.TooltipTexts;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.analysis.SampleLookup;
 import at.tugraz.genome.lda.analysis.exception.CalculationNotPossibleException;
+import at.tugraz.genome.lda.exception.ExcelInputFileException;
+import at.tugraz.genome.lda.exception.ExportException;
+import at.tugraz.genome.lda.export.ExcelAndTextExporter;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.ExportOptionsVO;
 import at.tugraz.genome.lda.vos.ResultCompGroupVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
+import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.utils.Calculator;
 
 /**
@@ -110,10 +108,6 @@ public class BarChartPainter extends JPanel implements ActionListener
   private JComboBox<String> magnitudeChooser_;
   
   
-//  private ButtonGroup isCalculationGroup_;
-//  private JRadioButton calcMedianOfRatios_;
-//  private JRadioButton calcMedian_;
-  
   private BarChart barChart_;
   
   private JRadioButton standardDeviation_;
@@ -142,49 +136,122 @@ public class BarChartPainter extends JPanel implements ActionListener
   private String groupName_;
   
   private Hashtable<String,Hashtable<String,Double>> valuesToPaint_ = new Hashtable<String,Hashtable<String,Double>>();
-  private Hashtable<String,Hashtable<String,Double>> sdsToPaint_ = new Hashtable<String,Hashtable<String,Double>>();
-  private Hashtable<String,Hashtable<String,Hashtable<String,Double>>> rtTimes_ = new Hashtable<String,Hashtable<String,Hashtable<String,Double>>>();
-  private Hashtable<String,Hashtable<String,Hashtable<String,Double>>> rtTimesDev_ = new Hashtable<String,Hashtable<String,Hashtable<String,Double>>>();
+  private Hashtable<String,Hashtable<String,Double>> sdsToPaint_ = new Hashtable<String,Hashtable<String,Double>>();  
+  /** the results from the original experiments - the mean and SD values are calculated in the new exporter; first key: analyte name; second key experiment name*/
+  private Hashtable<String,Hashtable<String,Double>> singleResultValues_ = new Hashtable<String,Hashtable<String,Double>>();
   private Hashtable<String,Integer> corrTypeISLookup_;
   private Hashtable<String,Integer> corrTypeESLookup_;
   Vector<String> modifications_;
   private String yAxisText_;
-//  private Hashtable<String,Color> colors_;
   ColorChooserDialog colorChooser_;
   private boolean bigConstructor_ = false;
   private int colorType_;
   private SampleLookup sampleLookup_;
+  /** should for this instance the sample lookupup be used*/
+  private boolean useSampleLookup_;
+  /** true when the peaks were grouped by a certain retention time*/
+  private boolean rtGrouped_;
+  /** true when sample groups are exported*/
+  private boolean isGroupedView_;
   
-  public BarChartPainter(int type, String groupName, String moleculeName,Hashtable<String,ResultCompVO> analysisResults,Vector<String> sortedValueNames, SampleLookup lookup, boolean showSDFields,
-      int maxIsotopes, ResultDisplaySettingsVO settingVO, String preferredUnit, String unit,Hashtable<String,Integer> corrTypeISLookup,
-      Hashtable<String,Integer> corrTypeESLookup, Vector<String> modifications, ColorChooserDialog colorChooser){
-    this(type, groupName, lookup, sortedValueNames, showSDFields, maxIsotopes, settingVO, preferredUnit, unit,corrTypeISLookup,corrTypeESLookup,modifications,colorChooser);
+  /**
+   * constructor for a bar chart painter when a single analyte/experiment/sample group is clicked
+   * @param type the export type (see TYPE_ ... definitions in the variables)
+   * @param groupName the analyte class
+   * @param moleculeName the name of the analyte/experiment/sample 
+   * @param analysisResults the corresponding results
+   * @param sortedValueNames the names of x-axis values
+   * @param lookup a lookup to the original sample names
+   * @param useSampleLookup true when the lookup for the original sample names shall be used
+   * @param showSDFields should error bars be shown
+   * @param maxIsotopes the maximum isotope that will be used for the export
+   * @param rtGrouped true when the peaks were grouped by a certain retention time
+   * @param isGroupedView true when sample groups are exported
+   * @param settingVO value object specifying the type of displayed values
+   * @param preferredUnit the preferred unit magnifier, e.g p for pico
+   * @param unit a description of the physical unit
+   * @param corrTypeISLookup the internal standard correction type
+   * @param corrTypeESLookup the external standard correction type
+   * @param modifications the modifications for this analyte class
+   * @param colorChooser the color chooser dialog
+   */
+  public BarChartPainter(int type, String groupName, String moleculeName,Hashtable<String,ResultCompVO> analysisResults,Vector<String> sortedValueNames, SampleLookup lookup,
+      boolean useSampleLookup, boolean showSDFields, int maxIsotopes, boolean rtGrouped, boolean isGroupedView, ResultDisplaySettingsVO settingVO, String preferredUnit, String unit,
+      Hashtable<String,Integer> corrTypeISLookup, Hashtable<String,Integer> corrTypeESLookup, Vector<String> modifications, ColorChooserDialog colorChooser){
+    this(type, groupName, lookup, useSampleLookup, sortedValueNames, showSDFields, maxIsotopes, rtGrouped, isGroupedView, settingVO, preferredUnit,
+        unit, corrTypeISLookup, corrTypeESLookup, modifications, colorChooser);
     moleculeNames_.add(moleculeName);
     analysisResultsHash_.put(moleculeName,analysisResults);
     bigConstructor_ = false;
     init();
   }
   
-  public BarChartPainter(int type, String groupName, Vector<String> moleculeNames,Hashtable<String,Hashtable<String,ResultCompVO>> analysisResults,Vector<String> sortedValueNames, SampleLookup lookup, boolean showSDFields,
-      int maxIsotopes, ResultDisplaySettingsVO settingVO, String preferredUnit, String unit,Hashtable<String,Integer> corrTypeISLookup,
-      Hashtable<String,Integer> corrTypeESLookup, Vector<String> modifications, ColorChooserDialog colorChooser){
-    this(type, groupName, lookup, sortedValueNames, showSDFields, maxIsotopes, settingVO, preferredUnit, unit,corrTypeISLookup,corrTypeESLookup,modifications,colorChooser);
+  /**
+   * constructor for a bar chart painter when there are several molecules selected
+   * @param type the export type (see TYPE_ ... definitions in the variables)
+   * @param groupName the analyte class
+   * @param moleculeNames the names of the analytes
+   * @param analysisResults the corresponding results
+   * @param sortedValueNames the names of x-axis values
+   * @param lookup a lookup to the original sample names
+   * @param useSampleLookup true when the lookup for the original sample names shall be used
+   * @param showSDFields should error bars be shown
+   * @param maxIsotopes the maximum isotope that will be used for the export
+   * @param rtGrouped true when the peaks were grouped by a certain retention time
+   * @param isGroupedView true when sample groups are exported
+   * @param settingVO value object specifying the type of displayed values
+   * @param preferredUnit the preferred unit magnifier, e.g p for pico
+   * @param unit a description of the physical unit
+   * @param corrTypeISLookup the internal standard correction type
+   * @param corrTypeESLookup the external standard correction type
+   * @param modifications the modifications for this analyte class
+   * @param colorChooser the color chooser dialog
+   */
+  public BarChartPainter(int type, String groupName, Vector<String> moleculeNames,Hashtable<String,Hashtable<String,ResultCompVO>> analysisResults,Vector<String> sortedValueNames,
+      SampleLookup lookup, boolean useSampleLookup, boolean showSDFields, int maxIsotopes, boolean rtGrouped, boolean isGroupedView, ResultDisplaySettingsVO settingVO,
+      String preferredUnit, String unit,Hashtable<String,Integer> corrTypeISLookup, Hashtable<String,Integer> corrTypeESLookup, Vector<String> modifications,
+      ColorChooserDialog colorChooser){
+    this(type, groupName, lookup, useSampleLookup, sortedValueNames, showSDFields, maxIsotopes, rtGrouped, isGroupedView, settingVO, preferredUnit,
+        unit,corrTypeISLookup, corrTypeESLookup, modifications, colorChooser);
     analysisResultsHash_ = analysisResults;
     moleculeNames_ = moleculeNames;
     bigConstructor_ = true;
     init();
   }
   
-  private BarChartPainter(int type, String groupName, SampleLookup lookup, Vector<String> sortedValueNames, boolean showSDFields,
-      int maxIsotopes, ResultDisplaySettingsVO settingVO, String preferredUnit, String unit,Hashtable<String,Integer> corrTypeISLookup,
-      Hashtable<String,Integer> corrTypeESLookup, Vector<String> modifications, ColorChooserDialog colorChooser){
+  /**
+   * constructor that have the other constructors in common
+   * @param type the export type (see TYPE_ ... definitions in the variables)
+   * @param groupName the analyte class
+   * @param lookup a lookup to the original sample names
+   * @param useSampleLookup true when the lookup for the original sample names shall be used
+   * @param sortedValueNames the names of x-axis values
+   * @param showSDFields should error bars be shown
+   * @param maxIsotopes the maximum isotope that will be used for the export
+   * @param rtGrouped true when the peaks were grouped by a certain retention time
+   * @param isGroupedView true when sample groups are exported 
+   * @param settingVO value object specifying the type of displayed values
+   * @param preferredUnit the preferred unit magnifier, e.g p for pico
+   * @param unit a description of the physical unit
+   * @param corrTypeISLookup the internal standard correction type
+   * @param corrTypeESLookup the external standard correction type
+   * @param modifications the modifications for this analyte class
+   * @param colorChooser the color chooser dialog
+   */
+  private BarChartPainter(int type, String groupName, SampleLookup lookup, boolean useSampleLookup, Vector<String> sortedValueNames, boolean showSDFields,
+      int maxIsotopes, boolean rtGrouped, boolean isGroupedView, ResultDisplaySettingsVO settingVO, String preferredUnit, String unit,
+      Hashtable<String,Integer> corrTypeISLookup,  Hashtable<String,Integer> corrTypeESLookup, Vector<String> modifications,
+      ColorChooserDialog colorChooser){
     analysisResultsHash_ = new Hashtable<String,Hashtable<String,ResultCompVO>>();
     sampleLookup_ = lookup;
+    useSampleLookup_ = useSampleLookup;
     moleculeNames_ = new Vector<String>();
     this.type_ = type;
     this.groupName_ = groupName;
     originalValueNames_ = sortedValueNames;
     maximumIsotopes_ = maxIsotopes;
+    rtGrouped_ = rtGrouped;
+    isGroupedView_ = isGroupedView;
     showSDFields_ = showSDFields;
     settingVO_ = settingVO;
     preferredUnit_ = preferredUnit;
@@ -195,21 +262,6 @@ public class BarChartPainter extends JPanel implements ActionListener
     barChartPanel_ = new JPanel();
     barChartPanel_.setLayout(new BorderLayout());
     this.add(barChartPanel_,BorderLayout.CENTER);
-//    Vector<int[]> colorChannels = (new ColorEncoder(valueNames_.size())).getChannels();
-//    Color[] defaultColors = ColorSequence.getDefaultColors();
-//    colors_ = new Hashtable<String,Color>();
-//    int count = 0;
-//    for (String name: valueNames_){
-//      Color color = null;
-//      if (valueNames_.size()>defaultColors.length){
-//        int[] rgb = colorChannels.get(count);
-//        color = new Color(rgb[0],rgb[1],rgb[2]);
-//      }else{
-//        color = defaultColors[count];
-//      }
-//      colors_.put(name, color);
-//      count++;
-//    }
     corrTypeISLookup_ = corrTypeISLookup;
     corrTypeESLookup_ = corrTypeESLookup;
     colorChooser_ = colorChooser;
@@ -299,15 +351,6 @@ public class BarChartPainter extends JPanel implements ActionListener
     normalScale_.setToolTipText(TooltipTexts.BARCHART_LINEAR);
     barScaleGroup_.add(normalScale_); 
 
-//    isCalculationGroup_ = new ButtonGroup();
-//    calcMedianOfRatios_ = new JRadioButton("median of ratios");
-//    calcMedianOfRatios_.setSelected(true);
-//    isCalculationGroup_.add(calcMedianOfRatios_); 
-//    calcMedian_ = new JRadioButton("median intern");
-//    isCalculationGroup_.add(calcMedian_); 
-//    calcMedianOfRatios_.addItemListener(new SelectionItemListener("ChangeMedian"));
-//    calcMedian_.addItemListener(new SelectionItemListener("ChangeMedian"));
-    
     SelectionItemListener isotopeListener = new SelectionItemListener("ChangeIsotope");
     maxIsotopes_.addItemListener(isotopeListener);
     maxIsotopes_.setToolTipText(TooltipTexts.HEATMAP_ISOTOPES);
@@ -323,8 +366,6 @@ public class BarChartPainter extends JPanel implements ActionListener
     menuItemsBar.add(doubleSided_);
     menuItemsBar.add(logarithmicScale_);    
     menuItemsBar.add(normalScale_);
-//    menuItemsBar.add(calcMedianOfRatios_);    
-//    menuItemsBar.add(calcMedian_);
     menuItemsBar.add(maxIsotopes_);
     JLabel isotpesLabel = new JLabel("isotopes");
     isotpesLabel.setToolTipText(TooltipTexts.HEATMAP_ISOTOPES);
@@ -404,7 +445,6 @@ public class BarChartPainter extends JPanel implements ActionListener
     barChartPanel_.removeAll();
     valuesToPaint_ = new Hashtable<String,Hashtable<String,Double>>();
     sdsToPaint_ = new Hashtable<String,Hashtable<String,Double>>();
-//    Hashtable<String,Hashtable<String,Integer>> amountOfGroupValues = new Hashtable<String,Hashtable<String,Integer>>();
     double lowestValue = 0;
     double highestValue = 0;
     int maxIsotope = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
@@ -448,9 +488,7 @@ public class BarChartPainter extends JPanel implements ActionListener
       highestValue = (Double)result.get(1);
       valuesToPaint_ = (Hashtable<String,Hashtable<String,Double>>)result.get(2);
       sdsToPaint_ = (Hashtable<String,Hashtable<String,Double>>)result.get(3);
-      rtTimes_ = (Hashtable<String,Hashtable<String,Hashtable<String,Double>>>)result.get(4);
-      rtTimesDev_ = (Hashtable<String,Hashtable<String,Hashtable<String,Double>>>)result.get(5);
-//      amountOfGroupValues = (Hashtable<String,Hashtable<String,Integer>>)result.get(6);
+      singleResultValues_ = (Hashtable<String,Hashtable<String,Double>>)result.get(4);
       yAxisText_ = "area [AU]";
       if (type_ == TYPE_CLASSES){
         yAxisText_ = unit_;
@@ -480,9 +518,7 @@ public class BarChartPainter extends JPanel implements ActionListener
         highestValue = (Double)result.get(1);
         valuesToPaint_ = (Hashtable<String,Hashtable<String,Double>>)result.get(2);
         sdsToPaint_ = (Hashtable<String,Hashtable<String,Double>>)result.get(3);
-        rtTimes_ = (Hashtable<String,Hashtable<String,Hashtable<String,Double>>>)result.get(4);
-        rtTimesDev_ = (Hashtable<String,Hashtable<String,Hashtable<String,Double>>>)result.get(5);
-//        amountOfGroupValues = (Hashtable<String,Hashtable<String,Integer>>)result.get(6);
+        singleResultValues_ = (Hashtable<String,Hashtable<String,Double>>)result.get(4);
         yAxisText_ = "percent [%]";
         
         
@@ -499,9 +535,7 @@ public class BarChartPainter extends JPanel implements ActionListener
       highestValue = (Double)result.get(1);
       valuesToPaint_ = (Hashtable<String,Hashtable<String,Double>>)result.get(2);
       sdsToPaint_ = (Hashtable<String,Hashtable<String,Double>>)result.get(3);
-      rtTimes_ = (Hashtable<String,Hashtable<String,Hashtable<String,Double>>>)result.get(4);
-      rtTimesDev_ = (Hashtable<String,Hashtable<String,Hashtable<String,Double>>>)result.get(5);
-//      amountOfGroupValues = (Hashtable<String,Hashtable<String,Integer>>)result.get(6);
+      singleResultValues_ = (Hashtable<String,Hashtable<String,Double>>)result.get(4);
       yAxisText_ = "rel. median";
       subTitle = "relative to median";
     }
@@ -512,25 +546,9 @@ public class BarChartPainter extends JPanel implements ActionListener
       highestValue = (Double)result.get(1);
       valuesToPaint_ = (Hashtable<String,Hashtable<String,Double>>)result.get(2);
       sdsToPaint_ = (Hashtable<String,Hashtable<String,Double>>)result.get(3);
-      rtTimes_ = (Hashtable<String,Hashtable<String,Hashtable<String,Double>>>)result.get(4);
-      rtTimesDev_ = (Hashtable<String,Hashtable<String,Hashtable<String,Double>>>)result.get(5);
-//      amountOfGroupValues = (Hashtable<String,Hashtable<String,Integer>>)result.get(6);
+      singleResultValues_ = (Hashtable<String,Hashtable<String,Double>>)result.get(4);
       yAxisText_ = "rel. standard";
       subTitle = "relative to standard";
-//      if (calcMedianOfRatios_.isSelected()){
-//        Vector result = this.extractLowestHighestValue("getRelativeToMedianOfISRatios","getRelativeToMedianOfISRatiosSD","getRelativeToMedianOfISRatiosSE",maxIsotope,settingVO_);
-//        lowestValue = (Double)result.get(0);
-//        highestValue = (Double)result.get(1);
-//        valuesToPaint = (Hashtable<String,Double>)result.get(2);
-//        sdsToPaint = (Hashtable<String,Double>)result.get(3);
-//      }else{
-//        Vector result = this.extractLowestHighestValue("getRelativeToISMedian","getRelativeToISMedianSD","getRelativeToISMedianSE",maxIsotope,settingVO_);
-//        lowestValue = (Double)result.get(0);
-//        highestValue = (Double)result.get(1);
-//        valuesToPaint = (Hashtable<String,Double>)result.get(2);
-//        sdsToPaint = (Hashtable<String,Double>)result.get(3);
-//
-//      }
     }
     if (lowestValue==1&&highestValue==1){
       highestValue = 10d;
@@ -555,9 +573,7 @@ public class BarChartPainter extends JPanel implements ActionListener
       highestValue = (Double)result.get(1);
       valuesToPaint_ = (Hashtable<String,Hashtable<String,Double>>)result.get(2);
       sdsToPaint_ = (Hashtable<String,Hashtable<String,Double>>)result.get(3);
-      rtTimes_ = (Hashtable<String,Hashtable<String,Hashtable<String,Double>>>)result.get(4);
-      rtTimesDev_ = (Hashtable<String,Hashtable<String,Hashtable<String,Double>>>)result.get(5);
-//      amountOfGroupValues = (Hashtable<String,Hashtable<String,Integer>>)result.get(6);
+      singleResultValues_ = (Hashtable<String,Hashtable<String,Double>>)result.get(4);
       yAxisText_ = unit_.substring(0,unit_.indexOf("[")+1)+(String)magnitudeChooser_.getSelectedItem()+unit_.substring(unit_.indexOf("[")+1+preferredUnit_.length());
       
       if (settingVO_.getType().equalsIgnoreCase("relative to base peak")){
@@ -591,7 +607,8 @@ public class BarChartPainter extends JPanel implements ActionListener
       }
     }
     
-    barChart_ = new BarChart(doubleSided_.isSelected(),logarithmicScale_.isSelected(),valuesToPaint_,sdsToPaint_,groupName_,subTitle,standardText,this.moleculeNames_, sampleLookup_, originalValueNames_,lowestValue,highestValue,/*amountOfGroupValues,*/yAxisText_, sdText, colorChooser_,colorType_);
+    barChart_ = new BarChart(doubleSided_.isSelected(),logarithmicScale_.isSelected(),valuesToPaint_,sdsToPaint_,groupName_,subTitle,standardText,this.moleculeNames_,
+        useSampleLookup_ ? sampleLookup_ : null, originalValueNames_,lowestValue,highestValue,/*amountOfGroupValues,*/yAxisText_, sdText, colorChooser_,colorType_);
     barChartPanel_.add(barChart_,BorderLayout.CENTER);
     barChartPanel_.invalidate();
     barChartPanel_.updateUI();
@@ -599,15 +616,12 @@ public class BarChartPainter extends JPanel implements ActionListener
   
   @SuppressWarnings( { "unchecked", "rawtypes" } )
   private Vector extractLowestHighestValue(String valueGetterMethod,String sdGetterMethod, String seGetterMethod, int maxIsotopes, ResultDisplaySettingsVO settingVO, boolean absolute,String preferredUnit){
-	Vector results = new Vector();
+    Vector results = new Vector();
     Double highestTotalValue = 0d;
     Double lowestTotalValue = Double.MAX_VALUE;
     Hashtable<String,Hashtable<String,Double>> valuesToPaint = new Hashtable<String,Hashtable<String,Double>>();
     Hashtable<String,Hashtable<String,Double>> sdsToPaint = new Hashtable<String,Hashtable<String,Double>>();
-    Hashtable<String,Hashtable<String,Hashtable<String,Double>>> rtTimes = new Hashtable<String,Hashtable<String,Hashtable<String,Double>>>();
-    Hashtable<String,Hashtable<String,Hashtable<String,Double>>> rtTimesDev = new Hashtable<String,Hashtable<String,Hashtable<String,Double>>>();
-//    Hashtable<String,Hashtable<String,Integer>> amountOfGroupValues = new Hashtable<String,Hashtable<String,Integer>>();
-//    boolean foundOneGroupValue = false;
+    Hashtable<String,Hashtable<String,Double>> originalFileValues = new Hashtable<String,Hashtable<String,Double>>();
     try{
       Class[] classes = new Class[2];      
       classes[0] = int.class;
@@ -620,17 +634,12 @@ public class BarChartPainter extends JPanel implements ActionListener
       for (String molName : analysisResultsHash_.keySet()){
         Hashtable<String,Double> valuesToPaintMol = new Hashtable<String,Double>();
         Hashtable<String,Double> sdsToPaintMol = new Hashtable<String,Double>();
-        Hashtable<String,Hashtable<String,Double>> rtTimesMol = new Hashtable<String,Hashtable<String,Double>>();
-        Hashtable<String,Hashtable<String,Double>> rtTimesDevMol = new Hashtable<String,Hashtable<String,Double>>();
         for (String name : analysisResultsHash_.get(molName).keySet()){
           ResultCompVO compVO = analysisResultsHash_.get(molName).get(name);
-          Hashtable<String,Double> rtTimesMod = new Hashtable<String,Double>();
           int isotopes = extractCorrectIsotopesSetting(maxIsotopes,settingVO,valueGetterMethod,compVO);
           if (isotopes<maxIsotopes)
             maxIsotopes_.setSelectedItem(String.valueOf(isotopes));
           getterParameters[0] = isotopes;
-          for (String modName : modifications_) rtTimesMod.put(modName,compVO.getRetentionTime(modName));
-          rtTimesMol.put(name, rtTimesMod);
           double standValue = (Double)valueGetter.invoke(compVO, getterParameters);
           if (absolute)
             standValue = StaticUtils.getAreaInCorrespondingUnit(standValue,preferredUnit);
@@ -639,13 +648,15 @@ public class BarChartPainter extends JPanel implements ActionListener
             highestTotalValue = standValue;
           if (standValue>0&&standValue<lowestTotalValue)
             lowestTotalValue = standValue;
+          if (type_ != TYPE_EXPERIMENT){
+            if (!originalFileValues.containsKey(molName))
+              originalFileValues.put(molName, new Hashtable<String,Double>());
+          }else{
+            if (!originalFileValues.containsKey(name))
+              originalFileValues.put(name, new Hashtable<String,Double>());            
+          }
           if (compVO instanceof ResultCompGroupVO){
             ResultCompGroupVO groupVO = (ResultCompGroupVO)compVO;
-//              foundOneGroupValue = true;
-            Hashtable<String,Double> rtTimesDevMod = new Hashtable<String,Double>();
-            for (String modName : modifications_) rtTimesDevMod.put(modName,groupVO.getRetentionTimeSD(modName));
-            rtTimesDevMol.put(name, rtTimesDevMod);
-//              amountValues.put(name, groupVO.getGroupingPartners().size());
             double standValueSD = (Double)sdGetter.invoke(groupVO, getterParameters);
             if (absolute)
               standValueSD = StaticUtils.getAreaInCorrespondingUnit(standValueSD,preferredUnit);
@@ -666,13 +677,32 @@ public class BarChartPainter extends JPanel implements ActionListener
               if ((standValue-standValueSD)>0&&(standValue-standValueSD)<lowestTotalValue)
                 lowestTotalValue = standValue-standValueSD;
             }
+            for (String expName : groupVO.getGroupingPartners().keySet()){
+              if (type_ != TYPE_EXPERIMENT){
+                if (originalFileValues.get(molName).containsKey(expName))
+                  continue;
+              }else{
+                if (originalFileValues.get(name).containsKey(expName))
+                  continue;                
+              }
+              ResultCompVO expCompVO = groupVO.getGroupingPartners().get(expName);
+              double expStandValue = (Double)valueGetter.invoke(expCompVO, getterParameters);
+              if (absolute)
+                expStandValue = StaticUtils.getAreaInCorrespondingUnit(expStandValue,preferredUnit);
+              if (type_ != TYPE_EXPERIMENT)
+                originalFileValues.get(molName).put(expName, expStandValue);
+              else
+                originalFileValues.get(name).put(expName, expStandValue);
+            }
+          }else{
+            if (type_ != TYPE_EXPERIMENT)
+              originalFileValues.get(molName).put(name, standValue);
+            else
+              originalFileValues.get(name).put(name, standValue);
           }
         }
         valuesToPaint.put(molName, valuesToPaintMol);
         sdsToPaint.put(molName, sdsToPaintMol);
-        rtTimes.put(molName, rtTimesMol);
-        rtTimesDev.put(molName, rtTimesDevMol);
-//        amountOfGroupValues.put(molName, amountValues);
       }
     } catch(Exception ex){
       ex.printStackTrace();
@@ -681,12 +711,7 @@ public class BarChartPainter extends JPanel implements ActionListener
     results.add(highestTotalValue);
     results.add(valuesToPaint);
     results.add(sdsToPaint);
-    results.add(rtTimes);
-    results.add(rtTimesDev);
-//    if (foundOneGroupValue)
-//      results.add(amountOfGroupValues);
-//    else
-//      results.add(null);
+    results.add(originalFileValues);
     return results;
   }
   
@@ -734,8 +759,6 @@ public class BarChartPainter extends JPanel implements ActionListener
 
     public void focusGained(FocusEvent e)
     {
-      // TODO Auto-generated method stub
-      
     }
 
     public void focusLost(FocusEvent e)
@@ -777,8 +800,6 @@ public class BarChartPainter extends JPanel implements ActionListener
             singleSided_.setEnabled(true);
             doubleSided_.setEnabled(true);
             disableMagnitudeChooser();
-//            calcMedianOfRatios_.setEnabled(false);
-//            calcMedian_.setEnabled(false);
             createPaintingArea();
           }
           if (((String)quantType_.getSelectedItem()).equalsIgnoreCase("area relative to standard")){
@@ -786,8 +807,6 @@ public class BarChartPainter extends JPanel implements ActionListener
             singleSided_.setEnabled(true);
             doubleSided_.setEnabled(true);
             disableMagnitudeChooser();
-//            calcMedianOfRatios_.setEnabled(true);
-//            calcMedian_.setEnabled(true);
             createPaintingArea();
           }
           if (((String)quantType_.getSelectedItem()).equalsIgnoreCase("absolute quantity")){
@@ -795,8 +814,6 @@ public class BarChartPainter extends JPanel implements ActionListener
             singleSided_.setEnabled(false);
             doubleSided_.setEnabled(false);
             enableMagnitudeChooser();
-//            calcMedianOfRatios_.setEnabled(true);
-//            calcMedian_.setEnabled(true);
             createPaintingArea();
           }
           repaintingBarChart_ = false;
@@ -919,6 +936,7 @@ public class BarChartPainter extends JPanel implements ActionListener
       int roundValue = 6;
       if ((barChart_.getRoundValue()+2)>roundValue)
         roundValue = barChart_.getRoundValue()+2;
+      //TODO: add radio buttons for the species type
       ExportOptionsVO exportVO = new ExportOptionsVO(exportType,sdValue,columnAnalyte_.isSelected(),exportRT,exportRTDev,roundValue,
           LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES);
       if (e.getActionCommand().equalsIgnoreCase(ExportPanel.EXPORT_EXCEL)){
@@ -935,23 +953,20 @@ public class BarChartPainter extends JPanel implements ActionListener
               @SuppressWarnings("rawtypes")
               Vector resultsVector = extractResultsVector();
               String headerTitle = StaticUtils.getAreaTypeString(settingVO_);
-////              if (yAxisText_==null){
-//                if (((String)quantType_.getSelectedItem()).equalsIgnoreCase("area absolute")){
-//                  headerTitle = "Area ";
-//                } else if (((String)quantType_.getSelectedItem()).equalsIgnoreCase("area relative to molecule")){
-//                  headerTitle = "Relative to Median ";
-//                } else if (((String)quantType_.getSelectedItem()).equalsIgnoreCase("area relative to standard")){
-//                  headerTitle = "Relative to Standard ";
-//                }
-////              }
-              BarChartPainter.exportToFile(groupName_,new BufferedOutputStream(new FileOutputStream(fileToStore)),true, maxIsotope, (Vector<String>)resultsVector.get(0), 
-                  (Vector<String>)resultsVector.get(1), (Hashtable<String,String>)resultsVector.get(2),(Hashtable<String,Hashtable<String,Vector<Double>>>)resultsVector.get(3), 
-                  yAxisText_, headerTitle,exportVO,modifications_);
+              ExcelAndTextExporter.exportToFile(type_!=TYPE_CLASSES,exportVO.getSpeciesType(), groupName_,new BufferedOutputStream(new FileOutputStream(fileToStore)),true,
+                  maxIsotope, (Vector<String>)resultsVector.get(0), rtGrouped_, isGroupedView_, (Vector<String>)resultsVector.get(1),
+                  (Hashtable<String,String>)resultsVector.get(2), sampleLookup_.getSampleResultFullPaths(), sampleLookup_.getSamplesOfGroups(),
+                  (Hashtable<String,Hashtable<String,Vector<Double>>>)resultsVector.get(3), yAxisText_, headerTitle, exportVO, sampleLookup_.getComparativeResultsLookup(),
+                  modifications_);
+
             }
-            catch (NumberFormatException ex) {new WarningMessage(new JFrame(), "Error", ex.getMessage());}
-            catch (FileNotFoundException ex) {new WarningMessage(new JFrame(), "Error", ex.getMessage());}
-            catch (IOException ex) {new WarningMessage(new JFrame(), "Error", ex.getMessage());}
-            catch (CalculationNotPossibleException ex) {new WarningMessage(new JFrame(), "Error", ex.getMessage());}
+            catch (NumberFormatException ex) {ex.printStackTrace();new WarningMessage(new JFrame(), "Error", ex.getMessage());}
+            catch (FileNotFoundException ex) {ex.printStackTrace();new WarningMessage(new JFrame(), "Error", ex.getMessage());}
+            catch (IOException ex) {ex.printStackTrace();new WarningMessage(new JFrame(), "Error", ex.getMessage());}
+            catch (ExcelInputFileException | ExportException | SpectrummillParserException ex) {
+              ex.printStackTrace();
+              new WarningMessage(new JFrame(), "Error", ex.getMessage());
+            }
           }  
         }
       } else if (e.getActionCommand().equalsIgnoreCase(ExportPanel.EXPORT_TEXT)){
@@ -968,7 +983,6 @@ public class BarChartPainter extends JPanel implements ActionListener
               @SuppressWarnings("rawtypes")
               Vector resultsVector = extractResultsVector();
               String headerTitle = StaticUtils.getAreaTypeString(settingVO_);
-////              if (yAxisText_==null){
                 if (((String)quantType_.getSelectedItem()).equalsIgnoreCase("area absolute")){
                   headerTitle = "Area";
                 } else if (((String)quantType_.getSelectedItem()).equalsIgnoreCase("area relative to molecule")){
@@ -976,15 +990,19 @@ public class BarChartPainter extends JPanel implements ActionListener
                 } else if (((String)quantType_.getSelectedItem()).equalsIgnoreCase("area relative to standard")){
                   headerTitle = "Relative to Standard";
                 }
-////              }
-              BarChartPainter.exportToFile(groupName_,new BufferedOutputStream(new FileOutputStream(fileToStore)),false, maxIsotope, (Vector<String>)resultsVector.get(0), 
-                  (Vector<String>)resultsVector.get(1), (Hashtable<String,String>)resultsVector.get(2),(Hashtable<String,Hashtable<String,Vector<Double>>>)resultsVector.get(3),
-                  yAxisText_, headerTitle,exportVO,modifications_);
+                ExcelAndTextExporter.exportToFile(type_!=TYPE_CLASSES,exportVO.getSpeciesType(), groupName_,new BufferedOutputStream(new FileOutputStream(fileToStore)),false,
+                    maxIsotope, (Vector<String>)resultsVector.get(0), rtGrouped_, isGroupedView_, (Vector<String>)resultsVector.get(1),
+                    (Hashtable<String,String>)resultsVector.get(2), sampleLookup_.getSampleResultFullPaths(), sampleLookup_.getSamplesOfGroups(),
+                    (Hashtable<String,Hashtable<String,Vector<Double>>>)resultsVector.get(3), yAxisText_, headerTitle, exportVO, sampleLookup_.getComparativeResultsLookup(),
+                    modifications_);
+
             }
             catch (NumberFormatException ex) {new WarningMessage(new JFrame(), "Error", ex.getMessage());}
             catch (FileNotFoundException ex) {new WarningMessage(new JFrame(), "Error", ex.getMessage());}
             catch (IOException ex) {new WarningMessage(new JFrame(), "Error", ex.getMessage());}
-            catch (CalculationNotPossibleException ex) {new WarningMessage(new JFrame(), "Error", ex.getMessage());}
+            catch (ExcelInputFileException | ExportException | SpectrummillParserException ex) {
+              new WarningMessage(new JFrame(), "Error", ex.getMessage());
+            }
           }  
         }      
       }
@@ -997,297 +1015,60 @@ public class BarChartPainter extends JPanel implements ActionListener
     Vector results = new  Vector();
     Vector<String> molNames = new Vector<String>();
     Vector<String> expNames = new Vector<String>();
+    Hashtable<String,String> expHash = new Hashtable<String,String>();
     Hashtable<String,Hashtable<String,Vector<Double>>> resultsHash = new Hashtable<String,Hashtable<String,Vector<Double>>>();
     if (type_ == TYPE_MOLECULE || type_ == TYPE_CLASSES){
       molNames.addAll(moleculeNames_);
-      expNames.addAll(BarChart.extractDisplayNames(sampleLookup_,originalValueNames_));
+      expNames.addAll(originalValueNames_);
+      for (String expName : originalValueNames_)
+        expHash.put(expName, sampleLookup_.getDisplayName(expName));
       for (String molName :  this.moleculeNames_){
         Hashtable<String,Vector<Double>> resultHash = new Hashtable<String,Vector<Double>>();
-        for (String expName : originalValueNames_){//BarChart.extractDisplayNames(sampleLookup_,originalValueNames_
+        for (String expName : sampleLookup_.getComparativeResultsLookup().getExpNamesInSequence()){/////for (String expName : originalValueNames_){// old: BarChart.extractDisplayNames(sampleLookup_,originalValueNames_
           Vector<Double> resultsVect = new Vector<Double>();
-          resultsVect.add(valuesToPaint_.get(molName).get(expName));
-          if (this.exportDeviation_!=null && this.exportDeviation_.isSelected()){
-            resultsVect.add(sdsToPaint_.get(molName).get(expName));
-          }
-          for (String modName : modifications_){
-            resultsVect.add(rtTimes_.get(molName).get(expName).get(modName));
-            if (this.standardDeviation_!=null){
-              resultsVect.add(rtTimesDev_.get(molName).get(expName).get(modName));
-            }
-          }
+          resultsVect.add(singleResultValues_.get(molName).get(expName));
           String displayName = expName;
-          if (sampleLookup_!=null)
-            displayName = sampleLookup_.getDisplayName(expName);
           resultHash.put(displayName, resultsVect);
         }  
         resultsHash.put(molName, resultHash);
       }
     } else if (type_ == TYPE_EXPERIMENT){
-      expNames.addAll(moleculeNames_);
-      molNames.addAll(BarChart.extractDisplayNames(sampleLookup_,originalValueNames_));
+      molNames.addAll(originalValueNames_);
+      String rightExp = null;
+      if (isGroupedView_)
+        rightExp = moleculeNames_.get(0);
+      else{
+        for (String expName : sampleLookup_.getComparativeResultsLookup().getExpNamesInSequence()){
+          if (!sampleLookup_.getDisplayName(expName).equalsIgnoreCase(moleculeNames_.get(0)))
+            continue;
+          rightExp = expName;
+        }
+      }
+      expNames.add(rightExp);
+      expHash.put(rightExp, moleculeNames_.get(0));
       for (String molName : valuesToPaint_.values().iterator().next().keySet()){
         Hashtable<String,Vector<Double>> resultHash = new Hashtable<String,Vector<Double>>();
-        Vector<Double> resultsVect = new Vector<Double>();
-        resultsVect.add(valuesToPaint_.values().iterator().next().get(molName));
-        if (this.exportDeviation_!=null && this.exportDeviation_.isSelected()){
-          resultsVect.add(sdsToPaint_.values().iterator().next().get(molName));
-        }
-        for (String modName : modifications_){
-          resultsVect.add(rtTimes_.values().iterator().next().get(molName).get(modName));
-          if (this.standardDeviation_!=null){
-            resultsVect.add(rtTimesDev_.values().iterator().next().get(molName).get(modName));
+        if (isGroupedView_){
+          for (String expName : sampleLookup_.getSamplesOfGroups().get(rightExp)){
+            Vector<Double> resultsVect = new Vector<Double>();
+            resultsVect.add(singleResultValues_.get(molName).get(expName));
+            resultHash.put(expName, resultsVect);
           }
+        }else{
+          Vector<Double> resultsVect = new Vector<Double>();
+          resultsVect.add(valuesToPaint_.values().iterator().next().get(molName));
+          resultHash.put(rightExp, resultsVect);
         }
-        resultHash.put(moleculeNames_.get(0), resultsVect);
         resultsHash.put(molName, resultHash);
-      }
+      }  
+      
     }
     results.add(molNames);
     results.add(expNames);
-    Hashtable<String,String> expHash = new Hashtable<String,String>();
-    for (String expName:expNames) expHash.put(expName, expName);
+    
     results.add(expHash);
     results.add(resultsHash);
     return results;
-  }
-  
-  public static void exportToFile(String sheetName, OutputStream out, boolean excelFile, int maxIsotope, Vector<String> molNames, 
-      Vector<String> expIdNames, Hashtable<String,String> expNames,Hashtable<String,Hashtable<String,Vector<Double>>> results, String preferredUnit, String headerText, 
-      ExportOptionsVO expVO, Vector<String> modifications) throws IOException, NumberFormatException, CalculationNotPossibleException{
-    Workbook workbook = null;
-    Sheet sheet = null;
-    Row row = null;
-    
-    CellStyle headerStyle = null;
-    CellStyle normalStyle = null;
-    CellStyle zeroStyle = null;
-
-    if (excelFile){
-      workbook = new XSSFWorkbook();
-      sheet = workbook.createSheet(sheetName);
-      headerStyle = getHeaderStyle(workbook);
-      normalStyle = getNormalStyle(workbook);
-      zeroStyle = getZeroStyle(workbook);
-      row = sheet.createRow(0);
-    }
-    boolean expInColumn = false;
-    Vector<String> columnNames = new Vector<String>(molNames);
-    Vector<String> rowNames = new Vector<String>(expIdNames);
-    if (!expVO.isAnalyteInColumn()){
-      columnNames = new Vector<String>(expIdNames);
-      rowNames = new Vector<String>(molNames);
-      expInColumn = true;
-    } 
-    StaticUtils.printOutLabelToFile(sheetName, out, row, headerStyle, (columnNames.size()+2)/2, excelFile, false);
-    if (!excelFile)
-      out.write("\n".getBytes());   
-    int rowCount = 1; 
-    int columnCount = 0;
-    String unit = "Arb.Units / AU";
-    if (preferredUnit!=null && preferredUnit.length()>0)
-      unit = preferredUnit;
-    String unitString = unit;
-    if (excelFile)
-      row = sheet.createRow(rowCount);
-    StaticUtils.printOutLabelToFile(unitString, out, row, headerStyle, columnCount, excelFile, false);
-    columnCount++;
-    StaticUtils.printOutLabelToFile("", out, row, headerStyle, columnCount, excelFile, true);
-    columnCount++;
-    for (String columnName : columnNames){
-      String valueToPrint = columnName;
-      if (expInColumn)
-        valueToPrint = expNames.get(columnName);
-      StaticUtils.printOutLabelToFile(valueToPrint, out, row, headerStyle, columnCount, excelFile, true);
-      columnCount++;
-//      if (expVO!=null && expVO.getExportType() != ExportOptionsVO.EXPORT_NO_DEVIATION){
-//        String title = molName+" ";
-//        if (expVO.getExportType() == ExportOptionsVO.EXPORT_SD_DEVIATION){
-//          title+="SD-"+expVO.getSdValue();
-//        } else if (expVO.getExportType() == ExportOptionsVO.EXPORT_SD_ERROR){
-//          title+="SE";
-//        }
-//        StaticUtils.printOutLabelToFile(title, out, sheet, arial12format, rowCount, columnCount, excelFile, true);
-//        columnCount++;
-//      }
-    }
-    rowCount++;
-    if (excelFile)
-      row = sheet.createRow(rowCount);
-    if (!excelFile)
-      out.write("\n".getBytes());
-    for (String rowName : rowNames){
-      columnCount = 0;
-      String valueToPrint = rowName;
-      if (!expInColumn)
-        valueToPrint = expNames.get(rowName);
-      StaticUtils.printOutLabelToFile(valueToPrint, out, row, headerStyle, columnCount, excelFile, false);
-      columnCount++;
-      StaticUtils.printOutLabelToFile("Value", out, row, headerStyle, columnCount, excelFile, true);
-      columnCount++;
-      // write out the quantitative value
-      for (String columnName : columnNames){
-        //String toWrite = "";
-        String toWrite = "0";
-        String molName = columnName;
-        String expName = rowName;
-        if (!expVO.isAnalyteInColumn()){
-          molName = rowName;
-          expName = columnName;
-        }
-        if (results.containsKey(molName) && results.get(molName).containsKey(expName)){
-          double myArea = results.get(molName).get(expName).get(0);
-          toWrite = StaticUtils.extractDisplayValue(myArea,expVO.getCommaPositions());
-        }
-        CellStyle style = null;
-        if (toWrite.equalsIgnoreCase("0")||toWrite.equalsIgnoreCase("0.0"))
-          style = zeroStyle;
-        else
-          style = normalStyle;
-        StaticUtils.printOutNumberToFile(toWrite, out, row, style, columnCount, excelFile, true);
-        columnCount++;
-//        if (expVO!=null && expVO.getExportType() != ExportOptionsVO.EXPORT_NO_DEVIATION){
-//          toWrite = "-1";
-//          double value = results.get(molName).get(expName).get(1);
-//          if (!Double.isInfinite(value) && !Double.isNaN(value))
-//            toWrite = StaticUtils.extractDisplayValue(value);
-//          font = null;
-//          if (toWrite.equalsIgnoreCase("-1")||toWrite.equalsIgnoreCase("-1.0"))
-//            font = new WritableCellFormat(arialFontRed);
-//          else
-//            font = new WritableCellFormat(arialFont);
-//          StaticUtils.printOutNumberToFile(toWrite, out, sheet,font,rowCount, columnCount, excelFile, true);
-//          columnCount++;
-//        }
-      }
-      rowCount++;
-      if (excelFile)
-        row = sheet.createRow(rowCount);
-      if (!excelFile)
-        out.write("\n".getBytes());
-   // write out the standard deviation
-      int currentResultsItem = 1;
-      if (expVO!=null && expVO.getExportType() != ExportOptionsVO.EXPORT_NO_DEVIATION){
-        columnCount = 0;
-        StaticUtils.printOutLabelToFile("", out, row, headerStyle, columnCount, excelFile, false);
-        columnCount++;
-        String title = "";
-        if (expVO.getExportType() == ExportOptionsVO.EXPORT_SD_DEVIATION){
-          title+="SD-"+expVO.getSdValue();
-        } else if (expVO.getExportType() == ExportOptionsVO.EXPORT_SD_ERROR){
-          title+="SE";
-        }
-        StaticUtils.printOutLabelToFile(title, out, row, headerStyle, columnCount, excelFile, true);
-        columnCount++;
-        for (String columnName : columnNames){
-          String toWrite = "-1";
-          String molName = columnName;
-          String expName = rowName;
-          if (!expVO.isAnalyteInColumn()){
-            molName = rowName;
-            expName = columnName;
-          }
-          if (results.containsKey(molName) && results.get(molName).containsKey(expName)){
-            double value = results.get(molName).get(expName).get(currentResultsItem);
-            if (!Double.isInfinite(value) && !Double.isNaN(value))
-              toWrite = StaticUtils.extractDisplayValue(value);
-          }
-          CellStyle style = null;
-          if (toWrite.equalsIgnoreCase("-1")||toWrite.equalsIgnoreCase("-1.0"))
-            style = zeroStyle;
-          else
-            style = normalStyle;
-          StaticUtils.printOutNumberToFile(toWrite, out, row, style, columnCount, excelFile, true);
-          columnCount++;
-        }
-        rowCount++;       
-        if (!excelFile)
-          out.write("\n".getBytes());
-        else
-          row = sheet.createRow(rowCount);
-        currentResultsItem++;
-      }
-      for (String modName : modifications){
-        if (expVO!=null && expVO.isExportRT()){
-          columnCount = 0;
-          StaticUtils.printOutLabelToFile("", out, row, headerStyle, columnCount, excelFile, false);
-          columnCount++;
-          String rtName = "RT";
-          if (modifications.size()>1)
-            rtName+="-"+modName;
-          StaticUtils.printOutLabelToFile(rtName, out, row, headerStyle, columnCount, excelFile, true);
-          columnCount++;
-          for (String columnName : columnNames){
-            String toWrite = "-1";
-            String molName = columnName;
-            String expName = rowName;
-            if (!expVO.isAnalyteInColumn()){
-              molName = rowName;
-              expName = columnName;
-            }
-            if (results.containsKey(molName) && results.get(molName).containsKey(expName)){
-              double value = results.get(molName).get(expName).get(currentResultsItem);
-              if (!Double.isInfinite(value) && !Double.isNaN(value))
-                toWrite = StaticUtils.extractDisplayValue(value);
-            }
-            CellStyle style = null;
-            if (toWrite.equalsIgnoreCase("-1")||toWrite.equalsIgnoreCase("-1.0"))
-              style = zeroStyle;
-            else
-              style = normalStyle;
-            StaticUtils.printOutNumberToFile(toWrite, out, row, style, columnCount, excelFile, true);
-            columnCount++;
-          }  
-          rowCount++;
-          
-          if (excelFile)
-            row = sheet.createRow(rowCount);
-          else
-            out.write("\n".getBytes());
-          currentResultsItem++;        
-        }
-        if (expVO!=null && expVO.isExportRTDev()){
-          columnCount = 0;
-          StaticUtils.printOutLabelToFile("", out, row, headerStyle, columnCount, excelFile, false);
-          columnCount++;
-//          String rtDevName = "RT-StDev";
-//          if (modifications.size()>1)
-//            rtDevName+="-"+modName;
-          StaticUtils.printOutLabelToFile("RT-StDev", out, row, headerStyle, columnCount, excelFile, true);
-          columnCount++;
-          for (String columnName : columnNames){
-            String toWrite = "-1";
-            String molName = columnName;
-            String expName = rowName;
-            if (!expVO.isAnalyteInColumn()){
-              molName = rowName;
-              expName = columnName;
-            }
-            if (results.containsKey(molName) && results.get(molName).containsKey(expName)){
-              double value = results.get(molName).get(expName).get(currentResultsItem);
-              if (!Double.isInfinite(value) && !Double.isNaN(value))
-                toWrite = StaticUtils.extractDisplayValue(value);
-            }
-            CellStyle style = null;
-            if (toWrite.equalsIgnoreCase("-1")||toWrite.equalsIgnoreCase("-1.0"))
-              style = zeroStyle;
-            else
-              style = normalStyle;
-            StaticUtils.printOutNumberToFile(toWrite, out, row, style, columnCount, excelFile, true);
-            columnCount++;
-          }  
-          rowCount++;         
-          if (excelFile)
-            row = sheet.createRow(rowCount);           
-          else
-            out.write("\n".getBytes());
-          currentResultsItem++;        
-        }
-      }
-    }
-    if (excelFile){
-      workbook.write(out);
-    }
-    out.close();
   }
   
   private int extractCorrectIsotopesSetting(int maxIsotopes,ResultDisplaySettingsVO settingVO, String valueGetterMethod, ResultCompVO compVO){
@@ -1455,44 +1236,4 @@ public class BarChartPainter extends JPanel implements ActionListener
     magnitudeChooser_.setEnabled(false);
   }
   
-  private static CellStyle getHeaderStyle(Workbook wb){
-    CellStyle arial12style = wb.createCellStyle();
-    org.apache.poi.ss.usermodel.Font arial12font = getArial12BoldFont(wb);
-    arial12style.setFont(arial12font);
-    arial12style.setAlignment(CellStyle.ALIGN_CENTER);
-    return arial12style;
-  }
-  
-  private static CellStyle getNormalStyle(Workbook wb){
-    CellStyle arialStyle = wb.createCellStyle();
-    org.apache.poi.ss.usermodel.Font arialfont = getArialFont(wb);
-    arialStyle.setFont(arialfont);
-    return arialStyle;
-  }
-  
-  private static CellStyle getZeroStyle(Workbook wb){
-    CellStyle arialStyle = wb.createCellStyle();
-    org.apache.poi.ss.usermodel.Font arialfont = getArialRedFont(wb);
-    arialStyle.setFont(arialfont);
-    return arialStyle;
-  }
-  
-  private static org.apache.poi.ss.usermodel.Font getArialRedFont(Workbook wb){
-    org.apache.poi.ss.usermodel.Font arialfont = getArialFont(wb);
-    arialfont.setColor(org.apache.poi.ss.usermodel.Font.COLOR_RED);
-    return arialfont;
-  }
-  
-  private static org.apache.poi.ss.usermodel.Font getArialFont(Workbook wb){
-    org.apache.poi.ss.usermodel.Font arial12font = wb.createFont();
-    arial12font.setFontName("Arial");
-    return arial12font;
-  }
-  
-  private static org.apache.poi.ss.usermodel.Font getArial12BoldFont(Workbook wb){
-    org.apache.poi.ss.usermodel.Font arial12font = getArialFont(wb);
-    arial12font.setFontHeightInPoints((short)12);
-    arial12font.setBoldweight(org.apache.poi.ss.usermodel.Font.BOLDWEIGHT_BOLD);
-    return arial12font;
-  }
 }

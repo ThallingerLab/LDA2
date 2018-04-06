@@ -66,7 +66,7 @@ import at.tugraz.genome.voutils.GeneralComparator;
  * @author Juergen Hartler
  *
  */
-public class ComparativeAnalysis extends ComparativeNameExtractor
+public class ComparativeAnalysis extends ComparativeNameExtractor implements ComparativeResultsLookup
 {
 
   private Hashtable<String,Hashtable<String,Vector<Hashtable<String,ResultAreaVO>>>> unprocessedResults_;
@@ -972,10 +972,12 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
         for (LipidParameterSet param: params){
           String rtDef = "";
           String analId = StaticUtils.generateLipidNameString(param.getName(), param.getDoubleBonds());
+          boolean isInternalStandard = (isSelectionPrefix_!=null && param.getName().startsWith(isSelectionPrefix_));
+          boolean isExternalStandard = (esSelectionPrefix_!=null && param.getName().startsWith(esSelectionPrefix_));;
           double retentionTime = -1d;
           if (param.getRt()!=null&&param.getRt().length()>0 ){
             retentionTime = new Double(param.getRt());
-            if (expRtGroupingTime_>0 && !((isSelectionPrefix_!=null && param.getName().startsWith(isSelectionPrefix_))||(esSelectionPrefix_!=null && param.getName().startsWith(esSelectionPrefix_))))rtDef = param.getRt();
+            if (expRtGroupingTime_>0 && !(isInternalStandard||isExternalStandard))rtDef = param.getRt();
           }
           
           //calculating the neutral mass
@@ -1008,7 +1010,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
               areaVO = sameMoleculeDiffRet.values().iterator().next();
             else if (rtDef!=null&&rtDef.length()>0){
               areaVO = hasAreaSameRt(rtDef,sameMoleculeDiffRet);
-              if (areaVO==null) areaVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass);
+              if (areaVO==null) areaVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass,
+                  isInternalStandard,isExternalStandard);
               // Juergen: I am not sure if this "if" and the setting of the retention time is required; for various charge states it seems to be counterproductive
               else /*if (areaVO.hasModification(param.getModificationName()))*/{
                 sameMoleculeDiffRet.remove(areaVO.getRt());
@@ -1016,7 +1019,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
             }  
           }else{
             if (param.getArea()>0f){
-              areaVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass);
+              areaVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass,
+                  isInternalStandard,isExternalStandard);
               if (orderedAnalytes.size()==0||!orderedAnalytes.get(orderedAnalytes.size()-1).equalsIgnoreCase(analId))
                 orderedAnalytes.add(analId);
             }else{
@@ -1024,7 +1028,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
               if (this.isNullResult_.containsKey(fileName)) fileHash = isNullResult_.get(fileName);
               Hashtable<String,Boolean> sheetHash = new Hashtable<String,Boolean>();
               if (fileHash.containsKey(sheetName)) sheetHash = fileHash.get(sheetName);
-              ResultAreaVO dummyVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass);
+              ResultAreaVO dummyVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass,
+                  isInternalStandard,isExternalStandard);
               sheetHash.put(dummyVO.getMoleculeName(), true);
               fileHash.put(sheetName, sheetHash);
               isNullResult_.put(fileName,fileHash);
@@ -1125,6 +1130,9 @@ public class ComparativeAnalysis extends ComparativeNameExtractor
       
       for (String groupName : groupAndMols.keySet()){
         for (String molName : groupAndMols.get(groupName).keySet()){
+          //standards should not run through this process
+          if ((isSelectionPrefix_!=null && molName.startsWith(isSelectionPrefix_))||(esSelectionPrefix_!=null && molName.startsWith(esSelectionPrefix_)))
+            continue;
           int clusterId = 0;
           //first key: cluster id; second key: experiment name; third key: retention time of added VO; value; the assigned area VOs
           Hashtable<Integer,Hashtable<String,Hashtable<String,ResultAreaVO>>> valuesInClusters = new  Hashtable<Integer,Hashtable<String,Hashtable<String,ResultAreaVO>>>();

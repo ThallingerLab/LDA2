@@ -379,7 +379,7 @@ public class ClassesOverviewPanel extends JPanel implements ActionListener
     ResultDisplaySettingsVO settingVO = new ResultDisplaySettingsVO("relative value", ResultCompVO.NO_STANDARD_CORRECTION, ResultCompVO.NO_STANDARD_CORRECTION,
         false, false);
     centerPanel_.removeAll();
-    BarChartPainter painter = new BarChartPainter(BarChartPainter.TYPE_CLASSES,"Overview",classes,overviewResults,experiments,sampleLookup_,isGrouped,maxIsotope,settingVO, preferredUnit,unit,
+    BarChartPainter painter = new BarChartPainter(BarChartPainter.TYPE_CLASSES,"Overview",classes,overviewResults,experiments,sampleLookup_,true,isGrouped,maxIsotope,false,isGrouped,settingVO, preferredUnit,unit,
         null,null,null,colorChooser_);
     this.remove(centerPanel_);
     this.centerPanel_ = painter;

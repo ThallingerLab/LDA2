@@ -29,10 +29,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Vector;
 
-import uk.ac.ebi.pride.jmztab1_1.utils.errors.MZTabException;
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.analysis.ComparativeAnalysis;
+import at.tugraz.genome.lda.exception.ExportException;
 import at.tugraz.genome.lda.export.LDAExporter;
 import at.tugraz.genome.lda.export.vos.EvidenceVO;
 import at.tugraz.genome.lda.export.vos.FeatureVO;
@@ -75,19 +75,17 @@ public class MztabUtils extends LDAExporter
    * @param molGroup the analyte class
    * @param molName the name of the species (may contain retention time separated by an "_" at the end)
    * @param resultsMol the values according to the heat map selection
-   * @param isInternalStandard is the analyte an internal standard (not used up to now)
-   * @param isExternalStandard is the analyte an external standard (not used up to now)
    * @param adductsSorted key: the adducts sorted in consecutive manner starting with the strongest representative; value: contains this adduct position information
    * @param expsOfGroup key: group name; value sorted vector of experiments
    * @return a combined object containing the various mzTab specific information
-   * @throws MZTabException when there is something wrong
+   * @throws ExportException when there is something wrong
    * @throws SpectrummillParserException when there are elements missing in the elementconfig.xml
    */
   public static SmallMztabMolecule createSmallMztabMolecule(short speciesType, int currentSummaryId, int currentFeatureId, int currentEvidenceId,
       int currentEvGroupingId, int maxIsotopes, ComparativeAnalysis analysisModule, Hashtable<String,MsRun> msruns,
       Hashtable<String,QuantificationResult> originalExcelResults, String molGroup, String molName, Hashtable<String,Vector<Double>> resultsMol,
-      boolean isInternalStandard, boolean isExternalStandard, LinkedHashMap<String,Boolean> adductsSorted, LinkedHashMap<String,Vector<String>> expsOfGroup)
-          throws MZTabException, SpectrummillParserException{
+      LinkedHashMap<String,Boolean> adductsSorted, LinkedHashMap<String,Vector<String>> expsOfGroup)
+          throws ExportException, SpectrummillParserException{
     
     Hashtable<String,String> modFormulas = new Hashtable<String,String>();
     Hashtable<String,Integer> modCharges = new Hashtable<String,Integer>();
@@ -102,6 +100,8 @@ public class MztabUtils extends LDAExporter
     for (String expName : analysisModule.getExpNamesInSequence()){
       ResultAreaVO areaVO = analysisModule.getResultAreaVO(molGroup,molName,expName);
       if (areaVO!=null){
+        if (areaVO.isAStandard())
+          isRtGrouped = false;
         Hashtable<String,Vector<LipidParameterSet>> sets = getRelevantOriginalResults(originalExcelResults.get(expName).getIdentifications().get(molGroup),areaVO);
         relevantOriginals.put(expName, sets);
         for (String mod : adductsSorted.keySet()){
@@ -110,18 +110,11 @@ public class MztabUtils extends LDAExporter
             modCharges.put(mod, areaVO.getCharge(mod));
             calcMasses.put(mod, areaVO.getTheoreticalMass(mod));
           }
-/****          
-          if (areaVO.hasModification(mod)){
-            Vector<Double> expMass = new Vector<Double>();
-            if (expMasses.containsKey(mod)) expMass = expMasses.get(mod);
-            expMass.add(areaVO.getExperimentalMass(mod));
-            expMasses.put(mod, expMass);
-          }*/
         }
       }
     }
     SpeciesExportVO exportVO =  extractExportableSummaryInformation(speciesType,  true, currentSummaryId, currentFeatureId, true, currentEvidenceId,
-        currentEvGroupingId, isRtGrouped, adductsSorted, analysisModule.getExpNamesInSequence(),expsOfGroup,  molGroup, molName, resultsMol,
+        currentEvGroupingId, isRtGrouped, adductsSorted, analysisModule.getExpNamesInSequence(),expsOfGroup,  molName, resultsMol,
         relevantOriginals, isotopes);
 //    System.out.println("------------------------------------------");
     //generates the mzTab SmallMoleculeSummary section

@@ -60,16 +60,47 @@ public class ResultAreaVO
   private Hashtable<String,Vector<Boolean>> moreThanOnePeak_;
   /** if there is a split according to MSn intensities - a percentage of the usable peak intensity is stored*/
   private float percentalSplit_;
+  /** true when this value is an internal standard*/
+  private boolean internalStandard_;
+  /** true when this value is an external standard*/
+  private boolean externalStandard_;
   
-  public ResultAreaVO(String name, Integer dbs, String rt, String expName, String chemicalFormula, float percentalSplit/*,String modName, String modFormula*/,double neutralMass) throws ChemicalFormulaException
+  /**
+   * public constructor for creating a ResultAreaVO
+   * @param name the name of the analyte
+   * @param dbs the amount of double bonds
+   * @param rt an identifier String for the retention time
+   * @param expName the abbreviated name of the experiment 
+   * @param chemicalFormula the chemical formula of the analyte
+   * @param percentalSplit the percentual split if present
+   * @param neutralMass the neutral mass of the analyte
+   * @param internalStandard true when this value is an internal standard
+   * @param externalStandard true when this value is an external standard
+   * @throws ChemicalFormulaException thrown when an element is missing in the elementconfig.xml
+   */
+  public ResultAreaVO(String name, Integer dbs, String rt, String expName, String chemicalFormula, float percentalSplit,double neutralMass,
+      boolean internalStandard, boolean externalStandard) throws ChemicalFormulaException
   {
-    this(name,dbs,expName,chemicalFormula,percentalSplit,neutralMass);
+    this(name,dbs,expName,chemicalFormula,percentalSplit,neutralMass,internalStandard,externalStandard);
     this.rtOriginal_ = rt;
     this.rt_ = rt;
     allOriginalRts_ = new Hashtable<String,Hashtable<String,String>>();
   }
-    
-  public ResultAreaVO(String name, Integer dbs, String expName, String chemicalFormula, float percentalSplit/*,String modName, String modFormula*/,double neutralMass) throws ChemicalFormulaException
+  
+  /**
+   * private constructor for creating a ResultAreaVO
+   * @param name the name of the analyte
+   * @param dbs the amount of double bonds
+   * @param expName the abbreviated name of the experiment 
+   * @param chemicalFormula the chemical formula of the analyte
+   * @param percentalSplit the percentual split if present
+   * @param neutralMass the neutral mass of the analyte
+   * @param internalStandard true when this value is an internal standard
+   * @param externalStandard true when this value is an external standard
+   * @throws ChemicalFormulaException thrown when an element is missing in the elementconfig.xml
+   */
+  private ResultAreaVO(String name, Integer dbs, String expName, String chemicalFormula, float percentalSplit,double neutralMass,
+      boolean internalStandard, boolean externalStandard) throws ChemicalFormulaException
   {
     super();
     name_ = name;
@@ -88,6 +119,8 @@ public class ResultAreaVO
     rt_ = null;
     percentalSplit_ = 1f;
     if(percentalSplit>=1) percentalSplit_ = percentalSplit/100f;
+    internalStandard_ = internalStandard;
+    externalStandard_ = externalStandard;
   }
   
   
@@ -474,6 +507,14 @@ public class ResultAreaVO
       return true;
     else
       return false;
+  }
+  
+  /**
+   * 
+   * @return true when this belongs to an internal or an external standard
+   */
+  public boolean isAStandard(){
+    return (internalStandard_ || this.externalStandard_);
   }
   
 }

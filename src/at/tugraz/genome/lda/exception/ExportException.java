@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2018 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,39 +19,60 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
-package at.tugraz.genome.lda.analysis;
-
-import java.util.LinkedHashMap;
-import java.util.Vector;
+package at.tugraz.genome.lda.exception;
 
 /**
+ * Class for reporting inadequacies during the export
  * 
  * @author Juergen Hartler
  *
  */
-public interface SampleLookup
+public class ExportException extends Exception
 {
-  public String getDisplayName(String sampleName);
-  public void setDisplayName(String sampleName, String displayName);
-  
+
   /**
    * 
-   * @return a sorted hash map containing the full file paths of the LDA-results; key: abbreviated experiment name; value: full file path
    */
-  public LinkedHashMap<String,String> getSampleResultFullPaths();
-  
+  private static final long serialVersionUID = 8310544341265158453L;
+
+
   /**
-   * 
-   * @return a sorted hash map containing the sample groups as key, and the abbreviated experiment names belonging to this group as values
+   *  Constructor for LMException.
    */
-  public LinkedHashMap<String,Vector<String>> getSamplesOfGroups();
-  
+  public ExportException() {
+      super();
+  }
+
+
   /**
-   * 
-   * @return the lookup to the comparative values; i.e. the (RT-grouped) result area VOs, and the original experiment names
+   *  Constructor for ExportException.
+   *
+   *@param  message
    */
-  public ComparativeResultsLookup getComparativeResultsLookup();
-  
+  public ExportException(String message) {
+      super(message);
+  }
+
+
+  /**
+   *  Constructor for ExportException.
+   *
+   *@param  message
+   *@param  cause
+   */
+  public ExportException(String message, Throwable cause) {
+      super(message, cause);
+  }
+
+
+  /**
+   *  Constructor for ExportException.
+   *
+   *@param  cause
+   */
+  public ExportException(Throwable cause) {
+      super(cause);
+  }
 }

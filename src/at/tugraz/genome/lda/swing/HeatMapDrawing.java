@@ -51,6 +51,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -85,12 +86,15 @@ import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.analysis.HeatMapClickListener;
 import at.tugraz.genome.lda.analysis.LipidomicsHeatMap;
 import at.tugraz.genome.lda.analysis.exception.CalculationNotPossibleException;
+import at.tugraz.genome.lda.exception.ExcelInputFileException;
+import at.tugraz.genome.lda.exception.ExportException;
+import at.tugraz.genome.lda.export.ExcelAndTextExporter;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.AutoAnalyteAddVO;
 import at.tugraz.genome.lda.vos.ExportOptionsVO;
-import at.tugraz.genome.lda.vos.ResultCompGroupVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
+import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 
 /**
  * 
@@ -166,22 +170,46 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   private ChromExportDialog chromExport_;
   private Hashtable<String,String> fromShortToExpName_;
   private Double rtTolerance_;
+  private HeatMapDrawing ungroupedPartner_;
   
   private ChromExportThread chromExportThread_;
   private Timer timer_;
 
+  /**
+   * constructor for a heat map
+   * @param molGroupName analyte class name
+   * @param resultsOfOneGroup the values; first key molecule name; second key: experiment name
+   * @param experimentNames the names of the experiments/sample groups
+   * @param moleculeNames the names of the analytes
+   * @param isLookup the lookup numbers for the individual internal standard correction options; key: standard correction option; value: lookup number
+   * @param esLookup the lookup numbers for the individual external standard correction options; key: standard correction option; value: lookup number
+   * @param maxIsotopesOfGroup the maximum number of isotopes allowed for this analyte class
+   * @param modifications the adducts for this analyte class
+   * @param statusText label containing information about the lipid the mouse is currently hoverd over (displayed at bottom of heat map)
+   * @param listener call back listener
+   * @param groupName analyte class name
+   * @param ungroupedPartner for sample groups, the heat map containing the individual experiments, null otherwise
+   * @param displaySettings dialog box for choosing the displayed values
+   * @param selectionSettings a dialog box for choosing the values to be displayed in the heat map
+   * @param combinedChartSettings a dialog box for choosing the values to be displayed in a combined chart
+   * @param exportSettings a dialog box for choosing parameters for the export
+   * @param rtTolerance the retention time tolerance value (if selected, otherwise null)
+   */
   public HeatMapDrawing(String molGroupName,Hashtable<String,Hashtable<String,ResultCompVO>> resultsOfOneGroup, Vector<String> experimentNames, 
       Vector<String> moleculeNames, Hashtable<String,Integer> isLookup, Hashtable<String,Integer> esLookup, int maxIsotopesOfGroup,
-      Vector<String> modifications, JLabel statusText, HeatMapClickListener listener, String groupName, boolean isGrouped,
-      boolean isAvailability, boolean esAvailability, boolean absoluteSettings, boolean hasProtein,
-      boolean hasNeutralLipid, ResultDisplaySettings displaySettings, ResultSelectionSettings selectionSettings,
-      ResultSelectionSettings combinedChartSettings, ExportSettingsPanel exportSettings, Double rtTolerance){
+      Vector<String> modifications, JLabel statusText, HeatMapClickListener listener, String groupName, HeatMapDrawing ungroupedPartner,
+      ResultDisplaySettings displaySettings, ResultSelectionSettings selectionSettings, ResultSelectionSettings combinedChartSettings,
+      ExportSettingsPanel exportSettings, Double rtTolerance){
     selectedMolecules_ = new Hashtable<String,String>();
     parentAction_ = true;
     this.rtTolerance_ = rtTolerance;
     molGroupName_ = molGroupName;
     combinedDialogOpen_ = false;
-    this.isGrouped_ = isGrouped;
+    if (ungroupedPartner!=null)
+      this.isGrouped_ = true;
+    else
+      this.isGrouped_ = false;
+    this.ungroupedPartner_ = ungroupedPartner;
     modifications_ = modifications;
     this.setLayout(new BorderLayout());
     JPanel bottomPanel = new JPanel();
@@ -435,10 +463,12 @@ public class HeatMapDrawing extends JPanel implements ActionListener
               preferredUnits.put(name, preferredUnit_.get(name));
           }
           String preferredUnit = extractPreferredUnitForExp(preferredUnits);
-          if (isGrouped_)
-            heatMapListener_.combinedAnalyteGroupSelected(combinedChartSettings_.getSelected(), groupName_, maxIsotopes, settingsVO_, preferredUnit, StaticUtils.getCorrespondingUnit(settingsVO_, preferredUnit,true));
-          else
-            heatMapListener_.combinedAnalyteSelected(combinedChartSettings_.getSelected(), groupName_, maxIsotopes, settingsVO_, preferredUnit, StaticUtils.getCorrespondingUnit(settingsVO_, preferredUnit,true));
+          if (isGrouped_){
+            heatMapListener_.combinedAnalyteGroupSelected(combinedChartSettings_.getSelected(), groupName_, maxIsotopes, rtTolerance_!=null,
+            settingsVO_, preferredUnit, StaticUtils.getCorrespondingUnit(settingsVO_, preferredUnit,true));
+          }else
+            heatMapListener_.combinedAnalyteSelected(combinedChartSettings_.getSelected(), groupName_, maxIsotopes, rtTolerance_!=null,
+            settingsVO_, preferredUnit, StaticUtils.getCorrespondingUnit(settingsVO_, preferredUnit,true));
         }
       }
       if (actionCommand.equalsIgnoreCase(CHANGE_IS_STATUS) && !isGrouped_){
@@ -508,6 +538,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     } else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_EXCEL)||
         actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_TEXT)){
       ExportOptionsVO expOptions = getExportOptions();
+      LinkedHashMap<String,String> expFullPaths = heatMapListener_.getSampleResultFullPaths();
       if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_EXCEL)||actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_TEXT)){
         Hashtable<String,String> expIdToString = new Hashtable<String,String>();
         for (String expId : experimentNames_)
@@ -523,17 +554,23 @@ public class HeatMapDrawing extends JPanel implements ActionListener
             if ((Boolean)results.get(1)){
               try {
                 int maxIsotope = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
+                Hashtable<String,Hashtable<String,ResultCompVO>> compVOs = resultsOfOneGroup_;
+                if (isGrouped_)
+                  compVOs = ungroupedPartner_.resultsOfOneGroup_;
                 String preferredUnit = HeatMapDrawing.extractPreferredUnitForExp(preferredUnit_);
-                Hashtable<String,Hashtable<String,Vector<Double>>> resultValues = HeatMapDrawing.extractValuesOfInterest(resultsOfOneGroup_, maxIsotope, settingsVO_, preferredUnit, expOptions,modifications_);
-//              if (preferredUnit!=null&&preferredUnit.length()>0)
+                Hashtable<String,Hashtable<String,Vector<Double>>> resultValues = HeatMapDrawing.extractValuesOfInterest(compVOs, maxIsotope, settingsVO_, preferredUnit, expOptions,modifications_);
                 preferredUnit = StaticUtils.getCorrespondingUnit(settingsVO_,preferredUnit,true);
-                BarChartPainter.exportToFile(molGroupName_,new BufferedOutputStream(new FileOutputStream(fileToStore)),true, maxIsotope, getSelectedMoleculeNames(), 
-                    experimentNames_,expIdToString, resultValues, preferredUnit, StaticUtils.getAreaTypeString(settingsVO_),expOptions,modifications_);
+                ExcelAndTextExporter.exportToFile(true,expOptions.getSpeciesType(), molGroupName_,new BufferedOutputStream(new FileOutputStream(fileToStore)),true,
+                    maxIsotope, getSelectedMoleculeNames(), rtTolerance_!=null, isGrouped_, experimentNames_,expIdToString, expFullPaths, heatMapListener_.getSamplesOfGroups(),
+                    resultValues, preferredUnit, StaticUtils.getAreaTypeString(settingsVO_), expOptions, heatMapListener_.getComparativeResultsLookup(),
+                    modifications_);
               }
               catch (NumberFormatException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
               catch (FileNotFoundException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
               catch (IOException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
-              catch (CalculationNotPossibleException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
+              catch (CalculationNotPossibleException | ExcelInputFileException | ExportException | SpectrummillParserException e) {
+                new WarningMessage(new JFrame(), "Error", e.getMessage());
+              }
             }  
           }
         } else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_TEXT)){
@@ -547,17 +584,24 @@ public class HeatMapDrawing extends JPanel implements ActionListener
             if ((Boolean)results.get(1)){
               try {
                 int maxIsotope = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
+                Hashtable<String,Hashtable<String,ResultCompVO>> compVOs = resultsOfOneGroup_;
+                if (isGrouped_)
+                  compVOs = ungroupedPartner_.resultsOfOneGroup_;
                 String preferredUnit = HeatMapDrawing.extractPreferredUnitForExp(preferredUnit_);
-                Hashtable<String,Hashtable<String,Vector<Double>>> resultValues = HeatMapDrawing.extractValuesOfInterest(resultsOfOneGroup_, maxIsotope, settingsVO_, preferredUnit, expOptions,modifications_);
-                //if (preferredUnit!=null&&preferredUnit.length()>0)
+                Hashtable<String,Hashtable<String,Vector<Double>>> resultValues = HeatMapDrawing.extractValuesOfInterest(compVOs, maxIsotope, settingsVO_, preferredUnit, expOptions,modifications_);
                 preferredUnit = StaticUtils.getCorrespondingUnit(settingsVO_,preferredUnit,true);
-                BarChartPainter.exportToFile(molGroupName_,new BufferedOutputStream(new FileOutputStream(fileToStore)),false, maxIsotope, getSelectedMoleculeNames(), 
-                    experimentNames_,expIdToString, resultValues, preferredUnit, StaticUtils.getAreaTypeString(settingsVO_),expOptions,modifications_);
+                ExcelAndTextExporter.exportToFile(true,expOptions.getSpeciesType(), molGroupName_,new BufferedOutputStream(new FileOutputStream(fileToStore)),false,
+                    maxIsotope, getSelectedMoleculeNames(), rtTolerance_!=null, isGrouped_, experimentNames_,expIdToString, expFullPaths, heatMapListener_.getSamplesOfGroups(),
+                    resultValues, preferredUnit, StaticUtils.getAreaTypeString(settingsVO_), expOptions, heatMapListener_.getComparativeResultsLookup(),
+                    modifications_);
+
               }
               catch (NumberFormatException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
               catch (FileNotFoundException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
               catch (IOException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
-              catch (CalculationNotPossibleException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
+              catch (CalculationNotPossibleException | ExcelInputFileException | ExportException | SpectrummillParserException e) {
+                new WarningMessage(new JFrame(), "Error", e.getMessage());
+              }
             }  
           }      
         }
@@ -831,41 +875,11 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         myArea = StaticUtils.getAreaInCorrespondingUnit(myArea, preferredUnit);
         Vector<Double> areaPlusDev = new Vector<Double>();
         areaPlusDev.add(myArea);
-        if (expOptions!=null&&expOptions.getExportType()!=ExportOptionsVO.EXPORT_NO_DEVIATION){
-          ResultCompGroupVO groupVO = (ResultCompGroupVO)compVO;
-          double sdValue = -1d;
-          if (expOptions.getExportType() == ExportOptionsVO.EXPORT_SD_DEVIATION || expOptions.getExportType() == ExportOptionsVO.EXPORT_SD_DEV_AND_ERROR){
-            sdValue = groupVO.getAreaSD(isoNr, settingVO)*Double.parseDouble(expOptions.getSdValue());
-            areaPlusDev.add(getExportableSdValue(sdValue,preferredUnit));
-          }
-          if (expOptions.getExportType() == ExportOptionsVO.EXPORT_SD_ERROR || expOptions.getExportType() == ExportOptionsVO.EXPORT_SD_DEV_AND_ERROR){
-            sdValue = groupVO.getAreaSE(isoNr, settingVO);
-            areaPlusDev.add(getExportableSdValue(sdValue,preferredUnit));
-          }
-        }
-        if (expOptions!=null&&expOptions.isExportRT()){
-          for (String modName : modifications){
-            areaPlusDev.add(compVO.getRetentionTime(modName));
-            if (expOptions!=null&&expOptions.isExportRTDev()){
-              ResultCompGroupVO groupVO = (ResultCompGroupVO)compVO;
-              areaPlusDev.add(groupVO.getRetentionTimeSD(modName));
-            }
-          }
-        }
         expValues.put(expKey, areaPlusDev);
       }   
       results.put(molKey, expValues);
     }
     return results;
-  }
-  
-  private static double getExportableSdValue(double sdValue, String preferredUnit){
-    double sd = -1d;
-    if (Double.isInfinite(sdValue) || Double.isNaN(sdValue))
-      sd = -1d;
-    else
-      sd = StaticUtils.getAreaInCorrespondingUnit(sdValue, preferredUnit);
-    return sd;
   }
   
   @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -1017,10 +1031,12 @@ public class HeatMapDrawing extends JPanel implements ActionListener
             String analyteName = heatmap_.getRowName(x,y);
             boolean returnValue = false;
             if (isGrouped_)
-              returnValue = heatMapListener_.analyteGroupClicked(analyteName,groupName_,maxIsotopes,settingsVO_,preferredUnit_.get(analyteName),StaticUtils.getCorrespondingUnit(settingsVO_, preferredUnit_.get(analyteName),true));
+              returnValue = heatMapListener_.analyteGroupClicked(analyteName,groupName_,maxIsotopes,rtTolerance_!=null,
+              settingsVO_,preferredUnit_.get(analyteName),StaticUtils.getCorrespondingUnit(settingsVO_, preferredUnit_.get(analyteName),true));
             else{
               if (SwingUtilities.isLeftMouseButton(e)){
-                returnValue = heatMapListener_.analyteClicked(analyteName,groupName_,maxIsotopes,settingsVO_,preferredUnit_.get(analyteName),StaticUtils.getCorrespondingUnit(settingsVO_, preferredUnit_.get(analyteName),true));
+                returnValue = heatMapListener_.analyteClicked(analyteName,groupName_,maxIsotopes,rtTolerance_!=null,
+                    settingsVO_,preferredUnit_.get(analyteName),StaticUtils.getCorrespondingUnit(settingsVO_, preferredUnit_.get(analyteName),true));
               } else if (SwingUtilities.isRightMouseButton(e)){
                 if (isAnalyteSelected(analyteName)){
                   selectItem_.setEnabled(false);
@@ -1042,9 +1058,11 @@ public class HeatMapDrawing extends JPanel implements ActionListener
               boolean returnValue = false;
               String preferredUnit = extractPreferredUnitForExp(preferredUnit_);
               if (isGrouped_)
-                returnValue = heatMapListener_.experimentGroupClicked(expName,groupName_,maxIsotopes,settingsVO_,preferredUnit,StaticUtils.getCorrespondingUnit(settingsVO_, preferredUnit,true));
+                returnValue = heatMapListener_.experimentGroupClicked(expName,groupName_,maxIsotopes,rtTolerance_!=null,
+                settingsVO_,preferredUnit,StaticUtils.getCorrespondingUnit(settingsVO_, preferredUnit,true));
               else
-                returnValue = heatMapListener_.experimentClicked(expName,groupName_,maxIsotopes,settingsVO_,preferredUnit,StaticUtils.getCorrespondingUnit(settingsVO_, preferredUnit,true));
+                returnValue = heatMapListener_.experimentClicked(expName,groupName_,maxIsotopes,rtTolerance_!=null,
+                settingsVO_,preferredUnit,StaticUtils.getCorrespondingUnit(settingsVO_, preferredUnit,true));
               if (!returnValue)
                 this.mouseMoved(e);
             }else if (!isGrouped_ && e.getButton()==MouseEvent.BUTTON3){

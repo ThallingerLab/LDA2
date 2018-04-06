@@ -27,6 +27,7 @@ import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.vos.ExportOptionsVO;
 import at.tugraz.genome.maspectras.utils.Calculator;
 
 /**
@@ -61,6 +62,12 @@ public class SummaryVO
   private LinkedHashMap<String,Double> groupMeans_;
   /** the coefficient of variation of each selected group (heat map); key: group name; value: coefficient of variation*/
   private LinkedHashMap<String,Double> groupCoeffVar_;
+  /** the retention times of the highest peaks of every modification; first key modification; second key: experiment*/
+  private Hashtable<String,Hashtable<String,Double>> rtsOfMods_;
+  /** the mean retention time for each selected group (heat map); first key: modification; key: group name; value: mean area*/
+  private Hashtable<String,Hashtable<String,Double>> groupRts_;
+  /** the standard deviations for the retention times of each selected group (heat map); first key: modification; key: group name; value: mean area*/  
+  private Hashtable<String,Hashtable<String,Double>> groupRtStdevs_;
   
   
   /**
@@ -75,11 +82,12 @@ public class SummaryVO
    * @param mods sorted (by abundance) vector of modifications/adducts
    * @param mzTabReliability a reliability score specific to mzTab
    * @param areas the mean area for each selected group (heat map); key: group name; value: mean area
+   * @param rtsOfMods retention times of the highest peaks of every modification; first key modification; second key: experiment
    * @param expsOfGroup key: group name; value: experiments belonging to this group
    */
   public SummaryVO(Integer id, String speciesId, String molecularId, Vector<Integer> featureRefs, String chemFormula,
       Double neutralMass, Float rt, Vector<String> mods, int mzTabReliability, Hashtable<String,Double> areas,
-      LinkedHashMap<String,Vector<String>> expsOfGroup)
+      Hashtable<String,Hashtable<String,Double>> rtsOfMods, LinkedHashMap<String,Vector<String>> expsOfGroup)
   {
     this.id_ = id;
     this.speciesId_ = speciesId;
@@ -91,10 +99,14 @@ public class SummaryVO
     this.mods_ = mods;
     this.mzTabReliability_ = mzTabReliability;
     this.areas_ = areas;
+    this.rtsOfMods_ = rtsOfMods;
     Vector<Double> areasOfGroup;
+    Vector<Double> rtsOfGroup;
     if (expsOfGroup.size()>0){
       groupMeans_ = new LinkedHashMap<String,Double>();
       groupCoeffVar_ = new LinkedHashMap<String,Double>();
+      groupRts_ = new Hashtable<String,Hashtable<String,Double>>();
+      groupRtStdevs_ = new Hashtable<String,Hashtable<String,Double>>();
       for (String groupName : expsOfGroup.keySet()){
         areasOfGroup = new Vector<Double>();
         for (String exp : expsOfGroup.get(groupName)){
@@ -109,8 +121,26 @@ public class SummaryVO
         double[] doubleArray = new double[areasOfGroup.size()];
         for (int i=0; i!=areasOfGroup.size(); i++) doubleArray[i] = areasOfGroup.get(i);  
         double mean = Calculator.mean(doubleArray);
-        groupMeans_.put(groupName, Calculator.mean(doubleArray));
-        groupCoeffVar_.put(groupName, Calculator.stddeviation(areasOfGroup)/mean);        
+        groupMeans_.put(groupName, mean);
+        groupCoeffVar_.put(groupName, Calculator.stddeviation(areasOfGroup)/mean);
+        
+        //for calculating the Rt values;
+        for (String mod : rtsOfMods.keySet()){
+          Hashtable<String,Double> rts = rtsOfMods.get(mod);
+          rtsOfGroup = new Vector<Double>();
+          for (String exp : expsOfGroup.get(groupName)){
+            if (rts.containsKey(exp))
+              rtsOfGroup.add(rts.get(exp));
+          }
+          if (!groupRts_.containsKey(mod)){
+            groupRts_.put(mod, new Hashtable<String,Double>());
+            groupRtStdevs_.put(mod, new Hashtable<String,Double>());
+          }
+          doubleArray = new double[rtsOfGroup.size()];
+          for (int i=0; i!=rtsOfGroup.size(); i++) doubleArray[i] = rtsOfGroup.get(i);  
+          groupRts_.get(mod).put(groupName, Calculator.mean(doubleArray));
+          groupRtStdevs_.get(mod).put(groupName, Calculator.stddeviation(rtsOfGroup));
+        }
       }
     }
   }
@@ -126,13 +156,14 @@ public class SummaryVO
    * @param mods sorted (by abundance) vector of modifications/adducts
    * @param mzTabReliability a reliability score specific to mzTab
    * @param areas the mean area for each selected group (heat map); key: group name; value: mean area
+   * @param rtsOfMods retention times of the highest peaks of every modification; first key modification; second key: experiment
    * @param expsOfGroup key: group name; value: experiments belonging to this group
    */
   public SummaryVO(String speciesId, String molecularId, Vector<Integer> featureRefs, String chemFormula,
       Double neutralMass, Float rt, Vector<String> mods, int mzTabReliability, Hashtable<String,Double> areas,
-      LinkedHashMap<String,Vector<String>> expsOfGroup)
+      Hashtable<String,Hashtable<String,Double>> rtsOfMods, LinkedHashMap<String,Vector<String>> expsOfGroup)
   {
-    this(null,speciesId,molecularId,featureRefs,chemFormula,neutralMass,rt,mods,mzTabReliability,areas,expsOfGroup);
+    this(null,speciesId,molecularId,featureRefs,chemFormula,neutralMass,rt,mods,mzTabReliability,areas,rtsOfMods,expsOfGroup);
   }
 
   
@@ -273,5 +304,70 @@ public class SummaryVO
       stdev = groupCoeffVar_.get(groupName);
     return stdev;
   }
+  
+  /**
+   * calculates a deviation; the expOptions specifies which deviation value has to be calculated 
+   * @param expOptions value object specifying the type of deviation value
+   * @param expsOfGroup the names of the experiments belonging to this sample group
+   * @return the calculated deviation value
+   */
+  public double calculateDeviationValue(ExportOptionsVO expOptions, Vector<String> expsOfGroup){
+    double sdValue = Double.NaN;
+    if (expOptions!=null&&expOptions.getExportType()!=ExportOptionsVO.EXPORT_NO_DEVIATION){
+      Vector<Double> areasOfGroup = new Vector<Double>();
+      double area;
+      for (String exp : expsOfGroup){
+        area = getArea(exp);
+        if (area>0)
+          areasOfGroup.add(area);
+      }
+      sdValue = Calculator.stddeviation(areasOfGroup);
+      if (expOptions.getExportType() == ExportOptionsVO.EXPORT_SD_DEVIATION || expOptions.getExportType() == ExportOptionsVO.EXPORT_SD_DEV_AND_ERROR)
+        sdValue = sdValue*Double.parseDouble(expOptions.getSdValue());
+      if (expOptions.getExportType() == ExportOptionsVO.EXPORT_SD_ERROR || expOptions.getExportType() == ExportOptionsVO.EXPORT_SD_DEV_AND_ERROR)
+        sdValue = sdValue/Math.sqrt(areasOfGroup.size());
+    }
+    return sdValue;
+  }
+  
+  /**
+   * returns the retention time of a certain modification of an experiment
+   * @param mod the adduct name
+   * @param exp the experiment name
+   * @return the retention time of a certain modification of an experiment
+   */
+  public Double getRetentionTime(String mod, String exp){
+    if (rtsOfMods_.containsKey(mod) && rtsOfMods_.get(mod).containsKey(exp))
+      return rtsOfMods_.get(mod).get(exp);
+    else
+      return null;
+  }
+  
+  /**
+   * returns the mean retention time of a certain modification of a sample group
+   * @param mod the adduct name
+   * @param group the sample group
+   * @return mean retention time of a certain modification of a sample group
+   */
+  public Double getMeanRetentionTime(String mod, String group){
+    if (groupRts_.containsKey(mod) && groupRts_.get(mod).containsKey(group))
+      return groupRts_.get(mod).get(group);
+    else
+      return null;
+  }
+
+  /**
+   * returns the standard deviation of the retention time of a certain modification of a sample group
+   * @param mod the adduct name
+   * @param group the sample group
+   * @return standard deviation of a certain modification of a sample group
+   */
+  public Double getStdevRetentionTime(String mod, String group){
+    if (groupRtStdevs_.containsKey(mod) && groupRtStdevs_.get(mod).containsKey(group))
+      return groupRtStdevs_.get(mod).get(group);
+    else
+      return null;
+  }
+  
   
 }

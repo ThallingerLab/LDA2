@@ -34,10 +34,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
-import uk.ac.ebi.pride.jmztab1_1.utils.errors.MZTabException;
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
+import at.tugraz.genome.lda.exception.ExportException;
 import at.tugraz.genome.lda.export.vos.EvidenceBase;
 import at.tugraz.genome.lda.export.vos.EvidenceVO;
 import at.tugraz.genome.lda.export.vos.FeatureVO;
@@ -186,43 +186,44 @@ public abstract class LDAExporter
    * @param adductsSorted key: the adducts sorted in consecutive manner starting with the strongest representative; value: contains this adduct position information 
    * @param expNames the sorted experiment names
    * @param expsOfGroup key: group name; value: experiments belonging to this group
-   * @param group the analyte class
    * @param molName the name of the molecule (inclusively an RT grouping parameter)
    * @param resultsMol the values according to the heat map selection
-   * @param relevantOriginals the relevant results from the LDA Excel file
+   * @param relevantOriginals the relevant results from the LDA Excel file - when these values are null, the speciesType must be LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES, and extractFeatures and extractEvidence must be false 
    * @param maxIsotope the maximum isotope that will be used for the export
    * @return value object containing all exportable information
-   * @throws MZTabException when there is something wrong
+   * @throws ExportException when there is something wrong
    * @throws SpectrummillParserException when there are elements missing in the elementconfig.xml
    */
   protected static SpeciesExportVO extractExportableSummaryInformation(short speciesType, boolean extractFeatures, int currentSummaryId,
       int currentFeatureId, boolean extractEvidence, int currentEvidenceId, int currentEvGroupingId, boolean isRtGrouped,
-      LinkedHashMap<String,Boolean> adductsSorted, Vector<String> expNames, LinkedHashMap<String,Vector<String>> expsOfGroup, String group,
+      LinkedHashMap<String,Boolean> adductsSorted, Vector<String> expNames, LinkedHashMap<String,Vector<String>> expsOfGroup,
       String molName, Hashtable<String,Vector<Double>> resultsMol, Hashtable<String,Hashtable<String,Vector<LipidParameterSet>>> relevantOriginals,
       int maxIsotope)
-          throws MZTabException, SpectrummillParserException{
+          throws ExportException, SpectrummillParserException{
     if (extractEvidence && !extractFeatures)
-      throw new MZTabException("It is not possible to extract the evidence without extracting the features");
+      throw new ExportException("It is not possible to extract the evidence without extracting the features");
     String chemFormula = "";
     Double neutralMassTheoretical = null;
     //reading information that is equal for all the identifications of one analyte
-    for (Hashtable<String,Vector<LipidParameterSet>> origs : relevantOriginals.values()){
-      if (origs.size()==0)
-        continue;
-      if (chemFormula.length()>0)
-        break;
-      for (Vector<LipidParameterSet> sets : origs.values()){
-        if (sets.size()==0)
+    if (relevantOriginals!=null){
+      for (Hashtable<String,Vector<LipidParameterSet>> origs : relevantOriginals.values()){
+        if (origs.size()==0)
           continue;
         if (chemFormula.length()>0)
           break;
-        for (LipidParameterSet set : sets){
-          try {
-            Hashtable<String,Integer> categorized = StaticUtils.categorizeFormula(set.getAnalyteFormula());
-            chemFormula = StaticUtils.getFormulaInHillNotation(categorized, false);
-            neutralMassTheoretical = Settings.getElementParser().calculateTheoreticalMass(StaticUtils.getFormulaInHillNotation(categorized, true), false);
+        for (Vector<LipidParameterSet> sets : origs.values()){
+          if (sets.size()==0)
+            continue;
+          if (chemFormula.length()>0)
             break;
-          }catch (ChemicalFormulaException e) {e.printStackTrace();}
+          for (LipidParameterSet set : sets){
+            try {
+              Hashtable<String,Integer> categorized = StaticUtils.categorizeFormula(set.getAnalyteFormula());
+              chemFormula = StaticUtils.getFormulaInHillNotation(categorized, false);
+              neutralMassTheoretical = Settings.getElementParser().calculateTheoreticalMass(StaticUtils.getFormulaInHillNotation(categorized, true), false);
+              break;
+            }catch (ChemicalFormulaException e) {e.printStackTrace();}
+          }
         }
       }
     }
@@ -314,37 +315,45 @@ public abstract class LDAExporter
       String strongestExp = getStrongestExp(areas);
       //detect the found modifications for this hit
       //detect the reliability of the hit 2 for MS/MS verification; 3 for MS1 only
+      //extract the retention times of the highest peaks of every modification; rtsOfMods: first key modification; second key: experiment
       int mzTabReliability = 3;
-      Hashtable<String,String> foundMods = new Hashtable<String,String>();
-      for (Hashtable<String,Vector<LipidParameterSet>> modParams : relevantOriginals.values()){
-        for (String mod : modParams.keySet()){
-          foundMods.put(mod, mod);
-          for (LipidParameterSet set : modParams.get(mod)){
-            if (mzTabReliability == 2) break;
-            if (set instanceof LipidomicsMSnSet && ((LipidomicsMSnSet)set).getStatus()>=LipidomicsMSnSet.HEAD_GROUP_DETECTED)
-              mzTabReliability = 2;
-          }
-        }
-      }
-      //detect the Rt of the strongest identification
       float rTime = 0f;
-      if (strongestExp!=null){
-        float highestArea = 0f;
-        for (Vector<LipidParameterSet> params : relevantOriginals.get(strongestExp).values()){
-          for (LipidParameterSet param : params){
-            for (CgProbe probe : param.getIsotopicProbes().get(0)){
-              if (probe.Area>highestArea){
-                highestArea = probe.Area;
-                rTime = probe.Peak;
+      Vector<String> adducts = null;
+      Hashtable<String,Hashtable<String,Double>> rtsOfMods = new Hashtable<String,Hashtable<String,Double>>();
+      if (relevantOriginals!=null){
+        Hashtable<String,String> foundMods = new Hashtable<String,String>();
+        for (String exp : relevantOriginals.keySet()){
+          Hashtable<String,Vector<LipidParameterSet>> modParams = relevantOriginals.get(exp);
+          for (String mod : modParams.keySet()){
+            foundMods.put(mod, mod);
+            for (LipidParameterSet set : modParams.get(mod)){
+              if (mzTabReliability == 3){
+                if (set instanceof LipidomicsMSnSet && ((LipidomicsMSnSet)set).getStatus()>=LipidomicsMSnSet.HEAD_GROUP_DETECTED)
+                  mzTabReliability = 2;
               }
             }
+            @SuppressWarnings("rawtypes")
+            Vector rtAndArea = getRtOfHighestZeroIsoArea(modParams.get(mod));
+            if (!rtsOfMods.containsKey(mod))
+              rtsOfMods.put(mod, new Hashtable<String,Double>());
+            rtsOfMods.get(mod).put(exp, ((Double)rtAndArea.get(0)/60d));
           }
         }
+        //detect the Rt of the strongest identification
+        if (strongestExp!=null){
+          Vector<LipidParameterSet> allParams = new Vector<LipidParameterSet>();
+          for (Vector<LipidParameterSet> params : relevantOriginals.get(strongestExp).values()){
+            allParams.addAll(params);
+          }
+          @SuppressWarnings("rawtypes")
+          Vector rtAndArea = getRtOfHighestZeroIsoArea(allParams);
+          rTime = ((Double)rtAndArea.get(0)).floatValue();
+        }
+        adducts = getSortedModifications(adductsSorted,foundMods);
       }
-      Vector<String> adducts = getSortedModifications(adductsSorted,foundMods);
       Vector<Integer> featureRefs = getFeatureRefs(molName,adducts,features);
       SummaryVO sumVO = new SummaryVO(currentSummaryId,molName,null,featureRefs,chemFormula,neutralMassTheoretical,rTime,
-          adducts,mzTabReliability,areas,expsOfGroup);
+          adducts,mzTabReliability,areas,rtsOfMods,expsOfGroup);
       currentSummaryId++;
       speciesSummaries.add(sumVO);
     } else if (speciesType==LipidomicsConstants.EXPORT_ANALYTE_TYPE_CHAIN || speciesType==LipidomicsConstants.EXPORT_ANALYTE_TYPE_POSITION){
@@ -368,6 +377,9 @@ public abstract class LDAExporter
       //first key: species; second key and value is the modification
       Hashtable<String,Hashtable<String,String>> modsOfSpecies = new Hashtable<String,Hashtable<String,String>>();
       
+      //the retention times of the highest peaks of every modification; rtsOfMods: first key: species second key modification; third key: experiment
+      Hashtable<String,Hashtable<String,Hashtable<String,Double>>> rtsOfMods = new Hashtable<String,Hashtable<String,Hashtable<String,Double>>>();
+
             
       //this is for the summary information
       for (String expName : expNames){
@@ -397,6 +409,7 @@ public abstract class LDAExporter
             Vector<LipidParameterSet> sets = allMods.get(mod);
             double areaOfMod = 0d;
             Hashtable<String,Double> molSpeciesAreasOfMod = new Hashtable<String,Double>();
+            Hashtable<String,Float> highestAreas = new Hashtable<String,Float>();
             for (LipidParameterSet set : sets){
               double areaOfOnePeak = set.getArea(maxIsotope);
               areaOfMod += areaOfOnePeak;
@@ -428,7 +441,7 @@ public abstract class LDAExporter
                   detection = (String)msnNames;
                 }
                 if (detection==null)
-                  throw new MZTabException("It is not possible that one MSn detection is null!");
+                  throw new ExportException("It is not possible that one MSn detection is null!");
                 
                 String woPosition = StaticUtils.sortFASequenceUnassigned(detection);
                 //this is for removal of unassigned positions, which are at the end of the string
@@ -440,15 +453,15 @@ public abstract class LDAExporter
                 String speciesInList = isSpeciesAlreadyInList(woPosition,molecularSpecies);
                 Hashtable<String,Integer> positions = new Hashtable<String,Integer>();
                 int count = 0;
-                float highestArea = 0f;
-                float rtOfHighest = 0f;
+                float highestPeakAreaOfAll = 0f;
+                float rtOfHighestPeakAreaOfAll = 0f;
                 if (speciesInList!=null){
                   woPosition = speciesInList;
                   positions = positionCount.get(woPosition);
                   count = molSpeciesCount.get(woPosition);
                   if (highestPeakArea.containsKey(woPosition)){
-                    highestArea = highestPeakArea.get(woPosition);
-                    rtOfHighest = rtOfHighestArea.get(woPosition);
+                    highestPeakAreaOfAll = highestPeakArea.get(woPosition);
+                    rtOfHighestPeakAreaOfAll = rtOfHighestArea.get(woPosition);
                   }
                 }else{
                   molecularSpecies.add(woPosition);
@@ -480,12 +493,35 @@ public abstract class LDAExporter
                 }
                 positionCount.put(woPosition,positions);
                 molSpeciesCount.put(woPosition, count);
-                if (relativePercentage*highestProbeArea>highestArea){
-                  highestArea = ((float)relativePercentage)*highestProbeArea;
-                  rtOfHighest = rtOfHighestProbe;
+                if (relativePercentage*highestProbeArea>highestPeakAreaOfAll){
+                  highestPeakAreaOfAll = ((float)relativePercentage)*highestProbeArea;
+                  rtOfHighestPeakAreaOfAll = rtOfHighestProbe;
                 }
-                highestPeakArea.put(woPosition,highestArea);
-                rtOfHighestArea.put(woPosition,rtOfHighest);
+                highestPeakArea.put(woPosition,highestPeakAreaOfAll);
+                rtOfHighestArea.put(woPosition,rtOfHighestPeakAreaOfAll);
+                
+                //for detecting the strongest peak and storing its RT separately for every modification
+                float highestArea = 0f;
+                if (highestAreas.containsKey(woPosition))
+                  highestArea = highestAreas.get(woPosition);
+                if ((relativePercentage*areaOfOnePeak)>highestArea){
+                  highestAreas.put(woPosition, highestArea);
+                  if (!rtsOfMods.containsKey(woPosition))
+                    rtsOfMods.put(woPosition, new Hashtable<String,Hashtable<String,Double>>());
+                  if (!rtsOfMods.get(woPosition).containsKey(mod))
+                    rtsOfMods.get(woPosition).put(mod, new Hashtable<String,Double>());
+                  rtsOfMods.get(woPosition).get(mod).put(expName, Double.parseDouble(set.getRt()));
+                  for (String aMod : modsWoChainAssignment){
+                    if (!rtsOfMods.get(woPosition).containsKey(aMod))
+                      rtsOfMods.get(woPosition).put(aMod,new Hashtable<String,Double>());
+                    if (rtsOfMods.get(woPosition).get(aMod).containsKey(expName) || !allMods.containsKey(aMod) || allMods.get(aMod).size()==0)
+                      continue;
+                    @SuppressWarnings("rawtypes")
+                    Vector rtAndArea = getRtOfHighestZeroIsoArea(allMods.get(aMod));
+                    rtsOfMods.get(woPosition).get(aMod).put(expName,((Double)rtAndArea.get(0))/60d);
+                  }
+                }
+                
                 Hashtable<String,String> mods = new Hashtable<String,String>();
                 if (modsOfSpecies.containsKey(woPosition))
                   mods = modsOfSpecies.get(woPosition);
@@ -523,26 +559,37 @@ public abstract class LDAExporter
           Hashtable<String,Double> splitsForExp = new Hashtable<String,Double>();
           splitsForExp.put(molName, 1d);
           percentalSplits.put(expName, splitsForExp);
-          //for the retention time
-          float highestArea = 0f;
-          float rtOfHighest = 0f;
-          for (LipidParameterSet set : allSets){
-            for (CgProbe probe : set.getIsotopicProbes().get(0)){
-              if (probe.Area>highestArea){
-                highestArea = probe.Area;
-                rtOfHighest = probe.Peak;
-              }
-            }
-            if (set instanceof LipidomicsMSnSet && ((LipidomicsMSnSet)set).getStatus()>=LipidomicsMSnSet.HEAD_GROUP_DETECTED)
-              mzTabReliabilityOfSumSpecies = 2;
-          }
-          rtOfHighestArea.put(molName, rtOfHighest);
-          //for the found modifications
+
+          //for the found modifications and retention time
           Hashtable<String,String> mods = new Hashtable<String,String>();
           if (modsOfSpecies.containsKey(molName))
             mods = modsOfSpecies.get(molName);
-          for (String aMod : allMods.keySet())
+          float highestPeakAreaOfAll = 0f;
+          float rtOfHighestPeakAreaOfAll = 0f;
+          for (String aMod : allMods.keySet()){
             mods.put(aMod, aMod);
+            for (LipidParameterSet set : allMods.get(aMod)){
+              if (mzTabReliabilityOfSumSpecies == 3){
+                if (set instanceof LipidomicsMSnSet && ((LipidomicsMSnSet)set).getStatus()>=LipidomicsMSnSet.HEAD_GROUP_DETECTED)
+                  mzTabReliabilityOfSumSpecies = 2;
+              }
+            }
+            @SuppressWarnings("rawtypes")
+            Vector rtAndArea = getRtOfHighestZeroIsoArea(allMods.get(aMod));
+            double rtOfHighest = ((Double)rtAndArea.get(0))/60d;
+            float highestArea = (Float)rtAndArea.get(1);
+            if (highestArea>highestPeakAreaOfAll){
+              highestPeakAreaOfAll = highestArea;
+              rtOfHighestPeakAreaOfAll = (float)(rtOfHighest*60d);
+            }
+            if (!rtsOfMods.containsKey(molName))
+              rtsOfMods.put(molName, new Hashtable<String,Hashtable<String,Double>>());
+            if (!rtsOfMods.get(molName).containsKey(aMod))
+              rtsOfMods.get(molName).put(aMod, new Hashtable<String,Double>());
+            rtsOfMods.get(molName).get(aMod).put(expName, rtOfHighest);
+          }
+          rtOfHighestArea.put(molName, rtOfHighestPeakAreaOfAll);    
+              
           modsOfSpecies.put(molName, mods);
 
         }
@@ -561,8 +608,7 @@ public abstract class LDAExporter
         Vector<String> adducts = getSortedModifications(adductsSorted,modsOfSpecies.get(aSpecies));
         Vector<Integer> featureRefs = getFeatureRefs(aSpecies,adducts,features);
         SummaryVO sumVO = new SummaryVO(currentSummaryId,aSpecies,null,featureRefs,chemFormula,neutralMassTheoretical,rTime,
-            adducts,mzTabReliabilityOfSumSpecies,
-            areas,expsOfGroup);
+            adducts,mzTabReliabilityOfSumSpecies,areas,rtsOfMods.get(molName),expsOfGroup);
         currentSummaryId++;
         speciesSummaries.add(sumVO);
       }
@@ -576,7 +622,7 @@ public abstract class LDAExporter
         Vector<String> adducts = getSortedModifications(adductsSorted,modsOfSpecies.get(speciesInHash));
         Vector<Integer> featureRefs = getFeatureRefs(aSpecies,adducts,features);
         SummaryVO sumVO = new SummaryVO(molName,aSpecies,featureRefs,chemFormula,neutralMassTheoretical,rTime,
-            adducts,2,areas,expsOfGroup);
+            adducts,2,areas,rtsOfMods.get(speciesInHash),expsOfGroup);
         summariesMolSpecies.put(aSpecies, sumVO);
         double totalArea = 0d;
         for (Double area : areas.values()) totalArea += area;
@@ -671,7 +717,7 @@ public abstract class LDAExporter
                     detection = (String)nameObject;
                   }
                   if (detection==null)
-                    throw new MZTabException("It is not possible that one MSn detection is null!");
+                    throw new ExportException("It is not possible that one MSn detection is null!");
                   String woPosition = StaticUtils.sortFASequenceUnassigned(detection);
                   //this is for removal of unassigned positions, which are at the end of the string
                   // ths proceeding does not support the export of DG position assignment
@@ -770,7 +816,7 @@ public abstract class LDAExporter
     }
        
     SpeciesExportVO exportVO = new SpeciesExportVO(currentSummaryId,speciesSummaries,currentFeatureId,
-        new Vector<FeatureVO>(features.values()),currentEvidenceId,currentEvGroupingId,evidence);
+        features!=null ? new Vector<FeatureVO>(features.values()) : new Vector<FeatureVO>(),currentEvidenceId,currentEvGroupingId,evidence);
     return exportVO;
   }
 
@@ -780,60 +826,75 @@ public abstract class LDAExporter
    * @param originalExcelResults the results from the LDA-resultExcelFiles
    * @return the primary adducts for the lipid classes
    */
-  @SuppressWarnings("unchecked")
   public static Hashtable<String,LinkedHashMap<String,Boolean>> extractAdductsSortedByAbundance(Collection<String> lClasses,
       Hashtable<String,QuantificationResult> originalExcelResults){
     Hashtable<String,LinkedHashMap<String,Boolean>> adductsSorted = new Hashtable<String,LinkedHashMap<String,Boolean>>();
-    double area;
+    
     for (String aClass : lClasses){
-      Hashtable<String,DoubleStringVO> areasPerAdduct = new Hashtable<String,DoubleStringVO>();
-      Hashtable<String,Boolean> containsPositionInformation = new Hashtable<String,Boolean>();
-      for (QuantificationResult result : originalExcelResults.values()){
-        if (!result.getIdentifications().containsKey(aClass))
-          continue;
-        for (LipidParameterSet hit : result.getIdentifications().get(aClass)){
-          area = 0d;
-          if (areasPerAdduct.containsKey(hit.getModificationName()))
-            area = areasPerAdduct.get(hit.getModificationName()).getValue();
-          area+=hit.getArea();
-          if (area>0){
-            areasPerAdduct.put(hit.getModificationName(), new DoubleStringVO(hit.getModificationName(),area));
-            boolean posInfo = false;
-            if (containsPositionInformation.containsKey(hit.getModificationName()))
-              posInfo = containsPositionInformation.get(hit.getModificationName());
-            if ((hit instanceof LipidomicsMSnSet) && ((LipidomicsMSnSet)hit).getStatus()>=LipidomicsMSnSet.POSITION_DETECTED &&
-                ((LipidomicsMSnSet)hit).getPositionEvidence().size()>0){
-             
-              boolean isARuleFulfilled = false;             
-              for (Hashtable<Integer,Vector<IntensityPositionVO>> posEv : ((LipidomicsMSnSet)hit).getPositionEvidence().values()){
-                if (hasPositionEvidence(posEv))
-                  isARuleFulfilled = true;
-                if (isARuleFulfilled)
-                  break;
-              }
-              if (isARuleFulfilled)
-                posInfo = true;
-            } 
-            containsPositionInformation.put(hit.getModificationName(), posInfo);
-          }
-        }
-      }
-      if (areasPerAdduct.size()==0)
+      LinkedHashMap<String,Boolean> modsSorted = extractAdductsSortedByAbundance(aClass, originalExcelResults);
+      if (modsSorted==null)
         continue;
-      List<DoubleStringVO> unsorted = new ArrayList<DoubleStringVO>(areasPerAdduct.values());
-      Collections.sort(unsorted,new GeneralComparator("at.tugraz.genome.lda.vos.DoubleStringVO", "getValue", "java.lang.Double"));
-      LinkedHashMap<String,Boolean> modsSorted = new LinkedHashMap<String,Boolean>();
-      for (int i=(unsorted.size()-1); i!=-1; i--){
-        String adduct = unsorted.get(i).getKey(); 
-        boolean positionInformation = false;
-        if (containsPositionInformation.containsKey(adduct))
-          positionInformation = containsPositionInformation.get(adduct);
-        modsSorted.put(adduct,positionInformation);
-      }
       adductsSorted.put(aClass, modsSorted);
     }
     
     return adductsSorted;
+  }
+  
+  /**
+   * returns adducts sorted by their abundance of a specific lipid class
+   * @param aClass the lipid class under observation;
+   * @param originalExcelResults the results from the LDA-resultExcelFiles
+   * @return the primary adducts for the lipid classes
+   */
+  @SuppressWarnings("unchecked")
+  protected static LinkedHashMap<String,Boolean> extractAdductsSortedByAbundance(String aClass,
+      Hashtable<String,QuantificationResult> originalExcelResults){
+    Hashtable<String,DoubleStringVO> areasPerAdduct = new Hashtable<String,DoubleStringVO>();
+    Hashtable<String,Boolean> containsPositionInformation = new Hashtable<String,Boolean>();
+    double area;
+    for (QuantificationResult result : originalExcelResults.values()){
+      if (!result.getIdentifications().containsKey(aClass))
+        continue;
+      for (LipidParameterSet hit : result.getIdentifications().get(aClass)){
+        area = 0d;
+        if (areasPerAdduct.containsKey(hit.getModificationName()))
+          area = areasPerAdduct.get(hit.getModificationName()).getValue();
+        area+=hit.getArea();
+        if (area>0){
+          areasPerAdduct.put(hit.getModificationName(), new DoubleStringVO(hit.getModificationName(),area));
+          boolean posInfo = false;
+          if (containsPositionInformation.containsKey(hit.getModificationName()))
+            posInfo = containsPositionInformation.get(hit.getModificationName());
+          if ((hit instanceof LipidomicsMSnSet) && ((LipidomicsMSnSet)hit).getStatus()>=LipidomicsMSnSet.POSITION_DETECTED &&
+              ((LipidomicsMSnSet)hit).getPositionEvidence().size()>0){
+           
+            boolean isARuleFulfilled = false;             
+            for (Hashtable<Integer,Vector<IntensityPositionVO>> posEv : ((LipidomicsMSnSet)hit).getPositionEvidence().values()){
+              if (hasPositionEvidence(posEv))
+                isARuleFulfilled = true;
+              if (isARuleFulfilled)
+                break;
+            }
+            if (isARuleFulfilled)
+              posInfo = true;
+          } 
+          containsPositionInformation.put(hit.getModificationName(), posInfo);
+        }
+      }
+    }
+    if (areasPerAdduct.size()==0)
+      return null;
+    List<DoubleStringVO> unsorted = new ArrayList<DoubleStringVO>(areasPerAdduct.values());
+    Collections.sort(unsorted,new GeneralComparator("at.tugraz.genome.lda.vos.DoubleStringVO", "getValue", "java.lang.Double"));
+    LinkedHashMap<String,Boolean> modsSorted = new LinkedHashMap<String,Boolean>();
+    for (int i=(unsorted.size()-1); i!=-1; i--){
+      String adduct = unsorted.get(i).getKey(); 
+      boolean positionInformation = false;
+      if (containsPositionInformation.containsKey(adduct))
+        positionInformation = containsPositionInformation.get(adduct);
+      modsSorted.put(adduct,positionInformation);
+    }
+    return modsSorted;
   }
 
   
@@ -972,4 +1033,29 @@ public abstract class LDAExporter
     }
   }
   
+  /**
+   * iterates over LipidParameterSets and returns the retention time of the strongest peak (first value in Double), and its area (second value in Float)
+   * @param params the collection of LipidParameterSets
+   * @return 1) retention time of the strongest peak (Double); 2) its area (Float)
+   */
+  @SuppressWarnings("rawtypes")
+  private static Vector getRtOfHighestZeroIsoArea(Collection<LipidParameterSet> params){
+    float highestZeroIsoArea = 0f;
+    double rTime = -1d;
+    for (LipidParameterSet param : params){
+      float areaSplit = 1f;
+      if (param.getPercentalSplit()>0)
+        areaSplit = param.getPercentalSplit();
+      for (CgProbe probe : param.getIsotopicProbes().get(0)){
+        if (probe.Area*areaSplit>highestZeroIsoArea){
+          highestZeroIsoArea = probe.Area*areaSplit;
+          rTime = (double)probe.Peak;
+        }
+      }
+    }
+    Vector<Object> timeAndArea = new Vector<Object>();
+    timeAndArea.add(rTime);
+    timeAndArea.add(highestZeroIsoArea);
+    return timeAndArea;
+  }
 }

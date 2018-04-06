@@ -38,12 +38,84 @@ import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
 public interface HeatMapClickListener extends SampleLookup
 {
   public boolean heatMapClicked(String experimentName, String resultFilePath,  String moleculeName);
-  public boolean analyteClicked(String moleculeName,String groupName, int maxIsotopes, ResultDisplaySettingsVO settingVO, String prefUnit, String unit);
-  public boolean analyteGroupClicked(String moleculeName,String groupName, int maxIsotopes, ResultDisplaySettingsVO settingVO, String prefUnit, String unit);
-  public boolean experimentClicked(String experimentName,String groupName, int maxIsotopes, ResultDisplaySettingsVO settingVO, String prefUnit, String unit);
-  public boolean experimentGroupClicked(String experimentGroupName,String groupName, int maxIsotopes, ResultDisplaySettingsVO settingVO, String prefUnit, String unit);
-  public boolean combinedAnalyteSelected(Vector<String> moleculeNames, String groupName, int maxIsotopes, ResultDisplaySettingsVO settingVO, String prefUnit, String unit);
-  public boolean combinedAnalyteGroupSelected(Vector<String> moleculeNames, String groupName, int maxIsotopes, ResultDisplaySettingsVO settingVO, String prefUnit, String unit);
+  
+  /**
+   * showing a bar chart when a specific analyte was clicked
+   * @param moleculeName the name of the analyte
+   * @param groupName the name of the analyte class
+   * @param maxIsotopes the highest isotope number allowed for the quantity
+   * @param rtGrouped true when the peaks were grouped by a certain retention time
+   * @param settingVO value object specifying the type of displayed values
+   * @param prefUnit the preferred unit magnifier, e.g p for pico
+   * @param unit a description of the physical unit
+   * @return true when the execution was successful
+   */
+  public boolean analyteClicked(String moleculeName,String groupName, int maxIsotopes, boolean rtGrouped, ResultDisplaySettingsVO settingVO, String prefUnit, String unit);
+  
+  /**
+   * showing a bar chart when a specific analyte was clicked
+   * @param moleculeName the name of the analyte
+   * @param groupName the name of the analyte class
+   * @param maxIsotopes the highest isotope number allowed for the quantity
+   * @param rtGrouped true when the peaks were grouped by a certain retention time
+   * @param settingVO value object specifying the type of displayed values
+   * @param prefUnit the preferred unit magnifier, e.g p for pico 
+   * @param unit a description of the physical unit
+   * @return true when the execution was successful
+   */
+  public boolean analyteGroupClicked(String moleculeName,String groupName, int maxIsotopes, boolean rtGrouped, ResultDisplaySettingsVO settingVO, String prefUnit, String unit);
+  
+  /**
+   * showing a bar chart when a specific experiment was clicked
+   * @param experimentName the name of the experiment in the heat map
+   * @param groupName the name of the analyte class
+   * @param maxIsotopes the highest isotope number allowed for the quantity
+   * @param rtGrouped true when the peaks were grouped by a certain retention time
+   * @param settingVO value object specifying the type of displayed values
+   * @param prefUnit the preferred unit magnifier, e.g p for pico
+   * @param unit a description of the physical unit
+   * @return true when the execution was successful
+   */
+  public boolean experimentClicked(String experimentName,String groupName, int maxIsotopes, boolean rtGrouped, ResultDisplaySettingsVO settingVO, String prefUnit, String unit);
+  
+  /**
+   * showing a bar chart when a specific sample group was clicked
+   * @param experimentGroupName the name of the experiment in the heat map
+   * @param groupName the name of the analyte class
+   * @param maxIsotopes the highest isotope number allowed for the quantity
+   * @param rtGrouped true when the peaks were grouped by a certain retention time 
+   * @param settingVO value object specifying the type of displayed values
+   * @param prefUnit the preferred unit magnifier, e.g p for pico
+   * @param unit a description of the physical unit
+   * @return true when the execution was successful
+   */
+  public boolean experimentGroupClicked(String experimentGroupName,String groupName, int maxIsotopes, boolean rtGrouped, ResultDisplaySettingsVO settingVO, String prefUnit, String unit);
+  
+  /**
+   * showing a bar chart when several analytes were selected
+   * @param moleculeNames names of selected analytes
+   * @param groupName the name of the analyte class
+   * @param maxIsotopes the highest isotope number allowed for the quantity
+   * @param rtGrouped true when the peaks were grouped by a certain retention time
+   * @param settingVO value object specifying the type of displayed values
+   * @param prefUnit the preferred unit magnifier, e.g p for pico
+   * @param unit a description of the physical unit
+   * @return true when the execution was successful
+   */
+  public boolean combinedAnalyteSelected(Vector<String> moleculeNames, String groupName, int maxIsotopes, boolean rtGrouped, ResultDisplaySettingsVO settingVO, String prefUnit, String unit);
+  
+  /**
+   * showing a bar chart when several analytes were selected for the grouped view
+   * @param moleculeNames names of selected analytes
+   * @param groupName the name of the analyte class
+   * @param maxIsotopes the highest isotope number allowed for the quantity
+   * @param rtGrouped true when the peaks were grouped by a certain retention time
+   * @param settingVO value object specifying the type of displayed values
+   * @param prefUnit the preferred unit magnifier, e.g p for pico
+   * @param unit a description of the physical unit
+   * @return true when the execution was successful
+   */
+  public boolean combinedAnalyteGroupSelected(Vector<String> moleculeNames, String groupName, int maxIsotopes, boolean rtGrouped, ResultDisplaySettingsVO settingVO, String prefUnit, String unit);
   
   public void changeISStatus(String groupName, boolean isGrouped, boolean value);
   public void changeESStatus(String groupName, boolean isGrouped, boolean value);
@@ -66,4 +138,5 @@ public interface HeatMapClickListener extends SampleLookup
    * @param grouped is it the export settings for the grouped heat map
    */
   public void showExportSettingsDialog(boolean grouped);
+  
 }

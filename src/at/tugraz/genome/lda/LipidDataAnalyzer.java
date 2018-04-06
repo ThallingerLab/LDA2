@@ -90,17 +90,18 @@ import org.apache.batik.svggen.SVGGraphics2D;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 
-import uk.ac.ebi.pride.jmztab1_1.utils.errors.MZTabException;
 import at.tugraz.genome.lda.alex123.RdbOutputWriter;
 import at.tugraz.genome.lda.analysis.AnalyteAddRemoveListener;
 import at.tugraz.genome.lda.analysis.ClassNamesExtractor;
 import at.tugraz.genome.lda.analysis.ComparativeAnalysis;
 import at.tugraz.genome.lda.analysis.ComparativeNameExtractor;
+import at.tugraz.genome.lda.analysis.ComparativeResultsLookup;
 import at.tugraz.genome.lda.analysis.HeatMapClickListener;
 import at.tugraz.genome.lda.analysis.exception.CalculationNotPossibleException;
 import at.tugraz.genome.lda.exception.AbsoluteSettingsInputException;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
+import at.tugraz.genome.lda.exception.ExportException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RdbWriterException;
 import at.tugraz.genome.lda.exception.RulesException;
@@ -3326,9 +3327,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           hasSampleWeight,hasProtein,hasNeutralLipid);
       ResultSelectionSettings selectionSettings = new ResultSelectionSettings(null,molNames,true);
       ResultSelectionSettings combinedChartSettings = new ResultSelectionSettings(null,molNames,false);
-      HeatMapDrawing drawing = new HeatMapDrawing(molGroup,resultsOfOneGroup, expNames,molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,false,
-          analysisModule_.getISAvailability().get(molGroup),analysisModule_.getESAvailability().get(molGroup),hasAbs, hasProtein, hasNeutralLipid, displaySettings,selectionSettings,combinedChartSettings,exportSettings_,
-          analysisModule_.getRtTolerance());
+      HeatMapDrawing drawing = new HeatMapDrawing(molGroup,resultsOfOneGroup, expNames,molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,null,
+          displaySettings,selectionSettings,combinedChartSettings,exportSettings_,analysisModule_.getRtTolerance());
       displaySettings.addActionListener(drawing);
       selectionSettings.addActionListener(drawing);
       combinedChartSettings.addActionListener(drawing);
@@ -3349,8 +3349,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         Hashtable<String,Hashtable<String,ResultCompVO>> groupedResultsOfOneGroup = groupedAnalysisResults.get(molGroup);
         JPanel groupPanel = new JPanel();
         groupPanel.setLayout(new BorderLayout());
-        HeatMapDrawing groupDrawing = new HeatMapDrawing(molGroup,groupedResultsOfOneGroup, this.groupsPanel_.getGroups(),molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,true,
-            analysisModule_.getISAvailability().get(molGroup),analysisModule_.getESAvailability().get(molGroup),hasAbs,hasProtein, hasNeutralLipid, displaySettings,selectionSettings,combinedChartSettings,exportSettingsGroup_,analysisModule_.getRtTolerance());
+        HeatMapDrawing groupDrawing = new HeatMapDrawing(molGroup,groupedResultsOfOneGroup, this.groupsPanel_.getGroups(),molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,
+            drawing, displaySettings,selectionSettings,combinedChartSettings,exportSettingsGroup_,analysisModule_.getRtTolerance());
         displaySettings.addActionListener(groupDrawing);
         selectionSettings.addActionListener(groupDrawing);
         combinedChartSettings.addActionListener(groupDrawing);
@@ -4297,7 +4297,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   }
 
   
-  public boolean analyteClicked(String moleculeName, String groupName, int maxIsotope, ResultDisplaySettingsVO settingVO, String prefUnit, String unit){
+  public boolean analyteClicked(String moleculeName, String groupName, int maxIsotope, boolean rtGrouped, ResultDisplaySettingsVO settingVO, String prefUnit, String unit){
     molBarCharts_.get(groupName).remove(1);
     Hashtable<String,ResultCompVO> analysisResults = new Hashtable<String,ResultCompVO>(analysisModule_.getResults().get(groupName).get(moleculeName));
 //    Vector<String> expNames = new Vector<String>();
@@ -4310,18 +4310,20 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 //      }
 //    }
 
-    molBarCharts_.get(groupName).insertTab("Bar-chart", null, new BarChartPainter(BarChartPainter.TYPE_MOLECULE,groupName,moleculeName,analysisResults,analysisModule_.getExpNamesInSequence(),this,false,getMaxIsotopeForSetting(settingVO, maxIsotope,analysisResults),settingVO, prefUnit, unit,
+    molBarCharts_.get(groupName).insertTab("Bar-chart", null, new BarChartPainter(BarChartPainter.TYPE_MOLECULE,groupName,moleculeName,analysisResults,analysisModule_.getExpNamesInSequence(),this,true,false,
+        getMaxIsotopeForSetting(settingVO, maxIsotope,analysisResults), rtGrouped, false, settingVO, prefUnit, unit,
         analysisModule_.getCorrectionTypeISLookup().get(groupName), analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_),null,1);
     molBarCharts_.get(groupName).setSelectedIndex(1);
     return true; 
   }
   
-  public boolean analyteGroupClicked(String moleculeName, String groupName, int maxIsotope, ResultDisplaySettingsVO settingVO, String prefUnit, String unit){
+  public boolean analyteGroupClicked(String moleculeName, String groupName, int maxIsotope, boolean rtGrouped, ResultDisplaySettingsVO settingVO, String prefUnit, String unit){
     molBarCharts_.get(groupName).remove(3);
     Hashtable<String,ResultCompVO> analysisResults = analysisModule_.getGroupedResults().get(groupName).get(moleculeName);
     Vector<String> groupNames = new Vector<String>(analysisModule_.getGroupNames());
-    molBarCharts_.get(groupName).insertTab("Group bar-chart", null, new BarChartPainter(BarChartPainter.TYPE_MOLECULE,groupName,moleculeName,analysisResults,groupNames,null,true,getMaxIsotopeForSetting(settingVO, maxIsotope,analysisResults),settingVO, prefUnit, unit,
-        analysisModule_.getCorrectionTypeISLookup().get(groupName), analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
+    molBarCharts_.get(groupName).insertTab("Group bar-chart", null, new BarChartPainter(BarChartPainter.TYPE_MOLECULE,groupName,moleculeName,analysisResults,groupNames,this,false,true,
+        getMaxIsotopeForSetting(settingVO, maxIsotope,analysisResults),rtGrouped, true, settingVO, prefUnit, unit,analysisModule_.getCorrectionTypeISLookup().get(groupName),
+        analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
     ,null,3);
     molBarCharts_.get(groupName).setSelectedIndex(3);
     return true; 
@@ -4335,7 +4337,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     return maxAppliIsotope;
   }
   
-  public boolean combinedAnalyteSelected(Vector<String> moleculeNames, String groupName, int maxIsotope, ResultDisplaySettingsVO settingVO, String prefUnit, String unit){
+  public boolean combinedAnalyteSelected(Vector<String> moleculeNames, String groupName, int maxIsotope, boolean rtGrouped, ResultDisplaySettingsVO settingVO, String prefUnit, String unit){
     molBarCharts_.get(groupName).remove(1);
     Hashtable<String,String> molNameHash = new Hashtable<String,String>();
     for (String molName : moleculeNames) molNameHash.put(molName, molName);
@@ -4361,13 +4363,15 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         analysisResults.put(molName, results);
       }
     }
-    molBarCharts_.get(groupName).insertTab("Bar-chart", null, new BarChartPainter(BarChartPainter.TYPE_MOLECULE,groupName,moleculeNames,analysisResults,expNames,this,false,StaticUtils.getMaxApplicableIsotopeHash(analysisResults, maxIsotope),settingVO, prefUnit, unit,
-        analysisModule_.getCorrectionTypeISLookup().get(groupName), analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
+    molBarCharts_.get(groupName).insertTab("Bar-chart", null, new BarChartPainter(BarChartPainter.TYPE_MOLECULE,groupName,moleculeNames,analysisResults,expNames,this,true,false,
+        StaticUtils.getMaxApplicableIsotopeHash(analysisResults, maxIsotope),rtGrouped,false,settingVO, prefUnit, unit, analysisModule_.getCorrectionTypeISLookup().get(groupName),
+        analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
     ,null,1);
     molBarCharts_.get(groupName).setSelectedIndex(1);
     return true;
   }
-  public boolean combinedAnalyteGroupSelected(Vector<String> moleculeNames, String groupName, int maxIsotope, ResultDisplaySettingsVO settingVO, String prefUnit, String unit){
+  public boolean combinedAnalyteGroupSelected(Vector<String> moleculeNames, String groupName, int maxIsotope, boolean rtGrouped, ResultDisplaySettingsVO settingVO,
+      String prefUnit, String unit){
     molBarCharts_.get(groupName).remove(3);
     Hashtable<String,String> molNameHash = new Hashtable<String,String>();
     Vector<String> groupNames = new Vector<String>(analysisModule_.getGroupNames());
@@ -4383,15 +4387,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         analysisResults.put(molName, results);
       }
     }
-    molBarCharts_.get(groupName).insertTab("Group bar-chart", null, new BarChartPainter(BarChartPainter.TYPE_MOLECULE,groupName,moleculeNames,analysisResults,groupNames,null,true,StaticUtils.getMaxApplicableIsotopeHash(analysisResults, maxIsotope),settingVO, prefUnit, unit,
-        analysisModule_.getCorrectionTypeISLookup().get(groupName), analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
+    molBarCharts_.get(groupName).insertTab("Group bar-chart", null, new BarChartPainter(BarChartPainter.TYPE_MOLECULE,groupName,moleculeNames,analysisResults,groupNames,this,false,true,
+        StaticUtils.getMaxApplicableIsotopeHash(analysisResults, maxIsotope),rtGrouped,true,settingVO, prefUnit, unit, analysisModule_.getCorrectionTypeISLookup().get(groupName),
+        analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
     ,null,3);
     molBarCharts_.get(groupName).setSelectedIndex(3);
     return true;    
   }
 
   
-  public boolean experimentClicked(String experimentName,String groupName, int maxIsotope, ResultDisplaySettingsVO settingVO, String prefUnit, String unit){
+  public boolean experimentClicked(String experimentName,String groupName, int maxIsotope, boolean rtGrouped, ResultDisplaySettingsVO settingVO, String prefUnit, String unit){
     molBarCharts_.get(groupName).remove(1);
     Hashtable<String,Hashtable<String,ResultCompVO>> analysisResults = analysisModule_.getResults().get(groupName);
     Hashtable<String,ResultCompVO> resultsForChart = new Hashtable<String,ResultCompVO>();
@@ -4411,14 +4416,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 //      }
 //      namesVector = new Vector<String>(newNameVector);
 //    }
-    molBarCharts_.get(groupName).insertTab("Bar chart", null,new BarChartPainter(BarChartPainter.TYPE_EXPERIMENT,groupName,getDisplayName(experimentName),resultsForChart,namesVector,null,false,getMaxIsotopeForSetting(settingVO, maxIsotope,resultsForChart),settingVO, prefUnit, unit,
-        analysisModule_.getCorrectionTypeISLookup().get(groupName), analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
+    molBarCharts_.get(groupName).insertTab("Bar chart", null,new BarChartPainter(BarChartPainter.TYPE_EXPERIMENT,groupName,getDisplayName(experimentName),resultsForChart,namesVector,this,false,false,
+        getMaxIsotopeForSetting(settingVO, maxIsotope,resultsForChart),rtGrouped,false,settingVO, prefUnit, unit,analysisModule_.getCorrectionTypeISLookup().get(groupName),
+        analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
     ,null,1);
     molBarCharts_.get(groupName).setSelectedIndex(1);
     return true;
   }
   
-  public boolean experimentGroupClicked(String experimentGroupName,String groupName, int maxIsotope, ResultDisplaySettingsVO settingVO, String prefUnit, String unit){
+  public boolean experimentGroupClicked(String experimentGroupName,String groupName, int maxIsotope, boolean rtGrouped, ResultDisplaySettingsVO settingVO,
+      String prefUnit, String unit){
     molBarCharts_.get(groupName).remove(3);
     Hashtable<String,Hashtable<String,ResultCompVO>> analysisResults = analysisModule_.getGroupedResults().get(groupName);
     Hashtable<String,ResultCompVO> resultsForChart = new Hashtable<String,ResultCompVO>();
@@ -4438,8 +4445,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 //      }
 //      namesVector = new Vector<String>(newNameVector);
 //    }
-    molBarCharts_.get(groupName).insertTab("Group bar-chart", null,new BarChartPainter(BarChartPainter.TYPE_EXPERIMENT,groupName,getDisplayName(experimentGroupName),resultsForChart,namesVector,null,true,getMaxIsotopeForSetting(settingVO, maxIsotope,resultsForChart),settingVO, prefUnit, unit,
-        analysisModule_.getCorrectionTypeISLookup().get(groupName), analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
+    molBarCharts_.get(groupName).insertTab("Group bar-chart", null,new BarChartPainter(BarChartPainter.TYPE_EXPERIMENT,groupName,getDisplayName(experimentGroupName),resultsForChart,namesVector,this,false,true,
+        getMaxIsotopeForSetting(settingVO, maxIsotope,resultsForChart), rtGrouped,true,settingVO, prefUnit, unit, analysisModule_.getCorrectionTypeISLookup().get(groupName),
+        analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
     ,null,3);
     molBarCharts_.get(groupName).setSelectedIndex(3);
     return true;
@@ -4461,6 +4469,15 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     if (classOverviewPanel_!=null)
       classOverviewPanel_.refreshNames();
 //    colorChooserDialog_.refreshNames();
+  }
+  
+  public LinkedHashMap<String,String> getSampleResultFullPaths(){
+    LinkedHashMap<String,String> fullPaths = new LinkedHashMap<String,String>();
+    for (int i=0; i!=analysisModule_.getExpNamesInSequence().size(); i++) {
+      String exp = analysisModule_.getExpNamesInSequence().get(i);
+      fullPaths.put(exp, analysisModule_.getFullFilePath(exp).getAbsolutePath());
+    }
+    return fullPaths;
   }
   
   public void changeISStatus(String groupName, boolean isGrouped, boolean value){
@@ -5104,11 +5121,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   
   public void exportMzTab(File exportFile, short speciesType)
   {
-	    // save the internal and external standard prefix
-    String internalStandardPref = internalStandardSelection_.getText();
-	    String externalStandardPref = externalStandardSelection_.getText();
-	    
-	    System.out.println("SpeciesType: "+speciesType);
+    
 	    Metadata metadata = new Metadata();
     metadata.setIdConfidenceMeasure(new ArrayList<Parameter>());
     //TODO: this has to be generated somehow differently
@@ -5162,10 +5175,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     
 	      Hashtable<String,QuantificationResult> originalExcelResults = new Hashtable<String,QuantificationResult>();
 	      Hashtable<String,MsRun> msRuns = new Hashtable<String,MsRun>();
+	      LinkedHashMap<String,String> fullExpPaths = getSampleResultFullPaths();
 	      boolean isotopicDistributionChecked = true;
 	      for (int i=0; i!=analysisModule_.getExpNamesInSequence().size(); i++) {
 	        String exp = analysisModule_.getExpNamesInSequence().get(i);
-	        String chromFileBase = StaticUtils.extractChromBaseName(analysisModule_.getFullFilePath(exp).getAbsolutePath(),exp);
+	        String chromFileBase = StaticUtils.extractChromBaseName(fullExpPaths.get(exp),exp);
 	        MsRun run = new MsRun();
 	        run.setId((i+1));
 	        run.setLocation("file://"+chromFileBase+".chrom");
@@ -5177,7 +5191,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	        metadata.addAssayItem(assay);
 	        expToMsRun.put(exp, (i+1));
 	        metadata.addMsrunItem(run);
-	        originalExcelResults.put(exp, LDAResultReader.readResultFile(analysisModule_.getFullFilePath(exp).getAbsolutePath(), new Hashtable<String,Boolean>()));
+	        originalExcelResults.put(exp, LDAResultReader.readResultFile(fullExpPaths.get(exp), new Hashtable<String,Boolean>()));
 	        if (!originalExcelResults.get(exp).getConstants().getRespectIsotopicDistribution())
 	          isotopicDistributionChecked = false;
 ////	      factory.addAbundanceOptionalColumn(assay);
@@ -5198,31 +5212,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       }
 	      if (!allTheSame)
 	        valueType = "relative value";
-	      System.out.println("Value Type: "+valueType);
-	      LinkedHashMap<String,Vector<String>> expsOfGroup = new LinkedHashMap<String,Vector<String>>();
-	      if (analysisModule_.getGroupNames()!=null && analysisModule_.getGroupNames().size()>0){
-	        for (int i=0; i!=analysisModule_.getGroupNames().size(); i++){
-	          String group = analysisModule_.getGroupNames().get(i);
-	          StudyVariable studyVariable = new StudyVariable();
-	          studyVariable.setId(i+1);
-	          studyVariable.setDescription(group);
-	          expsOfGroup.put(group, analysisModule_.getExpsOfGroup(group));
-	          for (String exp : expsOfGroup.get(group)){
-	            Integer assayId = expToMsRun.get(exp);
-	            for (Assay assay : metadata.getAssay()){
-	              if (assay.getId() == assayId)
-	                studyVariable.addAssayRefsItem(assay);
-	            }
-	          }
-	          metadata.addStudyVariableItem(studyVariable);
-        }
-	      //when there are no groups defined -> make one "undefined" group where all experiments belong to
-	      }else{
-        String group = "undefined";
+	      LinkedHashMap<String,Vector<String>> expsOfGroup = getSamplesOfGroups();
+	      int count = 0;
+	      for (String group : expsOfGroup.keySet()){
         StudyVariable studyVariable = new StudyVariable();
-        studyVariable.setId(1);
+        studyVariable.setId(count+1);
         studyVariable.setDescription(group);
-        expsOfGroup.put(group, analysisModule_.getExpNamesInSequence());
         for (String exp : expsOfGroup.get(group)){
           Integer assayId = expToMsRun.get(exp);
           for (Assay assay : metadata.getAssay()){
@@ -5231,8 +5226,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           }
         }
         metadata.addStudyVariableItem(studyVariable);
-	      }
-	  
+	        count++;
+      }  
 	  
 	      MzTab mzTabFile = new MzTab();
 	      mzTabFile.setMetadata(metadata);
@@ -5261,21 +5256,15 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 //	            if (resultsGroup != null) resultsGroupMol = resultsGroup.get(molName);
 //	            
           
-	            boolean isInternalStandard = false;
-	            boolean isExternalStandard = false;
 	//            String identifier = null;
-	            if (molName.startsWith(internalStandardPref))
-	              isInternalStandard = true;
 	//              identifier = "IS_" + molGroup + molName.substring(internalStandardPref.length());
-	            else if (molName.startsWith(externalStandardPref))
-	              isExternalStandard = true;
 	 //             identifier = "ES_" + molGroup + molName.substring(externalStandardPref.length());
 	//            else
 	//              identifier = molGroup + molName;
                   
 	            SmallMztabMolecule molecule = MztabUtils.createSmallMztabMolecule(speciesType, summaryId, featureId, evidenceId,
 	                evidenceGroupingId, maxIsotopes,analysisModule_, msRuns, originalExcelResults, molGroup, molName, resultsMol,
-	                isInternalStandard, isExternalStandard, adductsSorted, expsOfGroup);
+	                adductsSorted, expsOfGroup);
 	            if (molecule==null)
 	              continue;
 	            summaryId = molecule.getCurrentSummaryId();
@@ -5316,7 +5305,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     catch (ExcelInputFileException e) {
 	      e.printStackTrace();
 	    }
-    catch (MZTabException e) {
+    catch (ExportException e ) {
         e.printStackTrace();
     }
       catch (SpectrummillParserException e) {
@@ -6364,6 +6353,24 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     shotgunIsDisplayed_ = !enable;
   }
   
+  public LinkedHashMap<String,Vector<String>> getSamplesOfGroups(){
+    LinkedHashMap<String,Vector<String>> expsOfGroup = new LinkedHashMap<String,Vector<String>>();
+    if (analysisModule_.getGroupNames()!=null && analysisModule_.getGroupNames().size()>0){
+      for (int i=0; i!=analysisModule_.getGroupNames().size(); i++){
+        String group = analysisModule_.getGroupNames().get(i);
+        expsOfGroup.put(group, analysisModule_.getExpsOfGroup(group));
+      }
+      //when there are no groups defined -> make one "undefined" group where all experiments belong to
+    }else{
+      String group = "undefined";
+      expsOfGroup.put(group, analysisModule_.getExpNamesInSequence());
+    }
+    return expsOfGroup;
+  }
+  
+  public ComparativeResultsLookup getComparativeResultsLookup(){
+    return analysisModule_;
+  }
 }
   
  
