@@ -4678,7 +4678,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
               for (int i=0;i!=updateParams.size();i++){
                 String[] currentNameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(updateParams.get(i).getNameString());
                 if (currentNameAndRt[0].equalsIgnoreCase(analyteBeforeNameAndRt[0])){
-                  if (analysisModule_.neglectRtInformation(analyteName) || analysisModule_.isWithinRtGroupingBoundaries(Double.valueOf(currentNameAndRt[1]), Double.valueOf(analyteBeforeNameAndRt[1]))){
+                  if (analysisModule_.neglectRtInformation(analyteBeforeNameAndRt[0]) || analysisModule_.isWithinRtGroupingBoundaries(Double.valueOf(currentNameAndRt[1]), Double.valueOf(analyteBeforeNameAndRt[1]))){
                     positionToAdd = i+1;
                     break;
                   }  
@@ -4691,10 +4691,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
               int charge = 1;
               if (templateParam.ProbeCount()>0)
                 charge = templateParam.Probe(0).Charge;
-              boolean existsEmpty = checkIsEmptyThere(templateParam,updateParams);
-              if (existsEmpty)
-                System.out.println("There exists a empty one at :"+addVO.getExperimentName()+" ; "+modName);
-              if (!existsEmpty){
+              boolean oneThere = checkIsOneThere(analyteName,templateParam,updateParams);
+//              if (oneThere)
+//                System.out.println("There exists an empty one at :"+addVO.getExperimentName()+" ; "+modName);
+              if (!oneThere){
                   Vector<Vector<CgProbe>> probes = null;
                   if (exactProbePosition)
                     probes = analyzer.calculatePeakAtExactProbePosition(templateParam,maxIsotope,charge,result1.getMsLevels().get(groupName));
@@ -4892,15 +4892,19 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     return result_.getIdentifications().get(currentSelectedSheet_).get(resultPositionToOriginalLoopkup_.get(position));
   }
   
-  private boolean checkIsEmptyThere(LipidParameterSet templateParam,Vector<LipidParameterSet> updateParams){
-    boolean emptyThere = false;
+  private boolean checkIsOneThere(String analyteName, LipidParameterSet templateParam,Vector<LipidParameterSet> updateParams){
+    String[] refNameAndRt =  StaticUtils.extractMoleculeRtAndModFromMoleculeName(analyteName);
+    boolean oneThere = false;
     for (LipidParameterSet param : updateParams){
-      if (param.getNameString().equalsIgnoreCase(templateParam.getNameString())&&param.getModificationName().equalsIgnoreCase(templateParam.getNameString())){
-        emptyThere = true;
-        break;
+      String[] currentNameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(param.getNameString());
+      if (currentNameAndRt[0].equalsIgnoreCase(refNameAndRt[0]) && param.getModificationName().equalsIgnoreCase(templateParam.getModificationName())){
+        if (analysisModule_.neglectRtInformation(analyteName) || analysisModule_.isWithinRtGroupingBoundaries(Double.valueOf(currentNameAndRt[1]), Double.valueOf(refNameAndRt[1]))){
+          oneThere = true;
+          break;
+        }  
       }
     }
-    return emptyThere;
+    return oneThere;
   }
   
   

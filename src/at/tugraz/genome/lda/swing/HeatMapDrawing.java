@@ -746,6 +746,10 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       String expName = experimentNames_.get(lastClickedCellPos_[0]);
       String molName = moleculeNames_.get(lastClickedCellPos_[1]);
       ResultCompVO vo = compVOs_[lastClickedCellPos_[0]][lastClickedCellPos_[1]];
+      Hashtable<String,String> availableMods = new Hashtable<String,String>();
+      for (String modName : modifications_){
+        if (vo.containsMod(modName)) availableMods.put(modName, modName);
+      }
       int maxIsotopes = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
       Vector<String> foundUpdateables = new Vector<String>();
 //      Hashtable<String,String> updateableAndAnalyteBefore = new Hashtable<String,String>();
@@ -756,13 +760,31 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         ResultCompVO otherVO = compVOs_[i][lastClickedCellPos_[1]];
         if (actionCommand.equalsIgnoreCase("Choose just one peak for doubles")){
           if (i!=lastClickedCellPos_[0] && otherVO.getMoreThanOnePeak(otherVO.getAvailableIsotopeNr(maxIsotopes))){
-            foundUpdateables.add(otherVO.getAbsoluteFilePath());
-            for (String modName : modifications_){
-              if (otherVO.getMoreThanOnePeak(otherVO.getAvailableIsotopeNr(maxIsotopes), modName)) modHash.put(modName, modName);
+            boolean foundMod = false;
+            for (String modName : availableMods.keySet()){
+              if (otherVO.getMoreThanOnePeak(otherVO.getAvailableIsotopeNr(maxIsotopes), modName)){
+                modHash.put(modName, modName);
+                foundMod = true;
+              }
             }
+            if (foundMod)
+              foundUpdateables.add(otherVO.getAbsoluteFilePath());
           }
         } else if (actionCommand.equalsIgnoreCase("Quant. anal. at not found")||actionCommand.equalsIgnoreCase("Take exact peak for others")){
-          if (i!=lastClickedCellPos_[0] && !otherVO.existsInFile()){
+          if (i==lastClickedCellPos_[0])
+            continue;
+          boolean modMissing = false;
+          if (!otherVO.existsInFile())
+            modMissing = true;
+          else{
+            for (String modName : availableMods.keySet()){
+              if (!otherVO.containsMod(modName)){
+                modMissing = true;
+                break;
+              }
+            }
+          }
+          if (modMissing){
             String previousElement = "";
             for (int j=lastClickedCellPos_[1]-1;j>-1;j--){
               if (compVOs_[i][j].existsInFile()){
@@ -771,7 +793,6 @@ public class HeatMapDrawing extends JPanel implements ActionListener
               }
             }
             updateableAndAnalyteBefore.add(new AutoAnalyteAddVO(experimentNames_.get(i),otherVO.getAbsoluteFilePath(), previousElement));
-//            updateableAndAnalyteBefore.put(otherVO.getAbsoluteFilePath(), previousElement);
             maxIsotope = vo.getUsedIsotpes();
             for (String modName : modifications_){
               if (vo.containsMod(modName))modHash.put(modName, modName);
@@ -1010,7 +1031,9 @@ public class HeatMapDrawing extends JPanel implements ActionListener
                     if (!heatMapListener_.heatMapClicked(cellName.get(0),compVO.getAbsoluteFilePath(),cellName.get(1)))
                       this.mouseMoved(e);
                   }else if (e.getButton()==MouseEvent.BUTTON3 || e.isPopupTrigger()){
-                    if (attentionProbes_.containsKey(cellName.get(0))&&attentionProbes_.get(cellName.get(0)).containsKey(cellName.get(1)))
+                    if (attentionProbes_.containsKey(cellName.get(0)) && attentionProbes_.get(cellName.get(0)).containsKey(cellName.get(1))  
+                        && (attentionProbes_.get(cellName.get(0)).get(cellName.get(1)) == LipidomicsHeatMap.ATTENTION_COLOR_DOUBLE_PEAK
+                        || attentionProbes_.get(cellName.get(0)).get(cellName.get(1)) == LipidomicsHeatMap.ATTENTION_DOUBLE_AND_NOT_ALL_MODS))
                       this.mouseMoved(e);
                     else{
                       applySettingsPopup_.show(e.getComponent(), e.getX(), e.getY());

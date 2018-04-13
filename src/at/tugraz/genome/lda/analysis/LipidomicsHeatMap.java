@@ -53,6 +53,10 @@ public class LipidomicsHeatMap extends HeatMapGenerator
   protected SampleLookup lookup_;
   
   protected boolean ignorePlatformSettings_;
+
+  public final static Color ATTENTION_COLOR_DOUBLE_PEAK = Color.YELLOW;
+  public final static Color ATTENTION_COLOR_NOT_ALL_MODS = new Color(51,153,255);
+  public final static Color ATTENTION_DOUBLE_AND_NOT_ALL_MODS = new Color(204,153,255);
   
   public LipidomicsHeatMap(float[][] data, Vector<String> experimentNames, SampleLookup lookup, Vector<String> moleculeNames,
       Hashtable<String,Hashtable<String,Color>> attentionValues){
@@ -130,11 +134,11 @@ public class LipidomicsHeatMap extends HeatMapGenerator
               attention = attentionValues.get(experimentNames.get(i));
             Color color = null;
             if (compVO.getMoreThanOnePeak(compVO.getAvailableIsotopeNr(maxIsotope)) && !compVO.hasAllModsFound())
-              color = new Color(204,153,255);
+              color = ATTENTION_DOUBLE_AND_NOT_ALL_MODS;
             else if (compVO.getMoreThanOnePeak(compVO.getAvailableIsotopeNr(maxIsotope)))
-              color = Color.YELLOW;
+              color = ATTENTION_COLOR_DOUBLE_PEAK;
             else if (!compVO.hasAllModsFound())
-              color = new Color(51,153,255);
+              color = ATTENTION_COLOR_NOT_ALL_MODS;
             attention.put(moleculeNames.get(j), color);
             attentionValues.put(experimentNames.get(i), attention);
           }
