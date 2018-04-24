@@ -23,6 +23,7 @@
 
 package at.tugraz.genome.lda.export;
 
+import java.awt.Color;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Hashtable;
@@ -33,6 +34,8 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import at.tugraz.genome.lda.LDAResultReader;
@@ -43,6 +46,7 @@ import at.tugraz.genome.lda.export.vos.SpeciesExportVO;
 import at.tugraz.genome.lda.export.vos.SummaryVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
+import at.tugraz.genome.lda.swing.LipidomicsTableCellRenderer;
 import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.ExportOptionsVO;
@@ -164,13 +168,19 @@ public class ExcelAndTextExporter extends LDAExporter
     CellStyle headerStyle = null;
     CellStyle normalStyle = null;
     CellStyle zeroStyle = null;
-
+    CellStyle ms2Unambiguous = null;
+    CellStyle ms2Split = null;
+    CellStyle ms2NoSplitPossible = null;
+    
     if (excelFile){
       workbook = new XSSFWorkbook();
       sheet = workbook.createSheet(sheetName);
       headerStyle = getHeaderStyle(workbook);
       normalStyle = getNormalStyle(workbook);
       zeroStyle = getZeroStyle(workbook);
+      ms2Unambiguous = getMs2UnambiguousStyle((XSSFWorkbook)workbook);
+      ms2Split = getMs2SplitStyle((XSSFWorkbook)workbook);
+      ms2NoSplitPossible = getMs2NoSplitPossibleStyle((XSSFWorkbook)workbook);
       row = sheet.createRow(0);
     }
     boolean expInColumn = false;
@@ -249,7 +259,8 @@ public class ExcelAndTextExporter extends LDAExporter
         if (toWrite.equalsIgnoreCase("0")||toWrite.equalsIgnoreCase("0.0"))
           style = zeroStyle;
         else
-          style = normalStyle;
+          style = getCorrespondingCellStyle(sumVO.getEvidenceReliabilty(expName),normalStyle,
+        		  ms2Unambiguous, ms2Split, ms2NoSplitPossible);
         StaticUtils.printOutNumberToFile(toWrite, out, row, style, columnCount, excelFile, true);
         if (toWrite.length()>longestValues.get(columnCount))
           longestValues.put(columnCount,toWrite.length());
@@ -292,7 +303,8 @@ public class ExcelAndTextExporter extends LDAExporter
           if (toWrite.equalsIgnoreCase("-1")||toWrite.equalsIgnoreCase("-1.0"))
             style = zeroStyle;
           else
-            style = normalStyle;
+            style = getCorrespondingCellStyle(sumVO.getEvidenceReliabilty(expName),normalStyle,
+          		  ms2Unambiguous, ms2Split, ms2NoSplitPossible);
           StaticUtils.printOutNumberToFile(toWrite, out, row, style, columnCount, excelFile, true);
           if (toWrite.length()>longestValues.get(columnCount))
             longestValues.put(columnCount,toWrite.length());
@@ -338,7 +350,8 @@ public class ExcelAndTextExporter extends LDAExporter
             if (toWrite.equalsIgnoreCase("-1")||toWrite.equalsIgnoreCase("-1.0"))
               style = zeroStyle;
             else
-              style = normalStyle;
+              style = getCorrespondingCellStyle(sumVO.getEvidenceReliabilty(expName),normalStyle,
+            		  ms2Unambiguous, ms2Split, ms2NoSplitPossible);
             StaticUtils.printOutNumberToFile(toWrite, out, row, style, columnCount, excelFile, true);
             if (toWrite.length()>longestValues.get(columnCount))
               longestValues.put(columnCount,toWrite.length());
@@ -377,7 +390,8 @@ public class ExcelAndTextExporter extends LDAExporter
             if (toWrite.equalsIgnoreCase("-1")||toWrite.equalsIgnoreCase("-1.0"))
               style = zeroStyle;
             else
-              style = normalStyle;
+              style = getCorrespondingCellStyle(sumVO.getEvidenceReliabilty(expName),normalStyle,
+            	ms2Unambiguous, ms2Split, ms2NoSplitPossible);
             StaticUtils.printOutNumberToFile(toWrite, out, row, style, columnCount, excelFile, true);
             columnCount++;
           }  
@@ -436,6 +450,51 @@ public class ExcelAndTextExporter extends LDAExporter
   }
   
   /**
+   * returns the style for an MS2 unambiguously identified Excel cell
+   * @param wb the Excel workbook
+   * @return style for a header Excel cell
+   */
+  private static CellStyle getMs2UnambiguousStyle(XSSFWorkbook wb){
+    XSSFCellStyle arialStyleGreen = wb.createCellStyle();
+    org.apache.poi.ss.usermodel.Font arialfont = getArialFont(wb);
+    arialStyleGreen.setFont(arialfont);
+    XSSFColor color = new XSSFColor(LipidomicsTableCellRenderer.BRIGHT_GREEN);
+    arialStyleGreen.setFillForegroundColor(color);
+    arialStyleGreen.setFillPattern(CellStyle.SOLID_FOREGROUND);
+    return arialStyleGreen;
+  }
+
+  /**
+   * returns the style for an MS2-split identified Excel cell
+   * @param wb the Excel workbook
+   * @return style for a header Excel cell
+   */
+  private static CellStyle getMs2SplitStyle(XSSFWorkbook wb) {
+    XSSFCellStyle arialStyleYellow = wb.createCellStyle();
+    org.apache.poi.ss.usermodel.Font arialfont = getArialFont(wb);
+    arialStyleYellow.setFont(arialfont);
+    XSSFColor color = new XSSFColor(Color.YELLOW);
+    arialStyleYellow.setFillForegroundColor(color);
+    arialStyleYellow.setFillPattern(CellStyle.SOLID_FOREGROUND);
+    return arialStyleYellow;
+  }
+
+  /**
+   * returns the style for an MS2 no-MS1-split-possible identified Excel cell
+   * @param wb the Excel workbook
+   * @return style for a header Excel cell
+   */
+  private static CellStyle getMs2NoSplitPossibleStyle(XSSFWorkbook wb){
+    XSSFCellStyle arialStyleOrange = wb.createCellStyle();
+    org.apache.poi.ss.usermodel.Font arialfont = getArialFont(wb);
+    arialStyleOrange.setFont(arialfont);
+    XSSFColor color = new XSSFColor(Color.ORANGE);
+    arialStyleOrange.setFillForegroundColor(color);
+    arialStyleOrange.setFillPattern(CellStyle.SOLID_FOREGROUND);
+    return arialStyleOrange;	  
+  }
+  
+  /**
    * returns an Arial 12 font in bold
    * @param wb the Excel workbook
    * @return an Arial 12 font in bold
@@ -480,5 +539,26 @@ public class ExcelAndTextExporter extends LDAExporter
     int columnWidth = (int)((headerValue.length()*256)*ExcelUtils.BOLD_MULT);
     if ((longestValue+1)*256>columnWidth) columnWidth =  (longestValue+1)*256;
     sheet.setColumnWidth(column,columnWidth); 
+  }
+  
+  /**
+   * returns the corresponding evidence depending on the value of the found evidence
+   * @param evidence the evidence encoding specified in the SummaryVO
+   * @param normalStyle the standard cell style without any color
+   * @param ms2Unambiguous style when ms2 found and no overlap
+   * @param ms2Split style when ms2 is found, but there is an overlap with an isobar from another species, but the two hits can be separated
+   * @param ms2NoSplitPossible style when ms2 is found, but there is an overlap with an isobar from another species, and the two hits cannot be separated*
+   * @return
+   */
+  private static CellStyle getCorrespondingCellStyle(short evidence, CellStyle normalStyle, CellStyle ms2Unambiguous,
+      CellStyle ms2Split, CellStyle ms2NoSplitPossible) {
+    if (evidence==SummaryVO.EVIDENCE_MS2_UNAMBIGUOUS)
+      return ms2Unambiguous;
+    else if (evidence==SummaryVO.EVIDENCE_MS2_SPLIT)
+      return ms2Split;
+    else if (evidence==SummaryVO.EVIDENCE_MS2_NO_SPLIT_POSSIBLE)
+      return ms2NoSplitPossible;
+    else	
+      return normalStyle;
   }
 }

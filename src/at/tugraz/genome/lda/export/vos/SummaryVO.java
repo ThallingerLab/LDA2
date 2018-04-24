@@ -64,11 +64,21 @@ public class SummaryVO
   private LinkedHashMap<String,Double> groupCoeffVar_;
   /** the retention times of the highest peaks of every modification; first key modification; second key: experiment*/
   private Hashtable<String,Hashtable<String,Double>> rtsOfMods_;
+  /** the reliability of the evidence of every modification; first key modification; second key: experiment*/
+  private Hashtable<String,Hashtable<String,Short>> evidenceReliabilityOfMods_;
   /** the mean retention time for each selected group (heat map); first key: modification; key: group name; value: mean area*/
   private Hashtable<String,Hashtable<String,Double>> groupRts_;
   /** the standard deviations for the retention times of each selected group (heat map); first key: modification; key: group name; value: mean area*/  
   private Hashtable<String,Hashtable<String,Double>> groupRtStdevs_;
   
+  /** there is no ms2 evidence found for the hit*/
+  public final static short EVIDENCE_MS1_ONLY = 0;
+  /** ms2 found and no overlap*/
+  public final static short EVIDENCE_MS2_UNAMBIGUOUS = 1;
+  /** ms2 is found, but there is an overlap with an isobar from another species, but the two hits can be separated*/ 
+  public final static short EVIDENCE_MS2_SPLIT = 2;
+  /** ms2 is found, but there is an overlap with an isobar from another species, and the two hits cannot be separated*/
+  public final static short EVIDENCE_MS2_NO_SPLIT_POSSIBLE = 3;
   
   /**
    * constructor for creating cumulative class containing information across the various aspects
@@ -83,11 +93,13 @@ public class SummaryVO
    * @param mzTabReliability a reliability score specific to mzTab
    * @param areas the mean area for each selected group (heat map); key: group name; value: mean area
    * @param rtsOfMods retention times of the highest peaks of every modification; first key modification; second key: experiment
+   * @param evidenceReliabilityOfMods what kind of evidence supports this area value; first key modification; second key: experiment
    * @param expsOfGroup key: group name; value: experiments belonging to this group
    */
   public SummaryVO(Integer id, String speciesId, String molecularId, Vector<Integer> featureRefs, String chemFormula,
       Double neutralMass, Float rt, Vector<String> mods, int mzTabReliability, Hashtable<String,Double> areas,
-      Hashtable<String,Hashtable<String,Double>> rtsOfMods, LinkedHashMap<String,Vector<String>> expsOfGroup)
+      Hashtable<String,Hashtable<String,Double>> rtsOfMods, Hashtable<String,Hashtable<String,Short>> evidenceReliabilityOfMods,
+      LinkedHashMap<String,Vector<String>> expsOfGroup)
   {
     this.id_ = id;
     this.speciesId_ = speciesId;
@@ -99,6 +111,7 @@ public class SummaryVO
     this.mods_ = mods;
     this.mzTabReliability_ = mzTabReliability;
     this.areas_ = areas;
+    this.evidenceReliabilityOfMods_ = evidenceReliabilityOfMods;
     this.rtsOfMods_ = rtsOfMods;
     Vector<Double> areasOfGroup;
     Vector<Double> rtsOfGroup;
@@ -157,13 +170,16 @@ public class SummaryVO
    * @param mzTabReliability a reliability score specific to mzTab
    * @param areas the mean area for each selected group (heat map); key: group name; value: mean area
    * @param rtsOfMods retention times of the highest peaks of every modification; first key modification; second key: experiment
+   * @param evidenceReliabilityOfMods what kind of evidence supports this area value; first key modification; second key: experiment
    * @param expsOfGroup key: group name; value: experiments belonging to this group
    */
   public SummaryVO(String speciesId, String molecularId, Vector<Integer> featureRefs, String chemFormula,
       Double neutralMass, Float rt, Vector<String> mods, int mzTabReliability, Hashtable<String,Double> areas,
-      Hashtable<String,Hashtable<String,Double>> rtsOfMods, LinkedHashMap<String,Vector<String>> expsOfGroup)
+      Hashtable<String,Hashtable<String,Double>> rtsOfMods, Hashtable<String,Hashtable<String,Short>> evidenceReliabilityOfMods,
+      LinkedHashMap<String,Vector<String>> expsOfGroup)
   {
-    this(null,speciesId,molecularId,featureRefs,chemFormula,neutralMass,rt,mods,mzTabReliability,areas,rtsOfMods,expsOfGroup);
+    this(null,speciesId,molecularId,featureRefs,chemFormula,neutralMass,rt,mods,mzTabReliability,areas,rtsOfMods,evidenceReliabilityOfMods,
+        expsOfGroup);
   }
 
   
@@ -279,6 +295,22 @@ public class SummaryVO
       return 0d;
   }
   
+  /**
+   * returns the reliability of this identified area - for details see "EVIDENCE_" specifications in this object
+   * @param exp
+   * @return
+   */
+  public short getEvidenceReliabilty(String exp){
+    short reliability = EVIDENCE_MS1_ONLY;
+    for (Hashtable<String,Short> relies : evidenceReliabilityOfMods_.values()){
+      if (!relies.containsKey(exp))
+        continue;
+      // returns the corresponding reliability, where MS2 evidence, and more uncertain MS2 evidence is preceding
+      if (relies.get(exp)>reliability)
+        reliability = relies.get(exp);
+    }
+    return reliability;
+  }
   
   /**
    * returns the mean intensity value of a certain experiment group; if there is no detection, 0 is returned

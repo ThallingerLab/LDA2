@@ -46,6 +46,7 @@ import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
+import at.tugraz.genome.lda.export.vos.SummaryVO;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.swing.RangeColor;
@@ -1259,4 +1260,26 @@ public class StaticUtils
     }
     return false;
   }
+  
+  /**
+   * determines whether this LipidParameterSet contains MS1 evidence only or "clean" MS2 evidence, or there is a split 
+   * @param set the LipidParameterSet to vet
+   * @return the evidence level according to the definitions in the SummaryVO
+   */
+  public static short determineEvidenceStateOfHit (LipidParameterSet set) {
+    int ev = checkMS2Evidence(set);
+    switch (ev) {
+    case NO_MS2:
+      return SummaryVO.EVIDENCE_MS1_ONLY;
+    case PERCENTAL_SPLIT:
+      return SummaryVO.EVIDENCE_MS2_NO_SPLIT_POSSIBLE;
+    case SPLIT:
+      return SummaryVO.EVIDENCE_MS2_SPLIT;
+    case MS2_FULL:
+      return SummaryVO.EVIDENCE_MS2_UNAMBIGUOUS;
+    default:
+      return SummaryVO.EVIDENCE_MS1_ONLY;
+    }
+  }   
+  
 }

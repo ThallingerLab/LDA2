@@ -320,18 +320,27 @@ public abstract class LDAExporter
       float rTime = 0f;
       Vector<String> adducts = null;
       Hashtable<String,Hashtable<String,Double>> rtsOfMods = new Hashtable<String,Hashtable<String,Double>>();
+      //the reliability of the evidence of every modification; evidenceReliabilityOfMods: first key: species second key modification; third key: experiment
+      Hashtable<String,Hashtable<String,Hashtable<String,Short>>> evidenceReliabilityOfMods = new Hashtable<String,Hashtable<String,Hashtable<String,Short>>>();
       if (relevantOriginals!=null){
         Hashtable<String,String> foundMods = new Hashtable<String,String>();
+        short evidence;
+        short otherEvidence;
         for (String exp : relevantOriginals.keySet()){
           Hashtable<String,Vector<LipidParameterSet>> modParams = relevantOriginals.get(exp);
           for (String mod : modParams.keySet()){
             foundMods.put(mod, mod);
+            evidence = SummaryVO.EVIDENCE_MS1_ONLY;
             for (LipidParameterSet set : modParams.get(mod)){
               if (mzTabReliability == 3){
                 if (set instanceof LipidomicsMSnSet && ((LipidomicsMSnSet)set).getStatus()>=LipidomicsMSnSet.HEAD_GROUP_DETECTED)
                   mzTabReliability = 2;
               }
+              otherEvidence = StaticUtils.determineEvidenceStateOfHit(set);
+              if (otherEvidence>evidence)
+            	evidence = otherEvidence;
             }
+            storeEvidenceToHash(evidence, evidenceReliabilityOfMods, molName, mod, exp);
             @SuppressWarnings("rawtypes")
             Vector rtAndArea = getRtOfHighestZeroIsoArea(modParams.get(mod));
             if (!rtsOfMods.containsKey(mod))
@@ -353,7 +362,7 @@ public abstract class LDAExporter
       }
       Vector<Integer> featureRefs = getFeatureRefs(molName,adducts,features);
       SummaryVO sumVO = new SummaryVO(currentSummaryId,molName,null,featureRefs,chemFormula,neutralMassTheoretical,rTime,
-          adducts,mzTabReliability,areas,rtsOfMods,expsOfGroup);
+          adducts,mzTabReliability,areas,rtsOfMods,evidenceReliabilityOfMods.get(molName),expsOfGroup);
       currentSummaryId++;
       speciesSummaries.add(sumVO);
     } else if (speciesType==LipidomicsConstants.EXPORT_ANALYTE_TYPE_CHAIN || speciesType==LipidomicsConstants.EXPORT_ANALYTE_TYPE_POSITION){
@@ -380,6 +389,8 @@ public abstract class LDAExporter
       //the retention times of the highest peaks of every modification; rtsOfMods: first key: species second key modification; third key: experiment
       Hashtable<String,Hashtable<String,Hashtable<String,Double>>> rtsOfMods = new Hashtable<String,Hashtable<String,Hashtable<String,Double>>>();
 
+      //the reliability of the evidence of every modification; evidenceReliabilityOfMods: first key: species second key modification; third key: experiment
+      Hashtable<String,Hashtable<String,Hashtable<String,Short>>> evidenceReliabilityOfMods = new Hashtable<String,Hashtable<String,Hashtable<String,Short>>>();
             
       //this is for the summary information
       for (String expName : expNames){
@@ -413,8 +424,10 @@ public abstract class LDAExporter
             for (LipidParameterSet set : sets){
               double areaOfOnePeak = set.getArea(maxIsotope);
               areaOfMod += areaOfOnePeak;
-              if (!(set instanceof LipidomicsMSnSet) || ((LipidomicsMSnSet)set).getStatus()<=LipidomicsMSnSet.HEAD_GROUP_DETECTED)
+              short evidence = StaticUtils.determineEvidenceStateOfHit(set);
+              if (!(set instanceof LipidomicsMSnSet) || ((LipidomicsMSnSet)set).getStatus()<=LipidomicsMSnSet.HEAD_GROUP_DETECTED){
                 continue;
+              }
               LipidomicsMSnSet msn = (LipidomicsMSnSet)set;
               float highestProbeArea = 0f;
               float rtOfHighestProbe = 0f;
@@ -529,6 +542,8 @@ public abstract class LDAExporter
                 for (String aMod : modsWoChainAssignment)
                   mods.put(aMod, aMod);
                 modsOfSpecies.put(woPosition, mods);
+                
+                storeEvidenceToHash(evidence, evidenceReliabilityOfMods, woPosition, mod, expName);
               }
             }
             //calculate the relative percentage of one mol species and multiply it with the total area of one modification
@@ -566,14 +581,22 @@ public abstract class LDAExporter
             mods = modsOfSpecies.get(molName);
           float highestPeakAreaOfAll = 0f;
           float rtOfHighestPeakAreaOfAll = 0f;
+          short evidence;
+          short currentEvidence;
           for (String aMod : allMods.keySet()){
             mods.put(aMod, aMod);
+            evidence = SummaryVO.EVIDENCE_MS1_ONLY;
             for (LipidParameterSet set : allMods.get(aMod)){
               if (mzTabReliabilityOfSumSpecies == 3){
                 if (set instanceof LipidomicsMSnSet && ((LipidomicsMSnSet)set).getStatus()>=LipidomicsMSnSet.HEAD_GROUP_DETECTED)
                   mzTabReliabilityOfSumSpecies = 2;
               }
+              currentEvidence = StaticUtils.determineEvidenceStateOfHit(set);
+              if (currentEvidence>evidence)
+            	evidence = currentEvidence;
             }
+            storeEvidenceToHash(evidence, evidenceReliabilityOfMods, molName, aMod, expName); 
+
             @SuppressWarnings("rawtypes")
             Vector rtAndArea = getRtOfHighestZeroIsoArea(allMods.get(aMod));
             double rtOfHighest = ((Double)rtAndArea.get(0))/60d;
@@ -608,7 +631,7 @@ public abstract class LDAExporter
         Vector<String> adducts = getSortedModifications(adductsSorted,modsOfSpecies.get(aSpecies));
         Vector<Integer> featureRefs = getFeatureRefs(aSpecies,adducts,features);
         SummaryVO sumVO = new SummaryVO(currentSummaryId,aSpecies,null,featureRefs,chemFormula,neutralMassTheoretical,rTime,
-            adducts,mzTabReliabilityOfSumSpecies,areas,rtsOfMods.get(molName),expsOfGroup);
+            adducts,mzTabReliabilityOfSumSpecies,areas,rtsOfMods.get(molName),evidenceReliabilityOfMods.get(molName),expsOfGroup);
         currentSummaryId++;
         speciesSummaries.add(sumVO);
       }
@@ -622,7 +645,7 @@ public abstract class LDAExporter
         Vector<String> adducts = getSortedModifications(adductsSorted,modsOfSpecies.get(speciesInHash));
         Vector<Integer> featureRefs = getFeatureRefs(aSpecies,adducts,features);
         SummaryVO sumVO = new SummaryVO(molName,aSpecies,featureRefs,chemFormula,neutralMassTheoretical,rTime,
-            adducts,2,areas,rtsOfMods.get(speciesInHash),expsOfGroup);
+            adducts,2,areas,rtsOfMods.get(speciesInHash),evidenceReliabilityOfMods.get(speciesInHash),expsOfGroup);
         summariesMolSpecies.put(aSpecies, sumVO);
         double totalArea = 0d;
         for (Double area : areas.values()) totalArea += area;
@@ -1057,5 +1080,23 @@ public abstract class LDAExporter
     timeAndArea.add(rTime);
     timeAndArea.add(highestZeroIsoArea);
     return timeAndArea;
+  }
+  
+  /**
+   * adds the evidence add the corresponding position in the hash table (and takes care which evidence is stored, in case of several possibilities) 
+   * @param evidence the evidence identifier to store
+   * @param hash the hash table; first key: species second key modification; third key: experiment
+   * @param molName species name
+   * @param mod modification/adduct name
+   * @param expName experiment name
+   */
+  private static void storeEvidenceToHash(short evidence, Hashtable<String,Hashtable<String,Hashtable<String,Short>>> hash,
+	  String molName, String mod, String expName){ 
+    if (!hash.containsKey(molName))
+   	  hash.put(molName, new Hashtable<String,Hashtable<String,Short>>());
+    if (!hash.get(molName).containsKey(mod))
+      hash.get(molName).put(mod, new Hashtable<String,Short>());
+    if (!hash.get(molName).get(mod).containsKey(expName) || evidence>hash.get(molName).get(mod).get(expName))
+      hash.get(molName).get(mod).put(expName, evidence);
   }
 }
