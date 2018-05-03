@@ -2195,7 +2195,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           else{
             try{
               int isos = Integer.parseInt(this.amountOfMatchingBatchSearchIsotopes_.getText());
-              if (isos<1)
+              if (isos<0)
                 canStartQuantification = false;
             }catch(NumberFormatException nfx){
               canStartQuantification = false;
@@ -2383,7 +2383,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         }else{
           try{
             int isotopes = Integer.parseInt(this.amountOfMatchingBatchSearchIsotopes_.getText());
-            if (isotopes<1){
+            if (isotopes<0){
               @SuppressWarnings("unused")
               WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The number of matching isotopes must be >=0!");
 //              wasWarningMessage=true;
@@ -2463,7 +2463,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           else{
             try{
               int isos = Integer.parseInt(this.amountOfMatchingSearchIsotopes_.getText());
-              if (isos<1)
+              if (isos<0)
                 canStartQuantification = false;
             }catch(NumberFormatException nfx){
               canStartQuantification = false;
@@ -2633,7 +2633,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           }else{
             try{
               int isotopes = Integer.parseInt(this.amountOfMatchingSearchIsotopes_.getText());
-              if (isotopes<1){
+              if (isotopes<0){
                 @SuppressWarnings("unused")
                 WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The number of matching isotopes must be >=0!");
 //                wasWarningMessage=true;
@@ -4680,7 +4680,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                 if (currentNameAndRt[0].equalsIgnoreCase(analyteBeforeNameAndRt[0])){
                   if (analysisModule_.neglectRtInformation(analyteBeforeNameAndRt[0]) || analysisModule_.isWithinRtGroupingBoundaries(Double.valueOf(currentNameAndRt[1]), Double.valueOf(analyteBeforeNameAndRt[1]))){
                     positionToAdd = i+1;
-                    break;
+//                    break;
                   }  
                 }
               }
