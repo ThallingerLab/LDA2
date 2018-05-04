@@ -181,7 +181,10 @@ public class MztabUtils extends LDAExporter
         String mztabAdduct = LipidomicsConstants.getMzTabAdduct(vo.getAdduct())!=null ? LipidomicsConstants.getMzTabAdduct(vo.getAdduct()) : vo.getAdduct();
         feature.setAdductIon(mztabAdduct);
         feature.setExpMassToCharge(vo.getExpMz());
-        feature.setCharge(vo.getCharge());
+        int charge = vo.getCharge();
+        if (mztabAdduct.endsWith("-"))
+          charge = charge*-1;
+        feature.setCharge(charge);
         feature.setRetentionTime(vo.getRtApex());
         feature.setRetentionTimeStart(vo.getRtStart());
         feature.setRetentionTimeEnd(vo.getRtEnd());
@@ -207,28 +210,21 @@ public class MztabUtils extends LDAExporter
         String mztabAdduct = LipidomicsConstants.getMzTabAdduct(vo.getModification())!=null ? LipidomicsConstants.getMzTabAdduct(vo.getModification()) : vo.getModification();
         evidence.setAdductIon(mztabAdduct);
         evidence.setExpMassToCharge(vo.getExpMz());
-        evidence.setCharge(vo.getCharge());
+        int charge = vo.getCharge();
+        if (mztabAdduct.endsWith("-"))
+          charge = charge*-1;
+        evidence.setCharge(charge);
         evidence.setTheoreticalMassToCharge(vo.getTheorMz());
         evidence.setIdentificationMethod(identificationMethod);
         evidence.setMsLevel(new Parameter().cvLabel("MS").cvAccession("MS").name("ms level").value(String.valueOf(vo.getMsLevel())));
         List<SpectraRef> spectraNrs = new ArrayList<SpectraRef>();
-        for (String expName : analysisModule.getExpNamesInSequence()){
-          if (vo.getScanNrs(expName)==null)
-            continue;
-          for (Integer scanNr : vo.getScanNrs(expName)){
-            spectraNrs.add(new SpectraRef().msRun(msruns.get(expName)).reference("index="+scanNr.toString()));
-          }
+        for (Integer scanNr : vo.getScanNrs()){
+          spectraNrs.add(new SpectraRef().msRun(msruns.get(vo.getExpName())).reference("index="+scanNr.toString()));
         }
         evidence.setSpectraRef(spectraNrs);
         
         List<OptColumnMapping> optList = new ArrayList<OptColumnMapping>();
         optList.add(new OptColumnMapping().identifier("lda_identification").value(molGroup+" "+vo.getLdaId()));
-        int count = 1;
-        for (String expName : analysisModule.getExpNamesInSequence()){
-          String bestLdaIdentification = vo.getBestIdentification(expName);
-          optList.add(new OptColumnMapping().identifier("lda_id_ms_run["+count+"]").value(bestLdaIdentification!=null ? molGroup+" "+bestLdaIdentification : ""));
-          count++;
-        }
         evidence.setOpt(optList);
         
       //TODO: these are dummy values that are set in the meantime to produce an output:

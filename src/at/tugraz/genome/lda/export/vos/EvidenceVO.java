@@ -25,7 +25,6 @@ package at.tugraz.genome.lda.export.vos;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
 
@@ -37,7 +36,8 @@ import java.util.Set;
  */
 public class EvidenceVO extends EvidenceBase
 {
-  
+  /** the MS-run identifier*/
+  private String expName_;
   /** a unique identifier that must be different between the EvidenceVOs*/
   private int id_;
   /** the assumed chemical formula of this identification (including the modification/adduct)*/
@@ -48,44 +48,52 @@ public class EvidenceVO extends EvidenceBase
   private double theorMz_;
   /** the (recommended) LDA original identification*/
   private String ldaId_;
-  /** the evidence of a sample containing the highest structural information; key: experiment name; value; (molecular) species name*/
-  private Hashtable<String,String> highestLDAStructuralEv_;
   /** the MS-level this evidence is based on*/
   private int msLevel_;
-  /** the found scan numbers; key: experiment name; value: scan numbers*/
-  private Hashtable<String,List<Integer>> scanNrs_;
+  /** the found scan numbers*/
+  private List<Integer> scanNrs_;
 
   /**
    * constructor for EvidenceVO 
+   * @param expName the experiment identifier
    * @param base an EvidenceBase object holding basic information that is common to the individual evidence value objects
    * @param id a unique identifier that must be different between the EvidenceVOs
    * @param ldaId the (recommended) LDA original identification
-   * @param highestLDAStructuralEv the evidence of a sample containing the highest structural information; key: experiment name; value; (molecular) species name
    * @param chemFormula the assumed chemical formula of this identification (including the modification/adduct)
    * @param expMz the actually detected m/z value
    * @param theorMz the theoretical m/z value of the assumed identification
    * @param msLevel the MS-level this evidence is based on
-   * @param scanNrs found scan numbers; key: experiment name; value: scan numbers
+   * @param scanNrs found scan numbers
    */
-  public EvidenceVO(EvidenceBase base, int id, String ldaId, Hashtable<String,String> highestLDAStructuralEv,
-      String chemFormula, double expMz, double theorMz, int msLevel, Hashtable<String,Set<Integer>> scanNrs){
+  public EvidenceVO(String expName, EvidenceBase base, int id, String ldaId, String chemFormula, double expMz, double theorMz,
+      int msLevel, Set<Integer> scanNrs){
     super(base.getEvidenceGroupingId(),base.getModification(),base.getCharge());
+    this.expName_ = expName;
     this.id_ = id;
     this.ldaId_ = ldaId;
-    this.highestLDAStructuralEv_ = highestLDAStructuralEv;
     this.chemFormula_ = chemFormula;
     this.expMz_ = expMz;
     this.theorMz_ = theorMz;
     this.msLevel_ = msLevel;
-    scanNrs_ = new Hashtable<String,List<Integer>>();
-    for (String exp : scanNrs.keySet()){
-      List<Integer> list = new ArrayList<Integer>(scanNrs.get(exp));
-      Collections.sort(list);
-      scanNrs_.put(exp, list);
+    this.scanNrs_ = null;
+    if (scanNrs!=null){
+      scanNrs_ = new ArrayList<Integer>(scanNrs);
+      Collections.sort(scanNrs_);
     }
   }
 
   
+  /**
+   * 
+   * @return the experiment identifier
+   */
+  public String getExpName()
+  {
+    return expName_;
+  }
+
+
+
   /**
    * 
    * @return a unique identifier for this EvidenceVO
@@ -151,21 +159,9 @@ public class EvidenceVO extends EvidenceBase
    * @param exp the experiment name
    * @return the found MSn scan numbers of an experiment
    */
-  public List<Integer> getScanNrs(String exp){
-    if (scanNrs_.containsKey(exp))
-      return scanNrs_.get(exp);
-    else
-      return null;
-  }
-  
-  /**
-   * the highest structural information detected for this experiment
-   * @param exp experiment name
-   * @return the highest structural information detected for this experiment
-   */
-  public String getBestIdentification(String exp){
-    if (highestLDAStructuralEv_.containsKey(exp))
-      return highestLDAStructuralEv_.get(exp);
+  public List<Integer> getScanNrs(){
+    if (scanNrs_!=null)
+      return scanNrs_;
     else
       return null;
   }

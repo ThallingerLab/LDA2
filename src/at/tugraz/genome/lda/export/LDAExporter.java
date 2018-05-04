@@ -682,7 +682,7 @@ public abstract class LDAExporter
         boolean foundMsn = false;
         for (String species : speciesToCheck){
           String molecularSpecies = null;
-          String ldaId = new String(molName);
+          String ldaId;
           if (speciesToSummary.containsKey(species) && speciesToSummary.get(species).getMolecularId()!=null)
             molecularSpecies = speciesToSummary.get(species).getMolecularId();
           String noPosition = null;
@@ -694,17 +694,12 @@ public abstract class LDAExporter
             if (molecularSpecies.indexOf("/")!=-1 && !StaticUtils.areAllChainsTheSame(molecularSpecies))
               containsPositionInfo = true;
           }
-          double totalArea = 0d;
-          double areaTimesMz = 0d;
-          double weightedMz = 0d;
-          boolean foundOneHit = false;
-          boolean hasHitPositionInfo = false;
           LipidParameterSet oneSet = null;
-          Set<Integer> msLevels = new HashSet<Integer>(); 
-          //the first key is the ms-Level, the second the experiments
-          Hashtable<Integer,Hashtable<String,Set<Integer>>> scanNrs = new Hashtable<Integer,Hashtable<String,Set<Integer>>>();
-          Hashtable<String,String> highestLDAStructuralEv = new Hashtable<String,String>();
+          String chemFormulaInclAdduct = null; 
+          neutralMassTheoretical = null;
           for (String expName : expNames){
+            ldaId = new String(molName);
+            boolean hasHitPositionInfo = false;
             if (!relevantOriginals.containsKey(expName) || !relevantOriginals.get(expName).containsKey(mod) ||
                 (speciesToSummary.containsKey(species) && speciesToSummary.get(species).getArea(expName)==0d)){
               continue;
@@ -724,6 +719,13 @@ public abstract class LDAExporter
             if (!evaluate)
               continue;
             String bestIdentification = null;
+            Set<Integer> msLevels = new HashSet<Integer>();
+            double weightedMz = 0d;
+            double totalArea = 0d;
+            double areaTimesMz = 0d;
+            boolean foundOneHit = false;
+            Hashtable<Integer,Set<Integer>> scanNrs = new Hashtable<Integer,Set<Integer>>();
+            
             for (LipidParameterSet set : relevantOriginals.get(expName).get(mod)){
               if (!(set instanceof LipidomicsMSnSet) || ((LipidomicsMSnSet)set).getStatus()<LipidomicsMSnSet.HEAD_GROUP_DETECTED)
                 continue;
@@ -802,36 +804,35 @@ public abstract class LDAExporter
               totalArea += areaOfOnePeak;
               areaTimesMz += weightedMeanArea*areaOfOnePeak;
             }
-            if (bestIdentification!=null){
+            if (foundOneHit){
+              if (chemFormulaInclAdduct==null){
+                try {
+                  Hashtable<String,Integer> categorized = StaticUtils.categorizeFormula(oneSet.getChemicalFormula());
+                  chemFormulaInclAdduct = StaticUtils.getFormulaInHillNotation(categorized,false);
+                  neutralMassTheoretical = Settings.getElementParser().calculateTheoreticalMass(StaticUtils.getFormulaInHillNotation(categorized,true), false);
+                }catch (ChemicalFormulaException e) {e.printStackTrace();}
+              }
               if (bestIdentification.indexOf("/")==-1)
                 bestIdentification = StaticUtils.sortFASequenceUnassigned(bestIdentification);
-              highestLDAStructuralEv.put(expName, bestIdentification);
-            }
-          }
-          if (foundOneHit){
-            if (molecularSpecies!=null){
-              if (containsPositionInfo && !hasHitPositionInfo)
-                ldaId += " | "+noPosition;
-              else
-                ldaId += " | "+molecularSpecies;
-            }
-            weightedMz = areaTimesMz/totalArea;          
-            String chemFormulaInclAdduct = null; 
-            try {
-              Hashtable<String,Integer> categorized = StaticUtils.categorizeFormula(oneSet.getChemicalFormula());
-              chemFormulaInclAdduct = StaticUtils.getFormulaInHillNotation(categorized,false);
-              neutralMassTheoretical = Settings.getElementParser().calculateTheoreticalMass(StaticUtils.getFormulaInHillNotation(categorized,true), false);
-            }catch (ChemicalFormulaException e) {e.printStackTrace();}
-            List<Integer> msLevelsSorted = new ArrayList<Integer>(msLevels);
-            Collections.sort(msLevelsSorted);
-            for (int msLevel : msLevelsSorted){
-              evidence.add(new EvidenceVO(base,currentEvidenceId,ldaId,highestLDAStructuralEv,chemFormulaInclAdduct,weightedMz,neutralMassTheoretical,msLevel,scanNrs.get(msLevel)));
-              feature.addEvidenceRef(currentEvidenceId);
-              currentEvidenceId++;
-              foundMsn = true;
-            }
-          }
+              
+              weightedMz = areaTimesMz/totalArea;
+              if (molecularSpecies!=null){
+                if (containsPositionInfo && !hasHitPositionInfo)
+                  ldaId += " | "+noPosition;
+                else
+                  ldaId += " | "+bestIdentification;
+              }
 
+              
+              List<Integer> msLevelsSorted = new ArrayList<Integer>(msLevels);              
+              for (int msLevel : msLevelsSorted){
+                evidence.add(new EvidenceVO(expName,base,currentEvidenceId,ldaId,chemFormulaInclAdduct,weightedMz,neutralMassTheoretical,msLevel,scanNrs.get(msLevel)));
+                feature.addEvidenceRef(currentEvidenceId);
+                currentEvidenceId++;
+                foundMsn = true;
+              }
+            }
+          }
         }
         if (foundMsn)
           currentEvGroupingId++;
@@ -1037,22 +1038,18 @@ public abstract class LDAExporter
    * @param expName the experiment name
    * @param msnLevels the possible MS-levels
    * @param foundScans first key: MS-level; second key: sorted list of scan numbers; value: retention time
-   * @param toAdd the hash table where the scan numbers are added; first key MS-Level; second key: experiment name; value: set of scan numbers
+   * @param toAdd the hash table where the scan numbers are added; first key MS-Level; value: set of scan numbers
    */
   private static void addMsnScanNrsToHash(String expName, Set<Integer> msnLevels, Hashtable<Integer,LinkedHashMap<Integer,Float>> foundScans,
-      Hashtable<Integer,Hashtable<String,Set<Integer>>> toAdd){
+      Hashtable<Integer,Set<Integer>> toAdd){
     //for grouping the scanNrs to MS-level and experiment names
     for (Integer msLevel : msnLevels){
-      Hashtable<String,Set<Integer>> scanNrsEachScan = new Hashtable<String,Set<Integer>>();
-      if (toAdd.containsKey(msLevel))
-        scanNrsEachScan = toAdd.get(msLevel);
       Set<Integer> scans = new HashSet<Integer>();
-      if (scanNrsEachScan.containsKey(expName))
-        scans = scanNrsEachScan.get(expName);
+      if (toAdd.containsKey(msLevel))
+        scans = toAdd.get(msLevel);
       for (Integer scanNr : foundScans.get(msLevel).keySet())
         scans.add(scanNr);
-      scanNrsEachScan.put(expName, scans);
-      toAdd.put(msLevel, scanNrsEachScan);                      
+      toAdd.put(msLevel, scans);
     }
   }
   
