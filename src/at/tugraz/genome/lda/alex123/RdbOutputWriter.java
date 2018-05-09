@@ -29,9 +29,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LDAResultReader;
@@ -727,8 +729,30 @@ public class RdbOutputWriter
       results.add(result);
       fileLookup.put(result.hashCode(), resultFile);
     }
+    Hashtable<String,Vector<String>> molNamesInSequence = analysisModule.getAllMoleculeNames();
+    if (analysisModule.isRtGrouped()){
+      Set<String> alreadyThere = null;
+      String toAdd = null;
+      Hashtable<String,Vector<String>> newHash = new Hashtable<String,Vector<String>>();
+      for (String className : molNamesInSequence.keySet()){
+        Vector<String> mols = new Vector<String>();
+        alreadyThere = new HashSet<String>();
+        for (String molName : molNamesInSequence.get(className)){
+          if (molName.startsWith(internalStandardPrefix_) || molName.startsWith(externalStandardPrefix_))
+            toAdd = molName;
+          else
+            toAdd = molName.substring(0,molName.lastIndexOf("_"));
+          if (alreadyThere.contains(toAdd))
+            continue;
+          alreadyThere.add(toAdd);
+          mols.add(toAdd);          
+        }
+        newHash.put(className, mols);
+      }
+      molNamesInSequence = newHash;
+    }
     this.write(fileName, results, fileLookup, analysisModule.getClassSequence()!=null ? analysisModule.getClassSequence() : classSequence,
-        analysisModule.getAllMoleculeNames(), acceptedMolecules, maxIsotopes,analysisModule.getQuantObjects());
+        molNamesInSequence, acceptedMolecules, maxIsotopes,analysisModule.getQuantObjects());
 
   }
 

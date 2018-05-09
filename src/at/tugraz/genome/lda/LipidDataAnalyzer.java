@@ -5329,12 +5329,20 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       Hashtable<String,Hashtable<String,String>> acceptedMolecules = new Hashtable<String,Hashtable<String,String>>();
       LinkedHashMap<String,Integer> classSequence = new LinkedHashMap<String,Integer>();
       Hashtable<String,Integer> maxIsotopes = new Hashtable<String,Integer>();
+      String toAdd = null;
       for (String molGroup:this.heatmaps_.keySet()) {
         classSequence.put(molGroup, 1);
         Hashtable<String,String> molsOfClass = new Hashtable<String,String>();
         HeatMapDrawing heatmap = this.heatmaps_.get(molGroup);
         for (String molName: heatmap.getSelectedMoleculeNames()){
-          molsOfClass.put(molName, molName);
+          if (this.analysisModule_.isRtGrouped()){
+            if (molName.startsWith(internalStandardPref) || molName.startsWith(externalStandardPref))
+              toAdd = molName;
+            else  
+              toAdd = molName.substring(0,molName.lastIndexOf("_"));
+            molsOfClass.put(toAdd, toAdd);            
+          }else
+            molsOfClass.put(molName, molName);
         }
         acceptedMolecules.put(molGroup, molsOfClass);
         maxIsotopes.put(molGroup, heatmap.getSelectedIsotope());
