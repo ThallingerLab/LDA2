@@ -62,6 +62,11 @@ public class LipidomicsJTable extends JTable implements ActionListener
   private JPopupMenu addItemPopup_;
   private AnalyteAddRemoveListener parentListener_;
   
+  /** a popup menu item for activating the MS2 view*/
+  private JMenuItem showMS2_;
+  /** a popup menu item for activating the MS1 view*/
+  private JMenuItem showMS1_;
+  
   private boolean showRt_;
   
   private boolean controlDown_;
@@ -93,11 +98,16 @@ public class LipidomicsJTable extends JTable implements ActionListener
     item = new JMenuItem("Delete analyte");
     item.addActionListener(this);
     addItemPopup_.add(item);
-    item = new JMenuItem("Show MS/MS");
-    item.addActionListener(this);
-    item.setVisible(showMs2);
-    addItemPopup_.add(item);
+    showMS2_ = new JMenuItem("Show MS/MS");
+    showMS2_.addActionListener(this);
+    showMS2_.setVisible(showMs2);
+    addItemPopup_.add(showMS2_);
+    showMS1_ = new JMenuItem("Show MS1");
+    showMS1_.addActionListener(this);
+    showMS1_.setVisible(false);
+    addItemPopup_.add(showMS1_);
 
+    
     item = new JMenuItem("Sort by order");
     item.addActionListener(this);
     item.setVisible(orderType!=ORDER_TYPE_AS_IS);
@@ -149,6 +159,7 @@ public class LipidomicsJTable extends JTable implements ActionListener
                 model.setLeadSelectionIndex(rowNumber);
               }
               if (e.isControlDown()) model.addSelectionInterval(rowNumber,rowNumber);
+              showMs2OrMs1Selection();
               addItemPopup_.show(e.getComponent(), e.getX(), e.getY());
             }
             lastSelectedIndex_ = rowNumber;
@@ -158,6 +169,7 @@ public class LipidomicsJTable extends JTable implements ActionListener
             parentListener_.listSelectionChanged(rowNumber);
             if (SwingUtilities.isRightMouseButton( e )){
               model.setSelectionInterval( rowNumber, rowNumber );
+              showMs2OrMs1Selection();
               addItemPopup_.show(e.getComponent(), e.getX(), e.getY());              
             }
           }
@@ -219,6 +231,9 @@ public class LipidomicsJTable extends JTable implements ActionListener
     } else if (actionCommand.equalsIgnoreCase("Show MS/MS")){
       int position = getSelectionModel().getLeadSelectionIndex();
       parentListener_.showMs2(position);
+    } else if (actionCommand.equalsIgnoreCase("Show MS1")){
+      int position = getSelectionModel().getLeadSelectionIndex();
+      parentListener_.initANewViewer(position);
     } else if (actionCommand.equalsIgnoreCase("Sort by order")){
       parentListener_.changeListSorting(ORDER_TYPE_AS_IS);      
     } else if (actionCommand.equalsIgnoreCase("Sort by mass")){
@@ -239,6 +254,21 @@ public class LipidomicsJTable extends JTable implements ActionListener
   
   public String getSumLipidNameAt(int rowIndex){
     return ((LipidomicsTableModel)super.getModel()).getSumLipidNameAt(rowIndex);
+  }
+  
+  /**
+   * depending on the currently displayed view, activates or deactivates the corresponding buttons
+   * for changing the view
+   */
+  private void showMs2OrMs1Selection(){
+    if (parentListener_.isMS2Showing()){
+      this.showMS2_.setVisible(false);
+      this.showMS1_.setVisible(true);      
+    }else{
+      this.showMS2_.setVisible(true);
+      this.showMS1_.setVisible(false);
+    }
+      
   }
   
 }

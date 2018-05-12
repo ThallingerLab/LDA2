@@ -423,7 +423,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private ColorChooserDialog colorChooserDialog_;
   
   private boolean displaysMs2_;
-  private int currentMs2Position_;
+//  private int currentMs2Position_;
   private Vector<Vector<CgProbe>> ms1ProbesWhileMs2Display_;
   
   /** panel for the selection of fragmentation language settings */
@@ -3081,12 +3081,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         }  
       }      
     }else if (command.equalsIgnoreCase("AcceptMSnRecalculation")){
-      updateLipidParameterSet(recalcDialog_.getResult(), currentMs2Position_);
+      updateLipidParameterSet(recalcDialog_.getResult(), currentSelected_);
       recalcDialog_ = null;
     }else if (command.equalsIgnoreCase("DeclineMSnRecalculation")){
       recalcDialog_ = null;
     }else if (command.equalsIgnoreCase("AcceptChangedRT")){
-      LipidParameterSet set = getAnalyteInTableAtPosition(currentMs2Position_);
+      LipidParameterSet set = getAnalyteInTableAtPosition(currentSelected_);
       set.setRt(editRtDialog_.getRt());
       storeResultsToExcel();
       editRtDialog_ = null;
@@ -3112,7 +3112,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
    * @param position the position in the table where the object shall be updated
    */
   private void updateLipidParameterSet(LipidParameterSet newOne, int position){
-    int originalPosition = resultPositionToOriginalLoopkup_.get(currentMs2Position_);
+    int originalPosition = resultPositionToOriginalLoopkup_.get(currentSelected_);
     result_.getIdentifications().get(currentSelectedSheet_).remove(originalPosition);
     result_.getIdentifications().get(currentSelectedSheet_).add(originalPosition,newOne);
     storeResultsToExcel();
@@ -3144,7 +3144,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       else specNumber--;
       try {
        param = rdi.testForMSnDetection(spectrumPainter_.getMs2LevelSpectrumSelected(specNumber));
-       rangeColors = StaticUtils.createRangeColorVOs(param, ((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentMs2Position_),
+       rangeColors = StaticUtils.createRangeColorVOs(param, ((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentSelected_),
            areTheseAlex123MsnFragments());
       }
       catch (NoRuleException | IOException
@@ -3400,6 +3400,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       enableChromatographyFeatures();
   }
   
+  public void initANewViewer(int position){
+    this.currentSelected_ = position;
+    this.initANewViewer(getAnalyteInTableAtPosition(currentSelected_));
+  }
+
   
   private void initANewViewer(LipidParameterSet params){
     this.initANewViewer(params,null);
@@ -3617,7 +3622,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       }
       isotope_.setSelectedIndex(0);
       isotope_.addItemListener(changeIsotopeListener_);
-      initANewViewer(params_);
+      this.initMS1OrMS2View(params_);
+//      initANewViewer(params_);
     }
   }
     
@@ -3914,8 +3920,13 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       this.l2DPainter_.repaint();
     }
     if (command.equalsIgnoreCase("show2dChanged")){
-      if (this.params_!=null)
-        this.initANewViewer(params_);
+      if (this.params_!=null){
+        if (this.show2D_.isSelected())
+          this.initMS1OrMS2View(params_);
+        else
+          this.initANewViewer(params_);
+      }
+///        this.initANewViewer(params_);
     }
     if (command.equalsIgnoreCase("DisplayModeAbundance")){
       this.spectrumPainter_.setRelativeValues(relAbund_.isSelected());
@@ -4261,6 +4272,33 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
               }catch(NumberFormatException nfx){}
             }
             if (found){
+              //if show MS2 spectra is selected, try to find an adequate matching hit where MS2 spectra are present
+              if (this.displaysMs2_){
+                int j=i;
+                boolean foundMsn = false;
+                while (j<displayTable.getRowCount() && ((String)this.displayTable.getSumLipidNameAt(j)).startsWith(moleculeName)){
+                  if (((LipidomicsTableModel)displayTable.getModel()).hasMS2Evidence(j)){
+                    String moleculeInTableMsn = (String)this.displayTable.getSumLipidNameAt(j);
+                    if (rt==null) foundMsn = true;
+                    else{
+                      String rtInTableString = moleculeInTableMsn.substring(moleculeName.length()+1);
+                      if (rtInTableString.indexOf("_")!=-1) rtInTableString = rtInTableString.substring(0,rtInTableString.indexOf("_"));
+                      try{
+                        if (analysisModule_.isWithinRtGroupingBoundaries(Double.valueOf(rtInTableString), Double.valueOf(rt))){
+                          foundMsn=true;
+                        }
+                      }catch(NumberFormatException nfx){}
+                    }
+                    if (foundMsn)
+                      break;
+                  }
+                  j++;
+                }
+                if (foundMsn && i!=j){
+                  i = j;
+                  moleculeInTable = (String)this.displayTable.getSumLipidNameAt(i);
+                }
+              }
               moelculeTableName = moleculeInTable;
               selection = i;
               break;
@@ -4937,12 +4975,15 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     
  
   public void showMs2(int position){
-    currentMs2Position_ = position;
-    showMs2(null);
+    currentSelected_ = position;
+    showMs2(null,false);
   }
 
-  public boolean showMs2(LipidParameterSet set){ 
-     ms1ProbesWhileMs2Display_ = l2DPainter_.getAllSelectedProbes();
+  public boolean showMs2(LipidParameterSet set, boolean refreshL2dPainter){
+    if (refreshL2dPainter)
+      ms1ProbesWhileMs2Display_ = getAllProbesFromParams(set,null);
+    else
+      ms1ProbesWhileMs2Display_ = l2DPainter_.getAllSelectedProbes();      
     int charge = 1;
     if (params_.ProbeCount()>0)
       charge = params_.Probe(0).Charge;
@@ -4951,9 +4992,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     float currentIsotopicMass = params_.Mz[0];
     
     displaysMs2_ = true;
-    LipidParameterSet params = getAnalyteInTableAtPosition(currentMs2Position_);
+    LipidParameterSet params = getAnalyteInTableAtPosition(currentSelected_);
     if (set !=null) params = set;
-    Hashtable<Integer,Vector<RangeColor>> rangeColors = StaticUtils.createRangeColorVOs(params,((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentMs2Position_),
+    Hashtable<Integer,Vector<RangeColor>> rangeColors = StaticUtils.createRangeColorVOs(params,((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentSelected_),
         areTheseAlex123MsnFragments());
     try {
       int threeDMsLevel = 2;
@@ -5051,15 +5092,17 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         
         
         // this is for setting the displayed chromatogram to the isotope 0
-        if (isotope_.getSelectedIndex()!=0){
+        if (refreshL2dPainter || isotope_.getSelectedIndex()!=0){
           isotope_.setSelectedIndex(0);
           float startFloat = currentIsotopicMass-Float.parseFloat(this.displayMinusTolerance_.getText());
           float stopFloat = currentIsotopicMass+Float.parseFloat(this.displayPlusTolerance_.getText());
           Vector<CgProbe> storedProbes = ms1ProbesWhileMs2Display_.get(0);
           Vector<CgProbe> selectedProbes = ms1ProbesWhileMs2Display_.get(1);
-          l2DPainter_.getGraphics().dispose();
-          l2dPanel_.remove(l2DPainter_);
-          l2DPainter_ = null;
+          if (l2DPainter_!=null){
+            l2DPainter_.getGraphics().dispose();
+            l2dPanel_.remove(l2DPainter_);
+            l2DPainter_ = null;
+          }
           
           try {
             String[] rawLines = reader_.getRawLines(startFloat, stopFloat, result_.getMsLevels().get(currentSelectedSheet_));
@@ -5098,6 +5141,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     catch (CgException cgx) {
       @SuppressWarnings("unused")
       WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "The MS/MS cannot be displayed: "+cgx.getMessage());
+      this.displaysMs2_ = false;
       return false;
     }catch (Exception cgx) {
       cgx.printStackTrace();
@@ -5854,7 +5898,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   
   private LipidParameterSet refreshSpectrumPainterRDI() throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException{
     LipidParameterSet param = msnUserInterfaceObject_.testForMSnDetection(getMs2LevelSpectrumSelected());
-    Hashtable<Integer,Vector<RangeColor>> rangeColors = StaticUtils.createRangeColorVOs(param, ((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentMs2Position_),
+    Hashtable<Integer,Vector<RangeColor>> rangeColors = StaticUtils.createRangeColorVOs(param, ((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentSelected_),
         areTheseAlex123MsnFragments());
     if (rangeColors!=null) spectrumPainter_.refresh(param,rangeColors);
     else spectrumPainter_.clearRangeColors();
@@ -5956,8 +6000,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       isotope_.setSelectedIndex(0);
       float startFloat = currentIsotopicMass-Float.parseFloat(this.displayMinusTolerance_.getText());
       float stopFloat = currentIsotopicMass+Float.parseFloat(this.displayPlusTolerance_.getText());
-      Vector<CgProbe> storedProbes = ms1ProbesWhileMs2Display_.get(0);
-      Vector<CgProbe> selectedProbes = ms1ProbesWhileMs2Display_.get(1);
+      Vector<CgProbe> storedProbes = new Vector<CgProbe>();
+      Vector<CgProbe> selectedProbes = new Vector<CgProbe>();
+      //Vector<CgProbe> storedProbes = ms1ProbesWhileMs2Display_.get(0);
+      //Vector<CgProbe> selectedProbes = ms1ProbesWhileMs2Display_.get(1);
       l2DPainter_.getGraphics().dispose();
       l2dPanel_.remove(l2DPainter_);
       l2DPainter_ = null;
@@ -6023,7 +6069,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   public void newRule(int position) 
   {     
     LipidParameterSet data = getAnalyteInTableAtPosition(position);
-    currentMs2Position_ = position;
+    currentSelected_ = position;
     try 
     {      
       MSnAnalyzer analyzer = new MSnAnalyzer(null,(String)selectedSheet_.getSelectedItem(),data.getModificationName(),data,analyzer_);      
@@ -6042,7 +6088,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       e.printStackTrace();
     }
     
-    if (!showMs2(data)) return; 
+    if (!showMs2(data,true)) return; 
     try {
       userInterface = new RuleDefinitionInterface((String)selectedSheet_.getSelectedItem(), data, analyzer_, reader_.getHighestMsLevel(), this);  
       if(viewer_!=null)
@@ -6322,7 +6368,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   public void recalculateMSn(int position)
   {
     LipidParameterSet data = new LipidParameterSet(getAnalyteInTableAtPosition(position));
-    currentMs2Position_ = position;
+    currentSelected_ = position;
     try {
       String className = (String)selectedSheet_.getSelectedItem();
       MSnAnalyzer analyzer = new MSnAnalyzer(null,className,data.getModificationName(),data,analyzer_);
@@ -6334,7 +6380,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   }
 
   public void editRt(int position){
-    currentMs2Position_ = position;
+    currentSelected_ = position;
     String rt = getAnalyteInTableAtPosition(position).getRt();
     editRtDialog_ = new EditRtDialog(rt,this);
   }
@@ -6382,6 +6428,25 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   
   public ComparativeResultsLookup getComparativeResultsLookup(){
     return analysisModule_;
+  }
+  
+  /**
+   * checks whether it is appropriate to initiate an MS1 or MS2 view
+   * @param params the data to display
+   * @return true when an MS2 view is displayed
+   */
+  private boolean initMS1OrMS2View(LipidParameterSet params){
+    boolean showMS2 = false;
+    if (this.displaysMs2_ && params instanceof LipidomicsMSnSet){
+      showMS2 = this.showMs2(params,true);
+    }else{
+      this.initANewViewer(params);
+    }
+    return showMS2;
+  }
+  
+  public boolean isMS2Showing(){
+    return this.displaysMs2_;
   }
 }
   

@@ -52,4 +52,17 @@ public interface AnalyteAddRemoveListener
    * @param position the position in the JTable
    */
   public void editRt(int position);
+  
+  /**
+   * starts a new MS1 viewer
+   * @param position the position in the displayed table showing a list of species
+   */
+  public void initANewViewer(int position);
+  
+  /**
+   * 
+   * @return true when MS2 view is displayed, false when MS1 view is displayed
+   */
+  public boolean isMS2Showing();
+
 }
