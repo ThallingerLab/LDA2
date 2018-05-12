@@ -538,8 +538,8 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
 
     // **** Draw the y coordinates ****
 
-    float in = 0;
-    float din = 0;
+    double in = 0;
+    double din = 0;
 
     in = maxInt  / m_2dGain / 5;
     if (in < 0.1f)
@@ -618,7 +618,8 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
 
       gx.drawLine(x, y, x - 3, y);
       s = Integer.toString((int) in);
-      if (in<1&&in>0||(in>1&&in<2)||(in>2&&in<3)||(in>7&&in<8)) s = Float.toString(in);
+      if (in<1&&in>0||(in>1&&in<2)||(in>2&&in<3)||(in>7&&in<8)) s = Double.toString(in);
+      if (in>999) s = Calculator.scientificFormat(in);
       sw = fm.stringWidth(s);
       if (drawLegend){
         if (in == 0)
