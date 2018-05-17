@@ -39,6 +39,8 @@ import java.util.zip.Inflater;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
+//TODO: the following lines are for QQQ PIS/NLS - activate when necessary
+/****import at.tugraz.genome.lda.LipidomicsConstants;*/
 import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.maspectras.quantification.CgBase64;
 import at.tugraz.genome.maspectras.quantification.CgDefines;
@@ -308,6 +310,8 @@ public class MzXmlReader implements XmlSpectraReader
     String polarityString = "";
     int polarity = CgDefines.POLARITY_NO;
     int peaksCount = 0;
+    //TODO: the following lines are for QQQ PIS/NLS - activate when necessary
+/***    float precursor = -1;*/
 
     for (i = 0; i < rdr_.getAttributeCount(); i++) {
       if (rdr_.getAttributeLocalName(i) == "num") {
@@ -334,6 +338,12 @@ public class MzXmlReader implements XmlSpectraReader
     }
     boolean foundMzBorders = false;
     if (lowMzFound&&highMzFound) foundMzBorders = true;
+    else if (msLevel==1 && !myHeader_.hasMS1Scans){
+      lowestMz_ = 1000000 * CgDefines.mzMultiplicationFactorForInt;
+      highestMz_ = 0;      
+    }
+    if (msLevel==1)
+      myHeader_.hasMS1Scans = true;
 
     if (polarity!=CgDefines.POLARITY_NO){
       if (currentPolarity_==CgDefines.POLARITY_NO)
@@ -363,9 +373,33 @@ public class MzXmlReader implements XmlSpectraReader
                 // Now we can inform our caller that we have a valid
                 // new scan!
                 // =================================================
-
+                
+                //TODO: the following lines are for QQQ PIS/NLS - activate when necessary
+/****              } else if (!myHeader_.hasMS1Scans && LipidomicsConstants.isShotgun() && precursor>=0){
+                int currentLowMz =  Math.round((precursor*0.999f)*multiplicationFactorForInt_);
+                int currentHighMz = Math.round((precursor*1.001f)*multiplicationFactorForInt_);                
+                if (currentLowMz<this.lowestMz_) this.lowestMz_ = currentLowMz ;
+                if (currentHighMz>this.highestMz_) this.highestMz_ = currentHighMz;*/
               }
               if (parseMsMs_ && msLevel > myHeader_.highestMSLevel) myHeader_.highestMSLevel=msLevel;
+            //TODO: the following lines are for QQQ PIS/NLS - activate when necessary
+/****            } else if (rdr_.getLocalName().equalsIgnoreCase("precursorMz") && !myHeader_.hasMS1Scans && LipidomicsConstants.isShotgun()) {
+              int attributeCount = rdr_.getAttributeCount();
+              for (i = 0; i < attributeCount; i++) {
+                if (rdr_.getAttributeLocalName(i) == "precursorIntensity") {
+                  try {
+                    rdr_.next();
+                    String childNode = rdr_.getText().trim();
+                    if (childNode != null) {
+                      precursor = Float.parseFloat(childNode);
+                      break;
+                    }
+                  }
+                  catch (Exception ex) {
+                    throw new CgException(ex.getMessage());
+                  }
+                }
+              }*/
             } else if (rdr_.getLocalName().equalsIgnoreCase("scan")) {
               xmlReadMaxima();
             }
@@ -498,6 +532,8 @@ public class MzXmlReader implements XmlSpectraReader
     int polarity = CgDefines.POLARITY_NO;
     boolean lowMzFound = false;
     boolean highMzFound = false;
+    //TODO: the following lines are for QQQ PIS/NLS - activate when necessary
+    /****float precursorMz = -1f;*/
 
     // =========================================================
     // First of all we read the attributes:
@@ -536,7 +572,12 @@ public class MzXmlReader implements XmlSpectraReader
     }
     boolean foundMzBorders = false;
     if (lowMzFound&&highMzFound) foundMzBorders = true;
-    
+    else if (msLevel==1 && !myHeader_.hasMS1Scans){
+      lowestMz_ = 1000000 * CgDefines.mzMultiplicationFactorForInt;
+      highestMz_ = 0;      
+    }
+    if (msLevel==1)
+      myHeader_.hasMS1Scans = true;
     if (polarity!=CgDefines.POLARITY_NO){
       if (currentPolarity_==CgDefines.POLARITY_NO)
         currentPolarity_ = polarity;
@@ -578,7 +619,7 @@ public class MzXmlReader implements XmlSpectraReader
                 sc.BasePeakIntensity = basePeakIntensity;
                 sc.TotIonCurrent = totIonCurrent;
                 sc.setPolarity(polarity);
-                if (adders_ != null && adders_.length>0){                  
+                if (adders_ != null && adders_.length>0){
                   Vector<CgScan> scans = new Vector<CgScan>();
                   Vector<Range> ranges = new Vector<Range>();
                   for (AddScan adder : adders_){
@@ -606,6 +647,71 @@ public class MzXmlReader implements XmlSpectraReader
                   throw new CgException(
                       "No adder for Header and Scans defined.");
               } else {
+                //TODO: the following lines are for QQQ PIS/NLS - activate when necessary
+                //this generates an artificial MS1 scans for shotgun MSn-only data
+/****                if (!myHeader_.hasMS1Scans && LipidomicsConstants.isShotgun() && precursorMz>=0 ){
+                  sc = new CgScan(0);
+                  sc.Num = num;
+                  sc.MsLevel = 1;
+                  sc.RetentionTime = retentionTime;
+                  sc.BasePeakMz = basePeakMz;
+                  sc.BasePeakIntensity = basePeakIntensity;
+                  sc.TotIonCurrent = totIonCurrent;
+                  sc.setPolarity(polarity);
+                  if (adders_ != null && adders_.length>0){                  
+                    Vector<CgScan> scans = new Vector<CgScan>();
+                    Vector<Range> ranges = new Vector<Range>();
+                    for (AddScan adder : adders_){
+                      if (adders_.length==1) scans.add(sc);
+                      else scans.add(new CgScan(sc));
+                      ranges.add(new Range(adder.getLowerThreshold(),adder.getUpperThreshold()));
+                    }
+                    
+                    ////XmlReadPeaks(scans,ranges,maxRange,peaksCount,false,foundMzBorders);
+                    Hashtable<Integer,Vector<Float>> mzValues = new Hashtable<Integer,Vector<Float>>();
+                    Hashtable<Integer,Vector<Float>> intensities = new Hashtable<Integer,Vector<Float>>();
+                    float mz = Float.parseFloat(getPrecursorMzString(precursorMz_));
+                    //TODO: I do not know from where to get the intensity, since the precursorIntensity is always zero -> ask Kim
+                    float intensity = totIonCurrent;
+                    for (int k=0;k!=scans.size();k++){
+                    	mzValues.put(k, new Vector<Float>());
+                    	intensities.put(k, new Vector<Float>());
+                      //TODO: I am not sure whether I should keep this check
+                      if (ranges.get(k).getStart()<=mz && mz<ranges.get(k).getStop()){  
+                        mzValues.get(k).add(mz);
+                        intensities.get(k).add(intensity);
+                      }
+                    }
+                    for (int k=0;k!=scans.size();k++){
+                      CgScan aSc = scans.get(k);
+                      aSc.PeaksCount = mzValues.get(k).size();
+                      aSc.Scan = new float[mzValues.get(k).size()][2];
+                      for (i=0; i!=mzValues.get(k).size();i++){
+                        aSc.Scan[i][0] = mzValues.get(k).get(i);
+                        aSc.Scan[i][1] = intensities.get(k).get(i);
+                      }
+                      if (aSc.PeaksCount>0 && !foundMzBorders){
+                        aSc.LowMz =  mz*0.999f;
+                        aSc.HighMz = mz*1.001f;
+                      }
+                    }
+                    
+                    for (int j=0; j!=adders_.length; j++){
+                      AddScan adder = adders_[j];
+                      sc = scans.get(j);
+                      int currentLowMz = Math.round(sc.LowMz*multiplicationFactorForInt_);
+                      int currentHighMz = Math.round(sc.HighMz*multiplicationFactorForInt_);
+                      if (currentLowMz<this.lowestMz_) this.lowestMz_ = currentLowMz ;
+                      if (currentHighMz>this.highestMz_) this.highestMz_ = currentHighMz;
+                      // =================================================
+                      // Now we can inform our caller that we have a valid
+                      // new scan!
+                      // =================================================
+                      adder.AddScan(sc);
+                    }
+                  } else
+                    throw new CgException("No adder for Header and Scans defined.");
+                }*/
                 if (baseScans==null){
                   baseScans = new Vector<CgScan>();
                   scanRanges = new Vector<Range>();
@@ -659,7 +765,8 @@ public class MzXmlReader implements XmlSpectraReader
                     rdr_.next();
                     String childNode = rdr_.getText().trim();
                     if (childNode != null) {
-                      Float.parseFloat(childNode);
+                    //TODO: the following lines are for QQQ PIS/NLS - activate when necessary
+/****                      precursorMz = */Float.parseFloat(childNode);
                       precursorMz_.add(childNode);
                       break;
                     }

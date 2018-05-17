@@ -1829,7 +1829,7 @@ public class QuantificationThread extends Thread
     }
     if (stopThread){
       if (!error){
-        if (LipidomicsConstants.isMS2()){
+        if (!LipidomicsConstants.isShotgun() && LipidomicsConstants.isMS2()){
           PostQuantificationProcessor processor = new PostQuantificationProcessor(results_,ms2Removed_,adductInsensitiveRtFilter);
           try {
             results_ = processor.processData();

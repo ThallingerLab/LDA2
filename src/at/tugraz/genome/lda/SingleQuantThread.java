@@ -354,7 +354,7 @@ public class SingleQuantThread extends Thread
     
     for (QuantVO oneSet : hitsAccordingToQuant.keySet()){
       Hashtable<String,LipidParameterSet> hitsOfOneMod = hitsAccordingToQuant.get(oneSet);
-      if (LipidomicsConstants.isMS2() && hitsOfOneMod.size()>0){
+      if (!LipidomicsConstants.isShotgun() && LipidomicsConstants.isMS2() && hitsOfOneMod.size()>0){
         try {
           String unionTimeString = RulesContainer.getPeakUnionTime(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName()));
           if (unionTimeString != null && unionTimeString.length()>0){

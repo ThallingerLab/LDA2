@@ -92,8 +92,9 @@ public class LipidomicsTableModel extends DefaultTableModel implements TableMode
             }
             nameString = nameString.substring(0,nameString.length()-1);
           }
-          
-          String paramName = getLipidParamsDisplayString(param,nameString+"_"+param.getRt());
+          if (param.getRt()!=null && param.getRt().length()>0)
+            nameString += "_"+param.getRt();
+          String paramName = getLipidParamsDisplayString(param,nameString);
           rowToName_.put(rowCount, paramName);
           rowToParam_.put(rowCount, param); 
           for (int i=0; i!=paramsOriginal.size();i++){

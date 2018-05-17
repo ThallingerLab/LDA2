@@ -5001,7 +5001,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       
       Hashtable<Integer,Vector<String>> spectraRaw = reader_.getMsMsSpectra(params.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), params.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance(),-1f,-1f);
 
-      float peakRt = Float.parseFloat(params.getRt())*60f;
+      float peakRt = 0f;
+      if (params.getRt()!=null && params.getRt().length()>0)
+        peakRt = Float.parseFloat(params.getRt())*60f;
       String[] chroms = null;
       int[] borders = null;
       int[] bordersThreeD = null;
