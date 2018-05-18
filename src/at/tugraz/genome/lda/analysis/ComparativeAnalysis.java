@@ -3100,4 +3100,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
     valuesInClusters.remove(valuesInClusters.size()-1);
   }
   
+  protected void disableRtGrouping(){
+    this.expRtGroupingTime_ = -1d;
+  }
+  
 }

@@ -52,6 +52,8 @@ import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.swing.RangeColor;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
+import at.tugraz.genome.lda.xml.RawToChromThread;
+import at.tugraz.genome.maspectras.GlobalConstants;
 import at.tugraz.genome.maspectras.chromaviewer.MSMapViewer;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
@@ -157,15 +159,14 @@ public class StaticUtils
   }
   
   public static String extractChromBaseName(String resultFilePath, String experimentName){
-    String basePath = null;
+    Vector<String> basePaths = new Vector<String>();
     File resultsFile = new File(resultFilePath);
     if (resultsFile.exists()&&resultsFile.isFile()){
       String directory = StaticUtils.extractDirName(resultFilePath);
       String chromFilePath = directory+File.separator+experimentName+".chrom";
       File chromFile = new File (chromFilePath);
       boolean chromFileExists = false;
-      //This is excluded because the chrom file can now be a directory containing the chrom files
-      if (chromFile.exists())//&&chromFile.isFile())
+      if (chromFile.exists())
         chromFileExists = true;
       else{
         File dirFile = new File(directory);
@@ -173,15 +174,39 @@ public class StaticUtils
           File[] filesInDir = dirFile.listFiles();
           for (int i=0;i!=filesInDir.length;i++){
             if (filesInDir[i].getName().indexOf(experimentName)==0&&filesInDir[i].getAbsolutePath().endsWith(".chrom")){
-              if (!chromFileExists || filesInDir[i].getName().length()<chromFile.getName().length()) chromFile = filesInDir[i];
-              chromFileExists = true;
+//              if (!chromFileExists || filesInDir[i].getName().length()<chromFile.getName().length()){// chromFile = filesInDir[i];
+              //  System.out.println("4.");
+              basePaths.add(filesInDir[i].getAbsolutePath().substring(0,filesInDir[i].getAbsolutePath().length()-".chrom".length()));
             }
           }
         }
       }
-      if (chromFileExists) basePath = chromFile.getAbsolutePath().substring(0,chromFile.getAbsolutePath().length()-".chrom".length());
+      if (chromFileExists) basePaths.add(chromFile.getAbsolutePath().substring(0,chromFile.getAbsolutePath().length()-".chrom".length()));
     }
-    return basePath;
+    if (basePaths.size()==0)
+      return null;
+    else if (basePaths.size()==1)
+      return basePaths.get(0);
+    else{
+      String resultFileName = resultsFile.getName();
+      String toReturn = basePaths.get(0);
+      if (resultFileName.indexOf(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_POSITIVE)!=-1 ||
+          resultFileName.indexOf(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_NEGATIVE)!=-1){
+        for (String basePath : basePaths){
+          if ((resultFileName.indexOf(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_POSITIVE)!=-1 &&
+              basePath.endsWith(RawToChromThread.FILE_SUFFIX_POLARITY_POSITIVE)) ||
+              (resultFileName.indexOf(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_NEGATIVE)!=-1 &&
+              basePath.endsWith(RawToChromThread.FILE_SUFFIX_POLARITY_NEGATIVE)))
+            toReturn = basePath;            
+        }
+      }else{
+        for (String basePath : basePaths){
+          if (basePath.length()<resultFileName.length())
+            resultFileName = basePath;
+        }
+      }
+      return toReturn;
+    }
   }
   
   public static String existChromNecessaryFiles(String chromBaseName){
