@@ -117,6 +117,7 @@ public class MztabUtils extends LDAExporter
         relevantOriginals, isotopes);
 //    System.out.println("------------------------------------------");
     //generates the mzTab SmallMoleculeSummary section
+    Double smlArea;
     Vector<SmallMoleculeSummary> summaries = new Vector<SmallMoleculeSummary>();
     for (SummaryVO vo : exportVO.getSummaries()){
 //      System.out.println(id+": "+vo.getNeutralMass());
@@ -142,7 +143,8 @@ public class MztabUtils extends LDAExporter
       summary.setReliability(String.valueOf(vo.getMzTabReliability()));
       List<Double> abundanceAssay = new ArrayList<Double>();
       for (String expName : analysisModule.getExpNamesInSequence()){
-        abundanceAssay.add(vo.getArea(expName));
+        smlArea = vo.getArea(expName);
+        abundanceAssay.add(smlArea>0d ? vo.getArea(expName) : null);
 //        System.out.println(expName+": "+vo.getArea(expName));
       }
       summary.setAbundanceAssay(abundanceAssay);
@@ -156,10 +158,10 @@ public class MztabUtils extends LDAExporter
       summary.setAbundanceCoeffvarStudyVariable(abundanceCoeffvarStudyVariable);
 
       List<OptColumnMapping> optList = new ArrayList<OptColumnMapping>();
-      optList.add(new OptColumnMapping().identifier("lipid_species").value(molGroup+" "+vo.getSpeciesId()));
+      optList.add(new OptColumnMapping().identifier("global_lipid_species").value(molGroup+" "+vo.getSpeciesId()));
       String bestId = molGroup+" ";
       bestId += vo.getMolecularId()!=null ? vo.getMolecularId() : isRtGrouped ? vo.getSpeciesId().substring(0,vo.getSpeciesId().lastIndexOf("_")) : vo.getSpeciesId();
-      optList.add(new OptColumnMapping().identifier("lipid_best_id_level").value(bestId));
+      optList.add(new OptColumnMapping().identifier("global_lipid_best_id_level").value(bestId));
       summary.setOpt(optList);
       ////summary.setExpMassToCharge(vo.getNeutralMass());      
       summaries.add(summary);
@@ -176,6 +178,8 @@ public class MztabUtils extends LDAExporter
           smeRefs.add(String.valueOf(id));
         if (smeRefs.size()>0)
           feature.setSmeIdRefs(smeRefs);
+        if (smeRefs.size()>1)
+          feature.setSmeIdRefAmbiguityCode(2);
         String mztabAdduct = LipidomicsConstants.getMzTabAdduct(vo.getAdduct())!=null ? LipidomicsConstants.getMzTabAdduct(vo.getAdduct()) : vo.getAdduct();
         feature.setAdductIon(mztabAdduct);
         feature.setExpMassToCharge(vo.getExpMz());
@@ -222,9 +226,9 @@ public class MztabUtils extends LDAExporter
         evidence.setSpectraRef(spectraNrs);
         
         List<OptColumnMapping> optList = new ArrayList<OptColumnMapping>();
-        optList.add(new OptColumnMapping().identifier("lipid_species").value(molGroup+" "+vo.getSpeciesId()));
+        optList.add(new OptColumnMapping().identifier("global_lipid_species").value(molGroup+" "+vo.getSpeciesId()));
         if (speciesType >= LipidomicsConstants.EXPORT_ANALYTE_TYPE_CHAIN)
-          optList.add(new OptColumnMapping().identifier("lipid_molecular_species").value(vo.getLdaStructure()==null ? "" : molGroup+" "+vo.getLdaStructure().replaceAll(" \\| ", " | "+molGroup+" ")));
+          optList.add(new OptColumnMapping().identifier("global_lipid_molecular_species").value(vo.getLdaStructure()==null ? "" : molGroup+" "+vo.getLdaStructure().replaceAll(" \\| ", " | "+molGroup+" ")));
         evidence.setOpt(optList);
         
       //TODO: these are dummy values that are set in the meantime to produce an output:

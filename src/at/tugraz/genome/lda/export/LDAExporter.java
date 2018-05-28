@@ -253,7 +253,7 @@ public abstract class LDAExporter
         Vector<Double> areas = new Vector<Double>();
         for (String expName : expNames){
           if (!relevantOriginals.containsKey(expName) || !relevantOriginals.get(expName).containsKey(mod)){
-            areas.add(0d);
+            areas.add(null);
             continue;
           }
           Vector<LipidParameterSet> sets = relevantOriginals.get(expName).get(mod);
@@ -299,7 +299,7 @@ public abstract class LDAExporter
             weightedMz = areaTimesMz/totalArea;
             weightedRt = areaTimesRt/totalArea;
           }
-          areas.add(areaOfAssay);
+          areas.add(areaOfAssay>0d ? areaOfAssay : null);
         }
         if (foundOneHit){
           FeatureVO feature = new FeatureVO(currentFeatureId,mod,weightedMz,charge,weightedRt,
