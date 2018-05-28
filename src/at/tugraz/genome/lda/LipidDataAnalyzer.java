@@ -5181,9 +5181,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	    software.setParameter(new Parameter().name("LipidDataAnalyzer").value(Settings.VERSION));
 	    metadata.addSoftwareItem(software);
 	    Parameter quantMethod = new Parameter().cvLabel("MS").cvAccession("MS:1002038").name("unlabeled sample").value(null);
-	    Vector<Parameter> quantMethods = new Vector<Parameter>();
-	    quantMethods.add(quantMethod);
-	    metadata.setQuantificationMethod(quantMethods);
+    	metadata.setQuantificationMethod(quantMethod);
 	    List<CV> cvs = new ArrayList<CV>();
 	    CV label = new CV().id(1).label("MS").fullName("PSI-MS controlled vocabulary").version("4.0.9").url("https://raw.githubusercontent.com/HUPO-PSI/psi-ms-CV/master/psi-ms.obo");
 	    cvs.add(label);

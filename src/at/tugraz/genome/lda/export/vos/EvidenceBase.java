@@ -32,8 +32,6 @@ package at.tugraz.genome.lda.export.vos;
 public class EvidenceBase
 {
   
-  /** an identifier for evidence originating from the same spectra*/
-  private int evidenceGroupingId_;
   /** the name of the modification*/
   private String modification_;
   /** the charge of the hit*/
@@ -42,27 +40,15 @@ public class EvidenceBase
   
   /**
    * constructor for basic evidence value object (a class holding basic information that is common to the individual evidence value objects)
-   * @param evidenceGroupingId an  identifier for evidence originating from the same spectra
    * @param modification name of the modification
    * @param charge charge of the hit
    */
-  public EvidenceBase(int evidenceGroupingId, String modification, int charge)
+  public EvidenceBase(String modification, int charge)
   {
-    this.evidenceGroupingId_ = evidenceGroupingId;
     this.modification_ = modification;
     this.charge_ = charge;
   }
 
-  /**
-   * 
-   * @return  an  identifier for evidence originating from the same spectra
-   */
-  public int getEvidenceGroupingId()
-  {
-    return evidenceGroupingId_;
-  }
- 
-  
   /**
    * 
    * @return name of the modification

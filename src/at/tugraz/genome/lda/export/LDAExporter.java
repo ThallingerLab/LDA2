@@ -667,7 +667,7 @@ public abstract class LDAExporter
       evidence = new Vector<EvidenceVO>();
       for (String mod : features.keySet()){
         FeatureVO feature = features.get(mod);
-        EvidenceBase base = new EvidenceBase(currentEvGroupingId,mod,feature.getCharge());
+        EvidenceBase base = new EvidenceBase(mod,feature.getCharge());
         Vector<String> speciesToCheck = new Vector<String>();
         speciesToCheck.add(molName);
         Hashtable<String,SummaryVO> speciesToSummary = new Hashtable<String,SummaryVO>();
@@ -679,10 +679,12 @@ public abstract class LDAExporter
             speciesToSummary.put(summary.getMolecularId(), summary);
           }
         }
-        boolean foundMsn = false;
+        //first key: experiment; second key: msLevel; third key: grouping id; value: the scan numbers;
+        Hashtable<String,Hashtable<Integer,Hashtable<Integer,Set<Integer>>>> evGroupingIdLookup = new Hashtable<String,Hashtable<Integer,Hashtable<Integer,Set<Integer>>>>();
         for (String species : speciesToCheck){
           String molecularSpecies = null;
-          String ldaId;
+          String speciesId;
+          String ldaStructure;
           if (speciesToSummary.containsKey(species) && speciesToSummary.get(species).getMolecularId()!=null)
             molecularSpecies = speciesToSummary.get(species).getMolecularId();
           String noPosition = null;
@@ -698,7 +700,10 @@ public abstract class LDAExporter
           String chemFormulaInclAdduct = null; 
           neutralMassTheoretical = null;
           for (String expName : expNames){
-            ldaId = new String(molName);
+            if (!evGroupingIdLookup.containsKey(expName))
+              evGroupingIdLookup.put(expName, new Hashtable<Integer,Hashtable<Integer,Set<Integer>>>());
+            speciesId = new String(molName);
+            ldaStructure = null;
             boolean hasHitPositionInfo = false;
             if (!relevantOriginals.containsKey(expName) || !relevantOriginals.get(expName).containsKey(mod) ||
                 (speciesToSummary.containsKey(species) && speciesToSummary.get(species).getArea(expName)==0d)){
@@ -818,24 +823,30 @@ public abstract class LDAExporter
               weightedMz = areaTimesMz/totalArea;
               if (molecularSpecies!=null){
                 if (containsPositionInfo && !hasHitPositionInfo)
-                  ldaId += " | "+noPosition;
+                  ldaStructure = noPosition;
                 else
-                  ldaId += " | "+bestIdentification;
+                  ldaStructure = bestIdentification;
               }
 
               
               List<Integer> msLevelsSorted = new ArrayList<Integer>(msLevels);              
               for (int msLevel : msLevelsSorted){
-                evidence.add(new EvidenceVO(expName,base,currentEvidenceId,ldaId,chemFormulaInclAdduct,weightedMz,neutralMassTheoretical,msLevel,scanNrs.get(msLevel)));
+                if (!evGroupingIdLookup.get(expName).containsKey(msLevel))
+                  evGroupingIdLookup.get(expName).put(msLevel, new Hashtable<Integer,Set<Integer>>());
+                int currentGroupingId = checkForSameGroupingEvidence(evGroupingIdLookup.get(expName).get(msLevel),scanNrs.get(msLevel));
+                if (currentGroupingId==-1){
+                  currentGroupingId = currentEvGroupingId;
+                  evGroupingIdLookup.get(expName).get(msLevel).put(currentEvGroupingId, scanNrs.get(msLevel));
+                  currentEvGroupingId++;
+                }
+                evidence.add(new EvidenceVO(expName,base,currentEvidenceId,currentGroupingId,speciesId,ldaStructure,chemFormulaInclAdduct,weightedMz,
+                    neutralMassTheoretical,msLevel,scanNrs.get(msLevel)));
                 feature.addEvidenceRef(currentEvidenceId);
                 currentEvidenceId++;
-                foundMsn = true;
               }
             }
           }
         }
-        if (foundMsn)
-          currentEvGroupingId++;
       }      
     }
        
@@ -1095,5 +1106,30 @@ public abstract class LDAExporter
       hash.get(molName).put(mod, new Hashtable<String,Short>());
     if (!hash.get(molName).get(mod).containsKey(expName) || evidence>hash.get(molName).get(mod).get(expName))
       hash.get(molName).get(mod).put(expName, evidence);
+  }
+  
+  /**
+   * checks whether these spectra belong to an already used mzTab grouping id; if so, the grouping id is returned, otherwise -1
+   * @param groupIds the used grouping ids and the refered spectra
+   * @param spectra the spectra that are checked
+   * @return grouping id if the same spectra were used already, otherwise -1
+   */
+  private static int checkForSameGroupingEvidence(Hashtable<Integer,Set<Integer>> groupIds, Set<Integer> spectra){
+    Set<Integer> groupSpectra;
+    for (Integer groupId : groupIds.keySet()){
+      groupSpectra = groupIds.get(groupId);
+      if (spectra.size()!=groupSpectra.size())
+        continue;
+      boolean allFound = true;
+      for (Integer specNr : spectra){
+        if (!groupSpectra.contains(specNr)){
+          allFound = false;
+          break;
+        }
+      }
+      if (allFound)
+        return groupId;
+    }
+    return -1;
   }
 }

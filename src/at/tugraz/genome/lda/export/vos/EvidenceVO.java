@@ -40,14 +40,18 @@ public class EvidenceVO extends EvidenceBase
   private String expName_;
   /** a unique identifier that must be different between the EvidenceVOs*/
   private int id_;
+  /** an identifier for evidence originating from the same spectra*/
+  private int evidenceGroupingId_;
   /** the assumed chemical formula of this identification (including the modification/adduct)*/
   private String chemFormula_;
   /** the actually detected m/z value*/
   private double expMz_;
   /** the theoretical m/z value of the assumed identification*/
   private double theorMz_;
+  /** the identifier for the lipid species*/
+  private String speciesId_;
   /** the (recommended) LDA original identification*/
-  private String ldaId_;
+  private String ldaStructure_;
   /** the MS-level this evidence is based on*/
   private int msLevel_;
   /** the found scan numbers*/
@@ -58,19 +62,23 @@ public class EvidenceVO extends EvidenceBase
    * @param expName the experiment identifier
    * @param base an EvidenceBase object holding basic information that is common to the individual evidence value objects
    * @param id a unique identifier that must be different between the EvidenceVOs
-   * @param ldaId the (recommended) LDA original identification
+   * @param evidenceGroupingId an  identifier for evidence originating from the same spectra
+   * @param speciesId the identifier for the lipid species
+   * @param ldaStructure the (recommended) LDA original identification
    * @param chemFormula the assumed chemical formula of this identification (including the modification/adduct)
    * @param expMz the actually detected m/z value
    * @param theorMz the theoretical m/z value of the assumed identification
    * @param msLevel the MS-level this evidence is based on
    * @param scanNrs found scan numbers
    */
-  public EvidenceVO(String expName, EvidenceBase base, int id, String ldaId, String chemFormula, double expMz, double theorMz,
-      int msLevel, Set<Integer> scanNrs){
-    super(base.getEvidenceGroupingId(),base.getModification(),base.getCharge());
+  public EvidenceVO(String expName, EvidenceBase base, int id, int evidenceGroupingId, String speciesId, String ldaStructure, String chemFormula, double expMz,
+      double theorMz, int msLevel, Set<Integer> scanNrs){
+    super(base.getModification(),base.getCharge());
     this.expName_ = expName;
     this.id_ = id;
-    this.ldaId_ = ldaId;
+    this.evidenceGroupingId_ = evidenceGroupingId;
+    this.speciesId_ = speciesId;
+    this.ldaStructure_ = ldaStructure;
     this.chemFormula_ = chemFormula;
     this.expMz_ = expMz;
     this.theorMz_ = theorMz;
@@ -103,17 +111,32 @@ public class EvidenceVO extends EvidenceBase
     return id_;
   }
   
+  /**
+  * @return  an  identifier for evidence originating from the same spectra
+  */
+  public int getEvidenceGroupingId(){
+    return evidenceGroupingId_;
+  }
+
+  
+  /**
+   * 
+   * @return the identifier for the lipid species
+   */
+  public String getSpeciesId()
+  {
+    return speciesId_;
+  }
   
   /**
    * 
    * @return the (recommended) LDA original identification
    */
-  public String getLdaId()
+  public String getLdaStructure()
   {
-    return ldaId_;
+    return ldaStructure_;
   }
 
-  
   /**
    * 
    * @return the assumed chemical formula of this identification (including the modification/adduct)

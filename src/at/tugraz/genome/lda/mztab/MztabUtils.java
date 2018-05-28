@@ -43,7 +43,6 @@ import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.vos.ResultAreaVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
-import at.tugraz.genome.maspectras.utils.Calculator;
 import de.isas.mztab1_1.model.MsRun;
 import de.isas.mztab1_1.model.OptColumnMapping;
 import de.isas.mztab1_1.model.Parameter;
@@ -133,7 +132,6 @@ public class MztabUtils extends LDAExporter
       Vector<Double> neutralMasses = new Vector<Double>();
       neutralMasses.add(vo.getNeutralMass());
       summary.setTheoreticalNeutralMass(neutralMasses);
-      summary.setRetentionTime(Calculator.roundDBL((double)vo.getRt(),1));
       List<String> adducts = new ArrayList<String>();
       String mztabAdduct;
       for (String adduct : vo.getModifications()){
@@ -185,9 +183,9 @@ public class MztabUtils extends LDAExporter
         if (mztabAdduct.endsWith("-"))
           charge = charge*-1;
         feature.setCharge(charge);
-        feature.setRetentionTime(vo.getRtApex());
-        feature.setRetentionTimeStart(vo.getRtStart());
-        feature.setRetentionTimeEnd(vo.getRtEnd());
+        feature.setRetentionTimeInSeconds(vo.getRtApex());
+        feature.setRetentionTimeInSecondsStart(vo.getRtStart());
+        feature.setRetentionTimeInSecondsEnd(vo.getRtEnd());
         feature.setAbundanceAssay(new ArrayList<Double>(vo.getAreas()));
         
         //TODO: these are dummy values that are set in the meantime to produce an output:
@@ -224,7 +222,9 @@ public class MztabUtils extends LDAExporter
         evidence.setSpectraRef(spectraNrs);
         
         List<OptColumnMapping> optList = new ArrayList<OptColumnMapping>();
-        optList.add(new OptColumnMapping().identifier("lda_identification").value(molGroup+" "+vo.getLdaId()));
+        optList.add(new OptColumnMapping().identifier("lipid_species").value(molGroup+" "+vo.getSpeciesId()));
+        if (speciesType >= LipidomicsConstants.EXPORT_ANALYTE_TYPE_CHAIN)
+          optList.add(new OptColumnMapping().identifier("lipid_molecular_species").value(vo.getLdaStructure()==null ? "" : molGroup+" "+vo.getLdaStructure().replaceAll(" \\| ", " | "+molGroup+" ")));
         evidence.setOpt(optList);
         
       //TODO: these are dummy values that are set in the meantime to produce an output:
