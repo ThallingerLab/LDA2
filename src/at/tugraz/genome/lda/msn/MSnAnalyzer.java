@@ -108,6 +108,8 @@ public class MSnAnalyzer
   private Vector<String> validChainCombinations_;
   /** should absolute rules be ignored - whenever there is an overlap of isobars assumed*/
   private boolean ignoreAbsolute_;
+  /** CgProbes without retention time limits - for shotgun data*/
+  private Vector<CgProbe> shotgunProbes_;
   
   /** position definitions for fatty acid combinations - first key: id of the chain combination; second hash: lookup from the position of the fatty acid in the combination key to the assigned position*/
   private Hashtable<String,Hashtable<Integer,Integer>> positionDefinition_;
@@ -389,7 +391,7 @@ public class MSnAnalyzer
     Hashtable<Integer,Vector<CgProbe>> probesWithMSnSpectra = new Hashtable<Integer,Vector<CgProbe>>();
     for (int msLevel : msLevels.keySet()){
       Vector<CgProbe> probes = new Vector<CgProbe>();
-      for (CgProbe probe : set_.getIsotopicProbes().get(0)){
+      for (CgProbe probe : getCorrespondingCgProbes()){
         if (analyzer_.areMSnSpectraInThisRegion(probe.LowerValley,probe.UpperValley,msLevel)){
           probes.add(probe);
         }
@@ -875,7 +877,7 @@ public class MSnAnalyzer
     Hashtable<Integer,Float> basePeakValues = new Hashtable<Integer,Float>();
     Vector<Integer> levels = fragCalc_.getBasePeakIntRuleLevels(msLevels);
     if (levels.size()>0){
-      basePeakValues = analyzer_.extractBasePeakValues(levels,set_.getIsotopicProbes().get(0));
+      basePeakValues = analyzer_.extractBasePeakValues(levels,getCorrespondingCgProbes());
     }
     return basePeakValues;
   }
@@ -1728,7 +1730,7 @@ public class MSnAnalyzer
       //to extend this, spectrum coverage values have to be added to be added for each MS-Level in the [GENERAL] section of the fragmentation rules
       if (msLevels.get(level) && level==2) levels.add(level);
     }
-    Hashtable<Integer,Float> coverages = analyzer.calculateSpectrumCoverage(set.getIsotopicProbes().get(0), foundHits, notCountedHits, levels,
+    Hashtable<Integer,Float> coverages = analyzer.calculateSpectrumCoverage(getCorrespondingCgProbes(set), foundHits, notCountedHits, levels,
         bpCutoff);
     boolean covered = true;
     for (int key : coverages.keySet()){
@@ -2120,7 +2122,7 @@ public class MSnAnalyzer
       if (!proposedRts.containsKey(partner.getQuantVO())) continue;
       float lowest = Float.MAX_VALUE;
       float highest = 0f;
-      for (CgProbe probe : partner.getSet().getIsotopicProbes().get(0)){
+      for (CgProbe probe : getCorrespondingCgProbes(partner.getSet())){
         if (probe.LowerValley<lowest) lowest = probe.LowerValley;
         if (probe.UpperValley>highest) highest = probe.UpperValley;
       }
@@ -2307,5 +2309,39 @@ public class MSnAnalyzer
       return analyzer.checkMSnLevels();
     }
   }
+  
+  /**
+   * selects CgProbes accordingly depending on whether it is shotgun data or not
+   * @return appropriate CgProbes
+   */
+  private Vector<CgProbe> getCorrespondingCgProbes(){
+    if (LipidomicsConstants.isShotgun()){
+      if (this.shotgunProbes_==null){
+        shotgunProbes_ = getCorrespondingCgProbes(set_);
+      }
+      return shotgunProbes_;
+    }else
+      return set_.getIsotopicProbes().get(0);
+  }
+  
+  /**
+   * selects CgProbes accordingly depending on whether it is shotgun data or not
+   * @param set the data set the probes originate from
+   * @return appropriate CgProbes
+   */
+  private static Vector<CgProbe> getCorrespondingCgProbes(LipidParameterSet set){
+    Vector<CgProbe> probes = set.getIsotopicProbes().get(0);
+    if (LipidomicsConstants.isShotgun()){
+      probes = new Vector<CgProbe>();
+      for (CgProbe aProbe : set.getIsotopicProbes().get(0)){
+        CgProbe probe = new CgProbe(aProbe);
+        probe.LowerValley = 0f;
+        probe.UpperValley = Float.MAX_VALUE;
+        probes.add(probe);
+      }
+    }
+    return probes;
+  }
+  
 }
 

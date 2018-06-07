@@ -5056,7 +5056,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         Lipidomics2DSpectraChromPainter spectrumPainter = new Lipidomics2DSpectraChromPainter(analyzer_,scanNrSpectrumHash, scanNrPrecursorHash, scanNrLevelHash, allRetTimes,
             peakRt, extendedStart,extendedStop,LipidomicsConstants.getMs2ChromMultiplicationFactorForInt(),LipidomicsConstants.getMs2PrecursorTolerance()*2,this,
             extendedStart,extendedStop, true,new Vector<CgProbe>(),new Vector<CgProbe>(),1,1, this.relAbund_.isSelected(),
-            params,rangeColors, new Double(annotationThreshold_.getText()));
+            params,rangeColors, new Double(annotationThreshold_.getText()),shotgunIsDisplayed_);
 
         this.spectrumSelected_.setText(spectrumPainter.getSpectSelectedText());
         this.rtSelected_.setText(spectrumPainter.getRtSelectedText());
@@ -5957,7 +5957,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       Lipidomics2DSpectraChromPainter spectrumPainter = new Lipidomics2DSpectraChromPainter(analyzer_,rtNrSpectrumHash, rtNrPrecursorHash, scanNrLevelHash, retTimes,
           peakRt, extendedStart,extendedStop,LipidomicsConstants.getMs2ChromMultiplicationFactorForInt(),LipidomicsConstants.getMs2PrecursorTolerance()*2,this,
           extendedStart,extendedStop, true,new Vector<CgProbe>(),new Vector<CgProbe>(),1,1, this.relAbund_.isSelected(),
-          params,new Hashtable<Integer,Vector<RangeColor>>(),new Double(annotationThreshold_.getText()));      
+          params,new Hashtable<Integer,Vector<RangeColor>>(),new Double(annotationThreshold_.getText()),false);      
 
       //SETS THE ZOOM BACK BEFORE THE REFRESHMENT
       if(mz_minTimeText_.getText() != null){

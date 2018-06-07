@@ -87,6 +87,9 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
   
   private double annotationCutoff_;
   
+  /** is this data shotgun data*/
+  private boolean isShotgun_;
+  
     
   /**
    * 
@@ -110,11 +113,12 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
    * @param charge applies for chromatograms - here obsolete
    * @param relativeIntensity show intensity in relative or absolute values
    * @param annotationCutoff the relative value where spectra peaks should not be annotated anymore
+   * @param isShotgun is this shotgun data
    */
   public Lipidomics2DSpectraChromPainter(LipidomicsAnalyzer analyzer, Hashtable<Integer,String> rtNrSpectrumHash, Hashtable<Integer,Vector<Double>> rtNrPrecursorHash, 
       Hashtable<Integer, Integer> scanNrLevelHash, Hashtable<Integer,Float> retentionTimes, float precRt, float mzStart, float mzStop, int resolutionFactor,float stepSize, ActionListener listener,
       float start, float stop, boolean raw, Vector<CgProbe> storedProbes, Vector<CgProbe> selectedProbes,int isotopeNumber, int charge,
-      boolean relativeIntensity, double annotationCutoff){
+      boolean relativeIntensity, double annotationCutoff, boolean isShotgun){
     //TODO: The 2DSpectraChromPainter is currently not dedicated for storing areas - thus there is just 1 used as msLevel of the super constructor
     super(analyzer,new String[0], retentionTimes, mzStart, mzStop, resolutionFactor, stepSize, listener, DISPLAY_TIME_MZ,
         start, stop, raw, storedProbes, selectedProbes, isotopeNumber, charge,1,false);
@@ -160,6 +164,7 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
     timeRanges_ = null;
     m_2dGain_ = 0.97f;
     annotationCutoff_ = annotationCutoff;
+    isShotgun_ = isShotgun;
 //    spectrum_.LowerMzBand = this.stepSize_/2;
 //    spectrum_.UpperMzBand = this.stepSize_/2;
 //    spectrum_.Mz = (start+stop)/2;
@@ -194,13 +199,14 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
    * @param param the detected LipidParameterSet to be displayed
    * @param rangeColors the m/z ranges that shall be painted in a different color
    * @param annotationCutoff the relative value where spectra peaks should not be annotated anymore
+   * @param isShotgun is this shotgun data
    */
   public Lipidomics2DSpectraChromPainter(LipidomicsAnalyzer analyzer, Hashtable<Integer,String> rtNrSpectrumHash, Hashtable<Integer,Vector<Double>> rtNrPrecursorHash,
       Hashtable<Integer, Integer> scanNrLevelHash, Hashtable<Integer,Float> retentionTimes, float precRt, float mzStart, float mzStop, int resolutionFactor,float stepSize, ActionListener listener,
       float start, float stop, boolean raw, Vector<CgProbe> storedProbes, Vector<CgProbe> selectedProbes,int isotopeNumber, int charge,
-      boolean relativeIntensity, LipidParameterSet param, Hashtable<Integer,Vector<RangeColor>> rangeColors, double annotationCutoff){
+      boolean relativeIntensity, LipidParameterSet param, Hashtable<Integer,Vector<RangeColor>> rangeColors, double annotationCutoff, boolean isShotgun){
     this(analyzer, rtNrSpectrumHash, rtNrPrecursorHash, scanNrLevelHash, retentionTimes, precRt, mzStart, mzStop, resolutionFactor, stepSize, listener,
-        start, stop, raw, storedProbes, selectedProbes, isotopeNumber, charge, relativeIntensity, annotationCutoff);
+        start, stop, raw, storedProbes, selectedProbes, isotopeNumber, charge, relativeIntensity, annotationCutoff, isShotgun);
     setRangeColors(param,rangeColors);
   }
   
@@ -208,9 +214,13 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
     if (param instanceof LipidomicsMSnSet){
       rangeColors_ = rangeColors;
       timeRanges_ = new Vector<Range>();
-      for (CgProbe probe : param.getIsotopicProbes().get(0)){
-        timeRanges_.add(new Range(probe.LowerValley,probe.UpperValley));
-      } 
+      if (this.isShotgun_){
+        timeRanges_.add(new Range(0f,Float.MAX_VALUE));
+      }else{
+        for (CgProbe probe : param.getIsotopicProbes().get(0)){
+          timeRanges_.add(new Range(probe.LowerValley,probe.UpperValley));
+        } 
+      }
     }    
   }
   
@@ -219,9 +229,13 @@ public class Lipidomics2DSpectraChromPainter extends Lipidomics2DPainter
     if (param instanceof LipidomicsMSnSet)
     {      
       timeRanges_ = new Vector<Range>();
-      for (CgProbe probe : param.getIsotopicProbes().get(0))
-      {
-        timeRanges_.add(new Range(probe.LowerValley,probe.UpperValley));
+      if (this.isShotgun_){
+        timeRanges_.add(new Range(0f,Float.MAX_VALUE));
+      } else {
+        for (CgProbe probe : param.getIsotopicProbes().get(0))
+        {
+          timeRanges_.add(new Range(probe.LowerValley,probe.UpperValley));
+        }
       }
     }
   }
