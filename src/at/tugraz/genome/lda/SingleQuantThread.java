@@ -318,7 +318,7 @@ public class SingleQuantThread extends Thread
           else{
             if (LipidomicsConstants.isMS2()){
               try{
-                if (RulesContainer.isRtPostprocessing(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName())) && 
+                if (!LipidomicsConstants.isShotgun() && RulesContainer.isRtPostprocessing(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName())) && 
                     RulesContainer.correctRtForParallelModel(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName()))){
                   ms2RemovedHits_.get(oneSet).put(param.getRt(), param);
                 }
@@ -470,6 +470,17 @@ public class SingleQuantThread extends Thread
     // several minutes away, and the spectrum coverage contribution of the distinct peak is quite
     // low compared to the partnering peak - then an accidental hit based on same fragments is assumed
     // and the peak is left to the other partner
+    
+    //for shotgun: only separation by distinct fragments is possible
+    if (LipidomicsConstants.isShotgun()){
+      for (SharedMS1PeakVO shared : sharedPeaks){
+        calculatePercentualSplitValueAccordingToMSn(shared);
+        for (SharedPeakContributionVO contr : shared.getPartners()){
+          hitsAccordingToQuant.get(contr.getQuantVO()).put("", contr.getSet());
+        }
+      }
+      return hitsAccordingToQuant;
+    }
     
     //first, the peaks are sorted by ascending retention time
     Vector<SharedMS1PeakVO> sortedSharedPeaks = new Vector<SharedMS1PeakVO>();
@@ -981,7 +992,10 @@ public class SingleQuantThread extends Thread
       SharedPeakContributionVO partner = partners.get(i);
       if (!partner.hasDistinctFragments()){
         Hashtable<String,LipidParameterSet> sets = hitsAccordingToQuant.get(partner.getQuantVO());
-        sets.remove(partner.getSet().getRt());
+        String rt = "";
+        if (!LipidomicsConstants.isShotgun())
+          rt = partner.getSet().getRt();
+        sets.remove(rt);
         if (sets.size()==0) hitsAccordingToQuant.remove(partner.getQuantVO());
         partnersToRemove.add(i);
       }
@@ -1002,7 +1016,10 @@ public class SingleQuantThread extends Thread
       SharedPeakContributionVO partner = partners.get(i);
       if (partner.getQuantVO().equals(contr.getQuantVO())){
         Hashtable<String,LipidParameterSet> sets = hitsAccordingToQuant.get(partner.getQuantVO());
-        sets.remove(partner.getSet().getRt());
+        String rt = "";
+        if (!LipidomicsConstants.isShotgun())
+          rt = partner.getSet().getRt();
+        sets.remove(rt);
         if (sets.size()==0) hitsAccordingToQuant.remove(partner.getQuantVO());
         partnersToRemove.add(i);
       }
@@ -1021,10 +1038,13 @@ public class SingleQuantThread extends Thread
       QuantVO oneSet = contr.getQuantVO();
       Hashtable<String,LipidParameterSet> quantsOfMod = hitsAccordingToQuant.get(oneSet);
       try {
+        String rt = "";
+        if (!LipidomicsConstants.isShotgun())
+          rt = contr.getSet().getRt();
         //TODO: this is set to true in the meantime - maybe play around with caching in the future to improve calculation time
         MSnAnalyzer msnAnalyzer = new MSnAnalyzer(oneSet.getAnalyteClass(),oneSet.getModName(),contr.getSet(),analyzer_,oneSet,true,false);  
-        if (msnAnalyzer.checkStatus()==LipidomicsMSnSet.DISCARD_HIT) quantsOfMod.remove(contr.getSet().getRt());
-        else quantsOfMod.put(contr.getSet().getRt(),msnAnalyzer.getResult());
+        if (msnAnalyzer.checkStatus()==LipidomicsMSnSet.DISCARD_HIT) quantsOfMod.remove(rt);
+        else quantsOfMod.put(rt,msnAnalyzer.getResult());
       }
       catch (RulesException e) {
         e.printStackTrace();
@@ -1067,7 +1087,10 @@ public class SingleQuantThread extends Thread
         remove = true;
       }
       if (remove){
-        hitsAccordingToQuant.get(contr.getQuantVO()).remove(contr.getSet().getRt());
+        String rt = "";
+        if (!LipidomicsConstants.isShotgun())
+          rt = contr.getSet().getRt();
+        hitsAccordingToQuant.get(contr.getQuantVO()).remove(rt);
         partnersToRemove.add(i);
       }
     }
@@ -1123,7 +1146,10 @@ public class SingleQuantThread extends Thread
         for (int i=0; i!=shared.getPartners().size();i++){
           SharedPeakContributionVO cont = shared.getPartners().get(i);
           if (!(cont.getSet() instanceof LipidomicsMSnSet)) continue;
-          hitsAccordingToQuant.get(cont.getQuantVO()).remove(cont.getSet().getRt());
+          String rt = "";
+          if (!LipidomicsConstants.isShotgun())
+            rt = cont.getSet().getRt();
+          hitsAccordingToQuant.get(cont.getQuantVO()).remove(rt);
         }
       }
 
