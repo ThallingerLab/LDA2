@@ -43,13 +43,13 @@ import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.vos.ResultAreaVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
-import de.isas.mztab1_1.model.MsRun;
-import de.isas.mztab1_1.model.OptColumnMapping;
-import de.isas.mztab1_1.model.Parameter;
-import de.isas.mztab1_1.model.SmallMoleculeEvidence;
-import de.isas.mztab1_1.model.SmallMoleculeFeature;
-import de.isas.mztab1_1.model.SmallMoleculeSummary;
-import de.isas.mztab1_1.model.SpectraRef;
+import de.isas.mztab2.model.MsRun;
+import de.isas.mztab2.model.OptColumnMapping;
+import de.isas.mztab2.model.Parameter;
+import de.isas.mztab2.model.SmallMoleculeEvidence;
+import de.isas.mztab2.model.SmallMoleculeFeature;
+import de.isas.mztab2.model.SmallMoleculeSummary;
+import de.isas.mztab2.model.SpectraRef;
 
 /**
  * Class for generating mzTab specific export information 
@@ -59,6 +59,9 @@ import de.isas.mztab1_1.model.SpectraRef;
  */
 public class MztabUtils extends LDAExporter
 {
+  
+  /** the value for the best_id_confidence_measure is always the same*/
+  private final static Parameter BEST_CONFID_MEASURE = new Parameter().cvLabel("MS").cvAccession("MS:1002890").name("fragmentation score");
   
   /**
    * extracts the combined information of several experiments according to selections in the heat maps plus detailed data from LDA result files
@@ -122,11 +125,8 @@ public class MztabUtils extends LDAExporter
     for (SummaryVO vo : exportVO.getSummaries()){
 //      System.out.println(id+": "+vo.getNeutralMass());
       SmallMoleculeSummary summary = new SmallMoleculeSummary();
-      summary.setSmlId(String.valueOf(vo.getId()));
-      List<String> featureRefs = new ArrayList<String>();
-      for (Integer featureRef : vo.getFeatureRefs())
-        featureRefs.add(featureRef.toString());
-      summary.setSmfIdRefs(featureRefs);
+      summary.setSmlId(vo.getId());
+      summary.setSmfIdRefs(vo.getFeatureRefs());
       ArrayList<String> chemFormula = new ArrayList<String>();
       chemFormula.add(vo.getChemFormula());
       summary.setChemicalFormula(chemFormula);
@@ -141,6 +141,7 @@ public class MztabUtils extends LDAExporter
       }
       summary.setAdductIons(adducts);
       summary.setReliability(String.valueOf(vo.getMzTabReliability()));
+      summary.setBestIdConfidenceMeasure(BEST_CONFID_MEASURE);
       List<Double> abundanceAssay = new ArrayList<Double>();
       for (String expName : analysisModule.getExpNamesInSequence()){
         smlArea = vo.getArea(expName);
@@ -155,7 +156,7 @@ public class MztabUtils extends LDAExporter
         abundanceCoeffvarStudyVariable.add(vo.getCoeffVar(group));
       }
       summary.setAbundanceStudyVariable(abundanceStudyVariable);      
-      summary.setAbundanceCoeffvarStudyVariable(abundanceCoeffvarStudyVariable);
+      summary.setAbundanceVariationStudyVariable(abundanceCoeffvarStudyVariable);
 
       List<OptColumnMapping> optList = new ArrayList<OptColumnMapping>();
       optList.add(new OptColumnMapping().identifier("global_lipid_species").value(molGroup+" "+vo.getSpeciesId()));
@@ -169,16 +170,16 @@ public class MztabUtils extends LDAExporter
     
     //generates the mzTab SmallMoleculeSummary section
     Vector<SmallMoleculeFeature> features = new Vector<SmallMoleculeFeature>();
+    Hashtable<String,Short> polarities = new Hashtable<String,Short>();
+    for (String expName : analysisModule.getExpNamesInSequence())
+      polarities.put(expName,  SmallMztabMolecule.POLARITY_UNKNOWN);
     if (exportVO.getFeatures()!=null){
       for (FeatureVO vo : exportVO.getFeatures()){
         SmallMoleculeFeature feature = new SmallMoleculeFeature();
-        feature.setSmfId(String.valueOf(vo.getId()));
-        List<String> smeRefs = new ArrayList<String>();
-        for (Integer id : vo.getEvidenceRefs())
-          smeRefs.add(String.valueOf(id));
-        if (smeRefs.size()>0)
-          feature.setSmeIdRefs(smeRefs);
-        if (smeRefs.size()>1)
+        feature.setSmfId(vo.getId());
+        if (vo.getEvidenceRefs().size()>0)
+          feature.setSmeIdRefs(vo.getEvidenceRefs());
+        if (vo.getEvidenceRefs().size()>1)
           feature.setSmeIdRefAmbiguityCode(2);
         String mztabAdduct = LipidomicsConstants.getMzTabAdduct(vo.getAdduct())!=null ? LipidomicsConstants.getMzTabAdduct(vo.getAdduct()) : vo.getAdduct();
         feature.setAdductIon(mztabAdduct);
@@ -191,7 +192,16 @@ public class MztabUtils extends LDAExporter
         feature.setRetentionTimeInSecondsStart(vo.getRtStart());
         feature.setRetentionTimeInSecondsEnd(vo.getRtEnd());
         feature.setAbundanceAssay(new ArrayList<Double>(vo.getAreas()));
-        
+        for (int i=0; i!=analysisModule.getExpNamesInSequence().size(); i++){
+          short polarity = SmallMztabMolecule.POLARITY_UNKNOWN;
+          if (vo.getAreas().get(i)==null) continue;
+          String expName = analysisModule.getExpNamesInSequence().get(i);
+          if (mztabAdduct.endsWith("+"))
+            polarity = polarities.get(expName)==SmallMztabMolecule.POLARITY_NEGATIVE ? SmallMztabMolecule.POLARITY_BOTH : SmallMztabMolecule.POLARITY_POSITIVE;
+          else if (mztabAdduct.endsWith("-"))
+            polarity = polarities.get(expName)==SmallMztabMolecule.POLARITY_POSITIVE ? SmallMztabMolecule.POLARITY_BOTH : SmallMztabMolecule.POLARITY_NEGATIVE;
+          polarities.put(expName, polarity);
+        }
         //TODO: these are dummy values that are set in the meantime to produce an output:
 //        feature.setComment(new ArrayList<Comment>());
 //        //feature.setIsotopomer(new Parameter());
@@ -206,8 +216,8 @@ public class MztabUtils extends LDAExporter
     if (exportVO.getEvidence()!=null){
       for (EvidenceVO vo : exportVO.getEvidence()){
         SmallMoleculeEvidence evidence = new SmallMoleculeEvidence();
-        evidence.setSmeId(String.valueOf(vo.getId()));
-        evidence.setEvidenceUniqueId(String.valueOf(vo.getEvidenceGroupingId()));
+        evidence.setSmeId(vo.getId());
+        evidence.setEvidenceInputId(String.valueOf(vo.getEvidenceGroupingId()));
         evidence.setChemicalFormula(vo.getChemFormula());
         String mztabAdduct = LipidomicsConstants.getMzTabAdduct(vo.getModification())!=null ? LipidomicsConstants.getMzTabAdduct(vo.getModification()) : vo.getModification();
         evidence.setAdductIon(mztabAdduct);
@@ -224,22 +234,21 @@ public class MztabUtils extends LDAExporter
           spectraNrs.add(new SpectraRef().msRun(msruns.get(vo.getExpName())).reference("index="+scanNr.toString()));
         }
         evidence.setSpectraRef(spectraNrs);
+        List<Double> confidenceMeasures = new ArrayList<Double>();
+        confidenceMeasures.add(null);
+        evidence.setIdConfidenceMeasure(confidenceMeasures);
         
         List<OptColumnMapping> optList = new ArrayList<OptColumnMapping>();
         optList.add(new OptColumnMapping().identifier("global_lipid_species").value(molGroup+" "+vo.getSpeciesId()));
         if (speciesType >= LipidomicsConstants.EXPORT_ANALYTE_TYPE_CHAIN)
-          optList.add(new OptColumnMapping().identifier("global_lipid_molecular_species").value(vo.getLdaStructure()==null ? "" : molGroup+" "+vo.getLdaStructure().replaceAll(" \\| ", " | "+molGroup+" ")));
+          optList.add(new OptColumnMapping().identifier("global_lipid_molecular_species").value(vo.getLdaStructure()==null ? null : molGroup+" "+vo.getLdaStructure().replaceAll(" \\| ", " | "+molGroup+" ")));
         evidence.setOpt(optList);
-        
-      //TODO: these are dummy values that are set in the meantime to produce an output:
-        evidence.setIdConfidenceMeasure(new ArrayList<Double>());
-        
         evidences.add(evidence);
       }
     }
     
-    SmallMztabMolecule result = new SmallMztabMolecule(exportVO.getCurrentSummaryId(),summaries,exportVO.getCurrentFeatureId(),features,
-        exportVO.getCurrentEvidenceId(),exportVO.getCurrentEvGroupingId(),evidences); 
+    SmallMztabMolecule result = new SmallMztabMolecule(exportVO.getCurrentSummaryId(),polarities,summaries,exportVO.getCurrentFeatureId(),
+        features,exportVO.getCurrentEvidenceId(),exportVO.getCurrentEvGroupingId(),evidences); 
     return result;
   }
   

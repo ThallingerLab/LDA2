@@ -23,11 +23,12 @@
 
 package at.tugraz.genome.lda.mztab;
 
+import java.util.Hashtable;
 import java.util.Vector;
 
-import de.isas.mztab1_1.model.SmallMoleculeEvidence;
-import de.isas.mztab1_1.model.SmallMoleculeFeature;
-import de.isas.mztab1_1.model.SmallMoleculeSummary;
+import de.isas.mztab2.model.SmallMoleculeEvidence;
+import de.isas.mztab2.model.SmallMoleculeFeature;
+import de.isas.mztab2.model.SmallMoleculeSummary;
 
 /**
  * Class containing exportable information in mzTab-specific format
@@ -37,8 +38,19 @@ import de.isas.mztab1_1.model.SmallMoleculeSummary;
  */
 public class SmallMztabMolecule
 {
+  /** the polarity is unknown*/
+  public final static short POLARITY_UNKNOWN = 0;
+  /** the polarity is positive*/
+  public final static short POLARITY_POSITIVE = 1;
+  /** the polarity is negative*/
+  public final static short POLARITY_NEGATIVE = 2;
+  /** both polarities are present*/
+  public final static short POLARITY_BOTH = 3;
+  
   /** the next unique summary id to use*/
   private int currentSummaryId_;
+  /** the polarity for the detections*/
+  private Hashtable<String,Short> polarity_;
   /** exportable mzTab-specific SML objects*/
   private Vector<SmallMoleculeSummary> summary_;
   /** the next unique feature id to use*/
@@ -53,9 +65,11 @@ public class SmallMztabMolecule
   private Vector<SmallMoleculeEvidence> evidence_;
   
   
+  
   /**
    * Constructor for generating object containing exportable information in mzTab-specific format
    * @param currentSummaryId the next unique summary id to use
+   * @param polarity the polarity of the detections; key: experiment name; value polarity according to the definitions given here
    * @param summary exportable mzTab-specific SML objects
    * @param currentFeatureId the next unique feature id to use
    * @param features exportable mzTab-specific SMF objects
@@ -63,11 +77,12 @@ public class SmallMztabMolecule
    * @param currentEvGroupingId the next unique identifier for an evidence group, i.e. an identifier for evidence originating from the same spectra
    * @param evidence exportable mzTab-specific SME objects
    */
-  public SmallMztabMolecule(int currentSummaryId, Vector<SmallMoleculeSummary> summary, int currentFeatureId,
+  public SmallMztabMolecule(int currentSummaryId, Hashtable<String,Short> polarity, Vector<SmallMoleculeSummary> summary, int currentFeatureId,
       Vector<SmallMoleculeFeature> features, int currentEvidenceId, int currentEvGroupingId,
       Vector<SmallMoleculeEvidence> evidence){
-      this.currentSummaryId_ = currentSummaryId;
-     summary_ = summary;
+     this.currentSummaryId_ = currentSummaryId;
+     this.polarity_ = polarity;
+     this.summary_ = summary;
      this.currentFeatureId_ = currentFeatureId;
      this.features_ = features;
      this.currentEvidenceId_ = currentEvidenceId;
@@ -83,6 +98,16 @@ public class SmallMztabMolecule
   public int getCurrentSummaryId()
   {
     return currentSummaryId_;
+  }
+
+  
+  /**
+   * 
+   * @return the polarity of the detections according to the definitions in this VO; key: experiment name; value polarity according to the definitions given here
+   */
+  public Hashtable<String,Short> getPolarity()
+  {
+    return polarity_;
   }
 
 

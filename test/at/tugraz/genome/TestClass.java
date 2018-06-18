@@ -35,6 +35,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.LineNumberReader;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.util.ArrayList;
@@ -95,6 +96,22 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.xml.sax.SAXException;
 
 
+
+
+
+
+
+
+
+
+
+
+
+import uk.ac.ebi.pride.jmztab2.utils.MZTabFileParser;
+import de.isas.lipidomics.mztab2.validation.MzTabValidator;
+import uk.ac.ebi.pride.jmztab2.utils.errors.MZTabError;
+import uk.ac.ebi.pride.jmztab2.utils.errors.MZTabErrorList;
+import uk.ac.ebi.pride.jmztab2.utils.errors.MZTabErrorType;
 ////import at.tugraz.genome.IndependentTwoSamplesTTest;
 import JSci.maths.statistics.ChiSqrDistribution;
 import JSci.maths.statistics.TDistribution;
@@ -211,10 +228,23 @@ import at.tugraz.genome.voutils.GeneralComparator;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 import com.sun.j3d.utils.applet.MainFrame;
 import com.sun.org.apache.xerces.internal.util.URI;
 
-import de.isas.mztab1_1.model.Metadata;
+import de.isas.mztab2.model.Metadata;
+import de.isas.mztab2.model.MzTab;
+import de.isas.mztab2.model.ValidationMessage;
 
 //import com.sun.jna.Native;
 //import com.sun.jna.NativeLibrary;
@@ -329,7 +359,8 @@ public class TestClass extends JApplet implements AddScan
     //this.readRttFile();
     //this.detectMsnByAlex123();
     //this.mergeIdx2();
-    this.faSummaryConverter();
+    //this.faSummaryConverter();
+    this.mzTabValidation();
   }
 
   private void testExportPanel()
@@ -14170,4 +14201,47 @@ public void testTabFile() throws Exception {
       e.printStackTrace();
     }
   }
+  
+  private void mzTabValidation(){
+//    String filePath = "D:\\01-mztab.txt";
+//    MZTabFileParser parser = new MZTabFileParser(new File(filePath));
+//    try {
+//      parser.parse(System.out);
+//      MzTab mzTabFile = parser.getMZTabFile();
+//      System.out.println("Software: "+mzTabFile.getMetadata().getSoftware().get(0).getParameter().getName());
+//      System.out.println("11111111111111111");
+//      MZTabFileValidator validator = new MZTabFileValidator(parser.getErrorList());
+//      validator.toString();
+//
+//    }
+//    catch (IOException e) {
+//      // TODO Auto-generated catch block
+//      e.printStackTrace();
+//    }
+    String filePath = "D:\\01-mztab.txt";
+    //String filePath = "D:\\01-mztab_test.txt";
+    //String filePath = "D:\\lda2-lipidomics.mztab";
+    File inFile = new File(filePath);
+    System.out.println(
+        "Beginning validation of mztab file: " + inFile.
+            getAbsolutePath());
+    try {
+      OutputStream out = System.out;
+      MZTabErrorType.Level level = MZTabErrorType.Level.Error;
+      MZTabFileParser mzTabParser = new MZTabFileParser(inFile);
+      MZTabErrorList errorList = mzTabParser.parse(out, level);
+      System.out.println("111111111111111111");
+      if (!errorList.isEmpty()) {
+//        System.out.println("There were errors while processing your file, please check the output for details!");
+        List<ValidationMessage> messages = errorList.convertToValidationMessages();
+        for (ValidationMessage message : messages){
+          System.out.println("Message: "+message.getMessage());
+        }
+      }
+    } catch (IOException e) {
+      System.out.println(
+          "Caught an IO Exception: " + e.getMessage());
+    }
+  }
+  
 }

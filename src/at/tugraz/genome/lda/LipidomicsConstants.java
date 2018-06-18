@@ -42,14 +42,14 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 
-import de.isas.mztab1_1.model.Contact;
-import de.isas.mztab1_1.model.Instrument;
-import de.isas.mztab1_1.model.Parameter;
-import de.isas.mztab1_1.model.Publication;
-import de.isas.mztab1_1.model.PublicationItem;
-import de.isas.mztab1_1.model.PublicationItem.TypeEnum;
-import de.isas.mztab1_1.model.Sample;
-import de.isas.mztab1_1.model.SampleProcessing;
+import de.isas.mztab2.model.Contact;
+import de.isas.mztab2.model.Instrument;
+import de.isas.mztab2.model.Parameter;
+import de.isas.mztab2.model.Publication;
+import de.isas.mztab2.model.PublicationItem;
+import de.isas.mztab2.model.PublicationItem.TypeEnum;
+import de.isas.mztab2.model.Sample;
+import de.isas.mztab2.model.SampleProcessing;
 import at.tugraz.genome.lda.exception.SettingsException;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.utils.ExcelUtils;
@@ -1341,10 +1341,10 @@ public class LipidomicsConstants
     LipidomicsConstants.getInstance();
     if (instance_.mzTabInstrumentName_!=null || instance_.mzTabInstrumentSource_!=null || instance_.mzTabInstrumentAnalyzer_!=null || instance_.mzTabInstrumentDetector_!=null){
       Instrument instrument = new Instrument().id(1);
-      instrument.addInstrumentAnalyzerItem(instance_.mzTabInstrumentAnalyzer_);
-      instrument.setInstrumentDetector(instance_.mzTabInstrumentDetector_);
-      instrument.setInstrumentName(instance_.mzTabInstrumentName_);
-      instrument.setInstrumentSource(instance_.mzTabInstrumentSource_);
+      instrument.addAnalyzerItem(instance_.mzTabInstrumentAnalyzer_);
+      instrument.setDetector(instance_.mzTabInstrumentDetector_);
+      instrument.setName(instance_.mzTabInstrumentName_);
+      instrument.setSource(instance_.mzTabInstrumentSource_);
       return instrument;
     }
     return null;
