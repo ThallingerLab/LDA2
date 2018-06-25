@@ -176,7 +176,6 @@ import de.isas.mztab2.io.MzTabValidatingWriter;
 import de.isas.mztab2.io.MzTabWriter;
 import de.isas.mztab2.model.Assay;
 import de.isas.mztab2.model.CV;
-import de.isas.mztab2.model.ColumnParameterMapping;
 import de.isas.mztab2.model.Contact;
 import de.isas.mztab2.model.Database;
 import de.isas.mztab2.model.Instrument;
@@ -5189,10 +5188,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	    cvs.add(label);
 	    metadata.setCv(cvs);
 	    List<Database> databases = new ArrayList<Database>();
-	    Database database = new Database().id(1).param(new Parameter().name("no database").value("null"));
-	    database.setPrefix("nd");
-	    database.setVersion("Unknown");
-	    database.setUrl("none");
+	    //TODO: exchange with corresponding MS accession
+	////    Database database = new Database().id(1).param(new Parameter().cvLabel("MS").cvAccession("MS:XXXXXXX").name("Lipid Data Analyzer software for lipid quantification"));
+	    Database database = new Database().id(1).param(new Parameter().name("LipidDataAnalyzer2").value("lda2"));
+	    database.setPrefix("lda2");
+	    database.setVersion(Settings.VERSION);
+	    database.setUrl("https://github.com/ThallingerLab/LDA2");
 	    databases.add(database);
 	    metadata.setDatabase(databases);
 	    
@@ -5215,11 +5216,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	    }
 	    metadata.setSmallMoleculeQuantificationUnit(new Parameter().cvLabel("PRIDE").cvAccession("PRIDE:0000330").name("Arbitrary quantification unit"));
 	    metadata.setSmallMoleculeFeatureQuantificationUnit(new Parameter().cvLabel("PRIDE").cvAccession("PRIDE:0000330").name("Arbitrary quantification unit"));
-	    Vector<ColumnParameterMapping> colParMappings = new Vector<ColumnParameterMapping>();
-	    ColumnParameterMapping colPar = new  ColumnParameterMapping().param(new Parameter().id(1).cvLabel("UO").cvAccession("UO:0000010").name("second"));
-	    colParMappings.add(colPar);
-	    metadata.setColunitSmallMolecule(colParMappings);
-    metadata.setSmallMoleculeIdentificationReliability(new Parameter().cvLabel("MS").cvAccession("MS:XXXXX").name("MSI-2007-numeric"));
+	    //TODO: exchange with corresponding MS accession
+	    metadata.setSmallMoleculeIdentificationReliability(new Parameter().cvLabel("MS").cvAccession("MS:XXXXX").name("MSI-2007-numeric"));
     List<Parameter> idConfidenceMeasures = new ArrayList<Parameter>();
     idConfidenceMeasures.add(new Parameter().id(1).cvLabel("MS").cvAccession("MS:1002890").name("fragmentation score"));
     metadata.setIdConfidenceMeasure(idConfidenceMeasures);
@@ -5238,7 +5236,13 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	        String chromFileBase = StaticUtils.extractChromBaseName(fullExpPaths.get(exp),exp);
 	        MsRun run = new MsRun();
 	        run.setId((i+1));
-	        run.setLocation("file://"+chromFileBase.replaceAll("\\\\", "/")+".chrom");
+	        run.setLocation("file://"+chromFileBase.replaceAll("\\\\", "/")+".chrom");       
+	        run.setFragmentationMethod(LipidomicsConstants.getFragmentationMethods());
+	        //TODO: exchange with corresponding MS accession
+	////        run.setFormat(new Parameter().cvLabel("MS").cvAccession("MS:XXXXXXX").name("The Lipid Data Analyzer native chrom format."));
+	        run.setIdFormat(new Parameter().cvLabel("MS").cvAccession("MS:1000776").name("scan number only nativeID format"));
+	        run.setHashMethod(new Parameter().cvLabel("MS").cvAccession("MS:1000569").name("SHA-1"));
+	        
 	        Assay assay = new Assay();
 	        assay.setId(i+1);
 	        assay.addMsRunRefItem(run);
@@ -5276,6 +5280,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         studyVariable.setId(count+1);
         studyVariable.setName(group);
         studyVariable.setDescription(group);
+        //TODO: exchange with corresponding MS accession
+////        studyVariable.setAverageFunction(new Parameter().cvLabel("MS").cvAccession("MS:XXXXXXX").name("The arithmetic mean"));
+        //TODO: exchange with corresponding MS accession
+////        studyVariable.setVariationFunction(new Parameter().cvLabel("MS").cvAccession("MS:XXXXXXX").name("The coefficient of variation"));
         for (String exp : expsOfGroup.get(group)){
           Integer assayId = expToMsRun.get(exp);
           for (Assay assay : metadata.getAssay()){

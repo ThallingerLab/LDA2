@@ -217,6 +217,8 @@ public class LipidomicsConstants
   private List<SampleProcessing> mzTabSampleProcessings_;
   /** for mztab-exporting: the list of publications the data refers to*/
   private List<Publication> mzTabPubs_;
+  /** for mztab-exporting: the list of fragmentation methods the data refers to*/
+  private List<Parameter> fragmethods_;
   /** for mztab-exporting: a lookup between the LDA adduct notation and the one proposed for the mzTab format*/
   private Hashtable<String,String> mzTabAdductLookup_;
   
@@ -1372,6 +1374,15 @@ public class LipidomicsConstants
     LipidomicsConstants.getInstance();
     return instance_.mzTabPubs_;
   }
+  
+  /**
+   * 
+   * @return for mzTab-export: list of fragmentation methods used for the data
+   */
+  public static List<Parameter> getFragmentationMethods(){
+    LipidomicsConstants.getInstance();
+    return instance_.fragmethods_;
+  }
 
   /**
    * 
@@ -1547,6 +1558,7 @@ public class LipidomicsConstants
         Parameter mzTabSpecies = extractEBIParam("species",properties);
         Parameter mzTabTissue = extractEBIParam("tissue",properties);
         Parameter mzTabCelltype = extractEBIParam("celltype",properties);
+        List<Parameter> speciesDiseases = extractParameterList("species_disease_",properties);
         if (mzTabSpecies!=null || mzTabTissue!=null || mzTabCelltype!=null){
           mzTabSample_ = new Sample().id(1);
           if (mzTabSpecies!=null){
@@ -1561,7 +1573,11 @@ public class LipidomicsConstants
             mzTabSample_.setCellType((new Vector<Parameter>()));
             mzTabSample_.getCellType().add(mzTabCelltype);
           }
+          if (speciesDiseases.size()>0)
+            mzTabSample_.setDisease(speciesDiseases);
         }
+        fragmethods_ = extractParameterList("fragmentationmethod_",properties);
+        
         String key;
         String value;
         String adductKey;
@@ -1579,6 +1595,31 @@ public class LipidomicsConstants
     }catch(Exception e){
       e.printStackTrace();
     }
+  }
+  
+  /**
+   * extracts a sorted list of parameters from the properties which start with the propBase followed by a consecutive number starting with one  
+   * @param propBase the base of the properties to extract
+   * @param properties available properties
+   * @return sorted list of extracted parameters
+   */
+  private List<Parameter> extractParameterList(String propBase, Properties properties){
+    List<Parameter> parameters = new ArrayList<Parameter>();
+    int count = 1;
+    String value = "";
+    while ((value = properties.getProperty(propBase+String.valueOf(count),""))!=null && value.length()>0){    
+      int commas = countComma(value);
+      if (countComma(value)<1) continue;
+      Parameter param = null;
+      if (commas==1){
+        param = new Parameter().name(value.substring(0,value.indexOf(","))).value(value.substring(value.indexOf(",")+1));
+      }else{
+        param = extractEBIParam(propBase+String.valueOf(count),properties);
+      }
+      parameters.add(param);
+      count++;
+    }
+    return parameters;
   }
   
   /**

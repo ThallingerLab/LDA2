@@ -122,14 +122,26 @@ public class MztabUtils extends LDAExporter
     //generates the mzTab SmallMoleculeSummary section
     Double smlArea;
     Vector<SmallMoleculeSummary> summaries = new Vector<SmallMoleculeSummary>();
+    Vector<String> dbIdentifiers = null;
+    Vector<String> chemicalNames = null;
     for (SummaryVO vo : exportVO.getSummaries()){
 //      System.out.println(id+": "+vo.getNeutralMass());
       SmallMoleculeSummary summary = new SmallMoleculeSummary();
       summary.setSmlId(vo.getId());
       summary.setSmfIdRefs(vo.getFeatureRefs());
+      dbIdentifiers = new Vector<String>();
+      dbIdentifiers.add("lda2:"+molGroup+" "+(isRtGrouped ? vo.getSpeciesId().substring(0,vo.getSpeciesId().lastIndexOf("_")) : vo.getSpeciesId()));
+      summary.setDatabaseIdentifier(dbIdentifiers);
       ArrayList<String> chemFormula = new ArrayList<String>();
       chemFormula.add(vo.getChemFormula());
       summary.setChemicalFormula(chemFormula);
+      
+      chemicalNames = new Vector<String>();
+      String bestId = molGroup+" ";
+      bestId += vo.getMolecularId()!=null ? vo.getMolecularId() : isRtGrouped ? vo.getSpeciesId().substring(0,vo.getSpeciesId().lastIndexOf("_")) : vo.getSpeciesId();
+      chemicalNames.add(bestId);
+      summary.setChemicalName(chemicalNames);
+      
       Vector<Double> neutralMasses = new Vector<Double>();
       neutralMasses.add(vo.getNeutralMass());
       summary.setTheoreticalNeutralMass(neutralMasses);
@@ -160,11 +172,7 @@ public class MztabUtils extends LDAExporter
 
       List<OptColumnMapping> optList = new ArrayList<OptColumnMapping>();
       optList.add(new OptColumnMapping().identifier("global_lipid_species").value(molGroup+" "+vo.getSpeciesId()));
-      String bestId = molGroup+" ";
-      bestId += vo.getMolecularId()!=null ? vo.getMolecularId() : isRtGrouped ? vo.getSpeciesId().substring(0,vo.getSpeciesId().lastIndexOf("_")) : vo.getSpeciesId();
-      optList.add(new OptColumnMapping().identifier("global_lipid_best_id_level").value(bestId));
       summary.setOpt(optList);
-      ////summary.setExpMassToCharge(vo.getNeutralMass());      
       summaries.add(summary);
     }
     
@@ -213,12 +221,17 @@ public class MztabUtils extends LDAExporter
     
     //generates the mzTab SmallMoleculeEvidence section
     Vector<SmallMoleculeEvidence> evidences = new Vector<SmallMoleculeEvidence>();
+    String dbId = null;
     if (exportVO.getEvidence()!=null){
       for (EvidenceVO vo : exportVO.getEvidence()){
         SmallMoleculeEvidence evidence = new SmallMoleculeEvidence();
         evidence.setSmeId(vo.getId());
         evidence.setEvidenceInputId(String.valueOf(vo.getEvidenceGroupingId()));
+        String speciesName = molGroup+" "+(isRtGrouped ? vo.getSpeciesId().substring(0,vo.getSpeciesId().lastIndexOf("_")) : vo.getSpeciesId());
+        dbId = "lda2:"+speciesName;
+        evidence.setDatabaseIdentifier(dbId);
         evidence.setChemicalFormula(vo.getChemFormula());
+        evidence.setChemicalName(vo.getLdaStructure()==null ? speciesName : molGroup+" "+vo.getLdaStructure().replaceAll(" \\| ", " | "+molGroup+" "));
         String mztabAdduct = LipidomicsConstants.getMzTabAdduct(vo.getModification())!=null ? LipidomicsConstants.getMzTabAdduct(vo.getModification()) : vo.getModification();
         evidence.setAdductIon(mztabAdduct);
         evidence.setExpMassToCharge(vo.getExpMz());
@@ -228,7 +241,7 @@ public class MztabUtils extends LDAExporter
         evidence.setCharge(charge);
         evidence.setTheoreticalMassToCharge(vo.getTheorMz());
         evidence.setIdentificationMethod(identificationMethod);
-        evidence.setMsLevel(new Parameter().cvLabel("MS").cvAccession("MS").name("ms level").value(String.valueOf(vo.getMsLevel())));
+        evidence.setMsLevel(new Parameter().cvLabel("MS").cvAccession("MS:1000511").name("ms level").value(String.valueOf(vo.getMsLevel())));
         List<SpectraRef> spectraNrs = new ArrayList<SpectraRef>();
         for (Integer scanNr : vo.getScanNrs()){
           spectraNrs.add(new SpectraRef().msRun(msruns.get(vo.getExpName())).reference("index="+scanNr.toString()));
@@ -237,11 +250,12 @@ public class MztabUtils extends LDAExporter
         List<Double> confidenceMeasures = new ArrayList<Double>();
         confidenceMeasures.add(null);
         evidence.setIdConfidenceMeasure(confidenceMeasures);
+        evidence.setRank(1);
         
         List<OptColumnMapping> optList = new ArrayList<OptColumnMapping>();
         optList.add(new OptColumnMapping().identifier("global_lipid_species").value(molGroup+" "+vo.getSpeciesId()));
-        if (speciesType >= LipidomicsConstants.EXPORT_ANALYTE_TYPE_CHAIN)
-          optList.add(new OptColumnMapping().identifier("global_lipid_molecular_species").value(vo.getLdaStructure()==null ? null : molGroup+" "+vo.getLdaStructure().replaceAll(" \\| ", " | "+molGroup+" ")));
+//        if (speciesType >= LipidomicsConstants.EXPORT_ANALYTE_TYPE_CHAIN)
+//          optList.add(new OptColumnMapping().identifier("global_lipid_molecular_species").value(vo.getLdaStructure()==null ? null : molGroup+" "+vo.getLdaStructure().replaceAll(" \\| ", " | "+molGroup+" ")));
         evidence.setOpt(optList);
         evidences.add(evidence);
       }
