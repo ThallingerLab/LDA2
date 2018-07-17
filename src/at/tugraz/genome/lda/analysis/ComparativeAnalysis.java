@@ -1051,7 +1051,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
             modifications.put(recentModification, recentModification);
             
             for (Vector<CgProbe> probes : param.getIsotopicProbes()){
-              int isotope = probes.get(0).isotopeNumber;
+              int isotope = 0;
+              if (probes.size()>0) isotope = probes.get(0).isotopeNumber;
               for (CgProbe probe : probes){
                 Hashtable<Integer,Boolean> mtp = areaVO.addArea(recentModification,isotope,probe.Area);
                 if (mtp!=null) moreThanOnePeak = mtp;
