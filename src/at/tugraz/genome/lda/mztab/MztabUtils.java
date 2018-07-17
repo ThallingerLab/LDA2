@@ -171,7 +171,9 @@ public class MztabUtils extends LDAExporter
       summary.setAbundanceVariationStudyVariable(abundanceCoeffvarStudyVariable);
 
       List<OptColumnMapping> optList = new ArrayList<OptColumnMapping>();
-      optList.add(new OptColumnMapping().identifier("global_lipid_species").value(molGroup+" "+vo.getSpeciesId()));
+      optList.add(new OptColumnMapping().identifier("global_lipid_species").value(molGroup+" "+(isRtGrouped ? vo.getSpeciesId().substring(0,vo.getSpeciesId().lastIndexOf("_")) : vo.getSpeciesId())));
+      if (isRtGrouped)
+        optList.add(new OptColumnMapping().identifier("global_lipid_lda_species").value(molGroup+" "+vo.getSpeciesId()));
       summary.setOpt(optList);
       summaries.add(summary);
     }
@@ -253,7 +255,9 @@ public class MztabUtils extends LDAExporter
         evidence.setRank(1);
         
         List<OptColumnMapping> optList = new ArrayList<OptColumnMapping>();
-        optList.add(new OptColumnMapping().identifier("global_lipid_species").value(molGroup+" "+vo.getSpeciesId()));
+        optList.add(new OptColumnMapping().identifier("global_lipid_species").value(molGroup+" "+(isRtGrouped ? vo.getSpeciesId().substring(0,vo.getSpeciesId().lastIndexOf("_")) : vo.getSpeciesId())));
+        if (isRtGrouped)
+          optList.add(new OptColumnMapping().identifier("global_lipid_lda_species").value(molGroup+" "+vo.getSpeciesId()));
 //        if (speciesType >= LipidomicsConstants.EXPORT_ANALYTE_TYPE_CHAIN)
 //          optList.add(new OptColumnMapping().identifier("global_lipid_molecular_species").value(vo.getLdaStructure()==null ? null : molGroup+" "+vo.getLdaStructure().replaceAll(" \\| ", " | "+molGroup+" ")));
         evidence.setOpt(optList);

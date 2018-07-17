@@ -5184,16 +5184,46 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	    Parameter quantMethod = new Parameter().cvLabel("MS").cvAccession("MS:1002019").name("label free raw feature quantitation").value(null);
     metadata.setQuantificationMethod(quantMethod);
 	    List<CV> cvs = new ArrayList<CV>();
-	    CV label = new CV().id(1).label("MS").fullName("PSI-MS controlled vocabulary").version("4.0.9").url("https://raw.githubusercontent.com/HUPO-PSI/psi-ms-CV/master/psi-ms.obo");
+	    CV label = new CV().id(1).label("MS").fullName("PSI-MS controlled vocabulary").version("20-06-2018").uri("https://www.ebi.ac.uk/ols/ontologies/ms");
 	    cvs.add(label);
-	    metadata.setCv(cvs);
+    label = new CV().id(2).label("PRIDE").fullName("PRIDE PRoteomics IDEntifications (PRIDE) database controlled vocabulary").version("14-06-2018").uri("https://www.ebi.ac.uk/ols/ontologies/pride");
+    cvs.add(label);
+    
+    int cvId = 3;
+    if (LipidomicsConstants.isCvSepRequired()){
+      label = new CV().id(cvId).label("SEP").fullName("Sample Processing and Separation Techniques Ontology").version("1.070708").uri("http://purl.bioontology.org/ontology/SEP");
+      cvs.add(label);
+      cvId++;
+    }
+    if (LipidomicsConstants.isCvNcbiTaxonRequired()){      
+      label = new CV().id(cvId).label("NCBITaxon").fullName("NCBI organismal classification").version("2018-03-02").uri("https://www.ebi.ac.uk/ols/ontologies/ncbitaxon");
+      cvs.add(label);
+      cvId++;
+    }
+    if (LipidomicsConstants.isCvNcbiTaxonRequired()){      
+      label = new CV().id(cvId).label("CL").fullName("Cell Ontology").version("2018-07-07").uri("https://www.ebi.ac.uk/ols/ontologies/cl");
+      cvs.add(label);
+      cvId++;
+    }
+    if (LipidomicsConstants.isCvBtoRequired()){      
+      label = new CV().id(cvId).label("BTO").fullName("BRENDA tissue / enzyme source").version("2016-05-05").uri("https://www.ebi.ac.uk/ols/ontologies/bto");
+      cvs.add(label);
+      cvId++;
+    }
+    if (LipidomicsConstants.isCvDoidRequired()){      
+      label = new CV().id(cvId).label("DOID").fullName("Human Disease Ontology").version("2018-07-05").uri("https://www.ebi.ac.uk/ols/ontologies/doid");
+      cvs.add(label);
+      cvId++;
+    } 
+    metadata.setCv(cvs);
+    
 	    List<Database> databases = new ArrayList<Database>();
 	    //TODO: exchange with corresponding MS accession
 	////    Database database = new Database().id(1).param(new Parameter().cvLabel("MS").cvAccession("MS:XXXXXXX").name("Lipid Data Analyzer software for lipid quantification"));
 	    Database database = new Database().id(1).param(new Parameter().name("LipidDataAnalyzer2").value("lda2"));
 	    database.setPrefix("lda2");
 	    database.setVersion(Settings.VERSION);
-	    database.setUrl("https://github.com/ThallingerLab/LDA2");
+	    database.setUri("https://github.com/ThallingerLab/LDA2");
 	    databases.add(database);
 	    metadata.setDatabase(databases);
 	    
@@ -5217,7 +5247,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	    metadata.setSmallMoleculeQuantificationUnit(new Parameter().cvLabel("PRIDE").cvAccession("PRIDE:0000330").name("Arbitrary quantification unit"));
 	    metadata.setSmallMoleculeFeatureQuantificationUnit(new Parameter().cvLabel("PRIDE").cvAccession("PRIDE:0000330").name("Arbitrary quantification unit"));
 	    //TODO: exchange with corresponding MS accession
-	    metadata.setSmallMoleculeIdentificationReliability(new Parameter().cvLabel("MS").cvAccession("MS:XXXXX").name("MSI-2007-numeric"));
+	    metadata.setSmallMoleculeIdentificationReliability(new Parameter().cvLabel("MS").cvAccession("MS:1002896").name("compound identification confidence level"));
     List<Parameter> idConfidenceMeasures = new ArrayList<Parameter>();
     idConfidenceMeasures.add(new Parameter().id(1).cvLabel("MS").cvAccession("MS:1002890").name("fragmentation score"));
     metadata.setIdConfidenceMeasure(idConfidenceMeasures);
@@ -5238,8 +5268,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	        run.setId((i+1));
 	        run.setLocation("file://"+chromFileBase.replaceAll("\\\\", "/")+".chrom");       
 	        run.setFragmentationMethod(LipidomicsConstants.getFragmentationMethods());
-	        //TODO: exchange with corresponding MS accession
-	////        run.setFormat(new Parameter().cvLabel("MS").cvAccession("MS:XXXXXXX").name("The Lipid Data Analyzer native chrom format."));
+	        run.setFormat(new Parameter().cvLabel("MS").cvAccession("MS:1002966").name("The Lipid Data Analyzer native chrom format."));
 	        run.setIdFormat(new Parameter().cvLabel("MS").cvAccession("MS:1000776").name("scan number only nativeID format"));
 	        run.setHashMethod(new Parameter().cvLabel("MS").cvAccession("MS:1000569").name("SHA-1"));
 	        
@@ -5280,10 +5309,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         studyVariable.setId(count+1);
         studyVariable.setName(group);
         studyVariable.setDescription(group);
-        //TODO: exchange with corresponding MS accession
-////        studyVariable.setAverageFunction(new Parameter().cvLabel("MS").cvAccession("MS:XXXXXXX").name("The arithmetic mean"));
-        //TODO: exchange with corresponding MS accession
-////        studyVariable.setVariationFunction(new Parameter().cvLabel("MS").cvAccession("MS:XXXXXXX").name("The coefficient of variation"));
+        studyVariable.setAverageFunction(new Parameter().cvLabel("MS").cvAccession("MS:1002962").name("The arithmetic mean"));
+        studyVariable.setVariationFunction(new Parameter().cvLabel("MS").cvAccession("MS:1002963").name("The coefficient of variation"));
         for (String exp : expsOfGroup.get(group)){
           Integer assayId = expToMsRun.get(exp);
           for (Assay assay : metadata.getAssay()){

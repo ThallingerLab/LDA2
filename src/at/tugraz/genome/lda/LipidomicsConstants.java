@@ -221,6 +221,16 @@ public class LipidomicsConstants
   private List<Parameter> fragmethods_;
   /** for mztab-exporting: a lookup between the LDA adduct notation and the one proposed for the mzTab format*/
   private Hashtable<String,String> mzTabAdductLookup_;
+  /** contains CV for SEP ontology*/
+  private boolean cvSepRequired_;
+  /** contains CV for NCBITaxon ontology*/
+  private boolean cvNcbiTaxonRequired_;
+  /** contains CV for CL ontology*/
+  private boolean cvClRequired_;  
+  /** contains CV for BTO ontology*/
+  private boolean cvBtoRequired_;  
+  /** contains CV for DOID ontology*/
+  private boolean cvDoidRequired_;
   
   private boolean chromExportShowLegend_;
   
@@ -449,6 +459,11 @@ public class LipidomicsConstants
   }
   
   private LipidomicsConstants(boolean dummy){
+    cvSepRequired_ = false;
+    cvNcbiTaxonRequired_ = false;
+    cvClRequired_ = false;
+    cvBtoRequired_ = false;  
+    cvDoidRequired_ = false;
   }
   
   private LipidomicsConstants(){
@@ -1415,6 +1430,50 @@ public class LipidomicsConstants
     return mzTabAdduct;
   }
   
+  /**
+   * 
+   * @return contains CV for SEP ontology
+   */
+  public static boolean isCvSepRequired(){
+    LipidomicsConstants.getInstance();
+    return instance_.cvSepRequired_;    
+  }
+
+  /**
+   * 
+   * @return contains CV for NCBITaxon ontology
+   */
+  public static boolean isCvNcbiTaxonRequired(){
+    LipidomicsConstants.getInstance();
+    return instance_.cvNcbiTaxonRequired_;
+  }
+
+  /**
+   * 
+   * @return contains CV for CL ontology
+   */
+  public static boolean isClRequired(){
+    LipidomicsConstants.getInstance();
+    return instance_.cvClRequired_;
+  }
+  
+  /**
+   * 
+   * @return contains CV for BTO ontology
+   */
+  public static boolean isCvBtoRequired(){
+    LipidomicsConstants.getInstance();
+    return instance_.cvBtoRequired_;
+  }
+
+  /**
+   * 
+   * @return contains CV for DOID ontology
+   */
+  public static boolean isCvDoidRequired(){
+    LipidomicsConstants.getInstance();
+    return instance_.cvDoidRequired_;
+  }
   
   public static void switchToOtherConfFile(File newConfFile){
     instance_.readConstantsFile(newConfFile.getAbsolutePath());
@@ -1440,7 +1499,7 @@ public class LipidomicsConstants
    * @param properties the properties read from the file
    * @return the corresponding parameter in PSI notation
    */
-  private static Parameter extractEBIParam(String key, Properties properties){
+  private Parameter extractEBIParam(String key, Properties properties){
     Parameter param = null;
     String paramString = properties.getProperty(key,""); 
     if (paramString!=null && paramString.length()>0 && paramString.indexOf(",")!=-1){
@@ -1448,7 +1507,14 @@ public class LipidomicsConstants
       if (split.size()==4){
         //TODO: I used her "" instead of null, since the jmzTab lib has a small bug
         String cvLabel = "";
-        if (split.get(0)!=null && split.get(0).length()>0) cvLabel = split.get(0);
+        if (split.get(0)!=null && split.get(0).length()>0){
+          cvLabel = split.get(0);
+          if (!cvSepRequired_ && cvLabel.equalsIgnoreCase("SEP")) cvSepRequired_ = true;
+          else if (!cvNcbiTaxonRequired_ && cvLabel.equalsIgnoreCase("NCBITaxon")) cvNcbiTaxonRequired_ = true;
+          else if (!cvClRequired_ && cvLabel.equalsIgnoreCase("CL")) cvClRequired_ = true;
+          else if (!cvBtoRequired_ && cvLabel.equalsIgnoreCase("BTO")) cvBtoRequired_ = true;
+          else if (!cvDoidRequired_ && cvLabel.equalsIgnoreCase("DOID")) cvDoidRequired_ = true;
+        }
         //TODO: I used her "" instead of null, since the jmzTab lib has a small bug
         String accession = "";
         if (split.get(1)!=null && split.get(1).length()>0) accession = split.get(1);
