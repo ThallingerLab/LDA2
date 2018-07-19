@@ -460,8 +460,7 @@ public class FragRuleParser
     if (line.length()==0) return;
     int charge = 1;
     int msLevel = 2;
-    boolean mandatory = false;
-    boolean fromOtherSpecies = false;
+    short mandatory = FragmentRuleVO.MANDATORY_FALSE;
     String name = null;
     String formula = null;
     StringTokenizer tokenizer = new StringTokenizer(line,"\t ");
@@ -486,12 +485,14 @@ public class FragRuleParser
           msLevel = Integer.parseInt(value);
         }catch(NumberFormatException nfx){throw new RulesException("The value of "+FRAGMENT_LEVEL+" must be integer, the value \""+value+"\" is not! Error at line number "+lineNumber+"!");}
       }else if(key.equalsIgnoreCase(FRAGMENT_MANDATORY)){
-        if (!(value.equalsIgnoreCase("true")||value.equalsIgnoreCase("false")||value.equalsIgnoreCase("yes")||value.equalsIgnoreCase("no")||value.equalsIgnoreCase("other")))
+        if (!(value.equalsIgnoreCase("true")||value.equalsIgnoreCase("false")||value.equalsIgnoreCase("yes")||value.equalsIgnoreCase("no")||value.equalsIgnoreCase("other")||value.equalsIgnoreCase("quant")))
           throw new RulesException("The value of "+FRAGMENT_MANDATORY+" can contain the values \"true\",\"false\",\"yes\", \"no\" and \"other\" only! Error at line number "+lineNumber+"!");
         if (value.equalsIgnoreCase("true")||value.equalsIgnoreCase("yes"))
-          mandatory = true;
+          mandatory = FragmentRuleVO.MANDATORY_TRUE;
         else if (value.equalsIgnoreCase("other"))
-          fromOtherSpecies = true;
+          mandatory = FragmentRuleVO.MANDATORY_OTHER;
+        else if (value.equalsIgnoreCase("quant"))
+          mandatory = FragmentRuleVO.MANDATORY_QUANT;
       }else{
         throw new RulesException("The section "+FRAGMENT_SUBSECTION_NAME+" does not support the key \""+key+"\"! Error at line number "+lineNumber+"!");        
       }
@@ -499,7 +500,7 @@ public class FragRuleParser
     if (name==null || name.length()==0) throw new RulesException("A "+FRAGMENT_SUBSECTION_NAME+" entry must contain a key called \""+FRAGMENT_NAME+"\"! Error at line number "+lineNumber+"!");
     if (formula==null || formula.length()==0) throw new RulesException("A "+FRAGMENT_SUBSECTION_NAME+" entry must contain a key called \""+FRAGMENT_FORMULA+"\"! Error at line number "+lineNumber+"!");      
     checkNamePresent(name, lineNumber);
-    FragmentRuleVO ruleVO = new FragmentRuleVO(name,formula,charge,msLevel,mandatory,fromOtherSpecies,headFragments_, chainFragments_, elementParser_);
+    FragmentRuleVO ruleVO = new FragmentRuleVO(name,formula,charge,msLevel,mandatory,headFragments_, chainFragments_, elementParser_);
     if (currentSection==HEAD_SECTION) headFragments_.put(name, ruleVO);
     if (currentSection==CHAINS_SECTION){
       checkSelectedChainValid(ruleVO,lineNumber);
@@ -1295,7 +1296,7 @@ public class FragRuleParser
    */
   private static void writeFragmentRule(BufferedWriter bw, FragmentRuleVO rule) throws IOException{
     String mandatory = "false";                
-    if(rule.isMandatory()) mandatory = "true";
+    if(rule.isMandatory()==FragmentRuleVO.MANDATORY_TRUE) mandatory = "true";
     bw.write(FRAGMENT_NAME+"=" + rule.getName() + "\t" + FRAGMENT_FORMULA+"=" + 
       rule.getFormula() + "\t" + FRAGMENT_CHARGE+"=" + 
       Integer.toString(rule.getCharge()) + "\t"+ FRAGMENT_LEVEL+"=" + 

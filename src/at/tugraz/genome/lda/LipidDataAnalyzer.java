@@ -3395,7 +3395,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     resultsShowModification_ = new Hashtable<String,Boolean>();
     if (!keepOrder) orderResultsType_ = new Hashtable<String,Integer>();
     result_ = LDAResultReader.readResultFile(filePath,  resultsShowModification_);
-    if (result_.getConstants()!=null && result_.getConstants().getShotgun())
+    if (result_.getConstants()!=null && result_.getConstants().getShotgun()>LipidomicsConstants.SHOTGUN_FALSE)
       disableChromatographyFeatures();
     else
       enableChromatographyFeatures();

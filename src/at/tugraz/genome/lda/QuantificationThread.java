@@ -1046,8 +1046,13 @@ public class QuantificationThread extends Thread
   }
   
   public static void setAnalyzerProperties(LipidomicsAnalyzer analyzer){
-    if (LipidomicsConstants.isShotgun()){
+    if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
       analyzer.setShotgunParameters(LipidomicsConstants.getShogunProcessing());
+    }else if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_PRM){
+      analyzer.setPrmParameters(LipidomicsConstants.getChromSmoothRange(),LipidomicsConstants.getChromSmoothRepeats(),
+          LipidomicsConstants.getPeakDiscardingAreaFactor(),LipidomicsConstants.getRelativeAreaCutoff(),
+          LipidomicsConstants.getRelativeFarAreaCutoff(),LipidomicsConstants.getRelativeFarAreaTimeSpace(),
+          LipidomicsConstants.getMs2MzTolerance());
     }else{
       analyzer.set3DParameters(LipidomicsConstants.getChromSmoothRange(),LipidomicsConstants.getChromSmoothRepeats(),
         LipidomicsConstants.removeIfOtherIsotopePresent(),LipidomicsConstants.useNoiseCutoff(), LipidomicsConstants.getNoiseCutoffDeviationValue(),
@@ -1570,7 +1575,7 @@ public class QuantificationThread extends Thread
               for (String rt : hitsOfOneMod.keySet()){
                 LipidParameterSet set = hitsOfOneMod.get(rt);
                 boolean insideAllowedMz = false;
-                if (LipidomicsConstants.isShotgun()){
+                if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
                   insideAllowedMz = true;
                 } else {
                   for (CgProbe probe : set.getIsotopicProbes().get(0)){
@@ -1829,7 +1834,7 @@ public class QuantificationThread extends Thread
     }
     if (stopThread){
       if (!error){
-        if (!LipidomicsConstants.isShotgun() && LipidomicsConstants.isMS2()){
+        if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE && LipidomicsConstants.isMS2()){
           PostQuantificationProcessor processor = new PostQuantificationProcessor(results_,ms2Removed_,adductInsensitiveRtFilter);
           try {
             results_ = processor.processData();
@@ -1963,7 +1968,7 @@ public class QuantificationThread extends Thread
         for (String mod : analyteQuant.keySet()){
           if (results_.containsKey(className) && results_.get(className).containsKey(analyteName) && results_.get(className).get(analyteName).containsKey(mod)&&(results_.get(className).get(analyteName).get(mod)!=null)){
             Hashtable<String,LipidParameterSet> hitsOfOneMod = results_.get(className).get(analyteName).get(mod);
-            if (LipidomicsConstants.isShotgun()){
+            if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
               for (String key:hitsOfOneMod.keySet()) params.add(hitsOfOneMod.get(key));
             }else{
               List<DoubleStringVO> keys = new ArrayList<DoubleStringVO>();
@@ -1988,7 +1993,7 @@ public class QuantificationThread extends Thread
       Vector<LipidParameterSet> corrected = new Vector<LipidParameterSet>();
       for (LipidParameterSet param : params){
         boolean acceptProbe = false;
-        if (LipidomicsConstants.isShotgun()){
+        if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
           acceptProbe = true;
         }else{
           if (param.getIsotopicProbes().size()>0){

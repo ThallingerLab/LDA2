@@ -687,7 +687,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
         headRuleMSLevels_[i] = headRuleMSLevel;
         
         JComboBox<Object> fragRuleMandatoryField = new JComboBox<Object>(possibibilityListPostProcessing_);          
-        if(headFragments_.elementAt(i).isMandatory())
+        if(headFragments_.elementAt(i).isMandatory()==FragmentRuleVO.MANDATORY_TRUE)
         {
           fragRuleMandatoryField.setSelectedIndex(0); 
         }           
@@ -817,7 +817,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       try 
       {
         FragmentRuleVO ruleVO = new FragmentRuleVO(fragRuleNameField_.getText(),fragRuleFormulaField_.getText(),Integer.parseInt(fragRuleChargeField_.getText()), 
-        Integer.parseInt(fragRuleMsLevelField_.getText()), getComboMandatory(fragRuleMandatoryCombo_.getSelectedIndex()), false, headFragmentRules_, chainFragmentRules_, elementParser_);
+        Integer.parseInt(fragRuleMsLevelField_.getText()), getFragMandatory(fragRuleMandatoryCombo_.getSelectedIndex()), headFragmentRules_, chainFragmentRules_, elementParser_);
         headFragmentRules_.put(fragRuleNameField_.getText(), ruleVO);        
         refreshMiddle(1);       
       }
@@ -971,7 +971,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       try 
       {  
         IntensityRuleVO ruleVO = FragRuleParser.extractIntensityVOFromEquation(equRuleEquationField_.getText(), 0, FragRuleParser.HEAD_SECTION, FragmentRuleVO.getStringKeyHash(headFragmentRules_), FragmentRuleVO.getStringKeyHash(chainFragmentRules_),generalSettingsVO_.getAmountOfChains());
-        ruleVO.setMandatory( getComboMandatory(equRuleMandatoryCombo_.getSelectedIndex()));
+        ruleVO.setMandatory( getIntensityMandatory(equRuleMandatoryCombo_.getSelectedIndex()));
         headIntensityRules_.add(ruleVO);        
         refreshMiddle(1);  
         paintNewSpectra(false);
@@ -1156,7 +1156,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       chainRuleMSLevels_[i] = chainRuleMsLevelField;
            
       final JComboBox<Object> chainRuleMandatoryField = new JComboBox<Object>(possibibilityListPostProcessing_); 
-      if(sortedChainFragments_.elementAt(i).isMandatory())
+      if(sortedChainFragments_.elementAt(i).isMandatory()==FragmentRuleVO.MANDATORY_TRUE)
       {
         chainRuleMandatoryField.setSelectedIndex(0); 
       }           
@@ -1288,7 +1288,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
        try 
        {
          FragmentRuleVO ruleVO = new FragmentRuleVO(chainRuleNameField_.getText(),chainRuleFormulaField_.getText(),Integer.parseInt(chainRuleChargeField_.getText()), 
-         Integer.parseInt(chainRuleMsLevelField_.getText()), getComboMandatory(chainRuleMandatoryCombo_.getSelectedIndex()), false, headFragmentRules_, chainFragmentRules_, elementParser_);
+         Integer.parseInt(chainRuleMsLevelField_.getText()), getFragMandatory(chainRuleMandatoryCombo_.getSelectedIndex()), headFragmentRules_, chainFragmentRules_, elementParser_);
          chainFragmentRules_.put(chainRuleNameField_.getText(), ruleVO);
          refreshMiddle(2);
         
@@ -1441,7 +1441,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
        try 
        {
          IntensityRuleVO ruleVO = FragRuleParser.extractIntensityVOFromEquation(equChainRuleEquationField_.getText(), 0, FragRuleParser.CHAINS_SECTION, FragmentRuleVO.getStringKeyHash(headFragmentRules_), FragmentRuleVO.getStringKeyHash(chainFragmentRules_),generalSettingsVO_.getAmountOfChains());
-         ruleVO.setMandatory(getComboMandatory(equChainRuleMandatoryCombo_.getSelectedIndex()));
+         ruleVO.setMandatory(getIntensityMandatory(equChainRuleMandatoryCombo_.getSelectedIndex()));
          chainIntensityRules_.add(ruleVO);        
          refreshMiddle(2);    
          paintNewSpectra(false);   
@@ -1663,7 +1663,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
        try 
        {
          IntensityRuleVO ruleVO = FragRuleParser.extractIntensityVOFromEquation(positionEquationField_.getText(), 0, FragRuleParser.POSITION_SECTION, FragmentRuleVO.getStringKeyHash(headFragmentRules_), FragmentRuleVO.getStringKeyHash(chainFragmentRules_),generalSettingsVO_.getAmountOfChains());         
-         ruleVO.setMandatory(getComboMandatory(positionRuleMandatoryCombo_.getSelectedIndex()));
+         ruleVO.setMandatory(getIntensityMandatory(positionRuleMandatoryCombo_.getSelectedIndex()));
          positionIntensityRules_.add(ruleVO);        
          refreshMiddle(3);   
          paintNewSpectra(false);
@@ -2104,7 +2104,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     bw.write("[HEAD]\n");
     bw.write("!FRAGMENTS\n");        
 
-    FragmentRuleVO ruleVO = new FragmentRuleVO("EMPTY","CCCC",1, 2, false, false, headFragmentRules_, chainFragmentRules_, elementParser_);
+    FragmentRuleVO ruleVO = new FragmentRuleVO("EMPTY","CCCC",1, 2, (short)0, headFragmentRules_, chainFragmentRules_, elementParser_);
     headFragmentRules_.put("EMPTY", ruleVO);
     headFragments_ = getSortedVector(headFragmentRules_, TYPE_HEAD);  
     String mandatory;    
@@ -2113,7 +2113,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     for(int i=0; i<headFragments_.size(); i++ )
     {
       mandatory = "false";                
-      if(headFragments_.elementAt(i).isMandatory())
+      if(headFragments_.elementAt(i).isMandatory()==FragmentRuleVO.MANDATORY_TRUE)
       {
         mandatory = "true";
       }          
@@ -2159,10 +2159,10 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
         FragmentRuleVO rule = cache.get(key);
         try{
           if (type==TYPE_HEAD){
-            new FragmentRuleVO(rule.getName(),rule.getFormula(),rule.getCharge(),rule.getMsLevel(),rule.isMandatory(),false,
+            new FragmentRuleVO(rule.getName(),rule.getFormula(),rule.getCharge(),rule.getMsLevel(),rule.isMandatory(),
                 outputHash, new Hashtable<String,FragmentRuleVO>(), elementParser_);
           } else if (type==TYPE_CHAIN){
-            new FragmentRuleVO(rule.getName(),rule.getFormula(),rule.getCharge(),rule.getMsLevel(),rule.isMandatory(),false,
+            new FragmentRuleVO(rule.getName(),rule.getFormula(),rule.getCharge(),rule.getMsLevel(),rule.isMandatory(),
                 headFragmentRules_, outputHash, elementParser_);            
           }
           outputHash.put(key, rule);
@@ -2188,7 +2188,22 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
   /**
    * Returns the current combo setting
    */
-  private boolean getComboMandatory(int inputNumber)
+  private short getFragMandatory(int inputNumber)
+  {
+    if(inputNumber == 0)
+    {
+      return 1;          
+    }
+    else
+    {   
+      return 0;
+    }
+  }
+
+  /**
+   * Returns the current combo setting
+   */
+  private boolean getIntensityMandatory(int inputNumber)
   {
     if(inputNumber == 0)
     {
@@ -2199,7 +2214,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       return false;
     }
   }
-  
+
   /**
    * Builds the msn analyzer and returns the current debug info.
    * @return Current debug info
@@ -2669,7 +2684,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     if(checkHeadFragment())
 	    {       
 	      ruleVO = new FragmentRuleVO(fragRuleNameField_.getText(),fragRuleFormulaField_.getText(),Integer.parseInt(fragRuleChargeField_.getText()), 
-	      Integer.parseInt(fragRuleMsLevelField_.getText()), getComboMandatory(fragRuleMandatoryCombo_.getSelectedIndex()), false, headFragmentRules_, chainFragmentRules_, elementParser_);        
+	      Integer.parseInt(fragRuleMsLevelField_.getText()), getFragMandatory(fragRuleMandatoryCombo_.getSelectedIndex()), headFragmentRules_, chainFragmentRules_, elementParser_);        
 	      headFragmentRules_.put(fragRuleNameField_.getText(), ruleVO); 
 	      headFragments_ = getSortedVector(headFragmentRules_, TYPE_HEAD);      
 	    } else return; 
@@ -2704,7 +2719,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     try 
     {
       new FragmentRuleVO(fragRuleNameField_.getText(),fragRuleFormulaField_.getText(),Integer.parseInt(fragRuleChargeField_.getText()), 
-      Integer.parseInt(fragRuleMsLevelField_.getText()), getComboMandatory(fragRuleMandatoryCombo_.getSelectedIndex()), false, headFragmentRules_, chainFragmentRules_, elementParser_);
+      Integer.parseInt(fragRuleMsLevelField_.getText()), getFragMandatory(fragRuleMandatoryCombo_.getSelectedIndex()), headFragmentRules_, chainFragmentRules_, elementParser_);
     }
     catch (NumberFormatException e) 
     {
@@ -2780,7 +2795,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     before = headIntensityCounter();    
     IntensityRuleVO ruleVO;     
     ruleVO = FragRuleParser.extractIntensityVOFromEquation(equRuleEquationField_.getText(), 0, 2, FragmentRuleVO.getStringKeyHash(headFragmentRules_), FragmentRuleVO.getStringKeyHash(chainFragmentRules_), generalSettingsVO_.getAmountOfChains());
-    ruleVO.setMandatory(getComboMandatory(equRuleMandatoryCombo_.getSelectedIndex()));
+    ruleVO.setMandatory(getIntensityMandatory(equRuleMandatoryCombo_.getSelectedIndex()));
     headIntensityRules_.add(ruleVO);    
     paintNewSpectra(false);
     after = headIntensityCounter();
@@ -2857,7 +2872,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     if(checkChainFragment())
 	    {
 	      ruleVO = new FragmentRuleVO(this.chainRuleNameField_.getText(),this.chainRuleFormulaField_.getText(),Integer.parseInt(this.chainRuleChargeField_.getText()), 
-	          Integer.parseInt(this.chainRuleMsLevelField_.getText()), getComboMandatory(this.chainRuleMandatoryCombo_.getSelectedIndex()), false, this.headFragmentRules_, this.chainFragmentRules_, this.elementParser_);
+	          Integer.parseInt(this.chainRuleMsLevelField_.getText()), getFragMandatory(this.chainRuleMandatoryCombo_.getSelectedIndex()), this.headFragmentRules_, this.chainFragmentRules_, this.elementParser_);
 	      this.chainFragmentRules_.put(this.chainRuleNameField_.getText(), ruleVO); 
 	      this.sortedChainFragments_ = getSortedVector(this.chainFragmentRules_, TYPE_CHAIN); 
 	    } else return;
@@ -2891,7 +2906,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     try 
     {
       new FragmentRuleVO(chainRuleNameField_.getText(),chainRuleFormulaField_.getText(),Integer.parseInt(chainRuleChargeField_.getText()), 
-      Integer.parseInt(chainRuleMsLevelField_.getText()), getComboMandatory(chainRuleMandatoryCombo_.getSelectedIndex()), false, headFragmentRules_, chainFragmentRules_, elementParser_);
+      Integer.parseInt(chainRuleMsLevelField_.getText()), getFragMandatory(chainRuleMandatoryCombo_.getSelectedIndex()), headFragmentRules_, chainFragmentRules_, elementParser_);
     }
     catch (NumberFormatException e) 
     {
@@ -2976,7 +2991,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     before = chainIntensityCounter();    
     IntensityRuleVO ruleVO;     
     ruleVO = FragRuleParser.extractIntensityVOFromEquation(equChainRuleEquationField_.getText(), 0, 2, FragmentRuleVO.getStringKeyHash(headFragmentRules_), FragmentRuleVO.getStringKeyHash(chainFragmentRules_), generalSettingsVO_.getAmountOfChains());
-    ruleVO.setMandatory(getComboMandatory(equChainRuleMandatoryCombo_.getSelectedIndex()));
+    ruleVO.setMandatory(getIntensityMandatory(equChainRuleMandatoryCombo_.getSelectedIndex()));
     chainIntensityRules_.add(ruleVO);    
     
     
@@ -3059,7 +3074,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     try
     {
       IntensityRuleVO ruleVO = FragRuleParser.extractIntensityVOFromEquation(positionEquationField_.getText(), 0, FragRuleParser.POSITION_SECTION, FragmentRuleVO.getStringKeyHash(headFragmentRules_), FragmentRuleVO.getStringKeyHash(chainFragmentRules_),generalSettingsVO_.getAmountOfChains());         
-      ruleVO.setMandatory(getComboMandatory(positionRuleMandatoryCombo_.getSelectedIndex()));
+      ruleVO.setMandatory(getIntensityMandatory(positionRuleMandatoryCombo_.getSelectedIndex()));
       positionIntensityRules_.add(ruleVO);     
       saveRules(CACHE_DIR);
       after = unfulfilledPosRulesCounter();    
@@ -3203,7 +3218,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @param fragmentType 1...HeadFragments, 2...ChainFragments
    * @throws RulesException
    */
-  public FragmentRuleVO checkFragment(String ruleName, String formula, int charge, int msLevel, boolean mandatory, int type, int fragmentType) throws RulesException
+  public FragmentRuleVO checkFragment(String ruleName, String formula, int charge, int msLevel, short mandatory, int type, int fragmentType) throws RulesException
   {
     FragmentRuleVO ruleVO = null;
     Hashtable<String,FragmentRuleVO> source = null;
@@ -3227,15 +3242,15 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
         {        
           if(type == 1)
           {
-            ruleVO = new FragmentRuleVO(currentKey,formula,rule.getCharge(), rule.getMsLevel(), mandatory, false, headFragmentRules_, chainFragmentRules_, elementParser_);          
+            ruleVO = new FragmentRuleVO(currentKey,formula,rule.getCharge(), rule.getMsLevel(), mandatory, headFragmentRules_, chainFragmentRules_, elementParser_);          
           }
           if(type == 2)
           {
-            ruleVO = new FragmentRuleVO(currentKey,formula,charge, rule.getMsLevel(), mandatory, false, headFragmentRules_, chainFragmentRules_, elementParser_);          
+            ruleVO = new FragmentRuleVO(currentKey,formula,charge, rule.getMsLevel(), mandatory, headFragmentRules_, chainFragmentRules_, elementParser_);          
           }
           if(type == 3)
           {
-            ruleVO = new FragmentRuleVO(currentKey, formula, charge , msLevel, mandatory, false, headFragmentRules_, chainFragmentRules_, elementParser_);          
+            ruleVO = new FragmentRuleVO(currentKey, formula, charge , msLevel, mandatory, headFragmentRules_, chainFragmentRules_, elementParser_);          
           }         
           if (type==1 || type==2 || type==3)
             return ruleVO;

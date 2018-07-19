@@ -42,6 +42,7 @@ import at.tugraz.genome.lda.alex123.vos.TargetlistEntry;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
+import at.tugraz.genome.lda.msn.vos.FragmentRuleVO;
 import at.tugraz.genome.lda.msn.vos.FragmentVO;
 import at.tugraz.genome.lda.msn.vos.IntensityChainVO;
 import at.tugraz.genome.lda.msn.vos.IntensityPositionVO;
@@ -489,7 +490,7 @@ public class MSnAnalyzer
     boolean foundHeadFragments = false;
     for (FragmentVO fragment : mandatoryHeadFragments){
       if (!probesWithMSnSpectra.containsKey(fragment.getMsLevel())) continue;
-      CgProbe probe = analyzer_.calculateMs2Area(fragment.getMass(), fragment.getFormula(), fragment.getMsLevel(), fragment.getCharge(), fragment.isFromOtherSpecies(), probesWithMSnSpectra.get(fragment.getMsLevel()));
+      CgProbe probe = analyzer_.calculateMs2Area(fragment.getMass(), fragment.getFormula(), fragment.getMsLevel(), fragment.getCharge(), fragment.isMandatory()==FragmentRuleVO.MANDATORY_OTHER, probesWithMSnSpectra.get(fragment.getMsLevel()));
 //      System.out.println("Mand: "+fragment.getName()+";"+fragment.getMass()+";"+probe.Area+";"+probe.AreaStatus+";"+checkBasePeakCutoff(probe,fragment.getMsLevel()));
       if (probe.AreaStatus == CgAreaStatus.OK && checkBasePeakCutoff(probe,fragment.getMsLevel())){
         foundHeadFragments = true;
@@ -505,7 +506,7 @@ public class MSnAnalyzer
     }
     for (FragmentVO fragment : addHeadFragments){
       if (!probesWithMSnSpectra.containsKey(fragment.getMsLevel())) continue;
-      CgProbe probe = analyzer_.calculateMs2Area(fragment.getMass(), fragment.getFormula(), fragment.getMsLevel(), fragment.getCharge(), fragment.isFromOtherSpecies(), probesWithMSnSpectra.get(fragment.getMsLevel()));
+      CgProbe probe = analyzer_.calculateMs2Area(fragment.getMass(), fragment.getFormula(), fragment.getMsLevel(), fragment.getCharge(), fragment.isMandatory()==FragmentRuleVO.MANDATORY_OTHER, probesWithMSnSpectra.get(fragment.getMsLevel()));
 //      System.out.println("Add: "+fragment.getName()+";"+fragment.getMass()+";"+probe.Area+";"+probe.AreaStatus+";"+checkBasePeakCutoff(probe,fragment.getMsLevel()));
       if (probe.AreaStatus == CgAreaStatus.OK && checkBasePeakCutoff(probe,fragment.getMsLevel())){
         foundHeadFragments = true;
@@ -584,7 +585,7 @@ public class MSnAnalyzer
         for (FragmentVO fragment : mandatoryChainFragments){
         //System.out.println(fa+";"+fragment.getName()+" ; "+fragment.getMass());
           if (!probesWithMSnSpectra.containsKey(fragment.getMsLevel())) continue;
-          CgProbe probe = analyzer_.calculateMs2Area(fragment.getMass(), fragment.getFormula(), fragment.getMsLevel(), fragment.getCharge(), fragment.isFromOtherSpecies(), probesWithMSnSpectra.get(fragment.getMsLevel()));
+          CgProbe probe = analyzer_.calculateMs2Area(fragment.getMass(), fragment.getFormula(), fragment.getMsLevel(), fragment.getCharge(), fragment.isMandatory()==FragmentRuleVO.MANDATORY_OTHER, probesWithMSnSpectra.get(fragment.getMsLevel()));
 //        if (fa.getName().equalsIgnoreCase("16:0")) System.out.println("!!! "+fa.getName()+";"+fragment.getMass()+";"+fragment.getName()+";"+probe.Area);
           if (probe.AreaStatus == CgAreaStatus.OK && checkBasePeakCutoff(probe,fragment.getMsLevel())){
             foundChainFragments = true;
@@ -600,7 +601,7 @@ public class MSnAnalyzer
         for (FragmentVO fragment : addChainFragments){
 //          if (chainType==FragmentRuleVO.ALKYL_CHAIN && fa.getName().equalsIgnoreCase("18:1")) System.out.println("!!! 18:1: "+fragment.getMass());
           if (!probesWithMSnSpectra.containsKey(fragment.getMsLevel())) continue;
-          CgProbe probe = analyzer_.calculateMs2Area(fragment.getMass(), fragment.getFormula(), fragment.getMsLevel(), fragment.getCharge(), fragment.isFromOtherSpecies(), probesWithMSnSpectra.get(fragment.getMsLevel()));
+          CgProbe probe = analyzer_.calculateMs2Area(fragment.getMass(), fragment.getFormula(), fragment.getMsLevel(), fragment.getCharge(), fragment.isMandatory()==FragmentRuleVO.MANDATORY_OTHER, probesWithMSnSpectra.get(fragment.getMsLevel()));
           if (probe.AreaStatus == CgAreaStatus.OK && checkBasePeakCutoff(probe,fragment.getMsLevel())){
 //          System.out.println(fa.getName()+";"+fragment.getName()+";"+fragment.getMass()+";"+probe.Area+";"+probe.AreaStatus+"; Add");
             foundChainFragments = true;
@@ -2315,7 +2316,7 @@ public class MSnAnalyzer
    * @return appropriate CgProbes
    */
   private Vector<CgProbe> getCorrespondingCgProbes(){
-    if (LipidomicsConstants.isShotgun()){
+    if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
       if (this.shotgunProbes_==null){
         shotgunProbes_ = getCorrespondingCgProbes(set_);
       }
@@ -2331,7 +2332,7 @@ public class MSnAnalyzer
    */
   private static Vector<CgProbe> getCorrespondingCgProbes(LipidParameterSet set){
     Vector<CgProbe> probes = set.getIsotopicProbes().get(0);
-    if (LipidomicsConstants.isShotgun()){
+    if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
       probes = new Vector<CgProbe>();
       for (CgProbe aProbe : set.getIsotopicProbes().get(0)){
         CgProbe probe = new CgProbe(aProbe);

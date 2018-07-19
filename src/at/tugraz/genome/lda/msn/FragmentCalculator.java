@@ -300,8 +300,8 @@ public class FragmentCalculator
       //TODO: I do not know how to handle MS3 spectra - which precursor mass and formula should I use???
       Vector<Object> formulaAndMass = ruleVO.getFormulaAndMass(analyteFormula_, precursorMass_, null, 0,ruleVO.getCharge());
       FragmentVO fragVO = new FragmentVO(ruleVO.getName(),(Double)formulaAndMass.get(1),(String)formulaAndMass.get(0),ruleVO.getCharge(),ruleVO.getMsLevel(),
-          ruleVO.isMandatory(),ruleVO.isFromOtherSpecies());
-      if (ruleVO.isMandatory()) mandatoryFragments.add(fragVO);
+          ruleVO.isMandatory());
+      if (ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_TRUE || ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_QUANT) mandatoryFragments.add(fragVO);
       else addFragments.add(fragVO);
     }
     
@@ -520,8 +520,8 @@ public class FragmentCalculator
       //TODO: I do not know how to handle MS3 spectra - which precursor mass and formula should I use???
       Vector<Object> formulaAndMass = ruleVO.getFormulaAndMass(analyteFormula_, precursorMass_, fa.getFormula(), fa.getMass(), ruleVO.getCharge());
       FragmentVO fragVO = new FragmentVO(ruleVO.getName(),(Double)formulaAndMass.get(1),(String)formulaAndMass.get(0),ruleVO.getCharge(),ruleVO.getMsLevel(),
-          ruleVO.isMandatory(),ruleVO.isFromOtherSpecies());
-      if (ruleVO.isMandatory()) mandatoryFragments.add(fragVO);
+          ruleVO.isMandatory());
+      if (ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_TRUE || ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_QUANT) mandatoryFragments.add(fragVO);
       else addFragments.add(fragVO);
       
       chainFragments.put(true, mandatoryFragments);
@@ -552,7 +552,7 @@ public class FragmentCalculator
     boolean singleChainIdentification = RulesContainer.isSingleChainIdentification(ruleName_,rulesDir_);
     Vector<String> mandatoryFrags = new Vector<String>();
     for (FragmentRuleVO ruleVO : chainRules.values()){
-      if (ruleVO.isMandatory()) mandatoryFrags.add(ruleVO.getName());
+      if (ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_TRUE || ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_QUANT) mandatoryFrags.add(ruleVO.getName());
     }
     for (String key : this.potentialChainCombinations_.keySet()){
       Vector<FattyAcidVO> combFAs = this.potentialChainCombinations_.get(key);

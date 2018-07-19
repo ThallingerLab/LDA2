@@ -25,7 +25,7 @@ package at.tugraz.genome.lda.quantification;
 
 //import java.io.BufferedOutputStream;
 //import java.io.FileOutputStream;
-//import java.io.IOException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,10 +48,17 @@ import java.util.Vector;
 
 
 
+
+import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.quantification.Analyzer;
 import at.tugraz.genome.maspectras.quantification.CgAreaStatus;
 import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.QuantificationException;
+import at.tugraz.genome.lda.exception.RulesException;
+import at.tugraz.genome.lda.msn.FragmentCalculator;
+import at.tugraz.genome.lda.msn.vos.FragmentRuleVO;
+import at.tugraz.genome.lda.msn.vos.FragmentVO;
 import at.tugraz.genome.lda.quantification.LipidomicsDefines;
 import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.maspectras.quantification.CgChromatogram;
@@ -345,6 +352,29 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
   }
   
   /**
+   * sets parameters necessary for PRM procession
+   * @param chromSmoothRange the range in seconds for smoothing the initial chromatogram
+   * @param chromSmoothRepeats the smooth repeats for smoothing the initial chromatogram
+   * @param peakDiscardingAreaFactor a factor for discarding small peaks immediately after detection, e.g. 100 corresponds to removal of peaks that are smaller than 1% of the strongest peak in the chromatogram
+   * @param relativeAreaCutoff a factor for discarding peaks after all checks were performed, e.g. 0.01 corresponds to removal of peaks that are smaller than 1% of the strongest peak in the chromatogram
+   * @param relativeFarAreaCutoff a factor for discarding peaks that are farer away from the strongest peak after all checks were performed, e.g. 0.1 corresponds to removal of peaks that are smaller than 10% of the strongest peak in the chromatogram
+   * @param relativeFarAreaTimeSpace the time space in seconds to decide whether a peak is farer away from the strongest peak or not
+   * @param msnMzTolerance the m/z tolerance in MSn spectra
+   */
+  public void setPrmParameters(float chromSmoothRange, int chromSmoothRepeats, int peakDiscardingAreaFactor, float relativeAreaCutoff,
+      float relativeFarAreaCutoff, int relativeFarAreaTimeSpace, float msnMzTolerance){
+    this.chromSmoothRange_= chromSmoothRange;
+    this.chromSmoothRepeats_ = chromSmoothRepeats;
+    this.peakDiscardingAreaFactor_ = peakDiscardingAreaFactor;
+    this.relativeAreaCutoff_ = relativeAreaCutoff;
+    this.relativeFarAreaCutoff_ = relativeFarAreaCutoff;
+    this.relativeFarAreaTimeSpace_ = relativeFarAreaTimeSpace;
+    this.msnMzTolerance_ = msnMzTolerance;
+  }
+  
+  
+  
+  /**
    * sets the parameters necessary for processing shotgun data
    * @param mzTolerance the mzTolerance
    */
@@ -454,6 +484,198 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     result.put(0, oneResult);
     return result;
   }
+  
+  /**
+   * currently the method works only for head group fragments
+   * @param mz
+   * @param charge
+   * @param msLevel
+   * @param className
+   * @param modName
+   * @param analyteName
+   * @param formula
+   * @return
+   */
+  public Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> processPrmData(float mz, int charge, int msLevel, String className, String modName,
+      String analyteName, String formula) {
+    Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> finalResults = null;
+    try{
+      float mzTolerance = LipidomicsConstants.getCoarseChromMzTolerance(mz);
+      this.prepareMSnSpectraCache(mz-mzTolerance, mz+mzTolerance);
+
+    
+      FragmentCalculator fragCalc = new FragmentCalculator(null,className,modName,analyteName,formula,mz);
+      Vector<FragmentVO> mandHeadFragments = fragCalc.getHeadFragments().get(true);
+      Hashtable<String,Vector<CgProbe>> headPeaks = new Hashtable<String,Vector<CgProbe>>();
+      for (FragmentVO frag : mandHeadFragments){
+        if (frag.isMandatory()!=FragmentRuleVO.MANDATORY_QUANT)
+          continue;
+        
+        LipidomicsChromatogram chrom = new LipidomicsChromatogram(this.readJustIntensitiesOfInterest((float)frag.getMass()-msnMzTolerance_,(float)frag.getMass()+msnMzTolerance_,
+            0f,Float.MAX_VALUE,msLevel));
+        chrom.Smooth(chromSmoothRange_, this.chromSmoothRepeats_);
+        chrom.GetMaximumAndAverage();
+
+//        printChromaToFile(chrom,"D:\\Alex\\PRM\\test.png");
+//        printChromaToFile(chrom,"D:\\Alex\\PRM\\test_raw.png",1);
+        
+        //getting the peaks of one chromatogram
+        int currentScan =0;
+        Vector<CgProbe> probes = new Vector<CgProbe>();
+        float highestArea = 0f;
+        while (currentScan<chrom.Value.length){
+          CgProbe standardProbe = LipidomicsAnalyzer.calculateOneArea(chrom, currentScan, LipidomicsDefines.StandardValleyMethod,charge);
+          int highestScan = LipidomicsAnalyzer.findIndexByTime(standardProbe.UpperValley,chrom);
+          standardProbe.isotopeNumber = 0;
+          if (standardProbe.AreaStatus==CgAreaStatus.OK){
+            this.checkDuplicate(probes,standardProbe);
+            if (standardProbe.AreaStatus == CgAreaStatus.OK){
+              probes.add(standardProbe);
+              if (standardProbe.Area>highestArea)
+                highestArea = standardProbe.Area;
+              if (highestScan>currentScan)
+              currentScan = highestScan;
+            }
+          }
+          currentScan++;
+        }
+        //filter out small intensities
+        Vector<CgProbe> strongProbes = new Vector<CgProbe>();
+        for (CgProbe probe : probes){
+          if (probe.Area>(highestArea/peakDiscardingAreaFactor_))
+            strongProbes.add(probe);
+        }
+        headPeaks.put(frag.getName(), strongProbes);
+      }
+      finalResults = new Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>>();
+    
+      //TODO: here the chain Peaks have to be extracted - for the chain peaks, I have to check that all chains of one combination are present
+      Hashtable<String,Vector<CgProbe>> chainPeaks = new Hashtable<String,Vector<CgProbe>>();
+    
+      if (headPeaks.size()==0 && chainPeaks.size()==0)
+        return finalResults;
+          
+      //only hits which are found for all fragments are allowed
+      //this method checks them and generates a final CgProbe including the areas
+      String fragmentName;
+      Vector<CgProbe> probesToCheck = new Vector<CgProbe>();
+      if (headPeaks.size()>0){
+        fragmentName = headPeaks.keySet().iterator().next();
+        probesToCheck = headPeaks.get(fragmentName);
+      }else{
+        fragmentName = chainPeaks.keySet().iterator().next();
+        probesToCheck = chainPeaks.get(fragmentName);
+      }
+      
+      Vector<CgProbe> allProbes = new  Vector<CgProbe>();
+      CgProbe strongestProbe = null;
+      float strongestArea = 0f;
+      for (CgProbe probe : probesToCheck){
+        Vector<CgProbe> probesToCombine = new  Vector<CgProbe>();
+        probesToCombine.add(probe);
+        boolean allFound = true;
+        for (String fragName : headPeaks.keySet()){
+          if (fragName.equalsIgnoreCase(fragmentName))
+            continue;
+          Vector<CgProbe> otherProbes = headPeaks.get(fragName);
+          Vector<CgProbe> overlappingProbes = new Vector<CgProbe>();
+          CgProbe probeToAdd = null;
+          for (CgProbe other: otherProbes){
+            //here not inner third is used, but the peak of the one peak has to be within 75% of the other peak
+            if (isOneProbeInOtherInnerThird(probe, other, 4/3f, 8/3f)){
+              overlappingProbes.add(other);
+            }
+          }
+          // if there is none found, discard the peak
+          if (overlappingProbes.size()==0){
+            allFound = false;
+            break;
+            // if  there is more than one found, take the one closest to the peak center
+          } else {
+            float lowestDifference = Float.MAX_VALUE;
+            float summitDifference;
+            for (CgProbe other : overlappingProbes){
+              summitDifference = positiveDifference(probe.Peak, other.Peak);
+              if (summitDifference<lowestDifference){
+                probeToAdd = other;
+                lowestDifference = summitDifference;
+              }
+            }
+            probesToCombine.add(probeToAdd);
+          }
+        }
+        if (!allFound)
+          continue;
+        //now make a combined area and add it to the final results
+        float totalArea = 0f;
+        float lowerValleyTimesArea = 0f;
+        float peakTimesArea = 0f;
+        float upperValleyTimesArea = 0;
+        float totalBackground = 0f;
+        float totalAreaError = 0f;
+        float highestIntensity = 0f;
+        float lowerValley10TimesArea = 0f;
+        float lowerValley50TimesArea = 0f;
+        float upperValley10TimesArea = 0f;
+        float upperValley50TimesArea = 0f;
+        for (CgProbe aProbe : probesToCombine){
+          totalArea += aProbe.Area;
+          lowerValleyTimesArea += aProbe.LowerValley*aProbe.Area;
+          peakTimesArea += aProbe.Peak*aProbe.Area;
+          upperValleyTimesArea += aProbe.UpperValley*aProbe.Area;
+          totalBackground += aProbe.Background;
+          totalAreaError += aProbe.AreaError;
+          if (aProbe.getHighestIntensity()>highestIntensity)
+            highestIntensity = aProbe.getHighestIntensity();
+          lowerValley10TimesArea += aProbe.getLowerValley10()*aProbe.Area;
+          lowerValley50TimesArea += aProbe.getLowerValley50()*aProbe.Area;
+          upperValley10TimesArea += aProbe.getUpperValley10()*aProbe.Area;
+          upperValley50TimesArea += aProbe.getUpperValley50()*aProbe.Area;
+        }
+        CgProbe finalProbe = new CgProbe(0,1,1,formula);
+        finalProbe.Mz = mz;
+        finalProbe.LowerMzBand = mzTolerance;
+        finalProbe.UpperMzBand = mzTolerance;
+        finalProbe.isotopeNumber = 0;
+        finalProbe.Area = totalArea;
+        finalProbe.LowerValley = lowerValleyTimesArea/totalArea;
+        finalProbe.Peak = peakTimesArea/totalArea;
+        finalProbe.UpperValley = upperValleyTimesArea/totalArea;
+        finalProbe.Background = totalBackground;
+        finalProbe.AreaError = totalAreaError;
+        finalProbe.setHighestIntensity(highestIntensity);
+        finalProbe.setLowerValley10(lowerValley10TimesArea/totalArea);
+        finalProbe.setLowerValley50(lowerValley50TimesArea/totalArea);
+        finalProbe.setUpperValley10(upperValley10TimesArea/totalArea);
+        finalProbe.setUpperValley50(upperValley50TimesArea/totalArea);
+        finalProbe.AreaStatus = CgAreaStatus.OK;
+        finalProbe.setApexIntensity(0f);
+        allProbes.add(finalProbe);
+        if (finalProbe.Area>strongestArea){
+          strongestProbe = finalProbe;
+          strongestArea = finalProbe.Area;
+        }
+      }
+      int hitNumber = 0;
+      for (CgProbe aProbe : allProbes){
+        if (aProbe.Area<(strongestArea*relativeAreaCutoff_))
+          continue;
+        if (aProbe.Area<(strongestArea*relativeFarAreaCutoff_) && (this.checkTimeSpace(strongestProbe,aProbe)>relativeFarAreaTimeSpace_))
+          continue;
+        Vector<CgProbe> finalProbes = new Vector<CgProbe>();
+        finalProbes.add(aProbe);
+        Hashtable<Integer,Vector<CgProbe>> isotopes = new Hashtable<Integer,Vector<CgProbe>>();
+        isotopes.put(0, finalProbes);
+        finalResults.put(hitNumber, isotopes);
+        hitNumber++;
+      }
+    }catch (CgException | RulesException | NoRuleException | IOException | SpectrummillParserException ex){
+      ex.printStackTrace();
+    }
+    return finalResults;
+  }
+  
+  
 
   /**
    * calculates a shotgun intensity
@@ -4795,11 +5017,18 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
   private static float calculateShotgunIntensity(CgChromatogram cgChrom, int shotgunType){
     float intensity = 0f;
     float[] intValues = new float[cgChrom.Value.length];
+////    Vector<Float> ints = new Vector<Float>();
     float sum = 0f;
     for (int i=0; i!=cgChrom.Value.length; i++){
       intValues[i] = cgChrom.Value[i][1];
       sum += intValues[i];
+////      if (cgChrom.Value[i][1]>0f){
+////        ints.add(cgChrom.Value[i][1]);
+////        sum+=cgChrom.Value[i][1];
+////      }
     }
+////    float[] intValues = new float[ints.size()];
+////    for (int i=0; i!=ints.size(); i++) intValues[i] = ints.get(i);
     if (shotgunType==SHOTGUN_TYPE_MEAN)
       intensity = Calculator.mean(intValues);
     else if (shotgunType==SHOTGUN_TYPE_MEDIAN)

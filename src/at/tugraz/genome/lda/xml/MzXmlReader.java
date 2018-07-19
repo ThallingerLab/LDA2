@@ -40,7 +40,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
 //TODO: the following lines are for QQQ PIS/NLS - activate when necessary
-/****import at.tugraz.genome.lda.LipidomicsConstants;*/
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.maspectras.quantification.CgBase64;
 import at.tugraz.genome.maspectras.quantification.CgDefines;
@@ -310,8 +310,8 @@ public class MzXmlReader implements XmlSpectraReader
     String polarityString = "";
     int polarity = CgDefines.POLARITY_NO;
     int peaksCount = 0;
-    //TODO: the following lines are for QQQ PIS/NLS - activate when necessary
-/***    float precursor = -1;*/
+    //the following line is for QQQ PIS/NLS and PRM
+    float precursor = -1;
 
     for (i = 0; i < rdr_.getAttributeCount(); i++) {
       if (rdr_.getAttributeLocalName(i) == "num") {
@@ -374,16 +374,16 @@ public class MzXmlReader implements XmlSpectraReader
                 // new scan!
                 // =================================================
                 
-                //TODO: the following lines are for QQQ PIS/NLS - activate when necessary
-/****              } else if (!myHeader_.hasMS1Scans && LipidomicsConstants.isShotgun() && precursor>=0){
+                //the following lines (until end of bracket) are for QQQ PIS/NLS and PRM data
+              } else if (!myHeader_.hasMS1Scans && LipidomicsConstants.isShotgun()>LipidomicsConstants.SHOTGUN_FALSE && precursor>=0){
                 int currentLowMz =  Math.round((precursor*0.999f)*multiplicationFactorForInt_);
                 int currentHighMz = Math.round((precursor*1.001f)*multiplicationFactorForInt_);                
                 if (currentLowMz<this.lowestMz_) this.lowestMz_ = currentLowMz ;
-                if (currentHighMz>this.highestMz_) this.highestMz_ = currentHighMz;*/
+                if (currentHighMz>this.highestMz_) this.highestMz_ = currentHighMz;
               }
               if (parseMsMs_ && msLevel > myHeader_.highestMSLevel) myHeader_.highestMSLevel=msLevel;
-            //TODO: the following lines are for QQQ PIS/NLS - activate when necessary
-/****            } else if (rdr_.getLocalName().equalsIgnoreCase("precursorMz") && !myHeader_.hasMS1Scans && LipidomicsConstants.isShotgun()) {
+            //the following lines (until end of bracket) are for QQQ PIS/NLS and PRM data
+            } else if (rdr_.getLocalName().equalsIgnoreCase("precursorMz") && !myHeader_.hasMS1Scans && LipidomicsConstants.isShotgun()>LipidomicsConstants.SHOTGUN_FALSE) {
               int attributeCount = rdr_.getAttributeCount();
               for (i = 0; i < attributeCount; i++) {
                 if (rdr_.getAttributeLocalName(i) == "precursorIntensity") {
@@ -399,7 +399,7 @@ public class MzXmlReader implements XmlSpectraReader
                     throw new CgException(ex.getMessage());
                   }
                 }
-              }*/
+              }
             } else if (rdr_.getLocalName().equalsIgnoreCase("scan")) {
               xmlReadMaxima();
             }
@@ -532,8 +532,8 @@ public class MzXmlReader implements XmlSpectraReader
     int polarity = CgDefines.POLARITY_NO;
     boolean lowMzFound = false;
     boolean highMzFound = false;
-    //TODO: the following lines are for QQQ PIS/NLS - activate when necessary
-    /****float precursorMz = -1f;*/
+    //the following line is for QQQ PIS/NLS and PRM data
+    float precursorMz = -1f;
 
     // =========================================================
     // First of all we read the attributes:
@@ -647,9 +647,9 @@ public class MzXmlReader implements XmlSpectraReader
                   throw new CgException(
                       "No adder for Header and Scans defined.");
               } else {
-                //TODO: the following lines are for QQQ PIS/NLS - activate when necessary
+                //the following lines (until end of bracket) are for QQQ PIS/NLS and PRM data
                 //this generates an artificial MS1 scans for shotgun MSn-only data
-/****                if (!myHeader_.hasMS1Scans && LipidomicsConstants.isShotgun() && precursorMz>=0 ){
+                if (!myHeader_.hasMS1Scans && LipidomicsConstants.isShotgun()>LipidomicsConstants.SHOTGUN_FALSE && precursorMz>=0 ){
                   sc = new CgScan(0);
                   sc.Num = num;
                   sc.MsLevel = 1;
@@ -711,7 +711,7 @@ public class MzXmlReader implements XmlSpectraReader
                     }
                   } else
                     throw new CgException("No adder for Header and Scans defined.");
-                }*/
+                }
                 if (baseScans==null){
                   baseScans = new Vector<CgScan>();
                   scanRanges = new Vector<Range>();
@@ -765,8 +765,8 @@ public class MzXmlReader implements XmlSpectraReader
                     rdr_.next();
                     String childNode = rdr_.getText().trim();
                     if (childNode != null) {
-                    //TODO: the following lines are for QQQ PIS/NLS - activate when necessary
-/****                      precursorMz = */Float.parseFloat(childNode);
+                    //the following line is for QQQ PIS/NLS and PRM data
+                      precursorMz = Float.parseFloat(childNode);
                       precursorMz_.add(childNode);
                       break;
                     }

@@ -66,7 +66,7 @@ public class FragmentVerifier
   private String fragRuleMsLevelString_;
   
   /** The mandatory of the fragment */
-  private boolean mandatory_;
+  private short mandatory_;
   
   /** 1... formula, 2... charge, 3... ms level */
   int type_;
@@ -133,7 +133,7 @@ public class FragmentVerifier
 				this.fragRuleFormulaString_ = rdiObject_.getHeadRuleFormulas()[position_].getText();		
 			  this.fragRuleChargeString_ = rdiObject_.getHeadRuleCharges()[position_].getText();		
 			  this.fragRuleMsLevelString_ = rdiObject_.getHeadRuleMSLevels()[position_].getText();			  
-			  this.mandatory_ = rdiObject_.getHeadFragmentMandatories()[position_];			  
+			  this.mandatory_ = rdiObject_.getHeadFragmentMandatories()[position_] ? (short)1 : (short)0;			  
 			}
 			
 			if(headOrChain_ == 2)
@@ -142,7 +142,7 @@ public class FragmentVerifier
 				this.fragRuleFormulaString_ = rdiObject_.getChainRuleFormulas()[position_].getText();		
 			  this.fragRuleChargeString_ = rdiObject_.getChainRuleCharges()[position_].getText();		
 			  this.fragRuleMsLevelString_ = rdiObject_.getChainRuleMSLevels()[position_].getText();	
-			  this.mandatory_ = rdiObject_.getChainFragmentMandatories()[position_];	
+			  this.mandatory_ = rdiObject_.getChainFragmentMandatories()[position_] ? (short)1 : (short)0;	
 			}
 			checkMsLevel(true);
 				if(!(fragRuleFormulaString_.equals("")))
@@ -307,7 +307,7 @@ public class FragmentVerifier
 	    this.fragRuleFormulaString_ = rdiObject_.getHeadRuleFormulas()[position].getText();   
 	    this.fragRuleChargeString_ = rdiObject_.getHeadRuleCharges()[position].getText();   
 	    this.fragRuleMsLevelString_ = rdiObject_.getHeadRuleMSLevels()[position].getText();	   
-	    this.mandatory_ = rdiObject_.getHeadFragmentMandatories()[position];
+	    this.mandatory_ = rdiObject_.getHeadFragmentMandatories()[position] ? (short)1 : (short)0;
   	}
   	if(headOrChain_ == 2)
   	{
@@ -315,7 +315,7 @@ public class FragmentVerifier
 	    this.fragRuleFormulaString_ = rdiObject_.getChainRuleFormulas()[position].getText();   
 	    this.fragRuleChargeString_ = rdiObject_.getChainRuleCharges()[position].getText();   
 	    this.fragRuleMsLevelString_ = rdiObject_.getChainRuleMSLevels()[position].getText();
-	    this.mandatory_ = rdiObject_.getChainFragmentMandatories()[position];	
+	    this.mandatory_ = rdiObject_.getChainFragmentMandatories()[position] ? (short)1 : (short)0;	
   	}
   }  
 
@@ -344,7 +344,7 @@ public class FragmentVerifier
 			if(rdiObject_.getHeadRuleMSLevels()[position].getText() != null && rdiObject_.getHeadRuleMSLevels()[position].getText().length()>0)
 			    	this.fragRuleMsLevelString_ = rdiObject_.getHeadRuleMSLevels()[position].getText();
 
-	    this.mandatory_ = rdiObject_.getHeadFragmentMandatories()[position];		    
+	    this.mandatory_ = rdiObject_.getHeadFragmentMandatories()[position] ? (short)1 : (short)0;		    
   	}
   	if(headOrChain_ == 2)
    	{
@@ -360,7 +360,7 @@ public class FragmentVerifier
 			if(rdiObject_.getChainRuleMSLevels()[position].getText() != null && rdiObject_.getChainRuleMSLevels()[position].getText().length()>0)
 		    	this.fragRuleMsLevelString_ = rdiObject_.getChainRuleMSLevels()[position].getText();
 			
-			this.mandatory_ = rdiObject_.getChainFragmentMandatories()[position];			
+			this.mandatory_ = rdiObject_.getChainFragmentMandatories()[position] ? (short)1 : (short)0;			
   	}
     this.checkFragmentOnlySuccess();  
     if(checkMsLevel(false))

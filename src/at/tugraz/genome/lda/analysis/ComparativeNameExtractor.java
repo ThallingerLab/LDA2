@@ -279,7 +279,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
           continue;
         try {
           LipidomicsConstants readConstants = LipidomicsConstants.readSettingsFromExcel(sheet);
-          if (readConstants.getShotgun())
+          if (readConstants.getShotgun()==LipidomicsConstants.SHOTGUN_TRUE)
             isShotgun = true;
         } catch (SettingsException e) {
           e.printStackTrace();

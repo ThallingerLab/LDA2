@@ -247,12 +247,19 @@ public class LipidomicsConstants
   /** retention time in minutes that define a peak to be farer away, so that the ms2IsobarSCFarExclusionRatio can be used*/
   private float ms2IsobaricOtherRtDifference_;
   
-  /** true when the LDA shall run in shotgun mode*/
-  private boolean shotgun_;
+  /** 0 when LC, 1 when shotgun, 2 when PRM*/
+  private short shotgun_;
   /** the unit of the m/z values (available for shotgun only)*/
   private String mzUnit_;
   /** the way to acquire shotgun intensities (possible values are "mean", "median", "sum")*/
   private int shotgunProcessing_;
+  
+  /** this is the conventional chromatography mode*/
+  public final static short SHOTGUN_FALSE = 0;
+  /** this is the shotgun mode*/
+  public final static short SHOTGUN_TRUE = 1;
+  /** this is the PRM mode*/
+  public final static short SHOTGUN_PRM = 2;
   
   private final static String LDA_VERSION = "LDA-version";
   private final static String RAW_FILE = "rawFile";
@@ -424,7 +431,7 @@ public class LipidomicsConstants
   private final static String EXCEL_VALUE = "Value";
   private final static int EXCEL_VALUE_COLUMN = 1;
   
-  /** the shotgun parameter - true/false is allowed*/
+  /** the shotgun parameter - true/false/prm are allowed*/
   private final static String SHOTGUN = "shotgun";
   /** the input unit (for shotgan data only) - allowed are ppm, Da, Dalton, Th, Thompson, m/z*/
   private final static String MZUNIT = "mzUnit";
@@ -661,17 +668,20 @@ public class LipidomicsConstants
     mzTabInstrumentDetector_ = extractEBIParam(MZTAB_DETECTOR,properties);
     
     String shotgunString = properties.getProperty(SHOTGUN,"false");
-    shotgun_ = false;
+    shotgun_ = SHOTGUN_FALSE;
     if (shotgunString!=null&&(shotgunString.equalsIgnoreCase("true")||shotgunString.equalsIgnoreCase("yes")))
-      shotgun_ = true;
+      shotgun_ = SHOTGUN_TRUE;
+    if (shotgunString!=null&&(shotgunString.equalsIgnoreCase("prm")))
+      shotgun_ = SHOTGUN_PRM;
+    
     String mzUnitString = properties.getProperty(MZUNIT,MZUNIT_PPM);
     mzUnit_= MZUNIT_PPM;
-    if (!shotgun_ || mzUnitString.equalsIgnoreCase(MZUNIT_DA) || mzUnitString.equalsIgnoreCase(MZUNIT_DALTON) ||
+    if (shotgun_==SHOTGUN_FALSE || mzUnitString.equalsIgnoreCase(MZUNIT_DA) || mzUnitString.equalsIgnoreCase(MZUNIT_DALTON) ||
         mzUnitString.equalsIgnoreCase(MZUNIT_THOMPSON) || mzUnitString.equalsIgnoreCase(MZUNIT_TH) ||
         mzUnitString.equalsIgnoreCase(MZUNIT_MZ))
       mzUnit_ = MZUNIT_DA;
     shotgunProcessing_ = LipidomicsAnalyzer.SHOTGUN_TYPE_MEAN;
-    if (shotgun_){
+    if (shotgun_==SHOTGUN_TRUE){
       String processingString = properties.getProperty(SHOTGUN_PROCESSING);
       if (processingString==null)
         throw new SettingsException("When there is shotgun data, the \""+SHOTGUN_PROCESSING+"\" has to be set!");
@@ -1295,9 +1305,9 @@ public class LipidomicsConstants
   
   /**
    * 
-   * @return true when the settings are for a shotgun experiment
+   * @return 0 when LC, 1 when shotgun, 2 when PRM
    */
-  public static boolean isShotgun(){
+  public static short isShotgun(){
     if (instance_ == null) LipidomicsConstants.getInstance();
     return instance_.shotgun_;
   }
@@ -1412,7 +1422,7 @@ public class LipidomicsConstants
    * 
    * @return true when this is a shotgun instance
    */
-  public boolean getShotgun(){
+  public short getShotgun(){
     LipidomicsConstants.getInstance();
     return this.shotgun_;
   }
@@ -1779,13 +1789,15 @@ public class LipidomicsConstants
     if (String.valueOf(chromLowestResolution_).length()>longestValue) longestValue = String.valueOf(chromLowestResolution_).length();
 
       
-    if (shotgun_){
+    if (shotgun_>SHOTGUN_FALSE){
       rowCount = createPropertyRow(sheet,rowCount,SHOTGUN,String.valueOf(shotgun_));
       if (SHOTGUN.length()>longestKey) longestKey = SHOTGUN.length();
       if (String.valueOf(shotgun_).length()>longestValue) longestValue = String.valueOf(shotgun_).length();
       rowCount = createPropertyRow(sheet,rowCount,MZUNIT,mzUnit_);
       if (MZUNIT.length()>longestKey) longestKey = MZUNIT.length();
       if (mzUnit_.length()>longestValue) longestValue = mzUnit_.length();
+    }
+    if (shotgun_==SHOTGUN_TRUE){
       String shotgunProcessingString = null;
       if (shotgunProcessing_ == LipidomicsAnalyzer.SHOTGUN_TYPE_MEAN)
         shotgunProcessingString = SHOTGUN_PROCESSING_MEAN;
@@ -1803,6 +1815,8 @@ public class LipidomicsConstants
       rowCount = createPropertyRow(sheet,rowCount,CHROM_SMOOTH_REPEATS,String.valueOf(chromSmoothRepeats_));
       if (CHROM_SMOOTH_REPEATS.length()>longestKey) longestKey = CHROM_SMOOTH_REPEATS.length();
       if (String.valueOf(chromSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(chromSmoothRepeats_).length();
+    }
+    if (shotgun_==SHOTGUN_FALSE){
       rowCount = createPropertyRow(sheet,rowCount,USE_3D,String.valueOf(use3D_));
       if (USE_3D.length()>longestKey) longestKey = USE_3D.length();
       if (String.valueOf(use3D_).length()>longestValue) longestValue = String.valueOf(use3D_).length();
@@ -1926,10 +1940,14 @@ public class LipidomicsConstants
       if (String.valueOf(overlapPeakDistanceDivisor_).length()>longestValue) longestValue = String.valueOf(overlapPeakDistanceDivisor_).length();
       rowCount = createPropertyRow(sheet,rowCount,OVERLAP_FULL_DIST_DIVISOR,String.valueOf(overlapFullDistanceDivisor_));
       if (OVERLAP_FULL_DIST_DIVISOR.length()>longestKey) longestKey = OVERLAP_FULL_DIST_DIVISOR.length();
-      if (String.valueOf(overlapFullDistanceDivisor_).length()>longestValue) longestValue = String.valueOf(overlapFullDistanceDivisor_).length();   
+      if (String.valueOf(overlapFullDistanceDivisor_).length()>longestValue) longestValue = String.valueOf(overlapFullDistanceDivisor_).length();
+    }
+    if (shotgun_!=SHOTGUN_TRUE){
       rowCount = createPropertyRow(sheet,rowCount,PEAK_DISCARD_AREA_FACTOR,String.valueOf(peakDiscardingAreaFactor_));
       if (PEAK_DISCARD_AREA_FACTOR.length()>longestKey) longestKey = PEAK_DISCARD_AREA_FACTOR.length();
       if (String.valueOf(peakDiscardingAreaFactor_).length()>longestValue) longestValue = String.valueOf(peakDiscardingAreaFactor_).length();
+    }
+    if (shotgun_==SHOTGUN_FALSE){
       rowCount = createPropertyRow(sheet,rowCount,ISO_IN_BETWEEN_TIME,String.valueOf(isotopeInBetweenTime_));
       if (ISO_IN_BETWEEN_TIME.length()>longestKey) longestKey = ISO_IN_BETWEEN_TIME.length();
       if (String.valueOf(isotopeInBetweenTime_).length()>longestValue) longestValue = String.valueOf(isotopeInBetweenTime_).length();
@@ -1939,6 +1957,8 @@ public class LipidomicsConstants
       rowCount = createPropertyRow(sheet,rowCount,ISO_NEAR_NORMAL_PROBE_TIME,String.valueOf(isoNearNormalProbeTime_));
       if (ISO_NEAR_NORMAL_PROBE_TIME.length()>longestKey) longestKey = ISO_NEAR_NORMAL_PROBE_TIME.length();
       if (String.valueOf(isoNearNormalProbeTime_).length()>longestValue) longestValue = String.valueOf(isoNearNormalProbeTime_).length();
+    }
+    if (shotgun_!=SHOTGUN_TRUE){
       rowCount = createPropertyRow(sheet,rowCount,RELATIVE_AREA_CUTOFF,String.valueOf(relativeAreaCutoff_));
       if (RELATIVE_AREA_CUTOFF.length()>longestKey) longestKey = RELATIVE_AREA_CUTOFF.length();
       if (String.valueOf(relativeAreaCutoff_).length()>longestValue) longestValue = String.valueOf(relativeAreaCutoff_).length();   
@@ -1947,7 +1967,9 @@ public class LipidomicsConstants
       if (String.valueOf(relativeFarAreaCutoff_).length()>longestValue) longestValue = String.valueOf(relativeFarAreaCutoff_).length();  
       rowCount = createPropertyRow(sheet,rowCount,RELATIVE_AREA_FAR_TIME_SPACE,String.valueOf(relativeFarAreaTimeSpace_));
       if (RELATIVE_AREA_FAR_TIME_SPACE.length()>longestKey) longestKey = RELATIVE_AREA_FAR_TIME_SPACE.length();
-      if (String.valueOf(relativeFarAreaTimeSpace_).length()>longestValue) longestValue = String.valueOf(relativeFarAreaTimeSpace_).length();  
+      if (String.valueOf(relativeFarAreaTimeSpace_).length()>longestValue) longestValue = String.valueOf(relativeFarAreaTimeSpace_).length();
+    }
+    if (shotgun_==SHOTGUN_FALSE){
       rowCount = createPropertyRow(sheet,rowCount,RELATIVE_ISO_INBETWEEN_CUTOFF,String.valueOf(relativeIsoInBetweenCutoff_));
       if (RELATIVE_ISO_INBETWEEN_CUTOFF.length()>longestKey) longestKey = RELATIVE_ISO_INBETWEEN_CUTOFF.length();
       if (String.valueOf(relativeIsoInBetweenCutoff_).length()>longestValue) longestValue = String.valueOf(relativeIsoInBetweenCutoff_).length();

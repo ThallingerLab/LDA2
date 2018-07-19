@@ -38,14 +38,12 @@ public class FragmentVO
   private int charge_;
   // the MSn level at which the fragment is observed
   private int msLevel_;
-  // is the presence of the fragment mandatory for this rule
-  private boolean mandatory_;
+  // is the presence of the fragment mandatory for this rule - different options possible according to the MANDATORY_... specifications in FragmentRuleVO
+  private short mandatory_;
   // the m/z value of the fragment
   private double mass_;
   /** if the fragment is a chain - the type of the chain*/
   private int chainType_;
-  /** does this fragment originate from another species*/
-  private boolean fromOtherSpecies_;
   
   /**
    * all of the required information for the VO has to be provided in the constructor
@@ -58,9 +56,9 @@ public class FragmentVO
    * @param fromOtherSpecies does this fragment originate from another species (isobar)
    */
   public FragmentVO(String name, double mass, String formula, int charge, int msLevel,
-      boolean mandatory, boolean fromOtherSpecies)
+      short mandatory)
   {
-    this(name, mass, formula, charge, msLevel, mandatory, fromOtherSpecies, FragmentRuleVO.ACYL_CHAIN);
+    this(name, mass, formula, charge, msLevel, mandatory, FragmentRuleVO.ACYL_CHAIN);
   }
     
  /**
@@ -75,7 +73,7 @@ public class FragmentVO
    * @param chainType the type of the fatty acid chain ACYL_CHAIN_/ALKYL_CHAIN/ALKENYL_CHAIN
   */
   public FragmentVO(String name, double mass, String formula, int charge, int msLevel,
-        boolean mandatory, boolean fromOtherSpecies, int chainType)
+        short mandatory, int chainType)
     {    
     this.name_ = name;
     this.mass_ = mass;
@@ -83,7 +81,6 @@ public class FragmentVO
     this.charge_ = charge;
     this.msLevel_ = msLevel;
     this.mandatory_ = mandatory;
-    this.fromOtherSpecies_ = fromOtherSpecies;
     this.chainType_ = chainType;
   }
 
@@ -127,7 +124,7 @@ public class FragmentVO
    * 
    * @return is the presence of the fragment mandatory for this rule
    */
-  public boolean isMandatory()
+  public short isMandatory()
   {
     return mandatory_;
   }
@@ -150,15 +147,6 @@ public class FragmentVO
   
   
   /**
-   * @return true if this fragment originates from another species (isobar)
-   */
-  public boolean isFromOtherSpecies()
-  {
-    return fromOtherSpecies_;
-  }
-
-
-  /**
    * @return String representative of the VO - for debugging purposes
    */
   public String toString(){
@@ -168,7 +156,6 @@ public class FragmentVO
     toPrint += "; Charge: "+charge_;
     toPrint += "; MS: "+msLevel_;
     toPrint += "; Mand: "+mandatory_;
-    toPrint += "; OtherSpec: "+fromOtherSpecies_;
     return toPrint;
   }
   

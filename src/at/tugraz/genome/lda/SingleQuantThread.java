@@ -157,8 +157,19 @@ public class SingleQuantThread extends Thread
       }
 
     } else {
-      if (LipidomicsConstants.isShotgun()){
+      if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
         isotopicProbes = analyzer.processShotgunData((float)quantSet.getAnalyteMass(),quantSet.getCharge(),msLevel,quantSet.getProbabs().size());
+      } else if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_PRM){
+        //TODO: the MS-level is here always set to 2
+        isotopicProbes = analyzer.processPrmData((float)quantSet.getAnalyteMass(),quantSet.getCharge(),2,quantSet.getAnalyteClass(),
+            quantSet.getModName(), StaticUtils.generateLipidNameString(quantSet.getAnalyteName(), quantSet.getDbs()),quantSet.getAnalyteFormula());
+//        for (Integer hitNumber : isotopicProbes.keySet()){
+//          for (Integer isoNr: isotopicProbes.get(hitNumber).keySet()){
+//            for (CgProbe probe : isotopicProbes.get(hitNumber).get(isoNr)){
+//              System.out.println("! "+probe.Peak/60f+" "+probe.Area);
+//            }
+//          }
+//        }
       } else if (quantSet.getIsobaricRetTime_()>0){
         if (LipidomicsConstants.use3D()){
           isotopicProbes = analyzer.processByMzProbabsAndPossibleRetentionTime((float)quantSet.getAnalyteMass(),quantSet.getCharge(),
@@ -189,7 +200,7 @@ public class SingleQuantThread extends Thread
           LipidParameterSet param = createLipidParameterSet(oneHit,oneSet.getNegativeStartValue(), (float)oneSet.getAnalyteMass(),
               oneSet.getAnalyteName(), oneSet.getDbs(), oneSet.getModName(), oneSet.getAnalyteFormula(), oneSet.getModFormula(), 
               oneSet.getCharge());
-          if (LipidomicsConstants.isShotgun()){
+          if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
             adaptMzValuesOfShotgunHits(param);
             isobars.put(oneSet, param);
           }else{
@@ -209,7 +220,7 @@ public class SingleQuantThread extends Thread
           float stopMz = (float)oneSet.getAnalyteMass()+LipidomicsConstants.getMs2PrecursorTolerance();
           float lowestTime = Float.MAX_VALUE;
           float highestTime = 0f;
-          if (LipidomicsConstants.isShotgun()){
+          if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
             lowestTime = 0f;
             highestTime = Float.MAX_VALUE;
           }else{
@@ -254,7 +265,7 @@ public class SingleQuantThread extends Thread
             if (addHit) sameRt.put(key, param);
             else {
               try{
-                if (!LipidomicsConstants.isShotgun() && RulesContainer.isRtPostprocessing(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName())) && 
+                if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE && RulesContainer.isRtPostprocessing(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName())) && 
                     RulesContainer.correctRtForParallelModel(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName()))){
                   String rt = param.getRt();
                   ms2RemovedHits_.get(oneSet).put(rt, param);
@@ -299,7 +310,7 @@ public class SingleQuantThread extends Thread
           if (LipidomicsConstants.isMS2()){
             try {
               //TODO: the parameter before the last one is set to true in the meantime - maybe play around with caching in the future to improve calculation time
-              MSnAnalyzer msnAnalyzer = new MSnAnalyzer(oneSet.getAnalyteClass(),oneSet.getModName(),param,analyzer_,oneSet,true,false);  
+              MSnAnalyzer msnAnalyzer = new MSnAnalyzer(oneSet.getAnalyteClass(),oneSet.getModName(),param,analyzer_,oneSet,true,false);
               if (msnAnalyzer.checkStatus()==LipidomicsMSnSet.DISCARD_HIT) addHit = false;
               else param = msnAnalyzer.getResult();
 //              System.out.println("Status: "+msnAnalyzer.checkStatus());
@@ -318,7 +329,7 @@ public class SingleQuantThread extends Thread
           else{
             if (LipidomicsConstants.isMS2()){
               try{
-                if (!LipidomicsConstants.isShotgun() && RulesContainer.isRtPostprocessing(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName())) && 
+                if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE && RulesContainer.isRtPostprocessing(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName())) && 
                     RulesContainer.correctRtForParallelModel(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName()))){
                   ms2RemovedHits_.get(oneSet).put(param.getRt(), param);
                 }
@@ -338,7 +349,7 @@ public class SingleQuantThread extends Thread
           Hashtable<String,LipidParameterSet> hitsOfOneMod = new Hashtable<String,LipidParameterSet>();
           if (hitsAccordingToQuant.containsKey(quant)) hitsOfOneMod = hitsAccordingToQuant.get(quant);
           String rt = "";
-          if (!LipidomicsConstants.isShotgun())
+          if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE)
             rt = set.getRt();
           hitsOfOneMod.put(rt, set);
           hitsAccordingToQuant.put(quant, hitsOfOneMod);
@@ -354,7 +365,7 @@ public class SingleQuantThread extends Thread
     
     for (QuantVO oneSet : hitsAccordingToQuant.keySet()){
       Hashtable<String,LipidParameterSet> hitsOfOneMod = hitsAccordingToQuant.get(oneSet);
-      if (!LipidomicsConstants.isShotgun() && LipidomicsConstants.isMS2() && hitsOfOneMod.size()>0){
+      if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE && LipidomicsConstants.isMS2() && hitsOfOneMod.size()>0){
         try {
           String unionTimeString = RulesContainer.getPeakUnionTime(StaticUtils.getRuleName(oneSet.getAnalyteClass(),oneSet.getModName()));
           if (unionTimeString != null && unionTimeString.length()>0){
@@ -472,7 +483,7 @@ public class SingleQuantThread extends Thread
     // and the peak is left to the other partner
     
     //for shotgun: only separation by distinct fragments is possible
-    if (LipidomicsConstants.isShotgun()){
+    if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
       for (SharedMS1PeakVO shared : sharedPeaks){
         calculatePercentualSplitValueAccordingToMSn(shared);
         for (SharedPeakContributionVO contr : shared.getPartners()){
@@ -849,16 +860,16 @@ public class SingleQuantThread extends Thread
             probe.isotopeNumber *= -1;
           if (probe!=null&&probe.AreaStatus==CgAreaStatus.OK){
             totalArea += probe.Area;
-            if (!LipidomicsConstants.isShotgun())
+            if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE)
               rts.add((double)probe.Peak);
           }
         }
-        if (!LipidomicsConstants.isShotgun() && k==0){
+        if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE && k==0){
           rt = Calculator.FormatNumberToString(Calculator.mean(rts)/60d,2d);
         }
       }
     }
-    if (LipidomicsConstants.isShotgun())
+    if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE)
       rt = null;
     LipidParameterSet param = new LipidParameterSet(analyteMass, analyteName, dbs, modName, rt, analyteFormula, modFormula,charge);
     param.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance(analyteMass);
@@ -993,7 +1004,7 @@ public class SingleQuantThread extends Thread
       if (!partner.hasDistinctFragments()){
         Hashtable<String,LipidParameterSet> sets = hitsAccordingToQuant.get(partner.getQuantVO());
         String rt = "";
-        if (!LipidomicsConstants.isShotgun())
+        if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE)
           rt = partner.getSet().getRt();
         sets.remove(rt);
         if (sets.size()==0) hitsAccordingToQuant.remove(partner.getQuantVO());
@@ -1017,7 +1028,7 @@ public class SingleQuantThread extends Thread
       if (partner.getQuantVO().equals(contr.getQuantVO())){
         Hashtable<String,LipidParameterSet> sets = hitsAccordingToQuant.get(partner.getQuantVO());
         String rt = "";
-        if (!LipidomicsConstants.isShotgun())
+        if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE)
           rt = partner.getSet().getRt();
         sets.remove(rt);
         if (sets.size()==0) hitsAccordingToQuant.remove(partner.getQuantVO());
@@ -1039,7 +1050,7 @@ public class SingleQuantThread extends Thread
       Hashtable<String,LipidParameterSet> quantsOfMod = hitsAccordingToQuant.get(oneSet);
       try {
         String rt = "";
-        if (!LipidomicsConstants.isShotgun())
+        if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE)
           rt = contr.getSet().getRt();
         //TODO: this is set to true in the meantime - maybe play around with caching in the future to improve calculation time
         MSnAnalyzer msnAnalyzer = new MSnAnalyzer(oneSet.getAnalyteClass(),oneSet.getModName(),contr.getSet(),analyzer_,oneSet,true,false);  
@@ -1088,7 +1099,7 @@ public class SingleQuantThread extends Thread
       }
       if (remove){
         String rt = "";
-        if (!LipidomicsConstants.isShotgun())
+        if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE)
           rt = contr.getSet().getRt();
         hitsAccordingToQuant.get(contr.getQuantVO()).remove(rt);
         partnersToRemove.add(i);
@@ -1147,7 +1158,7 @@ public class SingleQuantThread extends Thread
           SharedPeakContributionVO cont = shared.getPartners().get(i);
           if (!(cont.getSet() instanceof LipidomicsMSnSet)) continue;
           String rt = "";
-          if (!LipidomicsConstants.isShotgun())
+          if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE)
             rt = cont.getSet().getRt();
           hitsAccordingToQuant.get(cont.getQuantVO()).remove(rt);
         }

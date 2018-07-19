@@ -57,16 +57,23 @@ public class FragmentRuleVO
   public final static int ALKYL_CHAIN = 1;
   public final static int ALKENYL_CHAIN = 2;
   
+  /** this fragment does not need to be necessarily present*/
+  public final static short MANDATORY_FALSE = 0;
+  /** this fragment must be present, otherwise this hit/structure is discarded*/
+  public final static short MANDATORY_TRUE = 1;
+  /** this fragment originates from another lipid subclass/adduct*/
+  public final static short MANDATORY_OTHER = 2;
+  /** this fragment is used for quantitation in PRM data and must be present*/
+  public final static short MANDATORY_QUANT = 3;
+  
   // name of fragment
   private String name_;
   // charge in which the fragment is observed
   private int charge_;
   // MS Level in which the fragment may be found (e.g. MS2, MS3, etc)
   private int msLevel_;
-  // must the fragment be present
-  private boolean mandatory_;
-  /** does this fragment originate from another species*/
-  private boolean fromOtherSpecies_;
+  // must the fragment be present - different options possible according to the MANDATORY_... specifications in this class
+  private short mandatory_;
   // is the fragment a neutral loss or adduct to a precursor
   private boolean containsPrecursor_;
   // stati if the chain is present, has to be added or subtracted
@@ -89,15 +96,14 @@ public class FragmentRuleVO
    * @param formula the rule for the fragment
    * @param charge charge state in which the fragment is observed
    * @param msLevel MS Level in which the fragment may be found (e.g. MS2, MS3, etc.)
-   * @param mandatory must the fragment be present
-   * @param fromOtherSpecies does this fragment originate from another species (isobar)
+   * @param must the fragment be present - different options possible according to the MANDATORY_... specifications in this class
    * @param headFragments the previously parsed head fragments (the fragment may be a derivative of a previously parsed head fragment)
    * @param chainFragments the previously parsed chain fragments (the fragment may be a derivative of a previously parsed chain fragment)
    * @param elementParser elementParser for evaluating the chemical formula
    * @throws RulesException specifies in detail which rule has been infringed
    */
   public FragmentRuleVO(String name, String formula, int charge, int msLevel,
-      boolean mandatory, boolean fromOtherSpecies, Hashtable<String,FragmentRuleVO> headFragments, 
+      short mandatory, Hashtable<String,FragmentRuleVO> headFragments, 
       Hashtable<String,FragmentRuleVO> chainFragments, ElementConfigParser elementParser) throws RulesException
   {
     super();
@@ -105,7 +111,6 @@ public class FragmentRuleVO
     this.charge_ = charge;
     this.msLevel_ = msLevel;
     this.mandatory_ = mandatory;
-    this.fromOtherSpecies_ = fromOtherSpecies;
     this.formula_ = formula;
     this.chainType_ = ACYL_CHAIN;
     if (charge<1) throw new RulesException("The charge state of an analyte must be greater or equal 1");
@@ -151,24 +156,14 @@ public class FragmentRuleVO
 
   /**
    * 
-   * @returnmust the fragment be present
+   * @return must the fragment be present - different options possible according to the MANDATORY_... specifications in this class
    */
-  public boolean isMandatory()
+  public short isMandatory()
   {
     return mandatory_;
   } 
   
   
-  
-  
-  /**
-   * @return true if this fragment originates from another species (isobar)
-   */
-  public boolean isFromOtherSpecies()
-  {
-    return fromOtherSpecies_;
-  }
-
   /**
    * categorizes the composition of the fragment formula (precursor present, chain present or subtracted, other losses or adducts)
    * @param formula the rule for the fragment
