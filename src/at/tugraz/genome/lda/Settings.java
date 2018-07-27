@@ -66,6 +66,9 @@ public class Settings
   
   public final static String SETTINGS_FILE = ".settings";
   
+  /** property label for making empty entries when an analyte cannot by found by "Quant. anal. at not found" and "Take exact peak for others"*/
+  public final static String EMPTY_ENTRY_FOR_QUANT_ANAL_NOT_FOUND = "EmptyEntriesForQuantAnalNotFound";
+  
   private static String operatingSystem_;
   private static String ldaUserHomePath_;
   private static String readWPath_;
@@ -88,6 +91,9 @@ public class Settings
   private static boolean useCuda_;
   /** use Alex123 target lists*/
   private static boolean useAlex_;
+  /** create empty entries when there is nothing found by "Quant. anal. at not found" or "Take exact peak for others"*/
+  private static boolean emptyEntriesForQuantAnalNotFound_;
+   
   /** the lookup of isotopes from the Alex format to the LDA format*/
   private static Hashtable<String,String> alexIsoLookup_ = new Hashtable<String,String>();
 
@@ -179,6 +185,12 @@ public class Settings
       String useAlexString = properties.getProperty("Alex123", null);
       if (useAlexString!=null&&(useAlexString.equalsIgnoreCase("true")||useAlexString.equalsIgnoreCase("yes"))){
         useAlex_ = true;
+      }
+      emptyEntriesForQuantAnalNotFound_ = false;
+      String emptyEntriesForQuantAnalNotFoundString = properties.getProperty(EMPTY_ENTRY_FOR_QUANT_ANAL_NOT_FOUND, null);
+      if (emptyEntriesForQuantAnalNotFoundString!=null&&(emptyEntriesForQuantAnalNotFoundString.equalsIgnoreCase("true")||
+          emptyEntriesForQuantAnalNotFoundString.equalsIgnoreCase("yes"))){
+        emptyEntriesForQuantAnalNotFound_ = true;
       }
       
       isDefaultInput_ = properties.getProperty("ISDefaultInput", "");
@@ -356,6 +368,15 @@ public class Settings
   public static boolean useAlex(){
     Settings.getInstance();
     return Settings.useAlex_;
+  }
+  
+  /**
+   * 
+   * @return true when creating empty entries when there is nothing found by "Quant. anal. at not found" or "Take exact peak for others"
+   */
+  public static boolean emptyEntriesForQuantAnalNotFound(){
+    Settings.getInstance();
+    return Settings.emptyEntriesForQuantAnalNotFound_;
   }
 
   public static String getInternalStandardDefaultInput()

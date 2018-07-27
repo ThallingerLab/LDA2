@@ -4686,18 +4686,65 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     }
   }
   
-  public void addAnalyteEverywhereAtPosition(String groupName, String analyteName, String absFilePathStartEx, Vector<String> selectedMods, Vector<AutoAnalyteAddVO> updateableAndAnalyteBefore, int maxIsotope, boolean exactProbePosition){
-    Hashtable<String,Boolean> showMods = new Hashtable<String,Boolean>();
-    Hashtable<String,String> modHash = new Hashtable<String,String>();
-    for (String modName : selectedMods) modHash.put(modName, modName);
+  public void addAnalytesEverywhereAtPosition(String groupName, Vector<String> analyteNames, Vector<String> absFilePathStartExps, Vector<String> selectedMods,
+      Hashtable<String,Vector<AutoAnalyteAddVO>> updateablesAndAnalytesBefore, Vector<Integer> maxIsotopes, boolean exactProbePosition){
+    //first, create a list of experimentPaths, so that the result files are not read more often than necessary
+    //first key is the experiment, second key is the max MS-levels
+    Hashtable<String,Integer> uniqueExampleExps = new Hashtable<String,Integer>();
+    for (String exp : absFilePathStartExps) uniqueExampleExps.put(exp, 0);
+    //second, create a list of experimentPaths of files that need to be updated
+    Hashtable<String,String> uniqueUpdatePaths = new Hashtable<String,String>();
+    for (Vector<AutoAnalyteAddVO> autoAnals : updateablesAndAnalytesBefore.values()){
+      for (AutoAnalyteAddVO addVO : autoAnals) uniqueUpdatePaths.put(addVO.getResultFilePath(),addVO.getExperimentName());
+    }
     try{
-      QuantificationResult result1 = LDAResultReader.readResultFile(absFilePathStartEx, showMods);
-      Hashtable<String,LipidParameterSet> paramsOfInterest = getParamByAnalyteName(analyteName, result1.getIdentifications().get(groupName), modHash);
-      if (paramsOfInterest.size()>0){
-        for (AutoAnalyteAddVO addVO : updateableAndAnalyteBefore){
-          try {
-            QuantificationResult result2 = LDAResultReader.readResultFile(addVO.getResultFilePath(), new Hashtable<String,Boolean>());
-            boolean hasRtInfo = QuantificationThread.hasRtInfo(result2.getIdentifications());
+      //now read the template files and extract the corresponding template LipidParameterSets
+      Hashtable<String,Boolean> showMods = new Hashtable<String,Boolean>();
+      Hashtable<String,String> modHash = new Hashtable<String,String>();
+      Hashtable<String,Hashtable<String,LipidParameterSet>> templateParams = new Hashtable<String,Hashtable<String,LipidParameterSet>>();
+      for (String modName : selectedMods) modHash.put(modName, modName);
+      for (String absFilePathStartEx : uniqueExampleExps.keySet()){
+        //System.out.println("Now I am reading: "+absFilePathStartEx);
+        QuantificationResult result1 = LDAResultReader.readResultFile(absFilePathStartEx, showMods);
+        uniqueExampleExps.put(absFilePathStartEx, result1.getMsLevels().get(groupName));
+        for (int i=0; i!=analyteNames.size(); i++){
+          String analyteName = analyteNames.get(i);
+          if (!absFilePathStartExps.get(i).equalsIgnoreCase(absFilePathStartEx))
+            continue;
+          Hashtable<String,LipidParameterSet> paramsOfInterest = getParamByAnalyteName(analyteName, result1.getIdentifications().get(groupName), modHash);
+          //System.out.println("For "+analyteName+" I found "+paramsOfInterest.size()+" modifications.");
+          templateParams.put(analyteName, paramsOfInterest);
+        }
+      }
+      
+      //now read, try to quantify, and update the corresponding experiments
+      for (String updateAbsPath : uniqueUpdatePaths.keySet()){
+        try{
+          //System.out.println("file to be updated: "+updateAbsPath);
+          QuantificationResult result2 = LDAResultReader.readResultFile(updateAbsPath, new Hashtable<String,Boolean>());
+          String chromSetBasePath = StaticUtils.extractChromBaseName(updateAbsPath, uniqueUpdatePaths.get(updateAbsPath));
+          String[] chromPaths = StringUtils.getChromFilePaths(chromSetBasePath+".chrom");
+          LipidomicsAnalyzer analyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
+          QuantificationThread.setAnalyzerProperties(analyzer);
+          boolean hasRtInfo = QuantificationThread.hasRtInfo(result2.getIdentifications());
+          boolean updateNecessary = false;
+          //I have to start from the end of the analyte list, otherwise the position of the AddAnalyteAddVO is not correct any longer
+          for (int i=(analyteNames.size()-1); i!=-1; i--){
+            String analyteName = analyteNames.get(i);
+            Hashtable<String,LipidParameterSet> paramsOfInterest = templateParams.get(analyteName);
+            if (paramsOfInterest.size()==0)
+              continue;
+            //looking if there is an add
+            AutoAnalyteAddVO addVO = null;
+            for (AutoAnalyteAddVO voToAddBefore : updateablesAndAnalytesBefore.get(analyteName)){
+              if (voToAddBefore.getResultFilePath().equalsIgnoreCase(updateAbsPath)){
+                addVO = voToAddBefore;
+                break;
+              }
+            }
+            if (addVO==null)
+              continue;
+            //System.out.println("I am looking at: "+analyteName+" ; "+addVO.getPreviousElement());
             Vector<LipidParameterSet> updateParams = result2.getIdentifications().get(groupName);
             Vector<LipidParameterSet> updateParamsWOZeroAnalyte = new Vector<LipidParameterSet>();
             for (LipidParameterSet set: updateParams ){
@@ -4705,25 +4752,22 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                 updateParamsWOZeroAnalyte.add(set);
             }
             updateParams = updateParamsWOZeroAnalyte;
-            String chromSetBasePath = StaticUtils.extractChromBaseName(addVO.getResultFilePath(), addVO.getExperimentName());
-            String[] chromPaths = StringUtils.getChromFilePaths(chromSetBasePath+".chrom");
-            LipidomicsAnalyzer analyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
-            QuantificationThread.setAnalyzerProperties(analyzer);
         
             int positionToAdd = 0;
             if (addVO.getPreviousElement()!=null && addVO.getPreviousElement().length()>0){
               String[] analyteBeforeNameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(addVO.getPreviousElement());
               if (analyteBeforeNameAndRt[1]==null) analyteBeforeNameAndRt[1]="";
-              for (int i=0;i!=updateParams.size();i++){
-                String[] currentNameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(updateParams.get(i).getNameString());
+              for (int j=0;j!=updateParams.size();j++){
+                String[] currentNameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(updateParams.get(j).getNameString());
                 if (currentNameAndRt[0].equalsIgnoreCase(analyteBeforeNameAndRt[0])){
                   if (analysisModule_.neglectRtInformation(analyteBeforeNameAndRt[0]) || analysisModule_.isWithinRtGroupingBoundaries(Double.valueOf(currentNameAndRt[1]), Double.valueOf(analyteBeforeNameAndRt[1]))){
-                    positionToAdd = i+1;
+                    positionToAdd = j+1;
 //                    break;
-                  }  
+                  }
                 }
               }
             }
+            //the position to add is known - now quantify each modification
             boolean isEmptyThere = true;
             for (String modName : paramsOfInterest.keySet()){
               LipidParameterSet templateParam = paramsOfInterest.get(modName);
@@ -4734,12 +4778,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 //              if (oneThere)
 //                System.out.println("There exists an empty one at :"+addVO.getExperimentName()+" ; "+modName);
               if (!oneThere){
-                  Vector<Vector<CgProbe>> probes = null;
-                  if (exactProbePosition)
-                    probes = analyzer.calculatePeakAtExactProbePosition(templateParam,maxIsotope,charge,result1.getMsLevels().get(groupName));
-                  else
-                    probes = analyzer.calculatePeakAtExactTimePosition(templateParam,maxIsotope,charge,result1.getMsLevels().get(groupName));
-                  // to calculate the total area
+                Vector<Vector<CgProbe>> probes = null;
+                if (exactProbePosition)
+                  probes = analyzer.calculatePeakAtExactProbePosition(templateParam,maxIsotopes.get(i),charge,uniqueExampleExps.get(absFilePathStartExps.get(i)));
+                else
+                  probes = analyzer.calculatePeakAtExactTimePosition(templateParam,maxIsotopes.get(i),charge,uniqueExampleExps.get(absFilePathStartExps.get(i)));
+                // to calculate the total area
                   float totalArea = 0;
                   String rt = "";
                   for (int k=0;k!=probes.size();k++){
@@ -4752,8 +4796,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                     if (k==0 && hasRtInfo) rt = Calculator.FormatNumberToString(Calculator.mean(rts)/60d,2d);
                   }
                   if (probes.size()==0 && hasRtInfo) rt = templateParam.getRt();
-// INFO: This check has been removed due to Martin, since he wants to have an empty entry if the analyte cannot be quantified                  
-//                  if (totalArea>0){
+// INFO: Settings.emptyEntriesForQuantAnalNotFound() is responsible for creating empty entries if the analyte cannot be quantified                  
+                  if (totalArea>0 || Settings.emptyEntriesForQuantAnalNotFound()){
                     LipidParameterSet paramToQuantify = new LipidParameterSet(templateParam.Mz[0], templateParam.getName(),
                       templateParam.getDoubleBonds(), templateParam.getModificationName(), rt, templateParam.getAnalyteFormula(),
                       templateParam.getModificationFormula(),templateParam.getCharge());
@@ -4792,32 +4836,34 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                       positionToAdd++;
                     if (!existsSameOne)
                       isEmptyThere = false;
-// end removed due to Martin
-//                 }
+                 }
               }
-          
             }
             if (!isEmptyThere){
               result2.getIdentifications().put(groupName, updateParams);
-              QuantificationThread.writeResultsToExcel(addVO.getResultFilePath(), result2);
+              //System.out.println("I found an update: "+analyteName+" ; "+addVO.getPreviousElement());
+              updateNecessary = true;
             }
-          } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            new WarningMessage(new JFrame(), "Error", e.getMessage());
-          }          
+          }
+          if (updateNecessary)
+            QuantificationThread.writeResultsToExcel(updateAbsPath, result2);
+        } catch (Exception e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+          new WarningMessage(new JFrame(), "Error", e.getMessage());
         }
-        acceptResultFiles();
-        for (int i=0; i!=resultTabs_.getTabCount();i++){
-          if (resultTabs_.getTitleAt(i).equalsIgnoreCase(groupName))
-            resultTabs_.setSelectedIndex(i);
-        }
+      }
+      acceptResultFiles();
+      for (int i=0; i!=resultTabs_.getTabCount();i++){
+        if (resultTabs_.getTitleAt(i).equalsIgnoreCase(groupName))
+          resultTabs_.setSelectedIndex(i);
       }
     } catch (ExcelInputFileException eif){
       //Comment: the graphical Warning message is shown in the readResultFile itself
     }
   }
   
+
   public void eliminateAnalyteEverywhere(String groupName, Hashtable<String,String> selectedAnalytes, Vector<String> selectedMods, Vector<String> foundUpdateables){
     for (String updateablePath : foundUpdateables){
       Hashtable<String,String> modHash = new Hashtable<String,String>();

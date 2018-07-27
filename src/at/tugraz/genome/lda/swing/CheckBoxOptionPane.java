@@ -57,7 +57,15 @@ public class CheckBoxOptionPane extends JDialog implements ActionListener
   private Hashtable<String,JCheckBox> checkBoxHash_;
   private boolean showOne_;
 
-  private CheckBoxOptionPane(JFrame parent, String title, String message, Vector<String> chechboxStrings, boolean showOne){
+  /**
+   * generic input pane that contains a list of check boxes
+   * @param parent the parent JFrame
+   * @param title the title of the frame
+   * @param messages the messages displayed to the user (each row is a separate line)
+   * @param chechboxStrings a list of strings displayed next to the check boxes (each string is an individual check box)
+   * @param showOne is false when a single check box should not be displayed
+   */
+  private CheckBoxOptionPane(JFrame parent, String title, Vector<String> messages, Vector<String> chechboxStrings, boolean showOne){
     super(parent, title, true);
     checkBoxStrings_ = chechboxStrings;
     showOne_ = showOne;
@@ -76,11 +84,15 @@ public class CheckBoxOptionPane extends JDialog implements ActionListener
     value_ = JOptionPane.NO_OPTION;
     int columns = chechboxes.size()/NR_OF_ROWS;
     if (chechboxes.size()%NR_OF_ROWS!=0 || columns==0)columns++;
-    if (message!=null&&message.length()>0){
-      JLabel titleLabel = new JLabel(message);
-      this.add(titleLabel, new GridBagConstraints(0, 0, columns, 1, 0.0, 0.0
-      ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 2, 2, 2), 0, 0));
-  }
+    int rowCount = 0;
+    for (String message : messages){
+      if (message!=null&&message.length()>0){
+        JLabel titleLabel = new JLabel(message);
+        this.add(titleLabel, new GridBagConstraints(0, rowCount, columns, 1, 0.0, 0.0
+            ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 2, 2, 2), 0, 0));
+        rowCount++;
+      }
+    }
   
 //  int rows = moleculeNames_.size()/columns_;
 //  if (moleculeNames_.size()>0 && moleculeNames_.size()%columns_!=0)
@@ -88,12 +100,12 @@ public class CheckBoxOptionPane extends JDialog implements ActionListener
     for (int i=0; i!=chechboxes.size(); i++){
       JCheckBox select  = chechboxes.get(i);
       select.setSelected(true);
-      int row = i%NR_OF_ROWS+1;
+      int row = i%NR_OF_ROWS+rowCount;
       int column = i/NR_OF_ROWS;
       this.add(select, new GridBagConstraints(column, row, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(2, 2, 2, 2), 0, 0));
     }
-    int requiredRows = 1+chechboxes.size();
+    int requiredRows = rowCount+chechboxes.size();
     if (requiredRows>1+NR_OF_ROWS)
       requiredRows = 1+NR_OF_ROWS;
     JPanel buttonPanel = new JPanel();
@@ -121,13 +133,13 @@ public class CheckBoxOptionPane extends JDialog implements ActionListener
    * button an empty vector is returned
    * @param parent the parent frame
    * @param title  the title of the dialog field
-   * @param message the message in the dialog box
+   * @param messages the messages in the dialog box (each string is a separate row)
    * @param chechboxStrings the name of the checkboxes that should be displayed in the dialog box
    * @return the checked checkboxes, if cancel is pressed the returned Vector is empty
    */
   
-  public static Vector<String> showConfirmDialog(JFrame parent, String title, String message, Vector<String> chechboxStrings, boolean showOne){  
-    CheckBoxOptionPane dialog = new CheckBoxOptionPane(parent, title, message, chechboxStrings, showOne);
+  public static Vector<String> showConfirmDialog(JFrame parent, String title, Vector<String> messages, Vector<String> chechboxStrings, boolean showOne){  
+    CheckBoxOptionPane dialog = new CheckBoxOptionPane(parent, title, messages, chechboxStrings, showOne);
     return dialog.getSelected();
   }
   

@@ -122,7 +122,19 @@ public interface HeatMapClickListener extends SampleLookup
   public void changeIsotopesUsed(String groupName, boolean isGrouped, int value);
   public void eliminateDoublePeaks(String groupName, String analyteName, String absFilePathStartExp, Vector<String> selectedMods, Vector<String> foundUpdateables);
   public void eliminateAnalyteEverywhere(String groupName, Hashtable<String,String> selectedAnalytes, Vector<String> selectedMods, Vector<String> foundUpdateables);
-  public void addAnalyteEverywhereAtPosition(String groupName, String analyteName, String absFilePathStartExp, Vector<String> selectedMods, Vector<AutoAnalyteAddVO> updateableAndAnalyteBefore, int maxIsotope, boolean exactProbePosition);
+  
+  /**
+   * for automatically adding analytes by selecting template probes in the heat map
+   * @param groupName the analyte class name
+   * @param analyteNames a sorted list of analyte names
+   * @param absFilePathStartExps a sorted list of experiments corresponding to the analyte names (they must be in the same sequence as the analyte names)
+   * @param selectedMods the modifications of the analytes that have to be searched for
+   * @param updateableAndAnalyteBefore information about where in the original file the new analyte has to be added; key: analyte name; value: vector with the information for each experiment where the analyte should be searched for
+   * @param maxIsotopes the highest number of isotopes to look for each analyte  (they must be in the same sequence as the analyte names)
+   * @param exactProbePosition true when the exact positions of the peak should be taken; false when an automated method shall be used
+   */
+  public void addAnalytesEverywhereAtPosition(String groupName, Vector<String> analyteNames, Vector<String> absFilePathStartExps, Vector<String> selectedMods,
+      Hashtable<String,Vector<AutoAnalyteAddVO>> updateableAndAnalyteBefore, Vector<Integer> maxIsotopes, boolean exactProbePosition);
   
   /**
    * exports the contents of the heat map to mzTab

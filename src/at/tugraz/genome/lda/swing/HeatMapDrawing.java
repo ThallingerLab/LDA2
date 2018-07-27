@@ -78,6 +78,7 @@ import org.apache.batik.svggen.SVGGraphics2D;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 
+import at.tugraz.genome.dbutilities.SimpleValueObject;
 import at.tugraz.genome.lda.ChromExportThread;
 import at.tugraz.genome.lda.LipidDataAnalyzer;
 import at.tugraz.genome.lda.LipidomicsConstants;
@@ -150,6 +151,17 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   
   private Hashtable<String,Hashtable<String,Color>> attentionProbes_;
   private Hashtable<String,String> selectedMolecules_;
+  /** when single items in the heat map are selected; first key: analyte name; second key: experiment name*/
+  private Hashtable<String,Hashtable<String,Color>> selectedSingleMolecules_;
+  /** stores the possible modifications when single items in the heat map are selected; first key: analyte name; second key: modification; value: modification*/
+  private Hashtable<String,Hashtable<String,String>> selectedSingleMoleculesMods_;
+  /** absolute file paths for the experiments where single items in the heat map are selected; first key: analyte name; value: absolute file path*/  
+  private Hashtable<String,String> selectedSingleMoleculesAbsPaths_;
+  /** stores information about the experiments where the automated quantitation should take place when single items in the heat map are selected;
+   * first key: analyte name; value: vector of objects holding information about the other experiments*/
+  private Hashtable<String,Vector<AutoAnalyteAddVO>> selectedSingleMoleculesAutoAnalyteAddVO_;
+  /** stores the highest isotope number when single items in the heat map are selected; first key: analyte name; second key: experiment name*/
+  private Hashtable<String,Integer> selectedSingleMoleculesMaxIso_;
   
   private boolean combinedDialogOpen_ = false;
   private boolean parentAction_;
@@ -159,6 +171,12 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   
   private MenuItem selectItem_;
   private MenuItem deselectItem_;
+
+  /** option "Select" in the popup menu appearing when a cell in the heat map is clicked by the right mouse button*/
+  private MenuItem selectSingleItem_;
+  /** option "Deselect" in the popup menu appearing when a cell in the heat map is clicked by the right mouse button*/
+  private MenuItem deselectSingleItem_;
+
   
   private MenuItem applyToAllDoubles_;
 //  private String lastClickedExp_;
@@ -201,6 +219,11 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       ResultDisplaySettings displaySettings, ResultSelectionSettings selectionSettings, ResultSelectionSettings combinedChartSettings,
       ExportSettingsPanel exportSettings, Double rtTolerance){
     selectedMolecules_ = new Hashtable<String,String>();
+    selectedSingleMolecules_ = new Hashtable<String,Hashtable<String,Color>>();
+    selectedSingleMoleculesMods_ = new Hashtable<String,Hashtable<String,String>>(); 
+    selectedSingleMoleculesAbsPaths_ = new Hashtable<String,String>();
+    selectedSingleMoleculesAutoAnalyteAddVO_ = new Hashtable<String,Vector<AutoAnalyteAddVO>>();
+    selectedSingleMoleculesMaxIso_ = new Hashtable<String,Integer>();
     parentAction_ = true;
     this.rtTolerance_ = rtTolerance;
     molGroupName_ = molGroupName;
@@ -302,8 +325,13 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     quantOthers = new MenuItem("Take exact peak for others");
     quantOthers.addActionListener(this);
     applySettingsPopup_.add(quantOthers);
-    
-    
+    selectSingleItem_ = new MenuItem("Select");
+    selectSingleItem_.addActionListener(this);
+    applySettingsPopup_.add(selectSingleItem_);
+    deselectSingleItem_ = new MenuItem("Deselect");
+    deselectSingleItem_.addActionListener(this);
+    applySettingsPopup_.add(deselectSingleItem_);
+
     this .add(applySettingsPopup_);
     
     removeAnalytePopup_ = new PopupMenu("Remove analyte");
@@ -438,8 +466,15 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     actionPerformed(event.getActionCommand());
   }
   
+  @SuppressWarnings("unchecked")
   private void actionPerformed(String actionCommand)
   {
+    Vector<String> foundUpdateables = new Vector<String>();
+    Vector<AutoAnalyteAddVO> updateableAndAnalyteBefore = new Vector<AutoAnalyteAddVO>();
+    Vector<SimpleValueObject> templateSpecies = new Vector<SimpleValueObject>();
+    Hashtable<String,String> modHash = new Hashtable<String,String>();
+    ResultCompVO vo = null;
+    int maxIsotope = 0;
     if (actionCommand.equalsIgnoreCase(CHANGE_IS_STATUS)||
         actionCommand.equalsIgnoreCase(CHANGE_ES_STATUS)||
         actionCommand.equalsIgnoreCase(CHANGE_DOUBLE_STATUS)||
@@ -553,7 +588,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
             fileToStore = (File)results.get(0);
             if ((Boolean)results.get(1)){
               try {
-                int maxIsotope = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
+                maxIsotope = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
                 Hashtable<String,Hashtable<String,ResultCompVO>> compVOs = resultsOfOneGroup_;
                 if (isGrouped_)
                   compVOs = ungroupedPartner_.resultsOfOneGroup_;
@@ -583,7 +618,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
             fileToStore = (File)results.get(0);
             if ((Boolean)results.get(1)){
               try {
-                int maxIsotope = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
+                maxIsotope = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
                 Hashtable<String,Hashtable<String,ResultCompVO>> compVOs = resultsOfOneGroup_;
                 if (isGrouped_)
                   compVOs = ungroupedPartner_.resultsOfOneGroup_;
@@ -742,20 +777,29 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         }
       }
     } else if (actionCommand.equalsIgnoreCase("Choose just one peak for doubles") || actionCommand.equalsIgnoreCase("Quant. anal. at not found")||
-        actionCommand.equalsIgnoreCase("Take exact peak for others")){
+        actionCommand.equalsIgnoreCase("Take exact peak for others") || actionCommand.equalsIgnoreCase("Select")){
       String expName = experimentNames_.get(lastClickedCellPos_[0]);
       String molName = moleculeNames_.get(lastClickedCellPos_[1]);
-      ResultCompVO vo = compVOs_[lastClickedCellPos_[0]][lastClickedCellPos_[1]];
+      if ((actionCommand.equalsIgnoreCase("Quant. anal. at not found")||actionCommand.equalsIgnoreCase("Take exact peak for others")) &&
+          selectedSingleMolecules_.containsKey(molName) && !selectedSingleMolecules_.get(molName).keySet().iterator().next().equalsIgnoreCase(expName)){
+        new WarningMessage(new JFrame(), "Error", "It is not allowed to select more than one from the same species");
+        return;
+      }
+//      for (String analName : this.selectedSingleMolecules_.keySet()){
+//        for (String exp : this.selectedSingleMolecules_.get(analName).keySet()){
+//          System.out.println("Other selected: "+analName+" ; "+exp);
+//        }
+//      }
+      vo = compVOs_[lastClickedCellPos_[0]][lastClickedCellPos_[1]];
       Hashtable<String,String> availableMods = new Hashtable<String,String>();
       for (String modName : modifications_){
         if (vo.containsMod(modName)) availableMods.put(modName, modName);
       }
       int maxIsotopes = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
-      Vector<String> foundUpdateables = new Vector<String>();
-//      Hashtable<String,String> updateableAndAnalyteBefore = new Hashtable<String,String>();
-      Vector<AutoAnalyteAddVO> updateableAndAnalyteBefore = new Vector<AutoAnalyteAddVO>();
-      Hashtable<String,String> modHash = new Hashtable<String,String>();
-      int maxIsotope = 0;
+      foundUpdateables = new Vector<String>();
+      updateableAndAnalyteBefore = new Vector<AutoAnalyteAddVO>();
+      modHash = new Hashtable<String,String>();
+      maxIsotope = 0;
       for (int i=0;i!=experimentNames_.size();i++){
         ResultCompVO otherVO = compVOs_[i][lastClickedCellPos_[1]];
         if (actionCommand.equalsIgnoreCase("Choose just one peak for doubles")){
@@ -770,7 +814,8 @@ public class HeatMapDrawing extends JPanel implements ActionListener
             if (foundMod)
               foundUpdateables.add(otherVO.getAbsoluteFilePath());
           }
-        } else if (actionCommand.equalsIgnoreCase("Quant. anal. at not found")||actionCommand.equalsIgnoreCase("Take exact peak for others")){
+        } else if (actionCommand.equalsIgnoreCase("Quant. anal. at not found")||actionCommand.equalsIgnoreCase("Take exact peak for others")||
+            actionCommand.equalsIgnoreCase("Select")){
           if (i==lastClickedCellPos_[0])
             continue;
           boolean modMissing = false;
@@ -801,25 +846,12 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         }
       }
       if (foundUpdateables.size()>0 || updateableAndAnalyteBefore.size()>0){
-        String confirmationMessage = "Are you sure you want to eliminate double peaks for "+molName+"? The peak nearest to the RT of "+expName+" is taken!";
-        if (actionCommand.equalsIgnoreCase("Quant. anal. at not found")){
-          confirmationMessage = "Are you sure you want to automatically add peaks for "+molName+"? The peak nearest to the RT of "+expName+" is taken!";
-        }else if (actionCommand.equalsIgnoreCase("Take exact peak for others")){
-          confirmationMessage = "Are you sure you want to automatically add peaks for "+molName+"? The exact peak borders of "+expName+" are taken!";
-        }
-        Vector<String> selectedMods = CheckBoxOptionPane.showConfirmDialog(new JFrame(), "Confirmation", confirmationMessage, new Vector<String>(modHash.values()),true);
-        if (selectedMods.size()>0){
-          boolean exactProbePosition = false;
-          if (actionCommand.equalsIgnoreCase("Take exact peak for others")) exactProbePosition = true;
-          if (actionCommand.equalsIgnoreCase("Choose just one peak for doubles"))
-            heatMapListener_.eliminateDoublePeaks(groupName_,molName,vo.getAbsoluteFilePath(),selectedMods,foundUpdateables);
-          else if (actionCommand.equalsIgnoreCase("Quant. anal. at not found")||actionCommand.equalsIgnoreCase("Take exact peak for others"))
-            heatMapListener_.addAnalyteEverywhereAtPosition(groupName_,molName,vo.getAbsoluteFilePath(),selectedMods,updateableAndAnalyteBefore,maxIsotope,exactProbePosition);          
-        }
-      } else {
+        templateSpecies.add(new SimpleValueObject(molName,expName));
+      }else{  
         if (actionCommand.equalsIgnoreCase("Choose just one peak for doubles"))
           new WarningMessage(new JFrame(), "Error", "There are no double peaks to eliminate for "+molName+"!");
-        else if (actionCommand.equalsIgnoreCase("Quant. anal. at not found"))
+        else if (actionCommand.equalsIgnoreCase("Quant. anal. at not found") || actionCommand.equalsIgnoreCase("Take exact peak for others") ||
+            actionCommand.equalsIgnoreCase("Select"))
           new WarningMessage(new JFrame(), "Error", "There are no  peaks to add for "+molName+"!");
       }
     } else if (actionCommand.equalsIgnoreCase("Remove analyte in all probes")){
@@ -827,9 +859,11 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       selectedAnalytes.put(lastClickedAnalyte_, lastClickedAnalyte_);
       String analyteList = "";
       for (String analName : selectedAnalytes.keySet()) analyteList += analName+", ";
-      Vector<String> selectedMods = CheckBoxOptionPane.showConfirmDialog(new JFrame(), "Confirmation", "Do you really want to delete "+groupName_+" "+analyteList+" in all of the probes?", modifications_,false);
+      Vector<String> messages = new Vector<String>();
+      messages.add("Do you really want to delete "+groupName_+" "+analyteList+" in all of the probes?");
+      Vector<String> selectedMods = CheckBoxOptionPane.showConfirmDialog(new JFrame(), "Confirmation", messages, modifications_,false);
       if (selectedMods.size()>0){
-        Hashtable<String,String> foundUpdateables = new Hashtable<String,String>();
+        Hashtable<String,String> foundUpdate = new Hashtable<String,String>();
         Hashtable<Integer,Integer> rowsWhereFound = new Hashtable<Integer,Integer>();
         for (int i=0;i!=this.moleculeNames_.size();i++){
           if (selectedAnalytes.containsKey(moleculeNames_.get(i)))
@@ -845,11 +879,11 @@ public class HeatMapDrawing extends JPanel implements ActionListener
                 if (otherVO.containsMod(modName))foundMod = true; 
               }
               if (foundMod)
-                foundUpdateables.put(otherVO.getAbsoluteFilePath(),otherVO.getAbsoluteFilePath());
+                foundUpdate.put(otherVO.getAbsoluteFilePath(),otherVO.getAbsoluteFilePath());
             }  
           }
         }
-        heatMapListener_.eliminateAnalyteEverywhere(groupName_, selectedAnalytes, selectedMods, new Vector<String>(foundUpdateables.values()));
+        heatMapListener_.eliminateAnalyteEverywhere(groupName_, selectedAnalytes, selectedMods, new Vector<String>(foundUpdate.values()));
       }
     }else if (actionCommand.equalsIgnoreCase("Select analyte") || actionCommand.equalsIgnoreCase("Deselect analyte")){  
       Graphics2D g2 = (Graphics2D)renderedImage_.getGraphics();
@@ -877,6 +911,71 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     } else if (actionCommand.equalsIgnoreCase("exportSelectionDialog")){
       heatMapListener_.showExportSettingsDialog(this.isGrouped_);
     }
+    if ((foundUpdateables.size()>0 || updateableAndAnalyteBefore.size()>0) && actionCommand.equalsIgnoreCase("Choose just one peak for doubles") || actionCommand.equalsIgnoreCase("Quant. anal. at not found")||
+        actionCommand.equalsIgnoreCase("Take exact peak for others")){
+      SimpleValueObject currentlySelected = templateSpecies.get(0);
+      @SuppressWarnings("rawtypes")
+      Vector result = getSelectedIndividualSpeciesInCorrectOrder(currentlySelected,modHash,vo.getAbsoluteFilePath(),updateableAndAnalyteBefore,maxIsotope);
+      templateSpecies = (Vector<SimpleValueObject>)result.get(0);
+      Hashtable<String,String> allMods = (Hashtable<String,String>)result.get(1);
+      Vector<String> absPaths = (Vector<String>)result.get(2);
+      Hashtable<String,Vector<AutoAnalyteAddVO>> updateablesAndAnalytesBefore = (Hashtable<String,Vector<AutoAnalyteAddVO>>)result.get(3);
+      Vector<Integer> maxIsotopes = (Vector<Integer>)result.get(4);
+      
+      Vector<String> confirmationMessages = new Vector<String>();
+      String confirmationMessage = "Are you sure you want to eliminate double peaks for "+currentlySelected.getLabel()+"? The peak nearest to the RT of "+currentlySelected.getValue()+" is taken!";
+      if (actionCommand.equalsIgnoreCase("Quant. anal. at not found")||actionCommand.equalsIgnoreCase("Take exact peak for others")){
+        confirmationMessage = "Are you sure you want to automatically add peaks for the following molecules? ";
+        if (actionCommand.equalsIgnoreCase("Quant. anal. at not found"))
+          confirmationMessage += "The peak nearest to the RT of the following experiments are taken:";
+        else if (actionCommand.equalsIgnoreCase("Take exact peak for others"))
+          confirmationMessage += "The exact peak borders of the following experiments are taekn:";
+        confirmationMessages.add(confirmationMessage);
+        for (SimpleValueObject species : templateSpecies)
+          confirmationMessages.add(species.getLabel()+":    "+species.getValue());
+      }else{
+        confirmationMessages.add(confirmationMessage);
+      }
+      Vector<String> selectedMods = CheckBoxOptionPane.showConfirmDialog(new JFrame(), "Confirmation", confirmationMessages, new Vector<String>(allMods.values()),true);
+      if (selectedMods.size()>0){
+        boolean exactProbePosition = false;
+        if (actionCommand.equalsIgnoreCase("Take exact peak for others")) exactProbePosition = true;
+        if (actionCommand.equalsIgnoreCase("Choose just one peak for doubles"))
+          heatMapListener_.eliminateDoublePeaks(groupName_,templateSpecies.get(0).getLabel(),vo.getAbsoluteFilePath(),selectedMods,foundUpdateables);
+        else if (actionCommand.equalsIgnoreCase("Quant. anal. at not found")||actionCommand.equalsIgnoreCase("Take exact peak for others")){
+          Vector<String> molNames = new Vector<String>();
+          for (SimpleValueObject svo : templateSpecies) molNames.add(svo.getLabel());
+          heatMapListener_.addAnalytesEverywhereAtPosition(groupName_,molNames,absPaths,selectedMods,updateablesAndAnalytesBefore,maxIsotopes,exactProbePosition);          
+        }
+      }
+
+    
+    } else if ((actionCommand.equalsIgnoreCase("Select") && ((foundUpdateables.size()>0 || updateableAndAnalyteBefore.size()>0))) || actionCommand.equalsIgnoreCase("Deselect")){  
+      Graphics2D g2 = (Graphics2D)renderedImage_.getGraphics();
+      boolean printAttentionRectangle = false;
+      if (actionCommand.equalsIgnoreCase("Select")){
+        if (!this.selectAnalyte(moleculeNames_.get(lastClickedCellPos_[1]),experimentNames_.get(lastClickedCellPos_[0]),heatmap_.getColorForCell(lastClickedCellPos_[1], lastClickedCellPos_[0]),modHash,
+            vo.getAbsoluteFilePath(),updateableAndAnalyteBefore,maxIsotope))
+          return;
+        g2.setColor(Color.BLUE);
+      }else if (actionCommand.equalsIgnoreCase("Deselect")){
+        g2.setColor(this.deselectAnalyte(moleculeNames_.get(lastClickedCellPos_[1]),experimentNames_.get(lastClickedCellPos_[0])));
+        if (markDoublePeaks_.isSelected() && attentionProbes_.containsKey(experimentNames_.get(lastClickedCellPos_[0])) &&
+            attentionProbes_.get(experimentNames_.get(lastClickedCellPos_[0])).containsKey(moleculeNames_.get(lastClickedCellPos_[1]))){
+          printAttentionRectangle = true;
+        }
+      }
+      Rectangle cellRect = heatmap_.getRectangleForCellByRowAndColumn(lastClickedCellPos_[1], lastClickedCellPos_[0]);
+      cellRect.setLocation(new Point(cellRect.getLocation().x+imagePositionX_,cellRect.getLocation().y+imagePositionY_));
+      g2.fillRect(cellRect.x+1,cellRect.y+1,cellRect.width-1,cellRect.height-1);
+      if (printAttentionRectangle){
+        heatmap_.paintAttentionRectangle(g2, attentionProbes_.get(experimentNames_.get(lastClickedCellPos_[0])).get(moleculeNames_.get(lastClickedCellPos_[1])), 
+            lastClickedCellPos_[1], lastClickedCellPos_[0], heatmap_.getExpressionImageXStart(), heatmap_.getExpressionImageYStart());
+      }
+      this.invalidate();
+      this.updateUI();
+    }
+
   }
   
   private static Hashtable<String,Hashtable<String,Vector<Double>>> extractValuesOfInterest(Hashtable<String,Hashtable<String,ResultCompVO>> vos, int maxIsotope, ResultDisplaySettingsVO settingVO, String preferredUnit, ExportOptionsVO expOptions, Vector<String> modifications) throws CalculationNotPossibleException{
@@ -980,11 +1079,8 @@ public class HeatMapDrawing extends JPanel implements ActionListener
           } else if (heatmap_.getRowNameStart()<xInImage&& xInImage<heatmap_.getRowNameEnd() &&
               heatmap_.getExpressionImageYStart()<=yInImage&&yInImage<heatmap_.getExpressionImageYEnd()){
             String analyteName = heatmap_.getRowName(x,y);
-//            if (analyteName!=null&&analyteName.length()>0&&!isAnalyteSelected(analyteName)){
               rectToDraw_ = heatmap_.getRectangleForRowName(analyteName);
               this.drawARectangle(g2);
-//            }else
-//              rectToDraw_ = null;
           } else if (heatmap_.getExpressionImageXStart()<=xInImage&&xInImage<heatmap_.getExpressionImageXEnd()&&
               heatmap_.getColumnNameStart()<=yInImage&&yInImage<heatmap_.getColumnNameEnd()){
             String expName = heatmap_.getColumnName(x,y);
@@ -1036,11 +1132,15 @@ public class HeatMapDrawing extends JPanel implements ActionListener
                         || attentionProbes_.get(cellName.get(0)).get(cellName.get(1)) == LipidomicsHeatMap.ATTENTION_DOUBLE_AND_NOT_ALL_MODS))
                       this.mouseMoved(e);
                     else{
+                      if (isAnalyteSelected(moleculeNames_.get(cellPos[1]),experimentNames_.get(cellPos[0]))){
+                        selectSingleItem_.setEnabled(false);
+                        deselectSingleItem_.setEnabled(true);
+                      }else{
+                        selectSingleItem_.setEnabled(true);
+                        deselectSingleItem_.setEnabled(false);                  
+                      }      
                       applySettingsPopup_.show(e.getComponent(), e.getX(), e.getY());
                       lastClickedCellPos_ = cellPos;
-//                      lastClickedExp_ = cellName.get(0);
-//                      lastClickedMol_ = cellName.get(1);
-//                      lastClickedResultVO_ = compVO;
                     }  
                   }
                 }else
@@ -1242,6 +1342,64 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     selectedMolecules_.put(analyteName, analyteName);
     
   }
+
+  /**
+   * returns true when a single analyte was selected previously
+   * @param analyteName the name of the analyte
+   * @param expName the name of the experiment
+   * @return true when a single analyte was selected previously
+   */
+  public boolean isAnalyteSelected(String analyteName, String expName)
+  {
+    if (selectedSingleMolecules_.containsKey(analyteName) && selectedSingleMolecules_.get(analyteName).containsKey(expName))
+      return true;
+    else
+      return false;
+  }
+
+  /**
+   * selects a single analyte in the heat map and stores additional information about this analyte
+   * @param analyteName the name of the analyte
+   * @param expName the name of the experiment
+   * @param color the color of the expression image
+   * @param modHash a hash table containing the possible modifications where an automated action can be executed
+   * @param absolutePath the absolute file path to the experiment of the analte
+   * @param updateableAndAnalyteBefore information about the experiments where the automated quantitation should take place
+   * @param maxIsotope the highest possible isotope number for this analyte
+   * @return true when the selection worked; false when the analyte was already selected
+   */
+  public boolean selectAnalyte(String analyteName, String expName, Color color, Hashtable<String,String> modHash, String absolutePath,
+      Vector<AutoAnalyteAddVO> updateableAndAnalyteBefore, int maxIsotope)
+  {
+    if (selectedSingleMolecules_.containsKey(analyteName)){
+      new WarningMessage(new JFrame(), "Error", "It is not allowed to select more than one from the same species");
+      return false;
+    }
+    selectedSingleMolecules_.put(analyteName, new Hashtable<String,Color>());
+    selectedSingleMoleculesMods_.put(analyteName, modHash);
+    selectedSingleMolecules_.get(analyteName).put(expName, color);
+    selectedSingleMoleculesAbsPaths_.put(analyteName, absolutePath);
+    selectedSingleMoleculesMaxIso_.put(analyteName, maxIsotope);
+    selectedSingleMoleculesAutoAnalyteAddVO_.put(analyteName, updateableAndAnalyteBefore);
+    return true;
+  }
+
+  /**
+   * selects a single analyte in the heat map and returns the previous color of this cell in the expression image
+   * @param analyteName the name of the analyte
+   * @param expName the name of the experiment
+   * @return the previous color of this cell in the expression image
+   */
+  public Color deselectAnalyte(String analyteName, String expName)
+  {
+    Color color =  selectedSingleMolecules_.get(analyteName).get(expName);
+    selectedSingleMolecules_.remove(analyteName);
+    selectedSingleMoleculesMods_.remove(analyteName);
+    selectedSingleMoleculesAbsPaths_.remove(analyteName);
+    selectedSingleMoleculesAutoAnalyteAddVO_.remove(analyteName);
+    selectedSingleMoleculesMaxIso_.remove(analyteName);  
+    return color;
+  }
   
   public int getSelectedIsotope(){
     int isotope = 0;
@@ -1406,7 +1564,8 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     removeAnalytePopup_ = null;
     selectItem_ = null;
     deselectItem_ = null;
-    deselectItem_ = null;
+    selectSingleItem_ = null;
+    deselectSingleItem_ = null;
     applyToAllDoubles_ = null;
     lastClickedAnalyte_ = null;
     if (modifications_!=null) modifications_.clear();
@@ -1458,5 +1617,57 @@ public class HeatMapDrawing extends JPanel implements ActionListener
    */
   public String getValueType(){
     return this.settingsVO_.getType();
+  }
+  
+  
+  /**
+   * returns a list of selected species plus additional information about this species
+   * each piece of information is added as separate object to the return vector
+   * first object:  sorted vector containing SimpleValueObject where the key is the analyte name (including RT), and the value is the experiment name
+   * second object: a hash table containing all possible modifications for the selected analytes
+   * third object:  sorted vector of absolute paths to the Excel result files of the selected single analyte (same order as first object)
+   * fourth object: hash table, key: analyte name; value: vector of objects holding information about the other experiments where automated processing should take place
+   * fifth object:  sorted vector of highest isotope numbers for each analyte (same order as first object)
+   * @param currentlySelected SimpleValueObject of the currently selected species; label: analyte name; value: experiment name
+   * @param modHash hash table containing the possible modifications where a quantitation can be performed; both the key and the value hold the same information: the modification
+   * @param absolutePath the absolute paths to the Excel result files of the last clicked single analyte
+   * @param updateableAndAnalyteBefore vector of objects holding information about the other experiments where automated processing should take place
+   * @param maxIsotope highest isotope number for the currently selected analyte
+   * @return a list of selected species plus additional information about this species where each piece of information is added as separate object to the return vector
+   */
+  @SuppressWarnings({ "rawtypes", "unchecked" })
+  private Vector getSelectedIndividualSpeciesInCorrectOrder(SimpleValueObject currentlySelected, Hashtable<String,String> modHash,
+      String absolutePath, Vector<AutoAnalyteAddVO> updateableAndAnalyteBefore, int maxIsotope){
+    Vector result = new Vector();
+    Vector<SimpleValueObject> sorted = new Vector<SimpleValueObject>();
+    Hashtable<String,String> allMods = new Hashtable<String,String>();
+    Vector<String> absPaths = new Vector<String>();
+    Hashtable<String,Vector<AutoAnalyteAddVO>> updateablesAndAnalytesBefore = new Hashtable<String,Vector<AutoAnalyteAddVO>>();
+    Vector<Integer> maxIsotopes = new Vector<Integer>();
+    for (String molName :moleculeNames_){
+      if (!selectedSingleMolecules_.containsKey(molName) && !currentlySelected.getLabel().equalsIgnoreCase(molName))
+        continue;
+      String expName;
+      if (currentlySelected.getLabel().equalsIgnoreCase(molName)){
+        expName = currentlySelected.getValue();
+        for (String mod : modHash.keySet()) allMods.put(mod, mod);
+        absPaths.add(absolutePath);
+        updateablesAndAnalytesBefore.put(molName, updateableAndAnalyteBefore);
+        maxIsotopes.add(maxIsotope);
+      }else{
+        expName = selectedSingleMolecules_.get(molName).keySet().iterator().next();
+        for (String mod : selectedSingleMoleculesMods_.get(molName).keySet()) allMods.put(mod, mod);
+        absPaths.add(selectedSingleMoleculesAbsPaths_.get(molName));
+        updateablesAndAnalytesBefore.put(molName, selectedSingleMoleculesAutoAnalyteAddVO_.get(molName));
+        maxIsotopes.add(selectedSingleMoleculesMaxIso_.get(molName));
+      }
+      sorted.add(new SimpleValueObject(molName,expName));
+    }
+    result.add(sorted);
+    result.add(allMods);
+    result.add(absPaths);
+    result.add(updateablesAndAnalytesBefore);
+    result.add(maxIsotopes);
+    return result;
   }
 }
