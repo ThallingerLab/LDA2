@@ -290,6 +290,11 @@ public class TooltipTexts
   public final static String DISPLAY_SHOW_2D = "<html>Should the 2D viewer be displayed or not?<br/>" +
   		"The 2D viewer allows to change the quantitation manually. The 3D viewer is just for displaying purposes</html>";
   public final static String DISPLAY_SHOW_MSN = "<html>Should the names be displayed using MSn evidence?</html>";
+  public final static String DISPLAY_RT_START = "<html>Display range for the 3D viewer in minutes.<br/>" +
+  "This defines the start retention time.</html>";
+  public final static String DISPLAY_RT_STOP = "<html>Display range for the 3D viewer in minutes.<br/>" +
+  "This defines the stop retention time.</html>";
+
 
   public final static String DISPLAY_ADD_ANALYTE_NAME = "<html>The name of the analyte (plus double bonds if appropriate).</html>";
   public final static String DISPLAY_ADD_ANALYTE_FORMULA = "<html>The chemical formula of the analyte (without modification)<br/>" +

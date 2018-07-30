@@ -328,6 +328,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JPanel quantifyingBatchPanel_;  
   private JTextField displayMinusTolerance_;
   private JTextField displayPlusTolerance_;
+  private JTextField displayRtStart_;
+  private JTextField displayRtStop_;
+
   private JCheckBox show2D_;
   /** show the names in MSn style in the display results or not*/
   private JCheckBox showMSnNames_;
@@ -447,6 +450,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private final static String DEFAULT_ANNOTATION_CUTOFF = "5";
   
   private final static Font SELECT_FIELD_FONT = new Font("Helvetica",Font.PLAIN,10);
+  private final static Font SMALL_FONT = new Font("Arial",Font.PLAIN,9);
   
   /** a dialog field showing the new MSn assignment*/
   private RecalculateMSnDialog recalcDialog_;
@@ -472,47 +476,80 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     shotgunIsDisplayed_ = false;
 
     JPanel displayTolerancePanel = new JPanel();
-    displayTolerancePanel.setLayout(new GridBagLayout());    
+    displayTolerancePanel.setLayout(new GridBagLayout());
     JLabel diplayTolMinus = new JLabel("- m/z: ");
+    diplayTolMinus.setFont(SMALL_FONT);
     diplayTolMinus.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
     displayTolerancePanel.add(diplayTolMinus,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
     JLabel diplayTolPlus = new JLabel("+ m/z: ");
+    diplayTolPlus.setFont(SMALL_FONT);
     diplayTolPlus.setToolTipText(TooltipTexts.DISPLAY_MZ_PLUS);
-    displayTolerancePanel.add(diplayTolPlus,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    displayMinusTolerance_ = new JTextField(4);
+    displayTolerancePanel.add(diplayTolPlus,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+    displayMinusTolerance_ = new JTextField(2);
+    displayMinusTolerance_.setFont(SMALL_FONT);
     displayMinusTolerance_.setText("1.5");
     displayMinusTolerance_.setHorizontalAlignment(JTextField.RIGHT);
     displayMinusTolerance_.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
     displayMinusTolerance_.setInputVerifier(new DoubleVerifier());
     displayTolerancePanel.add(displayMinusTolerance_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));    
-    displayPlusTolerance_ = new JTextField(4);
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));    
+    displayPlusTolerance_ = new JTextField(2);
+    displayPlusTolerance_.setFont(SMALL_FONT);
     displayPlusTolerance_.setText("2.5");
     displayPlusTolerance_.setHorizontalAlignment(JTextField.RIGHT);
     displayPlusTolerance_.setToolTipText(TooltipTexts.DISPLAY_MZ_PLUS);
     displayPlusTolerance_.setInputVerifier(new DoubleVerifier());
-    displayTolerancePanel.add(displayPlusTolerance_,new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    displayTolerancePanel.add(displayPlusTolerance_,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
     JLabel diplayTolUnit1 = new JLabel("[Da]");
-    diplayTolUnit1.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
-    displayTolerancePanel.add(diplayTolUnit1,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel diplayTolUnit2 = new JLabel("[Da]");
-    diplayTolUnit2.setToolTipText(TooltipTexts.DISPLAY_MZ_PLUS);
-    displayTolerancePanel.add(diplayTolUnit2,new GridBagConstraints(2, 1, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    diplayTolUnit1.setFont(SMALL_FONT);
+    displayTolerancePanel.add(diplayTolUnit1,new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+    JLabel rtTolMinusText = new JLabel("Start: ");
+    rtTolMinusText.setFont(SMALL_FONT);
+    rtTolMinusText.setToolTipText(TooltipTexts.DISPLAY_RT_START);
+    displayTolerancePanel.add(rtTolMinusText,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+    JLabel rtTolPlusText = new JLabel("Stop: ");
+    rtTolPlusText.setFont(SMALL_FONT);
+    rtTolPlusText.setToolTipText(TooltipTexts.DISPLAY_RT_STOP);
+    displayTolerancePanel.add(rtTolPlusText,new GridBagConstraints(2, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+    displayRtStart_ = new JTextField(2);
+    displayRtStart_.setFont(SMALL_FONT);
+    displayRtStart_.setText("");
+    displayRtStart_.setHorizontalAlignment(JTextField.RIGHT);
+    displayRtStart_.setToolTipText(TooltipTexts.DISPLAY_RT_START);
+    displayRtStart_.setInputVerifier(new DoubleVerifier());
+    displayTolerancePanel.add(displayRtStart_,new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+    displayRtStop_ = new JTextField(2);
+    displayRtStop_.setFont(SMALL_FONT);
+    displayRtStop_.setText("");
+    displayRtStop_.setHorizontalAlignment(JTextField.RIGHT);
+    displayRtStop_.setToolTipText(TooltipTexts.DISPLAY_RT_STOP);
+    displayRtStop_.setInputVerifier(new DoubleVerifier());
+    displayTolerancePanel.add(displayRtStop_,new GridBagConstraints(3, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+    JLabel diplayTolUnit2 = new JLabel("[min]");
+    diplayTolUnit2.setFont(SMALL_FONT);
+//    diplayTolUnit1.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
+    displayTolerancePanel.add(diplayTolUnit2,new GridBagConstraints(4, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+
+    
     JButton quantTolUpdate = new JButton("Update");
     quantTolUpdate.addActionListener(this);
     quantTolUpdate.setFont(quantTolUpdate.getFont().deriveFont(10f));
     quantTolUpdate.setMargin(new Insets(1,5,1,5));
     quantTolUpdate.setActionCommand("updateQuantTolOfCurrentlySelected");
     quantTolUpdate.setToolTipText(TooltipTexts.DISPLAY_UPDATE);
-    displayTolerancePanel.add(quantTolUpdate,new GridBagConstraints(3, 0, 1, 2, 0.0, 0.0
+    displayTolerancePanel.add(quantTolUpdate,new GridBagConstraints(5, 0, 1, 2, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     JPanel showOptionsPanel = new JPanel();
-    displayTolerancePanel.add(showOptionsPanel,new GridBagConstraints(0, 3, 4, 1, 0.0, 0.0
+    displayTolerancePanel.add(showOptionsPanel,new GridBagConstraints(0, 3, 6, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
     
     showMSnNames_ = new JCheckBox();
@@ -558,7 +595,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     tableContainer = new JPanel(new GridLayout(1,1));
     tableContainer.setBorder(BorderFactory.createTitledBorder("Results"));
     tableContainer.add(tablePanel_);
-    tablePane.setPreferredSize(new Dimension(380, 130));  
+    tablePane.setPreferredSize(new Dimension(500, 130));  
     
     selectionPane.add(tableContainer);
     selectionPane.add(listContainer);
@@ -3422,12 +3459,21 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       float currentIsotopicMass = params.Mz[0]+(LipidomicsConstants.getNeutronMass()*Integer.parseInt((String)this.isotope_.getSelectedItem())/(float)charge);
       float startFloat = currentIsotopicMass-Float.parseFloat(this.displayMinusTolerance_.getText());
       float stopFloat = currentIsotopicMass+Float.parseFloat(this.displayPlusTolerance_.getText());
+      float startRt = 0f;
+      if (this.displayRtStart_.getText()!=null && this.displayRtStart_.getText().length()>0)
+        startRt = Float.parseFloat(this.displayRtStart_.getText());
+      startRt = 60f*startRt;
+      float stopRt = 0f;
+      if (this.displayRtStop_.getText()!=null && this.displayRtStop_.getText().length()>0)
+        stopRt = Float.parseFloat(this.displayRtStop_.getText());
+      stopRt = 60f*stopRt;
+      
       
       String[] rawLines = reader_.getRawLines(startFloat, stopFloat, result_.getMsLevels().get(currentSelectedSheet_));
       Hashtable<Integer,Float> rtTimes = reader_.getRetentionTimesOriginal();
 
-      MSMapViewer viewer = MSMapViewerFactory.getMSMapViewer(rawLines, rtTimes,
-          startFloat,stopFloat,reader_.getMultiplicationFactorForInt_()/reader_.getLowestResolution_(),5f,this,
+      MSMapViewer viewer = MSMapViewerFactory.getMSMapViewer(rawLines, rtTimes,startFloat,stopFloat,
+          startRt,stopRt,reader_.getMultiplicationFactorForInt_()/reader_.getLowestResolution_(),5f,this,
           MSMapViewer.DISPLAY_TIME_MINUTES,false);
       viewer.setViewerSettings(true, true, true,LipidomicsConstants.getThreeDViewerDefaultMZResolution(),LipidomicsConstants.getThreeDViewerDefaultTimeResolution());
       //writeDisplayDataToExcelFormat(rawLines, rtTimes, startFloat,stopFloat);
@@ -3442,7 +3488,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       viewer.init();
       viewer.removeSaveLipidomicsSettings();
       
-      if (this.show2D_.isSelected()){     
+      if (this.show2D_.isSelected()){
         Lipidomics2DPainter l2DPainter = new Lipidomics2DPainter(analyzer_,rawLines, rtTimes, reader_.getRetentionTimes(),
             startFloat,stopFloat,reader_.getMultiplicationFactorForInt_()/reader_.getLowestResolution_(),params_.LowerMzBand*2,this,
             MSMapViewer.DISPLAY_TIME_MINUTES,currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand, false,
