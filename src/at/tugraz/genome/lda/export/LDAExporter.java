@@ -817,7 +817,7 @@ public abstract class LDAExporter
                   neutralMassTheoretical = Settings.getElementParser().calculateTheoreticalMass(StaticUtils.getFormulaInHillNotation(categorized,true), false);
                 }catch (ChemicalFormulaException e) {e.printStackTrace();}
               }
-              if (bestIdentification.indexOf("/")==-1)
+              if (molecularSpecies!=null && bestIdentification.indexOf("/")==-1)
                 bestIdentification = StaticUtils.sortFASequenceUnassigned(bestIdentification);
               
               weightedMz = areaTimesMz/totalArea;

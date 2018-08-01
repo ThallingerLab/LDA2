@@ -5358,7 +5358,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	        String chromFileBase = StaticUtils.extractChromBaseName(fullExpPaths.get(exp),exp);
 	        MsRun run = new MsRun();
 	        run.setId((i+1));
-	        run.setLocation("file://"+chromFileBase.replaceAll("\\\\", "/")+".chrom");       
+	        run.setLocation("file://"+chromFileBase.replaceAll("\\\\", "/").replaceAll(" ", "%20")+".chrom");       
 	        run.setFragmentationMethod(LipidomicsConstants.getFragmentationMethods());
 	        run.setFormat(new Parameter().cvLabel("MS").cvAccession("MS:1002966").name("The Lipid Data Analyzer native chrom format."));
 	        run.setIdFormat(new Parameter().cvLabel("MS").cvAccession("MS:1000776").name("scan number only nativeID format"));
