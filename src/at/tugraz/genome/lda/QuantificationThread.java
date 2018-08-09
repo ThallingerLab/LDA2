@@ -113,6 +113,8 @@ public class QuantificationThread extends Thread
   private boolean ionMode_;
   /** in the case of MSnFirst: in the first round analytes not containing MSn spectra are added to an hash - in the second round normal quantitation*/
   private boolean msnRoundFinished_;
+  /** was the task started by the command line interface*/
+  private boolean cli_;
   
   private Hashtable<Integer,Boolean> availableThreads_;
   private Hashtable<Integer,LipidomicsAnalyzer> analyzers_;
@@ -168,7 +170,7 @@ public class QuantificationThread extends Thread
     
   public QuantificationThread(String chromFile,String quantFile,String resultFile,//float mzTolerance, 
       float minusTime, float plusTime, int amountOfIsotopes, int isotopesMustMatch, boolean searchUnknownTime,
-      float basePeakCutoff, float rtShift, int numberOfProcessors, boolean ionMode){
+      float basePeakCutoff, float rtShift, int numberOfProcessors, boolean ionMode, boolean cli){
     super();
     this.chromFile_ = chromFile;
     this.chromFileName_ = StringUtils.getJustFileName(chromFile);
@@ -185,6 +187,7 @@ public class QuantificationThread extends Thread
     finished_ = false;
     numberOfProcessors_ = numberOfProcessors;
     this.ionMode_ = ionMode;
+    this.cli_ = cli;
   }
   
   public void run(){
@@ -2063,7 +2066,7 @@ public class QuantificationThread extends Thread
      
       QuantificationThread.writeResultsToExcel(resultFile,quantRes);
       
-      if (isAlexTargetList){
+      if (isAlexTargetList || cli_){
         String alexResultFile = new String(resultFile);
         if (alexResultFile.endsWith(".xls") || alexResultFile.endsWith(".xlsx"))
           alexResultFile = alexResultFile.substring(0,alexResultFile.lastIndexOf("."));

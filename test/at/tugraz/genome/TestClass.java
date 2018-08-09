@@ -370,7 +370,7 @@ public class TestClass extends JApplet implements AddScan
     //this.faSummaryConverter();
     //this.mzTabValidation();
     //this.evaluatePrmData();
-	this.batchQuantByCommandLine();
+    this.batchQuantByCommandLine();
   }
 
   private void testExportPanel()
@@ -14016,7 +14016,7 @@ public void testTabFile() throws Exception {
     try{
       LipidomicsConstants.getInstance().setRelativeMS1BasePeakCutoff(String.valueOf(cutoff));
       QuantificationThread quantThread = new QuantificationThread(chromFile,quantFile,resultFile, 
-          5f, 5f, 2, 1, true, cutoff, 0f, 7,positiveIonMode);
+          5f, 5f, 2, 1, true, cutoff, 0f, 7,positiveIonMode,false);
       quantThread.start();
       while (!quantThread.finished()){
         try {
@@ -14403,7 +14403,7 @@ public void testTabFile() throws Exception {
             progressBatchBar.setValue(0);
             BatchQuantThread batchQuantThread_ = new BatchQuantThread(batchQuantTable, batchQuantTableModel,progressBatchBar, 
               quantifyingBatchLabel, minusTimeTol,plusTimeTol,amountOfIsotopes,isotopesMustMatch,searchUnknownBatchTime, cutoff, 
-                rtShift, nrProcessors,ionMode);
+                rtShift, nrProcessors,ionMode,true);
             batchQuantThread_.start();
           }else{
             if (rawFiles.size()==0){

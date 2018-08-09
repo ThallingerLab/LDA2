@@ -2365,7 +2365,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
             batchQuantThread_ = new BatchQuantThread(this.batchQuantTable_, this.batchQuantTableModel_,this.progressBatchBar_, 
                 this.quantifyingBatchLabel_,//Float.parseFloat(this.batchMzTol_.getText()),
                 minusTimeTol,plusTimeTol,amountOfIsotopes,isotopesMustMatch,this.searchUnknownBatchTime_.isSelected(), cutoff, 
-                rtShift, Integer.parseInt(nrProcessorsBatch_.getText()),ionMode);
+                rtShift, Integer.parseInt(nrProcessorsBatch_.getText()),ionMode,false);
             batchQuantThread_.start();
           }else{
             if (rawFiles.size()==0){
@@ -2632,7 +2632,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           this.progressBar_.setValue(70);
           quantThread_ = new QuantificationThread(selectedMzxmlFile.getText(), selectedQuantFile.getText(),LipidDataAnalyzer.getResultFilePath(selectedMzxmlFile.getText(), selectedQuantFile.getText()),
               beforeTolerance,afterTolerance,amountOfIsotopes,isotopesMustMatch,
-              this.searchUnknownTime_.isSelected(),cutoff,rtShift,Integer.parseInt(nrProcessors_.getText()),ionMode);
+              this.searchUnknownTime_.isSelected(),cutoff,rtShift,Integer.parseInt(nrProcessors_.getText()),ionMode,false);
           quantThread_.start();
           threadStarted = true;
         }else if (aborted){
@@ -3728,7 +3728,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                 this.quantifyingBatchLabel_,//Float.parseFloat(this.batchMzTol_.getText()),
                 Float.parseFloat(this.singleTimeMinusTol_.getText()),Float.parseFloat(this.singleTimePlusTol_.getText()),
                 amountOfIsotopes,isotopesMustMatch,this.searchUnknownTime_.isSelected(), cutoff, 
-                rtShift, Integer.parseInt(nrProcessors_.getText()),ionMode);
+                rtShift, Integer.parseInt(nrProcessors_.getText()),ionMode,false);
             this.quantifyingBatchLabel_.setText("Quantifying");
             this.progressBatchBar_.setValue(0);
             this.quantifyingBatchPanel_.setVisible(true);
@@ -3799,7 +3799,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           ionMode = true;
         quantThread_ = new QuantificationThread(selectedMzxmlFile.getText(), selectedQuantFile.getText(),LipidDataAnalyzer.getResultFilePath(selectedMzxmlFile.getText(), selectedQuantFile.getText()),// Float.parseFloat(this.singleMzTol_.getText()),
             Float.parseFloat(this.singleTimeMinusTol_.getText()),Float.parseFloat(this.singleTimePlusTol_.getText()),amountOfIsotopes,isotopesMustMatch,this.searchUnknownTime_.isSelected(),
-            cutoff,rtShift,Integer.parseInt(this.nrProcessors_.getText()),ionMode);
+            cutoff,rtShift,Integer.parseInt(this.nrProcessors_.getText()),ionMode,false);
         quantThread_.start();
       }else{
         this.startQuantification.setEnabled(true);

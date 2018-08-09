@@ -68,7 +68,8 @@ public class BatchQuantThread extends Thread
   private float rtShift_;
   /** the ion mode of the search: true for positive, and false for negative; required only for ALEX123*/
   private boolean ionMode_;
-
+  /** was the task started by the command line interface*/
+  private boolean cli_;
   
   private int currentLine_;
   private boolean readFromRaw_;
@@ -80,7 +81,7 @@ public class BatchQuantThread extends Thread
   public BatchQuantThread(BatchQuantificationTable quantTable, BatchQuantificationTableModel quantTableModel, 
       JProgressBar progressBar, JLabel quantifyingLabel,//float mzTolerance,
       float minusTime, float plusTime,int amountOfIsotopes, int isotopesMustMatch, boolean searchUnknownTime,
-      float basePeakCutoff, float rtShift, int numberOfProcessors, boolean ionMode) {
+      float basePeakCutoff, float rtShift, int numberOfProcessors, boolean ionMode, boolean cli) {
     this.quantTable_ = quantTable;
     this.quantTableModel_ = quantTableModel;
     this.progressBar_ = progressBar;
@@ -103,6 +104,7 @@ public class BatchQuantThread extends Thread
     this.generatedMzXMLsFromWiff_ = new Vector<RawQuantificationPairVO>();
     this.areWiffPresent_ = false;
     this.ionMode_ = ionMode;
+    this.cli_ = cli;
   }
     
   public void run(){
@@ -190,7 +192,7 @@ public class BatchQuantThread extends Thread
                 LipidDataAnalyzer.getResultFilePath(filePair.getRawFile().getAbsolutePath(), filePair.getQuantFile().getAbsolutePath()),
                 //this.mzTolerance_,
                 minusTime_,plusTime_,this.amountOfIsotopes_,this.isotopesMustMatch_,this.searchUnknownTime_,this.basePeakCutoff_,rtShift_, 
-                numberOfProcessors_,ionMode_);
+                numberOfProcessors_,ionMode_,cli_);
             quantThread_.start();
           }
         }
@@ -329,7 +331,7 @@ public class BatchQuantThread extends Thread
               LipidDataAnalyzer.getResultFilePath(filePair.getRawFile().getAbsolutePath(), filePair.getQuantFile().getAbsolutePath()),
               //this.mzTolerance_,
               minusTime_,plusTime_,this.amountOfIsotopes_,this.isotopesMustMatch_,this.searchUnknownTime_,this.basePeakCutoff_,rtShift_,
-              numberOfProcessors_,ionMode_);
+              numberOfProcessors_,ionMode_,cli_);
           quantThread_.start();
           threadStarted = true;
         }

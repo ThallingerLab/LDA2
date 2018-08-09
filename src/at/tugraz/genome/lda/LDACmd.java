@@ -372,7 +372,7 @@ public class LDACmd
             try {
               batchQuantThread_ = new BatchQuantThread(batchQuantTable, batchQuantTableModel,progressBatchBar, 
               quantifyingBatchLabel, minusTimeTol,plusTimeTol,amountOfIsotopes,isotopesMustMatch,searchUnknownBatchTime, cutoff, 
-                rtShift, nrProcessors,ionMode);
+                rtShift, nrProcessors,ionMode,true);
               batchQuantThread_.start();
               this.initTimer();
             }catch(Exception ex) {
