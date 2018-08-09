@@ -6438,7 +6438,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
    * @param quantFiles the quantification files
    * @return the MS data/quantification file pairs
    */
-  private  Vector<RawQuantificationPairVO> generateQuantificationPairVOs(Vector<File> rawFiles, Vector<File> quantFiles){
+  public static Vector<RawQuantificationPairVO> generateQuantificationPairVOs(Vector<File> rawFiles, Vector<File> quantFiles){
     Vector<RawQuantificationPairVO> pairs = new Vector<RawQuantificationPairVO>();
     Vector<File> positivePolarity = new Vector<File>();
     Vector<File> negativePolarity = new Vector<File>();

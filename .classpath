@@ -44,5 +44,6 @@
 	<classpathentry kind="lib" path="lib/mztab-java/jackson-dataformat-xml-2.9.5.jar"/>
 	<classpathentry kind="lib" path="lib/mztab-java/jackson-datatype-joda-2.9.5.jar"/>
 	<classpathentry kind="lib" path="lib/mztab-java/jackson-module-jaxb-annotations-2.9.5.jar"/>
+	<classpathentry kind="lib" path="lib/cli/commons-cli-1.4.jar"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

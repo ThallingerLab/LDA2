@@ -55,6 +55,9 @@ import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 import javax.swing.JApplet;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JProgressBar;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -117,6 +120,7 @@ import JSci.maths.statistics.ChiSqrDistribution;
 import JSci.maths.statistics.TDistribution;
 import at.tugraz.genome.dbutilities.SimpleValueObject;
 import at.tugraz.genome.exception.LipidBLASTException;
+import at.tugraz.genome.lda.BatchQuantThread;
 import at.tugraz.genome.lda.LDAResultReader;
 import at.tugraz.genome.lda.LipidDataAnalyzer;
 import at.tugraz.genome.lda.LipidomicsConstants;
@@ -124,6 +128,7 @@ import at.tugraz.genome.lda.MzxmlToChromThread;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.QuantificationThread;
 import at.tugraz.genome.lda.SingleQuantThread;
+import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.alex123.TargetlistDirParser;
 import at.tugraz.genome.lda.alex123.TargetlistParser;
 import at.tugraz.genome.lda.alex123.vos.TargetlistEntry;
@@ -148,6 +153,8 @@ import at.tugraz.genome.lda.quantification.LipidomicsDefines;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.swing.AbsoluteQuantSettingsPanel;
 import at.tugraz.genome.lda.swing.BarChartPainter;
+import at.tugraz.genome.lda.swing.BatchQuantificationTable;
+import at.tugraz.genome.lda.swing.BatchQuantificationTableModel;
 import at.tugraz.genome.lda.swing.ExportPanel;
 import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.lda.utils.ExcelUtils;
@@ -156,6 +163,7 @@ import at.tugraz.genome.lda.utils.LevenbergMarquardtOptimizer;
 import at.tugraz.genome.lda.utils.RangeInteger;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.QuantVO;
+import at.tugraz.genome.lda.vos.RawQuantificationPairVO;
 import at.tugraz.genome.lda.xml.AbsoluteQuantSettingsWholeReader;
 import at.tugraz.genome.lda.xml.AddScan;
 import at.tugraz.genome.lda.xml.MzXmlReader;
@@ -360,7 +368,9 @@ public class TestClass extends JApplet implements AddScan
     //this.detectMsnByAlex123();
     //this.mergeIdx2();
     //this.faSummaryConverter();
-    this.mzTabValidation();
+    //this.mzTabValidation();
+    //this.evaluatePrmData();
+	this.batchQuantByCommandLine();
   }
 
   private void testExportPanel()
@@ -862,7 +872,7 @@ public class TestClass extends JApplet implements AddScan
     ElementConfigParser parser = new ElementConfigParser("elementconfig.xml");
     try {
       parser.parse();
-      System.out.println(parser.calculateTheoreticalMass("C42 H84 O8 P1 N1", false)+22.989218);
+      System.out.println(parser.calculateTheoreticalMass("C25 H50 N1 O6 P1", false));
       //System.out.println(parser.calculateTheoreticalMass("C44 H83 O8 P1 N1", false));
     }
     catch (SpectrummillParserException e) {
@@ -1479,26 +1489,30 @@ public class TestClass extends JApplet implements AddScan
   
   private void readQuantExcel(){
     try{
-//      Vector excelContent = QuantificationThread.parseQuantExcelFile("D:\\BiologicalExperiment\\massLists\\positive\\P-PC_P-PE.xlsx", 0f, 50f, 2, 1, true, 0f, 0f, 0f, 50f);
-//      System.out.println("Hallo");
-//      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)excelContent.get(2);
-//      LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)excelContent.get(0);
-//      Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)excelContent.get(1);
-//
-//      for (String className :classSequence.keySet()){
-//        Hashtable<String,Hashtable<String,QuantVO>> classQuant = quantObjects.get(className);
-//        Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>> resultsClass = new Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>();
+////      Vector excelContent = QuantificationThread.parseQuantExcelFile("D:\\Kim\\SL_massLists\\SL_negative.xlsx", -1f, -1f, 2, 1, true, 0f, 0f, -1f, -1f);
+      Vector excelContent = null;
+      System.out.println("Hallo");
+      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)excelContent.get(3);
+      LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)excelContent.get(0);
+      Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)excelContent.get(1);
+
+      for (String className :classSequence.keySet()){
+        Hashtable<String,Hashtable<String,QuantVO>> classQuant = quantObjects.get(className);
+        Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>> resultsClass = new Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>();
+        System.out.println("----------------- "+className+" -------------------");
 //        if (className.equalsIgnoreCase("oxPC_38_4")||className.equalsIgnoreCase("oxPC_40_6")){
-//          for (String analyteName : analyteSequence.get(className)){
-//            Hashtable<String,QuantVO> analyteQuant = classQuant.get(analyteName);
+          for (String analyteName : analyteSequence.get(className)){
+            Hashtable<String,QuantVO> analyteQuant = classQuant.get(analyteName);
+            System.out.println(analyteName);
+            //System.out.println(analyteQuant.keySet());
 //            if (analyteName.equalsIgnoreCase("SONPC")||analyteName.equalsIgnoreCase("7-OH-10O-4,8decendienoyl")){
 //              System.out.println(analyteName);
 //              QuantVO vo = analyteQuant.values().iterator().next();
 //              System.out.println(vo.getAnalyteFormula());
 //            }
-//          }  
+          }  
 //        }
-//      }  
+      }  
     }catch(Exception ex){
       ex.printStackTrace();
     }
@@ -14045,7 +14059,7 @@ public void testTabFile() throws Exception {
   }
   
   private void readRttFile(){
-    String rttFilePath = "D:\\Kristaps\\20171129\\TG quant NIST\\MCC007_Lipid01_NIST1_20171124_negative.chrom\\MCC007_Lipid01_NIST1_20171124_negative.rtt";
+    String rttFilePath = "D:\\shotgun\\20180206\\050_Shotgun1_IS_negative.chrom\\050_Shotgun1_IS_negative.rtt";
     DataInputStream inStream = null;
     try{
       inStream = new DataInputStream(new FileInputStream(rttFilePath));
@@ -14241,6 +14255,179 @@ public void testTabFile() throws Exception {
     } catch (IOException e) {
       System.out.println(
           "Caught an IO Exception: " + e.getMessage());
+    }
+  }
+  
+  private void evaluatePrmData(){
+    String chromFile = "D:\\Alex\\PRM\\PRM_Beispiel__006_Platelets_PRM_CerOH_HexCerOH.chrom";
+//    String quantFile = "D:\\Christer\\20170531\\target_lists_alex";
+//    boolean positiveIonMode = true;
+    float mz = 716.522481811612f;
+    int charge = 1;
+    int msLevel = 2;
+    String className = "PE";
+    String modName = "H";
+    String analyteName = "34:2";
+    String formula = "H75 P1 O8 N1 C39";
+    try {
+      String[] chromPaths = StringUtils.getChromFilePaths(chromFile);
+
+      LipidomicsAnalyzer lAnalyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
+      setStandardParameters(lAnalyzer);
+      Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> results = lAnalyzer.processPrmData(mz, charge, msLevel, className, modName, analyteName, formula);
+      for (Integer hitNumber : results.keySet()){
+        for (Integer isoNr: results.get(hitNumber).keySet()){
+          for (CgProbe probe : results.get(hitNumber).get(isoNr)){
+            System.out.println("! "+probe.Peak/60f+" "+probe.Area);
+            System.out.println(probe.LowerValley/60f+"-"+probe.UpperValley/60f);
+          }
+        }
+      }
+      
+      
+    } catch (Exception ex){
+      ex.printStackTrace();
+    }
+  }
+  private void batchQuantByCommandLine() {
+    //TODO: this should be input parameters
+    String rawDirString = "/home/juergen/data/Orbitrap-CID/-50";
+    String quantDirString = "/home/juergen/data/Orbitrap-CID/-50/massList";
+    int amountOfIsotopes = 2;
+    int isotopesMustMatch = 1;
+    float minusTimeTol = 0f;
+    float plusTimeTol = 0f;
+    boolean searchUnknownBatchTime = true;
+    float cutoff = 0.0001f;
+    float rtShift = 0f;
+    int nrProcessors = 11;
+    
+    BatchQuantificationTableModel batchQuantTableModel = new BatchQuantificationTableModel();
+	BatchQuantificationTable batchQuantTable = new BatchQuantificationTable(batchQuantTableModel);
+    
+    //TODO: these are visual components that are not required for command line
+    JLabel quantifyingBatchLabel = new JLabel("Quantifying");
+    JProgressBar progressBatchBar = new JProgressBar();
+    progressBatchBar.setMaximum(100);
+
+    
+    Vector<File> rawFiles = new Vector<File>();
+    Vector<File> quantFiles = new Vector<File>();
+    if (rawDirString!=null && rawDirString.length()>0 && quantDirString!=null&&quantDirString.length()>0){
+      File rawDir = new File(rawDirString );
+      File quantDir = new File(quantDirString);
+      if (rawDir.exists()&&rawDir.isDirectory()&&quantDir.exists()&&quantDir.isDirectory()){
+        File[] rawFileCandidates = rawDir.listFiles();
+        Hashtable<String,Vector<File>> avoidDuplication = new Hashtable<String,Vector<File>>();
+        boolean mzXMLOrChromPresent = false;
+        for (int i=0; i!=rawFileCandidates.length;i++){
+          if (rawFileCandidates[i].isFile()){
+            String[] fileNameAndSuffix = StaticUtils.extractFileNameAndSuffix(rawFileCandidates[i].getAbsolutePath()); 
+            String suffix = fileNameAndSuffix[1];
+            String fileName = fileNameAndSuffix[0];
+            if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("raw")||suffix.equalsIgnoreCase("chrom")||suffix.equalsIgnoreCase("wiff")){
+              if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("chrom")) mzXMLOrChromPresent = true;
+              Vector<File> theFiles = new Vector<File>();
+              if (avoidDuplication.containsKey(fileName)){
+                
+                theFiles = avoidDuplication.get(fileName);
+                }
+                theFiles.add(rawFileCandidates[i]);
+                avoidDuplication.put(fileName, theFiles);
+              }
+            }
+            if (rawFileCandidates[i].isDirectory()){
+              String[] fileNameAndSuffix = StaticUtils.extractFileNameAndSuffix(rawFileCandidates[i].getAbsolutePath()); 
+              String suffix = fileNameAndSuffix[1];
+              String fileName = fileNameAndSuffix[0];
+              if (suffix.equalsIgnoreCase("raw")|| suffix.equalsIgnoreCase("d") ||suffix.equalsIgnoreCase("chrom")){
+                if (suffix.equalsIgnoreCase("chrom")) mzXMLOrChromPresent = true;
+                Vector<File> theFiles = new Vector<File>();
+                if (avoidDuplication.containsKey(fileName)){
+                  theFiles = avoidDuplication.get(fileName);
+                }
+                theFiles.add(rawFileCandidates[i]);
+                avoidDuplication.put(fileName, theFiles);
+              }
+            }
+          }
+          for (String key : avoidDuplication.keySet()){
+            Vector<File> theFiles = avoidDuplication.get(key);
+            if (theFiles.size()==1){
+              String suffix = StaticUtils.extractFileNameAndSuffix(theFiles.get(0).getAbsolutePath())[1];
+              if (!mzXMLOrChromPresent || !suffix.equalsIgnoreCase("wiff"))
+                rawFiles.add(theFiles.get(0));
+            }else{
+              int selectedIndex = -1;
+              for (int i=0; i!=theFiles.size();i++){
+                File file = theFiles.get(i);
+                String suffix = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf(".")+1);
+                if (mzXMLOrChromPresent && suffix.equalsIgnoreCase("wiff")) continue;
+                if (suffix.equalsIgnoreCase("chrom")){
+                  selectedIndex = i;
+                }
+              }
+              if (selectedIndex>-1){
+                rawFiles.add(theFiles.get(selectedIndex));
+              }else{
+                for (int i=0; i!=theFiles.size();i++){
+                  File file = theFiles.get(i);
+                  String suffix = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf(".")+1);
+                  if (mzXMLOrChromPresent && suffix.equalsIgnoreCase("wiff")) continue;
+                  if (suffix.equalsIgnoreCase("mzXML")){
+                    rawFiles.add(theFiles.get(i));
+                  }
+                }  
+              }
+            }
+          }
+          File[] quantificationFileCandidates = quantDir.listFiles();
+          boolean containsTxtFiles = false;
+          for (int i=0; i!=quantificationFileCandidates.length;i++){
+            String suffix = quantificationFileCandidates[i].getAbsolutePath().substring(quantificationFileCandidates[i].getAbsolutePath().lastIndexOf(".")+1);
+            if (suffix.equalsIgnoreCase("xls")||suffix.equalsIgnoreCase("xlsx")){
+              quantFiles.add(quantificationFileCandidates[i]);
+            } else if (suffix.equalsIgnoreCase("txt"))
+              containsTxtFiles = true;
+          }
+          if (Settings.useAlex() && containsTxtFiles)
+            quantFiles.add(quantDir);
+          Vector<RawQuantificationPairVO> pairs = new Vector<RawQuantificationPairVO>();
+          
+          if (rawFiles.size()>0 && quantFiles.size()>0 && (pairs = LipidDataAnalyzer.generateQuantificationPairVOs(rawFiles,quantFiles)).size()>0){
+            boolean ionMode = false;
+//            if (this.ionModeBatch_!=null && ((String)ionModeBatch_.getSelectedItem()).equalsIgnoreCase("+"))
+//              ionMode = true;
+            batchQuantTableModel.clearFiles();
+            batchQuantTableModel.addFiles(pairs);
+            progressBatchBar.setValue(0);
+            BatchQuantThread batchQuantThread_ = new BatchQuantThread(batchQuantTable, batchQuantTableModel,progressBatchBar, 
+              quantifyingBatchLabel, minusTimeTol,plusTimeTol,amountOfIsotopes,isotopesMustMatch,searchUnknownBatchTime, cutoff, 
+                rtShift, nrProcessors,ionMode);
+            batchQuantThread_.start();
+          }else{
+            if (rawFiles.size()==0){
+              @SuppressWarnings("unused")
+              WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "In the specified raw directory are no quantifyable files");
+            }
+            if (quantFiles.size()==0){
+              @SuppressWarnings("unused")
+              WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "In the specified quant directory are no quantifyable files");
+            }
+            if (rawFiles.size()>0 && quantFiles.size()>0)
+              new WarningMessage(new JFrame(), "Warning", "In the specified directories are no quantifyable raw/quant pairs");
+          }
+        }else{
+          if (!rawDir.exists()||!rawDir.isDirectory()){
+            @SuppressWarnings("unused")
+            WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The raw directory does not exist");
+          }
+          if (!quantDir.exists()||!quantDir.isDirectory()){
+            @SuppressWarnings("unused")
+            WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The quantification directory does not exist");
+          }
+        }
+
     }
   }
   
