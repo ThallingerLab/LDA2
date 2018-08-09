@@ -130,12 +130,14 @@ public class RdbOutputWriter
     int highestIsotopeNumber = 0;
     int highestMSLevel = 1;
     
+    boolean foundAlexQuantObjects = false;
     //checking if the Alex123 target list specific columns can be filled out
     if (quantObjects!=null){
       for (Hashtable<String,Hashtable<String,QuantVO>> quantsOfClass : quantObjects.values()){
         for (Hashtable<String,QuantVO> quantsOfAnalyte : quantsOfClass.values()){
           for (QuantVO quant : quantsOfAnalyte.values()){
             if (!(quant instanceof TargetlistEntry)) continue;
+            foundAlexQuantObjects = true;
             TargetlistEntry entry = (TargetlistEntry) quant;
             if (entry.getDetector()!=null) detectorColumn = true;
             if (entry.getPolarity()!=null) polarityColumn = true;
@@ -156,12 +158,13 @@ public class RdbOutputWriter
 //        if (detectorColumn && polarityColumn && lipidIdColumn && lipidCategoryColumn && conflictsColumn && ohIndexColumn && containsMSnInformation)
 //          break;
       }
-    // get the highest MS-level
-    }else{
+    }
+    // get the highest MS-level    
+    if (!foundAlexQuantObjects){
       for (QuantificationResult result : results){
         for (String className : result.getIdentifications().keySet()){
           for (LipidParameterSet set : result.getIdentifications().get(className)){
-            if (!(set instanceof LipidomicsMSnSet) || quantObjects!=null) continue;
+            if (!(set instanceof LipidomicsMSnSet) /*|| quantObjects!=null*/) continue;
             LipidomicsMSnSet msn = (LipidomicsMSnSet)set;
             for (CgProbe headFrag : msn.getHeadGroupFragments().values()){
               if (headFrag.getMsLevel()>highestMSLevel) highestMSLevel = headFrag.getMsLevel();
