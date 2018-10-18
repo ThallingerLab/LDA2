@@ -328,12 +328,19 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JPanel quantifyingBatchPanel_;  
   private JTextField displayMinusTolerance_;
   private JTextField displayPlusTolerance_;
+  /** text field to set a permanent m/z start value for the 3D viewer*/
+  private JTextField displayMzStart_;
+  /** text field to set a permanent m/z stop value for the 3D viewer*/
+  private JTextField displayMzStop_;
   private JTextField displayRtStart_;
   private JTextField displayRtStop_;
 
   private JCheckBox show2D_;
   /** show the names in MSn style in the display results or not*/
   private JCheckBox showMSnNames_;
+  
+  /** this check box decides whether a static (locked) range is used, or it is adapted to the selected analyte*/
+  private JCheckBox lockMzRange_;
 
   private Lipidomics2DPainter l2DPainter_;
   private Lipidomics2DPainter spectrumPainter_;
@@ -373,6 +380,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JLabel spinnerLabel_;
   private JLabel spinnerBatchLabel_;
   private JPanel l2dPanel_;
+  /** layout for the 2D-panel - used to remove the Component at CENTER position*/
+  private BorderLayout l2dPanelLayout_;
   private JPanel spectrumPanel_;
   private boolean readFromRaw_;
   
@@ -441,6 +450,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   
   private final static String CHANGE_SEPARATE_RT_STATUS = "rtActivateTextBox";
   
+  /** action for setting a locked m/z range for the 3D viewer*/
+  private final static String CHANGE_LOCK_MZ_RANGE = "lockMzRange";
+  /** the displayed label next to check box for activating the lock mass range*/
+  private final static String DISPLAY_LOCK_MZ_TEXT = "Lock m/z range ";
+  
   /** Global finalButtonSection to delete it in the makeDisplayRemoveOperations */
   private JPanel finalButtonSection_;
   
@@ -464,6 +478,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private ExportSettingsPanel exportSettings_ = null;
   /** joined panel for exporting things from group heat maps*/
   private ExportSettingsPanel exportSettingsGroup_ = null;
+  /** the lock range must be updated if true*/
+  private boolean lockRangeUpdateRequired_ = false;
 
   
   public LipidDataAnalyzer(){
@@ -538,6 +554,38 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 //    diplayTolUnit1.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
     displayTolerancePanel.add(diplayTolUnit2,new GridBagConstraints(4, 1, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+    
+    JPanel lockMxSelectionPanel = new JPanel();
+    lockMzRange_ = new JCheckBox();
+    lockMzRange_.setFont(SMALL_FONT);
+    lockMzRange_.addItemListener(new LipidomicsItemListener(CHANGE_LOCK_MZ_RANGE));
+    lockMzRange_.setToolTipText(TooltipTexts.DISPLAY_LOCK_MZ);
+    lockMxSelectionPanel.add(lockMzRange_);
+    JLabel lockMz = new JLabel(DISPLAY_LOCK_MZ_TEXT);
+    lockMz.setToolTipText(TooltipTexts.DISPLAY_LOCK_MZ);
+    lockMz.setFont(SMALL_FONT);
+    lockMxSelectionPanel.add(lockMz);
+    displayMzStart_ = new JTextField(4);
+    displayMzStart_.setFont(SMALL_FONT);
+    displayMzStart_.setText("");
+    displayMzStart_.setHorizontalAlignment(JTextField.RIGHT);
+    displayMzStart_.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
+    displayMzStart_.setInputVerifier(new DoubleVerifier());
+    lockMxSelectionPanel.add(displayMzStart_);
+    displayMzStart_.setEnabled(false);
+    JLabel mzRangeSign = new JLabel("-");
+    lockMxSelectionPanel.add(mzRangeSign);
+    displayMzStop_ = new JTextField(4);
+    displayMzStop_.setFont(SMALL_FONT);
+    displayMzStop_.setText("");
+    displayMzStop_.setHorizontalAlignment(JTextField.RIGHT);
+    displayMzStop_.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
+    displayMzStop_.setInputVerifier(new DoubleVerifier());
+    displayMzStop_.setEnabled(false);
+    lockMxSelectionPanel.add(displayMzStop_);
+    
+    displayTolerancePanel.add(lockMxSelectionPanel ,new GridBagConstraints(0, 2, 6, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
 
     
     JButton quantTolUpdate = new JButton("Update");
@@ -668,7 +716,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   
   private void initL2dPanel(){
     l2dPanel_ = new JPanel();
-    l2dPanel_.setLayout(new BorderLayout());
+    l2dPanelLayout_ = new BorderLayout();
+    l2dPanel_.setLayout(l2dPanelLayout_);
     JPanel l2dMenu = new JPanel();
     l2dMenu.setPreferredSize(new Dimension(95,50));
     l2dPanel_.add(l2dMenu,BorderLayout.EAST);
@@ -2709,6 +2758,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
             this.updateSheetSelectionList();
             this.params_ = null;
             RuleDefinitionInterface.clearCacheDir();
+            lockRangeUpdateRequired_ = true;
           }
           catch (CgException e) {
             @SuppressWarnings("unused")
@@ -2739,12 +2789,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           }else
             this.initANewViewer(params_,getAllProbesFromParams(params_,null));
         }else{
-        if (this.l2DPainter_!=null)
-          this.initANewViewer(params_,l2DPainter_.getAllSelectedProbes());
-        else
-          this.initANewViewer(params_);
+          if (this.l2DPainter_!=null)
+            this.initANewViewer(params_,l2DPainter_.getAllSelectedProbes());
+          else
+            this.initANewViewer(params_);
         }
+      } else if (this.lockMzRange_.isSelected()){
+        this.currentSelectedSheet_ =  (String)selectedSheet_.getSelectedItem();
+        initANewViewer(null);
       }
+      lockRangeUpdateRequired_ = false;
     }
     if (command.equalsIgnoreCase("ZoomIn")||command.equalsIgnoreCase("ZoomMzIn")){
       float f1 = -1;
@@ -3452,13 +3506,28 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     try {
       displaysMs2_ = false;
       int charge = 1;
-      if (params.ProbeCount()>0)
-        charge = params.Probe(0).Charge;
-      else if (params.getCharge()!=null&&params.getCharge()>1)
-        charge = params.getCharge();
-      float currentIsotopicMass = params.Mz[0]+(LipidomicsConstants.getNeutronMass()*Integer.parseInt((String)this.isotope_.getSelectedItem())/(float)charge);
-      float startFloat = currentIsotopicMass-Float.parseFloat(this.displayMinusTolerance_.getText());
-      float stopFloat = currentIsotopicMass+Float.parseFloat(this.displayPlusTolerance_.getText());
+      float startFloat;
+      float stopFloat;
+      float currentIsotopicMass = 0;
+      if (params!=null) {
+        if (params.ProbeCount()>0)
+          charge = params.Probe(0).Charge;
+        else if (params.getCharge()!=null&&params.getCharge()>1)
+          charge = params.getCharge();
+        currentIsotopicMass = params.Mz[0]+(LipidomicsConstants.getNeutronMass()*Integer.parseInt((String)this.isotope_.getSelectedItem())/(float)charge);
+      }
+      
+      if (this.lockMzRange_.isSelected()) {
+        startFloat = Float.parseFloat(displayMzStart_.getText());
+        stopFloat = Float.parseFloat(displayMzStop_.getText());
+        if (startFloat>stopFloat) {
+          new WarningMessage(new JFrame(), "Error", "The stop value of the \""+DISPLAY_LOCK_MZ_TEXT+"\" cannot be smaller than the start m/z value");
+          return;
+        }
+      } else {
+        startFloat = currentIsotopicMass-Float.parseFloat(this.displayMinusTolerance_.getText());
+        stopFloat = currentIsotopicMass+Float.parseFloat(this.displayPlusTolerance_.getText());
+      }
       float startRt = 0f;
       if (this.displayRtStart_.getText()!=null && this.displayRtStart_.getText().length()>0)
         startRt = Float.parseFloat(this.displayRtStart_.getText());
@@ -3467,7 +3536,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       if (this.displayRtStop_.getText()!=null && this.displayRtStop_.getText().length()>0)
         stopRt = Float.parseFloat(this.displayRtStop_.getText());
       stopRt = 60f*stopRt;
-      
       
       String[] rawLines = reader_.getRawLines(startFloat, stopFloat, result_.getMsLevels().get(currentSelectedSheet_));
       Hashtable<Integer,Float> rtTimes = reader_.getRetentionTimesOriginal();
@@ -3478,44 +3546,62 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       viewer.setViewerSettings(true, true, true,LipidomicsConstants.getThreeDViewerDefaultMZResolution(),LipidomicsConstants.getThreeDViewerDefaultTimeResolution());
       //writeDisplayDataToExcelFormat(rawLines, rtTimes, startFloat,stopFloat);
       
-      Vector<Vector<CgProbe>> allProbes = getAllProbesFromParams(params,previouslyselectedProbes);
-      Vector<CgProbe> storedProbes = allProbes.get(0);
-      Vector<CgProbe> selectedProbes = allProbes.get(1);
-      viewer.setPaintableProbes(allProbes);
-      viewer.setCurrent2DMzRange(currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand);
+      Vector<CgProbe> storedProbes = new Vector<CgProbe>();
+      Vector<CgProbe> selectedProbes = new Vector<CgProbe>();
+      if (params!=null) {
+        Vector<Vector<CgProbe>> allProbes = getAllProbesFromParams(params,previouslyselectedProbes);
+        storedProbes = allProbes.get(0);
+        selectedProbes = allProbes.get(1);
+        viewer.setPaintableProbes(allProbes);
+        viewer.setCurrent2DMzRange(currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand);
+      }
       System.out.println("startFloat: "+startFloat);
       System.out.println("stopFloat: "+stopFloat);
       viewer.init();
       viewer.removeSaveLipidomicsSettings();
       
       if (this.show2D_.isSelected()){
-        Lipidomics2DPainter l2DPainter = new Lipidomics2DPainter(analyzer_,rawLines, rtTimes, reader_.getRetentionTimes(),
-            startFloat,stopFloat,reader_.getMultiplicationFactorForInt_()/reader_.getLowestResolution_(),params_.LowerMzBand*2,this,
+        java.awt.Panel l2DPainterPanel = new java.awt.Panel();
+        Lipidomics2DPainter l2DPainter = null;
+        if (params!=null){
+          String[] rawLines2D = rawLines;
+          float startFloat2D = startFloat;
+          float stopFloat2D = stopFloat;
+          if (this.lockMzRange_.isSelected() && ((currentIsotopicMass-2*params.LowerMzBand)<startFloat || stopFloat<(currentIsotopicMass+2*params.UpperMzBand))){
+            System.out.println("I change the raw lines 2D: "+currentIsotopicMass);
+            startFloat2D = currentIsotopicMass-2*params.LowerMzBand;
+            stopFloat2D = currentIsotopicMass+2*params.UpperMzBand;
+            rawLines2D = reader_.getRawLines(startFloat2D, stopFloat2D, result_.getMsLevels().get(currentSelectedSheet_));
+          }
+          
+          l2DPainter = new Lipidomics2DPainter(analyzer_,rawLines2D, rtTimes, reader_.getRetentionTimes(),
+            startFloat2D,stopFloat2D,reader_.getMultiplicationFactorForInt_()/reader_.getLowestResolution_(),params_.LowerMzBand*2,this,
             MSMapViewer.DISPLAY_TIME_MINUTES,currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand, false,
             storedProbes,selectedProbes,Integer.parseInt((String)this.isotope_.getSelectedItem()),charge,result_.getMsLevels().get(currentSelectedSheet_),
             shotgunIsDisplayed_);
-        l2DPainter.preChromatogramExtraxtion(currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand);
+          l2DPainter.preChromatogramExtraxtion(currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand);
+          l2DPainterPanel = l2DPainter;
+        }
         this.makeDisplayRemoveOperations();
         this.viewer_ = viewer;
 
         majorSplitPane_ = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         majorSplitPane_.setDividerSize(1);
         majorSplitPane_.setTopComponent(viewer_);
-        l2DPainter_ = l2DPainter;
-        l2dPanel_.add(l2DPainter,BorderLayout.CENTER);
+        l2dPanel_.add(l2DPainterPanel,BorderLayout.CENTER);
         majorSplitPane_.setBottomComponent(this.l2dPanel_);
-        l2DPainter.setBackground(Color.WHITE);
+        l2DPainterPanel.setBackground(Color.WHITE);
       
         this.displayPanel_.add(majorSplitPane_,BorderLayout.CENTER);
         this.displayPanel_.validate();
         majorSplitPane_.setDividerLocation(0.75);
       
-
-        l2DPainter_.draw2DDiagram(currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand, m_chkRaw_.isSelected());
-
-      //      l2DPainter_.paint(l2DPainter_.getGraphics());
+        if (l2DPainter!=null) {
+          l2DPainter_ = l2DPainter;
+          l2DPainter_.draw2DDiagram(currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand, m_chkRaw_.isSelected());
+        }
         majorSplitPane_.repaint();
-        l2DPainter_.repaint();
+        l2DPainterPanel.repaint();
       }else{
         this.makeDisplayRemoveOperations();
         this.viewer_ = viewer;
@@ -3547,17 +3633,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       this.displayPanel_.remove(viewer_);
       this.viewer_ = null;
     }
-    if (l2DPainter_!=null && remove2DPainter){
-      l2DPainter_.getGraphics().dispose();
-      l2dPanel_.remove(l2DPainter_);
-      l2DPainter_ = null;
-    }
-    if (spectrumPainter_!=null){
-      spectrumPainter_.getGraphics().dispose();
-      if (finalButtonSection_!=null) spectrumPanel_.remove(finalButtonSection_);
-      spectrumPanel_.remove(spectrumPainter_);
-      spectrumPainter_ = null;
-    }
+    if (remove2DPainter)
+      remove2DPainter();
     if (topSplitPane_!=null){
       topSplitPane_.removeAll();
       topSplitPane_.getGraphics().dispose();
@@ -3573,6 +3650,25 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     if(msnUserInterfaceObject_ != null)
       msnUserInterfaceObject_.deleteDetailsBoxes();
     System.gc();
+  }
+
+
+  /**
+   * removes graphics methods for displaying the 2D chromatogram/spectrum viewer
+   */
+  private void remove2DPainter() {
+    if (l2DPainter_!=null){
+      if (l2DPainter_.getGraphics()!=null)
+        l2DPainter_.getGraphics().dispose();
+      l2dPanel_.remove(l2DPainter_);
+      l2DPainter_ = null;
+    }
+    if (spectrumPainter_!=null){
+      spectrumPainter_.getGraphics().dispose();
+      if (finalButtonSection_!=null) spectrumPanel_.remove(finalButtonSection_);
+      spectrumPanel_.remove(spectrumPainter_);
+      spectrumPainter_ = null;
+    }
   }
   
   
@@ -4011,12 +4107,19 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 //    }   
     if (command.equalsIgnoreCase("ChangeIsotope") && !this.displaysMs2_){
       if (e.getStateChange()==ItemEvent.SELECTED){
-        if (this.params_!=null && l2DPainter_!=null){     
-          this.initANewViewer(params_,this.l2DPainter_.getAllSelectedProbes());
+        if (this.params_!=null && l2DPainter_!=null){
+          if (!this.lockMzRange_.isSelected() || this.viewer_==null || lockRangeUpdateRequired_){
+            this.initANewViewer(params_,this.l2DPainter_.getAllSelectedProbes());
+            lockRangeUpdateRequired_ = false;
+          }else {
+            updateViewForLockMz(params_);
+          }        
         }
       }
     } else if (command.equalsIgnoreCase("showMSnNames")){
       updateResultListSelectionTable();
+    } else if (command.equalsIgnoreCase(CHANGE_LOCK_MZ_RANGE)) {
+      changeLockMzRange();
     }
     
   }
@@ -5073,6 +5176,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   }
 
   public boolean showMs2(LipidParameterSet set, boolean refreshL2dPainter){
+    lockMzRange_.setSelected(false);
     if (refreshL2dPainter)
       ms1ProbesWhileMs2Display_ = getAllProbesFromParams(set,null);
     else
@@ -6074,7 +6178,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
    * @throws CgException
    */
   public void updateSpectra(LipidParameterSet params, boolean newPrec) throws CgException
-  {  
+  {
+    lockMzRange_.setSelected(false);
     if(newPrec ==  true){
       //PAINTS THE NEW SPEKTRA WITH THE LPS
       float m2dGain = spectrumPainter_.getM2dGain();   
@@ -6599,13 +6704,88 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     if (this.displaysMs2_ && params instanceof LipidomicsMSnSet){
       showMS2 = this.showMs2(params,true);
     }else{
-      this.initANewViewer(params);
+      if (!this.lockMzRange_.isSelected() || this.viewer_==null || lockRangeUpdateRequired_){
+        this.initANewViewer(params);
+        lockRangeUpdateRequired_ = false;
+      }else {
+        updateViewForLockMz(params);
+      }        
     }
     return showMS2;
   }
   
+  /**
+   * this updates the coloring in the 3D viewer, and the 2D chromatogram, when a locked m/z range is used 
+   * @param params the selected LipidParameterSet - can be null
+   */
+  private void updateViewForLockMz(LipidParameterSet params){
+    Vector<Vector<CgProbe>> allProbes = getAllProbesFromParams(params,null);
+    viewer_.setPaintableProbes(allProbes);
+    Vector<CgProbe> storedProbes = allProbes.get(0);
+    Vector<CgProbe> selectedProbes = allProbes.get(1);
+    this.viewer_.setTheShowSelectedWasOn(false);   
+    if (params!=null && this.show2D_.isSelected()) {
+      int charge = 1;
+      if (params.ProbeCount()>0)
+        charge = params.Probe(0).Charge;
+      else if (params.getCharge()!=null&&params.getCharge()>1)
+        charge = params.getCharge();
+      float currentIsotopicMass = params.Mz[0]+(LipidomicsConstants.getNeutronMass()*Integer.parseInt((String)this.isotope_.getSelectedItem())/(float)charge);
+      viewer_.setCurrent2DMzRange(currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand);
+      float startFloat = currentIsotopicMass-params.LowerMzBand*2;
+      float stopFloat = currentIsotopicMass+params.LowerMzBand*2;
+      try {
+        String[] rawLines = reader_.getRawLines(startFloat, stopFloat, result_.getMsLevels().get(currentSelectedSheet_));
+        Hashtable<Integer,Float> rtTimes = reader_.getRetentionTimes();
+        Lipidomics2DPainter l2DPainter = new Lipidomics2DPainter(analyzer_,rawLines, rtTimes, reader_.getRetentionTimes(),
+            startFloat,stopFloat,reader_.getMultiplicationFactorForInt_()/reader_.getLowestResolution_(),params_.LowerMzBand*2,this,
+            MSMapViewer.DISPLAY_TIME_MINUTES,currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand, false,
+            storedProbes,selectedProbes,Integer.parseInt((String)this.isotope_.getSelectedItem()),charge,result_.getMsLevels().get(currentSelectedSheet_),
+            shotgunIsDisplayed_);
+        l2DPainter.preChromatogramExtraxtion(currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand);
+        remove2DPainter();
+        if (l2dPanelLayout_.getLayoutComponent(BorderLayout.CENTER)!=null && !(l2dPanelLayout_.getLayoutComponent(BorderLayout.CENTER) instanceof Lipidomics2DPainter))
+          l2dPanel_.remove(l2dPanelLayout_.getLayoutComponent(BorderLayout.CENTER));
+        l2DPainter_ = l2DPainter;
+        l2DPainter_.setBackground(Color.WHITE);
+        l2dPanel_.add(l2DPainter,BorderLayout.CENTER);
+        l2dPanel_.repaint();
+        l2dPanel_.invalidate();
+        l2dPanel_.updateUI();
+//        this.displayPanel_.invalidate();
+//        this.majorSplitPane_.repaint();
+//        System.out.println("111111111111");
+
+      }
+      catch (CgException e) {
+        new WarningMessage(new JFrame(), "ERROR", e.getMessage());
+        e.printStackTrace();
+      }
+
+    }
+    this.viewer_.repaintColors();
+  }
+  
   public boolean isMS2Showing(){
     return this.displaysMs2_;
+  }
+  
+  /**
+   * switches between locked and dynamic m/z range
+   */
+  private void changeLockMzRange() {
+    boolean selected = lockMzRange_.isSelected();
+    displayMinusTolerance_.setEnabled(!selected);
+    displayPlusTolerance_.setEnabled(!selected);
+    displayMzStart_.setEnabled(selected);
+    displayMzStop_.setEnabled(selected);
+    if (lockMzRange_.isSelected() && params_!=null && (displayMzStart_.getText()==null || displayMzStart_.getText().length()==0)) {
+      float currentIsotopicMass = params_.Mz[0];
+      displayMzStart_.setText(Calculator.FormatNumberToString((double)(currentIsotopicMass-Float.parseFloat(this.displayMinusTolerance_.getText())),2d));
+      displayMzStop_.setText(Calculator.FormatNumberToString((double)(currentIsotopicMass+Float.parseFloat(this.displayPlusTolerance_.getText())),2d));
+    }
+    if (lockMzRange_.isSelected())
+      lockRangeUpdateRequired_ = true;
   }
 }
   

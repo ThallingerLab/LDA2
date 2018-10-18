@@ -290,6 +290,7 @@ public class TooltipTexts
   public final static String DISPLAY_SHOW_2D = "<html>Should the 2D viewer be displayed or not?<br/>" +
   		"The 2D viewer allows to change the quantitation manually. The 3D viewer is just for displaying purposes</html>";
   public final static String DISPLAY_SHOW_MSN = "<html>Should the names be displayed using MSn evidence?</html>";
+  public final static String DISPLAY_LOCK_MZ = "<html>This setting locks the 3D viewer to a certain m/z range</html>";
   public final static String DISPLAY_RT_START = "<html>Display range for the 3D viewer in minutes.<br/>" +
   "This defines the start retention time.</html>";
   public final static String DISPLAY_RT_STOP = "<html>Display range for the 3D viewer in minutes.<br/>" +

@@ -672,7 +672,9 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
       chrom.Value[i][1] = 0;
     }
     if (dataStrings_!=null){
-      for (int i=startIndex; i!=stopIndex;i++){
+      if (startIndex<0)
+        startIndex=0;
+      for (int i=startIndex; i<stopIndex && i!=dataStrings_.length; i++){
         if (dataStrings_[i]!=null&&dataStrings_[i].length()>0){
           ByteBuffer buffer = ByteBuffer.wrap(Base64.decode(dataStrings_[i]));
           while (buffer.hasRemaining()){
