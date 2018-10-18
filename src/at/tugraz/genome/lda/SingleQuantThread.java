@@ -693,7 +693,7 @@ public class SingleQuantThread extends Thread
    * @return all of the hits, which include the potentially united results 
    * @throws CgException
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({ "unchecked", "unlikely-arg-type" })
   private Hashtable<String,LipidParameterSet> uniteHits(LipidomicsAnalyzer analyzer, Hashtable<String,LipidParameterSet> hits, float unionTime,
       QuantVO quantSet,boolean ignorePositionalEvidence) throws CgException{
     List<StringFloatVO> rts = new ArrayList<StringFloatVO>();

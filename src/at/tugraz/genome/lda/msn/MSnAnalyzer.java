@@ -1864,6 +1864,7 @@ public class MSnAnalyzer
    * @return the split peak intensities if possible
    * @throws CgException 
    */
+  @SuppressWarnings("unlikely-arg-type")
   public static Vector<SharedPeakContributionVO> splitTwoIsobaricPeaks(LipidomicsAnalyzer analyzer, float start, float stop, float startRelative, float stopRelative, SharedMS1PeakVO shared, int upperMsLevel) throws CgException{
     // this is for the preparation of the data hashes for processing
     Vector<SharedPeakContributionVO> splitted = new Vector<SharedPeakContributionVO>();
