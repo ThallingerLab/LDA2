@@ -3635,6 +3635,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     }
     if (remove2DPainter)
       remove2DPainter();
+    if (spectrumPainter_!=null){
+      spectrumPainter_.getGraphics().dispose();
+      if (finalButtonSection_!=null) spectrumPanel_.remove(finalButtonSection_);
+      spectrumPanel_.remove(spectrumPainter_);
+      spectrumPainter_ = null;
+    }
     if (topSplitPane_!=null){
       topSplitPane_.removeAll();
       topSplitPane_.getGraphics().dispose();
@@ -3662,12 +3668,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         l2DPainter_.getGraphics().dispose();
       l2dPanel_.remove(l2DPainter_);
       l2DPainter_ = null;
-    }
-    if (spectrumPainter_!=null){
-      spectrumPainter_.getGraphics().dispose();
-      if (finalButtonSection_!=null) spectrumPanel_.remove(finalButtonSection_);
-      spectrumPanel_.remove(spectrumPainter_);
-      spectrumPainter_ = null;
     }
   }
   
