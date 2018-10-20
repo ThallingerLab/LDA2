@@ -85,6 +85,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 
+import uk.ac.ebi.pride.jmztab2.utils.errors.MZTabErrorType.Level;
+
 import org.apache.batik.dom.GenericDOMImplementation;
 import org.apache.batik.svggen.SVGGraphics2D;
 import org.w3c.dom.DOMImplementation;
@@ -174,6 +176,7 @@ import com.sun.j3d.utils.applet.MainFrame;
 
 import de.isas.mztab2.io.MzTabValidatingWriter;
 import de.isas.mztab2.io.MzTabWriter;
+import de.isas.mztab2.io.MzTabWriterDefaults;
 import de.isas.mztab2.model.Assay;
 import de.isas.mztab2.model.CV;
 import de.isas.mztab2.model.Contact;
@@ -5526,6 +5529,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       int evidenceId = 1;
       int evidenceGroupingId = 1;
       short polarity;
+      boolean containsSMESection = false;
 	      for (String molGroup:this.heatmaps_.keySet()) {
 	        Hashtable<String,String> selectedMolHash = new Hashtable<String,String>();
 	        HeatMapDrawing heatmap = this.heatmaps_.get(molGroup);
@@ -5569,6 +5573,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	            }
 	            for (SmallMoleculeEvidence evidence : molecule.getEvidence()){
 	              mzTabFile.addSmallMoleculeEvidenceItem(evidence);
+	              if (!containsSMESection)
+	                containsSMESection = true;
 	            }
 	            for (int i=0; i!=analysisModule_.getExpNamesInSequence().size(); i++) {
 	              String exp = analysisModule_.getExpNamesInSequence().get(i);
@@ -5597,7 +5603,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	      }
       
 	      //BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(exportFile));
-	      MzTabWriter<List<ValidationMessage>> writer = new MzTabValidatingWriter();
+	      MzTabWriter<List<ValidationMessage>> writer = null;
+	      if (containsSMESection)
+	        writer = new MzTabValidatingWriter();
+	      else
+	        writer = new MzTabValidatingWriter(new MzTabValidatingWriter.WriteAndParseValidator(System.out, Level.Warn, 100),new MzTabWriterDefaults(), true);
+
 	      OutputStreamWriter outwriter = new OutputStreamWriter(new FileOutputStream(exportFile.getAbsolutePath()), StandardCharsets.UTF_8);
 	      writer.write(outwriter, mzTabFile);
 	      outwriter.close();
