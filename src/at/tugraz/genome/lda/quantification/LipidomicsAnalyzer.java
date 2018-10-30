@@ -5015,20 +5015,27 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
    * @return calculated value
    */
   private static float calculateShotgunIntensity(CgChromatogram cgChrom, int shotgunType){
-    float intensity = 0f;
-    float[] intValues = new float[cgChrom.Value.length];
-////    Vector<Float> ints = new Vector<Float>();
+    //build the values of interest
+    Vector<Float> ints = new Vector<Float>();
     float sum = 0f;
     for (int i=0; i!=cgChrom.Value.length; i++){
-      intValues[i] = cgChrom.Value[i][1];
-      sum += intValues[i];
-////      if (cgChrom.Value[i][1]>0f){
-////        ints.add(cgChrom.Value[i][1]);
-////        sum+=cgChrom.Value[i][1];
-////      }
+      sum += cgChrom.Value[i][1];
+      if (!LipidomicsConstants.isShotgunIntensityRemoval() || cgChrom.Value[i][1]>0f)
+        ints.add(cgChrom.Value[i][1]);
     }
-////    float[] intValues = new float[ints.size()];
-////    for (int i=0; i!=ints.size(); i++) intValues[i] = ints.get(i);
+    //if there is another threshold set, calculate the average, and remove the hits according to the cutoff
+    if (LipidomicsConstants.isShotgunIntensityRemoval() && LipidomicsConstants.getShotgunRelIntCutoff()>0) {
+      float cutoff = (sum*LipidomicsConstants.getShotgunRelIntCutoff())/((float)ints.size());
+      Vector<Float> intermediate = new Vector<Float>();
+      for (Float inten : ints) {
+        if (inten>cutoff)
+          intermediate.add(inten);
+      }
+    }
+        
+    float intensity = 0f;
+    float[] intValues = new float[ints.size()];
+    for (int i=0; i!=ints.size(); i++) intValues[i] = ints.get(i);
     if (shotgunType==SHOTGUN_TYPE_MEAN)
       intensity = Calculator.mean(intValues);
     else if (shotgunType==SHOTGUN_TYPE_MEDIAN)

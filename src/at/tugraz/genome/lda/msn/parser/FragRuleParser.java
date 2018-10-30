@@ -406,29 +406,23 @@ public class FragRuleParser
    * @throws RulesException if the value is not a number or not in the range of 0-100%, exclusive 100% 
    */
   public static double readPercentPermilleValue(String inValue,String section, int lineNumber) throws RulesException {
-    boolean percent = false;
-    boolean permille = false;
-    String value = new String(inValue);
-    if (value.endsWith("%")){
-      percent = true;
-      value = value.substring(0,value.length()-1);
-    } else if (value.endsWith("\u2030")){
-      permille = true;
-      value = value.substring(0,value.length()-1);
-    }
     try{
-      double doubleValue = Double.parseDouble(value);
-      if (percent) doubleValue /= 100;
-      else if (permille) doubleValue /= 1000;
-      if (doubleValue<0){
-        throw new RulesException("The "+section+" must not be negative, the value \""+value+"\" is not! Error at line number "+lineNumber+"!");
-      } else if (doubleValue>=1){
-        if (percent) value+="%";
-        else if (permille) value+="\u2030";
-        throw new RulesException("The "+section+" must not be bigger than 100%, the value \""+value+"\" is not! Error at line number "+lineNumber+"!");
+      double doubleValue =  StaticUtils.readPercentPermilleValue(inValue);
+      String value = new String(inValue);
+      if (value.endsWith("%")||value.endsWith("\u2030"))
+        value = value.substring(0,value.length()-1);
+      if (doubleValue<0 || doubleValue>=1) {
+        if (doubleValue<0){
+          throw new RulesException("The "+section+" must not be negative, the value \""+value+"\" is not! Error at line number "+lineNumber+"!");
+        } else if (doubleValue>=1){
+          throw new RulesException("The "+section+" must not be bigger than 100%, the value \""+inValue+"\" is not! Error at line number "+lineNumber+"!");
+        }
       }
       return doubleValue;
     }catch(NumberFormatException nfx){
+      String value = new String(inValue);
+      if (value.endsWith("%")||value.endsWith("\u2030"))
+        value = value.substring(0,value.length()-1);
       throw new RulesException("The value of "+section+" must be double format, the value \""+value+"\" is not! Error at line number "+lineNumber+"!");
     }   
   }

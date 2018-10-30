@@ -53,6 +53,7 @@ import de.isas.mztab2.model.SampleProcessing;
 import at.tugraz.genome.lda.exception.SettingsException;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.utils.ExcelUtils;
+import at.tugraz.genome.lda.utils.StaticUtils;
 
 /**
  * 
@@ -253,6 +254,11 @@ public class LipidomicsConstants
   private String mzUnit_;
   /** the way to acquire shotgun intensities (possible values are "mean", "median", "sum")*/
   private int shotgunProcessing_;
+  /** should shotgun intensities be removed below a certain threshold*/
+  private boolean shotgunIntensityRemoval_;
+  /** the relative intensity cutoff for the removal*/
+  private float shotgunRelIntCutoff_;
+  
   
   /** this is the conventional chromatography mode*/
   public final static short SHOTGUN_FALSE = 0;
@@ -260,6 +266,7 @@ public class LipidomicsConstants
   public final static short SHOTGUN_TRUE = 1;
   /** this is the PRM mode*/
   public final static short SHOTGUN_PRM = 2;
+  
   
   private final static String LDA_VERSION = "LDA-version";
   private final static String RAW_FILE = "rawFile";
@@ -437,6 +444,8 @@ public class LipidomicsConstants
   private final static String MZUNIT = "mzUnit";
   /** the shotgun processing type - allowed are mean, median, sum*/
   private final static String SHOTGUN_PROCESSING = "shotgunProcessing";
+  /** the way zeros are handled in calculating shotgun intensities ("false": zeros are used; "true": zeros are discarded; float value: relative cutoff to average without zeros)*/
+  private final static String SHOTGUN_ZERO_HANDLING = "shotgunDiscardZeros";
   
   /** possible input parameter for MZUNIT*/ 
   public final static String MZUNIT_PPM = "ppm";
@@ -694,6 +703,24 @@ public class LipidomicsConstants
       else
         throw new SettingsException("The shotgun processing type \""+processingString+"\" is unknown! Please use "+SHOTGUN_PROCESSING_MEAN+", "+SHOTGUN_PROCESSING_MEDIAN+", or "+SHOTGUN_PROCESSING_SUM+" instead!");
     }
+    
+    String shotgunZeroHandlingString = properties.getProperty(SHOTGUN_ZERO_HANDLING,"false");
+    this.shotgunIntensityRemoval_ = false;
+    this.shotgunRelIntCutoff_ = -1f;
+    if (shotgunZeroHandlingString.equalsIgnoreCase("false") || shotgunZeroHandlingString.equalsIgnoreCase("no"))
+      ;
+    else if (shotgunZeroHandlingString.equalsIgnoreCase("true") || shotgunZeroHandlingString.equalsIgnoreCase("yes")) {
+      this.shotgunIntensityRemoval_ = true;
+      this.shotgunRelIntCutoff_ = 0f;
+    } else {
+      try {
+        shotgunRelIntCutoff_ = (float)StaticUtils.readPercentPermilleValue(shotgunZeroHandlingString);
+        shotgunIntensityRemoval_ = true;
+      } catch (NumberFormatException nfx) {
+        throw new SettingsException("Invalid input for "+SHOTGUN_ZERO_HANDLING+"! The following values are allowed: true, false, or any float format that might be followed by % or \u2030!");
+      }
+    }
+      
   }
   
   /**
@@ -1330,7 +1357,24 @@ public class LipidomicsConstants
     return instance_.shotgunProcessing_;    
   }
   
-  
+  /**
+   * 
+   * @return should shotgun intensities be removed below a certain threshold
+   */
+  public static boolean isShotgunIntensityRemoval(){
+    if (instance_ == null) LipidomicsConstants.getInstance();
+    return instance_.shotgunIntensityRemoval_;    
+  }
+
+  /**
+   * 
+   * @return the relative intensity cutoff for the removal
+   */
+  public static float getShotgunRelIntCutoff(){
+    if (instance_ == null) LipidomicsConstants.getInstance();
+    return instance_.shotgunRelIntCutoff_;    
+  }
+
   /**
    * 
    * @return relative cutoff threshold for fatty acid chain detection - it is in relation to the most intense chain
@@ -1808,6 +1852,16 @@ public class LipidomicsConstants
       rowCount = createPropertyRow(sheet,rowCount,SHOTGUN_PROCESSING,shotgunProcessingString);
       if (SHOTGUN_PROCESSING.length()>longestKey) longestKey = SHOTGUN_PROCESSING.length();
       if (shotgunProcessingString.length()>longestValue) longestValue = shotgunProcessingString.length();
+      
+      String shotgunZeroHandlingString = "false";
+      if (shotgunRelIntCutoff_>0)
+        shotgunZeroHandlingString = String.valueOf(shotgunRelIntCutoff_);
+      else if (shotgunRelIntCutoff_==0)
+        shotgunZeroHandlingString = "true";
+      rowCount = createPropertyRow(sheet,rowCount,SHOTGUN_ZERO_HANDLING,shotgunZeroHandlingString);
+      if (SHOTGUN_ZERO_HANDLING.length()>longestKey) longestKey = SHOTGUN_ZERO_HANDLING.length();
+      if (shotgunZeroHandlingString.length()>longestValue) longestValue = shotgunZeroHandlingString.length();
+
     }else{
       rowCount = createPropertyRow(sheet,rowCount,CHROM_SMOOTH_RANGE,String.valueOf(chromSmoothRange_));
       if (CHROM_SMOOTH_RANGE.length()>longestKey) longestKey = CHROM_SMOOTH_RANGE.length();

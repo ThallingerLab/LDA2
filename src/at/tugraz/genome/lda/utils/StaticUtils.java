@@ -1305,6 +1305,34 @@ public class StaticUtils
     default:
       return SummaryVO.EVIDENCE_MS1_ONLY;
     }
-  }   
+  }
+  
+  /**
+   * parses an input in fraction, percent and permille format and returns the corresponding double value
+   * ATTENTION: the value must be positive
+   * @param inValue the String representation of the fraction, percent or permille format
+   * @return the double representation of the fraction, percent or permille format
+   * @throws NumberFormatException if the value is not a number (percent and permille sign at the end allowed) 
+   */
+  public static double readPercentPermilleValue(String inValue) throws NumberFormatException {
+    boolean percent = false;
+    boolean permille = false;
+    String value = new String(inValue);
+    if (value.endsWith("%")){
+      percent = true;
+      value = value.substring(0,value.length()-1);
+    } else if (value.endsWith("\u2030")){
+      permille = true;
+      value = value.substring(0,value.length()-1);
+    }
+    try{
+      double doubleValue = Double.parseDouble(value);
+      if (percent) doubleValue /= 100;
+      else if (permille) doubleValue /= 1000;
+      return doubleValue;
+    }catch(NumberFormatException nfx){
+      throw new NumberFormatException("The value "+inValue+" has not the correct format!");
+    }   
+  }
   
 }
