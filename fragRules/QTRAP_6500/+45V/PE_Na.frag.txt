@@ -19,7 +19,7 @@ Name=NL_PEhead_141		Formula=$PRECURSOR-C2H8NO4P	Charge=1	MSLevel=2	mandatory=fal
 Name=NL_PEhead_163		Formula=$PRECURSOR-C2H7NO4PNa	Charge=1	MSLevel=2	mandatory=true
 
 !INTENSITIES
-Equation=NL_PEhead_163*2.5>Precursor mandatory=true
+Equation=NL_PEhead_163*2.5>Precursor	mandatory=true
 
 [CHAINS]
 !FRAGMENTS
@@ -28,7 +28,7 @@ Name=NL_Carboxy_Ethanolamine	Formula=$PRECURSOR-$CHAIN-C2H5N		Charge=1	MSLevel=2
 Name=NL_Ketene_Ethanolamine	Formula=$PRECURSOR-$CHAIN-C2H5N+H2O	Charge=1	MSLevel=2	mandatory=true
 
 !INTENSITIES
-Equation=NL_Carboxy_Ethanolamine>NL_Carboxy+0*NL_Ketene_Ethanolamine mandatory=true
+Equation=NL_Carboxy_Ethanolamine>NL_Carboxy+0*NL_Ketene_Ethanolamine	mandatory=true
 
 [POSITION]
 !INTENSITIES
