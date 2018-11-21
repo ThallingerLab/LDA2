@@ -1864,7 +1864,6 @@ public class MSnAnalyzer
    * @return the split peak intensities if possible
    * @throws CgException 
    */
-  @SuppressWarnings("unlikely-arg-type")
   public static Vector<SharedPeakContributionVO> splitTwoIsobaricPeaks(LipidomicsAnalyzer analyzer, float start, float stop, float startRelative, float stopRelative, SharedMS1PeakVO shared, int upperMsLevel) throws CgException{
     // this is for the preparation of the data hashes for processing
     Vector<SharedPeakContributionVO> splitted = new Vector<SharedPeakContributionVO>();
@@ -1922,7 +1921,21 @@ public class MSnAnalyzer
       for (QuantVO quant : mzsForChroms.keySet()){
         Hashtable<String,CgProbe> allOfQuant = mzsForChroms.get(quant);
         Hashtable<String,Vector<LipidomicsChromatogram>> chromsOfPartner = new Hashtable<String,Vector<LipidomicsChromatogram>>();
-        if (chromsForMzs.containsKey(chromsOfPartner)) chromsOfPartner = chromsForMzs.get(chromsOfPartner);
+        
+        //ATTENTION START: the original version of this line was the following:
+        //if (chromsForMzs.containsKey(chromsOfPartner)) chromsOfPartner = chromsForMzs.get(chromsOfPartner);
+        //however, this if statement will never be true, since the value types are totally different!
+        //when I would really do the following: if (chromsForMzs.containsKey(key)) chromsOfPartner = chromsForMzs.get(key);
+        //chroms for the same m/z value would be added, since all of the possible distinct fragments are limited anyway in the building of the relevantMzHash by the lines:
+        //Hashtable<String,CgProbe> allOfQuant = new Hashtable<String,CgProbe>();
+        //if (allOfMsLevel.containsKey(quant)) allOfQuant = allOfMsLevel.get(quant);
+        //allOfQuant.put(key, probe);
+        //allOfMsLevel.put(quant, allOfQuant);
+        //And the key is the name of the distinct fragment, and as such unique
+        //So if anything makes sense at all, then it is the following line (or maybe it can be removed, since two same QuantVOs cannot happen anyway):
+        if (chromsForMzs.containsKey(quant)) continue;
+        //ATTENTION END: this attention message was generated on 20.11.2018; when there no problems occur until 19.11.2020: delete these comments
+        
         for (String key: allOfQuant.keySet()){
           LipidomicsChromatogram chrom = new LipidomicsChromatogram(new CgChromatogram(scansSorted.size()));
           chrom.LowerMzBand = analyzer.getMsnMzTolerance();
@@ -1964,7 +1977,7 @@ public class MSnAnalyzer
             intensity = buffer.get();
             if (intensity>noiseThreshold){
               if (intensity>highestInt) highestInt = intensity;
-              //this is for the absolute intensites
+              //this is for the absolute intensities
               for (QuantVO quant : mzsForChroms.keySet()){
                 Hashtable<String,CgProbe> mzs = mzsForChroms.get(quant);
                 for (String key : mzs.keySet()){
@@ -1990,7 +2003,7 @@ public class MSnAnalyzer
       }
     }
     
-    //now calculate for each QuantVO where are the highest intensites reached for each fragment (absoluteValues)
+    //now calculate for each QuantVO where are the highest intensities reached for each fragment (absoluteValues)
     Hashtable<QuantVO,Hashtable<String,FloatFloatVO>> rtPeaksAbsolute = new Hashtable<QuantVO,Hashtable<String,FloatFloatVO>>();
     Hashtable<QuantVO,Float> proposedRts = new Hashtable<QuantVO,Float>();
     for (QuantVO quant : chromsForMzs.keySet()){
