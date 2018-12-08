@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2018 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -85,6 +85,7 @@ public class FragRuleParser
   //general properties of the rule file
   private final static String GENERAL_CHAINS = "AmountOfChains";
   private final static String GENERAL_MS2_LIB = "ChainLibrary";
+  private final static String GENERAL_LCB_LIB = "LCBLibrary";
   public final static String GENERAL_CATOMS_PARSE = "CAtomsFromName";
   public final static String GENERAL_DBOND_PARSE = "DoubleBondsFromName";
   private final static String GENERAL_CUTOFF = "BasePeakCutoff";
@@ -104,6 +105,9 @@ public class FragRuleParser
   private final static String GENERAL_ISOBAR_RATIO = "IsobarSCExclusionRatio";
   private final static String GENERAL_ISOBAR_FAR_RATIO = "IsobarSCFarExclusionRatio";
   private final static String GENERAL_ISOBAR_RT = "IsobarRtDiff";
+  
+  //for sphingolipids
+  private final static String GENERAL_LCBS = "AmountOfLCBs";
 
   //properties of the fragment subsection of the rule file
   private final static String FRAGMENT_NAME = "Name";
@@ -286,9 +290,19 @@ public class FragRuleParser
       }catch(NumberFormatException nfx){
         throw new RulesException("The value of "+GENERAL_CHAINS_ALKENYL+" must be integer, the value \""+value+"\" is not! Error at line number "+lineNumber+"!");
       }
+    }else if (key.equalsIgnoreCase(GENERAL_LCBS)){
+      try{
+        Short.parseShort(value);
+        generalSettings_.put(GENERAL_LCBS, value);
+      }catch(NumberFormatException nfx){
+        throw new RulesException("The value of "+GENERAL_LCBS+" must be integer, the value \""+value+"\" is not! Error at line number "+lineNumber+"!");
+      }
     } else if (key.equalsIgnoreCase(GENERAL_MS2_LIB)){
       if (!value.endsWith(FattyAcidsContainer.FA_FILE_SUFFIX_NEW) && !value.endsWith(FattyAcidsContainer.FA_FILE_SUFFIX_OLD)) throw new RulesException("The value of "+GENERAL_MS2_LIB+" must be an Excel file; the value \""+value+"\" is not! Error at line number "+lineNumber+"!");
       generalSettings_.put(GENERAL_MS2_LIB, value);
+    } else if (key.equalsIgnoreCase(GENERAL_LCB_LIB)){
+      if (!value.endsWith(FattyAcidsContainer.FA_FILE_SUFFIX_NEW) && !value.endsWith(FattyAcidsContainer.FA_FILE_SUFFIX_OLD)) throw new RulesException("The value of "+GENERAL_LCB_LIB+" must be an Excel file; the value \""+value+"\" is not! Error at line number "+lineNumber+"!");
+      generalSettings_.put(GENERAL_LCB_LIB, value);
     } else if (key.equalsIgnoreCase(GENERAL_CATOMS_PARSE)){
       try{
         Pattern.compile(value);
@@ -439,8 +453,11 @@ public class FragRuleParser
     int amountOfChains =  Integer.parseInt(getAmountOfChains());
     int amountOfAlkylChains = Integer.parseInt(getAmountOfAlkylChains());
     int amountOfAlkenylChains = Integer.parseInt(getAmountOfAlkenylChains());
-    if ((amountOfAlkylChains+amountOfAlkenylChains)>amountOfChains)
-      throw new RulesException("There must not be more \""+GENERAL_CHAINS_ALKYL+"\" and \""+GENERAL_CHAINS_ALKENYL+"\" than \""+GENERAL_CHAINS+"\"!");
+    short amountOfLCBs = Short.parseShort(getAmountOfLCBs());
+    if ((amountOfAlkylChains+amountOfAlkenylChains+amountOfLCBs)>amountOfChains)
+      throw new RulesException("There must not be more \""+GENERAL_CHAINS_ALKYL+"\", \""+GENERAL_CHAINS_ALKENYL+"\" and \""+GENERAL_LCBS+"\" than \""+GENERAL_CHAINS+"\"!");
+    if (amountOfLCBs>0 && !generalSettings_.containsKey(GENERAL_LCB_LIB))
+      throw new RulesException("When there are \""+GENERAL_LCBS+"\" set, the rules file must contain the property \""+GENERAL_LCB_LIB+"\" in the "+GENERAL_SECTION_NAME+" section!");
   }
   
   /**
@@ -869,6 +886,15 @@ public class FragRuleParser
   }
 
   /**
+   * retrieves name of long chain base library- parseFile() has to be called before
+   * @return file name of the Excel file containing the long chain bases
+   */
+  public String getLcbLibrary(){
+    return this.generalSettings_.get(GENERAL_LCB_LIB);
+  }
+  
+  
+  /**
    * Java regular expression to extract the number C atoms from the analyte name - parseFile() has to be called before 
    * @return regular expression to extract the number C atoms from the analyte name
    */
@@ -911,6 +937,17 @@ public class FragRuleParser
     if (generalSettings_.containsKey(GENERAL_CHAINS_ALKENYL)) alkenylChains = Integer.parseInt(generalSettings_.get(GENERAL_CHAINS_ALKENYL));
     return String.valueOf(alkenylChains);
   }
+
+  /**
+   * how many LCBs does this analyte class have - parseFile() has to be called before
+   * @return the amount of chains for this class
+   */
+  public String getAmountOfLCBs(){
+    short lcbs = 0;
+    if (generalSettings_.containsKey(GENERAL_LCBS)) lcbs = Short.parseShort(generalSettings_.get(GENERAL_LCBS));
+    return String.valueOf(lcbs);
+  }
+
   
   
   /**
@@ -1192,7 +1229,8 @@ public class FragRuleParser
     bw.write(GENERAL_CHAINS+"=");
     if (generalSettings.getAmountOfChains()!=null) bw.write(generalSettings.getAmountOfChains().toString());             
     bw.write("\n"+GENERAL_MS2_LIB+"=");
-    if (generalSettings.getChainLibrary()!=null) bw.write(generalSettings.getChainLibrary());        
+    if (generalSettings.getChainLibrary()!=null) bw.write(generalSettings.getChainLibrary());
+    if (generalSettings.getLcbLibrary()!=null) bw.write("\n"+GENERAL_LCB_LIB+"="+generalSettings.getLcbLibrary());
     bw.write("\n"+GENERAL_CATOMS_PARSE+"=");
     if (generalSettings.getCarbonAtomsRule()!=null) bw.write(generalSettings.getCarbonAtomsRule());        
     bw.write("\n"+GENERAL_DBOND_PARSE+"=");
@@ -1200,7 +1238,9 @@ public class FragRuleParser
     if (generalSettings.getAmountOfAlkylChains()!=null && generalSettings.getAmountOfAlkylChains()>0)
       bw.write("\n"+GENERAL_CHAINS_ALKYL+"="+String.valueOf(generalSettings.getAmountOfAlkylChains()));
     if (generalSettings.getAmountOfAlkenylChains()!=null && generalSettings.getAmountOfAlkenylChains()>0)
-      bw.write("\n"+GENERAL_CHAINS_ALKENYL+"="+String.valueOf(generalSettings.getAmountOfAlkenylChains()));  
+      bw.write("\n"+GENERAL_CHAINS_ALKENYL+"="+String.valueOf(generalSettings.getAmountOfAlkenylChains()));
+    if (generalSettings.getAmountOfLCBs()!=null && generalSettings.getAmountOfLCBs()>0)
+      bw.write("\n"+GENERAL_LCBS+"="+String.valueOf(generalSettings.getAmountOfAlkylChains()));
     bw.write("\n"+GENERAL_CUTOFF+"=");
     if (generalSettings.getBasePeakCutoff()!=null) bw.write(generalSettings.getBasePeakCutoff()); 
     if (generalSettings.getChainCutoff()!=null)

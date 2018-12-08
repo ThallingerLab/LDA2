@@ -800,10 +800,12 @@ public class GeneralSettingsPanel extends JPanel implements ActionListener
       msIdOrder = RulesContainer.ORDER_MSN_FIRST;
     Integer addPositions = readIntegerFromTextField(this.addChainPositions_);
     
+    //TODO: the number of LCB chains and the LCB chain library is not read from the GUI - appropriate input masks have to be implemented
     GeneralSettingsVO settings = new GeneralSettingsVO(new Integer(chainsAmountField_.getText()),
-        alkylChains, alkenylChains, addPositions, chainsLibraryField_.getText(), carbonAtomsRuleField_.getText(),
-        this.doubleBondRuleField_.getText(), isSingleChainAllowed, chainCutoff, basePeakCutoff,
-        spectrumCoverage, rtPostProcessing, rtParallelSeries, rtMaxDev, msIdOrder);
+        alkylChains, alkenylChains, null, addPositions, chainsLibraryField_.getText(), null,
+        carbonAtomsRuleField_.getText(), this.doubleBondRuleField_.getText(), isSingleChainAllowed,
+        chainCutoff, basePeakCutoff, spectrumCoverage, rtPostProcessing, rtParallelSeries, rtMaxDev,
+        msIdOrder);
     return settings;
   }
   

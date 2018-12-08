@@ -184,6 +184,34 @@ public class RulesContainer
   }
   
   /**
+   * 
+   * @param ruleName name of the lipid class
+   * @return the name of the long chain base library
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static String getLcbLibrary(String ruleName) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    return getLcbLibrary(ruleName, currentRulesDir_);
+  }
+  
+  /** 
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return the name of the long chain base library
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static String getLcbLibrary(String ruleName, String rulesDir) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    RulesContainer cont = checkIfRuleExists(ruleName,rulesDir);
+    return cont.rules_.get(ruleName).getLcbLibrary();
+  }
+
+  
+  /**
    * Java regular expression to extract the number C atoms from the analyte name
    * @param ruleName name of the lipid class
    * @return regular expression to extract the number C atoms from the analyte name
@@ -323,6 +351,34 @@ public class RulesContainer
     return cont.rules_.get(ruleName).getAmountOfAlkenylChains();
   }
   
+  /**
+   * how many LCBs does this analyte class have
+   * @param ruleName name of the lipid class
+   * @return the amount of alkenyl chains for this class
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static String getAmountOfLCBs(String ruleName) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    return getAmountOfLCBs(ruleName, currentRulesDir_);
+  }
+
+  /** 
+   * how many LCBs chains does this analyte class have
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return the amount of alkenyl chains for this class
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static String getAmountOfLCBs(String ruleName, String rulesDir) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    RulesContainer cont = checkIfRuleExists(ruleName,rulesDir);
+    return cont.rules_.get(ruleName).getAmountOfLCBs();
+  }
+
   /**
    * cutoff value relative to the base peak
    * @param ruleName name of the lipid class

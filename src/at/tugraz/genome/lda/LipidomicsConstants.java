@@ -238,6 +238,8 @@ public class LipidomicsConstants
   //the following parameters are for MSn spectral analysis
   /** the +/- m/z tolerance for peak detection */
   private float ms2MzTolerance_;
+  /** the +/- m/z tolerance for peak detection */  
+  private int ms2MinIntsForNoiseRemoval_;
   /** relative cutoff threshold for fatty acid chain detection - it is in relation to the most intense chain */
   private double chainCutoffValue_;
   /** relative intensity cutoff for exclusion of isobars regarding spectrum coverage*/
@@ -417,10 +419,12 @@ public class LipidomicsConstants
   private final static String MS2_VIEWER_MZ_RESOLUTION = "threeDViewerMs2DefaultMZResolution";
   private final static String MS2_VIEWER_MZ_RESOLUTION_DEFAULT = "1";
   private final static String MS2_MZ_TOL = "ms2MzTolerance";
+  private final static String MS2_MIN_NOISE_REMOVAL = "ms2MinIntsForNoiseRemoval";
   private final static String MS2_ISOBAR_RATIO = "ms2IsobarSCExclusionRatio";
   private final static String MS2_ISOBAR_FAR_RATIO = "ms2IsobarSCFarExclusionRatio";
   private final static String MS2_ISOBAR_FAR_RT = "ms2IsobaricOtherRtDifference";
   private final static String MS2_MZ_TOL_DEFAULT = "0.2";
+  private final static String MS2_MIN_NOISE_REMOVAL_DEFAULT = "100";
   private final static String CHAIN_CUTOFF = "chainCutoffValue";
   private final static String CHAIN_CUTOFF_DEFAULT = "0.01";
   private final static String ALEX_TARGETLIST = "alexTargetlist";
@@ -635,6 +639,12 @@ public class LipidomicsConstants
       Float.parseFloat(threeDViewerMs2DefaultMZResolution_);
     } catch (NumberFormatException nfx){threeDViewerMs2DefaultMZResolution_ = MS2_VIEWER_MZ_RESOLUTION_DEFAULT;}
     ms2MzTolerance_ = Float.parseFloat(properties.getProperty(MS2_MZ_TOL,MS2_MZ_TOL_DEFAULT));
+    try {
+      ms2MinIntsForNoiseRemoval_ = Integer.parseInt(properties.getProperty(MS2_MIN_NOISE_REMOVAL,MS2_MIN_NOISE_REMOVAL_DEFAULT));
+    } catch (NumberFormatException nfx) {
+      throw new SettingsException("Invalid input for "+MS2_MIN_NOISE_REMOVAL+"! The input must be in integer format!");
+    }
+    
     ms2IsobarSCExclusionRatio_ = 0f;
     String ms2IsobarSCExclusionRatioString = properties.getProperty(MS2_ISOBAR_RATIO);
     if (ms2IsobarSCExclusionRatioString!=null && ms2IsobarSCExclusionRatioString.length()>0){
@@ -1301,6 +1311,14 @@ public class LipidomicsConstants
     return instance_.ms2MzTolerance_;
   }
   
+  /**
+   * 
+   * @return minimum number of detected signals to start a noise removal
+   */
+  public static int getMs2MinIntsForNoiseRemoval(){
+    if (instance_ == null) LipidomicsConstants.getInstance();
+    return instance_.ms2MinIntsForNoiseRemoval_;
+  }
   
   /**
    * 
@@ -1800,7 +1818,10 @@ public class LipidomicsConstants
     if (String.valueOf(ms2PrecursorTolerance_).length()>longestValue) longestValue = String.valueOf(ms2PrecursorTolerance_).length();    
     rowCount = createPropertyRow(sheet,rowCount,MS2_MZ_TOL,String.valueOf(ms2MzTolerance_));
     if (MS2_MZ_TOL.length()>longestKey) longestKey = MS2_MZ_TOL.length();
-    if (String.valueOf(ms2MzTolerance_).length()>longestValue) longestValue = String.valueOf(ms2MzTolerance_).length();   
+    if (String.valueOf(ms2MzTolerance_).length()>longestValue) longestValue = String.valueOf(ms2MzTolerance_).length();
+    rowCount = createPropertyRow(sheet,rowCount,MS2_MIN_NOISE_REMOVAL,String.valueOf(ms2MinIntsForNoiseRemoval_));
+    if (MS2_MIN_NOISE_REMOVAL.length()>longestKey) longestKey = MS2_MIN_NOISE_REMOVAL.length();
+    if (String.valueOf(ms2MinIntsForNoiseRemoval_).length()>longestValue) longestValue = String.valueOf(ms2MinIntsForNoiseRemoval_).length();   
     rowCount = createPropertyRow(sheet,rowCount,MS2_ISOBAR_RATIO,String.valueOf(ms2IsobarSCExclusionRatio_));
     if (MS2_ISOBAR_RATIO.length()>longestKey) longestKey = MS2_ISOBAR_RATIO.length();
     if (String.valueOf(ms2IsobarSCExclusionRatio_).length()>longestValue) longestValue = String.valueOf(ms2IsobarSCExclusionRatio_).length();

@@ -143,6 +143,7 @@ import at.tugraz.genome.lda.msn.MSnAnalyzer;
 import at.tugraz.genome.lda.msn.PostQuantificationProcessor;
 import at.tugraz.genome.lda.msn.RulesContainer;
 import at.tugraz.genome.lda.msn.parser.FragRuleParser;
+import at.tugraz.genome.lda.msn.parser.LCBLibParser;
 import at.tugraz.genome.lda.msn.vos.IntensityPositionVO;
 import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
 import at.tugraz.genome.lda.msn.vos.MSnDebugVO;
@@ -370,7 +371,10 @@ public class TestClass extends JApplet implements AddScan
     //this.faSummaryConverter();
     //this.mzTabValidation();
     //this.evaluatePrmData();
-    this.batchQuantByCommandLine();
+    //this.batchQuantByCommandLine();
+    
+    //generateSphingolipidMassList();
+    //parseLCBList();
   }
 
   private void testExportPanel()
@@ -8297,7 +8301,7 @@ public void testTabFile() throws Exception {
   private boolean areThereAnyMSnSpectra(LipidomicsAnalyzer analyzer,LipidParameterSet lda,QuantVO quantVO) throws CgException{
     boolean spectraThere = false;
     if (lda!=null){
-      Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache((float)(lda.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance()), (float)(lda.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance()));
+      Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache((float)(lda.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance()), (float)(lda.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance()),100);
       for (CgProbe probe : lda.getIsotopicProbes().get(0)){
         if (analyzer.areMSnSpectraInThisRegion(probe.LowerValley,probe.UpperValley,2)){
           spectraThere = true;
@@ -8305,7 +8309,7 @@ public void testTabFile() throws Exception {
         }
       }
     }else{
-      Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache((float)(quantVO.getAnalyteMass()-LipidomicsConstants.getMs2PrecursorTolerance()), (float)(quantVO.getAnalyteMass()+LipidomicsConstants.getMs2PrecursorTolerance()));
+      Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache((float)(quantVO.getAnalyteMass()-LipidomicsConstants.getMs2PrecursorTolerance()), (float)(quantVO.getAnalyteMass()+LipidomicsConstants.getMs2PrecursorTolerance()),100);
       if (analyzer.areMSnSpectraInThisRegion(0f,Float.MAX_VALUE,2)){
         spectraThere = true;
       }
@@ -8315,7 +8319,7 @@ public void testTabFile() throws Exception {
 
   private boolean areThereAnyMSnSpectra(LipidomicsAnalyzer analyzer, QuantVO quantVO, LipidClassInfoVO info, LinkedHashMap<String,ReferenceInfoVO> species) throws CgException{
     boolean spectraThere = false;
-    Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache((float)(quantVO.getAnalyteMass()-LipidomicsConstants.getMs2PrecursorTolerance()), (float)(quantVO.getAnalyteMass()+LipidomicsConstants.getMs2PrecursorTolerance()));
+    Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache((float)(quantVO.getAnalyteMass()-LipidomicsConstants.getMs2PrecursorTolerance()), (float)(quantVO.getAnalyteMass()+LipidomicsConstants.getMs2PrecursorTolerance()),100);
     if (info.checkRt() && msLevels!=null && msLevels.containsKey(2) && msLevels.get(2)){
       for (ReferenceInfoVO ref : species.values()){
         float startRt  = (float)((ref.getCorrectRt()-info.getRtTolerance())*60d);
@@ -14303,7 +14307,7 @@ public void testTabFile() throws Exception {
     int nrProcessors = 11;
     
     BatchQuantificationTableModel batchQuantTableModel = new BatchQuantificationTableModel();
-	BatchQuantificationTable batchQuantTable = new BatchQuantificationTable(batchQuantTableModel);
+    BatchQuantificationTable batchQuantTable = new BatchQuantificationTable(batchQuantTableModel);
     
     //TODO: these are visual components that are not required for command line
     JLabel quantifyingBatchLabel = new JLabel("Quantifying");
@@ -14429,6 +14433,384 @@ public void testTabFile() throws Exception {
         }
 
     }
+  }
+  
+  private void generateSphingolipidMassList() {
+    try{
+      ElementConfigParser parser = new ElementConfigParser("elementconfig.xml");
+      parser.parse();
+      
+      //for sphingoid backbone chain library
+      String quantFile = "C:\\Development\\LipidDataAnalyzer\\fattyAcids\\dLCB.xlsx";
+      
+      //for sphingoid bases
+      //String quantFile = "C:\\Sphingolipids\\massLists\\tSphBase_positive.xlsx";
+      //String quantFile = "C:\\Sphingolipids\\massLists\\dSphBase_negative.xlsx";
+      //String quantFile = "C:\\Sphingolipids\\massLists\\tSphBase_positive.xlsx";
+      
+      //for Cer
+      //String quantFile = "C:\\Sphingolipids\\massLists\\mCer_negative.xlsx";
+      //String quantFile = "C:\\Sphingolipids\\massLists\\dCer_positive.xlsx";
+      //String quantFile = "C:\\Sphingolipids\\massLists\\tCer_positive.xlsx";
+      
+      //for Cer1P
+      //String quantFile = "C:\\Sphingolipids\\massLists\\mCer1P_negative.xlsx";
+      //String quantFile = "C:\\Sphingolipids\\massLists\\dCer1P_negative.xlsx";
+      //String quantFile = "C:\\Sphingolipids\\massLists\\tCer1P_positive.xlsx";
+
+      //for SM
+      //String quantFile = "C:\\Sphingolipids\\massLists\\mSM_positive.xlsx";
+      //String quantFile = "C:\\Sphingolipids\\massLists\\dSM_negative.xlsx";
+      //String quantFile = "C:\\Sphingolipids\\massLists\\tSM_negative.xlsx";
+
+      //for LSM
+      //String quantFile = "C:\\Sphingolipids\\massLists\\mLSM_negative.xlsx";
+      //String quantFile = "C:\\Sphingolipids\\massLists\\dLSM_negative.xlsx";
+      //String quantFile = "C:\\Sphingolipids\\massLists\\tLSM_negative.xlsx";
+
+      //for HexCer
+      //String quantFile = "C:\\Sphingolipids\\massLists\\mHexCer_negative.xlsx";
+      //String quantFile = "C:\\Sphingolipids\\massLists\\dHexCer_negative.xlsx";
+      //String quantFile = "C:\\Sphingolipids\\massLists\\tHexCer_negative.xlsx";
+
+      //for LacCer
+      //String quantFile = "C:\\Sphingolipids\\massLists\\dLacCer_negative.xlsx";
+      
+      //for S1P
+      //String quantFile = "C:\\Sphingolipids\\massLists\\mS1P_negative.xlsx";
+      //String quantFile = "C:\\Sphingolipids\\massLists\\dS1P_negative.xlsx";
+      //String quantFile = "C:\\Sphingolipids\\massLists\\tS1P_negative.xlsx";
+      
+      BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(quantFile));
+      XSSFWorkbook resultWorkbook = new XSSFWorkbook();
+      XSSFCellStyle headerStyle = getHeaderStyle(resultWorkbook);
+      
+      //for sphingoid backbone chain library
+      Sheet resultSheet = resultWorkbook.createSheet("dLCB");
+      
+      //for sphingoid bases
+      //Sheet resultSheet = resultWorkbook.createSheet("mSphBase");
+      //Sheet resultSheet = resultWorkbook.createSheet("dSphBase");
+      //Sheet resultSheet = resultWorkbook.createSheet("tSphBase");
+
+      //for Cer
+      //Sheet resultSheet = resultWorkbook.createSheet("mCer");
+      //Sheet resultSheet = resultWorkbook.createSheet("dCer");
+      //Sheet resultSheet = resultWorkbook.createSheet("tCer");
+
+      //for Cer1P
+      //Sheet resultSheet = resultWorkbook.createSheet("mCer1P");
+      //Sheet resultSheet = resultWorkbook.createSheet("dCer1P");
+      //Sheet resultSheet = resultWorkbook.createSheet("tCer1P");
+
+      //for SM
+      //Sheet resultSheet = resultWorkbook.createSheet("mSM");
+      //Sheet resultSheet = resultWorkbook.createSheet("dSM");
+      //Sheet resultSheet = resultWorkbook.createSheet("tSM");
+
+      //for LSM
+      //Sheet resultSheet = resultWorkbook.createSheet("mLSM");
+      //Sheet resultSheet = resultWorkbook.createSheet("dLSM");
+      //Sheet resultSheet = resultWorkbook.createSheet("tLSM");
+
+      //for HexCer
+      //Sheet resultSheet = resultWorkbook.createSheet("mHexCer");
+      //Sheet resultSheet = resultWorkbook.createSheet("dHexCer");
+      //Sheet resultSheet = resultWorkbook.createSheet("tHexCer");
+
+      //for LacCer
+      //Sheet resultSheet = resultWorkbook.createSheet("dLacCer");
+
+      //for S1P
+      //Sheet resultSheet = resultWorkbook.createSheet("mS1P");
+      //Sheet resultSheet = resultWorkbook.createSheet("dS1P");
+      //Sheet resultSheet = resultWorkbook.createSheet("tS1P");
+
+      
+      int rowCount = 4;
+      Row outRow = resultSheet.createRow(rowCount);
+      Cell label = outRow.createCell(0,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("Name");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(2,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("dbs");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(3,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("C");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(4,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("H");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(5,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("O");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(6,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("P");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(7,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("N");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(8,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("D");
+      label.setCellStyle(headerStyle);
+      //for sphingoid backbone chain library
+      label = outRow.createCell(9,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("mass");
+      label.setCellStyle(headerStyle);
+      //for all others
+      label = outRow.createCell(9,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("M");
+      label.setCellStyle(headerStyle);
+
+      
+      //for positive ion mode data
+//      label = outRow.createCell(10,HSSFCell.CELL_TYPE_STRING);      
+//      label.setCellValue("mass(form[+H] name[H])");
+//      label.setCellStyle(headerStyle);
+//      label = outRow.createCell(11,HSSFCell.CELL_TYPE_STRING);      
+//      label.setCellValue("mass(form[-OH] name[-OH])");
+//      label.setCellStyle(headerStyle);
+//      label = outRow.createCell(12,HSSFCell.CELL_TYPE_STRING);      
+//      label.setCellValue("mass(form[+Na] name[Na])");
+//      label.setCellStyle(headerStyle);
+      //for negative ion mode data
+//      label = outRow.createCell(10,HSSFCell.CELL_TYPE_STRING);      
+//      label.setCellValue("mass(form[-H] name[-H])");
+//      label.setCellStyle(headerStyle);
+//      label = outRow.createCell(11,HSSFCell.CELL_TYPE_STRING);      
+//      label.setCellValue("mass(form[+HCOO] name[HCOO])");
+//      label.setCellStyle(headerStyle);
+//      label = outRow.createCell(12,HSSFCell.CELL_TYPE_STRING);      
+//      label.setCellValue("mass(form[+Cl] name[Cl])");
+//      label.setCellStyle(headerStyle);
+      
+      //for all except for sphingoid backbone chain library
+//      label = outRow.createCell(13,HSSFCell.CELL_TYPE_STRING);
+//      label.setCellValue("tR (min)");
+//      label.setCellStyle(headerStyle);
+      rowCount++;
+      
+      Hashtable<Integer,Integer> cDbsCombi = new Hashtable<Integer,Integer>();
+
+      //for sphingoid backbone chain library
+      for (int i=10; i!=21; i++) {
+        for (int j=0; j!=5; j++) {
+          if (j>4 && i<12)
+            continue;
+          if (j>5 && i<17)
+            continue;
+          cDbsCombi.put(i, j);
+        }
+      }
+      
+      //for sphingoid bases, LSM and S1P
+//      for (int i=2; i!=31; i++) {
+//        for (int j=0; j!=6; j++) {
+//          if (j>0 && i<10)
+//            continue;
+//          cDbsCombi.put(i, j);
+//        }
+//      }
+      
+      //for Cer, Cer1P, SM and HexCer
+//      for (int i=20; i!=49; i++) {
+//        for (int j=0; j!=8; j++) {
+//          if (j>1 && i<26)
+//            continue;
+//          else if (j>2 && i<28)
+//            continue;
+//          else if (j>3 && i<32)
+//            continue;
+//          else if (j>4 && i<34)
+//            continue;
+//          else if (j>5 && i<36)
+//            continue;
+//          cDbsCombi.put(i, j);
+//        }
+//      }
+      
+      //for sphingoid backbone chain library
+      for (int cAtoms=10; cAtoms<21; cAtoms+=1){
+      
+      //for sphingoid bases, LSM and S1P
+      //for (int cAtoms=2; cAtoms<31; cAtoms+=1){
+      //for Cer, Cer1P, SM and HexCer
+      //for (int cAtoms=20; cAtoms<49; cAtoms+=1){
+        int dbs = 0;
+        int dbsMax = cDbsCombi.get(cAtoms)+1;
+        while (dbs<dbsMax){
+        //for sphingoid backbone chain library
+          int totalC = cAtoms;
+          int hAtoms = totalC*2-2*dbs+3;        
+          int oAtoms = 2;
+
+          //for Sphingoid bases
+        //int totalC = cAtoms;
+        //int hAtoms = totalC*2-2*dbs+3;        
+        //for mSphingoid bases
+        //int oAtoms = 1;
+        //for dSphingoid bases
+        //int oAtoms = 2;
+        //for tSphingoid bases
+        //int oAtoms = r;
+
+          //for Cer
+          //int totalC = cAtoms;
+          //int hAtoms = totalC*2-2*dbs+1;
+          //for mCer
+          //int oAtoms = 2;
+          //for dCer
+          //int oAtoms = 3;
+          //for tCer
+          //int oAtoms = 4;
+
+        //for Cer1P
+        //int totalC = cAtoms;
+        //int hAtoms = totalC*2-2*dbs+2;
+        //for mCer1P
+        //int oAtoms = 5;
+        //for dCer1P
+        //int oAtoms = 6;
+        //for tCer1P
+        //int oAtoms = 7;
+
+          //for SM
+//          int totalC = cAtoms+5;
+//          int hAtoms = totalC*2-2*dbs+3;
+//          //for mSM
+//          //int oAtoms = 5;
+//          //for dSM
+//          //int oAtoms = 6;
+//          //for tSM
+//          int oAtoms = 7;
+
+          //for LSM
+//          int totalC = cAtoms+5;
+//          int hAtoms = totalC*2-2*dbs+5;
+//          //for mLSM
+//          //int oAtoms = 4;
+//          //for dLSM
+//          //int oAtoms = 5;
+//          //for tLSM
+//          int oAtoms = 6;
+
+          //for HexCer
+//          int totalC = cAtoms+6;
+//          int hAtoms = totalC*2-2*dbs-1;
+//          //for mHexCer
+//          //int oAtoms = 7;
+//          //for dHexCer
+//          //int oAtoms = 8;
+//          //for tHexCer
+//          int oAtoms = 9;
+
+          //for LacCer
+//          int totalC = cAtoms+12;
+//          int hAtoms = totalC*2-2*dbs-3;
+//          //for dLacCer
+//          int oAtoms = 13;
+
+          //for S1P
+//          int totalC = cAtoms;
+//          int hAtoms = totalC*2-2*dbs+4;
+//          //for mS1P
+//          //int oAtoms = 4;
+//          //for dS1P
+//          //int oAtoms = 5;
+//          //for tS1P
+//          int oAtoms = 6;
+          
+          //for sphingoid backbone chain library, sphingoid bases, Cer, HexCer and LacCer
+          int pAtoms = 0;
+          //for Cer1P, SM, LSM and S1P
+          //int pAtoms = 1;
+          //for sphingoid backbone chain library, sphingoid bases, Cer, Cer1P, HexCer, LacCer and S1P
+          int nAtoms = 1;
+          //for SM and LSM
+          //int nAtoms = 2;
+          int dAtoms = 0;
+          double massNeutral = parser.getElementDetails("C").getMonoMass()*((double)totalC)+parser.getElementDetails("H").getMonoMass()*((double)hAtoms)+
+              parser.getElementDetails("O").getMonoMass()*((double)oAtoms)+parser.getElementDetails("P").getMonoMass()*((double)pAtoms)+
+              parser.getElementDetails("N").getMonoMass()*((double)nAtoms)+parser.getElementDetails("D").getMonoMass()*((double)dAtoms);
+//          double massCharged = massNeutral+parser.getElementDetails("H").getMonoMass()+parser.getElementDetails("C").getMonoMass()+2d*parser.getElementDetails("O").getMonoMass();
+          
+          //for positive ion mode
+          //protonated
+//          double massH = massNeutral+parser.getElementDetails("h").getMonoMass();
+//          //water loss
+//          double massOH = massNeutral+parser.getElementDetails("h").getMonoMass()-2*parser.getElementDetails("H").getMonoMass()-parser.getElementDetails("O").getMonoMass();
+//          //sodiated
+//          double massNa = massNeutral+parser.getElementDetails("na").getMonoMass();
+
+          //for negative ion mode
+          //deprotonated
+//          double massH = massNeutral-parser.getElementDetails("h").getMonoMass();
+//          //water loss
+//          double massHCOO = massNeutral-parser.getElementDetails("h").getMonoMass()+2*parser.getElementDetails("H").getMonoMass()+parser.getElementDetails("C").getMonoMass()+2*parser.getElementDetails("O").getMonoMass();
+//          //sodiated
+//          double massCl = massNeutral+parser.getElementDetails("cl").getMonoMass();
+
+          outRow = resultSheet.createRow(rowCount);
+          label = outRow.createCell(0,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(cAtoms);
+          label = outRow.createCell(1,HSSFCell.CELL_TYPE_STRING);
+          label.setCellValue(":");       
+          label = outRow.createCell(2,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(dbs);
+          label = outRow.createCell(3,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(totalC);
+          label = outRow.createCell(4,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(hAtoms);
+          label = outRow.createCell(5,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(oAtoms);
+          label = outRow.createCell(6,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(pAtoms);
+          label = outRow.createCell(7,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(nAtoms);
+          label = outRow.createCell(8,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(dAtoms);
+          label = outRow.createCell(9,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(massNeutral);
+          
+          //positive
+//          label = outRow.createCell(10,HSSFCell.CELL_TYPE_NUMERIC);
+//          label.setCellValue(massH);
+//          label = outRow.createCell(11,HSSFCell.CELL_TYPE_NUMERIC);
+//          label.setCellValue(massOH);
+//          label = outRow.createCell(12,HSSFCell.CELL_TYPE_NUMERIC);
+//          label.setCellValue(massNa);
+          //negative
+//        label = outRow.createCell(10,HSSFCell.CELL_TYPE_NUMERIC);
+//        label.setCellValue(massH);
+//        label = outRow.createCell(11,HSSFCell.CELL_TYPE_NUMERIC);
+//        label.setCellValue(massHCOO);
+//        label = outRow.createCell(12,HSSFCell.CELL_TYPE_NUMERIC);
+//        label.setCellValue(massCl);
+
+          dbs++;
+          rowCount++;
+        }
+      }
+      
+      resultWorkbook.write(out);
+      out.close();
+    } catch (Exception ex){
+      ex.printStackTrace();
+    }
+
+  }
+  
+  private void parseLCBList() {
+    File lcbFile = new File("C:\\Development\\LipidDataAnalyzer\\fattyAcids\\dLCB.xlsx");
+    try {
+      LCBLibParser parser = new LCBLibParser(lcbFile);
+      parser.parseFile();
+    }
+    catch (IOException | RulesException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+//    parser.
   }
   
 }

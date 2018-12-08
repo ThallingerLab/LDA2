@@ -5185,15 +5185,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     else
       ms1ProbesWhileMs2Display_ = l2DPainter_.getAllSelectedProbes();      
     int charge = 1;
-    if (params_.ProbeCount()>0)
-      charge = params_.Probe(0).Charge;
-    else if (params_.getCharge()!=null&&params_.getCharge()>1)
-      charge = params_.getCharge();
-    float currentIsotopicMass = params_.Mz[0];
     
     displaysMs2_ = true;
     LipidParameterSet params = getAnalyteInTableAtPosition(currentSelected_);
     if (set !=null) params = set;
+    if (params.ProbeCount()>0)
+      charge = params.Probe(0).Charge;
+    else if (params.getCharge()!=null&&params.getCharge()>1)
+      charge = params.getCharge();
+    float currentIsotopicMass = params.Mz[0];
+
     Hashtable<Integer,Vector<RangeColor>> rangeColors = StaticUtils.createRangeColorVOs(params,((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentSelected_),
         areTheseAlex123MsnFragments());
     try {
@@ -5309,12 +5310,13 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           try {
             String[] rawLines = reader_.getRawLines(startFloat, stopFloat, result_.getMsLevels().get(currentSelectedSheet_));
             Hashtable<Integer,Float> rtTimes = reader_.getRetentionTimes();
-            Lipidomics2DPainter l2DPainter = new Lipidomics2DPainter(analyzer_,rawLines, rtTimes,
+            Lipidomics2DPainter l2DPainter = new Lipidomics2DPainter(analyzer_,rawLines, reader_.getRetentionTimesOriginal(), rtTimes,
                 startFloat,stopFloat,reader_.getMultiplicationFactorForInt_()/reader_.getLowestResolution_(),params_.LowerMzBand*2,this,
-                MSMapViewer.DISPLAY_TIME_MINUTES,currentIsotopicMass-params_.LowerMzBand, currentIsotopicMass+params_.UpperMzBand, false,
+                MSMapViewer.DISPLAY_TIME_MINUTES,currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand, false,
                 storedProbes,selectedProbes,Integer.parseInt((String)this.isotope_.getSelectedItem()),charge,result_.getMsLevels().get(currentSelectedSheet_),
                 shotgunIsDisplayed_);
-            l2DPainter.preChromatogramExtraxtion(currentIsotopicMass-params_.LowerMzBand, currentIsotopicMass+params_.UpperMzBand);
+            
+            l2DPainter.preChromatogramExtraxtion(currentIsotopicMass-params.LowerMzBand, currentIsotopicMass+params.UpperMzBand);
             l2DPainter_ = l2DPainter;
             l2DPainter_.setBackground(Color.WHITE);
             l2dPanel_.add(l2DPainter,BorderLayout.CENTER);

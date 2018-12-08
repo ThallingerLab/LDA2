@@ -1960,8 +1960,8 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     if (RulesContainer.getRetentionTimeMaxDeviation(ruleClassIdentifier_)!=null) rtMaxDev = new Double(RulesContainer.getRetentionTimeMaxDeviation(ruleClassIdentifier_));
     this.generalSettingsVO_ = new GeneralSettingsVO(new Integer(RulesContainer.getAmountOfChains(ruleClassIdentifier_)),
         new Integer(RulesContainer.getAmountOfAlkylChains(ruleClassIdentifier_)), new Integer(RulesContainer.getAmountOfAlkenylChains(ruleClassIdentifier_)),
-        RulesContainer.getAddChainPositions(ruleClassIdentifier_),
-        RulesContainer.getChainlibrary(ruleClassIdentifier_), RulesContainer.getCAtomsFromNamePattern(ruleClassIdentifier_),
+        new Short(RulesContainer.getAmountOfLCBs(ruleClassIdentifier_)), RulesContainer.getAddChainPositions(ruleClassIdentifier_),
+        RulesContainer.getChainlibrary(ruleClassIdentifier_), RulesContainer.getLcbLibrary(ruleClassIdentifier_), RulesContainer.getCAtomsFromNamePattern(ruleClassIdentifier_),
         RulesContainer.getDoubleBondsFromNamePattern(ruleClassIdentifier_), RulesContainer.isSingleChainIdentification(ruleClassIdentifier_),
         RulesContainer.getChainCutoffAsString(ruleClassIdentifier_), RulesContainer.getBasePeakCutoffAsString(ruleClassIdentifier_),
         RulesContainer.getSpectrumCoverageMinAsString(ruleClassIdentifier_), RulesContainer.isRtPostprocessing(ruleClassIdentifier_),
@@ -1989,8 +1989,9 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     if (RulesContainer.getRetentionTimeMaxDeviation(ruleClassIdentifier_,fileDir)!=null) rtMaxDev = new Double(RulesContainer.getRetentionTimeMaxDeviation(ruleClassIdentifier_,fileDir));
     this.generalSettingsVO_ = new GeneralSettingsVO(new Integer(RulesContainer.getAmountOfChains(ruleClassIdentifier_,fileDir)),
         new Integer(RulesContainer.getAmountOfAlkylChains(ruleClassIdentifier_,fileDir)), new Integer(RulesContainer.getAmountOfAlkenylChains(ruleClassIdentifier_,fileDir)),
-        RulesContainer.getAddChainPositions(ruleClassIdentifier_,fileDir),
-        RulesContainer.getChainlibrary(ruleClassIdentifier_,fileDir), RulesContainer.getCAtomsFromNamePattern(ruleClassIdentifier_,fileDir),
+        new Short(RulesContainer.getAmountOfLCBs(ruleClassIdentifier_,fileDir)),RulesContainer.getAddChainPositions(ruleClassIdentifier_,fileDir),
+        RulesContainer.getChainlibrary(ruleClassIdentifier_,fileDir), RulesContainer.getLcbLibrary(ruleClassIdentifier_,fileDir),
+        RulesContainer.getCAtomsFromNamePattern(ruleClassIdentifier_,fileDir),
         RulesContainer.getDoubleBondsFromNamePattern(ruleClassIdentifier_,fileDir), RulesContainer.isSingleChainIdentification(ruleClassIdentifier_,fileDir),
         RulesContainer.getChainCutoffAsString(ruleClassIdentifier_,fileDir), RulesContainer.getBasePeakCutoffAsString(ruleClassIdentifier_,fileDir),
         RulesContainer.getSpectrumCoverageMinAsString(ruleClassIdentifier_,fileDir), RulesContainer.isRtPostprocessing(ruleClassIdentifier_,fileDir),
@@ -2005,7 +2006,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
   }
   
   /**
-   * Refreshes the middleTab section if a rule has changed but ignores the current signes in the general tab
+   * Refreshes the middleTab section if a rule has changed but ignores the current settings in the general tab
    * @param tabIndex Index of the current tab
   */
   void refreshMiddleWithoutCurrentGenerals(int tabIndex)
@@ -3327,7 +3328,8 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    */
   private MSnAnalyzer updateMSnAnalyzerToCurrentSettings(int specNumber) throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException{
     FragmentCalculator fragCalc_ = new FragmentCalculator(CACHE_DIR,lipidClassName_,lipidAdduct_,data_.getNameStringWithoutRt(),data_.getChemicalFormula(),data_.Mz[0]);
-    analyzer_.prepareMSnSpectraCache(data_.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), data_.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance());
+    analyzer_.prepareMSnSpectraCache(data_.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), data_.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance(),
+        LipidomicsConstants.getMs2MinIntsForNoiseRemoval());
     Vector<Range> ranges = analyzer_.findSingleSpectraRanges(fragCalc_.getSpectrumLevelRange());     
     Vector<CgProbe> probes = new Vector<CgProbe>();
     if (specNumber<0 || specNumber>=ranges.size()){

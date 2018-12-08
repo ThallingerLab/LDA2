@@ -298,7 +298,8 @@ public class MSnAnalyzer
    */
   private void scanAllSpectraForCandidates(double precursorMz, double precursorTolerance) throws RulesException, IOException, SpectrummillParserException, CgException {
     spectraFound_ = new Vector<Float>();
-    Hashtable<Integer,Boolean> msLevels =  analyzer_.prepareMSnSpectraCache((float)(precursorMz-precursorTolerance), (float)(precursorMz+precursorTolerance));
+    Hashtable<Integer,Boolean> msLevels =  analyzer_.prepareMSnSpectraCache((float)(precursorMz-precursorTolerance), (float)(precursorMz+precursorTolerance),
+        LipidomicsConstants.getMs2MinIntsForNoiseRemoval());
     try{
       if (msLevels.size()<1){
         this.status_ = LipidomicsMSnSet.NO_MSN_PRESENT;
@@ -2319,7 +2320,8 @@ public class MSnAnalyzer
   
   public static Hashtable<Integer,Boolean> prepareCachedSpectra(LipidomicsAnalyzer analyzer, LipidParameterSet set, boolean readMSnSpectra) throws CgException{
     if (readMSnSpectra)
-      return analyzer.prepareMSnSpectraCache(set.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), set.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance());
+      return analyzer.prepareMSnSpectraCache(set.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), set.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance(),
+          LipidomicsConstants.getMs2MinIntsForNoiseRemoval());
     else{
       return analyzer.checkMSnLevels();
     }

@@ -38,8 +38,12 @@ public class GeneralSettingsVO
   private Integer amountOfAlkylChains_;
   /** how many alkenyl chains does this analyte class have */
   private Integer amountOfAlkenylChains_;
+  /** how many LCBs does this analyte class have */
+  private Short amountOfLCBs_;
   /** the name of the fatty acid chain library */
   private String chainLibrary_;
+  /** the name of the long chain base library */
+  private String lcbLibrary_;
   /**  Java regular expression to extract the number carbon atoms from the analyte name */
   private String carbonAtomsRule_;
   /** Java regular expression to extract the number of double bonds from the analyte name */
@@ -71,7 +75,9 @@ public class GeneralSettingsVO
     amountOfChains_ = null;
     amountOfAlkylChains_ = null;
     amountOfAlkenylChains_ = null;
+    amountOfLCBs_ = null;
     chainLibrary_ = null;
+    lcbLibrary_ = null;
     carbonAtomsRule_ = null;
     doubleBondsRule_ = null;
     allowSingleChain_ = false;
@@ -89,7 +95,9 @@ public class GeneralSettingsVO
    * @param amountOfChains how many chains does this analyte class have
    * @param amountOfAlkylChains how many alkyl chains does this analyte class have
    * @param amountOfAlkenylChains how many alkenyl chains does this analyte class have
+   * @param amountOfLCBs how many LCBs does this analyte class have
    * @param chainLibrary the name of the fatty acid chain library
+   * @param chainLibrary the name of the long chain base library
    * @param carbonAtomsRule Java regular expression to extract the number carbon atoms from the analyte name
    * @param doubleBondsRule Java regular expression to extract the number of double bonds from the analyte name
    * @param allowSingleChain is an identification which is based on a single chain already valid?
@@ -102,9 +110,9 @@ public class GeneralSettingsVO
    * @param msIdentificationOrder in which order the identification by MS should be made (ORDER_MS1_FIRST/ORDER_MSN_FIRST/ORDER_MSN_ONLY from RulesContainer)
    */
   public GeneralSettingsVO(Integer amountOfChains,
-      Integer amountOfAlkylChains, Integer amountOfAlkenylChains, Integer addChainPositions,
-      String chainLibrary, String carbonAtomsRule, String doubleBondsRule,
-      boolean allowSingleChain, String chainCutoff, String basePeakCutoff,
+      Integer amountOfAlkylChains, Integer amountOfAlkenylChains, Short amountOfLCBs,
+      Integer addChainPositions, String chainLibrary, String lcbLibrary, String carbonAtomsRule,
+      String doubleBondsRule, boolean allowSingleChain, String chainCutoff, String basePeakCutoff,
       String spectrumCoverage, boolean rtPostProcessing, boolean rtParallelSeries,
       Double rtMaxDeviation, int msIdentificationOrder)
   {
@@ -112,8 +120,10 @@ public class GeneralSettingsVO
     this.amountOfChains_ = amountOfChains;
     this.amountOfAlkylChains_ = amountOfAlkylChains;
     this.amountOfAlkenylChains_ = amountOfAlkenylChains;
+    this.amountOfLCBs_ = amountOfLCBs;
     this.addChainPositions_ = addChainPositions;
     this.chainLibrary_ = chainLibrary;
+    this.lcbLibrary_ = lcbLibrary;
     this.carbonAtomsRule_ = carbonAtomsRule;
     this.doubleBondsRule_ = doubleBondsRule;
     this.allowSingleChain_ = allowSingleChain;
@@ -152,6 +162,15 @@ public class GeneralSettingsVO
   {
     return amountOfAlkenylChains_;
   }
+  
+  /**
+   * 
+   * @return how many LCBs does this analyte class have
+   */
+  public Short getAmountOfLCBs()
+  {
+    return amountOfLCBs_;
+  }
 
   /**
    * 
@@ -160,6 +179,15 @@ public class GeneralSettingsVO
   public String getChainLibrary()
   {
     return chainLibrary_;
+  }
+
+  /**
+   * 
+   * @return the name of the long chain base library
+   */
+  public String getLcbLibrary()
+  {
+    return lcbLibrary_;
   }
 
   /**

@@ -47,6 +47,7 @@ import javax.swing.UIManager;
 
 import at.tugraz.genome.lda.exception.SettingsException;
 import at.tugraz.genome.lda.msn.RulesContainer;
+import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.quantification.SavGolJNI;
 import at.tugraz.genome.lda.swing.RuleDefinitionInterface;
 import at.tugraz.genome.lda.utils.StaticUtils;
@@ -62,7 +63,7 @@ public class Settings
 {
   private static Settings instance_ = null;
 
-  public final static String VERSION = "2.6.3_6";
+  public final static String VERSION = "2.6.3_7";
   
   public final static String SETTINGS_FILE = ".settings";
   
@@ -118,6 +119,12 @@ public class Settings
   public final static String FRAG_SETTINGS_FILE = ".selected";
   
   private LinkedHashMap<String,File> propertiesFiles_;
+  
+  /** the path to the encoding of the hydroxylation path*/
+  private static String hydroxyEncodingPath_;
+
+  /** the character encoding of the number of hydroxylation sites*/
+  private static HydroxyEncoding hydroxyEncoding_;
   
   private static Settings getInstance() {
     if (instance_ == null) {
@@ -216,8 +223,18 @@ public class Settings
           }
         }
       }
+      
+      //for reading the hydroxylation encoding config file
+      hydroxyEncodingPath_ = properties.getProperty("HydroxyEncodingPath", "hydroxylationEncoding.txt");
+      if (hydroxyEncodingPath_==null || hydroxyEncodingPath_.length()==0)
+        throw new Exception("In order to work, LDA must have a lookup file for the encoding of the hydroxylation sites. Please specify it in the \"HydroxyEncodingPath\" settings of the .settings file");
+      File hydroxyEncoding = new File(hydroxyEncodingPath_);
+      if (!hydroxyEncoding.exists())
+        throw new Exception("The file \""+hydroxyEncodingPath_+"\" (specified in the HydroxyEncodingPath of the .settings file) does not exist!");
+      hydroxyEncoding_ = new HydroxyEncoding(hydroxyEncodingPath_);
     }catch(Exception e){
       e.printStackTrace();
+      System.exit(1);
     }
   }
   
@@ -350,18 +367,18 @@ public class Settings
    * @return if a CUDA capable device is installed
    */
   public static boolean hasCuda() {
-	boolean cudaCapable;
-	SavGolJNI sav_gol_jni = null;
-	try {
-		// try to load the necessary libraries for CUDA and to find a CUDA capable device
-		sav_gol_jni = new SavGolJNI();
-		cudaCapable = sav_gol_jni.cudaCapableDeviceNative();
-	} catch (UnsatisfiedLinkError e) {
-		cudaCapable = false;
-	}
-	if (!cudaCapable)
-        new WarningMessage(new JFrame(), "Error", "Your GPU is not ready for CUDA! The calculation will continue without GPU assistance.");
-	return cudaCapable;
+    boolean cudaCapable;
+    SavGolJNI sav_gol_jni = null;
+    try {
+      // try to load the necessary libraries for CUDA and to find a CUDA capable device
+      sav_gol_jni = new SavGolJNI();
+      cudaCapable = sav_gol_jni.cudaCapableDeviceNative();
+    } catch (UnsatisfiedLinkError e) {
+      cudaCapable = false;
+    }
+    if (!cudaCapable)
+      new WarningMessage(new JFrame(), "Error", "Your GPU is not ready for CUDA! The calculation will continue without GPU assistance.");
+    return cudaCapable;
   }
   
   /** use Alex123 target lists*/
@@ -512,6 +529,16 @@ public class Settings
     for (String option : fragOptions) fragSettings.add(option);
     return fragSettings;
   }
+  
+  /**
+   * 
+   * @return the object holding the hydroxylation encodings
+   */
+  public static HydroxyEncoding getHydroxyEncoding() {
+    Settings.getInstance();
+    return hydroxyEncoding_;
+  }
+  
   
   /**
    * 

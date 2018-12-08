@@ -501,7 +501,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> finalResults = null;
     try{
       float mzTolerance = LipidomicsConstants.getCoarseChromMzTolerance(mz);
-      this.prepareMSnSpectraCache(mz-mzTolerance, mz+mzTolerance);
+      this.prepareMSnSpectraCache(mz-mzTolerance, mz+mzTolerance,LipidomicsConstants.getMs2MinIntsForNoiseRemoval());
 
     
       FragmentCalculator fragCalc = new FragmentCalculator(null,className,modName,analyteName,formula,mz);
@@ -4991,7 +4991,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
    * @throws CgException
    */
   public Hashtable<Integer,Boolean> prepareMSnSpectraCache(float startMz, float stopMz, float startTime, float stopTime) throws CgException{
-    return reader_.prepareMSnSpectraCache(startMz, stopMz, startTime, stopTime);
+    return reader_.prepareMSnSpectraCache(startMz, stopMz, startTime, stopTime,LipidomicsConstants.getMs2MinIntsForNoiseRemoval());
   }
 
   /**
