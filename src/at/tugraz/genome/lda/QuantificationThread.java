@@ -2235,7 +2235,7 @@ public class QuantificationThread extends Thread
       sortedEntries = dirParser.getResults();
     }
     if (sortedEntries==null || sortedEntries.size()==0)
-      throw new AlexTargetlistParserException("There are usable entries in your target list");
+      throw new AlexTargetlistParserException("There are unusable entries in your target list");
     
     LinkedHashMap<String,Integer> classSequence = new LinkedHashMap<String,Integer>();
     Hashtable<String,Boolean> adductInsensitiveRtFilter = new Hashtable<String,Boolean>();

@@ -83,6 +83,7 @@ public class TargetlistParser
   private final static String FRAGMENT_OH_NUMBER_COLUMN = "OH index from structure information";
   private final static String FRAGMENT_SUM_COMPOSITION_COLUMN = "Sum composition from structure information";
   private final static String FRAGMENT_FORMULA_COLUMN = "Sum formula from structure information";
+  private final static String FRAGMENT_FORMULA_COLUMN_PARTIAL = "Sum formula from structure inf";
   
   
   /**
@@ -286,9 +287,9 @@ public class TargetlistParser
             throw new AlexTargetlistParserException("The \""+MS2_ACTIVATION_COLUMN+"\" column must not be empty if the \""+MS_LEVEL_COLUMN+"\" equals 3. The entry at line "+lineNumber+" in file "+fileName_+" is empty.");
           if (adduct==null || adductCategorized==null) 
             throw new AlexTargetlistParserException("The \""+ADDUCT_COLUMN+"\" column must not be empty. The entry at line "+lineNumber+" in file "+fileName_+" is empty.");
-          if (adduct==null) 
+          if (id==null) 
             throw new AlexTargetlistParserException("The \""+ID_COLUMN+"\" column must not be empty. The entry at line "+lineNumber+" in file "+fileName_+" is empty.");
-          if (adduct==null) 
+          if (category==null) 
             throw new AlexTargetlistParserException("The \""+CATEGORY_COLUMN+"\" column must not be empty. The entry at line "+lineNumber+" in file "+fileName_+" is empty.");
           if (charge<1)
             throw new AlexTargetlistParserException("An entry in \""+CATEGORY_COLUMN+"\" must be contain a higher integer value than 0. The entry at line "+lineNumber+" in file "+fileName_+" does not.");
@@ -375,7 +376,7 @@ public class TargetlistParser
               fragmentOhNumberColumn = columnNr;
             } else if (columns[columnNr].equalsIgnoreCase(FRAGMENT_SUM_COMPOSITION_COLUMN)){
               fragmentSumCompositionColumn = columnNr;
-            } else if (columns[columnNr].equalsIgnoreCase(FRAGMENT_FORMULA_COLUMN)){
+            } else if (columns[columnNr].equalsIgnoreCase(FRAGMENT_FORMULA_COLUMN) || columns[columnNr].startsWith(FRAGMENT_FORMULA_COLUMN_PARTIAL)){
               fragmentFormulaColumn = columnNr;
             }
           }

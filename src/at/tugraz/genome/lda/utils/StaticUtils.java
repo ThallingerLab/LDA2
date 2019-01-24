@@ -1105,13 +1105,17 @@ public class StaticUtils
       Class.forName( "at.tugraz.genome.lda.Settings");
       useAlex = Settings.useAlex(); 
     } catch( ClassNotFoundException e ) { }
-    if (useAlex  && (name.equals("FA") || name.startsWith("FA ")) || (name.startsWith("-FA "))){
-      if (name.equals("FA"))
-        displayName = "FA "+faName;
-      else if (name.startsWith("FA "))
-        displayName = "FA "+faName+name.substring("FA ".length());
-      else if (name.startsWith("-FA "))
-        displayName = "-FA "+faName+name.substring("-FA ".length());
+    if (useAlex  && (name.equals("FA") || name.startsWith("FA ") || (name.startsWith("-FA ")))){
+      if (name.indexOf(faName)==-1) {
+        if (name.equals("FA"))
+          displayName = "FA "+faName;
+        else if (name.startsWith("FA "))
+          displayName = "FA "+faName+name.substring("FA ".length());
+        else if (name.startsWith("-FA "))
+          displayName = "-FA "+faName+name.substring("-FA ".length());
+      }else{      
+        displayName = name;
+      }
     }
     return displayName;
   }
