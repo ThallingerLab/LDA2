@@ -372,7 +372,7 @@ public class TestClass extends JApplet implements AddScan
     //this.mzTabValidation();
     //this.evaluatePrmData();
     //this.batchQuantByCommandLine();
-    
+    //this.groupAlexResultsByRt();
     //generateSphingolipidMassList();
     //parseLCBList();
   }
@@ -14432,6 +14432,15 @@ public void testTabFile() throws Exception {
           }
         }
 
+    }
+  }
+  
+  private void groupAlexResultsByRt() {
+    AlexRtGrouper grouper = new AlexRtGrouper("C:\\data\\Christer\\20190111\\positive",0.4d);
+    try {
+      grouper.groupTheEntries();
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
   

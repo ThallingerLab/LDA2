@@ -337,6 +337,28 @@
 	    <delete includeEmptyDirs="true">
 	       <fileset dir="${classes.faConverter.dir}" />
 	    </delete>
-	</target>	
+	</target>
+	
+	<target name="rtGrouper">
+		<mkdir dir="${classes.alexGrouper.dir}"/>
+	  	<javac debug="true"
+	         destdir="${classes.alexGrouper.dir}"
+	         includes="**/*.java"
+	         includeAntRuntime="false">
+	  		<src path="${src.alexGrouper.dir}" />
+	      <classpath refid="distri.class.path" />
+	  	</javac>
+	  	<jar jarfile="${dist.dir}/AlexRtGrouper.jar">
+			<manifest>
+				<attribute name="Main-Class" value="at.tugraz.genome.AlexRtGrouper" />
+				<attribute name="Class-Path" value="LipidDataAnalyzer.jar tuLibs/maspectras-lipidomics.jar thirdParty/poi.jar thirdParty/poi-ooxml.jar thirdParty/poi-ooxml-schemas.jar"/>
+			</manifest>
+	        <fileset dir="${classes.alexGrouper.dir}" includes="**/*.*"/> 
+	    </jar>
+	    <delete includeEmptyDirs="true">
+	       <fileset dir="${classes.alexGrouper.dir}" />
+	    </delete>
+
+	</target>
 
 </project>

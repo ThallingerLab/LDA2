@@ -199,6 +199,16 @@ public class TargetlistEntry extends QuantVO
   {
     return msLevel_;
   }
+  
+  
+  /**
+   * sets the msLevel
+   * @param msLevel the MS level
+   */
+  public void setMsLevel_(int msLevel)
+  {
+    this.msLevel_ = msLevel;
+  }
 
   /**
    * @return the name of the fragment
@@ -231,6 +241,16 @@ public class TargetlistEntry extends QuantVO
   {
     return molecularSpecies_;
   }
+  
+  
+  /**
+   * sets the name of the molecular species
+   * @param molecularSpecies name of the molecular species
+   */
+  public void setMolecularSpecies_(String molecularSpecies)
+  {
+    this.molecularSpecies_ = molecularSpecies;
+  }
 
   /**
    * @return the m/z of the MS2 precursor 
@@ -238,6 +258,16 @@ public class TargetlistEntry extends QuantVO
   public String getMs2Precursor()
   {
     return ms2Precursor_;
+  }
+  
+  
+  /**
+   * sets the value of the MS2 precursor
+   * @param ms2Precursor the m/z of the MS2 precursor
+   */
+  public void setMs2Precursor(String ms2Precursor)
+  {
+    this.ms2Precursor_ = ms2Precursor;
   }
 
   /**
@@ -247,6 +277,15 @@ public class TargetlistEntry extends QuantVO
   {
     return ms2Activation_;
   }
+    
+  /**
+   * sets the MS2 activation type
+   * @param ms2Activation MS2 activation type
+   */
+  public void setMs2Activation(String ms2Activation)
+  {
+    this.ms2Activation_ = ms2Activation;
+  }
 
   /**
    * @return the MS3 precursor
@@ -255,6 +294,16 @@ public class TargetlistEntry extends QuantVO
   {
     return ms3Precursor_;
   }
+ 
+  /**
+   * sets the value of the MS3 precursor
+   * @param ms3Precursor the m/z of the MS3 precursor
+   */
+  public void setMs3Precursor(String ms3Precursor)
+  {
+    this.ms3Precursor_ = ms3Precursor;
+  }
+
 
   /**
    * @return the activation mode for MS3
@@ -262,6 +311,15 @@ public class TargetlistEntry extends QuantVO
   public String getMs3Activation()
   {
     return ms3Activation_;
+  }
+  
+  /**
+   * sets the MS3 activation type
+   * @param ms3Activation MS3 activation type
+   */
+  public void setMs3Activation(String ms3Activation)
+  {
+    this.ms3Activation_ = ms3Activation;
   }
 
   /**

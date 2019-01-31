@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2019 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -1146,7 +1146,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     text.setFont(new Font("Arial",Font.PLAIN, 12));
     logoPanel.add(text,new GridBagConstraints(0, 4, 3, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
-    text = new JLabel("Copyright \u00A9 2018 J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger");
+    text = new JLabel("Copyright \u00A9 2019 J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger");
     text.setFont(new Font("Arial",Font.PLAIN, 12));
     logoPanel.add(text,new GridBagConstraints(0, 5, 3, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
@@ -3746,7 +3746,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     String titleString = "Lipid Data Analyzer "+Settings.VERSION+"   "+LipidomicsConstants.getCurrentMSMachine()+" settings ";
     String fragSelected = Settings.getFragmentSettingsString();
     if (fragSelected!=null) titleString += " "+fragSelected;    
-    titleString += "         \u00A9 2018 - J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger - GNU GPL v3 license";
+    titleString += "         \u00A9 2019 - J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger - GNU GPL v3 license";
     return titleString;
   }
 
@@ -5649,26 +5649,18 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       Hashtable<String,Hashtable<String,String>> acceptedMolecules = new Hashtable<String,Hashtable<String,String>>();
       LinkedHashMap<String,Integer> classSequence = new LinkedHashMap<String,Integer>();
       Hashtable<String,Integer> maxIsotopes = new Hashtable<String,Integer>();
-      String toAdd = null;
       for (String molGroup:this.heatmaps_.keySet()) {
         classSequence.put(molGroup, 1);
         Hashtable<String,String> molsOfClass = new Hashtable<String,String>();
         HeatMapDrawing heatmap = this.heatmaps_.get(molGroup);
         for (String molName: heatmap.getSelectedMoleculeNames()){
-          if (this.analysisModule_.isRtGrouped()){
-            if (molName.startsWith(internalStandardPref) || molName.startsWith(externalStandardPref))
-              toAdd = molName;
-            else  
-              toAdd = molName.substring(0,molName.lastIndexOf("_"));
-            molsOfClass.put(toAdd, toAdd);            
-          }else
-            molsOfClass.put(molName, molName);
+          molsOfClass.put(molName, molName);
         }
         acceptedMolecules.put(molGroup, molsOfClass);
         maxIsotopes.put(molGroup, heatmap.getSelectedIsotope());
       }
       RdbOutputWriter rdbWriter = new RdbOutputWriter(internalStandardPref,externalStandardPref);
-      rdbWriter.write(exportFile.getAbsolutePath(), analysisModule_, classSequence, acceptedMolecules,maxIsotopes);
+      rdbWriter.write(exportFile.getAbsolutePath(), analysisModule_, classSequence, null, acceptedMolecules,maxIsotopes,null,null);
     }
     catch (ExcelInputFileException e) {
       e.printStackTrace();
