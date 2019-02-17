@@ -27,6 +27,6 @@ Name=NL_Carboxy_Na	Formula=$PRECURSOR-$CHAIN+H-Na	Charge=1	MSLevel=2	mandatory=f
 Name=NL_Carboxy_NH3	Formula=$PRECURSOR-$CHAIN-NH3	Charge=1	MSLevel=2	mandatory=false
 
 !INTENSITIES
-Equation=NL_Carboxy+NL_Carboxy_NH3+0*NL_Carboxy_Na>0.005*Precursor	mandatory=true
+Equation=NL_Carboxy+0*NL_Carboxy_Na>0.005*Precursor	mandatory=true
 Equation=NL_Carboxy>NL_Carboxy_Na					mandatory=true
 

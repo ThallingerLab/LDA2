@@ -21,7 +21,6 @@ Equation=NL_NH3<0.05*$BASEPEAK	mandatory=true
 !FRAGMENTS
 Name=NL_Carboxy		Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=false
 Name=NL_Carboxy_Na	Formula=$PRECURSOR-$CHAIN+H-Na	Charge=1	MSLevel=2	mandatory=false
-Name=NL_Carboxy_NH3	Formula=$PRECURSOR-$CHAIN-NH3	Charge=1	MSLevel=2	mandatory=false
 Name=MG_fragment_IS	Formula=$CHAIN+C3D5O		Charge=1	MSLevel=2	mandatory=false
 Name=MG_fragment	Formula=$CHAIN+C3H5O		Charge=1	MSLevel=2	mandatory=false
 
