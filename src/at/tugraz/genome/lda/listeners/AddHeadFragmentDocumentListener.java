@@ -28,6 +28,9 @@ import java.io.IOException;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+import at.tugraz.genome.lda.exception.ChemicalFormulaException;
+import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.swing.RuleDefinitionInterface;
@@ -59,8 +62,8 @@ public class AddHeadFragmentDocumentListener implements DocumentListener
     	catch (IOException e1) {e1.printStackTrace();}
     	catch (SpectrummillParserException e1) {e1.printStackTrace();}
     	catch (CgException e1) {e1.printStackTrace();}
-    	catch (NoRuleException e1) {e1.printStackTrace();} 
-        
+    	catch (NoRuleException e1) {e1.printStackTrace();}
+    catch (HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e1) {e1.printStackTrace();}
     }
 
     public void removeUpdate(DocumentEvent e) 
@@ -74,7 +77,7 @@ public class AddHeadFragmentDocumentListener implements DocumentListener
     	catch (SpectrummillParserException e1) {}
     	catch (CgException e1) {}
     	catch (NoRuleException e1) {} 
-        
+    catch (HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e1) {e1.printStackTrace();}        
     }
 
     public void changedUpdate(DocumentEvent e) 
@@ -87,6 +90,7 @@ public class AddHeadFragmentDocumentListener implements DocumentListener
     	catch (IOException e1) {}
     	catch (SpectrummillParserException e1) {}
     	catch (CgException e1) {}
-    	catch (NoRuleException e1) {}        
+    	catch (NoRuleException e1) {}
+    catch (HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e1) {e1.printStackTrace();}
     }
 }

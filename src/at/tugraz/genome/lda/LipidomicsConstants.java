@@ -50,7 +50,9 @@ import de.isas.mztab2.model.PublicationItem;
 import de.isas.mztab2.model.PublicationItem.TypeEnum;
 import de.isas.mztab2.model.Sample;
 import de.isas.mztab2.model.SampleProcessing;
+import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.SettingsException;
+import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.StaticUtils;
@@ -69,6 +71,8 @@ public class LipidomicsConstants
   public final static String EXCEL_MSN_SECTION_POSITION_INTENSITIES = "Position rules";
   
   public final static String EXCEL_MSN_FRAGMENT_NAME = "Name";
+  public final static String EXCEL_MSN_FRAGMENT_OH = "OH";
+  public final static String EXCEL_MSN_FRAGMENT_CHAIN_TYPE = "Chain type";  
   public final static String EXCEL_MSN_FRAGMENT_FORMULA = "Formula";
   public final static String EXCEL_MSN_FRAGMENT_CHARGE = "Charge";
   public final static String EXCEL_MSN_FRAGMENT_MSLEVEL = "msLevel";
@@ -90,6 +94,9 @@ public class LipidomicsConstants
   public final static String EXCEL_MSN_INTENSITY_VALUES = "Values";
   public final static String EXCEL_MSN_INTENSITY_MISSED = "Missed";
   
+  private final static String EXCEL_HYDROXY_FA_PREFIX = "faOHEncoding_";
+  private final static String EXCEL_HYDROXY_LCB_PREFIX = "lcbOHEncoding_";
+  
   /** results shall be exported at the species level*/
   public final static short EXPORT_ANALYTE_TYPE_SPECIES = 0;
   /** results shall be exported at the chain level (no position)*/
@@ -97,14 +104,53 @@ public class LipidomicsConstants
   /** results shall be exported at the chain position level*/
   public final static short EXPORT_ANALYTE_TYPE_POSITION = 2;
   
+  /** to separate between the chains for naming of chain combinations*/
+  public final static String CHAIN_COMBI_SEPARATOR = "<->";
+  /** to indicate the number of OH sites after the type*/
+  public final static String CHAIN_OH_INDEX_SEPARATOR = "^";
+  /** to separate between the chain type and the name*/
+  public final static String CHAIN_NAME_TYPE_SEPARATOR = "@";
+  /** indicator that there will come a different type of linkage (alkyl/aleknyl)*/
+  public final static String CHAIN_LINKAGE_INCLUSION_START = "{";
+  /** indicator that there will end a different type of linkage (alkyl/aleknyl)*/
+  public final static String CHAIN_LINKAGE_INCLUSION_STOP = "}";
+  /** the prefix to indicate a fatty acyl/alkyl/alenyl chain*/
+  public final static String CHAIN_TYPE_FA_NAME = "FA";
+  /** the prefix to indicate an LCB chain*/
+  public final static String CHAIN_TYPE_LCB_NAME = "LCB";
+  /** the prefix to indicate a fatty acyl chain*/
+  public final static short CHAIN_TYPE_NO_CHAIN = -1;
+  /** the prefix to indicate a fatty acyl chain*/
+  public final static short CHAIN_TYPE_FA_ACYL = 0;
+  /** the prefix to indicate a fatty alkyl chain*/
+  public final static short CHAIN_TYPE_FA_ALKYL = 1;
+  /** the prefix to indicate a fatty alkyl chain*/
+  public final static short CHAIN_TYPE_FA_ALKENYL = 2;  
+  /** the prefix to indicate an LCB chain*/
+  public final static short CHAIN_TYPE_LCB = 3;
+
+  
   /** prefix for alkyl linked fatty acid chains */
   public final static String ALKYL_PREFIX = "O-";
-
   /** prefix for alkenyl linked fatty acid chains */
   public final static String ALKENYL_PREFIX = "P-";
-  
   /** the separator to distinguish between several fatty acids*/
-  public final static String FA_SEPARATOR = "_";
+  public final static String CHAIN_SEPARATOR_NO_POS = "_";
+  /** the separator to distinguish between several fatty acids, where the positions are known*/
+  public final static String CHAIN_SEPARATOR_KNOWN_POS = "/";
+  /** the separator between the number of carbon atoms and the double bonds*/  
+  public final static String CHAIN_SEPARATOR_DBS = ":";
+  /** separator used between human readable chain combinations to show that there are more than one possible position assignment*/
+  public final static String CHAIN_COMBI_SEPARATOR_AMBIG_POS = ";";
+  
+  /** the String for separating the OH numbers*/
+  public final static String ALEX_OH_SEPARATOR = ";";
+  /** prefix for alkylated chains*/
+  public final static String ALEX_ALKYL_PREFIX = "O_";
+  /** prefix for alkenylated chains*/
+  public final static String ALEX_ALKENYL_PREFIX = "P_";
+  /** the String for separating the chains*/
+  public final static String ALEX_CHAIN_SEPARATOR = "-";
 
   
   public static String LDA_PROPERTIES_FILE = "LipidDataAnalyzer.properties";
@@ -1765,8 +1811,11 @@ public class LipidomicsConstants
    * class, since the parameters to write are private
    * @param sheet the Excel sheet to be written
    * @param headerStyle style for the header column
+   * @param faHydroxyEncoding the character encoding of the number of hydroxylation sites for the
+   * @param lcbHydroxyEncoding the character encoding of the number of hydroxylation sites for the LCB
    */
-  public void writeSettingsToExcel(Sheet sheet,CellStyle headerStyle){
+  public void writeSettingsToExcel(Sheet sheet, CellStyle headerStyle, HydroxyEncoding faHydroxyEncoding,
+      HydroxyEncoding lcbHydroxyEncoding){
     int rowCount = 0;
     Row row = sheet.createRow(rowCount);
     rowCount++;
@@ -2097,13 +2146,40 @@ public class LipidomicsConstants
       if (String.valueOf(alexTargetlist_).length()>longestValue) longestValue = String.valueOf(alexTargetlist_).length();
     }
     
+    
+    String key;
+    String value;
+    if (faHydroxyEncoding!=null) {
+      for (Short oh : faHydroxyEncoding.getHydroxyNumbersInAscendingOrder()) {
+        try {
+          key = EXCEL_HYDROXY_FA_PREFIX+String.valueOf(oh);
+          value = faHydroxyEncoding.getEncodedPrefix(oh);
+          rowCount = createPropertyRow(sheet,rowCount,key,value);
+        //this catch can never happen
+        }catch (HydroxylationEncodingException e) {}
+      }
+    }
+    if (lcbHydroxyEncoding!=null) {
+      for (Short oh : lcbHydroxyEncoding.getHydroxyNumbersInAscendingOrder()) {
+        try {
+          key = EXCEL_HYDROXY_LCB_PREFIX+String.valueOf(oh);
+          value = lcbHydroxyEncoding.getEncodedPrefix(oh);
+          rowCount = createPropertyRow(sheet,rowCount,key,value);
+        //this catch can never happen
+        }catch (HydroxylationEncodingException e) {}
+      }
+    }
+
+    
     int keyColumnWidth = (int)((LipidomicsConstants.EXCEL_KEY.length()*ExcelUtils.CHAR_MULT)*ExcelUtils.BOLD_MULT);
     if ((longestKey+1)*ExcelUtils.CHAR_MULT>keyColumnWidth) keyColumnWidth =  (longestKey+1)*ExcelUtils.CHAR_MULT;
     sheet.setColumnWidth(EXCEL_KEY_COLUMN,keyColumnWidth); 
     int valueColumnWidth = (int)((LipidomicsConstants.EXCEL_VALUE.length()*ExcelUtils.CHAR_MULT)*ExcelUtils.BOLD_MULT);
     if ((longestValue+1)*ExcelUtils.CHAR_MULT>valueColumnWidth) valueColumnWidth =  (longestValue+1)*ExcelUtils.CHAR_MULT;
     sheet.setColumnWidth(EXCEL_VALUE_COLUMN,valueColumnWidth);
+
   }
+  
   
   /**
    * returns the String representation of the Param VO
@@ -2171,12 +2247,16 @@ public class LipidomicsConstants
    * class, since the parameters to be set are private
    * @param sheet Excel sheet to read the parameters from
    * @throws SettingsException thrown when a settings combination is not possible
-   * @return LipidomicsConstants object containing the parameters that were read
+   * @return settings: [0] LipidomicsConstants object containing the parameters that were read; [1] FA hydroxylation encoding; [2] LCB hydroxylation encoding
    */
-  public static LipidomicsConstants readSettingsFromExcel(Sheet sheet) throws SettingsException{
+  public static Object[] readSettingsFromExcel(Sheet sheet) throws SettingsException{
     Properties properties = new Properties();
     int keyColumn = -1;
     int valueColumn = -1;
+    Hashtable<String,Short> faOhEncondings = new Hashtable<String,Short>();
+    Hashtable<String,Short> lcbOhEncondings = new Hashtable<String,Short>();
+    String ohNumberString;
+
     for (int rowCount=0;rowCount!=(sheet.getLastRowNum()+1);rowCount++){
       Hashtable<Integer,Object> entries = ExcelUtils.getEntriesOfOneRow(sheet.getRow(rowCount),true);
       // the columns are known - parse the entries
@@ -2186,7 +2266,19 @@ public class LipidomicsConstants
         String value = "";
         if (entries.get(valueColumn) instanceof String) value = (String)entries.get(valueColumn);
         else value = String.valueOf((Double)entries.get(valueColumn));
-        properties.put(key, value);
+        if (key.startsWith(EXCEL_HYDROXY_FA_PREFIX) || key.startsWith(EXCEL_HYDROXY_LCB_PREFIX)) {
+          ohNumberString = null;
+          if (key.startsWith(EXCEL_HYDROXY_FA_PREFIX))
+            ohNumberString = key.substring(EXCEL_HYDROXY_FA_PREFIX.length());
+          else if (key.startsWith(EXCEL_HYDROXY_LCB_PREFIX))
+            ohNumberString = key.substring(EXCEL_HYDROXY_LCB_PREFIX.length());
+          Short ohNumber = Short.parseShort(ohNumberString);
+          if (key.startsWith(EXCEL_HYDROXY_FA_PREFIX))
+            faOhEncondings.put(value, ohNumber);
+          else if (key.startsWith(EXCEL_HYDROXY_LCB_PREFIX))
+            lcbOhEncondings.put(value, ohNumber);
+        }else
+          properties.put(key, value);
       // looking for the header columns
       } else{
         for (Integer columnId : entries.keySet()){
@@ -2212,7 +2304,11 @@ public class LipidomicsConstants
     }
     if (properties.containsKey(MASS_SHIFT))properties.put(MASS_SHIFT, String.valueOf(Double.parseDouble(properties.getProperty(MASS_SHIFT))*1000d));
     consts.setVariables(properties);
-    return consts;
+    Object[] returnValues = new Object[3];
+    returnValues[0] = consts;
+    returnValues[1] = new HydroxyEncoding(faOhEncondings);
+    returnValues[2] = new HydroxyEncoding(lcbOhEncondings);
+    return returnValues;
   }
 
   public String getRelativeMS1BasePeakCutoff()

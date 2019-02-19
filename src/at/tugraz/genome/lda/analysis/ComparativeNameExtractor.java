@@ -278,7 +278,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
         if (!sheet.getSheetName().equalsIgnoreCase(QuantificationThread.CONSTANTS_SHEET))
           continue;
         try {
-          LipidomicsConstants readConstants = LipidomicsConstants.readSettingsFromExcel(sheet);
+          LipidomicsConstants readConstants = (LipidomicsConstants)LipidomicsConstants.readSettingsFromExcel(sheet)[0];
           if (readConstants.getShotgun()==LipidomicsConstants.SHOTGUN_TRUE)
             isShotgun = true;
         } catch (SettingsException e) {

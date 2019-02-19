@@ -26,6 +26,11 @@ package at.tugraz.genome.lda.alex123.vos;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.exception.AlexTargetlistParserException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
+import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
+import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.QuantVO;
 
 /**
@@ -47,7 +52,9 @@ public class TargetlistEntry extends QuantVO
   private String structure_ = null;
   /** the name of this species*/
   private String species_ = null;
-  /** the name of the lipid molecular species*/
+  /** the original name of the lipid molecular species*/
+  private String originalMolecularSpecies_ = null;
+  /** the name of the lipid molecular species in LDA encoding*/
   private String molecularSpecies_ = null;
   /** the m/z of the MS2 precursor*/
   private String ms2Precursor_ = null;
@@ -120,6 +127,7 @@ public class TargetlistEntry extends QuantVO
    * @param fragmentOhNumber the number of OH groups of the fragment
    * @param fragmentSumComposition the sum composition of the fragment
    * @param fragmentFormula the chemical formula of the fragment
+   * @throws AlexTargetlistParserException thrown whenever there is something wrong with the entries
    */
   public TargetlistEntry(String detector, String polarity, int msLevel,
       double mz, String fragment, String structure, String species,
@@ -129,7 +137,7 @@ public class TargetlistEntry extends QuantVO
       int charge, int carbonNumber, int dbNumber, int ohNumber,
       String sumComposition, String formula, String originalSumFormula, int fragmentCarbonNumber,
       int fragmentDbNumber, int fragmentOhNumber,
-      String fragmentSumComposition, String fragmentFormula)
+      String fragmentSumComposition, String fragmentFormula) throws AlexTargetlistParserException
   {
     super(lipidClass, species, -1, formula, mz, charge, adduct, adductFormula, -1f, 0f, 0f,
         new Vector<Double>(), new Vector<Double>(),0);
@@ -148,13 +156,9 @@ public class TargetlistEntry extends QuantVO
     this.fragment_ = fragment;
     this.structure_ = structure;
     this.species_ = species;
-    this.molecularSpecies_ = molecularSpecies;
-    if (molecularSpecies_!=null && molecularSpecies_.startsWith(lipidClass+" "))
-      molecularSpecies_ = molecularSpecies_.substring((lipidClass+" ").length());
-    if (molecularSpecies_!=null && molecularSpecies_.indexOf("-")>-1){
-      molecularSpecies_ = molecularSpecies_.replaceAll("-", "_");
-      molecularSpecies_ = molecularSpecies_.replaceAll("O_", "O-");
-    }
+    this.originalMolecularSpecies_ = molecularSpecies;
+    this.decodeMolecularSpecies(this.originalMolecularSpecies_,lipidClass,species);
+
     this.ms2Precursor_ = ms2Precursor;
     this.ms2Activation_ = ms2Activation;
     this.ms3Precursor_ = ms3Precursor;
@@ -244,14 +248,26 @@ public class TargetlistEntry extends QuantVO
   
   
   /**
+   * @return the name of the lipid molecular species
+   */
+  public String getOriginalMolecularSpecies()
+  {
+    return originalMolecularSpecies_;
+  }
+  
+  
+  /**
    * sets the name of the molecular species
    * @param molecularSpecies name of the molecular species
+   * @throws AlexTargetlistParserException thrown whenever there is something wrong with the entries
    */
-  public void setMolecularSpecies_(String molecularSpecies)
+  public void setOriginalMolecularSpecies(String originalMolecularSpecies) throws AlexTargetlistParserException
   {
-    this.molecularSpecies_ = molecularSpecies;
+    this.originalMolecularSpecies_ = originalMolecularSpecies;
+    this.decodeMolecularSpecies(this.originalMolecularSpecies_, this.analyteClass_, this.analyteName_);
   }
-
+  
+  
   /**
    * @return the m/z of the MS2 precursor 
    */
@@ -495,5 +511,71 @@ public class TargetlistEntry extends QuantVO
     this.alex123FragmentsForClass_ = alex123FragmentsForClass;
   }
   
+  /**
+   * decodes an Alex123 molecular species entry to the corresponding LDA representation
+   * @param molecularSpecies the original Alex123 naming of the molecular species
+   * @param lipidClass the lipid class
+   * @param species the species name - for error handling
+   * @throws AlexTargetlistParserException thrown whenever there is something wrong with the entries
+   */
+  private void decodeMolecularSpecies(String molecularSpecies, String lipidClass, String species) throws AlexTargetlistParserException {
+    this.molecularSpecies_ = null;
+    if (originalMolecularSpecies_!=null && originalMolecularSpecies_.startsWith(lipidClass+" "))
+      originalMolecularSpecies_ = originalMolecularSpecies_.substring((lipidClass+" ").length());
+    //this was the old LDA combination encoding
+//    if (molecularSpecies_!=null && molecularSpecies_.indexOf("-")>-1){
+//      molecularSpecies_ = molecularSpecies_.replaceAll("-", "_");
+//      molecularSpecies_ = molecularSpecies_.replaceAll("O_", "O-");
+//    }
+    //this is for the new LDA combination encoding
+    if (originalMolecularSpecies_!=null && originalMolecularSpecies_.length()>0) {
+      Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
+      Vector<String> parts = getParts(originalMolecularSpecies_);
+      for (String part : parts) {
+        try {
+          chains.add(StaticUtils.decodeAlex123Chain(part,species));
+        }
+        catch (LipidCombinameEncodingException e) {
+          throw new AlexTargetlistParserException(e);
+        }
+      }
+      this.molecularSpecies_ = StaticUtils.encodeLipidCombi(chains);
+    }else {
+      this.molecularSpecies_ = originalMolecularSpecies_;
+    }
+  }
+  
+  /**
+   * splits a an Alex123 combination to the individual chains
+   * @param combi the Alex123 combination name
+   * @return a vector of the single chain identifiers
+   */
+  private Vector<String> getParts(String combi){
+    Vector<String> parts = new Vector<String>();
+    String rest = combi.replaceAll("/",LipidomicsConstants.ALEX_CHAIN_SEPARATOR);
+    int cut = rest.length();
+    while (rest.substring(0,cut).indexOf(LipidomicsConstants.ALEX_CHAIN_SEPARATOR)!=-1) {
+      int last = rest.substring(0,cut).lastIndexOf(LipidomicsConstants.ALEX_CHAIN_SEPARATOR);
+      if ((last+1)>=LipidomicsConstants.ALEX_ALKYL_PREFIX.length() &&
+          LipidomicsConstants.ALEX_ALKYL_PREFIX.equalsIgnoreCase(rest.substring(last-LipidomicsConstants.ALEX_ALKYL_PREFIX.length()+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length(),last+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length()))) {
+        cut = last;
+      }else if ((last+1)>=LipidomicsConstants.ALKYL_PREFIX.length() &&
+          LipidomicsConstants.ALKYL_PREFIX.equalsIgnoreCase(rest.substring(last-LipidomicsConstants.ALKYL_PREFIX.length()+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length(),last+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length()))) {
+        cut = last;
+      }else  if ((last+1)>=LipidomicsConstants.ALEX_ALKENYL_PREFIX.length() &&
+          LipidomicsConstants.ALEX_ALKYL_PREFIX.equalsIgnoreCase(rest.substring(last-LipidomicsConstants.ALEX_ALKENYL_PREFIX.length()+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length(),last+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length()))) {
+        cut = last;
+      }else  if ((last+1)>=LipidomicsConstants.ALKENYL_PREFIX.length() &&
+          LipidomicsConstants.ALKYL_PREFIX.equalsIgnoreCase(rest.substring(last-LipidomicsConstants.ALKENYL_PREFIX.length()+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length(),last+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length()))) {
+        cut = last;
+      }else {
+        parts.add(0,rest.substring(last+1));
+        rest = rest.substring(0,last);
+        cut = rest.length();
+      }
+    }
+    parts.add(0,rest);
+    return parts;
+  }
   
 }

@@ -89,6 +89,7 @@ import at.tugraz.genome.lda.analysis.LipidomicsHeatMap;
 import at.tugraz.genome.lda.analysis.exception.CalculationNotPossibleException;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.ExportException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.export.ExcelAndTextExporter;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.AutoAnalyteAddVO;
@@ -603,7 +604,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
               catch (NumberFormatException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
               catch (FileNotFoundException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
               catch (IOException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
-              catch (CalculationNotPossibleException | ExcelInputFileException | ExportException | SpectrummillParserException e) {
+              catch (CalculationNotPossibleException | ExcelInputFileException | ExportException | SpectrummillParserException | LipidCombinameEncodingException e) {
                 new WarningMessage(new JFrame(), "Error", e.getMessage());
               }
             }  
@@ -634,7 +635,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
               catch (NumberFormatException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
               catch (FileNotFoundException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
               catch (IOException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
-              catch (CalculationNotPossibleException | ExcelInputFileException | ExportException | SpectrummillParserException e) {
+              catch (CalculationNotPossibleException | ExcelInputFileException | ExportException | SpectrummillParserException | LipidCombinameEncodingException e) {
                 new WarningMessage(new JFrame(), "Error", e.getMessage());
               }
             }  

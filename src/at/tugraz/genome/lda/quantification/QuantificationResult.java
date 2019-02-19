@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 
 /**
  * 
@@ -41,19 +42,28 @@ public class QuantificationResult
   /** constants holding the quantitation parameters */
   private LipidomicsConstants constants_;
   /** the levels of identification of each lipid class */
-  Map<String,Integer> msLevels_;
+  private Map<String,Integer> msLevels_;
+  /** the character encoding of the number of hydroxylation sites for the FA*/
+  private HydroxyEncoding faHydroxyEncoding_;
+  /** the character encoding of the number of hydroxylation sites for the LCB*/
+  private HydroxyEncoding lcbHydroxyEncoding_;
+
   
   /**
    * constructor providing all the necessary information - changes later on are not possible
    * @param identifications the MSn identifications
    * @param constants quantification settings that where used
    * @param msLevels class specific identification MS levels
+   * @param faHydroxyEncoding the character encoding of the number of hydroxylation sites for the FA
+   * @param lcbHydroxyEncoding the character encoding of the number of hydroxylation sites for the LCB
    */
   public QuantificationResult (Hashtable<String,Vector<LipidParameterSet>> identifications, LipidomicsConstants constants,
-      Map<String,Integer> msLevels){
+      Map<String,Integer> msLevels, HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding){
     identifications_ = identifications;
     constants_ = constants;
     msLevels_ = msLevels;
+    faHydroxyEncoding_ = faHydroxyEncoding;
+    lcbHydroxyEncoding_ = lcbHydroxyEncoding;
   }
 
   /**
@@ -81,6 +91,24 @@ public class QuantificationResult
   public Map<String,Integer> getMsLevels()
   {
     return msLevels_;
+  }
+
+  /**
+   * 
+   * @return the character encoding of the number of hydroxylation sites for the FA
+   */
+  public HydroxyEncoding getFaHydroxyEncoding()
+  {
+    return faHydroxyEncoding_;
+  }
+
+  /**
+   * 
+   * @return the character encoding of the number of hydroxylation sites for the LCB
+   */
+  public HydroxyEncoding getLcbHydroxyEncoding()
+  {
+    return lcbHydroxyEncoding_;
   }
   
   

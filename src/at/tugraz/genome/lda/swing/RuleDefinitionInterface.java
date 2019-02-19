@@ -70,6 +70,8 @@ import at.tugraz.genome.lda.msn.FragmentCalculator;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.MSnAnalyzer;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
+import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.RulesContainer;
@@ -798,8 +800,8 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
        try {
         checkToAddHeadFragment();
       }
-      catch (IOException | RulesException | SpectrummillParserException
-          | NoRuleException | CgException e) {
+      catch (IOException | RulesException | SpectrummillParserException | NoRuleException | CgException |
+          HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e) {
         e.printStackTrace();
       }
      }
@@ -953,7 +955,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
        } catch (RulesException e0){
          new WarningMessage(new JFrame(), "Error", e0.getMessage());
        } catch (IOException | SpectrummillParserException
-           | NoRuleException | CgException e1) {
+           | NoRuleException | CgException | ChemicalFormulaException e1) {
          e1.printStackTrace();
        }             
      }
@@ -1023,7 +1025,10 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
        catch (NoRuleException e) 
        {
          e.printStackTrace();
-       }      
+       }
+      catch (HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e ) {
+        e.printStackTrace();
+      }      
 
      }     
    }); 
@@ -1270,7 +1275,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
         checkToAddChainFragment();
       }
       catch (RulesException | IOException | SpectrummillParserException
-          | CgException | NoRuleException e1) {
+          | CgException | NoRuleException | HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e1) {
         e1.printStackTrace();
       }      
     }
@@ -1422,7 +1427,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
         } catch (RulesException e0){
           new WarningMessage(new JFrame(), "Error", e0.getMessage());
         } catch (IOException | SpectrummillParserException
-            | NoRuleException | CgException e1) {
+            | NoRuleException | CgException | ChemicalFormulaException e1 ) {
           e1.printStackTrace();
         }
       }
@@ -1472,7 +1477,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
           {
         	    msnAnalyzer_ = updateMSnAnalyzerToCurrentSettings();
           }
-          catch (NoRuleException e) 
+          catch (NoRuleException | HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e) 
           {
             e.printStackTrace();
           }         
@@ -1492,7 +1497,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
         {       
           e.printStackTrace();
         }
-        catch (CgException e) 
+        catch (CgException | ChemicalFormulaException | HydroxylationEncodingException | LipidCombinameEncodingException e) 
         {       
           e.printStackTrace();
         }       
@@ -1691,7 +1696,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
         try 
         {         
           msnAnalyzer_ = updateMSnAnalyzerToCurrentSettings();
-          printPositionRecomandation(msnAnalyzer_.getPositionDefinition());
+          printPositionRecomandation(msnAnalyzer_.getResult(),msnAnalyzer_.getPositionDefinition());
         } catch (RulesException rx) {       
           if (rx.getMessage().endsWith(FragRuleParser.NO_HEAD_AND_CHAINS_SECTION)){
             new WarningMessage(new JFrame(), "Error", "There are no rules entered!");
@@ -1711,6 +1716,9 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
         }
         catch (NoRuleException e) 
         {
+          e.printStackTrace();
+        }
+        catch (HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e) {
           e.printStackTrace();
         }  
       }     
@@ -1958,10 +1966,24 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
   {      
     Double rtMaxDev = null;
     if (RulesContainer.getRetentionTimeMaxDeviation(ruleClassIdentifier_)!=null) rtMaxDev = new Double(RulesContainer.getRetentionTimeMaxDeviation(ruleClassIdentifier_));
+    int faHydroxyRangeStart = -1;
+    int faHydroxyRangeStop = -1;
+    int lcbHydroxyRangeStart = -1;
+    int lcbHydroxyRangeStop = -1;
+    if (RulesContainer.getFaHydroxyRange(ruleClassIdentifier_)!=null && RulesContainer.getFaHydroxyRange(ruleClassIdentifier_).getStop()>0) {
+      faHydroxyRangeStart = RulesContainer.getFaHydroxyRange(ruleClassIdentifier_).getStart();
+      faHydroxyRangeStop = RulesContainer.getFaHydroxyRange(ruleClassIdentifier_).getStop();
+    }
+    if (RulesContainer.getLcbHydroxyRange(ruleClassIdentifier_)!=null && RulesContainer.getLcbHydroxyRange(ruleClassIdentifier_).getStop()>0) {
+      lcbHydroxyRangeStart = RulesContainer.getLcbHydroxyRange(ruleClassIdentifier_).getStart();
+      lcbHydroxyRangeStop = RulesContainer.getLcbHydroxyRange(ruleClassIdentifier_).getStop();
+    }
+    
     this.generalSettingsVO_ = new GeneralSettingsVO(new Integer(RulesContainer.getAmountOfChains(ruleClassIdentifier_)),
         new Integer(RulesContainer.getAmountOfAlkylChains(ruleClassIdentifier_)), new Integer(RulesContainer.getAmountOfAlkenylChains(ruleClassIdentifier_)),
         new Short(RulesContainer.getAmountOfLCBs(ruleClassIdentifier_)), RulesContainer.getAddChainPositions(ruleClassIdentifier_),
-        RulesContainer.getChainlibrary(ruleClassIdentifier_), RulesContainer.getLcbLibrary(ruleClassIdentifier_), RulesContainer.getCAtomsFromNamePattern(ruleClassIdentifier_),
+        RulesContainer.getChainlibrary(ruleClassIdentifier_), RulesContainer.getLcbLibrary(ruleClassIdentifier_), faHydroxyRangeStart,
+        faHydroxyRangeStop, lcbHydroxyRangeStart, lcbHydroxyRangeStop, RulesContainer.getCAtomsFromNamePattern(ruleClassIdentifier_),
         RulesContainer.getDoubleBondsFromNamePattern(ruleClassIdentifier_), RulesContainer.isSingleChainIdentification(ruleClassIdentifier_),
         RulesContainer.getChainCutoffAsString(ruleClassIdentifier_), RulesContainer.getBasePeakCutoffAsString(ruleClassIdentifier_),
         RulesContainer.getSpectrumCoverageMinAsString(ruleClassIdentifier_), RulesContainer.isRtPostprocessing(ruleClassIdentifier_),
@@ -1987,11 +2009,24 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
   {         
     Double rtMaxDev = null;
     if (RulesContainer.getRetentionTimeMaxDeviation(ruleClassIdentifier_,fileDir)!=null) rtMaxDev = new Double(RulesContainer.getRetentionTimeMaxDeviation(ruleClassIdentifier_,fileDir));
+    int faHydroxyRangeStart = -1;
+    int faHydroxyRangeStop = -1;
+    int lcbHydroxyRangeStart = -1;
+    int lcbHydroxyRangeStop = -1;
+    if (RulesContainer.getFaHydroxyRange(ruleClassIdentifier_,fileDir)!=null && RulesContainer.getFaHydroxyRange(ruleClassIdentifier_,fileDir).getStop()>0) {
+      faHydroxyRangeStart = RulesContainer.getFaHydroxyRange(ruleClassIdentifier_,fileDir).getStart();
+      faHydroxyRangeStop = RulesContainer.getFaHydroxyRange(ruleClassIdentifier_,fileDir).getStop();
+    }
+    if (RulesContainer.getLcbHydroxyRange(ruleClassIdentifier_,fileDir)!=null && RulesContainer.getLcbHydroxyRange(ruleClassIdentifier_,fileDir).getStop()>0) {
+      lcbHydroxyRangeStart = RulesContainer.getLcbHydroxyRange(ruleClassIdentifier_,fileDir).getStart();
+      lcbHydroxyRangeStop = RulesContainer.getLcbHydroxyRange(ruleClassIdentifier_,fileDir).getStop();
+    }
+
     this.generalSettingsVO_ = new GeneralSettingsVO(new Integer(RulesContainer.getAmountOfChains(ruleClassIdentifier_,fileDir)),
         new Integer(RulesContainer.getAmountOfAlkylChains(ruleClassIdentifier_,fileDir)), new Integer(RulesContainer.getAmountOfAlkenylChains(ruleClassIdentifier_,fileDir)),
         new Short(RulesContainer.getAmountOfLCBs(ruleClassIdentifier_,fileDir)),RulesContainer.getAddChainPositions(ruleClassIdentifier_,fileDir),
         RulesContainer.getChainlibrary(ruleClassIdentifier_,fileDir), RulesContainer.getLcbLibrary(ruleClassIdentifier_,fileDir),
-        RulesContainer.getCAtomsFromNamePattern(ruleClassIdentifier_,fileDir),
+        faHydroxyRangeStart, faHydroxyRangeStop, lcbHydroxyRangeStart, lcbHydroxyRangeStop,RulesContainer.getCAtomsFromNamePattern(ruleClassIdentifier_,fileDir), 
         RulesContainer.getDoubleBondsFromNamePattern(ruleClassIdentifier_,fileDir), RulesContainer.isSingleChainIdentification(ruleClassIdentifier_,fileDir),
         RulesContainer.getChainCutoffAsString(ruleClassIdentifier_,fileDir), RulesContainer.getBasePeakCutoffAsString(ruleClassIdentifier_,fileDir),
         RulesContainer.getSpectrumCoverageMinAsString(ruleClassIdentifier_,fileDir), RulesContainer.isRtPostprocessing(ruleClassIdentifier_,fileDir),
@@ -2223,8 +2258,11 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @throws SpectrummillParserException 
    * @throws IOException 
    * @throws RulesException 
+   * @throws HydroxylationEncodingException thrown if hydroxylation the encoding does not exist
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  MSnDebugVO getCurrentDebugInfo() throws RulesException, IOException, SpectrummillParserException, CgException
+  MSnDebugVO getCurrentDebugInfo() throws RulesException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException
   {    
     MSnDebugVO debugInfo = null;  
     try 
@@ -2248,8 +2286,11 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @throws SpectrummillParserException 
    * @throws IOException 
    * @throws RulesException 
+   * @throws HydroxylationEncodingException thrown if hydroxylation the encoding does not exist
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  private String showFragmentTabDetailsString(Hashtable<String,CgProbe> detectedFragments) throws RulesException, IOException, SpectrummillParserException, CgException
+  private String showFragmentTabDetailsString(Hashtable<String,CgProbe> detectedFragments) throws RulesException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException
   {      
       MSnDebugVO debugInfo = getCurrentDebugInfo();      
     
@@ -2291,8 +2332,11 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @throws SpectrummillParserException 
    * @throws IOException 
    * @throws RulesException 
+   * @throws HydroxylationEncodingException thrown if hydroxylation the encoding does not exist
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  private String showHeadIntensityTabDetailsString(Hashtable<String,IntensityRuleVO> fulfilledIntensityRules) throws RulesException, IOException, SpectrummillParserException, CgException
+  private String showHeadIntensityTabDetailsString(Hashtable<String,IntensityRuleVO> fulfilledIntensityRules) throws RulesException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException
   {   
       MSnDebugVO debugInfo = getCurrentDebugInfo();   
       String labelInput = "Intensity rules that were fulfilled by the head group fragments:<br><br>";      
@@ -2337,20 +2381,24 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
   
   /**
    * Prints out a dialog of the possible positions of the chains
+   * @param result the obtained result
    * @param positionRecommendations1
    * @throws CgException 
    * @throws SpectrummillParserException 
    * @throws IOException 
    * @throws RulesException 
+   * @throws HydroxylationEncodingException thrown if hydroxylation the encoding does not exist
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  public void printPositionRecomandation (Hashtable<String,Hashtable<Integer,Integer>> positionRecommendations1) throws RulesException, IOException, SpectrummillParserException, CgException
+  public void printPositionRecomandation (LipidParameterSet result, Hashtable<String,Hashtable<Integer,Integer>> positionRecommendations1) throws RulesException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException
   {   
     deleteDetailsBoxes();   
     
     MSnDebugVO debugInfo = getCurrentDebugInfo();
     
     String toWrite ="";    
-    toWrite = toWrite + "<br>Possible Positions:<br>" + getResultWriteString(false);
+    toWrite = toWrite + "<br>Possible Positions:<br>" + getResultWriteString(result,false);
         
     Hashtable<String,Hashtable<String,IntensityRuleVO>> unfulfilledPosRules = debugInfo.getUnfulfilledPositionRules();
     toWrite = toWrite + "<br><br>Unfulfilled rules: "+unfulfilledPosRules.size()+"<br/>";
@@ -2410,10 +2458,13 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @throws SpectrummillParserException 
    * @throws IOException 
    * @throws RulesException 
+   * @throws HydroxylationEncodingException thrown if hydroxylation the encoding does not exist
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   private void printInDialogShowDetailsBox(Hashtable<String,CgProbe> detectedFragments, 
       Hashtable<String,IntensityRuleVO> fulfilledIntensityRules, 
-      Hashtable<String,Hashtable<String,CgProbe>> chainFragments, Hashtable<String,Hashtable<String,IntensityChainVO>> chainIntensities) throws RulesException, IOException, SpectrummillParserException, CgException
+      Hashtable<String,Hashtable<String,CgProbe>> chainFragments, Hashtable<String,Hashtable<String,IntensityChainVO>> chainIntensities) throws RulesException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException
   {
     try{
     deleteDetailsBoxes();
@@ -2625,11 +2676,14 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     }     
     catch (NoRuleException e) 
     {
+    }
+    catch (HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e) {
+      e.printStackTrace();
     }  
     LipidParameterSet result = msnAnalyzer_.getResult();  
     
     String toWrite = "";
-    toWrite = toWrite + "<br><font color='red'>Result:<br>" + getResultWriteString(true) + "</font>";    
+    toWrite = toWrite + "<br><font color='red'>Result:<br>" + getResultWriteString(result,true) + "</font>";    
     toWrite = toWrite + "<br><br>Double Bonds: " + result.getDoubleBonds();
     toWrite = toWrite + "<br><br>Modification Name: " + result.getModificationName();
     toWrite = toWrite + "<br><br>Analyte Formula: " + result.getAnalyteFormula();
@@ -2663,8 +2717,11 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @throws SpectrummillParserException
    * @throws NoRuleException
    * @throws CgException
+   * @throws HydroxylationEncodingException thrown if hydroxylation the encoding does not exist
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  public void checkToAddHeadFragment() throws IOException, RulesException, SpectrummillParserException, NoRuleException, CgException 
+  public void checkToAddHeadFragment() throws IOException, RulesException, SpectrummillParserException, NoRuleException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException 
   { 
     //if (!this.checkGeneralEntries(true)) return;
     int before = 0;
@@ -2747,8 +2804,11 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @throws IOException
    * @throws SpectrummillParserException
    * @throws CgException
+   * @throws HydroxylationEncodingException thrown if hydroxylation the encoding does not exist
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  public int headFragmentCounter() throws RulesException, IOException, SpectrummillParserException, CgException
+  public int headFragmentCounter() throws RulesException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException
   {
     int numberOfDetectedFragments = 0;    
     try 
@@ -2772,8 +2832,9 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @throws SpectrummillParserException 
    * @throws IOException 
    * @throws NoRuleException 
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
    */
-  public void checkToAddHeadIntensityRule() throws RulesException, IOException, SpectrummillParserException, CgException, NoRuleException
+  public void checkToAddHeadIntensityRule() throws RulesException, IOException, SpectrummillParserException, CgException, NoRuleException, ChemicalFormulaException
   {
     //if (!this.checkGeneralEntries(true)) return;
     int before = 0;
@@ -2820,16 +2881,17 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @throws RulesException
    * @throws IOException
    * @throws SpectrummillParserException
-   * @throws CgException
+   * @throws CgException when there is something wrong with quantitation
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
    */
-  public int headIntensityCounter() throws RulesException, IOException, SpectrummillParserException, CgException
+  public int headIntensityCounter() throws RulesException, IOException, SpectrummillParserException, CgException, ChemicalFormulaException
   {
     int numberOfFulfilledIntensityRules = 0;   
     try 
     {
       msnAnalyzer_ = updateMSnAnalyzerToCurrentSettings();
     }
-    catch (NoRuleException e) 
+    catch (NoRuleException | HydroxylationEncodingException | LipidCombinameEncodingException e) 
     {
       e.printStackTrace();
     }  
@@ -2846,8 +2908,11 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @throws SpectrummillParserException
    * @throws CgException
    * @throws NoRuleException
+   * @throws HydroxylationEncodingException thrown if hydroxylation the encoding does not exist
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  public void checkToAddChainFragment() throws RulesException, IOException, SpectrummillParserException, CgException, NoRuleException 
+  public void checkToAddChainFragment() throws RulesException, IOException, SpectrummillParserException, CgException, NoRuleException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException 
   {
     //if (!this.checkGeneralEntries(true)) return;
     int before = 0;
@@ -2935,8 +3000,11 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @throws IOException
    * @throws SpectrummillParserException
    * @throws CgException
+   * @throws HydroxylationEncodingException thrown if hydroxylation the encoding does not exist
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
+   * @throws LipidCombinameEncodingException  
    */
-  public int chainFragmentCounter() throws RulesException, IOException, SpectrummillParserException, CgException
+  public int chainFragmentCounter() throws RulesException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException 
   {
     int maxFragmentsDetected = 0;    
     try 
@@ -2972,8 +3040,9 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @throws SpectrummillParserException
    * @throws NoRuleException
    * @throws CgException
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
    */
-  public void checkToAddChainIntensityRule() throws RulesException, IOException, SpectrummillParserException, NoRuleException, CgException
+  public void checkToAddChainIntensityRule() throws RulesException, IOException, SpectrummillParserException, NoRuleException, CgException, ChemicalFormulaException
   {    
     //if (!this.checkGeneralEntries(true)) return;
     int before = 0;
@@ -3018,14 +3087,15 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @throws IOException
    * @throws SpectrummillParserException
    * @throws CgException
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
    */
-  public int chainIntensityCounter() throws RulesException, IOException, SpectrummillParserException, CgException
+  public int chainIntensityCounter() throws RulesException, IOException, SpectrummillParserException, CgException, ChemicalFormulaException
   {    
     try 
     {
       msnAnalyzer_ = this.updateMSnAnalyzerToCurrentSettings();
     }
-    catch (NoRuleException e) 
+    catch (NoRuleException | HydroxylationEncodingException | LipidCombinameEncodingException e) 
     {
       e.printStackTrace();
     }   
@@ -3118,8 +3188,8 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       Hashtable<String,Hashtable<String,IntensityRuleVO>> unfulfilledPosRules = debugInfo.getUnfulfilledPositionRules();
       result = unfulfilledPosRules.size();
     }
-    catch (RulesException | IOException | SpectrummillParserException
-        | CgException e) 
+    catch (RulesException | IOException | SpectrummillParserException | CgException | HydroxylationEncodingException
+        | ChemicalFormulaException | LipidCombinameEncodingException e) 
     {
       e.printStackTrace();
     }
@@ -3151,29 +3221,36 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
 
   /**
    * Returns a sorted string of results
+   * @param result the obtained result
    * @param positions
    * @param rT
    * @return the sorted result string
    */
   @SuppressWarnings("unchecked")
-  public String getResultWriteString(boolean showRetentionTime)
+  public String getResultWriteString(LipidParameterSet result, boolean showRetentionTime)
   {
-    try {
-      msnAnalyzer_ = new MSnAnalyzer(lipidClassName_, lipidAdduct_, data_,
-          analyzer_, null, true, false);
-    }
-    catch (RulesException | IOException | SpectrummillParserException
-        | CgException e) {
-      e.printStackTrace();
-    }
-
-    LipidParameterSet result = msnAnalyzer_.getResult();
+//    try {
+//      msnAnalyzer_ = new MSnAnalyzer(lipidClassName_, lipidAdduct_, data_,
+//          analyzer_, null, true, false);
+//    }
+//    catch (RulesException | IOException | SpectrummillParserException
+//        | CgException | HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e) {
+//      e.printStackTrace();
+//    }
+//
+//    LipidParameterSet result = msnAnalyzer_.getResult();
 
     String resultString = "";
     String chainString = "";
     LipidomicsMSnSet msnSet = (LipidomicsMSnSet) result;
     if (showRetentionTime == true) {
-      for (Object nameObj:msnSet.getMSnIdentificationNames()) {
+      Vector<Object> detected = null;
+      try {detected = msnSet.getMSnIdentificationNames();
+      }catch (LipidCombinameEncodingException lcx) {
+        detected = new Vector<Object>();
+        lcx.printStackTrace();
+      }
+      for (Object nameObj:detected) {
         if (nameObj instanceof String) {
           chainString = (String) nameObj;
           resultString = resultString + chainString + "_" + result.getRt()
@@ -3189,7 +3266,13 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
         }
       }
     } else {
-      for (Object nameObj:msnSet.getMSnIdentificationNames()) {
+      Vector<Object> detected = null;
+      try {detected = msnSet.getMSnIdentificationNames();
+      }catch (LipidCombinameEncodingException lcx) {
+        detected = new Vector<Object>();
+        lcx.printStackTrace();
+      }
+      for (Object nameObj:detected) {
         if (nameObj instanceof String) {
           chainString = (String) nameObj;
           resultString = resultString + chainString + "_" + result.getRt()
@@ -3290,8 +3373,11 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @throws IOException exception if there is something wrong about the file
    * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
    * @throws CgException errors from the quantitation process
+   * @throws HydroxylationEncodingException HydroxylationEncodingException
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  public LipidParameterSet testForMSnDetection(int specNumber) throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException{
+  public LipidParameterSet testForMSnDetection(int specNumber) throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException{
     try{
       MSnAnalyzer analyzer = updateMSnAnalyzerToCurrentSettings(specNumber);
       data_ = analyzer.getResult();
@@ -3311,23 +3397,30 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * @throws IOException exception if there is something wrong about the file
    * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
    * @throws CgException errors from the quantitation process
+   * @throws HydroxylationEncodingException thrown if hydroxylation the encoding does not exist
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  private MSnAnalyzer updateMSnAnalyzerToCurrentSettings() throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException{
+  private MSnAnalyzer updateMSnAnalyzerToCurrentSettings() throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException{
     return this.updateMSnAnalyzerToCurrentSettings(spectrumUpdater_.getMs2LevelSpectrumSelected());
   }
   
   /**
    * creates an MSnAnalyzer object with the currently entered rules for a selected spectrum
    * @param specNumber the number of the selected spectrum
-   * @returnthe MSnAnalyzer with the currently entered rules
+   * @return the MSnAnalyzer with the currently entered rules
    * @throws RulesException specifies in detail which rule has been infringed
    * @throws NoRuleException thrown if the rules are not there
    * @throws IOException exception if there is something wrong about the file
    * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
    * @throws CgException errors from the quantitation process
+   * @throws HydroxylationEncodingException thrown if hydroxylation the encoding does not exist
+   * @throws ChemicalFormulaException thrown if there is something wrong with the formula
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  private MSnAnalyzer updateMSnAnalyzerToCurrentSettings(int specNumber) throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException{
-    FragmentCalculator fragCalc_ = new FragmentCalculator(CACHE_DIR,lipidClassName_,lipidAdduct_,data_.getNameStringWithoutRt(),data_.getChemicalFormula(),data_.Mz[0]);
+  private MSnAnalyzer updateMSnAnalyzerToCurrentSettings(int specNumber) throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException{
+    FragmentCalculator fragCalc_ = new FragmentCalculator(CACHE_DIR,lipidClassName_,lipidAdduct_,data_.getNameStringWithoutRt(),data_.getChemicalFormula(),
+        data_.getChemicalFormulaWODeducts(),data_.Mz[0],data_.getOhNumber());
     analyzer_.prepareMSnSpectraCache(data_.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), data_.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance(),
         LipidomicsConstants.getMs2MinIntsForNoiseRemoval());
     Vector<Range> ranges = analyzer_.findSingleSpectraRanges(fragCalc_.getSpectrumLevelRange());     

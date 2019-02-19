@@ -38,12 +38,14 @@ import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExportException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.export.vos.EvidenceBase;
 import at.tugraz.genome.lda.export.vos.EvidenceVO;
 import at.tugraz.genome.lda.export.vos.FeatureVO;
 import at.tugraz.genome.lda.export.vos.SpeciesExportVO;
 import at.tugraz.genome.lda.export.vos.SummaryVO;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
+import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.msn.vos.IntensityPositionVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
@@ -93,10 +95,11 @@ public abstract class LDAExporter
    * @param species the species to check
    * @param molecularSpecies the vector containing other species
    * @return the String representation of the species in the list
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  protected static String isSpeciesAlreadyInList(String species, Vector<String> molecularSpecies){
+  protected static String isSpeciesAlreadyInList(String species, Vector<String> molecularSpecies) throws LipidCombinameEncodingException{
     for (String other : molecularSpecies){
-      if (species.equalsIgnoreCase(other) || StaticUtils.isAPermutedVersion(species, other)){
+      if (species.equalsIgnoreCase(other) || StaticUtils.isAPermutedVersion(species, other,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)){
         return other;
       } 
     }  
@@ -172,14 +175,13 @@ public abstract class LDAExporter
 
   
   
-  @SuppressWarnings("unchecked")
   /**
    * extracts the combined information of several experiments according to selections in the heat maps plus detailed data from LDA result files
    * @param speciesType structural level of data export (lipid species, chain level, position level - for details see LipidomicsConstants.EXPORT_ANALYTE_TYPE)
    * @param extractFeatures should the features information be included in the exported data
+   * @param currentSummaryId a running unique identifier
    * @param currentFeatureId a running unique identifier
    * @param extractEvidence should the evidence information information be included in the exported data (only possible when features are included)
-   * @param currentSummaryId a running unique identifier
    * @param currentEvidenceId a running unique identifier
    * @param currentEvGroupingId a running identifier for evidence originating from the same spectra
    * @param isRtGrouped is there only one entry for each species, or are the species grouped be retention time
@@ -190,16 +192,20 @@ public abstract class LDAExporter
    * @param resultsMol the values according to the heat map selection
    * @param relevantOriginals the relevant results from the LDA Excel file - when these values are null, the speciesType must be LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES, and extractFeatures and extractEvidence must be false 
    * @param maxIsotope the maximum isotope that will be used for the export
+   * @param faHydroxyEncoding the OH encodings of the FA moiety
+   * @param lcbHydroxyEncoding the OH encodings of the LCB moiety
    * @return value object containing all exportable information
    * @throws ExportException when there is something wrong
    * @throws SpectrummillParserException when there are elements missing in the elementconfig.xml
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
+  @SuppressWarnings("unchecked")
   protected static SpeciesExportVO extractExportableSummaryInformation(short speciesType, boolean extractFeatures, int currentSummaryId,
       int currentFeatureId, boolean extractEvidence, int currentEvidenceId, int currentEvGroupingId, boolean isRtGrouped,
       LinkedHashMap<String,Boolean> adductsSorted, Vector<String> expNames, LinkedHashMap<String,Vector<String>> expsOfGroup,
       String molName, Hashtable<String,Vector<Double>> resultsMol, Hashtable<String,Hashtable<String,Vector<LipidParameterSet>>> relevantOriginals,
-      int maxIsotope)
-          throws ExportException, SpectrummillParserException{
+      int maxIsotope, HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding)
+          throws ExportException, SpectrummillParserException, LipidCombinameEncodingException{
     if (extractEvidence && !extractFeatures)
       throw new ExportException("It is not possible to extract the evidence without extracting the features");
     String chemFormula = "";
@@ -456,7 +462,8 @@ public abstract class LDAExporter
                 if (detection==null)
                   throw new ExportException("It is not possible that one MSn detection is null!");
                 
-                String woPosition = StaticUtils.sortFASequenceUnassigned(detection);
+                String woPosition = StaticUtils.sortFASequenceUnassigned(detection.replaceAll(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS, LipidomicsConstants.CHAIN_SEPARATOR_NO_POS),
+                    LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
                 //this is for removal of unassigned positions, which are at the end of the string
                 // ths proceeding does not support the export of DG position assignment
                 while (woPosition.endsWith("_-"))
@@ -690,10 +697,10 @@ public abstract class LDAExporter
           String noPosition = null;
           boolean containsPositionInfo = false;
           if (molecularSpecies!=null){
-            noPosition = StaticUtils.sortFASequenceUnassigned(molecularSpecies.replaceAll("/", "_"));
+           noPosition = StaticUtils.sortFASequenceUnassigned(molecularSpecies.replaceAll(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS, LipidomicsConstants.CHAIN_SEPARATOR_NO_POS),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
             while (noPosition.endsWith("_-"))
               noPosition = noPosition.substring(0,noPosition.length()-2);
-            if (molecularSpecies.indexOf("/")!=-1 && !StaticUtils.areAllChainsTheSame(molecularSpecies))
+            if (molecularSpecies.indexOf(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS)!=-1 && !StaticUtils.areAllChainsTheSame(molecularSpecies))
               containsPositionInfo = true;
           }
           LipidParameterSet oneSet = null;
@@ -748,14 +755,15 @@ public abstract class LDAExporter
                   }
                   if (detection==null)
                     throw new ExportException("It is not possible that one MSn detection is null!");
-                  String woPosition = StaticUtils.sortFASequenceUnassigned(detection);
+                  String woPosition = StaticUtils.sortFASequenceUnassigned(detection.replaceAll(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS, LipidomicsConstants.CHAIN_SEPARATOR_NO_POS),
+                      LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
                   //this is for removal of unassigned positions, which are at the end of the string
                   // ths proceeding does not support the export of DG position assignment
                   while (woPosition.endsWith("_-"))
                     woPosition = woPosition.substring(0,woPosition.length()-2);
-                  if (StaticUtils.isAPermutedVersion(woPosition,noPosition)){
+                  if (StaticUtils.isAPermutedVersion(woPosition,noPosition,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)){
                     evaluate = true;
-                    Set<Integer> msnLevels = msn.getMSLevels(detection);
+                    Set<Integer> msnLevels = msn.getMSLevels(detection,faHydroxyEncoding,lcbHydroxyEncoding);
                     msLevels.addAll(msnLevels);
                     addMsnScanNrsToHash(expName,msnLevels,msn.getMsnRetentionTimes(),scanNrs);
                     //for setting the best identification for found hits of an experiment
@@ -776,7 +784,8 @@ public abstract class LDAExporter
                       bestIdentification = identification;
 
                     
-                    if (containsPositionInfo && detection.indexOf("/")!=-1 && hasPositionEvidence(msn.getPositionEvidence(detection)))
+                    if (containsPositionInfo && detection.indexOf("/")!=-1 && hasPositionEvidence(msn.getPositionEvidence(detection,
+                        faHydroxyEncoding,lcbHydroxyEncoding)))
                       hasHitPositionInfo = true;
                     break;
                   }
@@ -785,11 +794,11 @@ public abstract class LDAExporter
                 evaluate = true;
                 bestIdentification = molNameWORt;
                 if (speciesType==LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES){
-                  Set<Integer> msnLevels = msn.getMSLevels(LipidomicsMSnSet.MSLEVEL_ALL_IDENTIFIER);
+                  Set<Integer> msnLevels = msn.getMSLevels(LipidomicsMSnSet.MSLEVEL_ALL_IDENTIFIER,faHydroxyEncoding,lcbHydroxyEncoding);
                   msLevels.addAll(msnLevels);
                   addMsnScanNrsToHash(expName,msnLevels,msn.getMsnRetentionTimes(),scanNrs);
                 } else if (!StaticUtils.isThereChainInformationAvailable(molNameWORt,sets)){
-                  Set<Integer> msnLevels = msn.getMSLevels(LipidomicsMSnSet.MSLEVEL_HEAD_IDENTIFIER);
+                  Set<Integer> msnLevels = msn.getMSLevels(LipidomicsMSnSet.MSLEVEL_HEAD_IDENTIFIER,faHydroxyEncoding,lcbHydroxyEncoding);
                   msLevels.addAll(msnLevels);
                   addMsnScanNrsToHash(expName,msnLevels,msn.getMsnRetentionTimes(),scanNrs);
                 }
@@ -818,7 +827,7 @@ public abstract class LDAExporter
                 }catch (ChemicalFormulaException e) {e.printStackTrace();}
               }
               if (molecularSpecies!=null && bestIdentification.indexOf("/")==-1)
-                bestIdentification = StaticUtils.sortFASequenceUnassigned(bestIdentification);
+                bestIdentification = StaticUtils.sortFASequenceUnassigned(bestIdentification,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
               
               weightedMz = areaTimesMz/totalArea;
               if (molecularSpecies!=null){

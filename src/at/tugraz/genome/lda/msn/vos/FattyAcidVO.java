@@ -33,6 +33,8 @@ import at.tugraz.genome.lda.utils.StaticUtils;
  */
 public class FattyAcidVO
 {
+  /** the type of chain: LipidomicsConstants.CHAIN_TYPE_FA or LipidomicsConstants.CHAIN_TYPE_LCB*/
+  private short chainType_;
   // prefix to separate fatty acid
   private String prefix_;
   // number of C atoms
@@ -43,23 +45,51 @@ public class FattyAcidVO
   private double mass_;
   // chemical formula
   private String formula_;
+  /** the number of OH groups*/
+  private int ohNumber_;
   
   /**
    * all the information has to be provided in the constructor
+   * @param chainType the type of chain: LipidomicsConstants.CHAIN_TYPE_FA or LipidomicsConstants.CHAIN_TYPE_LCB
    * @param cAtoms number of C atoms
    * @param doubleBonds number of double bonds
+   * @param ohNumber
    * @param mass mass value
    * @param formula chemical formula
    */
-  public FattyAcidVO(String prefix, int cAtoms, int doubleBonds, double mass, String formula){
+  public FattyAcidVO(short chainType, String prefix, int cAtoms, int doubleBonds, int ohNumber, double mass, String formula){
+    this.chainType_ = chainType;
     this.prefix_ = prefix;
     this.cAtoms_ = cAtoms;
-    this.mass_ = mass;
     this.doubleBonds_ = doubleBonds;
+    this.ohNumber_ = ohNumber;
+    this.mass_ = mass;
     this.formula_ = formula;
   }
   
   
+  
+  /**
+   * 
+   * @return the type of chain: LipidomicsConstants.CHAIN_TYPE_FA or LipidomicsConstants.CHAIN_TYPE_LCB
+   */
+  public short getChainType()
+  {
+    return chainType_;
+  }
+
+ 
+  /** 
+   * allows for chain type correction when a general parser was used
+   * @param chainType the new chain type
+   */
+  public void correctChainType_(short chainType)
+  {
+    this.chainType_ = chainType;
+  }
+
+
+
   /**
    * 
    * @return the prefix
@@ -86,6 +116,17 @@ public class FattyAcidVO
   {
     return doubleBonds_;
   }
+  
+  
+  /**
+   * 
+   * @return the number of hydroxylation groups
+   */
+  public int getOhNumber()
+  {
+    return ohNumber_;
+  }
+
 
   /**
    * 
@@ -105,19 +146,35 @@ public class FattyAcidVO
     return formula_;
   }
 
+  
   /**
-   * 
    * @return name consisting of number of C atoms : number of double bonds
    */
-  public String getName(){
+  public String getCarbonDbsId(){
     return StaticUtils.generateLipidNameString(prefix_+String.valueOf(cAtoms_),doubleBonds_);
+  }
+  
+  /**
+   * 
+   * @return an unique identifier for the chain that includes the chain type, the number of OHs, the #C-atoms, the #double bonds, and the isotope prefix
+   */
+  public String getChainId() {
+    return StaticUtils.encodeLipidNameForCreatingCombis(this,true);
+  }
+  
+  /**
+   * 
+   * @return the sames as getChainId(), but without the isotope prefix
+   */
+  public String getChainIdWOPrefix() {
+    return StaticUtils.encodeLipidNameForCreatingCombis(this,false);    
   }
   
   /**
    * @return String representing the values of the value object
    */
   public String toString(){
-    return ("Name: "+getName()+" Mass: "+mass_+" Formula: "+formula_);
+    return ("Name: "+getChainId()+" Mass: "+mass_+" Formula: "+formula_);
   }
   
 }

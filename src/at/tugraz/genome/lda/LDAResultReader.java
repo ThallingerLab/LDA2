@@ -43,9 +43,13 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import at.tugraz.genome.lda.analysis.ComparativeNameExtractor;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
+import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.msn.parser.FragRuleParser;
+import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
+import at.tugraz.genome.lda.msn.vos.FragmentRuleVO;
 import at.tugraz.genome.lda.msn.vos.IntensityChainVO;
 import at.tugraz.genome.lda.msn.vos.IntensityPositionVO;
 import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
@@ -107,6 +111,8 @@ public class LDAResultReader
     Hashtable<String,Vector<LipidParameterSet>> resultParams = new Hashtable<String,Vector<LipidParameterSet>>();
     Hashtable<String,Integer> msLevels = new Hashtable<String,Integer>();
     LipidomicsConstants readConstants = null;
+    HydroxyEncoding faOhEncodings = null;
+    HydroxyEncoding lcbOhEncodings = null;
     String suffix = "";
     if (filePath!=null && filePath.length()>3)
       suffix = filePath.substring(filePath.lastIndexOf("."));
@@ -469,7 +475,10 @@ public class LDAResultReader
           showModifications.put(sheet.getSheetName(), showModification);
           msLevels.put(sheet.getSheetName(), msLevel);
         } else if (sheet.getSheetName().equalsIgnoreCase(QuantificationThread.CONSTANTS_SHEET)){
-          readConstants = LipidomicsConstants.readSettingsFromExcel(sheet);
+          Object[] settings = LipidomicsConstants.readSettingsFromExcel(sheet);
+          readConstants = (LipidomicsConstants)settings[0];
+          faOhEncodings = (HydroxyEncoding)settings[1];
+          lcbOhEncodings = (HydroxyEncoding)settings[2];
         }
       }
       for (int sheetNumber=0;sheetNumber!=workbook.getNumberOfSheets();sheetNumber++){       
@@ -479,7 +488,7 @@ public class LDAResultReader
             continue;
           String lipidClass = sheet.getSheetName().substring(0,sheet.getSheetName().lastIndexOf(QuantificationThread.MSN_SHEET_ADDUCT));
           Vector<LipidParameterSet> resultPrms = resultParams.get(lipidClass);
-          resultPrms = readMSnEvidence(sheet,resultPrms,readConstants);
+          resultPrms = readMSnEvidence(sheet,resultPrms,readConstants,faOhEncodings,lcbOhEncodings);
           resultParams.put(lipidClass,resultPrms);
         }
       }  
@@ -494,7 +503,7 @@ public class LDAResultReader
       new WarningMessage(new JFrame(), "ERROR", e.getMessage());
       throw new ExcelInputFileException(e);
     }
-    QuantificationResult result = new QuantificationResult(resultParams,readConstants,msLevels);
+    QuantificationResult result = new QuantificationResult(resultParams,readConstants,msLevels,faOhEncodings,lcbOhEncodings);
     return result;
   }
   
@@ -503,10 +512,14 @@ public class LDAResultReader
    * @param sheet the Excel sheet to be read
    * @param ms1Results the results from MS1 Excel reading
    * @param readConstants the lipidomics constants used for this file (for checking if this file was quantified using an Alex123 target list)
+   * @param faHydroxyEncoding the character encoding of the number of hydroxylation sites for the
+   * @param lcbHydroxyEncoding the character encoding of the number of hydroxylation sites for the LCB
    * @return Vector containing MS1 (LipidParameterSet) and  MS2 (LipidomicsMSnSe) results
    * @throws RulesException
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  public static Vector<LipidParameterSet> readMSnEvidence(Sheet sheet, Vector<LipidParameterSet> ms1Results, LipidomicsConstants readConstants) throws RulesException {
+  public static Vector<LipidParameterSet> readMSnEvidence(Sheet sheet, Vector<LipidParameterSet> ms1Results, LipidomicsConstants readConstants,
+      HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding) throws RulesException, LipidCombinameEncodingException {
     Hashtable<String,LipidParameterSet> msHash = new Hashtable<String,LipidParameterSet>();
     for (LipidParameterSet ms1 : ms1Results){
       msHash.put(ms1.getNamePlusModHumanReadable(), ms1);
@@ -525,12 +538,12 @@ public class LDAResultReader
     boolean chainRules = false;
     boolean positionRules = false;
     String combiKey = "";
-    
+
     // is the header row read and the column indices initialized 
     boolean headerRowRead = false;
     // the header row has to be read
     boolean readFragmentHeaderRow = false;
-    
+
     // is the intensity header read and the column indices initialized 
     boolean intensityHeaderRead = false;
     // the intensity header row has to be read
@@ -539,6 +552,8 @@ public class LDAResultReader
     
     // column indices for the fragment information rows
     int nameColumn = -1;
+    int ohColumn = -1;
+    int chainTypeColumn = -1;
     int formulaColumn = -1;
     int msLevelColumn = -1;
     int chargeColumn = -1;
@@ -576,7 +591,12 @@ public class LDAResultReader
     
     Hashtable<String,String> uniqueRules = new Hashtable<String,String>();
     int numberOfPositions = -1;
+    boolean containsAlkyl = false;
+    boolean containsAlkenyl = false;
     boolean usedAlexMsnTargets = false;
+    
+    char knownPosSep = LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS.toCharArray()[0];
+    char unknownPosSep = LipidomicsConstants.CHAIN_SEPARATOR_NO_POS.toCharArray()[0];
     
     for (int rowCount=0;rowCount!=(sheet.getLastRowNum()+1);rowCount++){
       Hashtable<Integer,Object> cellEntries =  ExcelUtils.getEntriesOfOneRow(sheet.getRow(rowCount),false);
@@ -608,44 +628,51 @@ public class LDAResultReader
         addingMSnEvidence = msHash.get(speciesName);
         int count = MSN_ROW_FRAGMENT_NAME+1;
         numberOfPositions = -1;
+        containsAlkyl = false;
+        containsAlkenyl = false;
         while (cellEntries.containsKey(count)){
           String lipidIdentification = (String)cellEntries.get(count);
           if (lipidIdentification!=null && lipidIdentification.length()>0){
+            //this put has to be here to store the MSn scan numbers
             columnToIdentification.put(count, lipidIdentification);
             // this if was extended by "lipidIdentification.indexOf(":")!=-1" to support single chains - I hope this has no negative side effects
-            if (lipidIdentification.indexOf("/")!=-1||lipidIdentification.indexOf("_")!=-1||lipidIdentification.indexOf(":")!=-1){
+            if (lipidIdentification.indexOf(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS)!=-1||lipidIdentification.indexOf(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)!=-1||
+                lipidIdentification.indexOf(LipidomicsConstants.CHAIN_SEPARATOR_DBS)!=-1){
+              boolean isAlexOhEncoding = false;
               //if there is a ";", the next character after the following numbers must be a ":"; if there is a "/" or a "_" it is the OH index of an Alex123 notation
               if (usedAlexMsnTargets){
-                if (lipidIdentification.indexOf(";")!=-1){
+                if (lipidIdentification.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS)!=-1){
                   boolean makeSubstring = false;
                   char[] chars = lipidIdentification.toCharArray();
-                  for (int i=lipidIdentification.indexOf(";")+1; i!=chars.length; i++){
-                    if (chars[i]=='-' || Character.isDigit(chars[i]))
-                      continue;
+                  for (int i=lipidIdentification.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS)+1; i!=chars.length; i++){
                     //it is the OH index of an Alex123 notation
-                    else if (chars[i]=='/' || chars[i]=='_')
+                    if (chars[i]==knownPosSep || chars[i]==unknownPosSep) {
+                      isAlexOhEncoding = true;
                       break;
                     //it is an LDA identification where the position is unknown -> cut
-                    else if (chars[i]==':'){
+                    }else if (chars[i]==':'){
                       makeSubstring = true;
                       break;
-                    }else{
-                      System.out.println("Warning: such a character is not possible for a lipid name containing a \";\"; detected in "+sheet.getSheetName()+" "+addingMSnEvidence.getNameString());
-                    }    
+                    }else
+                      continue;
                   }
                   if (makeSubstring)
-                    lipidIdentification = lipidIdentification.substring(0,lipidIdentification.indexOf(";"));
+                    lipidIdentification = lipidIdentification.substring(0,lipidIdentification.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS));
                 }
               }else{
-                if (lipidIdentification.indexOf(";")!=-1)lipidIdentification = lipidIdentification.substring(0,lipidIdentification.indexOf(";"));
+                if (lipidIdentification.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS)!=-1)lipidIdentification = lipidIdentification.substring(0,lipidIdentification.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS));
               }
-              Object[] nameAndNumberOfPos = StaticUtils.cleanEmptyFAPositions(lipidIdentification);
-              if (usedAlexMsnTargets && lipidIdentification.indexOf("/")!=-1)
-                validChainCombinations.add(lipidIdentification);
-              else
-                validChainCombinations.add((String)nameAndNumberOfPos[0]);
+              Object[] nameAndNumberOfPos = StaticUtils.cleanEmptyFAPositionsAndEncodeToLDACombiName(lipidIdentification,faHydroxyEncoding,
+                  lcbHydroxyEncoding, isAlexOhEncoding);
+              lipidIdentification = (String)nameAndNumberOfPos[0];
               int posNr = (Integer)nameAndNumberOfPos[1];
               if (posNr>numberOfPositions) numberOfPositions = posNr;
+              containsAlkyl = (Boolean)nameAndNumberOfPos[2];
+              containsAlkenyl = (Boolean)nameAndNumberOfPos[3];
+              //when the correct MSn LDA decoded MSn identification name is known, put the correct one to the column
+              columnToIdentification.put(count, lipidIdentification);
+              validChainCombinations.add(lipidIdentification);
+              //System.out.println("0. lipidIdentification: "+sheet.getSheetName()+" "+lipidIdentification);
             }
           }
           count++;
@@ -770,9 +797,13 @@ public class LDAResultReader
         combiKey = ((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)).trim().substring(LipidomicsConstants.EXCEL_MSN_SECTION_POSITION_INTENSITIES.length());
         combiKey = combiKey.substring(combiKey.indexOf("(")+1,combiKey.indexOf(")"));
         if (combiKey.indexOf(";")!=-1) combiKey = combiKey.substring(0,combiKey.indexOf(";"));
-        validChainCombinations = correctUndefinedChainCombinations(combiKey,validChainCombinations);
+        validChainCombinations = correctUndefinedChainCombinations(combiKey,validChainCombinations,LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
         Hashtable<String,Integer> chainOccurenceInCombi = new Hashtable<String,Integer>();
-        String[] fas = LipidomicsMSnSet.getFAsFromCombiName(combiKey.replaceAll("/", "_"));
+        combiKey = (String)StaticUtils.cleanEmptyFAPositionsAndEncodeToLDACombiName(combiKey,faHydroxyEncoding,
+            lcbHydroxyEncoding,  (usedAlexMsnTargets && combiKey.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS)!=-1))[0];
+        combiKey = getPermutationThatIsInValidChainCombinations(combiKey, validChainCombinations);
+        
+        Vector<String> fas = StaticUtils.splitChainCombiToEncodedStrings(combiKey,LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
         for (String fa: fas){
           int count = 0;
           if (chainOccurenceInCombi.containsKey(fa)) count = chainOccurenceInCombi.get(fa);
@@ -780,9 +811,9 @@ public class LDAResultReader
           chainOccurenceInCombi.put(fa, count);
         }
         // there is only one type of fatty acid chain
-        if (chainOccurenceInCombi.size()==1 && fas.length==numberOfPositions){
+        if (chainOccurenceInCombi.size()==1 && fas.size()==numberOfPositions){
           Hashtable<Integer,Integer> definitions = new Hashtable<Integer,Integer>();
-          for (int i=0; i!=fas.length;i++){
+          for (int i=0; i!=fas.size();i++){
             definitions.put(i, i);
           }
           positionDefinition.put(combiKey, definitions);
@@ -799,7 +830,7 @@ public class LDAResultReader
         if (isDefinitionPresent(positionDefinition)) status = LipidomicsMSnSet.POSITION_DETECTED;
         addingMSnEvidence = new LipidomicsMSnSet(addingMSnEvidence, status, mzTolerance,headGroupFragments, headIntensityRules,
         chainFragments, chainIntensityRules, validChainCombinations, positionDefinition,positionEvidence, numberOfPositions, basePeakValues,
-        msnRetentionTimes);
+        msnRetentionTimes, faHydroxyEncoding, lcbHydroxyEncoding);
         msHash.put(speciesName,addingMSnEvidence);
         addingMSnEvidence=null;
       }
@@ -809,6 +840,8 @@ public class LDAResultReader
           if (cellEntries.get(columnId)==null || ((String)cellEntries.get(columnId)).length()==0) continue;
           String entry = (String)cellEntries.get(columnId);
           if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_NAME)) nameColumn = columnId;
+          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_OH)) ohColumn = columnId;
+          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_CHAIN_TYPE)) chainTypeColumn = columnId;
           if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_FORMULA)) formulaColumn = columnId;
           if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_MSLEVEL)) msLevelColumn = columnId;
           if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_FRAGMENT_CHARGE)) chargeColumn = columnId;
@@ -843,8 +876,34 @@ public class LDAResultReader
       } 
       // reading information about the fragment
       else if (addingMSnEvidence!=null && headerRowRead && (headGroupFragmentActive||chainFragmentActive)){
+          
         String fragmentName = null;
         if (nameColumn>-1 && cellEntries.containsKey(nameColumn)) fragmentName = (String)cellEntries.get(nameColumn);
+        int oh = 0;
+        if (ohColumn>-1 && cellEntries.containsKey(ohColumn)) oh = (int)Math.rint((Double)cellEntries.get(ohColumn));
+        // I have to put this to LipidomicsConstants.CHAIN_TYPE_NO_CHAIN for backward compatibility - by this I know that these results were
+        // produced by an older LDA version
+        short chainType = LipidomicsConstants.CHAIN_TYPE_NO_CHAIN;
+        if (chainTypeColumn>-1 && cellEntries.containsKey(chainTypeColumn)) {
+          String chainTypeString =  (String)cellEntries.get(chainTypeColumn);
+          if (chainTypeString.equalsIgnoreCase(FragmentRuleVO.CHAIN_NAME.substring(1)))
+            chainType = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
+          else if (chainTypeString.equalsIgnoreCase(FragmentRuleVO.ALKYL_CHAIN_NAME.substring(1)))
+            chainType = LipidomicsConstants.CHAIN_TYPE_FA_ALKYL;
+          else if (chainTypeString.equalsIgnoreCase(FragmentRuleVO.ALKENYL_CHAIN_NAME.substring(1)))
+            chainType = LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL;
+          else if (chainTypeString.equalsIgnoreCase(FragmentRuleVO.LCB_NAME.substring(1)))
+            chainType = LipidomicsConstants.CHAIN_TYPE_LCB;
+          else
+            throw new LipidCombinameEncodingException("The entry \""+chainTypeString+"\" is not allowed in the column \""+LipidomicsConstants.EXCEL_MSN_FRAGMENT_CHAIN_TYPE+"\"!");
+        //this is required for backward compatibility
+        } else if (chainFragmentActive) {
+          chainType = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
+          if (containsAlkyl && fragmentName.indexOf("("+LipidomicsConstants.ALKYL_PREFIX)!=-1)
+            chainType = LipidomicsConstants.CHAIN_TYPE_FA_ALKYL;
+          if (containsAlkenyl && fragmentName.indexOf("("+LipidomicsConstants.ALKENYL_PREFIX)!=-1)
+            chainType = LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL;
+        }
         String formula = null;
         if (formulaColumn>-1 && cellEntries.containsKey(formulaColumn)) formula = "+"+((String)cellEntries.get(formulaColumn)).trim().replaceAll(" ", " \\+");
         int msLevel = -1;
@@ -900,13 +959,13 @@ public class LDAResultReader
             status = LipidomicsMSnSet.HEAD_GROUP_DETECTED;
           }else if (chainFragmentActive){
             status = LipidomicsMSnSet.FRAGMENTS_DETECTED;
-            String[] faAndFragment = StaticUtils.parseChainFaAndFragmentNameFromExcel(fragmentName);
-            String faName = faAndFragment[0];
-            fragmentName =  faAndFragment[1];
+            Object[] faAndFragment = StaticUtils.parseChainFaAndFragmentNameFromExcel(fragmentName,chainType,oh);
+            FattyAcidVO faName = (FattyAcidVO)faAndFragment[0];
+            fragmentName =  (String)faAndFragment[1];
             Hashtable<String,CgProbe> fragments = new Hashtable<String,CgProbe>();
-            if (chainFragments.containsKey(faName)) fragments = chainFragments.get(faName);
+            if (chainFragments.containsKey(faName.getChainId())) fragments = chainFragments.get(faName.getChainId());
             fragments.put(fragmentName, probe);
-            chainFragments.put(faName,fragments);
+            chainFragments.put(faName.getChainId(),fragments);
           }
         }
       }
@@ -944,8 +1003,8 @@ public class LDAResultReader
           IntensityRuleVO ruleVO = FragRuleParser.extractIntensityVOFromEquation(rule, -1, currentSection, head, chain, null, missed);
           if (chainRules || positionRules){
             IntensityRuleVO ruleInst = null;
-            if (chainRules) ruleInst = IntensityChainVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO);
-            else if (positionRules) ruleInst = IntensityPositionVO.getFattyAcidsFromReadableRule(readableRuleInterpretation, ruleVO);
+            if (chainRules) ruleInst = IntensityChainVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO,chainFragments,missed);
+            else if (positionRules) ruleInst = IntensityPositionVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO,chainFragments,missed);
             if (ruleInst!=null) ruleVO = ruleInst;
           }
           if (ruleVO.containsBasePeak()){
@@ -957,30 +1016,41 @@ public class LDAResultReader
             int msLevel = ruleVO.getMSLevel(headGroupFragments, chainFragments, ruleVO.getBiggerFA(), ruleVO.getSmallerFA());
             if (msLevel>1) basePeakValues.put(msLevel, basePeak);
           }
-          if (ruleVO!=null && headGroupRules) headIntensityRules.put(ruleVO.getRuleIdentifier(), ruleVO);
+          if (ruleVO!=null && headGroupRules) {
+            headIntensityRules.put(ruleVO.getRuleIdentifier(), ruleVO);
+          }
           else if (ruleVO!=null && chainRules){
-            IntensityChainVO chainVO =  IntensityChainVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO);
-            if (!chainVO.getBiggerFA().equalsIgnoreCase(chainVO.getSmallerFA())) chainVO.setChainType(IntensityChainVO.DIFF_CHAIN_TYPES);
+            //this line was replaced by the next one since this step was already perforemed before - I simply casted now the object
+            //IntensityChainVO chainVO =  IntensityChainVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO,chainFragments,missed);
+            IntensityChainVO chainVO = (IntensityChainVO)ruleVO;
+            if (!chainVO.getBiggerFA().getChainId().equalsIgnoreCase(chainVO.getSmallerFA().getChainId())) chainVO.setChainType(IntensityChainVO.DIFF_CHAIN_TYPES);
             Hashtable<String,IntensityChainVO> rules = new Hashtable<String,IntensityChainVO>();
             String id = "";
             if (chainVO.getChainType()==IntensityChainVO.DIFF_CHAIN_TYPES){
-              String[] poss = getChainCombination(chainVO.getBiggerFA(),chainVO.getSmallerFA());
-              if (chainIntensityRules.containsKey(poss[0])) id = poss[0];
-              else id = poss[1];
-            } else id = chainVO.getBiggerFA();
+              Vector<String>  chains = new Vector<String>();
+              chains.add(chainVO.getBiggerFA().getChainId());
+              chains.add(chainVO.getSmallerFA().getChainId());
+              Vector<String> permut = StaticUtils.getPermutedChainNames(chains, LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
+              if (chainIntensityRules.contains(permut.get(0)))
+                id = permut.get(0);
+              else
+                id = permut.get(1);
+            } else id = chainVO.getBiggerFA().getChainId();
             if (chainIntensityRules.containsKey(id)) rules = chainIntensityRules.get(id);
             rules.put(ruleVO.getRuleIdentifier(), chainVO);
             chainIntensityRules.put(id, rules);
           } else if (ruleVO!=null && positionRules){
-            IntensityPositionVO posVO = IntensityPositionVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO);
+            //this line was replaced by the next one since this step was already perforemed before - I simply casted now the object
+            //IntensityPositionVO posVO = IntensityPositionVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO,chainFragments,missed);
+            IntensityPositionVO posVO = (IntensityPositionVO)ruleVO;
             Hashtable<Integer,Integer> defs = new Hashtable<Integer,Integer>();
             Hashtable<Integer,Vector<IntensityPositionVO>> evidence = new Hashtable<Integer,Vector<IntensityPositionVO>>();
             if (positionDefinition.containsKey(combiKey)) defs = positionDefinition.get(combiKey);
             if (positionEvidence.containsKey(combiKey)) evidence = positionEvidence.get(combiKey);
-            String[] fas = LipidomicsMSnSet.getFAsFromCombiName(combiKey);
+            Vector<String> fas = StaticUtils.splitChainCombiToEncodedStrings(combiKey,LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
             Hashtable<String,String> usedFAs = new Hashtable<String,String>();
-            for (int i=0;i!=fas.length;i++){
-              String fa = fas[i];
+            for (int i=0;i!=fas.size();i++){
+              String fa = fas.get(i);
               int position = posVO.getPositionByFA(fa);
               if ( position<0 || usedFAs.containsKey(fa)) continue;
               if (defs.containsKey(i)){
@@ -988,8 +1058,8 @@ public class LDAResultReader
                 if (defs.get(i)!=(position-1)){
                   boolean otherSameFAAtPositionOrUndefined = false;
                   //check if there is the same FA more than once, and this position is assigned or undefined
-                  for (int j=0;j!=fas.length;j++){
-                    if (i==j || !fa.equalsIgnoreCase(fas[j]))continue;
+                  for (int j=0;j!=fas.size();j++){
+                    if (i==j || !fa.equalsIgnoreCase(fas.get(j)))continue;
                     if (!defs.containsKey(j)||defs.get(i)==(position-1)||defs.get(j)==(position-1)) otherSameFAAtPositionOrUndefined=true;
                   }
                   if (!otherSameFAAtPositionOrUndefined) defs.remove(i);
@@ -1000,7 +1070,7 @@ public class LDAResultReader
                 //position for the correct assignment
                 boolean sameFaAlreadySamePosition = false;
                 for (int j=0; j!=i; j++){
-                  if (!fa.equalsIgnoreCase(fas[j])) continue;
+                  if (!fa.equalsIgnoreCase(fas.get(j))) continue;
                   if (defs.get(j)==(position-1)) sameFaAlreadySamePosition = true;
                 }
                 if (!sameFaAlreadySamePosition){
@@ -1030,6 +1100,8 @@ public class LDAResultReader
       // if in the next row the fragment head row has to be read - the column indices have to be initialized
       if (readFragmentHeaderRow){
         nameColumn = -1;
+        ohColumn = -1;
+        chainTypeColumn = -1;
         formulaColumn = -1;
         msLevelColumn = -1;
         chargeColumn = -1;
@@ -1059,7 +1131,7 @@ public class LDAResultReader
       if (isDefinitionPresent(positionDefinition)) status = LipidomicsMSnSet.POSITION_DETECTED;
       addingMSnEvidence = new LipidomicsMSnSet(addingMSnEvidence, status, mzTolerance,headGroupFragments, headIntensityRules,
       chainFragments, chainIntensityRules, validChainCombinations, positionDefinition,positionEvidence, numberOfPositions, basePeakValues,
-      msnRetentionTimes);
+      msnRetentionTimes, faHydroxyEncoding, lcbHydroxyEncoding);
       msHash.put(speciesName,addingMSnEvidence);
     }
     
@@ -1099,30 +1171,20 @@ public class LDAResultReader
     return cleaned;
   }
   
-  /**
-   * returns the various permutations of two fatty acid chains
-   * @param fa1 fatty acid chain 1
-   * @param fa2 fatty acid chain 2
-   * @return
-   */
-  private static String[] getChainCombination(String fa1, String fa2){
-    String[] poss = new String[2];
-    poss[0] = fa1+"_"+fa2;
-    poss[1] = fa2+"_"+fa1;
-    return poss;
-  }
   
   /**
    * the parser adds found chain combinations by replacing the "/" by "_", where the sequence of the fatty acids may
    * be different than in the stored values - this method corrects the sequence to be exactly as in the stored Excel
    * @param combiKey fa combination String as it should be
    * @param validChainCombinations the currently available chain combinations
+   * @param sep the separator for the combination
    * @return the corrected available chain combinations
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  private static Vector<String> correctUndefinedChainCombinations(String combiKey, Vector<String> validChainCombinations){
+  private static Vector<String> correctUndefinedChainCombinations(String combiKey, Vector<String> validChainCombinations, String sep) throws LipidCombinameEncodingException{
     Vector<String> corrected = new Vector<String>();
     for (String combi : validChainCombinations){
-      if (StaticUtils.isAPermutedVersion(combiKey,combi)) corrected.add(combiKey);
+      if (StaticUtils.isAPermutedVersion(combiKey,combi,sep)) corrected.add(combiKey);
       else corrected.add(combi);
     }
     return corrected;
@@ -1138,6 +1200,24 @@ public class LDAResultReader
       if (posss.size()>0) return true;
     }
     return false;
+  }
+  
+  
+  /**
+   * selects the permutation that is used in the validChainCombinations
+   * @param combiKey an encoded LDA chain combination
+   * @param validChainCombinations the available chain combinations in valid validChainCombinations
+   * @return the one in validChainCombinations
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
+   */
+  private static String getPermutationThatIsInValidChainCombinations(String combiKey, Vector<String> validChainCombinations) throws LipidCombinameEncodingException {
+    Vector<String> chains = StaticUtils.splitChainCombiToEncodedStrings(combiKey,LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
+    Vector<String> permuts = StaticUtils.getPermutedChainNames(chains, LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
+    for (String permut : permuts) {
+      if (validChainCombinations.contains(permut))
+        return permut;
+    }
+    return null;
   }
   
 }

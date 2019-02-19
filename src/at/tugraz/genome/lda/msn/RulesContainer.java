@@ -34,6 +34,7 @@ import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.parser.FragRuleParser;
 import at.tugraz.genome.lda.msn.vos.FragmentRuleVO;
 import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
+import at.tugraz.genome.lda.utils.RangeInteger;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
@@ -354,7 +355,7 @@ public class RulesContainer
   /**
    * how many LCBs does this analyte class have
    * @param ruleName name of the lipid class
-   * @return the amount of alkenyl chains for this class
+   * @return the amount of LCB chains for this class
    * @throws RulesException specifies in detail which rules are not valid
    * @throws NoRuleException thrown if the rules are not there
    * @throws IOException general exception if there is something wrong about the file
@@ -368,7 +369,7 @@ public class RulesContainer
    * how many LCBs chains does this analyte class have
    * @param ruleName name of the lipid class
    * @param rulesDir directory where the rule files are stored
-   * @return the amount of alkenyl chains for this class
+   * @return the amount of LCB chains for this class
    * @throws RulesException specifies in detail which rules are not valid
    * @throws NoRuleException thrown if the rules are not there
    * @throws IOException general exception if there is something wrong about the file
@@ -378,6 +379,63 @@ public class RulesContainer
     RulesContainer cont = checkIfRuleExists(ruleName,rulesDir);
     return cont.rules_.get(ruleName).getAmountOfLCBs();
   }
+
+  /**
+   * the range of possible hydroxylation sites for the FA moiety
+   * @param ruleName name of the lipid class
+   * @return range of possible hydroxylation sites for the FA moiety
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static RangeInteger getFaHydroxyRange(String ruleName) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    return getFaHydroxyRange(ruleName, currentRulesDir_);
+  }
+
+  /** 
+   * the range of possible hydroxylation sites for the FA moiety
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return range of possible hydroxylation sites for the FA moiety
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static RangeInteger getFaHydroxyRange(String ruleName, String rulesDir) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    RulesContainer cont = checkIfRuleExists(ruleName,rulesDir);
+    return cont.rules_.get(ruleName).getFaHydroxyRange();
+  }
+
+  /**
+   * the range of possible hydroxylation sites for the LCB moiety
+   * @param ruleName name of the lipid class
+   * @return range of possible hydroxylation sites for the LCB moiety
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static RangeInteger getLcbHydroxyRange(String ruleName) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    return getLcbHydroxyRange(ruleName, currentRulesDir_);
+  }
+
+  /** 
+   * the range of possible hydroxylation sites for the LCB moiety
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return range of possible hydroxylation sites for the LCB moiety
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static RangeInteger getLcbHydroxyRange(String ruleName, String rulesDir) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    RulesContainer cont = checkIfRuleExists(ruleName,rulesDir);
+    return cont.rules_.get(ruleName).getLcbHydroxyRange();
+  }
+  
 
   /**
    * cutoff value relative to the base peak

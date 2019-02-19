@@ -41,8 +41,10 @@ import at.tugraz.genome.lda.alex123.vos.TargetlistFloatStringVO;
 import at.tugraz.genome.lda.analysis.ComparativeAnalysis;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.RdbWriterException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
+import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.utils.StaticUtils;
@@ -146,9 +148,10 @@ public class RdbOutputWriter
    * @param quantObjects the quantification objects providing more information (only for Alex123 target lists)
    * @throws RdbWriterException if something is wrong with the writing
    * @throws ChemicalFormulaException if something is wrong with the chemical formulae
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   public void write(String fileName, Vector<QuantificationResult> results, LinkedHashMap<String,Integer> classSequence,
-      Hashtable<String,Vector<String>> analyteSequence, Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects) throws RdbWriterException, ChemicalFormulaException {
+      Hashtable<String,Vector<String>> analyteSequence, Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects) throws RdbWriterException, ChemicalFormulaException, LipidCombinameEncodingException {
     //the third variable is not required - only backward compatibility that is not necessary for this method
     //the sixth and the seventh parameter is not required by this method - all of the molecules and isotopes have to be written
     write(fileName,results,null,classSequence,analyteSequence,null,null,null,quantObjects);
@@ -167,13 +170,14 @@ public class RdbOutputWriter
    * @param analysisModule the comparative analysis module - containing information about the file comparisons by the heat map (only for exports by LDA files)
    * @throws RdbWriterException if something is wrong with the writing
    * @throws ChemicalFormulaException if something is wrong with the chemical formulae
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   @SuppressWarnings("unchecked")
   private void write(String fileNameOut, Vector<QuantificationResult> results, Hashtable<Integer,String> expLookup,
       LinkedHashMap<String,Integer> classSequence, Hashtable<String,Vector<String>> correctAnalyteSequence,
       Hashtable<String,Hashtable<String,String>> acceptedMolecules, ComparativeAnalysis analysisModule,
       Hashtable<String,Integer> maxIsotopes, Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects) throws RdbWriterException,
-      ChemicalFormulaException {
+      ChemicalFormulaException, LipidCombinameEncodingException {
     boolean detectorColumn = false;
     boolean polarityColumn = false;
     boolean lipidIdColumn = false;
@@ -646,6 +650,7 @@ public class RdbOutputWriter
                       oneCombi = nameString;
                       if (msnSet.getMSnIdentificationNames().size()>1) relativeShare=msnSet.getRelativeIntensity(nameString);
                     }
+                    oneCombi = msnSet.getCombiIdFromHumanReadable(oneCombi);
                       
                     Hashtable<Integer,Hashtable<String,Hashtable<String,TargetlistEntry>>> alexFragments = null;
                     if (quantObject!=null && containsMSnInformation && quantObject.getMsnFragments()!=null && quantObject.getMsnFragments().size()>0)
@@ -660,22 +665,28 @@ public class RdbOutputWriter
                       }
                     }
                     if (msnSet.getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED){
-                      molSpeciesId = classNameToWrite+"("+nameString+")";
+                      //molSpeciesId = classNameToWrite+"("+nameString+")";
                       Hashtable<String,Hashtable<String,CgProbe>> chainFrags =  msnSet.getChainFragments();
 
-                      String[] fas = LipidomicsMSnSet.getFAsFromCombiName(oneCombi);
+//                      Vector<String> fas = StaticUtils.splitChainCombiToEncodedStrings(oneCombi.replaceAll(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS, LipidomicsConstants.CHAIN_SEPARATOR_NO_POS),
+//                          LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
+                      Vector<FattyAcidVO> fas = StaticUtils.decodeLipidNamesFromChainCombi(oneCombi);
+                      molSpeciesId = StaticUtils.encodeAlexMolSpeciesName(classNameToWrite,fas);
                       Hashtable<String,String> usedFAs = new Hashtable<String,String>();
-                      for (int j=0; j!= fas.length; j++){
-                        String fa = fas[j];
+                      for (int j=0; j!= fas.size(); j++){
+                        FattyAcidVO fa = fas.get(j);
                         Hashtable<String,CgProbe> frags =  new Hashtable<String,CgProbe>();
-                        String faStored = StaticUtils.getStoredFAName(fa,chainFrags);
-                        if (faStored!=null) frags =  chainFrags.get(faStored);
+                        //String faStored = StaticUtils.getStoredFAName(fa.getCarbonDbsId(),chainFrags);
+                        //if (faStored!=null) frags =  chainFrags.get(faStored);
+                        frags =  chainFrags.get(fa.getChainId());
+                        if (frags==null)
+                          continue;
                         for (String key : frags.keySet()){
                           String fragmentName = key;
-                          if (!fragmentName.contains(faStored)) fragmentName = StaticUtils.getChainFragmentDisplayName(fragmentName,faStored);
+                          if (!fragmentName.contains(fa.getChainId())) fragmentName = StaticUtils.getChainFragmentDisplayName(fragmentName,fa.getCarbonDbsId());
                           if (usedFAs.containsKey(fragmentName))continue;
                           usedFAs.put(fragmentName, fragmentName);
-                          TargetlistEntry ms2Target = getMSnTargetlistEntry(key,faStored,oneCombi,alexFragments);
+                          TargetlistEntry ms2Target = getMSnTargetlistEntry(key,fa.getChainId(),oneCombi,alexFragments);
                           fragments.add(new TargetlistFloatStringVO(fragmentName,frags.get(key).Mz,frags.get(key).getMsLevel(),ms2Target)); 
                         }
                       }
@@ -850,11 +861,12 @@ public class RdbOutputWriter
    * @throws RdbWriterException if something is wrong with the writing
    * @throws ExcelInputFileException if something is wrong with the Excel quantitation files
    * @throws ChemicalFormulaException if something is wrong with the chemical formulae
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   public void write(String fileName, ComparativeAnalysis analysisModule, LinkedHashMap<String,Integer> classSequence,
       Hashtable<String,Vector<String>> analyteSequence, Hashtable<String,Hashtable<String,String>> acceptedMolecules, Hashtable<String,Integer> maxIsotopes,
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects, Vector<String> allowedExps)
-          throws RdbWriterException, ExcelInputFileException, ChemicalFormulaException{
+          throws RdbWriterException, ExcelInputFileException, ChemicalFormulaException, LipidCombinameEncodingException{
     Vector<QuantificationResult> results = new Vector<QuantificationResult>();
     Hashtable<Integer,String> expLookup = new Hashtable<Integer,String>();
     for (int i=0; i!=analysisModule.getExpNamesInSequence().size(); i++) {

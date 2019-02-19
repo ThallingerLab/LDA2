@@ -165,15 +165,19 @@ public class SharedMS1PeakVO
       Hashtable<String,CgProbe> chainFrags = chainFragments.get(faName);
       for (String fragName : chainFrags.keySet()){
         CgProbe probe = chainFrags.get(fragName);
-        boolean alreadyThere = false;
+        String otherProbe = null;
         // check if there is already a probe with this m/z
-        for (CgProbe other : frags.values()){
-          if (isInsideMz(probe, other)){
-            alreadyThere = true;
+        for (String other : frags.keySet()){
+          if (isInsideMz(probe, frags.get(other))){
+            otherProbe = other;
             break;
           }
         }
-        if (!alreadyThere) frags.put(faName+";"+fragName, probe);
+        if (otherProbe==null || probe.Area>frags.get(otherProbe).Area) {
+          if (otherProbe!=null)
+            frags.remove(otherProbe);
+          frags.put(faName+";"+fragName, probe);
+        }
       }
     }
     return frags;

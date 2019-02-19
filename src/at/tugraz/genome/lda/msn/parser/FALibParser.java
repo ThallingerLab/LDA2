@@ -27,13 +27,21 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.Settings;
+import at.tugraz.genome.lda.exception.ChemicalFormulaException;
+import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.RulesException;
+import at.tugraz.genome.lda.exception.SheetNotPresentException;
 import at.tugraz.genome.lda.msn.FattyAcidsContainer;
+import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
+import at.tugraz.genome.lda.utils.StaticUtils;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
@@ -51,12 +59,16 @@ public class FALibParser
 {
   // the Excel file must contain a tab called "FAS"
   private final static String FAS_SHEET_NAME = "FAS";
-  
+    
   protected File inputFile_;
-  // hash containing the result of the parsing
-  // the first integer is the amount of carbon atoms
-  // the second integer is the amount of double bonds
-  private Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> result_;
+  
+  /** hash containing the result of the parsing
+   * the first String is the encoding of the number of hydroxylation sites
+   * the second integer is the amount of carbon atoms
+   * the third integer is the amount of double bonds
+   * the fourth key is the prefix
+   */
+  private Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> result_;
   
   /**
    * Constructor specifying the Excel file to parse
@@ -81,9 +93,10 @@ public class FALibParser
    * Command that starts the parsing of the Excel file specified in the constructor
    * @throws RulesException specifies in detail which rule has been infringed
    * @throws IOException general exception if a file is not there
+   * @throws SheetNotPresentException thrown if the tab in the Excel file is not present
    */
-  public void parseFile() throws RulesException, IOException{
-    result_ = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>();
+  public void parseFile() throws RulesException, IOException, SheetNotPresentException{
+    result_ = new Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>();
     InputStream myxls = null;
     try{
       myxls = new FileInputStream(inputFile_);
@@ -96,20 +109,85 @@ public class FALibParser
       for (int sheetNumber = 0; sheetNumber!=workbook.getNumberOfSheets(); sheetNumber++){
         if (workbook.getSheetAt(sheetNumber).getSheetName().equalsIgnoreCase(FAS_SHEET_NAME)) sheet = workbook.getSheetAt(sheetNumber);
       }
-      if (sheet==null) throw new RulesException("A fatty acid chain library must have a sheet called \""+FAS_SHEET_NAME+"\"! The lib "+inputFile_.getName()+" has not!");
-      result_ = parseSheet(sheet);
+      if (sheet==null) throw new SheetNotPresentException("A fatty acid chain library must have a sheet called \""+FAS_SHEET_NAME+"\"! The lib "+inputFile_.getName()+" has not!");
+      Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> readResult = parseSheet(sheet);
+      result_.put(HydroxyEncoding.HYDROXYLATION_ZERO, readResult);
+      
+      if (Settings.getFaHydroxyEncoding()!=null) {
+        //first: find the highest hydroxyNumber
+        int highestHydroxyNumber = 0;
+        HydroxyEncoding hydroxies = Settings.getFaHydroxyEncoding();
+        short hydroxyKey;
+        HashSet<String> encodedHydroxyStrings = new HashSet<String>();
+        for (Object hydroxyObject : hydroxies.keySet()) {
+          hydroxyKey = Short.parseShort((String)hydroxyObject);
+          encodedHydroxyStrings.add((String)hydroxies.get(hydroxyObject));
+          if (hydroxyKey>highestHydroxyNumber)
+            highestHydroxyNumber = hydroxyKey;
+        }
+        double oxygenMass = Settings.getElementParser().getElementDetails("O").getMonoMass();
+        for (int i=1; i<=highestHydroxyNumber; i++) {
+          String encoded = null;
+          try {
+            encoded = hydroxies.getEncodedPrefix((short)i);
+          }
+          catch (HydroxylationEncodingException e) {
+            continue;
+          }
+          try {
+            // now, create a the new hash tables and calculate the mass differences according to the hydroxylation numbers
+            Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> currentHydroxy = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>();
+            for (Integer cAtoms :  result_.get(HydroxyEncoding.HYDROXYLATION_ZERO).keySet()) {
+              Hashtable<Integer,Hashtable<String,FattyAcidVO>> otherCAtoms = result_.get(HydroxyEncoding.HYDROXYLATION_ZERO).get(cAtoms);
+              Hashtable<Integer,Hashtable<String,FattyAcidVO>> cAtomsRes = new Hashtable<Integer,Hashtable<String,FattyAcidVO>>();
+              for (Integer dbs : otherCAtoms.keySet()) {
+                Hashtable<String,FattyAcidVO> otherDbs = otherCAtoms.get(dbs);
+                Hashtable<String,FattyAcidVO> dbsRes = new Hashtable<String,FattyAcidVO>();
+                for (String prefix : otherDbs.keySet()) {
+                  FattyAcidVO otherFA = otherDbs.get(prefix);
+                  Hashtable<String,Integer> formulaCat = StaticUtils.categorizeFormula(otherFA.getFormula());
+                  int oxygens = 0;
+                  if (formulaCat.containsKey("O")) oxygens = formulaCat.get("O");
+                  oxygens += i;
+                  formulaCat.put("O", oxygens);
+                  FattyAcidVO chainVO = new FattyAcidVO(otherFA.getChainType(), otherFA.getPrefix(), otherFA.getcAtoms(), otherFA.getDoubleBonds(),i, otherFA.getMass()+i*oxygenMass, StaticUtils.getFormulaInHillNotation(formulaCat, true));
+                  dbsRes.put(prefix, chainVO);
+                }
+              cAtomsRes.put(dbs, dbsRes);
+              }
+              currentHydroxy.put(cAtoms, cAtomsRes);
+            }
+            result_.put(encoded, currentHydroxy);
+          }catch(ChemicalFormulaException cfx) {
+            cfx.printStackTrace();
+          }
+        }
+      }
     }finally{
       try{myxls.close();}catch(Exception ex){};
     }
   }
-  
+
+
   /**
    * parses the sheet of an Excel file for chain mass lists
    * @param sheet the excel list to parse
    * @return he result hash - first integer is the amount of carbon atoms; second integer is the amount of double bonds; third key is the prefix
    * @throws RulesException specifies in detail which rule has been infringed
    */
-  protected Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> parseSheet(Sheet sheet) throws RulesException{
+  private Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> parseSheet(Sheet sheet) throws RulesException{
+    return this.parseSheet(sheet, 0);
+  }
+
+  
+  /**
+   * parses the sheet of an Excel file for chain mass lists
+   * @param sheet the excel list to parse
+   * @param ohNumber the number of OH sites
+   * @return the result hash - first integer is the amount of carbon atoms; second integer is the amount of double bonds; third key is the prefix
+   * @throws RulesException specifies in detail which rule has been infringed
+   */
+  protected Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> parseSheet(Sheet sheet, int ohNumber) throws RulesException{
     Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> result = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>();
     int cAtomsColumn = -1;
     int dbsColumn = -1;
@@ -219,12 +297,12 @@ public class FALibParser
           chemicalFormula+=element+String.valueOf(amount);
         }
 
-        FattyAcidVO faVO = new FattyAcidVO(prefix,cAtoms,dbs,mass,chemicalFormula);
+        FattyAcidVO faVO = new FattyAcidVO(LipidomicsConstants.CHAIN_TYPE_FA_ACYL, prefix,cAtoms,dbs,ohNumber,mass,chemicalFormula);
         Hashtable<Integer,Hashtable<String,FattyAcidVO>> fasWithSameC = new Hashtable<Integer,Hashtable<String,FattyAcidVO>>();
         if (result.containsKey(cAtoms)) fasWithSameC = result.get(cAtoms);
         Hashtable<String,FattyAcidVO> fasWithSameDbs = new Hashtable<String,FattyAcidVO>();
         if (fasWithSameC.containsKey(dbs)) fasWithSameDbs = fasWithSameC.get(dbs);
-        if (fasWithSameDbs.containsKey(prefix)) throw new RulesException("A fatty acid chain library must not contain the same elements twice! The entry "+faVO.getName()+" at line number "+(rowCount+1)+" is there for the second time!");
+        if (fasWithSameDbs.containsKey(prefix)) throw new RulesException("A fatty acid chain library must not contain the same elements twice! The entry "+faVO.getCarbonDbsId()+" at line number "+(rowCount+1)+" is there for the second time!");
         fasWithSameDbs.put(prefix, faVO);
         fasWithSameC.put(dbs, fasWithSameDbs);
         result.put(cAtoms, fasWithSameC);
@@ -236,9 +314,9 @@ public class FALibParser
   
   /**
    * Fetches the results of the parsing - parseFile() has to be called before
-   * @return the result hash - first integer is the amount of carbon atoms; second integer is the amount of double bonds; third key is the prefix
+   * @return the result hash - first key: encoded hydroxy; second key is the amount of carbon atoms; third key is the amount of double bonds; fourth key is the prefix
    */
-  public Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getFattyAcids(){
+  public Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> getFattyAcids(){
     return result_;
   }
 }

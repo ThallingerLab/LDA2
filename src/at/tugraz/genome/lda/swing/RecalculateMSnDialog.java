@@ -40,6 +40,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import at.tugraz.genome.lda.TooltipTexts;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.MSnAnalyzer;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
@@ -128,7 +129,13 @@ public class RecalculateMSnDialog extends JDialog implements ActionListener
       float area = result_.getArea();
       LipidomicsMSnSet msn = (LipidomicsMSnSet)result_;
       List<DoubleStringVO> nameAreaVO = new ArrayList<DoubleStringVO>();
-      for (Object names : msn.getMSnIdentificationNames()){
+      Vector<Object> detected = null;
+      try {detected = msn.getMSnIdentificationNames();
+      }catch (LipidCombinameEncodingException lcx) {
+        detected = new Vector<Object>();
+        lcx.printStackTrace();
+      }
+      for (Object names : detected){
         String name = "";
         double relArea = 0d;
         if (names instanceof Vector){

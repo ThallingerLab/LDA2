@@ -63,7 +63,7 @@ public class Settings
 {
   private static Settings instance_ = null;
 
-  public final static String VERSION = "2.7.0";
+  public final static String VERSION = "2.7.0_nightly";
   
   public final static String SETTINGS_FILE = ".settings";
   
@@ -120,11 +120,18 @@ public class Settings
   
   private LinkedHashMap<String,File> propertiesFiles_;
   
-  /** the path to the encoding of the hydroxylation path*/
-  private static String hydroxyEncodingPath_;
+  /** the path to the encoding of the FA hydroxylation path*/
+  private static String faHydroxyEncodingPath_;
 
-  /** the character encoding of the number of hydroxylation sites*/
-  private static HydroxyEncoding hydroxyEncoding_;
+  /** the character encoding of the number of hydroxylation sites for the FA*/
+  private static HydroxyEncoding faHydroxyEncoding_;
+
+  /** the path to the encoding of the LCB hydroxylation path*/
+  private static String lcbHydroxyEncodingPath_;
+
+  /** the character encoding of the number of hydroxylation sites for the LCB*/
+  private static HydroxyEncoding lcbHydroxyEncoding_;
+
   
   private static Settings getInstance() {
     if (instance_ == null) {
@@ -223,15 +230,24 @@ public class Settings
           }
         }
       }
-      
-      //for reading the hydroxylation encoding config file
-      hydroxyEncodingPath_ = properties.getProperty("HydroxyEncodingPath", "hydroxylationEncoding.txt");
-      if (hydroxyEncodingPath_==null || hydroxyEncodingPath_.length()==0)
-        throw new Exception("In order to work, LDA must have a lookup file for the encoding of the hydroxylation sites. Please specify it in the \"HydroxyEncodingPath\" settings of the .settings file");
-      File hydroxyEncoding = new File(hydroxyEncodingPath_);
+
+      //for reading the hydroxylation encoding config file of the LCB
+      faHydroxyEncodingPath_ = properties.getProperty("FaHydroxyEncodingPath", "FaHydroxylationEncoding.txt");
+      if (faHydroxyEncodingPath_==null || faHydroxyEncodingPath_.length()==0)
+        throw new Exception("In order to work, LDA must have a lookup file for the encoding of the FA hydroxylation sites. Please specify it in the \"FahydroxyEncodingPath\" settings of the .settings file");
+      File hydroxyEncoding = new File(faHydroxyEncodingPath_);
       if (!hydroxyEncoding.exists())
-        throw new Exception("The file \""+hydroxyEncodingPath_+"\" (specified in the HydroxyEncodingPath of the .settings file) does not exist!");
-      hydroxyEncoding_ = new HydroxyEncoding(hydroxyEncodingPath_);
+        throw new Exception("The file \""+faHydroxyEncodingPath_+"\" (specified in the FaHydroxyEncodingPath of the .settings file) does not exist!");
+      faHydroxyEncoding_ = new HydroxyEncoding(faHydroxyEncodingPath_);
+
+      //for reading the hydroxylation encoding config file of the LCB
+      lcbHydroxyEncodingPath_ = properties.getProperty("LcbHydroxyEncodingPath", "lcbHydroxylationEncoding.txt");
+      if (lcbHydroxyEncodingPath_==null || lcbHydroxyEncodingPath_.length()==0)
+        throw new Exception("In order to work, LDA must have a lookup file for the encoding of the LCB hydroxylation sites. Please specify it in the \"LCBHydroxyEncodingPath\" settings of the .settings file");
+      hydroxyEncoding = new File(lcbHydroxyEncodingPath_);
+      if (!hydroxyEncoding.exists())
+        throw new Exception("The file \""+lcbHydroxyEncodingPath_+"\" (specified in the LcbHydroxyEncodingPath of the .settings file) does not exist!");
+      lcbHydroxyEncoding_ = new HydroxyEncoding(lcbHydroxyEncodingPath_);
     }catch(Exception e){
       e.printStackTrace();
       System.exit(1);
@@ -529,14 +545,25 @@ public class Settings
     for (String option : fragOptions) fragSettings.add(option);
     return fragSettings;
   }
+
   
   /**
    * 
-   * @return the object holding the hydroxylation encodings
+   * @return the object holding the FA hydroxylation encodings
    */
-  public static HydroxyEncoding getHydroxyEncoding() {
+  public static HydroxyEncoding getFaHydroxyEncoding() {
     Settings.getInstance();
-    return hydroxyEncoding_;
+    return faHydroxyEncoding_;
+  }
+  
+  
+  /**
+   * 
+   * @return the object holding the LCB hydroxylation encodings
+   */
+  public static HydroxyEncoding getLcbHydroxyEncoding() {
+    Settings.getInstance();
+    return lcbHydroxyEncoding_;
   }
   
   

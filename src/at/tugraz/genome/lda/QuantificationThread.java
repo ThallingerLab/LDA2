@@ -57,11 +57,15 @@ import at.tugraz.genome.lda.alex123.vos.TargetlistEntry;
 import at.tugraz.genome.lda.exception.AlexTargetlistParserException;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
+import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.PostQuantificationProcessor;
 import at.tugraz.genome.lda.msn.RulesContainer;
+import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
+import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.msn.vos.IntensityChainVO;
 import at.tugraz.genome.lda.msn.vos.IntensityPositionVO;
 import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
@@ -146,6 +150,9 @@ public class QuantificationThread extends Thread
   private final static int STATUS_WAITING = 0;
   private final static int STATUS_CALCULATING = 1;
   private final static int STATUS_FINISHED = 2;
+
+  private final static int MSN_ROW_FRAGMENT_OH = 1;
+  private final static int MSN_ROW_FRAGMENT_CHAIN_TYPE = 2;
   
   private final static int MSN_ROW_FRAGMENT_MSLEVEL = 2;
   private final static int MSN_ROW_FRAGMENT_CHARGE = 3;
@@ -292,24 +299,27 @@ public class QuantificationThread extends Thread
     LipidomicsConstants constants = quantRes.getConstants();
     if (constants!=null){
       Sheet constantsSheet = resultWorkbook.createSheet(CONSTANTS_SHEET );
-      constants.writeSettingsToExcel(constantsSheet,headerStyle);
+      constants.writeSettingsToExcel(constantsSheet,headerStyle,quantRes.getFaHydroxyEncoding(),quantRes.getLcbHydroxyEncoding());
     }
     for (String sheetName: quantRes.getIdentifications().keySet()){
       Vector<LipidParameterSet> params = quantRes.getIdentifications().get(sheetName);
       boolean hasMSnInformation = false;
+//      boolean hasChainInfo = false;
       Sheet resultSheet = resultWorkbook.createSheet(sheetName);
       Sheet resultMSnSheet  = null;
       for (LipidParameterSet param : params){
-        if (param instanceof LipidomicsMSnSet) hasMSnInformation = true;
+        if (param instanceof LipidomicsMSnSet) {
+          hasMSnInformation = true;
+//          if (((LipidomicsMSnSet)param).getStatus()>=LipidomicsMSnSet.FRAGMENTS_DETECTED)
+//            hasChainInfo = true;
+        }
       }
-      if (hasMSnInformation){ resultMSnSheet = resultWorkbook.createSheet(sheetName+MSN_SHEET_ADDUCT);
-        resultMSnSheet.setColumnWidth(MSN_ROW_FRAGMENT_MZ_TOLERANCE, (int)((LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ_TOLERANCE.length()*256)*ExcelUtils.BOLD_MULT)); 
-        resultMSnSheet.setColumnWidth(MSN_ROW_FRAGMENT_TIME_LOWER, (int)((LipidomicsConstants.EXCEL_MSN_FRAGMENT_TIME_LOWER.length()*256)*ExcelUtils.BOLD_MULT)); 
-        resultMSnSheet.setColumnWidth(MSN_ROW_FRAGMENT_TIME_UPPER, (int)((LipidomicsConstants.EXCEL_MSN_FRAGMENT_TIME_UPPER.length()*256)*ExcelUtils.BOLD_MULT)); 
-        resultMSnSheet.setColumnWidth(MSN_ROW_FRAGMENT_ELLIPSE_TIME, (int)((LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_TIME.length()*256)*ExcelUtils.BOLD_MULT)); 
-        resultMSnSheet.setColumnWidth(MSN_ROW_FRAGMENT_ELLIPSE_MZ, (int)((LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_MZ.length()*256)*ExcelUtils.BOLD_MULT)); 
-        resultMSnSheet.setColumnWidth(MSN_ROW_FRAGMENT_ELLIPSE_TIME_RANGE, (int)((LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_TIME_RANGE.length()*256)*ExcelUtils.BOLD_MULT)); 
-        resultMSnSheet.setColumnWidth(MSN_ROW_FRAGMENT_ELLIPSE_MZ_RANGE, (int)((LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_MZ_RANGE.length()*256)*ExcelUtils.BOLD_MULT));
+      Hashtable<Integer,String> msnLongestHeaders = null;
+      Hashtable<Integer,Integer> msnLongestEntries = null;
+      if (hasMSnInformation){
+        resultMSnSheet = resultWorkbook.createSheet(sheetName+MSN_SHEET_ADDUCT);
+        msnLongestHeaders = new Hashtable<Integer,String>();
+        msnLongestEntries = new Hashtable<Integer,Integer>();
       }
       Sheet resultSheetOV = null;
 //      HSSFRow headerRowOV = null;
@@ -496,7 +506,7 @@ public class QuantificationThread extends Thread
       for (LipidParameterSet param : params){
         if (param instanceof LipidomicsMSnSet){
           try {
-            msnRowCount = writeMSnEvidence(msnRowCount,resultMSnSheet,(LipidomicsMSnSet)param, headerStyle);
+            msnRowCount = writeMSnEvidence(msnRowCount,resultMSnSheet,(LipidomicsMSnSet)param, headerStyle, msnLongestHeaders, msnLongestEntries);
           }catch(Exception ex){
             ex.printStackTrace();
             throw ex;
@@ -659,6 +669,11 @@ public class QuantificationThread extends Thread
           }
         }
       }
+      if (hasMSnInformation){
+        for (Integer column : msnLongestHeaders.keySet()) {
+          setColumnWidth(resultMSnSheet, column, msnLongestHeaders.get(column), (msnLongestEntries.containsKey(column) ? msnLongestEntries.get(column) : 0));
+        }
+      }
     }
     resultWorkbook.write(out);
     out.close();
@@ -670,62 +685,50 @@ public class QuantificationThread extends Thread
    * @param sheet Excel sheet for MSn evidence for this class
    * @param param the lipid identification containing MSn evidence
    * @param headerStyle style for the header row
+   * @param longestHeaders the names of the longest header entries for each column - for setting the column width
+   * @param longestEntries the length of the longest entries for each column - for setting the column width
    * @return the next row where subsequent information can be written
    * @throws RulesException
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded 
    */
   @SuppressWarnings("unchecked")
-  private static int writeMSnEvidence(int msnRowCount, Sheet sheet, LipidomicsMSnSet param, CellStyle headerStyle) throws RulesException{
+  private static int writeMSnEvidence(int msnRowCount, Sheet sheet, LipidomicsMSnSet param, CellStyle headerStyle,
+      Hashtable<Integer,String> longestHeaders, Hashtable<Integer,Integer> longestEntries) throws RulesException, LipidCombinameEncodingException {
     int count = msnRowCount;
     Row row = sheet.createRow(count);
     count++;
     Row areaRow = sheet.createRow(count);
     count++;
-    Cell cell = row.createCell(0);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(param.getNamePlusModHumanReadable());
-    cell = areaRow.createCell(0);
-    cell.setCellValue(param.Area);
+    createHeaderCell(row, 0, headerStyle, param.getNamePlusModHumanReadable(), longestHeaders);
+    createValueCell(areaRow, Cell.CELL_TYPE_NUMERIC, 0, String.valueOf(param.Area), null, (double)param.Area, longestEntries);
     
     // writing of fragments and rules concerning the head group
     Hashtable<String,CgProbe> headGroupFragments = param.getHeadGroupFragments();
-    int longestName = 0;
-    int longestFormula = 0;
-    int longestRuleValue = 0;
-    int longestMissed = 0;
     if (headGroupFragments.size()>0){
      Row headGroupRow =  sheet.createRow(count);
      count++;
-     cell = headGroupRow.createCell(0);
-     cell.setCellStyle(headerStyle);
-     cell.setCellValue(LipidomicsConstants.EXCEL_MSN_SECTION_HEAD_FRAGMENTS);
+     createHeaderCell(headGroupRow, 0, headerStyle, LipidomicsConstants.EXCEL_MSN_SECTION_HEAD_FRAGMENTS, longestHeaders);
      headGroupRow = sheet.createRow(count);
      count++;
-     writeMSnFragmentHeader(headGroupRow,headerStyle);
+     writeMSnFragmentHeader(headGroupRow,headerStyle,LipidomicsConstants.CHAIN_TYPE_NO_CHAIN,longestHeaders);
      for (String name : headGroupFragments.keySet()){
        headGroupRow = sheet.createRow(count);
        count++;
-       int formulaSize = writeMSnFragment(headGroupRow,name,param.getMSnMzTolerance(),headGroupFragments.get(name));
-       if (formulaSize>longestFormula) longestFormula=formulaSize;
+       writeMSnFragment(headGroupRow,name,param.getMSnMzTolerance(),headGroupFragments.get(name),LipidomicsConstants.CHAIN_TYPE_NO_CHAIN,-1,
+           longestEntries);
      }
      Hashtable<String,IntensityRuleVO> headIntRules = param.getHeadIntensityRules();
      if (headIntRules.size()>0){
        headGroupRow =  sheet.createRow(count);
        count++;
-       cell = headGroupRow.createCell(0);
-       cell.setCellStyle(headerStyle);
-       cell.setCellValue(LipidomicsConstants.EXCEL_MSN_SECTION_HEAD_INTENSITIES);
+       createHeaderCell(headGroupRow, 0, headerStyle, LipidomicsConstants.EXCEL_MSN_SECTION_HEAD_INTENSITIES, longestHeaders);
        headGroupRow = sheet.createRow(count);
        count++;
-       writeMSnIntensityHeader(headGroupRow,headerStyle);
+       writeMSnIntensityHeader(headGroupRow,headerStyle,  longestHeaders);
        Hashtable<String,String> uniqueRules = new Hashtable<String,String>();
        for (IntensityRuleVO ruleVO : headIntRules.values()){
-         int[] spaces = new int[4];
-         if (writeMSnIntensity(sheet,count,ruleVO,param,uniqueRules,spaces)){
+         if (writeMSnIntensity(sheet,count,ruleVO,param,uniqueRules,longestEntries)){
            count++;
-           if (spaces[0]>longestName) longestName = spaces[0];
-           if (spaces[1]>longestFormula) longestFormula = spaces[1];
-           if (spaces[2]>longestRuleValue) longestRuleValue = spaces[2];
-           if (spaces[3]>longestMissed) longestMissed = spaces[3];
          }
        }
      }
@@ -736,43 +739,34 @@ public class QuantificationThread extends Thread
     if (chainFragments.size()>0){
       Row chainRow =  sheet.createRow(count);
       count++;
-      cell = chainRow.createCell(0);
-      cell.setCellStyle(headerStyle);
-      cell.setCellValue(LipidomicsConstants.EXCEL_MSN_SECTION_CHAIN_FRAGMENTS);
+      createHeaderCell(chainRow, 0, headerStyle, LipidomicsConstants.EXCEL_MSN_SECTION_CHAIN_FRAGMENTS, longestHeaders);
       chainRow = sheet.createRow(count);
       count++;
-      writeMSnFragmentHeader(chainRow,headerStyle);
+      writeMSnFragmentHeader(chainRow,headerStyle,LipidomicsConstants.CHAIN_TYPE_FA_ACYL,longestHeaders);
       for (String faName : chainFragments.keySet()){
         Hashtable<String,CgProbe> fragments = chainFragments.get(faName);
         for (String name : fragments.keySet()){
           chainRow = sheet.createRow(count);
           count++;
-          String displayName = StaticUtils.getChainFragmentDisplayName(name,faName);
-          int formulaSize = writeMSnFragment(chainRow,displayName,param.getMSnMzTolerance(),fragments.get(name));
-          if (formulaSize>longestFormula) longestFormula=formulaSize;          
+          FattyAcidVO fa = StaticUtils.decodeLipidNameForCreatingCombis(faName);
+          String displayName = StaticUtils.getChainFragmentDisplayName(name,fa.getCarbonDbsId());
+          writeMSnFragment(chainRow,displayName,param.getMSnMzTolerance(),fragments.get(name),fa.getChainType(),fa.getOhNumber(),longestEntries);
         }
       }
       Hashtable<String,Hashtable<String,IntensityChainVO>> chainRules = param.getChainIntensityRules();
       if (chainRules.size()>0){
         chainRow =  sheet.createRow(count);
         count++;
-        cell = chainRow.createCell(0);
-        cell.setCellStyle(headerStyle);
-        cell.setCellValue(LipidomicsConstants.EXCEL_MSN_SECTION_CHAIN_INTENSITIES);
+        createHeaderCell(chainRow, 0, headerStyle, LipidomicsConstants.EXCEL_MSN_SECTION_CHAIN_INTENSITIES, longestHeaders);
         chainRow = sheet.createRow(count);
         count++;
-        writeMSnIntensityHeader(chainRow,headerStyle);
+        writeMSnIntensityHeader(chainRow,headerStyle,longestHeaders);
         Hashtable<String,String> uniqueRules = new Hashtable<String,String>();
         for (String faName : chainRules.keySet()){
           Hashtable<String,IntensityChainVO> rules = chainRules.get(faName);
           for (IntensityRuleVO rule : rules.values()){
-            int[] spaces = new int[4];
-            if (writeMSnIntensity(sheet,count,rule,param,uniqueRules,spaces)){
+            if (writeMSnIntensity(sheet,count,rule,param,uniqueRules,longestEntries)){
               count++;
-              if (spaces[0]>longestName) longestName = spaces[0];
-              if (spaces[1]>longestFormula) longestFormula = spaces[1];
-              if (spaces[2]>longestRuleValue) longestRuleValue = spaces[2];
-              if (spaces[3]>longestMissed) longestMissed = spaces[3];
             }
           }
         }
@@ -785,22 +779,15 @@ public class QuantificationThread extends Thread
       for (String combiName : posRules.keySet()){
         Row positionRow =  sheet.createRow(count);
         count++;
-        cell = positionRow.createCell(0);
-        cell.setCellStyle(headerStyle);
-        cell.setCellValue(LipidomicsConstants.EXCEL_MSN_SECTION_POSITION_INTENSITIES+" ("+combiName+")");
+        createHeaderCell(positionRow, 0, headerStyle, LipidomicsConstants.EXCEL_MSN_SECTION_POSITION_INTENSITIES+" ("+param.getPositionInsensitiveHumanReadableCombiName(combiName)+")", longestHeaders);
         positionRow = sheet.createRow(count);
         count++;
-        writeMSnIntensityHeader(positionRow,headerStyle);
+        writeMSnIntensityHeader(positionRow,headerStyle,longestHeaders);
         Hashtable<String,String> uniqueRules = new Hashtable<String,String>();
         Vector<IntensityRuleVO> rules = param.getFAsInSequenceAsInRule(combiName); 
         for (IntensityRuleVO rule : rules){
-          int[] spaces = new int[4];
-          if (writeMSnIntensity(sheet,count,rule,param,uniqueRules,spaces)){
+          if (writeMSnIntensity(sheet,count,rule,param,uniqueRules,longestEntries)){
             count++;
-            if (spaces[0]>longestName) longestName = spaces[0];
-            if (spaces[1]>longestFormula) longestFormula = spaces[1];
-            if (spaces[2]>longestRuleValue) longestRuleValue = spaces[2];
-            if (spaces[3]>longestMissed) longestMissed = spaces[3];
           }  
         }
       }
@@ -808,13 +795,19 @@ public class QuantificationThread extends Thread
     Hashtable<String,String> identifiedLipids = new Hashtable<String,String>();
     String identificationString;
     int cellCount = 1;
-    for (Object nameObject : param.getMSnIdentificationNames()){
+    Vector<Object> detected = null;
+    try {detected = param.getMSnIdentificationNames();
+    }catch (LipidCombinameEncodingException lcx) {
+      detected = new Vector<Object>();
+      lcx.printStackTrace();
+    }
+    for (Object nameObject : detected){
       identificationString = "";
       double area = 0d;
       if (nameObject instanceof Vector){
         area = param.getRelativeIntensity(((Vector<String>)nameObject).get(0))*((double)param.Area);
         for (String name : (Vector<String>)nameObject){
-          identificationString+=name+";";
+          identificationString+=name+LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS;
         }
         identificationString = identificationString.substring(0,identificationString.length()-1);
       }else{
@@ -824,11 +817,8 @@ public class QuantificationThread extends Thread
         else area = param.getRelativeIntensity(name)*((double)param.Area);
       }
       identifiedLipids.put(identificationString, identificationString);
-      cell = row.createCell(cellCount);
-      cell.setCellStyle(headerStyle);
-      cell.setCellValue(identificationString);
-      cell = areaRow.createCell(cellCount);
-      cell.setCellValue(area);
+      createHeaderCell(row, cellCount, headerStyle, identificationString, longestHeaders);
+      createValueCell(areaRow, Cell.CELL_TYPE_NUMERIC, cellCount, String.valueOf(area), null, area, longestEntries);
       cellCount++;
     }
     
@@ -840,23 +830,10 @@ public class QuantificationThread extends Thread
       String rtString = "";
       for (Integer scanNr : rts.keySet()) rtString += scanNr+"="+rts.get(scanNr)+";";
       if (rtString.length()>0) rtString = rtString.substring(0,rtString.length()-1);
-      cell = row.createCell(cellCount);
-      cell.setCellStyle(headerStyle);
-      cell.setCellValue("MS"+msLevel+" scan RTs");
-      cell = areaRow.createCell(cellCount);
-      cell.setCellValue(rtString);
+      createHeaderCell(row, cellCount, headerStyle, "MS"+msLevel+" scan RTs", longestHeaders);
+      createValueCell(areaRow, Cell.CELL_TYPE_STRING, cellCount, rtString, null, null, longestEntries);
       cellCount++;
     }
-    
-    int nameColumnWidth = (int)((LipidomicsConstants.EXCEL_MSN_SECTION_HEAD_FRAGMENTS.length()*256)*ExcelUtils.BOLD_MULT);
-    if ((longestName+1)*256>nameColumnWidth) nameColumnWidth =  (longestName+1)*256;
-    sheet.setColumnWidth(LDAResultReader.MSN_ROW_FRAGMENT_NAME,nameColumnWidth); 
-    int formulaColumnWidth = (int)((LipidomicsConstants.EXCEL_MSN_FRAGMENT_FORMULA.length()*256)*ExcelUtils.BOLD_MULT);
-    if ((longestFormula+1)*256>formulaColumnWidth) formulaColumnWidth =  (longestFormula+1)*256;
-    sheet.setColumnWidth(LDAResultReader.MSN_ROW_FRAGMENT_FORMULA, formulaColumnWidth);
-    int ruleValueWidth = (int)((LipidomicsConstants.EXCEL_MSN_FRAGMENT_MSLEVEL.length()*256)*ExcelUtils.BOLD_MULT);
-    if ((longestRuleValue+1)*256> ruleValueWidth)  ruleValueWidth =  (longestRuleValue+1)*256;
-    sheet.setColumnWidth(MSN_ROW_INTENSITY_VALUES,ruleValueWidth);
     count++;
     return count;
   }
@@ -865,57 +842,51 @@ public class QuantificationThread extends Thread
    * writes the header row for subsequent fragment evidence
    * @param row Excel row that shall be used for writing
    * @param headerStyle style for the header row
+   * @param chainType the chain type - allowed: LipidomicsConstants.CHAIN_TYPE_NO_CHAIN|CHAIN_TYPE_FA_ACYL|CHAIN_TYPE_FA_ALKYL|CHAIN_TYPE_FA_ALKENYL|CHAIN_TYPE_LCB
+   * @param longestHeaders the names of the longest header entries for each column - for setting the column width
    */
-  private static void writeMSnFragmentHeader(Row row, CellStyle headerStyle){
-    Cell cell = row.createCell(LDAResultReader.MSN_ROW_FRAGMENT_NAME,Cell.CELL_TYPE_STRING);
+  private static void writeMSnFragmentHeader(Row row, CellStyle headerStyle, short chainType, Hashtable<Integer,String> longestHeaders){
+    createHeaderCell(row, LDAResultReader.MSN_ROW_FRAGMENT_NAME, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_NAME, longestHeaders);
+    int add = 0;
+    if (chainType!=LipidomicsConstants.CHAIN_TYPE_NO_CHAIN) {
+      createHeaderCell(row, MSN_ROW_FRAGMENT_OH, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_OH, longestHeaders);
+      createHeaderCell(row, MSN_ROW_FRAGMENT_CHAIN_TYPE, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_CHAIN_TYPE, longestHeaders);      
+      add = 2;
+    }
+    createHeaderCell(row, LDAResultReader.MSN_ROW_FRAGMENT_FORMULA+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_FORMULA, longestHeaders);      
+    createHeaderCell(row, MSN_ROW_FRAGMENT_MSLEVEL+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_MSLEVEL, longestHeaders);
+    createHeaderCell(row, MSN_ROW_FRAGMENT_CHARGE+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_CHARGE, longestHeaders);
+    createHeaderCell(row, MSN_ROW_FRAGMENT_MZ+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ, longestHeaders);
+    createHeaderCell(row, MSN_ROW_FRAGMENT_MZ_TOLERANCE+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ_TOLERANCE, longestHeaders);
+    createHeaderCell(row, MSN_ROW_FRAGMENT_AREA+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_AREA, longestHeaders);
+    createHeaderCell(row, MSN_ROW_FRAGMENT_PEAK+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_PEAK, longestHeaders);
+    createHeaderCell(row, MSN_ROW_FRAGMENT_TIME_LOWER+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_TIME_LOWER, longestHeaders);
+    createHeaderCell(row, MSN_ROW_FRAGMENT_TIME_UPPER+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_TIME_UPPER, longestHeaders);
+    createHeaderCell(row, MSN_ROW_FRAGMENT_MZ_LOWER+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ_LOWER, longestHeaders);
+    createHeaderCell(row, MSN_ROW_FRAGMENT_MZ_UPPER+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ_UPPER, longestHeaders);
+    createHeaderCell(row, MSN_ROW_FRAGMENT_ELLIPSE_TIME+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_TIME, longestHeaders);
+    createHeaderCell(row, MSN_ROW_FRAGMENT_ELLIPSE_MZ+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_MZ, longestHeaders);
+    createHeaderCell(row, MSN_ROW_FRAGMENT_ELLIPSE_TIME_RANGE+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_TIME_RANGE, longestHeaders);
+    createHeaderCell(row, MSN_ROW_FRAGMENT_ELLIPSE_MZ_RANGE+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_MZ_RANGE, longestHeaders);
+  }
+  
+  
+  /**
+   * creates a header cell
+   * @param row the row where it has to be created
+   * @param column the column number
+   * @param headerStyle the header style
+   * @param value the value to be written in the header cell
+   * @param msnLongestHeaders the names of the longest header entries for each column - for setting the column width
+   * @return created cell
+   */
+  private static Cell createHeaderCell(Row row, int column, CellStyle headerStyle, String value, Hashtable<Integer,String> longestHeaders) {
+    Cell cell = row.createCell(column,Cell.CELL_TYPE_STRING);
     cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_NAME);
-    cell = row.createCell(LDAResultReader.MSN_ROW_FRAGMENT_FORMULA,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_FORMULA);
-    cell = row.createCell(MSN_ROW_FRAGMENT_MSLEVEL,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_MSLEVEL);
-    cell = row.createCell(MSN_ROW_FRAGMENT_CHARGE,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_CHARGE);
-    cell = row.createCell(MSN_ROW_FRAGMENT_MZ,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ);
-    cell = row.createCell(MSN_ROW_FRAGMENT_MZ_TOLERANCE,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ_TOLERANCE);
-    cell = row.createCell(MSN_ROW_FRAGMENT_AREA,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_AREA);
-    cell = row.createCell(MSN_ROW_FRAGMENT_PEAK,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_PEAK);
-    cell = row.createCell(MSN_ROW_FRAGMENT_TIME_LOWER,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_TIME_LOWER);
-    cell = row.createCell(MSN_ROW_FRAGMENT_TIME_UPPER,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_TIME_UPPER);
-    cell = row.createCell(MSN_ROW_FRAGMENT_MZ_LOWER,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ_LOWER);
-    cell = row.createCell(MSN_ROW_FRAGMENT_MZ_UPPER,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ_UPPER);
-    cell = row.createCell(MSN_ROW_FRAGMENT_ELLIPSE_TIME,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_TIME);
-    cell = row.createCell(MSN_ROW_FRAGMENT_ELLIPSE_MZ,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_MZ);
-    cell = row.createCell(MSN_ROW_FRAGMENT_ELLIPSE_TIME_RANGE,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_TIME_RANGE);
-    cell = row.createCell(MSN_ROW_FRAGMENT_ELLIPSE_MZ_RANGE,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_MZ_RANGE);   
-
+    cell.setCellValue(value);
+    if (!longestHeaders.containsKey(column) || value.length()>longestHeaders.get(column).length())
+      longestHeaders.put(column, value);
+    return cell;
   }
 
   /**
@@ -924,70 +895,80 @@ public class QuantificationThread extends Thread
    * @param name display name of the fragment
    * @param mzTolerance m/z tolerance for the identification
    * @param probe VO containing information about the identified fragment
-   * @return
+   * @param chainType the chain type - allowed: LipidomicsConstants.CHAIN_TYPE_NO_CHAIN|CHAIN_TYPE_FA_ACYL|CHAIN_TYPE_FA_ALKYL|CHAIN_TYPE_FA_ALKENYL|CHAIN_TYPE_LCB
+   * @param oh the number of hydroxylations on a chain
    */
-  private static int writeMSnFragment(Row row, String name, float mzTolerance, CgProbe probe){
-    Cell cell = row.createCell(LDAResultReader.MSN_ROW_FRAGMENT_NAME,Cell.CELL_TYPE_STRING);
-    cell.setCellValue(name);
-    cell = row.createCell(LDAResultReader.MSN_ROW_FRAGMENT_FORMULA,Cell.CELL_TYPE_STRING);
+  private static void writeMSnFragment(Row row, String name, float mzTolerance, CgProbe probe,short chainType, int oh, Hashtable<Integer,Integer> longestEntries){
+    createValueCell(row, Cell.CELL_TYPE_STRING, LDAResultReader.MSN_ROW_FRAGMENT_NAME, name, null, null, longestEntries);
+    int add = 0;
+    if (chainType!=LipidomicsConstants.CHAIN_TYPE_NO_CHAIN) {
+      createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_OH, String.valueOf(oh), oh, null, longestEntries);
+      createValueCell(row, Cell.CELL_TYPE_STRING, MSN_ROW_FRAGMENT_CHAIN_TYPE, StaticUtils.getHumanReadableChainType(chainType), null, null, longestEntries);
+      add = 2;
+    }    
     //TODO: this is only here because of a damaged Alex123 file - delete in future version!
     String formula = "";
     if (probe.getFormula()!=null) formula = probe.getFormula().replaceAll("\\+", "").trim();
-    int formulaSize = formula.length();
-    cell.setCellValue(formula);
-    cell = row.createCell(MSN_ROW_FRAGMENT_MSLEVEL,Cell.CELL_TYPE_NUMERIC);
-    cell.setCellValue(probe.getMsLevel());
-    cell = row.createCell(MSN_ROW_FRAGMENT_CHARGE,Cell.CELL_TYPE_NUMERIC);
-    cell.setCellValue(probe.Charge);
-    cell = row.createCell(MSN_ROW_FRAGMENT_MZ,Cell.CELL_TYPE_NUMERIC);
-    cell.setCellValue(probe.Mz);
-    cell = row.createCell(MSN_ROW_FRAGMENT_MZ_TOLERANCE,Cell.CELL_TYPE_NUMERIC);
-    cell.setCellValue(mzTolerance);
-    cell = row.createCell(MSN_ROW_FRAGMENT_AREA,Cell.CELL_TYPE_NUMERIC);
-    cell.setCellValue(probe.Area);
-    cell = row.createCell(MSN_ROW_FRAGMENT_PEAK,Cell.CELL_TYPE_NUMERIC);
-    cell.setCellValue(probe.Peak);
-    cell = row.createCell(MSN_ROW_FRAGMENT_TIME_LOWER,Cell.CELL_TYPE_NUMERIC);
-    cell.setCellValue(probe.LowerValley);
-    cell = row.createCell(MSN_ROW_FRAGMENT_TIME_UPPER,Cell.CELL_TYPE_NUMERIC);
-    cell.setCellValue(probe.UpperValley);
+    createValueCell(row, Cell.CELL_TYPE_STRING, LDAResultReader.MSN_ROW_FRAGMENT_FORMULA+add, formula, null, null, longestEntries);
+    createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_MSLEVEL+add, String.valueOf(probe.getMsLevel()), probe.getMsLevel(), null, longestEntries);
+    createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_CHARGE+add, String.valueOf(probe.Charge), probe.Charge, null, longestEntries);
+    createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_MZ+add, String.valueOf(probe.Mz), null, (double)probe.Mz, longestEntries);
+    createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_MZ_TOLERANCE+add, String.valueOf(mzTolerance), null, (double)mzTolerance, longestEntries);
+    createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_AREA+add, String.valueOf(probe.Area), null, (double)probe.Area, longestEntries);
+    createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_PEAK+add, String.valueOf(probe.Peak), null, (double)probe.Peak, longestEntries);
+    createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_TIME_LOWER+add, String.valueOf(probe.LowerValley), null, (double)probe.LowerValley, longestEntries);
+    createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_TIME_UPPER+add, String.valueOf(probe.UpperValley), null, (double)probe.UpperValley, longestEntries);
     if (probe instanceof Probe3D){
       Probe3D probe3D = (Probe3D)probe;
-      cell = row.createCell(MSN_ROW_FRAGMENT_MZ_LOWER,Cell.CELL_TYPE_NUMERIC);
-      cell.setCellValue(probe3D.LowerMzBand);
-      cell = row.createCell(MSN_ROW_FRAGMENT_MZ_UPPER,Cell.CELL_TYPE_NUMERIC);
-      cell.setCellValue(probe3D.UpperMzBand);
-      cell = row.createCell(MSN_ROW_FRAGMENT_ELLIPSE_TIME,Cell.CELL_TYPE_NUMERIC);
-      cell.setCellValue(probe3D.getEllipseTimePosition());
-      cell = row.createCell(MSN_ROW_FRAGMENT_ELLIPSE_MZ,Cell.CELL_TYPE_NUMERIC);
-      cell.setCellValue(probe3D.getEllipseMzPosition());
-      cell = row.createCell(MSN_ROW_FRAGMENT_ELLIPSE_TIME_RANGE,Cell.CELL_TYPE_NUMERIC);
-      cell.setCellValue(probe3D.getEllipseTimeStretch());
-      cell = row.createCell(MSN_ROW_FRAGMENT_ELLIPSE_MZ_RANGE,Cell.CELL_TYPE_NUMERIC);
-      cell.setCellValue(probe3D.getEllipseMzStretch());
+      createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_MZ_LOWER+add, String.valueOf(probe3D.LowerMzBand), null, (double)probe3D.LowerMzBand, longestEntries);
+      createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_MZ_UPPER+add, String.valueOf(probe3D.UpperMzBand), null, (double)probe3D.UpperMzBand, longestEntries);
+      createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_ELLIPSE_TIME+add, String.valueOf(probe3D.getEllipseTimePosition()), null, (double)probe3D.getEllipseTimePosition(), longestEntries);
+      createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_ELLIPSE_MZ+add, String.valueOf(probe3D.getEllipseMzPosition()), null, (double)probe3D.getEllipseMzPosition(), longestEntries);
+      createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_ELLIPSE_TIME_RANGE+add, String.valueOf(probe3D.getEllipseTimeStretch()), null, (double)probe3D.getEllipseTimeStretch(), longestEntries);
+      createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_ELLIPSE_MZ_RANGE+add, String.valueOf(probe3D.getEllipseMzStretch()), null, (double)probe3D.getEllipseMzStretch(), longestEntries);
     }
-    return formulaSize;
   }
+  
+  
+  /**
+   * creates a value cell
+   * @param row the row where it has to be created
+   * @param cellType the cell type according to the types stored in the class org.apache.poi.ss.usermodel.Cell
+   * @param column the column number
+   * @param strValue the string value representation
+   * @param intValue the int value representation (can be null)
+   * @param doubleValue the double value representation (can be null)
+   * @param longestEntries the length of the longest entries for each column - for setting the column width
+   * @return created cell
+   */
+  private static Cell createValueCell(Row row, int cellType, int column, String strValue, Integer intValue, Double doubleValue, Hashtable<Integer,Integer> longestEntries) {
+    Cell cell = row.createCell(column,cellType);
+    int length = strValue.length();
+    if (cellType==Cell.CELL_TYPE_NUMERIC) {
+      if (intValue!=null)
+        cell.setCellValue(intValue);
+      else if (doubleValue!=null)
+        cell.setCellValue(doubleValue);
+    }else {
+      cell.setCellValue(strValue);
+    }
+    if (!longestEntries.containsKey(column) || length>longestEntries.get(column))
+      longestEntries.put(column, length);
+    return cell;
+  }
+  
   
   /**
    * writes the header row for subsequent intensity evidence
    * @param row Excel row that shall be used for writing
    * @param headerStyle style for the header row
+   * @param longestHeaders the names of the longest header entries for each column - for setting the column width
    */
-  private static void writeMSnIntensityHeader(Row row, CellStyle headerStyle){
-    Cell cell = row.createCell(MSN_ROW_INTENSITY_RULE,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_INTENSITY_RULE);
-    cell = row.createCell(MSN_ROW_INTENSITY_ORIGINAL,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_INTENSITY_ORIGINAL);
-    cell = row.createCell(MSN_ROW_INTENSITY_VALUES,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_INTENSITY_VALUES);
-    cell = row.createCell(MSN_ROW_INTENSITY_MISSED,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(LipidomicsConstants.EXCEL_MSN_INTENSITY_MISSED);
-    
+  private static void writeMSnIntensityHeader(Row row, CellStyle headerStyle, Hashtable<Integer,String> longestHeaders){
+    createHeaderCell(row, MSN_ROW_INTENSITY_RULE, headerStyle, LipidomicsConstants.EXCEL_MSN_INTENSITY_RULE, longestHeaders);
+    createHeaderCell(row, MSN_ROW_INTENSITY_ORIGINAL, headerStyle, LipidomicsConstants.EXCEL_MSN_INTENSITY_ORIGINAL, longestHeaders);
+    createHeaderCell(row, MSN_ROW_INTENSITY_VALUES, headerStyle, LipidomicsConstants.EXCEL_MSN_INTENSITY_VALUES, longestHeaders);
+    createHeaderCell(row, MSN_ROW_INTENSITY_MISSED, headerStyle, LipidomicsConstants.EXCEL_MSN_INTENSITY_MISSED, longestHeaders);    
   }
   
   /**
@@ -998,7 +979,8 @@ public class QuantificationThread extends Thread
    * @return lengths for adaption of cell width: int[0] longest amount of characters for MSN_ROW_INTENSITY_RULE cell; int[1] longest amount of characters for MSN_ROW_INTENSITY_ORIGINAL cell; int[2] longest amount of characters for MSN_ROW_INTENSITY_VALUES cell
    * @throws RulesException if something is not possible
    */
-  private static boolean writeMSnIntensity(Sheet sheet, int count, IntensityRuleVO ruleVO, LipidomicsMSnSet param, Hashtable<String,String> uniqueRules, int[] spaceConsumption) throws RulesException{
+  private static boolean writeMSnIntensity(Sheet sheet, int count, IntensityRuleVO ruleVO, LipidomicsMSnSet param, Hashtable<String,String> uniqueRules,
+     Hashtable<Integer,Integer> longestEntries) throws RulesException{
     String ruleInterpretation = ruleVO.getReadableRuleInterpretation();
     String rule = ruleVO.getRuleIdentifier();
     Hashtable<String,Float> fragmentAreas = param.getFragmentAreas(ruleVO);
@@ -1017,18 +999,10 @@ public class QuantificationThread extends Thread
     if (uniqueRules.containsKey(uniqueId)) return false;
     uniqueRules.put(uniqueId, uniqueId);
     Row row = sheet.createRow(count);
-    Cell cell = row.createCell(MSN_ROW_INTENSITY_RULE,Cell.CELL_TYPE_STRING);
-    spaceConsumption[0] = ruleInterpretation.length();
-    cell.setCellValue(ruleInterpretation);
-    cell = row.createCell(MSN_ROW_INTENSITY_ORIGINAL,Cell.CELL_TYPE_STRING);
-    spaceConsumption[1] = rule.length();
-    cell.setCellValue(rule);
-    cell = row.createCell(MSN_ROW_INTENSITY_VALUES,Cell.CELL_TYPE_STRING);
-    spaceConsumption[2] = valueInterpretation.length();
-    cell.setCellValue(valueInterpretation);
-    cell = row.createCell(MSN_ROW_INTENSITY_MISSED,Cell.CELL_TYPE_STRING);
-    spaceConsumption[3] = missed.length();
-    cell.setCellValue(missed);
+    createValueCell(row, Cell.CELL_TYPE_STRING, MSN_ROW_INTENSITY_RULE, ruleInterpretation, null, null, longestEntries);
+    createValueCell(row, Cell.CELL_TYPE_STRING, MSN_ROW_INTENSITY_ORIGINAL, rule, null, null, longestEntries);
+    createValueCell(row, Cell.CELL_TYPE_STRING, MSN_ROW_INTENSITY_VALUES, valueInterpretation, null, null, longestEntries);
+    createValueCell(row, Cell.CELL_TYPE_STRING, MSN_ROW_INTENSITY_MISSED, missed, null, null, longestEntries);
     return true;
   }
   
@@ -2061,8 +2035,9 @@ public class QuantificationThread extends Thread
         }
       }
       constants.setAlexTargetlist(isAlexTargetList);
-      constants.setAlexTargetlistUsed(alexTargetlistUsed); 
-      QuantificationResult quantRes = new QuantificationResult(correctedParams,constants,classSequence);
+      constants.setAlexTargetlistUsed(alexTargetlistUsed);
+      HydroxyEncoding[] encodings = getOnlyUsedHydroxyEncodings(correctedParams,Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding());
+      QuantificationResult quantRes = new QuantificationResult(correctedParams,constants,classSequence,encodings[0],encodings[1]);
      
       QuantificationThread.writeResultsToExcel(resultFile,quantRes);
       
@@ -2416,5 +2391,69 @@ public class QuantificationThread extends Thread
     return distris;
   }
 
+  /**
+   * sets the column width of an Excel cell according to the entries
+   * @param sheet the Excel tab where the width should be set
+   * @param column the column number
+   * @param headerValue the longest header value entry
+   * @param longestValue length of the longest cell entry in this column
+   */
+  private static void setColumnWidth(Sheet sheet, int column, String headerValue, int longestValue){
+    int columnWidth = (int)((headerValue.length()*256)*ExcelUtils.BOLD_MULT);
+    if ((longestValue+1)*256>columnWidth) columnWidth =  (longestValue+1)*256;
+    if (columnWidth>255*256)
+      columnWidth=255*256;
+    sheet.setColumnWidth(column,columnWidth); 
+  }
+  
+  
+  /**
+   * method that reduced the defined OH encodings to the actually used ones
+   * @param correctedParams the found results
+   * @param faHydroxyEncoding the actually used OH encodings for FA moiety
+   * @param lcbHydroxyEncoding the actually used OH encodings for LCB moiety
+   * @return the reduced OH encodings [0] = FA; [1] = LCB
+   */
+  private HydroxyEncoding[] getOnlyUsedHydroxyEncodings(Hashtable<String,Vector<LipidParameterSet>> correctedParams,
+      HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding) {
+    Hashtable<String,Short> usedFaEncodings = new Hashtable<String,Short>();
+    Hashtable<String,Short> usedLcbEncodings = new Hashtable<String,Short>();
+    LipidomicsMSnSet msn;
+    Short oh;
+    for (Vector<LipidParameterSet> params : correctedParams.values()) {
+      for (LipidParameterSet param : params) {
+        if (!(param instanceof LipidomicsMSnSet))
+          continue;
+        msn = (LipidomicsMSnSet)param;
+        if (msn.getStatus()<LipidomicsMSnSet.FRAGMENTS_DETECTED)
+          continue;
+        for (FattyAcidVO fa : msn.getInvolvedFAs().values()) {
+          if (fa.getOhNumber()<0)
+            continue;
+          oh = (short)fa.getOhNumber();
+          if (fa.getChainType()<LipidomicsConstants.CHAIN_TYPE_LCB) {
+            if (usedFaEncodings.contains(oh))
+              continue;
+            try {
+              usedFaEncodings.put(faHydroxyEncoding.getEncodedPrefix(oh),oh);
+            //this exception cannot happen
+            }catch (HydroxylationEncodingException e) {}
+          }else if (fa.getChainType()==LipidomicsConstants.CHAIN_TYPE_LCB) {
+            if (usedLcbEncodings.contains(oh))
+              continue;
+            try {
+              usedLcbEncodings.put(lcbHydroxyEncoding.getEncodedPrefix(oh),oh);
+            //this exception cannot happen
+            }catch (HydroxylationEncodingException e) {}            
+          }
+        }
+      }
+    }
+    
+    HydroxyEncoding[] encodings = new HydroxyEncoding[2];
+    encodings[0] = new HydroxyEncoding(usedFaEncodings);
+    encodings[1] = new HydroxyEncoding(usedLcbEncodings);
+    return encodings;
+  }
 
 }

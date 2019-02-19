@@ -23,6 +23,8 @@
 
 package at.tugraz.genome.lda.msn.vos;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
+
 /**
  * value object containing necessare information about a potential MSn fragment itself
  * @author Juergen Hartler
@@ -43,7 +45,7 @@ public class FragmentVO
   // the m/z value of the fragment
   private double mass_;
   /** if the fragment is a chain - the type of the chain*/
-  private int chainType_;
+  private short chainType_;
   
   /**
    * all of the required information for the VO has to be provided in the constructor
@@ -58,7 +60,7 @@ public class FragmentVO
   public FragmentVO(String name, double mass, String formula, int charge, int msLevel,
       short mandatory)
   {
-    this(name, mass, formula, charge, msLevel, mandatory, FragmentRuleVO.ACYL_CHAIN);
+    this(name, mass, formula, charge, msLevel, mandatory, LipidomicsConstants.CHAIN_TYPE_FA_ACYL);
   }
     
  /**
@@ -73,7 +75,7 @@ public class FragmentVO
    * @param chainType the type of the fatty acid chain ACYL_CHAIN_/ALKYL_CHAIN/ALKENYL_CHAIN
   */
   public FragmentVO(String name, double mass, String formula, int charge, int msLevel,
-        short mandatory, int chainType)
+        short mandatory, short chainType)
     {    
     this.name_ = name;
     this.mass_ = mass;
@@ -140,7 +142,7 @@ public class FragmentVO
   
   
   
-  public int getChainType()
+  public short getChainType()
   {
     return chainType_;
   }

@@ -26,7 +26,9 @@ package at.tugraz.genome.lda.msn.vos;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.maspectras.quantification.CgProbe;
 
 /**
  * Value object containing all necessary information for a rule for intensity comparison
@@ -36,27 +38,30 @@ import at.tugraz.genome.lda.utils.StaticUtils;
  */
 public class IntensityChainVO extends IntensityRuleVO
 {
-  /** the fatty acid at the greater than side of this rule*/
-  private String biggerFA_;
-  /** the fatty acid at the smaller than side of this rule*/
-  private String smallerFA_;
   
+  /** the fatty acid at the greater than side of this rule*/
+  private FattyAcidVO biggerFA_;
+  /** the fatty acid at the smaller than side of this rule*/
+  private FattyAcidVO smallerFA_;
+  
+
   /**
    * constructor containing the original rule plus the fatty acid
    * @param rule rule that was applied
    * @param fa fatty acid that was verified
    */
-  public IntensityChainVO(IntensityRuleVO rule, String fa){
+  public IntensityChainVO(IntensityRuleVO rule, FattyAcidVO fa){
     this(rule,fa,fa);
   }
 
+  
   /**
    * constructor containing the original rule plus the fatty acid
    * @param rule rule that was applied
    * @param biggerFA fatty acid with higher area that was verified
    * @param smallerFA fatty acid with smaller area that was verified
    */
-  public IntensityChainVO(IntensityRuleVO rule, String biggerFA, String smallerFA){
+  public IntensityChainVO(IntensityRuleVO rule, FattyAcidVO biggerFA, FattyAcidVO smallerFA){
     super(rule);
     this.biggerFA_ = biggerFA;
     this.smallerFA_ = smallerFA;
@@ -66,7 +71,7 @@ public class IntensityChainVO extends IntensityRuleVO
   /**
    * @return fatty acid that was verified at at the greater part of the comparator
    */
-  public String getBiggerFA()
+  public FattyAcidVO getBiggerFA()
   {
     return biggerFA_;
   }
@@ -74,7 +79,7 @@ public class IntensityChainVO extends IntensityRuleVO
   /**
    * @return fatty acid that was verified at at the lesser part of the comparator
    */
-  public String getSmallerFA()
+  public FattyAcidVO getSmallerFA()
   {
     return smallerFA_;
   }
@@ -88,12 +93,12 @@ public class IntensityChainVO extends IntensityRuleVO
   public String getReadableRuleInterpretation() {
     Hashtable<String,String> originalToReplacementBigger = new Hashtable<String,String>();
     for (String name : getBiggerNonBasePeakNames()){
-      String value = StaticUtils.getChainFragmentDisplayName(name, biggerFA_);
+      String value = StaticUtils.getChainFragmentDisplayName(name, biggerFA_.getCarbonDbsId());
       originalToReplacementBigger.put(name, value);
     }
     Hashtable<String,String> originalToReplacementSmaller = new Hashtable<String,String>();
     for (String name : getSmallerNonBasePeakNames()){
-      String value = StaticUtils.getChainFragmentDisplayName(name, smallerFA_);
+      String value = StaticUtils.getChainFragmentDisplayName(name, smallerFA_.getCarbonDbsId());
       originalToReplacementSmaller.put(name, value);
     }
     String[] biggerSmaller = splitToBiggerAndSmallerPart(equation_);
@@ -118,8 +123,8 @@ public class IntensityChainVO extends IntensityRuleVO
     if (!equals(other)) return false;
     if (!(other instanceof IntensityChainVO)) return false;
     IntensityChainVO chain = (IntensityChainVO)other;
-    if (!biggerFA_.equalsIgnoreCase(chain.biggerFA_)) return false;
-    if (!smallerFA_.equalsIgnoreCase(chain.smallerFA_)) return false;
+    if (!biggerFA_.getChainId().equalsIgnoreCase(chain.biggerFA_.getChainId())) return false;
+    if (!smallerFA_.getChainId().equalsIgnoreCase(chain.smallerFA_.getChainId())) return false;
     return true;
   }
   
@@ -127,17 +132,31 @@ public class IntensityChainVO extends IntensityRuleVO
    * inverse method of getReadableRuleInterpretation() - fetches the fatty acid from this interpretation
    * @param rule the readable rule interpretation
    * @param ruleVO rule that is required to form an IntensityChainVO
+   * @param chainFragments the found chain fragments with its areas; first key: fatty acid name; second key: name of the fragment; value: CgProbe peak identification object
+   * @param missed fragments that were not found in the equation (required for reading of results, since for rules containing "+", not all of the fragments have to be found)
    * @return IntensityChainVO which includes the fatty acid
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (not containing type and OH number) cannot be decoded
    */
-  public static IntensityChainVO getFattyAcidsFromReadableRule(String rule, IntensityRuleVO ruleVO){
+  public static IntensityChainVO getFattyAcidsFromReadableRule(String rule, IntensityRuleVO ruleVO, Hashtable<String,Hashtable<String,CgProbe>> chainFragments,
+      Hashtable<String,String> missed) throws LipidCombinameEncodingException{
     String[] biggerSmaller = splitToBiggerAndSmallerPart(rule);
     String biggerPart = biggerSmaller[0];
     String smallerPart = biggerSmaller[1];
-    String biggerFA = extractFANames(biggerPart, ruleVO.getBiggerNonBasePeakNames());
-    String smallerFA = extractFANames(smallerPart, ruleVO.getSmallerNonBasePeakNames());
-    if (biggerFA==null) biggerFA = smallerFA;
-    if (smallerFA==null) smallerFA = biggerFA;
-    return new IntensityChainVO(ruleVO, biggerFA,smallerFA);
+    Vector<String> biggerNbpNames = ruleVO.getBiggerNonBasePeakNames();
+    Vector<String> smallerNbpNames = ruleVO.getSmallerNonBasePeakNames();
+    String biggerFA = extractFANames(biggerPart, biggerNbpNames);
+    String smallerFA = extractFANames(smallerPart, smallerNbpNames);
+    FattyAcidVO biggerVO = null;
+    FattyAcidVO smallerVO = null;
+    if (biggerFA!=null)
+      biggerVO = selectChainFromFoundFragments(biggerFA,biggerNbpNames,chainFragments,missed);
+    if (smallerFA!=null) 
+      smallerVO = selectChainFromFoundFragments(smallerFA,smallerNbpNames,chainFragments,missed);
+    if (biggerVO==null)
+      biggerVO = smallerVO;
+    if (smallerVO==null)
+      smallerVO = biggerVO;
+    return new IntensityChainVO(ruleVO,biggerVO,smallerVO);
   }
   
   

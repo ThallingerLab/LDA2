@@ -32,6 +32,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.exception.ChemicalFormulaException;
+import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
@@ -99,7 +102,7 @@ public class SingleQuantThread extends Thread
     finished_ = true;
   }
   
-  private Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> startSingleQuantification(LipidomicsAnalyzer analyzer, QuantVO quantSet, int msLevel) throws CgException {
+  private Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> startSingleQuantification(LipidomicsAnalyzer analyzer, QuantVO quantSet, int msLevel) throws CgException, LipidCombinameEncodingException {
     System.out.println("massOfInterest: "+quantSet.getAnalyteMass());
     Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> isotopicProbes = null;
     float defaultRelativeAreaCutoff = analyzer.getRelativeAreaCutoff();
@@ -152,7 +155,7 @@ public class SingleQuantThread extends Thread
           if (msnAnalyzer!=null && msnAnalyzer.areMSnSpectraPresent()) msnSpectraPresent_ = true;
         }
       }
-      catch (RulesException | IOException | SpectrummillParserException e) {
+      catch (RulesException | IOException | SpectrummillParserException | HydroxylationEncodingException | ChemicalFormulaException e) {
         e.printStackTrace();
       }
 
@@ -160,9 +163,9 @@ public class SingleQuantThread extends Thread
       if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
         isotopicProbes = analyzer.processShotgunData((float)quantSet.getAnalyteMass(),quantSet.getCharge(),msLevel,quantSet.getProbabs().size());
       } else if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_PRM){
-        //TODO: the MS-level is here always set to 2
+        //TODO: the MS-level is here always set to 2, and the ohNumber is always set to 0
         isotopicProbes = analyzer.processPrmData((float)quantSet.getAnalyteMass(),quantSet.getCharge(),2,quantSet.getAnalyteClass(),
-            quantSet.getModName(), StaticUtils.generateLipidNameString(quantSet.getAnalyteName(), quantSet.getDbs()),quantSet.getAnalyteFormula());
+            quantSet.getModName(), StaticUtils.generateLipidNameString(quantSet.getAnalyteName(), quantSet.getDbs()),quantSet.getAnalyteFormula(),0);
 //        for (Integer hitNumber : isotopicProbes.keySet()){
 //          for (Integer isoNr: isotopicProbes.get(hitNumber).keySet()){
 //            for (CgProbe probe : isotopicProbes.get(hitNumber).get(isoNr)){
@@ -261,6 +264,9 @@ public class SingleQuantThread extends Thread
               catch (SpectrummillParserException e) {
                 e.printStackTrace();
               }
+              catch (HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e) {
+                e.printStackTrace();
+              }
             }
             if (addHit) sameRt.put(key, param);
             else {
@@ -315,7 +321,7 @@ public class SingleQuantThread extends Thread
               else param = msnAnalyzer.getResult();
 //              System.out.println("Status: "+msnAnalyzer.checkStatus());
             }
-            catch (RulesException e) {
+            catch (RulesException | HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e) {
               e.printStackTrace();
             }
             catch (IOException e) {
@@ -378,7 +384,7 @@ public class SingleQuantThread extends Thread
           }
         }
         catch (RulesException | NoRuleException | IOException
-            | SpectrummillParserException e) {
+            | SpectrummillParserException | LipidCombinameEncodingException e) {
         }
       }      
     }
@@ -398,9 +404,10 @@ public class SingleQuantThread extends Thread
    * @param msLevel the level where the peak is oberlapping
    * @return the disentangled results
    * @throws CgException
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   @SuppressWarnings("unchecked")
-  private Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> disentagleSharedMS1Peaks(Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> hitsAccordingToQuant, LipidomicsAnalyzer analyzer, int msLevel) throws CgException{
+  private Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> disentagleSharedMS1Peaks(Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> hitsAccordingToQuant, LipidomicsAnalyzer analyzer, int msLevel) throws CgException, LipidCombinameEncodingException{
     //first detect which peaks are shared by different lipid classes
     Vector<SharedMS1PeakVO> sharedPeaks = detectSharedMS1PeakInstances(hitsAccordingToQuant);
     Vector<Integer> sharedToRemove = new Vector<Integer>();
@@ -692,10 +699,11 @@ public class SingleQuantThread extends Thread
    * @param ignorePositionalEvidence ignore separations based on positional divergences
    * @return all of the hits, which include the potentially united results 
    * @throws CgException
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   @SuppressWarnings({ "unchecked", "unlikely-arg-type" })
   private Hashtable<String,LipidParameterSet> uniteHits(LipidomicsAnalyzer analyzer, Hashtable<String,LipidParameterSet> hits, float unionTime,
-      QuantVO quantSet,boolean ignorePositionalEvidence) throws CgException{
+      QuantVO quantSet,boolean ignorePositionalEvidence) throws CgException, LipidCombinameEncodingException{
     List<StringFloatVO> rts = new ArrayList<StringFloatVO>();
     for (String rt : hits.keySet())rts.add(new StringFloatVO(rt));
     Collections.sort(rts,new GeneralComparator("at.tugraz.genome.lda.utils.StringFloatVO", "getFloatValue", "java.lang.Float"));
@@ -814,7 +822,7 @@ public class SingleQuantThread extends Thread
           MSnAnalyzer msnAnalyzer = new MSnAnalyzer(quantSet.getAnalyteClass(),quantSet.getModName(),set,analyzer_,quantSet,true,false);  
           if (msnAnalyzer.checkStatus()!=LipidomicsMSnSet.DISCARD_HIT) set = msnAnalyzer.getResult();
         }
-        catch (RulesException e) {
+        catch (RulesException | HydroxylationEncodingException | ChemicalFormulaException e) {
           e.printStackTrace();
         }
         catch (IOException e) {
@@ -1057,7 +1065,7 @@ public class SingleQuantThread extends Thread
         if (msnAnalyzer.checkStatus()==LipidomicsMSnSet.DISCARD_HIT) quantsOfMod.remove(rt);
         else quantsOfMod.put(rt,msnAnalyzer.getResult());
       }
-      catch (RulesException e) {
+      catch (RulesException | HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e) {
         e.printStackTrace();
       }
       catch (IOException e) {

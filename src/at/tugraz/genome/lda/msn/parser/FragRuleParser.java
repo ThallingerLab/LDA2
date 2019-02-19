@@ -35,7 +35,9 @@ import java.util.Vector;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
+import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.FattyAcidsContainer;
 import at.tugraz.genome.lda.msn.RulesContainer;
@@ -43,6 +45,7 @@ import at.tugraz.genome.lda.msn.vos.ExpressionForComparisonVO;
 import at.tugraz.genome.lda.msn.vos.FragmentMultVO;
 import at.tugraz.genome.lda.msn.vos.FragmentRuleVO;
 import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
+import at.tugraz.genome.lda.utils.RangeInteger;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.rdi.GeneralSettingsVO;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
@@ -85,7 +88,6 @@ public class FragRuleParser
   //general properties of the rule file
   private final static String GENERAL_CHAINS = "AmountOfChains";
   private final static String GENERAL_MS2_LIB = "ChainLibrary";
-  private final static String GENERAL_LCB_LIB = "LCBLibrary";
   public final static String GENERAL_CATOMS_PARSE = "CAtomsFromName";
   public final static String GENERAL_DBOND_PARSE = "DoubleBondsFromName";
   private final static String GENERAL_CUTOFF = "BasePeakCutoff";
@@ -107,8 +109,11 @@ public class FragRuleParser
   private final static String GENERAL_ISOBAR_RT = "IsobarRtDiff";
   
   //for sphingolipids
+  private final static String GENERAL_LCB_LIB = "LCBLibrary";
   private final static String GENERAL_LCBS = "AmountOfLCBs";
-
+  private final static String GENERAL_FA_HYDROXY_RANGE = "FaHydroxylationRange";
+  private final static String GENERAL_LCB_HYDROXY_RANGE = "LcbHydroxylationRange";
+  
   //properties of the fragment subsection of the rule file
   private final static String FRAGMENT_NAME = "Name";
   private final static String FRAGMENT_FORMULA = "Formula";
@@ -136,6 +141,11 @@ public class FragRuleParser
   private Vector<IntensityRuleVO> chainIntensities_;
   // position rules for intensity comparisons
   private Vector<IntensityRuleVO> positionIntensities_;
+  // specifies the range of hydroxylation sites for the fatty acid chain
+  private RangeInteger faHydroxyRange_;
+  // specifies the range of hydroxylation sites for the lcb chain
+  private RangeInteger lcbHydroxyRange_;
+  
   
   // requires an ElementConfigParser to evaluate the chemical formulas
   private ElementConfigParser elementParser_;
@@ -238,6 +248,13 @@ public class FragRuleParser
         }
       }
       if (!foundGeneral_) throw new RulesException("The rules file does not contain the mandatory "+GENERAL_SECTION_NAME+" section!");
+      //if there are LCBs present, several other things have to be specified too
+      if (generalSettings_.containsKey(GENERAL_LCBS) && Integer.parseInt(generalSettings_.get(GENERAL_LCBS))>1) {
+        if (!generalSettings_.containsKey(GENERAL_LCB_LIB))
+          throw new RulesException("A rule file that has more than one \""+GENERAL_LCBS+"\", must define a \""+GENERAL_LCB_LIB+"\"!");          
+        if (lcbHydroxyRange_==null)
+          throw new RulesException("A rule file that has more than one \""+GENERAL_LCBS+"\", must define a \""+GENERAL_LCB_HYDROXY_RANGE+"\"!");
+      }
       if (!foundHead_ && !foundChains_) throw new RulesException(NO_HEAD_AND_CHAINS_SECTION);
       if (headFragments_.size()==0 && chainFragments_.size()==0) throw new RulesException("The rules file does not contain any fragments in the "+FRAGMENT_SUBSECTION+"! There must be at least one fragment!");
       checkIfGeneralValuesAreThere();
@@ -256,7 +273,8 @@ public class FragRuleParser
     headIntensities_ = new Vector<IntensityRuleVO>();
     chainIntensities_ = new Vector<IntensityRuleVO>();
     positionIntensities_ = new Vector<IntensityRuleVO>();
-
+    faHydroxyRange_ = null;
+    lcbHydroxyRange_ = null;
   }
   
   /**
@@ -297,6 +315,10 @@ public class FragRuleParser
       }catch(NumberFormatException nfx){
         throw new RulesException("The value of "+GENERAL_LCBS+" must be integer, the value \""+value+"\" is not! Error at line number "+lineNumber+"!");
       }
+    }else if (key.equalsIgnoreCase(GENERAL_FA_HYDROXY_RANGE)){
+      faHydroxyRange_ = parseRangeEntry(value,key,lineNumber,LipidomicsConstants.CHAIN_TYPE_FA_ACYL);
+    }else if (key.equalsIgnoreCase(GENERAL_LCB_HYDROXY_RANGE)){
+      lcbHydroxyRange_ = parseRangeEntry(value,key,lineNumber,LipidomicsConstants.CHAIN_TYPE_LCB);
     } else if (key.equalsIgnoreCase(GENERAL_MS2_LIB)){
       if (!value.endsWith(FattyAcidsContainer.FA_FILE_SUFFIX_NEW) && !value.endsWith(FattyAcidsContainer.FA_FILE_SUFFIX_OLD)) throw new RulesException("The value of "+GENERAL_MS2_LIB+" must be an Excel file; the value \""+value+"\" is not! Error at line number "+lineNumber+"!");
       generalSettings_.put(GENERAL_MS2_LIB, value);
@@ -587,7 +609,10 @@ public class FragRuleParser
       ruleVO.checkForDiffChainTypes(chainFragments_);
       chainIntensities_.add(ruleVO);
     }
-    if (currentSection==POSITION_SECTION) positionIntensities_.add(ruleVO);
+    if (currentSection==POSITION_SECTION) {
+      ruleVO.checkForDiffChainTypes(chainFragments_);
+      positionIntensities_.add(ruleVO);
+    }
   }
   
   /**
@@ -842,7 +867,7 @@ public class FragRuleParser
   }
   
   /**
-   * checks if the $CHAIN/$ALKYLCHAIN/$ALEKNYLCHAIN is possible in this context
+   * checks if the $CHAIN/$ALKYLCHAIN/$ALEKNYLCHAIN/$LCB is possible in this context
    * @param ruleVO the parsed FragmentRuleVO
    * @param lineNumber the line number of the expression - for error detection
    * @throws RulesException thrown if an invalid chain is used
@@ -851,28 +876,42 @@ public class FragRuleParser
     int amountOfChains = Integer.valueOf(getAmountOfChains());
     int amountOfAlkylChains = Integer.valueOf(getAmountOfAlkylChains());
     int amountOfAlkenylChains = Integer.valueOf(getAmountOfAlkenylChains());
-    int amountOfAcylChains = amountOfChains-amountOfAlkylChains-amountOfAlkenylChains;
+    int amountOfLcbChains = Integer.valueOf(getAmountOfLCBs());
+    int amountOfAcylChains = amountOfChains-amountOfAlkylChains-amountOfAlkenylChains-amountOfLcbChains;
+    boolean isError = false;
     String errorMessage = "The chain type ";
-    if (ruleVO.getChainType()==FragmentRuleVO.ACYL_CHAIN && amountOfAcylChains<1){
+    if (ruleVO.getChainType()==LipidomicsConstants.CHAIN_TYPE_FA_ACYL && amountOfAcylChains<1){
       errorMessage += FragmentRuleVO.CHAIN_NAME+" is not allowed according to the general settings! Only ";
-      if (amountOfAlkylChains>0) errorMessage += FragmentRuleVO.ALKYL_CHAIN_NAME;
-      if (amountOfAlkylChains>0 && amountOfAlkenylChains>0) errorMessage += "/";
-      if (amountOfAlkenylChains>0) errorMessage += FragmentRuleVO.ALKENYL_CHAIN_NAME;
-      errorMessage += " is allowed";
-      throw new RulesException(errorMessage);
-    } else if (ruleVO.getChainType()==FragmentRuleVO.ALKYL_CHAIN && amountOfAlkylChains<1){
+      isError = true;
+    } else if (ruleVO.getChainType()==LipidomicsConstants.CHAIN_TYPE_FA_ALKYL && amountOfAlkylChains<1){
       errorMessage += FragmentRuleVO.ALKYL_CHAIN_NAME+" is not allowed according to the general settings! Only ";
-      if (amountOfAcylChains>0) errorMessage += FragmentRuleVO.CHAIN_NAME;
-      if (amountOfAcylChains>0 && amountOfAlkenylChains>0) errorMessage += "/";
-      if (amountOfAlkenylChains>0) errorMessage += FragmentRuleVO.ALKENYL_CHAIN_NAME;
-      errorMessage += " is allowed";
-      throw new RulesException(errorMessage);
-    } else if (ruleVO.getChainType()==FragmentRuleVO.ALKENYL_CHAIN && amountOfAlkenylChains<1){
+      isError = true;
+    } else if (ruleVO.getChainType()==LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL && amountOfAlkenylChains<1){
       errorMessage += FragmentRuleVO.ALKENYL_CHAIN_NAME+" is not allowed according to the general settings! Only ";
-      if (amountOfAcylChains>0) errorMessage += FragmentRuleVO.CHAIN_NAME;
-      if (amountOfAcylChains>0 && amountOfAlkylChains>0) errorMessage += "/";
-      if (amountOfAlkylChains>0) errorMessage += FragmentRuleVO.ALKYL_CHAIN_NAME;
-      errorMessage += " is allowed";
+      isError = true;
+    } else if (ruleVO.getChainType()==LipidomicsConstants.CHAIN_TYPE_LCB && amountOfLcbChains<1){
+      errorMessage += FragmentRuleVO.LCB_NAME+" is not allowed according to the general settings! Only ";
+      isError = true;
+    }
+    if (isError) {
+      boolean isFirst = true;
+      if (amountOfAcylChains>0) {
+        errorMessage += FragmentRuleVO.CHAIN_NAME;
+        isFirst = false;
+      }
+      if (amountOfAlkylChains>0) {
+        errorMessage += (isFirst ? "" : "/")+FragmentRuleVO.ALKYL_CHAIN_NAME;
+        isFirst = false;
+      }
+      if (amountOfAlkenylChains>0) {
+        errorMessage += (isFirst ? "" : "/")+FragmentRuleVO.ALKENYL_CHAIN_NAME;
+        isFirst = false;
+      }
+      if (amountOfLcbChains>0) {
+        errorMessage += (isFirst ? "" : "/")+FragmentRuleVO.LCB_NAME;
+        isFirst = false;
+      }
+      errorMessage += " is allowed";      
       throw new RulesException(errorMessage);
     }
   }
@@ -1193,6 +1232,25 @@ public class FragRuleParser
   }
   
   /**
+   * hydroxylation range for the FA moiety - parseFile() has to be called before
+   * @return the hydroxylation range for the FA moiety
+   */
+  public RangeInteger getFaHydroxyRange() {
+    if (this.faHydroxyRange_!=null)
+      return this.faHydroxyRange_;
+    else
+      return new RangeInteger(0,0);
+  }
+  
+  /**
+   * hydroxylation range for the LCB moiety - parseFile() has to be called before
+   * @return the hydroxylation range for the LCB moiety
+   */
+  public RangeInteger getLcbHydroxyRange() {
+    return this.lcbHydroxyRange_;
+  }
+  
+  /**
    * writes a complete fragmentation ruleset, by providing the necessary parameters
    * @param dir the directory where the rules shall be written
    * @param lipidClass the lipid class the rules affect
@@ -1240,7 +1298,19 @@ public class FragRuleParser
     if (generalSettings.getAmountOfAlkenylChains()!=null && generalSettings.getAmountOfAlkenylChains()>0)
       bw.write("\n"+GENERAL_CHAINS_ALKENYL+"="+String.valueOf(generalSettings.getAmountOfAlkenylChains()));
     if (generalSettings.getAmountOfLCBs()!=null && generalSettings.getAmountOfLCBs()>0)
-      bw.write("\n"+GENERAL_LCBS+"="+String.valueOf(generalSettings.getAmountOfAlkylChains()));
+      bw.write("\n"+GENERAL_LCBS+"="+String.valueOf(generalSettings.getAmountOfLCBs()));
+    if (generalSettings.getFaHydroxyRangeStart()>-1 && generalSettings.getFaHydroxyRangeStop()>-1) {
+      if (generalSettings.getFaHydroxyRangeStart()==generalSettings.getFaHydroxyRangeStop())
+        bw.write("\n"+GENERAL_FA_HYDROXY_RANGE+"="+String.valueOf(generalSettings.getFaHydroxyRangeStart()));
+      else
+        bw.write("\n"+GENERAL_FA_HYDROXY_RANGE+"="+String.valueOf(generalSettings.getFaHydroxyRangeStart())+"-"+String.valueOf(generalSettings.getFaHydroxyRangeStop()));
+    }
+    if (generalSettings.getLcbHydroxyRangeStart()>-1 && generalSettings.getLcbHydroxyRangeStop()>-1) {
+      if (generalSettings.getLcbHydroxyRangeStart()==generalSettings.getLcbHydroxyRangeStop())
+        bw.write("\n"+GENERAL_LCB_HYDROXY_RANGE+"="+String.valueOf(generalSettings.getLcbHydroxyRangeStart()));
+      else
+        bw.write("\n"+GENERAL_LCB_HYDROXY_RANGE+"="+String.valueOf(generalSettings.getLcbHydroxyRangeStart())+"-"+String.valueOf(generalSettings.getLcbHydroxyRangeStop()));
+    }
     bw.write("\n"+GENERAL_CUTOFF+"=");
     if (generalSettings.getBasePeakCutoff()!=null) bw.write(generalSettings.getBasePeakCutoff()); 
     if (generalSettings.getChainCutoff()!=null)
@@ -1360,6 +1430,86 @@ public class FragRuleParser
       } catch( ClassNotFoundException e ) { }
     }
     return useAlex_;
+  }
+  
+  /**
+   * parses a $from$-$to$ integer (or hydroxy-encoded) range, where both values are included in the range
+   * @param value the $from$-$to$ String
+   * @param chainType is it a LipidomicsConstants.CHAIN_TYPE_FA_ACYL|CHAIN_TYPE_LCB
+   * @return the range
+   */
+  private RangeInteger parseRangeEntry(String value, String param, int lineNumber, short chainType) throws RulesException {
+    int start;
+    int stop;
+    if (value.indexOf("-")!=-1) {
+      String[] splitted = value.split("-");
+      try {
+        start = parseHydroxyEncodedValue(splitted[0],lineNumber,chainType);
+        stop = parseHydroxyEncodedValue(splitted[1],lineNumber,chainType);
+        if (stop<start)
+          throw new RulesException("The parameter \""+param+"\" is a range where the lower value must come first; the value \""+value+"\") at line "+lineNumber+" does not comply!");
+      }catch(RulesException nfx) {
+        if (nfx.getMessage().indexOf("The value of")!=-1 && nfx.getMessage().indexOf("must be in your")!=-1)
+          throw nfx;
+        nfx.printStackTrace();
+        throw new RulesException("The parameter \""+param+"\" must be a single integer, or a range in the format $lower$-$higher$; the value \""+value+"\" at line "+lineNumber+" does not comply!");
+      }      
+    }else{
+      try {
+        int number = parseHydroxyEncodedValue(value,lineNumber,chainType);
+        start = number;
+        stop = number;
+      }catch(RulesException nfx) {
+        if (nfx.getMessage().indexOf("The value of")!=-1 && nfx.getMessage().indexOf("must be in your")!=-1)
+          throw nfx;
+        throw new RulesException("The parameter \""+param+"\" must be a single integer, or a range in the format $lower$-$higher$; the value \""+value+"\" at line "+lineNumber+" does not comply!");
+      }
+    }
+    return new RangeInteger(start,stop);    
+  }
+  
+  /**
+   * 
+   * @param value the string to be decoded - can be integer, or the encoded value
+   * @param lineNumber the line number
+   * @param chainType is it a LipidomicsConstants.CHAIN_TYPE_FA_ACYL|CHAIN_TYPE_LCB
+   * @return the number of hydorxylation sites in integer format
+   * @throws RulesException when this hydroxylation site is not defined
+   */ 
+  private int parseHydroxyEncodedValue(String value, int lineNumber, short chainType) throws RulesException {
+    String hydroxyEncoded = new String(value);
+    int hydroxyNumber = -1;
+    try{
+      hydroxyNumber = Integer.parseInt(value);
+    }catch(NumberFormatException nfx){}
+    if (hydroxyNumber>-1) {
+      try {
+        if (hydroxyNumber>0){
+          if (chainType==LipidomicsConstants.CHAIN_TYPE_FA_ACYL)
+            hydroxyEncoded = Settings.getFaHydroxyEncoding().getEncodedPrefix((short)hydroxyNumber);
+          else if (chainType==LipidomicsConstants.CHAIN_TYPE_LCB)
+            hydroxyEncoded = Settings.getLcbHydroxyEncoding().getEncodedPrefix((short)hydroxyNumber);
+          else
+            throw new RulesException("The chain type \""+chainType+"\" is not allowed!");
+        }
+      }catch(HydroxylationEncodingException hex) {
+        throw new RulesException("The value of "+value+" must be in your hydroxylationEncoding.txt, the value \""+value+"\" is not! Error at line number "+lineNumber+"!");
+      }
+    } else {
+      try {
+        if (hydroxyNumber>0){
+          if (chainType==LipidomicsConstants.CHAIN_TYPE_FA_ACYL)
+            hydroxyNumber = Settings.getFaHydroxyEncoding().getHydroxyNumber(hydroxyEncoded);
+          else if (chainType==LipidomicsConstants.CHAIN_TYPE_LCB)
+            hydroxyNumber = Settings.getLcbHydroxyEncoding().getHydroxyNumber(hydroxyEncoded);
+          else
+            throw new RulesException("The chain type \""+chainType+"\" is not allowed!");
+        }
+      }catch(HydroxylationEncodingException hex) {
+        throw new RulesException("The value of "+hydroxyEncoded+" must be in your hydroxylationEncoding.txt, the value \""+value+"\" is not! Error at line number "+lineNumber+"!");
+      }
+    }
+    return hydroxyNumber;
   }
   
 }

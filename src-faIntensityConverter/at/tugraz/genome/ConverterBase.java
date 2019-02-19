@@ -39,6 +39,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.utils.ExcelUtils;
@@ -148,8 +149,8 @@ public abstract class ConverterBase
     return sorted;
   }
   
-  protected boolean isFaPresent(String fa, String combiName){
-    String[] fas = LipidomicsMSnSet.getFAsFromCombiName(combiName);
+  protected boolean isFaPresent(String fa, String combiName) throws LipidCombinameEncodingException{
+   Vector<String> fas = StaticUtils.splitChainCombiToEncodedStrings(combiName,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
     for (String oneFa : fas){
       if (oneFa.equalsIgnoreCase(fa))
         return true;
@@ -159,7 +160,7 @@ public abstract class ConverterBase
 
   @SuppressWarnings("unchecked")
   private String[] extractFaIntensityDetails(String fa, Vector<String> sortedFAs, LipidomicsMSnSet msn,
-      String ms1AreaString, float ms1Area, float faIntensity, float totalIntensity){
+      String ms1AreaString, float ms1Area, float faIntensity, float totalIntensity) throws LipidCombinameEncodingException{
     String percent = "100.00";
     String faAreaString = ms1AreaString;
     if (sortedFAs.size()!=1){
@@ -194,13 +195,13 @@ public abstract class ConverterBase
     return results;
   }
   
-  private String getFASortedCombiName(String name){
-    if (name.indexOf("/")==-1 && name.indexOf(LipidomicsConstants.FA_SEPARATOR)!=-1)
-      return StaticUtils.sortFASequenceUnassigned(name);
+  private String getFASortedCombiName(String name) throws LipidCombinameEncodingException{
+    if (name.indexOf("/")==-1 && name.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR)!=-1)
+      return StaticUtils.sortFASequenceUnassigned(name,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
     return name;
   }
   
-  protected LinkedHashMap<String,String[]> extractFaIntensityDetails(LipidomicsMSnSet msn, String ms1AreaString, float ms1Area){
+  protected LinkedHashMap<String,String[]> extractFaIntensityDetails(LipidomicsMSnSet msn, String ms1AreaString, float ms1Area) throws LipidCombinameEncodingException{
     Hashtable<String,Hashtable<String,CgProbe>> chainFrags = msn.getChainFragments();
     float totalIntensity = 0f;
     Hashtable<String,Float> faIntensities = new Hashtable<String,Float>();

@@ -27,6 +27,7 @@ import java.util.Hashtable;
 import java.util.Set;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.RulesException;
@@ -46,16 +47,14 @@ public class FragmentRuleVO
   public final static String CHAIN_NAME = "$CHAIN";
   public final static String ALKYL_CHAIN_NAME = "$ALKYLCHAIN";
   public final static String ALKENYL_CHAIN_NAME = "$ALKENYLCHAIN";
+  public final static String LCB_NAME = "$LCB";
   
-  // stati if a fragment is present, has to be added or subtracted
+  
+  // if a fragment is present, has to be added or subtracted
   private final static int NO_FRAGMENT = 0;
   private final static int ADD_FRAGMENT = 1;
   private final static int MINUS_FRAGMENT = -1;
   
-  // chain types
-  public final static int ACYL_CHAIN = 0;
-  public final static int ALKYL_CHAIN = 1;
-  public final static int ALKENYL_CHAIN = 2;
   
   /** this fragment does not need to be necessarily present*/
   public final static short MANDATORY_FALSE = 0;
@@ -79,7 +78,7 @@ public class FragmentRuleVO
   // stati if the chain is present, has to be added or subtracted
   private int chainAction_;
   /** chain type (normal,alkyl,alkenyl)*/  
-  private int chainType_;
+  private short chainType_;
   // chemical composition of the fragment
   private Hashtable<String,Integer> elementAmounts_;
   //Formula
@@ -112,7 +111,7 @@ public class FragmentRuleVO
     this.msLevel_ = msLevel;
     this.mandatory_ = mandatory;
     this.formula_ = formula;
-    this.chainType_ = ACYL_CHAIN;
+    this.chainType_ = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
     if (charge<1) throw new RulesException("The charge state of an analyte must be greater or equal 1");
     this.categorizeFormula(formula, headFragments, chainFragments, elementParser);
   }
@@ -184,7 +183,7 @@ public class FragmentRuleVO
     result = containsChain(form);
     form = (String)result[1];
     chainAction_ = (Integer)result[0];
-    chainType_ = (Integer)result[2];
+    chainType_ = ((Integer)result[2]).shortValue();
     result = containsSelfDefinedFragments(form, getStringKeyHash(headFragments), getStringKeyHash(chainFragments));
     selfDefinedParts_ = (Vector<String>)result[0];
     Vector<Integer> plusOrMinus = (Vector<Integer>)result[1];
@@ -289,15 +288,19 @@ public class FragmentRuleVO
    */
   private static Object[] containsChain(String formula) throws RulesException {
     int chainProcedure = NO_FRAGMENT;
-    int chainType = ACYL_CHAIN;
-    if (formula.indexOf(CHAIN_NAME)!=-1 || formula.indexOf(ALKYL_CHAIN_NAME)!=-1 || formula.indexOf(ALKENYL_CHAIN_NAME)!=-1){
+    int chainType = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
+    if (formula.indexOf(CHAIN_NAME)!=-1 || formula.indexOf(ALKYL_CHAIN_NAME)!=-1 || formula.indexOf(ALKENYL_CHAIN_NAME)!=-1 ||
+        formula.indexOf(LCB_NAME)!=-1){
       String chainName = CHAIN_NAME;
       if (formula.indexOf(ALKYL_CHAIN_NAME)!=-1){
         chainName = ALKYL_CHAIN_NAME;
-        chainType = ALKYL_CHAIN;
+        chainType = LipidomicsConstants.CHAIN_TYPE_FA_ALKYL;
       } else if (formula.indexOf(ALKENYL_CHAIN_NAME)!=-1){
         chainName = ALKENYL_CHAIN_NAME;
-        chainType = ALKENYL_CHAIN;
+        chainType = LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL;
+      } else if (formula.indexOf(LCB_NAME)!=-1){
+        chainName = LCB_NAME;
+        chainType = LipidomicsConstants.CHAIN_TYPE_LCB;
       }
       int startIndex = formula.indexOf(chainName);
       int stopIndex = startIndex+chainName.length();
@@ -458,12 +461,14 @@ public class FragmentRuleVO
     if (chainAction_==ADD_FRAGMENT) toPrint += "+";
     else if (chainAction_==MINUS_FRAGMENT) toPrint += "-";
     if (chainAction_!=NO_FRAGMENT){
-      if (chainType_ == ACYL_CHAIN)
+      if (chainType_ == LipidomicsConstants.CHAIN_TYPE_FA_ACYL)
         toPrint += CHAIN_NAME+" ";
-      else if (chainType_ == ALKYL_CHAIN)
+      else if (chainType_ == LipidomicsConstants.CHAIN_TYPE_FA_ALKYL)
         toPrint += ALKYL_CHAIN_NAME+" ";
-      else if (chainType_ == ALKENYL_CHAIN)
+      else if (chainType_ == LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL)
         toPrint += ALKENYL_CHAIN_NAME+" ";
+      else if (chainType_ == LipidomicsConstants.CHAIN_TYPE_LCB)
+        toPrint += LCB_NAME+" ";
     }
     for (String element : elementAmounts_.keySet()){
       if (elementAmounts_.get(element)>0) toPrint += "+";
@@ -475,6 +480,27 @@ public class FragmentRuleVO
     if (toPrint.length()>1) toPrint = toPrint.substring(0,toPrint.length()-1);
     return toPrint;
   }
+
+  
+  /**
+   * calculates the chemical formula of a fragment (by the rules and known precursor and, if necessary, known chain)
+   * @param precursorFormula chemical formula of the precursor
+   * @param precursorMass m/z of the precursor
+   * @param vo
+   * @param charge charge state in which the fragment shall be observed
+   * @return object vector containing: get(0): chemical formula; get(1) m/z value as double
+   * @throws RulesException 
+   */
+  //TODO: this is an intermediate solution, until the various hydroxylation options are available
+  public Vector<Object> getFormulaAndMass(String precursorFormula, double precursorMass, FattyAcidVO vo, int charge) throws RulesException{
+    FattyAcidVO fa = vo;
+    //TODO: currently dihydroxylated is here hardcoded
+    //if (chainType_==LCB_CHAIN)      
+    //  fa = FattyAcidsContainer.getFattyAcidChains(chainLib);
+    return getFormulaAndMass(precursorFormula, precursorMass, fa.getFormula(), fa.getMass(), charge); 
+  }
+
+  
   
   /**
    * calculates the chemical formula of a fragment (by the rules and known precursor and, if necessary, known chain)
@@ -507,14 +533,6 @@ public class FragmentRuleVO
         throw new RulesException("The formula "+chainFormula+" contains fragments that have not been defined before! Fragments have to be defined in previous columns, before they can be used!");
       }
       double realChainMass = chainMass;
-      if (chainType_==ALKYL_CHAIN){
-        realChainMass += (2d*elementDetails_.get("H").getMonoMass()-elementDetails_.get("O").getMonoMass());
-        chainAmounts.put("H",(chainAmounts.get("H")+2));
-        chainAmounts.put("O",(chainAmounts.get("O")-1));
-      } else if (chainType_ == ALKENYL_CHAIN){
-        realChainMass += (-1d*elementDetails_.get("O").getMonoMass());
-        chainAmounts.put("O",(chainAmounts.get("O")-1));
-      }
       if (chainAction_==ADD_FRAGMENT){
         mass += realChainMass/((double)charge);
       }else if (chainAction_==MINUS_FRAGMENT){
@@ -550,9 +568,9 @@ public class FragmentRuleVO
 
   /**
    * 
-   * @return the type of the chain (ACYL_CHAIN/ALKYL_CHAIN/ALKENYL_CHAIN)
+   * @return the type of the chain (ACYL_CHAIN/ALKYL_CHAIN/ALKENYL_CHAIN/LCB)
    */
-  public int getChainType()
+  public short getChainType()
   {
     return chainType_;
   }

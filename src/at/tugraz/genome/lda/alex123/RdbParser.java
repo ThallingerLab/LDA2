@@ -172,7 +172,7 @@ public class RdbParser
             if (msLevel>entry.getMsLevel())
               entry.setMsLevel_(msLevel);
             if (molecularSpecies!=null && (entry.getMolecularSpecies()==null || entry.getMolecularSpecies().length()==0))
-              entry.setMolecularSpecies_(molecularSpecies);
+              entry.setOriginalMolecularSpecies(molecularSpecies);
             if (precursors.containsKey(2) && (entry.getMs2Precursor()==null || entry.getMs2Precursor().length()==0))
               entry.setMs2Precursor(precursors.get(2));
             if (activations.containsKey(2) && (entry.getMs2Activation()==null || entry.getMs2Activation().length()==0))

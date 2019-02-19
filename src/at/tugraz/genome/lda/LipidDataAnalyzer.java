@@ -104,6 +104,8 @@ import at.tugraz.genome.lda.exception.AbsoluteSettingsInputException;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.ExportException;
+import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RdbWriterException;
 import at.tugraz.genome.lda.exception.RulesException;
@@ -113,6 +115,7 @@ import at.tugraz.genome.lda.interfaces.ColorChangeListener;
 import at.tugraz.genome.lda.listeners.AnnotationThresholdListener;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.MSnAnalyzer;
+import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.mztab.MztabUtils;
 import at.tugraz.genome.lda.mztab.SmallMztabMolecule;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
@@ -3240,14 +3243,14 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       try {
        param = rdi.testForMSnDetection(spectrumPainter_.getMs2LevelSpectrumSelected(specNumber));
        rangeColors = StaticUtils.createRangeColorVOs(param, ((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentSelected_),
-           areTheseAlex123MsnFragments());
+           result_.getFaHydroxyEncoding(), result_.getLcbHydroxyEncoding(), areTheseAlex123MsnFragments());
       }
       catch (NoRuleException | IOException
-          | SpectrummillParserException | CgException e) {
+          | SpectrummillParserException | CgException | ChemicalFormulaException | LipidCombinameEncodingException e) {
         e.printStackTrace();
       }
       //if it is a rules exception, then a new rule is currently entered - no need to report an error
-      catch (RulesException  e) {
+      catch (RulesException  | HydroxylationEncodingException e) {
       }
    }
     if (next){
@@ -5195,11 +5198,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       charge = params.getCharge();
     float currentIsotopicMass = params.Mz[0];
 
-    Hashtable<Integer,Vector<RangeColor>> rangeColors = StaticUtils.createRangeColorVOs(params,((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentSelected_),
-        areTheseAlex123MsnFragments());
     try {
+      Hashtable<Integer,Vector<RangeColor>> rangeColors = StaticUtils.createRangeColorVOs(params,((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentSelected_),
+          result_.getFaHydroxyEncoding(), result_.getLcbHydroxyEncoding(), areTheseAlex123MsnFragments());
       int threeDMsLevel = 2;
-      
       Hashtable<Integer,Vector<String>> spectraRaw = reader_.getMsMsSpectra(params.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), params.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance(),-1f,-1f);
 
       float peakRt = 0f;
@@ -5341,12 +5343,17 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       
 
       
-    }
-    catch (CgException cgx) {
+    }catch (CgException cgx) {
       @SuppressWarnings("unused")
       WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "The MS/MS cannot be displayed: "+cgx.getMessage());
       this.displaysMs2_ = false;
       return false;
+    }catch (LipidCombinameEncodingException cgx) {
+      @SuppressWarnings("unused")
+      WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "The molecular species name cannot be decoded: "+cgx.getMessage());
+      this.displaysMs2_ = false;
+      return false;
+
     }catch (Exception cgx) {
       cgx.printStackTrace();
         @SuppressWarnings("unused")
@@ -5462,6 +5469,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	      LinkedHashMap<String,String> fullExpPaths = getSampleResultFullPaths();
 	      boolean isotopicDistributionChecked = true;
 	      Hashtable<String,Short> polarities = new Hashtable<String,Short>();
+	      HydroxyEncoding faEncoding = null;
+	      HydroxyEncoding lcbEncoding = null;
 	      for (int i=0; i!=analysisModule_.getExpNamesInSequence().size(); i++) {
 	        String exp = analysisModule_.getExpNamesInSequence().get(i);
 	        String chromFileBase = StaticUtils.extractChromBaseName(fullExpPaths.get(exp),exp);
@@ -5482,6 +5491,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	        expToMsRun.put(exp, (i+1));
 	        metadata.addMsRunItem(run);
 	        originalExcelResults.put(exp, LDAResultReader.readResultFile(fullExpPaths.get(exp), new Hashtable<String,Boolean>()));
+	        if (originalExcelResults.get(exp).getFaHydroxyEncoding()!=null) faEncoding = originalExcelResults.get(exp).getFaHydroxyEncoding();
+	        if (originalExcelResults.get(exp).getLcbHydroxyEncoding()!=null) lcbEncoding = originalExcelResults.get(exp).getLcbHydroxyEncoding();
 	        if (!originalExcelResults.get(exp).getConstants().getRespectIsotopicDistribution())
 	          isotopicDistributionChecked = false;
 	        polarities.put(exp, SmallMztabMolecule.POLARITY_UNKNOWN);
@@ -5557,10 +5568,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	 //             identifier = "ES_" + molGroup + molName.substring(externalStandardPref.length());
 	//            else
 	//              identifier = molGroup + molName;
-                  
-	            SmallMztabMolecule molecule = MztabUtils.createSmallMztabMolecule(speciesType, summaryId, featureId, evidenceId,
+            SmallMztabMolecule molecule = MztabUtils.createSmallMztabMolecule(speciesType, summaryId, featureId, evidenceId,
 	                evidenceGroupingId, maxIsotopes,analysisModule_, msRuns, originalExcelResults, molGroup, molName, resultsMol,
-	                adductsSorted, expsOfGroup);
+	                adductsSorted, expsOfGroup, faEncoding, lcbEncoding);
 	            if (molecule==null)
 	              continue;
 	            summaryId = molecule.getCurrentSummaryId();
@@ -5619,17 +5629,15 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	      e.printStackTrace();
 	    }
 	    catch (NumberFormatException e) {
-	      // TODO Auto-generated catch block
 	      e.printStackTrace();
 	    }
 	    catch (CalculationNotPossibleException e) {
-	      // TODO Auto-generated catch block
 	      e.printStackTrace();
 	    }
     catch (ExcelInputFileException e) {
 	      e.printStackTrace();
 	    }
-    catch (ExportException e ) {
+    catch (ExportException | LipidCombinameEncodingException e ) {
         e.printStackTrace();
     }
       catch (SpectrummillParserException e) {
@@ -5672,7 +5680,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       @SuppressWarnings("unused")
       WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "The Alex123-file cannot be written: "+rwe.getMessage());
     }
-    catch (ChemicalFormulaException cfe) {
+    catch (ChemicalFormulaException | LipidCombinameEncodingException cfe) {
       cfe.printStackTrace();
       @SuppressWarnings("unused")
       WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "The Alex123-file cannot be written: "+cfe.getMessage());
@@ -5762,7 +5770,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                 if (sortedByMolSpecies.containsKey(faId)) oneMolSpecies = sortedByMolSpecies.get(faId);
                 else{
                   for (String otherId : sortedByMolSpecies.keySet()){
-                    if (StaticUtils.isAPermutedVersion(faId, otherId)){
+                    //TODO: this might not be correct - check when doing MAF-exports
+                    if (StaticUtils.isAPermutedVersion(faId, otherId,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)){
                       faId = otherId;
                       oneMolSpecies = sortedByMolSpecies.get(faId);
                       break;
@@ -5886,7 +5895,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                       if (className.equalsIgnoreCase("DG") && set.getModificationName().equalsIgnoreCase("Na") && detectedFaId.split("_").length==2){
                         detectedFaId+="_-"; 
                       }
-                      if (detectedFaId.equalsIgnoreCase(faId) || StaticUtils.isAPermutedVersion(detectedFaId, faId) || detectedFaId.equalsIgnoreCase(molName)) isCorrect = true;
+                      //TODO: this might not be correct - check when doing MAF-exports
+                      if (detectedFaId.equalsIgnoreCase(faId) || StaticUtils.isAPermutedVersion(detectedFaId, faId,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS) || detectedFaId.equalsIgnoreCase(molName)) isCorrect = true;
                       if (!isCorrect)continue;
                       if (chemicalFormula.length()==0){
                         chemicalFormula = set.getAnalyteFormula().replaceAll(" ", "");
@@ -5938,9 +5948,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                       if (set.getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED){
                         String faName = nameString.replaceAll("/","_");
                         if (faName.indexOf("|")>-1) faName = faName.substring(0,faName.indexOf("|"));
-                        String[] fas = StaticUtils.getFAsFromCombiName(faName);
-                        for (int j=0; j!= fas.length; j++){
-                          String fa = fas[j];
+                        //TODO: this might not be correct - check when doing MAF-exports
+                        Vector<String> fas = StaticUtils.splitChainCombiToEncodedStrings(faName,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
+                        for (int j=0; j!= fas.size(); j++){
+                          String fa = fas.get(j);
                           if (!set.getChainFragments().containsKey(fa)) continue;
                           for (CgProbe probe : set.getChainFragments().get(fa).values()){
                             fragments.add(probe.Mz);
@@ -6066,6 +6077,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     }
     catch (ExcelInputFileException e) {
       e.printStackTrace();
+    }
+    catch (LipidCombinameEncodingException e) {
+      e.printStackTrace();
     }     
   }
   
@@ -6164,10 +6178,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     return startStop;
   }
   
-  private LipidParameterSet refreshSpectrumPainterRDI() throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException{
+  private LipidParameterSet refreshSpectrumPainterRDI() throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException{
     LipidParameterSet param = msnUserInterfaceObject_.testForMSnDetection(getMs2LevelSpectrumSelected());
     Hashtable<Integer,Vector<RangeColor>> rangeColors = StaticUtils.createRangeColorVOs(param, ((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentSelected_),
-        areTheseAlex123MsnFragments());
+        result_.getFaHydroxyEncoding(), result_.getLcbHydroxyEncoding(), areTheseAlex123MsnFragments());
     if (rangeColors!=null) spectrumPainter_.refresh(param,rangeColors);
     else spectrumPainter_.clearRangeColors();
     this.spectrumSelected_.setText(spectrumPainter_.getSpectSelectedText());
@@ -6256,7 +6270,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       try {
         pr = refreshSpectrumPainterRDI();
       } catch (RulesException | NoRuleException | IOException
-        | SpectrummillParserException e1) {
+        | SpectrummillParserException | HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e1) {
       }
     
       //REFRESHES THE CHROM PAINTER FROM HERE ONLY FOR NEW PRECUSORS
@@ -6308,7 +6322,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         refreshSpectrumPainterRDI();
       }
       catch (RulesException | NoRuleException | IOException
-          | SpectrummillParserException e) {
+          | SpectrummillParserException | HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e) {
         e.printStackTrace();
       }
     }
@@ -6356,6 +6370,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     catch (CgException e) {
       e.printStackTrace();
     }
+    catch (HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e) {
+      e.printStackTrace();
+    }
     
     if (!showMs2(data,true)) return; 
     try {
@@ -6372,7 +6389,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       msnUserInterfaceObject_ = userInterface;
       refreshSpectrumPainterRDI();
     }
-    catch (NoRuleException nrx){
+    catch (NoRuleException | HydroxylationEncodingException | LipidCombinameEncodingException e){
       
     }
     catch (RulesException | IOException
@@ -6642,7 +6659,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       String className = (String)selectedSheet_.getSelectedItem();
       MSnAnalyzer analyzer = new MSnAnalyzer(null,className,data.getModificationName(),data,analyzer_);
       recalcDialog_ = new RecalculateMSnDialog(className,analyzer,this);
-    } catch (RulesException | IOException | SpectrummillParserException | CgException e) {
+    } catch (RulesException | IOException | SpectrummillParserException | CgException | HydroxylationEncodingException | ChemicalFormulaException | LipidCombinameEncodingException e) {
       e.printStackTrace();
       new WarningMessage(new JFrame(), "ERROR", e.getMessage());
     }

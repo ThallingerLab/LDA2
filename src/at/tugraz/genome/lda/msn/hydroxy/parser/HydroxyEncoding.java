@@ -25,7 +25,10 @@ package at.tugraz.genome.lda.msn.hydroxy.parser;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Properties;
 
 import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
@@ -40,6 +43,10 @@ public class HydroxyEncoding extends Properties{
   private static final long serialVersionUID = 4234382085044433873L;
   /** lookup from the textual encoding to the number of hydroxylation sites*/
   private Hashtable<String,Short> encodingToNumber_;
+  /** OH numbers sorted in ascending order*/
+  private List<Short> sortedOHs_;
+  
+  public final static String HYDROXYLATION_ZERO = "n";
   
   /**
    * constructor requires the path to the lookup file
@@ -48,22 +55,51 @@ public class HydroxyEncoding extends Properties{
    * @throws HydroxylationEncodingException when there is something wrong with the file
    */
   public HydroxyEncoding(String path) throws IOException, HydroxylationEncodingException{
+    this();
     FileInputStream in = new FileInputStream(path);
     this.load(in);
     in.close();
-    encodingToNumber_ = new Hashtable<String,Short>();
+    Short oh;
     String keyString = "";
     try {
       for (Object key : this.keySet()) {
         keyString = (String)key;
         if (keyString==null || keyString.length()==0)
           continue;
-        encodingToNumber_.put((String)get(key),Short.parseShort(keyString));
+        oh = Short.parseShort(keyString);
+        encodingToNumber_.put((String)get(key),oh);
+        sortedOHs_.add(oh);
       }
+      Collections.sort(sortedOHs_);
     }catch(NumberFormatException nfx) {
       throw new HydroxylationEncodingException("The value \""+keyString+"\" is not permitted as hydroxylation encoding - only integer numbers are allowed as keys!");
     }
   }
+  
+  /**
+   * private constructor initializing the hash tables
+   */
+  private HydroxyEncoding() {
+    super();
+    encodingToNumber_ = new Hashtable<String,Short>();
+    sortedOHs_ = new ArrayList<Short>();
+  }
+  
+  
+  /**
+   * constructor to use when the source of the properties is not a text file
+   * @param encodingToNumber key: the encoded prefix; value: OH number
+   */
+  public HydroxyEncoding(Hashtable<String,Short> encodingToNumber) {
+    this();
+    this.encodingToNumber_ = new Hashtable<String,Short>(encodingToNumber);
+    for (String key : encodingToNumber.keySet()) {
+      put(String.valueOf(encodingToNumber_.get(key)),key);
+      sortedOHs_.add(encodingToNumber_.get(key));
+    }
+    Collections.sort(sortedOHs_);
+  }
+  
   
   /**
    * returns the encoded String for the number of hydroxy groups
@@ -88,6 +124,14 @@ public class HydroxyEncoding extends Properties{
     if (!encodingToNumber_.containsKey(encoded))
       throw new HydroxylationEncodingException("The demanded hydroxylation key \""+encoded+"\" does not exist in the encoding file");
     return encodingToNumber_.get(encoded);
+  }
+  
+  /**
+   * 
+   * @return a list of OH numbers in the encoding - sorted in ascending order
+   */
+  public List<Short> getHydroxyNumbersInAscendingOrder(){
+    return this.sortedOHs_;
   }
   
 }

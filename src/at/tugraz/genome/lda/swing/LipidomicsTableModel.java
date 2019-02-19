@@ -29,6 +29,7 @@ import java.util.Vector;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.utils.StaticUtils;
@@ -80,7 +81,13 @@ public class LipidomicsTableModel extends DefaultTableModel implements TableMode
     for (LipidParameterSet param : params){
       if (showMSn && param instanceof LipidomicsMSnSet && (((LipidomicsMSnSet)param).getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED)){
         LipidomicsMSnSet msnSet = (LipidomicsMSnSet)param;
-        for (Object nameObj : msnSet.getMSnIdentificationNames()){
+        Vector<Object> detected = null;
+        try {detected = msnSet.getMSnIdentificationNames();
+        }catch (LipidCombinameEncodingException lcx) {
+          detected = new Vector<Object>();
+          lcx.printStackTrace();
+        }
+        for (Object nameObj : detected){
           String nameString = "";
           if (nameObj instanceof String){
             nameString = (String)nameObj;

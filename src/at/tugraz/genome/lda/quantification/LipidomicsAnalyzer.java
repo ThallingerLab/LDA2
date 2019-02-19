@@ -53,6 +53,8 @@ import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException
 import at.tugraz.genome.maspectras.quantification.Analyzer;
 import at.tugraz.genome.maspectras.quantification.CgAreaStatus;
 import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.exception.ChemicalFormulaException;
+import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.QuantificationException;
 import at.tugraz.genome.lda.exception.RulesException;
@@ -487,24 +489,25 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
   
   /**
    * currently the method works only for head group fragments
-   * @param mz
-   * @param charge
-   * @param msLevel
-   * @param className
-   * @param modName
-   * @param analyteName
-   * @param formula
-   * @return
+   * @param mz the ideal m/z value
+   * @param charge the charge
+   * @param msLevel the MS-level
+   * @param className name of the analyte class
+   * @param modName name of modification
+   * @param analyteName name of analyte
+   * @param formula formula of analyte
+   * @param ohNumber nuber of hydroxylation sites
+   * @return quantification results
    */
   public Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> processPrmData(float mz, int charge, int msLevel, String className, String modName,
-      String analyteName, String formula) {
+      String analyteName, String formula, int ohNumber) {
     Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> finalResults = null;
     try{
       float mzTolerance = LipidomicsConstants.getCoarseChromMzTolerance(mz);
       this.prepareMSnSpectraCache(mz-mzTolerance, mz+mzTolerance,LipidomicsConstants.getMs2MinIntsForNoiseRemoval());
 
-    
-      FragmentCalculator fragCalc = new FragmentCalculator(null,className,modName,analyteName,formula,mz);
+      //TODO: here, the analyteFormula without deducts is not implemented - has to be changed in future!
+      FragmentCalculator fragCalc = new FragmentCalculator(null,className,modName,analyteName,formula,formula,mz,ohNumber);
       Vector<FragmentVO> mandHeadFragments = fragCalc.getHeadFragments().get(true);
       Hashtable<String,Vector<CgProbe>> headPeaks = new Hashtable<String,Vector<CgProbe>>();
       for (FragmentVO frag : mandHeadFragments){
@@ -669,7 +672,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
         finalResults.put(hitNumber, isotopes);
         hitNumber++;
       }
-    }catch (CgException | RulesException | NoRuleException | IOException | SpectrummillParserException ex){
+    }catch (CgException | RulesException | NoRuleException | IOException | SpectrummillParserException | HydroxylationEncodingException | ChemicalFormulaException ex){
       ex.printStackTrace();
     }
     return finalResults;

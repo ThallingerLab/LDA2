@@ -30,8 +30,11 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.utils.RangeInteger;
+import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 
 /**
@@ -45,7 +48,7 @@ public class IntensityRuleVO
   public final static String BASEPEAK_NAME = "$BASEPEAK";
   
   // different chain types are involved
-  public final static int DIFF_CHAIN_TYPES = -1;
+  public final static short DIFF_CHAIN_TYPES = -1;
   
   // to which section does this rule belong to [HEAD_SECTION, CHAINS_SECTION, or POSITION_SECTION]
   private int type_;
@@ -59,7 +62,7 @@ public class IntensityRuleVO
   protected ExpressionForComparisonVO smallerExpression_;
 
   /** which type of fatty acid chains are involved; if different chain types are involved use DIFF_CHAIN_TYPES*/
-  protected int chainType_;
+  protected short chainType_;
 
   
   /**
@@ -75,7 +78,7 @@ public class IntensityRuleVO
     mandatory_ = false;
     biggerExpression_ = biggerExpression;
     smallerExpression_ = smallerExpression;
-    chainType_ = FragmentRuleVO.ACYL_CHAIN;
+    chainType_ = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
   }
   
   /**
@@ -221,7 +224,7 @@ public class IntensityRuleVO
    * 
    * @return the fatty acid name of the more intense side of the equation (if appropriate)
    */
-  public String getBiggerFA()
+  public FattyAcidVO getBiggerFA()
   {
     return null;
   }
@@ -230,7 +233,7 @@ public class IntensityRuleVO
    * 
    * @return the fatty acid name of the less intense side of the equation (if appropriate)
    */
-  public String getSmallerFA()
+  public FattyAcidVO getSmallerFA()
   {
     return null;
   }
@@ -249,7 +252,7 @@ public class IntensityRuleVO
    * 
    * @return which type of fatty acid chains are involved
    */
-  public int getChainType()
+  public short getChainType()
   {
     return chainType_;
   }
@@ -423,7 +426,7 @@ public class IntensityRuleVO
    */
   public void checkForDiffChainTypes(Hashtable<String,FragmentRuleVO> fragRules){
     boolean foundOneType = false;
-    chainType_ = FragmentRuleVO.ACYL_CHAIN;
+    chainType_ = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
     for (FragmentMultVO multVO : biggerExpression_.getFragments()){
       if (multVO.getFragmentName().equalsIgnoreCase(BASEPEAK_NAME)) continue;
       if (!fragRules.containsKey(multVO.getFragmentName())) continue;
@@ -483,14 +486,14 @@ public class IntensityRuleVO
    * @param smallerFA the fatty acid of the less intense part (if appropriate)
    * @return
    */
-  public int getMSLevel(Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments, String biggerFA, String smallerFA){
+  public int getMSLevel(Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments, FattyAcidVO biggerFA, FattyAcidVO smallerFA){
     int msLevel = -1;
     for (String name : getBiggerNonBasePeakNames()){
       if (headGroupFragments.containsKey(name)){
         msLevel = headGroupFragments.get(name).getMsLevel();
         break;
-      } else if (biggerFA!=null && chainFragments.containsKey(biggerFA) && chainFragments.get(biggerFA).containsKey(name)){
-        msLevel = chainFragments.get(biggerFA).get(name).getMsLevel();
+      } else if (biggerFA!=null && chainFragments.containsKey(biggerFA.getChainId()) && chainFragments.get(biggerFA.getChainId()).containsKey(name)){
+        msLevel = chainFragments.get(biggerFA.getChainId()).get(name).getMsLevel();
         break;
       }
     }
@@ -499,8 +502,8 @@ public class IntensityRuleVO
       if (headGroupFragments.containsKey(name)){
         msLevel = headGroupFragments.get(name).getMsLevel();
         break;
-      } else if (smallerFA!=null && chainFragments.containsKey(smallerFA) && chainFragments.get(smallerFA).containsKey(name)){
-        msLevel = chainFragments.get(smallerFA).get(name).getMsLevel();
+      } else if (smallerFA!=null && chainFragments.containsKey(smallerFA.getChainId()) && chainFragments.get(smallerFA.getChainId()).containsKey(name)){
+        msLevel = chainFragments.get(smallerFA.getChainId()).get(name).getMsLevel();
         break;
       }
     }
@@ -512,7 +515,7 @@ public class IntensityRuleVO
    * 
    * @param chainType which type of fatty acid chains are involved
    */
-  public void setChainType(int chainType)
+  public void setChainType(short chainType)
   {
     this.chainType_ = chainType;
   }
@@ -615,5 +618,57 @@ public class IntensityRuleVO
   public boolean isAbsoluteComparison(){
     return (this.biggerExpression_.isAbsoluteComparison() || this.smallerExpression_.isAbsoluteComparison());
   }
+  
+  /**
+   * selects a corresponding chain VO from the found results
+   * @param chainCAndDb chain name specified by name and db
+   * @param nonBasepeakNames the fragment names, that are not the base peak
+   * @param chainFragments the found chain fragments with its areas; first key: fatty acid name; second key: name of the fragment; value: CgProbe peak identification object 
+   * @param ragments that were not found in the equation (required for reading of results, since for rules containing "+", not all of the fragments have to be found)
+   * @return the found chain VO
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (not containing type and OH number) cannot be decoded
+   */
+  protected static FattyAcidVO selectChainFromFoundFragments(String chainCAndDb, Vector<String> nonBasepeakNames, Hashtable<String,Hashtable<String,CgProbe>> chainFragments,
+      Hashtable<String,String> missed) throws LipidCombinameEncodingException{
+    //first, find all the fragments that were not missed
+    Vector<String> foundFragments = new Vector<String>();
+    for (String frag : nonBasepeakNames) {
+      if (!missed.containsKey(frag))
+        foundFragments.add(frag);
+    }
+    Object[] prefixCAndDbs = StaticUtils.parsePrefixCAndDbsFromChainId(chainCAndDb);
+    String prefix = (String)prefixCAndDbs[0];
+    int cAtoms = (Integer)prefixCAndDbs[1];
+    int dbs = (Integer)prefixCAndDbs[2];
+    String frag;
+    // in the case there are no found fragments, create a FattyAcidVO from the chainCAndDb
+    if (foundFragments.size()==0)
+      return new FattyAcidVO(LipidomicsConstants.CHAIN_TYPE_NO_CHAIN, prefix, cAtoms, dbs, -1, -1, null);
+    for (String chainId : chainFragments.keySet()){
+      if ((prefix.length()>0 && chainId.indexOf(prefix)==-1) || chainId.indexOf(String.valueOf(cAtoms))==-1 || chainId.indexOf(String.valueOf(dbs))==-1)
+        continue;
+      Hashtable<String,CgProbe> foundFrags = chainFragments.get(chainId);
+      //check if this chain contains one of the fragments
+      boolean fragFound = false;
+      for (String fragWiPos : foundFragments) {
+        frag = fragWiPos;
+        if (fragWiPos.indexOf("[")!=-1)
+          frag = frag.substring(0,fragWiPos.indexOf("["));
+        if (foundFrags.containsKey(frag)) {
+          fragFound = true;
+          break;
+        }
+      }
+      if (!fragFound)
+        continue;
+      //now check if the prefix the #C-atoms and the #dbs matches
+      FattyAcidVO chain = StaticUtils.decodeLipidNameForCreatingCombis(chainId);
+      if (!chain.getPrefix().equalsIgnoreCase(prefix) || chain.getcAtoms()!=cAtoms || chain.getDoubleBonds()!=dbs)
+        continue;
+      return chain;
+    }
+    return null;
+  }
+
   
 }

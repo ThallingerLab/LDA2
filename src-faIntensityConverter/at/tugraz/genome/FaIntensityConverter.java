@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 
 /**
  * 
@@ -67,7 +68,7 @@ public class FaIntensityConverter
         LDAToFaConverter converter = new LDAToFaConverter(file.getAbsolutePath());
         try {
           converter.convert();
-        } catch (ExcelInputFileException | FileNotFoundException e) {
+        } catch (ExcelInputFileException | FileNotFoundException | LipidCombinameEncodingException e) {
           System.out.println("---------------------------------------------------");
           System.out.println("There is something wrong with the file: "+file.getName());
           e.printStackTrace();

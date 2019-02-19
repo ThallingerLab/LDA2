@@ -28,6 +28,7 @@ import java.io.IOException;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.swing.RuleDefinitionInterface;
@@ -60,7 +61,7 @@ import at.tugraz.genome.maspectras.quantification.CgException;
 	       catch (IOException e1) {e1.printStackTrace();}
 	       catch (SpectrummillParserException e1) {e1.printStackTrace();}
 	       catch (CgException e1) {e1.printStackTrace();}
-	       catch (NoRuleException e1) {e1.printStackTrace();}
+	       catch (NoRuleException | ChemicalFormulaException e1) {e1.printStackTrace();}
 	     }
 	    
 	     @Override
@@ -74,7 +75,7 @@ import at.tugraz.genome.maspectras.quantification.CgException;
 	       catch (IOException e1) {e1.printStackTrace();}
 	       catch (SpectrummillParserException e1) {e1.printStackTrace();}
 	       catch (CgException e1) {e1.printStackTrace();}
-	       catch (NoRuleException e1) {e1.printStackTrace();}
+	       catch (NoRuleException | ChemicalFormulaException e1) {e1.printStackTrace();}
 	     }    
 	    
 	     @Override
@@ -88,7 +89,7 @@ import at.tugraz.genome.maspectras.quantification.CgException;
        catch (IOException e1) {e1.printStackTrace();}
        catch (SpectrummillParserException e1) {e1.printStackTrace();}
        catch (CgException e1) {e1.printStackTrace();}
-       catch (NoRuleException e1) {e1.printStackTrace();}
+       catch (NoRuleException | ChemicalFormulaException e1) {e1.printStackTrace();}
      }  
 	     
 	

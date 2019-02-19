@@ -25,6 +25,7 @@ package at.tugraz.genome.lda.msn.vos;
 
 import java.util.Hashtable;
 
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.vos.QuantVO;
@@ -181,8 +182,9 @@ public class SharedPeakContributionVO
   /**
    * if a peak split has to be removed because a split partner has a wrong retention time the unsplit peak version is stored,
    * this method creates the copy of the unsplit version
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  public void makeCopyOfOldIdentification(){
+  public void makeCopyOfOldIdentification() throws LipidCombinameEncodingException{
     if (set_ instanceof LipidomicsMSnSet){
       this.oldSet_ = new LipidomicsMSnSet((LipidomicsMSnSet)set_);
     }else{

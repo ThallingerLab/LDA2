@@ -27,7 +27,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashSet;
 import java.util.Hashtable;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -35,6 +34,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
@@ -59,7 +59,7 @@ public class LCBLibParser extends FALibParser
 
   
   /** hash containing the result of the parsing
-   * the first integer is the number of hydroxylation sites
+   * the first String is the encoding of the number of hydroxylation sites
    * the second integer is the amount of carbon atoms
    * the third integer is the amount of double bonds
    */
@@ -84,12 +84,12 @@ public class LCBLibParser extends FALibParser
   public void parseFile() throws RulesException, IOException{
     result_ = new Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>();
     //first, create a hashtable of all available hydroxylation sites
-    HydroxyEncoding hydroxies = Settings.getHydroxyEncoding();
+    HydroxyEncoding hydroxies = Settings.getLcbHydroxyEncoding();
     short hydroxyKey;
-    HashSet<String> encodedHydroxyStrings = new HashSet<String>();
+    Hashtable<String,Short> encodedHydroxyStrings = new Hashtable<String,Short>();
     for (Object hydroxyObject : hydroxies.keySet()) {
       hydroxyKey = Short.parseShort((String)hydroxyObject);
-      encodedHydroxyStrings.add((String)hydroxies.get(hydroxyObject));
+      encodedHydroxyStrings.put((String)hydroxies.get(hydroxyObject),hydroxyKey);
       if (hydroxyKey>highestHydroxyNumber_)
         highestHydroxyNumber_ = hydroxyKey;
     }
@@ -108,7 +108,7 @@ public class LCBLibParser extends FALibParser
         sheetName = workbook.getSheetAt(sheetNumber).getSheetName();
         sheet = null;
         String hydrKey = null;
-        for (String key : encodedHydroxyStrings) {
+        for (String key : encodedHydroxyStrings.keySet()) {
           if (sheetName.equalsIgnoreCase(key+LCB_SHEET_SUFFIX)) {
             sheet = workbook.getSheetAt(sheetNumber);
             hydrKey = key;
@@ -116,7 +116,15 @@ public class LCBLibParser extends FALibParser
           }
         }
         if (sheet==null) continue;
-        result_.put(hydrKey, parseSheet(sheet));
+        result_.put(hydrKey, parseSheet(sheet,encodedHydroxyStrings.get(hydrKey)));
+        //correct result for correct chain type
+        for (Hashtable<Integer,Hashtable<String,FattyAcidVO>> sameC : result_.get(hydrKey).values()){
+          for (Hashtable<String,FattyAcidVO> sameDb : sameC.values()) {
+            for (FattyAcidVO fa : sameDb.values()) {
+              fa.correctChainType_(LipidomicsConstants.CHAIN_TYPE_LCB);
+            }
+          }
+        }
 //        if (workbook.getSheetAt(sheetNumber).getSheetName().equalsIgnoreCase(FAS_SHEET_NAME)) sheet = workbook.getSheetAt(sheetNumber);
       }
       if (result_.size()==0) throw new RulesException("A long chain base library must contain at least one sheet starting with the hydroxylation code, followed by \""+LCB_SHEET_SUFFIX+"\", e.g. d"+LCB_SHEET_SUFFIX+"! The lib "+inputFile_.getName()+" has not!");
@@ -163,7 +171,7 @@ public class LCBLibParser extends FALibParser
               if (formulaCat.containsKey("O")) oxygens = formulaCat.get("O");
               oxygens += hydroxyDifference;
               formulaCat.put("O", oxygens);
-              FattyAcidVO chainVO = new FattyAcidVO(otherFA.getPrefix(), otherFA.getcAtoms(), otherFA.getDoubleBonds(), otherFA.getMass()+hydroxyDifference*oxygenMass, StaticUtils.getFormulaInHillNotation(formulaCat, true));
+              FattyAcidVO chainVO = new FattyAcidVO(LipidomicsConstants.CHAIN_TYPE_LCB, otherFA.getPrefix(), otherFA.getcAtoms(), otherFA.getDoubleBonds(),i, otherFA.getMass()+hydroxyDifference*oxygenMass, StaticUtils.getFormulaInHillNotation(formulaCat, true));
               dbsRes.put(prefix, chainVO);
             }
             cAtomsRes.put(dbs, dbsRes);
@@ -179,4 +187,13 @@ public class LCBLibParser extends FALibParser
       try{myxls.close();}catch(Exception ex){};
     }
   }
+  
+  
+  /**
+   * @return hash containing the result of the parsing; first key: encoding of the number of hydroxylation sites; second key: number of carbon atoms; third key: number of double bonds
+   */
+  public Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> getResult(){
+    return result_;
+  }
+  
 }

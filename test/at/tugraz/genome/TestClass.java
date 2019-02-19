@@ -136,6 +136,7 @@ import at.tugraz.genome.lda.exception.AlexTargetlistParserException;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.LMException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.FragmentCalculator;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
@@ -150,8 +151,10 @@ import at.tugraz.genome.lda.msn.vos.MSnDebugVO;
 import at.tugraz.genome.lda.parser.MzXMLMergerForWaters;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
+import at.tugraz.genome.lda.quantification.LipidomicsChromatogram;
 import at.tugraz.genome.lda.quantification.LipidomicsDefines;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
+import at.tugraz.genome.lda.quantification.SavGolJNI;
 import at.tugraz.genome.lda.swing.AbsoluteQuantSettingsPanel;
 import at.tugraz.genome.lda.swing.BarChartPainter;
 import at.tugraz.genome.lda.swing.BatchQuantificationTable;
@@ -176,6 +179,7 @@ import at.tugraz.genome.maspectras.parser.spectrummill.vos.ChemicalFormulaVO;
 import at.tugraz.genome.maspectras.parser.spectrummill.vos.SmChemicalElementVO;
 import at.tugraz.genome.maspectras.parser.spectrummill.vos.SmIsotopeVO;
 import at.tugraz.genome.maspectras.quantification.CgAreaStatus;
+import at.tugraz.genome.maspectras.quantification.CgChromatogram;
 import at.tugraz.genome.maspectras.quantification.CgDefines;
 import at.tugraz.genome.maspectras.quantification.CgException;
 import at.tugraz.genome.maspectras.quantification.CgIAddScan;
@@ -375,6 +379,8 @@ public class TestClass extends JApplet implements AddScan
     //this.groupAlexResultsByRt();
     //generateSphingolipidMassList();
     //parseLCBList();
+    //replicateCudaBug();
+    detectMSnWithLCB();
   }
 
   private void testExportPanel()
@@ -876,7 +882,7 @@ public class TestClass extends JApplet implements AddScan
     ElementConfigParser parser = new ElementConfigParser("elementconfig.xml");
     try {
       parser.parse();
-      System.out.println(parser.calculateTheoreticalMass("C25 H50 N1 O6 P1", false));
+      System.out.println(parser.calculateTheoreticalMass("C5 H11 O5 P1 N1", false));
       //System.out.println(parser.calculateTheoreticalMass("C44 H83 O8 P1 N1", false));
     }
     catch (SpectrummillParserException e) {
@@ -1790,7 +1796,8 @@ public class TestClass extends JApplet implements AddScan
       }
       mergedParams.put(lClass, analsMerged);
     }
-    QuantificationResult mergedResults = new QuantificationResult(mergedParams,result1.getConstants(),mergedLevels);
+    QuantificationResult mergedResults = new QuantificationResult(mergedParams,result1.getConstants(),mergedLevels,Settings.getFaHydroxyEncoding(),
+        Settings.getLcbHydroxyEncoding());
     return mergedResults;
   }
   
@@ -2822,7 +2829,7 @@ public class TestClass extends JApplet implements AddScan
 //    for (Vector<Integer> combi : combis) System.out.println(combi);
   }
   
-  private void printResults(LipidParameterSet result){
+  private void printResults(LipidParameterSet result) throws LipidCombinameEncodingException{
     if (result instanceof LipidomicsMSnSet){
       LipidomicsMSnSet resultMSn = (LipidomicsMSnSet)result;
       System.out.println("Head-group size: "+resultMSn.getHeadGroupFragments().size());
@@ -3232,85 +3239,33 @@ public void testTabFile() throws Exception {
   }
 
   private void readMSnIdentification(){
-    String filePath = "D:\\lipidomics\\20150617\\05_Wolfrum_pos.xlsx";
+    //String filePath = "C:\\Sphingolipids\\dataStandardsPrelim\\20190111\\positive\\01092018 CER and SPH Mixes positive-10uM MIX 1_Cer_test_pos.xlsx";
+    String filePath = "C:\\data\\BiologicalExperiment\\Orbitrap_CID\\positive\\002_liver2-1_Orbitrap_CID_pos_positive.xlsx";
     try {
       Hashtable<String,Boolean> showMods = new  Hashtable<String,Boolean>();
       QuantificationResult result = LDAResultReader.readResultFile(filePath, showMods);
-//      for (String cl : showMods.keySet()) System.out.println(cl+" ; "+showMods.get(cl));
-      for (String key : result.getIdentifications().keySet()){
-        for (LipidParameterSet set : result.getIdentifications().get(key)){
-          if (!(set instanceof LipidomicsMSnSet)) continue;
-          LipidomicsMSnSet msn = (LipidomicsMSnSet)set;
-          if (key.equalsIgnoreCase("DG") && set.getNameStringWithoutRt().equalsIgnoreCase("IS40:10")){
-            Hashtable<String,Hashtable<Integer,Integer>> posDef = msn.getPositionDefinition();
-            Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>> posEv = msn.getPositionEvidence();
-            for (String combi : posDef.keySet()){
-              System.out.println(combi);
-              Hashtable<Integer,Integer> pd = posDef.get(combi);
-              Hashtable<Integer,Vector<IntensityPositionVO>> pev = posEv.get(combi);
-              for (Integer order : pd.keySet()){
-                System.out.println(order+": "+pd.get(order)+";"+pev.get(pd.get(order)+1).size());
-                if (!pev.containsKey(pd.get(order)+1)) continue;
-                for (IntensityPositionVO intPos : pev.get(pd.get(order)+1)){
-                  System.out.println(intPos.getReadableRuleInterpretation());
-                }
-              }
-            }
-          }
-//          System.out.println(msn.getNameString());
-//          for (Object nameObject : msn.getMSnIdentificationNames()){
-//            String identificationString = "";
-//            double area = 0d;
-//            if (nameObject instanceof Vector){
-//              area = msn.getRelativeIntensity(((Vector<String>)nameObject).get(0))*((double)msn.Area);
-//              for (String name : (Vector<String>)nameObject){
-//                identificationString+=name+";";
-//              }
-//              identificationString = identificationString.substring(0,identificationString.length()-1);
-//            }else{
-//              String name = (String) nameObject;
-//              identificationString = name;
-//              if (msn.getStatus()==LipidomicsMSnSet.HEAD_GROUP_DETECTED)area = msn.Area;
-//              else area = msn.getRelativeIntensity(name)*((double)msn.Area);
-//            }
-//            System.out.println("  "+identificationString+" ; "+area);
-//          }
-          
-//          for (IntensityRuleVO rule : msn.getHeadIntensityRules().values()){
-//            System.out.println(rule);
-//            if (rule.getBiggerName().equalsIgnoreCase(IntensityRuleVO.BASEPEAK_NAME)||rule.getSmallerName().equalsIgnoreCase(IntensityRuleVO.BASEPEAK_NAME)){
-//              System.out.println("BASE_PEAK: "+msn.getBasePeak(rule));
-//            }
-//          }
-//          for (String fragmentName : msn.getHeadGroupFragments().keySet()){
-//            System.out.println("     "+fragmentName+": "+msn.getHeadGroupFragments().get(fragmentName).Area);
-//          }
-//          for (String fa : msn.getChainFragments().keySet()){
-//            System.out.println("      FA: "+fa);
-//            Hashtable<String,CgProbe> fragments = msn.getChainFragments().get(fa);
-//            for (String fragmentName : fragments.keySet()){
-//              System.out.println("     "+fragmentName+": "+fragments.get(fragmentName).Area);
-//            }            
-//          }
-//          for (String fa : msn.getChainIntensityRules().keySet()){
-//            System.out.println("      FA: "+fa);
-//            Hashtable<String,IntensityChainVO> rules = msn.getChainIntensityRules().get(fa);
-//            for (String rule : rules.keySet()){
-//              System.out.println("     "+rule);
-//            }            
-//          }
-//          for (String combi : msn.getPositionEvidence().keySet()){
-//            System.out.println("  "+combi);
-//            Hashtable<Integer,Vector<IntensityPositionVO>> poss = msn.getPositionEvidence().get(combi);
-//            for (Integer pos : poss.keySet()){
-//              System.out.println("    "+pos);
-//              for (IntensityPositionVO rule : poss.get(pos)){
-//                System.out.println("          "+rule);
+//      for (String key : result.getIdentifications().keySet()){
+//        for (LipidParameterSet set : result.getIdentifications().get(key)){
+//          if (!(set instanceof LipidomicsMSnSet)) continue;
+//          LipidomicsMSnSet msn = (LipidomicsMSnSet)set;
+//          if (key.equalsIgnoreCase("DG") && set.getNameStringWithoutRt().equalsIgnoreCase("IS40:10")){
+//            Hashtable<String,Hashtable<Integer,Integer>> posDef = msn.getPositionDefinition();
+//            Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>> posEv = msn.getPositionEvidence();
+//            for (String combi : posDef.keySet()){
+//              System.out.println(combi);
+//              Hashtable<Integer,Integer> pd = posDef.get(combi);
+//              Hashtable<Integer,Vector<IntensityPositionVO>> pev = posEv.get(combi);
+//              for (Integer order : pd.keySet()){
+//                System.out.println(order+": "+pd.get(order)+";"+pev.get(pd.get(order)+1).size());
+//                if (!pev.containsKey(pd.get(order)+1)) continue;
+//                for (IntensityPositionVO intPos : pev.get(pd.get(order)+1)){
+//                  System.out.println(intPos.getReadableRuleInterpretation());
+//                }
 //              }
 //            }
 //          }
-        }
-      }
+//        }
+//      }
     }
     catch (ExcelInputFileException e) {
       // TODO Auto-generated catch block
@@ -7981,7 +7936,7 @@ public void testTabFile() throws Exception {
   }
 
   
-  private Object[] checkLDAEvidence(String correct, LipidomicsMSnSet lda){
+  private Object[] checkLDAEvidence(String correct, LipidomicsMSnSet lda) throws LipidCombinameEncodingException{
     int evidence = 0;
     String name = "not reported";
     if (lda!=null){
@@ -8366,7 +8321,7 @@ public void testTabFile() throws Exception {
             nameString = nameString.replaceAll("/", "_");
             ////if (quant.getAnalyteClass().equalsIgnoreCase("DG")&&set.getModificationName().equalsIgnoreCase("NH4"))nameString+="_-";
             for (String key : ldaMs2Evidence.keySet()){
-              if (StaticUtils.isAPermutedVersion(key, nameString)){
+              if (StaticUtils.isAPermutedVersion(key, nameString,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)){
                 nameString = key;
                 sameMs2Ident = ldaMs2Evidence.get(key);
               }
@@ -8492,7 +8447,7 @@ public void testTabFile() throws Exception {
               toCompare += "_-";
             }
                                                                                                                              
-            if (!StaticUtils.isAPermutedVersion(keyWOSlash, toCompare)) continue;
+            if (!StaticUtils.isAPermutedVersion(keyWOSlash, toCompare,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)) continue;
             ldaOKAccordingToReference.put(ldaName, ldaName);
             boolean nameDidNotChange = false;
             for (LipidomicsMSnSet set : ldaHits){              
@@ -8547,7 +8502,7 @@ public void testTabFile() throws Exception {
           double lbMs2Prob = 0d;
           if (ident!=null){
             for (String lbName : ident.getIdentifications(info.getSns())){     
-              if (!StaticUtils.isAPermutedVersion(keyWOSlash, lbName.replaceAll("/", "_"))) continue;
+              if (!StaticUtils.isAPermutedVersion(keyWOSlash, lbName.replaceAll("/", "_"),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)) continue;
               lbNames.put(lbName, lbName);
               lbOKAccordingToReference.put(lbName, lbName);
               double prob = ident.getHighestProbability(lbName, info.getSns());
@@ -8647,7 +8602,7 @@ public void testTabFile() throws Exception {
         //check if LipidBlast finds the FP too
         if (ident!=null && (lbMS1Evidence<-1  || lbMS1Evidence>0)){
           for (String lbNm : ident.getIdentifications(info.getSns())){
-            if (!StaticUtils.isAPermutedVersion(ldaKey, lbNm.replaceAll("/", "_"))) continue;
+            if (!StaticUtils.isAPermutedVersion(ldaKey, lbNm.replaceAll("/", "_"),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)) continue;
             lbMS2Evidence = LdaLBLASTCompareVO.FALSE_POSITIVE;
             lbNames.put(lbNm, lbNm);
             lbOKAccordingToReference.put(lbNm, lbNm);
@@ -8683,7 +8638,7 @@ public void testTabFile() throws Exception {
         double prob = 0d;
         String key = lbNm;
         for (String other : lbNames.keySet()){
-          if (StaticUtils.isAPermutedVersion(other.replaceAll("/", "_"),lbNm.replaceAll("/","_"))){
+          if (StaticUtils.isAPermutedVersion(other.replaceAll("/", "_"),lbNm.replaceAll("/","_"),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)){
             nameVariations = lbNameVariations.get(other);
             rts = rtMS2LBs.get(other);
             key = other;
@@ -9632,7 +9587,7 @@ public void testTabFile() throws Exception {
     return false;
   }
   
-  private void detectLBNotDetected(){
+  private void detectLBNotDetected() throws LipidCombinameEncodingException{
     Hashtable<String,Vector<String>> detectedByLB = new Hashtable<String,Vector<String>>();
     Hashtable<String,Hashtable<String,Vector<SimpleValueObject>>> foundByLDAOnly = new Hashtable<String,Hashtable<String,Vector<SimpleValueObject>>>();
     String baseDir = "L:\\Biological_Experiment_LDA2\\LipidBlast\\";
@@ -9896,9 +9851,9 @@ public void testTabFile() throws Exception {
     return detectedAndNotDetected;
   }
   
-  private int isFACombiInList(String structure, Vector<String> list){
+  private int isFACombiInList(String structure, Vector<String> list) throws LipidCombinameEncodingException{
     for (int i=0; i!=list.size(); i++){
-      if (StaticUtils.isAPermutedVersion(structure, list.get(i))) return i;
+      if (StaticUtils.isAPermutedVersion(structure, list.get(i),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)) return i;
     }
     return -1;
   }
@@ -12033,7 +11988,7 @@ public void testTabFile() throws Exception {
             if (foundStructures.containsKey(structure)) found = true;
             else {
               for (String foundStructure : foundStructures.keySet()){
-                if (StaticUtils.isAPermutedVersion(structure, foundStructure)){
+                if (StaticUtils.isAPermutedVersion(structure, foundStructure,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)){
                   found = true;
                   break;
                 }
@@ -12064,7 +12019,7 @@ public void testTabFile() throws Exception {
             if (coveredMS2Species.containsKey(structure)) found = true;
             else {
               for (String foundStructure : coveredMS2Species.keySet()){
-                if (StaticUtils.isAPermutedVersion(structure, foundStructure)){
+                if (StaticUtils.isAPermutedVersion(structure, foundStructure,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)){
                   found = true;
                   break;
                 }
@@ -12237,7 +12192,7 @@ public void testTabFile() throws Exception {
                     //this is to prevent an exclusion, if only FPs are detected
                     boolean matchesACorrectStructure = false;
                     for (String posStruct : posStructures.keySet()){
-                      if (StaticUtils.isAPermutedVersion(faId, posStruct.replaceAll("/", "_"))){
+                      if (StaticUtils.isAPermutedVersion(faId, posStruct.replaceAll("/", "_"),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)){
                         matchesACorrectStructure = true;
                         break;
                       }
@@ -12256,7 +12211,7 @@ public void testTabFile() throws Exception {
                     boolean correctStruct = false;
                     for (Object msnNames : msn.getMSnIdentificationNames()){
                       String faId = getFaId(msnNames,machineName,className,mod,isExperiment1);
-                      if (StaticUtils.isAPermutedVersion(faId, struct.replaceAll("/", "_"))){
+                      if (StaticUtils.isAPermutedVersion(faId, struct.replaceAll("/", "_"),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)){
                         correctStruct = true;
                         structureFound = true;
                         break;
@@ -12332,7 +12287,7 @@ public void testTabFile() throws Exception {
                 if (containsStructures){
                   for (Object msnNames : msn.getMSnIdentificationNames()){
                     String faId = getFaId(msnNames,machineName,className,mod,isExperiment1);
-                    boolean isPermutedVersion = StaticUtils.isAPermutedVersion(faId, struct.replaceAll("/", "_"));
+                    boolean isPermutedVersion = StaticUtils.isAPermutedVersion(faId, struct.replaceAll("/", "_"),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
                     if (!isPermutedVersion && !isExperiment1) continue;
                     String nameString = "";
                     if (msnNames instanceof Vector){
@@ -12891,7 +12846,7 @@ public void testTabFile() throws Exception {
           for (String molSpecies:speciesDetections.keySet()){
             String one = molSpecies.replaceAll("/", "_").substring("DG ".length());
             String two = identVO.molecularSpecies.replaceAll("/", "_").substring("DG ".length());
-            if (!StaticUtils.isAPermutedVersion(one, two)) continue;
+            if (!StaticUtils.isAPermutedVersion(one, two,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)) continue;
             identVO.molecularSpecies = molSpecies;
             structureIdents = speciesDetections.get(identVO.molecularSpecies);
             break;
@@ -13178,7 +13133,7 @@ public void testTabFile() throws Exception {
               String woPos = molSpeciesId.replaceAll("/", "_");
               for (String oneMol : molSpeciesGrouped.keySet()){
                 String otherWoPos = oneMol.replaceAll("/", "_");
-                if (!StaticUtils.isAPermutedVersion(woPos.substring(lipidClass.length()+1),otherWoPos.substring(lipidClass.length()+1))) continue;
+                if (!StaticUtils.isAPermutedVersion(woPos.substring(lipidClass.length()+1),otherWoPos.substring(lipidClass.length()+1),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)) continue;
                 belongToOneMolSpecies = molSpeciesGrouped.get(oneMol);
                 molSpeciesId = oneMol;
               }
@@ -13267,7 +13222,7 @@ public void testTabFile() throws Exception {
                   }else{
                     String otherStructure = structure;
                     if (unAssignedSns.size()>0) otherStructure = unAssignedSns.keySet().iterator().next();
-                    if (!StaticUtils.isAPermutedVersion(structure.substring(lipidClass.length()+1), otherStructure.substring(lipidClass.length()+1)))
+                    if (!StaticUtils.isAPermutedVersion(structure.substring(lipidClass.length()+1), otherStructure.substring(lipidClass.length()+1),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS))
                       throw new Exception ("There cannot be more than one FA combination for an unassigned structure "+platformNames.get(key)+" "+structure+"for molecular species");
                     foundSns++;
                     unAssignedSns.put(otherStructure, foundSns);
@@ -13292,7 +13247,7 @@ public void testTabFile() throws Exception {
               String idToChange = null;
               if (unAssignedSns.size()>0) idToChange = unAssignedSns.keySet().iterator().next();
               else idToChange = assignedSns.keySet().iterator().next().replaceAll("/", "_");
-              correctId = lipidClass+" "+StaticUtils.sortFASequenceUnassigned(idToChange.substring(lipidClass.length()+1));
+              correctId = lipidClass+" "+StaticUtils.sortFASequenceUnassigned(idToChange.substring(lipidClass.length()+1),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
             }
             correctId = checkForKnownManualCorrections(correctId);
             numberOfDetections.put(correctId, identified);
@@ -13396,7 +13351,7 @@ public void testTabFile() throws Exception {
                   String one = novMol.replaceAll("_0:0", "_-").replaceAll("\\(", "").replaceAll("\\)", "").replaceAll("/", "_");
                   if (lipidClass.equalsIgnoreCase("P-PE")) one = one.substring("PE".length()+1);
                   else one = one.substring(lipidClass.length()+1);
-                  if (StaticUtils.isAPermutedVersion(one, two)){
+                  if (StaticUtils.isAPermutedVersion(one, two,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)){
                     if (lipidClass.equalsIgnoreCase("DG")){
                       for (SingleAdductIdentificationVO oneAdduct : singleAdducts){
                         for (String structure : oneAdduct.annotatedStructures.values()){
@@ -13530,34 +13485,34 @@ public void testTabFile() throws Exception {
     cell.setCellValue(value);
   }
   
-  private String checkForKnownManualCorrections(String id){
+  private String checkForKnownManualCorrections(String id) throws LipidCombinameEncodingException{
     if (id.startsWith("PC")){
       String fas = id.substring("PC ".length()).replaceAll("/", "_");
-      if (StaticUtils.isAPermutedVersion(fas, "16:1_18:3"))
+      if (StaticUtils.isAPermutedVersion(fas, "16:1_18:3",LipidomicsConstants.CHAIN_SEPARATOR_NO_POS))
         return "PC 16:1_18:3";
-      else if (StaticUtils.isAPermutedVersion(fas, "15:0_20:3"))
+      else if (StaticUtils.isAPermutedVersion(fas, "15:0_20:3",LipidomicsConstants.CHAIN_SEPARATOR_NO_POS))
         return "PC 15:0_20:3";
-      else if (StaticUtils.isAPermutedVersion(fas, "16:0_20:1"))
+      else if (StaticUtils.isAPermutedVersion(fas, "16:0_20:1",LipidomicsConstants.CHAIN_SEPARATOR_NO_POS))
         return "PC 16:0_20:1";
-      else if (StaticUtils.isAPermutedVersion(fas, "16:1_20:5"))
+      else if (StaticUtils.isAPermutedVersion(fas, "16:1_20:5",LipidomicsConstants.CHAIN_SEPARATOR_NO_POS))
         return "PC 16:1_20:5";
-      else if (StaticUtils.isAPermutedVersion(fas, "18:0_20:6"))
+      else if (StaticUtils.isAPermutedVersion(fas, "18:0_20:6",LipidomicsConstants.CHAIN_SEPARATOR_NO_POS))
         return "PC 18:0_20:6";
-      else if (StaticUtils.isAPermutedVersion(fas, "17:1_22:6"))
+      else if (StaticUtils.isAPermutedVersion(fas, "17:1_22:6",LipidomicsConstants.CHAIN_SEPARATOR_NO_POS))
         return "PC 17:1_22:6";
-      else if (StaticUtils.isAPermutedVersion(fas, "18:1_22:5"))
+      else if (StaticUtils.isAPermutedVersion(fas, "18:1_22:5",LipidomicsConstants.CHAIN_SEPARATOR_NO_POS))
         return "PC 18:1_22:5";
-      else if (StaticUtils.isAPermutedVersion(fas, "20:4_20:5"))
+      else if (StaticUtils.isAPermutedVersion(fas, "20:4_20:5",LipidomicsConstants.CHAIN_SEPARATOR_NO_POS))
         return "PC 20:4_20:5";     
     }else if (id.startsWith("PE")){
       String fas = id.substring("PE ".length()).replaceAll("/", "_");
-      if (StaticUtils.isAPermutedVersion(fas, "18:1_21:6"))
+      if (StaticUtils.isAPermutedVersion(fas, "18:1_21:6",LipidomicsConstants.CHAIN_SEPARATOR_NO_POS))
         return "PE 18:1_21:6";
     }else if (id.startsWith("PG")){
       String fas = id.substring("PG ".length()).replaceAll("/", "_");
-      if (StaticUtils.isAPermutedVersion(fas, "18:2_22:6"))
+      if (StaticUtils.isAPermutedVersion(fas, "18:2_22:6",LipidomicsConstants.CHAIN_SEPARATOR_NO_POS))
         return "PG 18:2_22:6";
-      else if (StaticUtils.isAPermutedVersion(fas, "20:4_22:6"))
+      else if (StaticUtils.isAPermutedVersion(fas, "20:4_22:6",LipidomicsConstants.CHAIN_SEPARATOR_NO_POS))
         return "PG 20:4_22:6";
     }
     return id;
@@ -14278,7 +14233,7 @@ public void testTabFile() throws Exception {
 
       LipidomicsAnalyzer lAnalyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
       setStandardParameters(lAnalyzer);
-      Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> results = lAnalyzer.processPrmData(mz, charge, msLevel, className, modName, analyteName, formula);
+      Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> results = lAnalyzer.processPrmData(mz, charge, msLevel, className, modName, analyteName, formula,0);
       for (Integer hitNumber : results.keySet()){
         for (Integer isoNr: results.get(hitNumber).keySet()){
           for (CgProbe probe : results.get(hitNumber).get(isoNr)){
@@ -14450,7 +14405,7 @@ public void testTabFile() throws Exception {
       parser.parse();
       
       //for sphingoid backbone chain library
-      String quantFile = "C:\\Development\\LipidDataAnalyzer\\fattyAcids\\dLCB.xlsx";
+      //String quantFile = "C:\\Development\\LipidDataAnalyzer\\fattyAcids\\dLCB.xlsx";
       
       //for sphingoid bases
       //String quantFile = "C:\\Sphingolipids\\massLists\\tSphBase_positive.xlsx";
@@ -14459,8 +14414,9 @@ public void testTabFile() throws Exception {
       
       //for Cer
       //String quantFile = "C:\\Sphingolipids\\massLists\\mCer_negative.xlsx";
-      //String quantFile = "C:\\Sphingolipids\\massLists\\dCer_positive.xlsx";
+      //String quantFile = "C:\\Sphingolipids\\massLists\\dCer_negative.xlsx";
       //String quantFile = "C:\\Sphingolipids\\massLists\\tCer_positive.xlsx";
+      //String quantFile = "C:\\Sphingolipids\\massLists\\qCer_positive.xlsx";
       
       //for Cer1P
       //String quantFile = "C:\\Sphingolipids\\massLists\\mCer1P_negative.xlsx";
@@ -14479,7 +14435,7 @@ public void testTabFile() throws Exception {
 
       //for HexCer
       //String quantFile = "C:\\Sphingolipids\\massLists\\mHexCer_negative.xlsx";
-      //String quantFile = "C:\\Sphingolipids\\massLists\\dHexCer_negative.xlsx";
+      String quantFile = "C:\\Sphingolipids\\massLists\\dHexCer_positive.xlsx";
       //String quantFile = "C:\\Sphingolipids\\massLists\\tHexCer_negative.xlsx";
 
       //for LacCer
@@ -14495,7 +14451,7 @@ public void testTabFile() throws Exception {
       XSSFCellStyle headerStyle = getHeaderStyle(resultWorkbook);
       
       //for sphingoid backbone chain library
-      Sheet resultSheet = resultWorkbook.createSheet("dLCB");
+      //Sheet resultSheet = resultWorkbook.createSheet("dLCB");
       
       //for sphingoid bases
       //Sheet resultSheet = resultWorkbook.createSheet("mSphBase");
@@ -14506,6 +14462,7 @@ public void testTabFile() throws Exception {
       //Sheet resultSheet = resultWorkbook.createSheet("mCer");
       //Sheet resultSheet = resultWorkbook.createSheet("dCer");
       //Sheet resultSheet = resultWorkbook.createSheet("tCer");
+      //Sheet resultSheet = resultWorkbook.createSheet("qCer");
 
       //for Cer1P
       //Sheet resultSheet = resultWorkbook.createSheet("mCer1P");
@@ -14524,7 +14481,7 @@ public void testTabFile() throws Exception {
 
       //for HexCer
       //Sheet resultSheet = resultWorkbook.createSheet("mHexCer");
-      //Sheet resultSheet = resultWorkbook.createSheet("dHexCer");
+      Sheet resultSheet = resultWorkbook.createSheet("dHexCer");
       //Sheet resultSheet = resultWorkbook.createSheet("tHexCer");
 
       //for LacCer
@@ -14563,9 +14520,9 @@ public void testTabFile() throws Exception {
       label.setCellValue("D");
       label.setCellStyle(headerStyle);
       //for sphingoid backbone chain library
-      label = outRow.createCell(9,HSSFCell.CELL_TYPE_STRING);
-      label.setCellValue("mass");
-      label.setCellStyle(headerStyle);
+//      label = outRow.createCell(9,HSSFCell.CELL_TYPE_STRING);
+//      label.setCellValue("mass");
+//      label.setCellStyle(headerStyle);
       //for all others
       label = outRow.createCell(9,HSSFCell.CELL_TYPE_STRING);
       label.setCellValue("M");
@@ -14573,15 +14530,15 @@ public void testTabFile() throws Exception {
 
       
       //for positive ion mode data
-//      label = outRow.createCell(10,HSSFCell.CELL_TYPE_STRING);      
-//      label.setCellValue("mass(form[+H] name[H])");
-//      label.setCellStyle(headerStyle);
-//      label = outRow.createCell(11,HSSFCell.CELL_TYPE_STRING);      
-//      label.setCellValue("mass(form[-OH] name[-OH])");
-//      label.setCellStyle(headerStyle);
-//      label = outRow.createCell(12,HSSFCell.CELL_TYPE_STRING);      
-//      label.setCellValue("mass(form[+Na] name[Na])");
-//      label.setCellStyle(headerStyle);
+      label = outRow.createCell(10,HSSFCell.CELL_TYPE_STRING);      
+      label.setCellValue("mass(form[+H] name[H])");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(11,HSSFCell.CELL_TYPE_STRING);      
+      label.setCellValue("mass(form[-OH] name[-OH])");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(12,HSSFCell.CELL_TYPE_STRING);      
+      label.setCellValue("mass(form[+Na] name[Na])");
+      label.setCellStyle(headerStyle);
       //for negative ion mode data
 //      label = outRow.createCell(10,HSSFCell.CELL_TYPE_STRING);      
 //      label.setCellValue("mass(form[-H] name[-H])");
@@ -14594,23 +14551,23 @@ public void testTabFile() throws Exception {
 //      label.setCellStyle(headerStyle);
       
       //for all except for sphingoid backbone chain library
-//      label = outRow.createCell(13,HSSFCell.CELL_TYPE_STRING);
-//      label.setCellValue("tR (min)");
-//      label.setCellStyle(headerStyle);
+      label = outRow.createCell(13,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("tR (min)");
+      label.setCellStyle(headerStyle);
       rowCount++;
       
       Hashtable<Integer,Integer> cDbsCombi = new Hashtable<Integer,Integer>();
 
       //for sphingoid backbone chain library
-      for (int i=10; i!=21; i++) {
-        for (int j=0; j!=5; j++) {
-          if (j>4 && i<12)
-            continue;
-          if (j>5 && i<17)
-            continue;
-          cDbsCombi.put(i, j);
-        }
-      }
+//      for (int i=10; i!=21; i++) {
+//        for (int j=0; j!=5; j++) {
+//          if (j>4 && i<12)
+//            continue;
+//          if (j>5 && i<17)
+//            continue;
+//          cDbsCombi.put(i, j);
+//        }
+//      }
       
       //for sphingoid bases, LSM and S1P
 //      for (int i=2; i!=31; i++) {
@@ -14622,36 +14579,36 @@ public void testTabFile() throws Exception {
 //      }
       
       //for Cer, Cer1P, SM and HexCer
-//      for (int i=20; i!=49; i++) {
-//        for (int j=0; j!=8; j++) {
-//          if (j>1 && i<26)
-//            continue;
-//          else if (j>2 && i<28)
-//            continue;
-//          else if (j>3 && i<32)
-//            continue;
-//          else if (j>4 && i<34)
-//            continue;
-//          else if (j>5 && i<36)
-//            continue;
-//          cDbsCombi.put(i, j);
-//        }
-//      }
+      for (int i=20; i!=49; i++) {
+        for (int j=0; j!=8; j++) {
+          if (j>1 && i<26)
+            continue;
+          else if (j>2 && i<28)
+            continue;
+          else if (j>3 && i<32)
+            continue;
+          else if (j>4 && i<34)
+            continue;
+          else if (j>5 && i<36)
+            continue;
+          cDbsCombi.put(i, j);
+        }
+      }
       
       //for sphingoid backbone chain library
-      for (int cAtoms=10; cAtoms<21; cAtoms+=1){
+      //for (int cAtoms=10; cAtoms<21; cAtoms+=1){
       
       //for sphingoid bases, LSM and S1P
       //for (int cAtoms=2; cAtoms<31; cAtoms+=1){
       //for Cer, Cer1P, SM and HexCer
-      //for (int cAtoms=20; cAtoms<49; cAtoms+=1){
+      for (int cAtoms=20; cAtoms<49; cAtoms+=1){
         int dbs = 0;
         int dbsMax = cDbsCombi.get(cAtoms)+1;
         while (dbs<dbsMax){
         //for sphingoid backbone chain library
-          int totalC = cAtoms;
-          int hAtoms = totalC*2-2*dbs+3;        
-          int oAtoms = 2;
+//          int totalC = cAtoms;
+//          int hAtoms = totalC*2-2*dbs+3;        
+//          int oAtoms = 2;
 
           //for Sphingoid bases
         //int totalC = cAtoms;
@@ -14672,6 +14629,8 @@ public void testTabFile() throws Exception {
           //int oAtoms = 3;
           //for tCer
           //int oAtoms = 4;
+          //for qCer
+          //int oAtoms = 5;
 
         //for Cer1P
         //int totalC = cAtoms;
@@ -14704,12 +14663,12 @@ public void testTabFile() throws Exception {
 //          int oAtoms = 6;
 
           //for HexCer
-//          int totalC = cAtoms+6;
-//          int hAtoms = totalC*2-2*dbs-1;
+          int totalC = cAtoms+6;
+          int hAtoms = totalC*2-2*dbs-1;
 //          //for mHexCer
 //          //int oAtoms = 7;
 //          //for dHexCer
-//          //int oAtoms = 8;
+          int oAtoms = 8;
 //          //for tHexCer
 //          int oAtoms = 9;
 
@@ -14741,15 +14700,15 @@ public void testTabFile() throws Exception {
           double massNeutral = parser.getElementDetails("C").getMonoMass()*((double)totalC)+parser.getElementDetails("H").getMonoMass()*((double)hAtoms)+
               parser.getElementDetails("O").getMonoMass()*((double)oAtoms)+parser.getElementDetails("P").getMonoMass()*((double)pAtoms)+
               parser.getElementDetails("N").getMonoMass()*((double)nAtoms)+parser.getElementDetails("D").getMonoMass()*((double)dAtoms);
-//          double massCharged = massNeutral+parser.getElementDetails("H").getMonoMass()+parser.getElementDetails("C").getMonoMass()+2d*parser.getElementDetails("O").getMonoMass();
+          double massCharged = massNeutral+parser.getElementDetails("H").getMonoMass()+parser.getElementDetails("C").getMonoMass()+2d*parser.getElementDetails("O").getMonoMass();
           
           //for positive ion mode
           //protonated
-//          double massH = massNeutral+parser.getElementDetails("h").getMonoMass();
-//          //water loss
-//          double massOH = massNeutral+parser.getElementDetails("h").getMonoMass()-2*parser.getElementDetails("H").getMonoMass()-parser.getElementDetails("O").getMonoMass();
-//          //sodiated
-//          double massNa = massNeutral+parser.getElementDetails("na").getMonoMass();
+          double massH = massNeutral+parser.getElementDetails("h").getMonoMass();
+          //water loss
+          double massOH = massNeutral+parser.getElementDetails("h").getMonoMass()-2*parser.getElementDetails("H").getMonoMass()-parser.getElementDetails("O").getMonoMass();
+          //sodiated
+          double massNa = massNeutral+parser.getElementDetails("na").getMonoMass();
 
           //for negative ion mode
           //deprotonated
@@ -14782,12 +14741,12 @@ public void testTabFile() throws Exception {
           label.setCellValue(massNeutral);
           
           //positive
-//          label = outRow.createCell(10,HSSFCell.CELL_TYPE_NUMERIC);
-//          label.setCellValue(massH);
-//          label = outRow.createCell(11,HSSFCell.CELL_TYPE_NUMERIC);
-//          label.setCellValue(massOH);
-//          label = outRow.createCell(12,HSSFCell.CELL_TYPE_NUMERIC);
-//          label.setCellValue(massNa);
+          label = outRow.createCell(10,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(massH);
+          label = outRow.createCell(11,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(massOH);
+          label = outRow.createCell(12,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(massNa);
           //negative
 //        label = outRow.createCell(10,HSSFCell.CELL_TYPE_NUMERIC);
 //        label.setCellValue(massH);
@@ -14821,5 +14780,1698 @@ public void testTabFile() throws Exception {
     }
 //    parser.
   }
+  
+  private void replicateCudaBug() {
+    CgChromatogram cgc = new CgChromatogram(800);
+    cgc.Value[0][0] = 439.92114f;
+    cgc.Value[0][1] = 416666.66f;
+    cgc.Value[1][0] = 439.92615f;
+    cgc.Value[1][1] = 0.0f;
+    cgc.Value[2][0] = 439.93115f;
+    cgc.Value[2][1] = 0.0f;
+    cgc.Value[3][0] = 439.93616f;
+    cgc.Value[3][1] = 0.0f;
+    cgc.Value[4][0] = 439.94113f;
+    cgc.Value[4][1] = 0.0f;
+    cgc.Value[5][0] = 439.94614f;
+    cgc.Value[5][1] = 0.0f;
+    cgc.Value[6][0] = 439.95114f;
+    cgc.Value[6][1] = 0.0f;
+    cgc.Value[7][0] = 439.95615f;
+    cgc.Value[7][1] = 0.0f;
+    cgc.Value[8][0] = 439.96115f;
+    cgc.Value[8][1] = 0.0f;
+    cgc.Value[9][0] = 439.96616f;
+    cgc.Value[9][1] = 0.0f;
+    cgc.Value[10][0] = 439.97113f;
+    cgc.Value[10][1] = 0.0f;
+    cgc.Value[11][0] = 439.97614f;
+    cgc.Value[11][1] = 0.0f;
+    cgc.Value[12][0] = 439.98114f;
+    cgc.Value[12][1] = 0.0f;
+    cgc.Value[13][0] = 439.98615f;
+    cgc.Value[13][1] = 0.0f;
+    cgc.Value[14][0] = 439.99115f;
+    cgc.Value[14][1] = 0.0f;
+    cgc.Value[15][0] = 439.99615f;
+    cgc.Value[15][1] = 0.0f;
+    cgc.Value[16][0] = 440.00113f;
+    cgc.Value[16][1] = 0.0f;
+    cgc.Value[17][0] = 440.00613f;
+    cgc.Value[17][1] = 0.0f;
+    cgc.Value[18][0] = 440.01114f;
+    cgc.Value[18][1] = 0.0f;
+    cgc.Value[19][0] = 440.01614f;
+    cgc.Value[19][1] = 0.0f;
+    cgc.Value[20][0] = 440.02115f;
+    cgc.Value[20][1] = 0.0f;
+    cgc.Value[21][0] = 440.02615f;
+    cgc.Value[21][1] = 0.0f;
+    cgc.Value[22][0] = 440.03113f;
+    cgc.Value[22][1] = 0.0f;
+    cgc.Value[23][0] = 440.03613f;
+    cgc.Value[23][1] = 0.0f;
+    cgc.Value[24][0] = 440.04114f;
+    cgc.Value[24][1] = 83333.336f;
+    cgc.Value[25][0] = 440.04614f;
+    cgc.Value[25][1] = 0.0f;
+    cgc.Value[26][0] = 440.05115f;
+    cgc.Value[26][1] = 0.0f;
+    cgc.Value[27][0] = 440.05615f;
+    cgc.Value[27][1] = 0.0f;
+    cgc.Value[28][0] = 440.06116f;
+    cgc.Value[28][1] = 0.0f;
+    cgc.Value[29][0] = 440.06613f;
+    cgc.Value[29][1] = 0.0f;
+    cgc.Value[30][0] = 440.07114f;
+    cgc.Value[30][1] = 0.0f;
+    cgc.Value[31][0] = 440.07614f;
+    cgc.Value[31][1] = 0.0f;
+    cgc.Value[32][0] = 440.08115f;
+    cgc.Value[32][1] = 0.0f;
+    cgc.Value[33][0] = 440.08615f;
+    cgc.Value[33][1] = 0.0f;
+    cgc.Value[34][0] = 440.09116f;
+    cgc.Value[34][1] = 0.0f;
+    cgc.Value[35][0] = 440.09613f;
+    cgc.Value[35][1] = 0.0f;
+    cgc.Value[36][0] = 440.10114f;
+    cgc.Value[36][1] = 0.0f;
+    cgc.Value[37][0] = 440.10614f;
+    cgc.Value[37][1] = 0.0f;
+    cgc.Value[38][0] = 440.11115f;
+    cgc.Value[38][1] = 0.0f;
+    cgc.Value[39][0] = 440.11615f;
+    cgc.Value[39][1] = 0.0f;
+    cgc.Value[40][0] = 440.12115f;
+    cgc.Value[40][1] = 0.0f;
+    cgc.Value[41][0] = 440.12613f;
+    cgc.Value[41][1] = 0.0f;
+    cgc.Value[42][0] = 440.13113f;
+    cgc.Value[42][1] = 0.0f;
+    cgc.Value[43][0] = 440.13614f;
+    cgc.Value[43][1] = 0.0f;
+    cgc.Value[44][0] = 440.14114f;
+    cgc.Value[44][1] = 0.0f;
+    cgc.Value[45][0] = 440.14615f;
+    cgc.Value[45][1] = 0.0f;
+    cgc.Value[46][0] = 440.15115f;
+    cgc.Value[46][1] = 0.0f;
+    cgc.Value[47][0] = 440.15613f;
+    cgc.Value[47][1] = 0.0f;
+    cgc.Value[48][0] = 440.16113f;
+    cgc.Value[48][1] = 0.0f;
+    cgc.Value[49][0] = 440.16614f;
+    cgc.Value[49][1] = 0.0f;
+    cgc.Value[50][0] = 440.17114f;
+    cgc.Value[50][1] = 0.0f;
+    cgc.Value[51][0] = 440.17615f;
+    cgc.Value[51][1] = 0.0f;
+    cgc.Value[52][0] = 440.18115f;
+    cgc.Value[52][1] = 0.0f;
+    cgc.Value[53][0] = 440.18616f;
+    cgc.Value[53][1] = 0.0f;
+    cgc.Value[54][0] = 440.19113f;
+    cgc.Value[54][1] = 0.0f;
+    cgc.Value[55][0] = 440.19614f;
+    cgc.Value[55][1] = 0.0f;
+    cgc.Value[56][0] = 440.20114f;
+    cgc.Value[56][1] = 0.0f;
+    cgc.Value[57][0] = 440.20615f;
+    cgc.Value[57][1] = 0.0f;
+    cgc.Value[58][0] = 440.21115f;
+    cgc.Value[58][1] = 0.0f;
+    cgc.Value[59][0] = 440.21616f;
+    cgc.Value[59][1] = 0.0f;
+    cgc.Value[60][0] = 440.22113f;
+    cgc.Value[60][1] = 0.0f;
+    cgc.Value[61][0] = 440.22614f;
+    cgc.Value[61][1] = 0.0f;
+    cgc.Value[62][0] = 440.23114f;
+    cgc.Value[62][1] = 0.0f;
+    cgc.Value[63][0] = 440.23615f;
+    cgc.Value[63][1] = 0.0f;
+    cgc.Value[64][0] = 440.24115f;
+    cgc.Value[64][1] = 0.0f;
+    cgc.Value[65][0] = 440.24615f;
+    cgc.Value[65][1] = 0.0f;
+    cgc.Value[66][0] = 440.25113f;
+    cgc.Value[66][1] = 0.0f;
+    cgc.Value[67][0] = 440.25613f;
+    cgc.Value[67][1] = 0.0f;
+    cgc.Value[68][0] = 440.26114f;
+    cgc.Value[68][1] = 0.0f;
+    cgc.Value[69][0] = 440.26614f;
+    cgc.Value[69][1] = 0.0f;
+    cgc.Value[70][0] = 440.27115f;
+    cgc.Value[70][1] = 0.0f;
+    cgc.Value[71][0] = 440.27615f;
+    cgc.Value[71][1] = 0.0f;
+    cgc.Value[72][0] = 440.28113f;
+    cgc.Value[72][1] = 0.0f;
+    cgc.Value[73][0] = 440.28613f;
+    cgc.Value[73][1] = 0.0f;
+    cgc.Value[74][0] = 440.29114f;
+    cgc.Value[74][1] = 0.0f;
+    cgc.Value[75][0] = 440.29614f;
+    cgc.Value[75][1] = 0.0f;
+    cgc.Value[76][0] = 440.30115f;
+    cgc.Value[76][1] = 0.0f;
+    cgc.Value[77][0] = 440.30615f;
+    cgc.Value[77][1] = 0.0f;
+    cgc.Value[78][0] = 440.31116f;
+    cgc.Value[78][1] = 0.0f;
+    cgc.Value[79][0] = 440.31613f;
+    cgc.Value[79][1] = 0.0f;
+    cgc.Value[80][0] = 440.32114f;
+    cgc.Value[80][1] = 0.0f;
+    cgc.Value[81][0] = 440.32614f;
+    cgc.Value[81][1] = 0.0f;
+    cgc.Value[82][0] = 440.33115f;
+    cgc.Value[82][1] = 0.0f;
+    cgc.Value[83][0] = 440.33615f;
+    cgc.Value[83][1] = 0.0f;
+    cgc.Value[84][0] = 440.34116f;
+    cgc.Value[84][1] = 0.0f;
+    cgc.Value[85][0] = 440.34613f;
+    cgc.Value[85][1] = 0.0f;
+    cgc.Value[86][0] = 440.35114f;
+    cgc.Value[86][1] = 0.0f;
+    cgc.Value[87][0] = 440.35614f;
+    cgc.Value[87][1] = 0.0f;
+    cgc.Value[88][0] = 440.36115f;
+    cgc.Value[88][1] = 0.0f;
+    cgc.Value[89][0] = 440.36615f;
+    cgc.Value[89][1] = 0.0f;
+    cgc.Value[90][0] = 440.37115f;
+    cgc.Value[90][1] = 0.0f;
+    cgc.Value[91][0] = 440.37613f;
+    cgc.Value[91][1] = 0.0f;
+    cgc.Value[92][0] = 440.38113f;
+    cgc.Value[92][1] = 0.0f;
+    cgc.Value[93][0] = 440.38614f;
+    cgc.Value[93][1] = 0.0f;
+    cgc.Value[94][0] = 440.39114f;
+    cgc.Value[94][1] = 0.0f;
+    cgc.Value[95][0] = 440.39615f;
+    cgc.Value[95][1] = 0.0f;
+    cgc.Value[96][0] = 440.40115f;
+    cgc.Value[96][1] = 0.0f;
+    cgc.Value[97][0] = 440.40613f;
+    cgc.Value[97][1] = 0.0f;
+    cgc.Value[98][0] = 440.41113f;
+    cgc.Value[98][1] = 0.0f;
+    cgc.Value[99][0] = 440.41614f;
+    cgc.Value[99][1] = 0.0f;
+    cgc.Value[100][0] = 440.42114f;
+    cgc.Value[100][1] = 0.0f;
+    cgc.Value[101][0] = 440.42615f;
+    cgc.Value[101][1] = 0.0f;
+    cgc.Value[102][0] = 440.43115f;
+    cgc.Value[102][1] = 0.0f;
+    cgc.Value[103][0] = 440.43616f;
+    cgc.Value[103][1] = 0.0f;
+    cgc.Value[104][0] = 440.44113f;
+    cgc.Value[104][1] = 0.0f;
+    cgc.Value[105][0] = 440.44614f;
+    cgc.Value[105][1] = 0.0f;
+    cgc.Value[106][0] = 440.45114f;
+    cgc.Value[106][1] = 0.0f;
+    cgc.Value[107][0] = 440.45615f;
+    cgc.Value[107][1] = 0.0f;
+    cgc.Value[108][0] = 440.46115f;
+    cgc.Value[108][1] = 0.0f;
+    cgc.Value[109][0] = 440.46616f;
+    cgc.Value[109][1] = 0.0f;
+    cgc.Value[110][0] = 440.47113f;
+    cgc.Value[110][1] = 0.0f;
+    cgc.Value[111][0] = 440.47614f;
+    cgc.Value[111][1] = 0.0f;
+    cgc.Value[112][0] = 440.48114f;
+    cgc.Value[112][1] = 0.0f;
+    cgc.Value[113][0] = 440.48615f;
+    cgc.Value[113][1] = 0.0f;
+    cgc.Value[114][0] = 440.49115f;
+    cgc.Value[114][1] = 0.0f;
+    cgc.Value[115][0] = 440.49615f;
+    cgc.Value[115][1] = 0.0f;
+    cgc.Value[116][0] = 440.50113f;
+    cgc.Value[116][1] = 0.0f;
+    cgc.Value[117][0] = 440.50613f;
+    cgc.Value[117][1] = 0.0f;
+    cgc.Value[118][0] = 440.51114f;
+    cgc.Value[118][1] = 0.0f;
+    cgc.Value[119][0] = 440.51614f;
+    cgc.Value[119][1] = 0.0f;
+    cgc.Value[120][0] = 440.52115f;
+    cgc.Value[120][1] = 0.0f;
+    cgc.Value[121][0] = 440.52615f;
+    cgc.Value[121][1] = 0.0f;
+    cgc.Value[122][0] = 440.53113f;
+    cgc.Value[122][1] = 0.0f;
+    cgc.Value[123][0] = 440.53613f;
+    cgc.Value[123][1] = 0.0f;
+    cgc.Value[124][0] = 440.54114f;
+    cgc.Value[124][1] = 0.0f;
+    cgc.Value[125][0] = 440.54614f;
+    cgc.Value[125][1] = 0.0f;
+    cgc.Value[126][0] = 440.55115f;
+    cgc.Value[126][1] = 0.0f;
+    cgc.Value[127][0] = 440.55615f;
+    cgc.Value[127][1] = 0.0f;
+    cgc.Value[128][0] = 440.56116f;
+    cgc.Value[128][1] = 0.0f;
+    cgc.Value[129][0] = 440.56613f;
+    cgc.Value[129][1] = 0.0f;
+    cgc.Value[130][0] = 440.57114f;
+    cgc.Value[130][1] = 0.0f;
+    cgc.Value[131][0] = 440.57614f;
+    cgc.Value[131][1] = 0.0f;
+    cgc.Value[132][0] = 440.58115f;
+    cgc.Value[132][1] = 0.0f;
+    cgc.Value[133][0] = 440.58615f;
+    cgc.Value[133][1] = 0.0f;
+    cgc.Value[134][0] = 440.59116f;
+    cgc.Value[134][1] = 0.0f;
+    cgc.Value[135][0] = 440.59613f;
+    cgc.Value[135][1] = 0.0f;
+    cgc.Value[136][0] = 440.60114f;
+    cgc.Value[136][1] = 0.0f;
+    cgc.Value[137][0] = 440.60614f;
+    cgc.Value[137][1] = 0.0f;
+    cgc.Value[138][0] = 440.61115f;
+    cgc.Value[138][1] = 0.0f;
+    cgc.Value[139][0] = 440.61615f;
+    cgc.Value[139][1] = 0.0f;
+    cgc.Value[140][0] = 440.62115f;
+    cgc.Value[140][1] = 0.0f;
+    cgc.Value[141][0] = 440.62613f;
+    cgc.Value[141][1] = 0.0f;
+    cgc.Value[142][0] = 440.63113f;
+    cgc.Value[142][1] = 0.0f;
+    cgc.Value[143][0] = 440.63614f;
+    cgc.Value[143][1] = 0.0f;
+    cgc.Value[144][0] = 440.64114f;
+    cgc.Value[144][1] = 0.0f;
+    cgc.Value[145][0] = 440.64615f;
+    cgc.Value[145][1] = 0.0f;
+    cgc.Value[146][0] = 440.65115f;
+    cgc.Value[146][1] = 0.0f;
+    cgc.Value[147][0] = 440.65613f;
+    cgc.Value[147][1] = 0.0f;
+    cgc.Value[148][0] = 440.66113f;
+    cgc.Value[148][1] = 0.0f;
+    cgc.Value[149][0] = 440.66614f;
+    cgc.Value[149][1] = 0.0f;
+    cgc.Value[150][0] = 440.67114f;
+    cgc.Value[150][1] = 0.0f;
+    cgc.Value[151][0] = 440.67615f;
+    cgc.Value[151][1] = 0.0f;
+    cgc.Value[152][0] = 440.68115f;
+    cgc.Value[152][1] = 0.0f;
+    cgc.Value[153][0] = 440.68616f;
+    cgc.Value[153][1] = 0.0f;
+    cgc.Value[154][0] = 440.69113f;
+    cgc.Value[154][1] = 0.0f;
+    cgc.Value[155][0] = 440.69614f;
+    cgc.Value[155][1] = 0.0f;
+    cgc.Value[156][0] = 440.70114f;
+    cgc.Value[156][1] = 0.0f;
+    cgc.Value[157][0] = 440.70615f;
+    cgc.Value[157][1] = 0.0f;
+    cgc.Value[158][0] = 440.71115f;
+    cgc.Value[158][1] = 0.0f;
+    cgc.Value[159][0] = 440.71616f;
+    cgc.Value[159][1] = 0.0f;
+    cgc.Value[160][0] = 440.72113f;
+    cgc.Value[160][1] = 0.0f;
+    cgc.Value[161][0] = 440.72614f;
+    cgc.Value[161][1] = 0.0f;
+    cgc.Value[162][0] = 440.73114f;
+    cgc.Value[162][1] = 0.0f;
+    cgc.Value[163][0] = 440.73615f;
+    cgc.Value[163][1] = 0.0f;
+    cgc.Value[164][0] = 440.74115f;
+    cgc.Value[164][1] = 0.0f;
+    cgc.Value[165][0] = 440.74615f;
+    cgc.Value[165][1] = 0.0f;
+    cgc.Value[166][0] = 440.75113f;
+    cgc.Value[166][1] = 0.0f;
+    cgc.Value[167][0] = 440.75613f;
+    cgc.Value[167][1] = 0.0f;
+    cgc.Value[168][0] = 440.76114f;
+    cgc.Value[168][1] = 0.0f;
+    cgc.Value[169][0] = 440.76614f;
+    cgc.Value[169][1] = 0.0f;
+    cgc.Value[170][0] = 440.77115f;
+    cgc.Value[170][1] = 0.0f;
+    cgc.Value[171][0] = 440.77615f;
+    cgc.Value[171][1] = 0.0f;
+    cgc.Value[172][0] = 440.78113f;
+    cgc.Value[172][1] = 0.0f;
+    cgc.Value[173][0] = 440.78613f;
+    cgc.Value[173][1] = 0.0f;
+    cgc.Value[174][0] = 440.79114f;
+    cgc.Value[174][1] = 0.0f;
+    cgc.Value[175][0] = 440.79614f;
+    cgc.Value[175][1] = 0.0f;
+    cgc.Value[176][0] = 440.80115f;
+    cgc.Value[176][1] = 0.0f;
+    cgc.Value[177][0] = 440.80615f;
+    cgc.Value[177][1] = 0.0f;
+    cgc.Value[178][0] = 440.81116f;
+    cgc.Value[178][1] = 0.0f;
+    cgc.Value[179][0] = 440.81613f;
+    cgc.Value[179][1] = 0.0f;
+    cgc.Value[180][0] = 440.82114f;
+    cgc.Value[180][1] = 0.0f;
+    cgc.Value[181][0] = 440.82614f;
+    cgc.Value[181][1] = 0.0f;
+    cgc.Value[182][0] = 440.83115f;
+    cgc.Value[182][1] = 0.0f;
+    cgc.Value[183][0] = 440.83615f;
+    cgc.Value[183][1] = 0.0f;
+    cgc.Value[184][0] = 440.84116f;
+    cgc.Value[184][1] = 0.0f;
+    cgc.Value[185][0] = 440.84613f;
+    cgc.Value[185][1] = 0.0f;
+    cgc.Value[186][0] = 440.85114f;
+    cgc.Value[186][1] = 0.0f;
+    cgc.Value[187][0] = 440.85614f;
+    cgc.Value[187][1] = 0.0f;
+    cgc.Value[188][0] = 440.86115f;
+    cgc.Value[188][1] = 0.0f;
+    cgc.Value[189][0] = 440.86615f;
+    cgc.Value[189][1] = 0.0f;
+    cgc.Value[190][0] = 440.87115f;
+    cgc.Value[190][1] = 0.0f;
+    cgc.Value[191][0] = 440.87613f;
+    cgc.Value[191][1] = 0.0f;
+    cgc.Value[192][0] = 440.88113f;
+    cgc.Value[192][1] = 750000.0f;
+    cgc.Value[193][0] = 440.88614f;
+    cgc.Value[193][1] = 0.0f;
+    cgc.Value[194][0] = 440.89114f;
+    cgc.Value[194][1] = 0.0f;
+    cgc.Value[195][0] = 440.89615f;
+    cgc.Value[195][1] = 0.0f;
+    cgc.Value[196][0] = 440.90115f;
+    cgc.Value[196][1] = 0.0f;
+    cgc.Value[197][0] = 440.90613f;
+    cgc.Value[197][1] = 0.0f;
+    cgc.Value[198][0] = 440.91113f;
+    cgc.Value[198][1] = 0.0f;
+    cgc.Value[199][0] = 440.91614f;
+    cgc.Value[199][1] = 0.0f;
+    cgc.Value[200][0] = 440.92114f;
+    cgc.Value[200][1] = 0.0f;
+    cgc.Value[201][0] = 440.92615f;
+    cgc.Value[201][1] = 0.0f;
+    cgc.Value[202][0] = 440.93115f;
+    cgc.Value[202][1] = 0.0f;
+    cgc.Value[203][0] = 440.93616f;
+    cgc.Value[203][1] = 0.0f;
+    cgc.Value[204][0] = 440.94113f;
+    cgc.Value[204][1] = 0.0f;
+    cgc.Value[205][0] = 440.94614f;
+    cgc.Value[205][1] = 0.0f;
+    cgc.Value[206][0] = 440.95114f;
+    cgc.Value[206][1] = 0.0f;
+    cgc.Value[207][0] = 440.95615f;
+    cgc.Value[207][1] = 0.0f;
+    cgc.Value[208][0] = 440.96115f;
+    cgc.Value[208][1] = 0.0f;
+    cgc.Value[209][0] = 440.96616f;
+    cgc.Value[209][1] = 0.0f;
+    cgc.Value[210][0] = 440.97113f;
+    cgc.Value[210][1] = 0.0f;
+    cgc.Value[211][0] = 440.97614f;
+    cgc.Value[211][1] = 0.0f;
+    cgc.Value[212][0] = 440.98114f;
+    cgc.Value[212][1] = 0.0f;
+    cgc.Value[213][0] = 440.98615f;
+    cgc.Value[213][1] = 0.0f;
+    cgc.Value[214][0] = 440.99115f;
+    cgc.Value[214][1] = 0.0f;
+    cgc.Value[215][0] = 440.99615f;
+    cgc.Value[215][1] = 0.0f;
+    cgc.Value[216][0] = 441.00113f;
+    cgc.Value[216][1] = 0.0f;
+    cgc.Value[217][0] = 441.00613f;
+    cgc.Value[217][1] = 0.0f;
+    cgc.Value[218][0] = 441.01114f;
+    cgc.Value[218][1] = 0.0f;
+    cgc.Value[219][0] = 441.01614f;
+    cgc.Value[219][1] = 0.0f;
+    cgc.Value[220][0] = 441.02115f;
+    cgc.Value[220][1] = 0.0f;
+    cgc.Value[221][0] = 441.02615f;
+    cgc.Value[221][1] = 0.0f;
+    cgc.Value[222][0] = 441.03113f;
+    cgc.Value[222][1] = 0.0f;
+    cgc.Value[223][0] = 441.03613f;
+    cgc.Value[223][1] = 0.0f;
+    cgc.Value[224][0] = 441.04114f;
+    cgc.Value[224][1] = 0.0f;
+    cgc.Value[225][0] = 441.04614f;
+    cgc.Value[225][1] = 0.0f;
+    cgc.Value[226][0] = 441.05115f;
+    cgc.Value[226][1] = 0.0f;
+    cgc.Value[227][0] = 441.05615f;
+    cgc.Value[227][1] = 0.0f;
+    cgc.Value[228][0] = 441.06116f;
+    cgc.Value[228][1] = 0.0f;
+    cgc.Value[229][0] = 441.06613f;
+    cgc.Value[229][1] = 0.0f;
+    cgc.Value[230][0] = 441.07114f;
+    cgc.Value[230][1] = 0.0f;
+    cgc.Value[231][0] = 441.07614f;
+    cgc.Value[231][1] = 0.0f;
+    cgc.Value[232][0] = 441.08115f;
+    cgc.Value[232][1] = 0.0f;
+    cgc.Value[233][0] = 441.08615f;
+    cgc.Value[233][1] = 0.0f;
+    cgc.Value[234][0] = 441.09116f;
+    cgc.Value[234][1] = 0.0f;
+    cgc.Value[235][0] = 441.09613f;
+    cgc.Value[235][1] = 0.0f;
+    cgc.Value[236][0] = 441.10114f;
+    cgc.Value[236][1] = 0.0f;
+    cgc.Value[237][0] = 441.10614f;
+    cgc.Value[237][1] = 0.0f;
+    cgc.Value[238][0] = 441.11115f;
+    cgc.Value[238][1] = 0.0f;
+    cgc.Value[239][0] = 441.11615f;
+    cgc.Value[239][1] = 0.0f;
+    cgc.Value[240][0] = 441.12115f;
+    cgc.Value[240][1] = 166666.67f;
+    cgc.Value[241][0] = 441.12613f;
+    cgc.Value[241][1] = 0.0f;
+    cgc.Value[242][0] = 441.13113f;
+    cgc.Value[242][1] = 0.0f;
+    cgc.Value[243][0] = 441.13614f;
+    cgc.Value[243][1] = 0.0f;
+    cgc.Value[244][0] = 441.14114f;
+    cgc.Value[244][1] = 0.0f;
+    cgc.Value[245][0] = 441.14615f;
+    cgc.Value[245][1] = 0.0f;
+    cgc.Value[246][0] = 441.15115f;
+    cgc.Value[246][1] = 0.0f;
+    cgc.Value[247][0] = 441.15613f;
+    cgc.Value[247][1] = 0.0f;
+    cgc.Value[248][0] = 441.16113f;
+    cgc.Value[248][1] = 0.0f;
+    cgc.Value[249][0] = 441.16614f;
+    cgc.Value[249][1] = 0.0f;
+    cgc.Value[250][0] = 441.17114f;
+    cgc.Value[250][1] = 0.0f;
+    cgc.Value[251][0] = 441.17615f;
+    cgc.Value[251][1] = 0.0f;
+    cgc.Value[252][0] = 441.18115f;
+    cgc.Value[252][1] = 0.0f;
+    cgc.Value[253][0] = 441.18616f;
+    cgc.Value[253][1] = 0.0f;
+    cgc.Value[254][0] = 441.19113f;
+    cgc.Value[254][1] = 0.0f;
+    cgc.Value[255][0] = 441.19614f;
+    cgc.Value[255][1] = 0.0f;
+    cgc.Value[256][0] = 441.20114f;
+    cgc.Value[256][1] = 0.0f;
+    cgc.Value[257][0] = 441.20615f;
+    cgc.Value[257][1] = 0.0f;
+    cgc.Value[258][0] = 441.21115f;
+    cgc.Value[258][1] = 0.0f;
+    cgc.Value[259][0] = 441.21616f;
+    cgc.Value[259][1] = 0.0f;
+    cgc.Value[260][0] = 441.22113f;
+    cgc.Value[260][1] = 0.0f;
+    cgc.Value[261][0] = 441.22614f;
+    cgc.Value[261][1] = 0.0f;
+    cgc.Value[262][0] = 441.23114f;
+    cgc.Value[262][1] = 0.0f;
+    cgc.Value[263][0] = 441.23615f;
+    cgc.Value[263][1] = 0.0f;
+    cgc.Value[264][0] = 441.24115f;
+    cgc.Value[264][1] = 0.0f;
+    cgc.Value[265][0] = 441.24615f;
+    cgc.Value[265][1] = 0.0f;
+    cgc.Value[266][0] = 441.25113f;
+    cgc.Value[266][1] = 0.0f;
+    cgc.Value[267][0] = 441.25613f;
+    cgc.Value[267][1] = 0.0f;
+    cgc.Value[268][0] = 441.26114f;
+    cgc.Value[268][1] = 0.0f;
+    cgc.Value[269][0] = 441.26614f;
+    cgc.Value[269][1] = 0.0f;
+    cgc.Value[270][0] = 441.27115f;
+    cgc.Value[270][1] = 0.0f;
+    cgc.Value[271][0] = 441.27615f;
+    cgc.Value[271][1] = 0.0f;
+    cgc.Value[272][0] = 441.28113f;
+    cgc.Value[272][1] = 0.0f;
+    cgc.Value[273][0] = 441.28613f;
+    cgc.Value[273][1] = 0.0f;
+    cgc.Value[274][0] = 441.29114f;
+    cgc.Value[274][1] = 0.0f;
+    cgc.Value[275][0] = 441.29614f;
+    cgc.Value[275][1] = 0.0f;
+    cgc.Value[276][0] = 441.30115f;
+    cgc.Value[276][1] = 0.0f;
+    cgc.Value[277][0] = 441.30615f;
+    cgc.Value[277][1] = 0.0f;
+    cgc.Value[278][0] = 441.31116f;
+    cgc.Value[278][1] = 0.0f;
+    cgc.Value[279][0] = 441.31613f;
+    cgc.Value[279][1] = 0.0f;
+    cgc.Value[280][0] = 441.32114f;
+    cgc.Value[280][1] = 0.0f;
+    cgc.Value[281][0] = 441.32614f;
+    cgc.Value[281][1] = 0.0f;
+    cgc.Value[282][0] = 441.33115f;
+    cgc.Value[282][1] = 0.0f;
+    cgc.Value[283][0] = 441.33615f;
+    cgc.Value[283][1] = 0.0f;
+    cgc.Value[284][0] = 441.34116f;
+    cgc.Value[284][1] = 0.0f;
+    cgc.Value[285][0] = 441.34613f;
+    cgc.Value[285][1] = 0.0f;
+    cgc.Value[286][0] = 441.35114f;
+    cgc.Value[286][1] = 0.0f;
+    cgc.Value[287][0] = 441.35614f;
+    cgc.Value[287][1] = 0.0f;
+    cgc.Value[288][0] = 441.36115f;
+    cgc.Value[288][1] = 0.0f;
+    cgc.Value[289][0] = 441.36615f;
+    cgc.Value[289][1] = 0.0f;
+    cgc.Value[290][0] = 441.37115f;
+    cgc.Value[290][1] = 0.0f;
+    cgc.Value[291][0] = 441.37613f;
+    cgc.Value[291][1] = 0.0f;
+    cgc.Value[292][0] = 441.38113f;
+    cgc.Value[292][1] = 0.0f;
+    cgc.Value[293][0] = 441.38614f;
+    cgc.Value[293][1] = 0.0f;
+    cgc.Value[294][0] = 441.39114f;
+    cgc.Value[294][1] = 0.0f;
+    cgc.Value[295][0] = 441.39615f;
+    cgc.Value[295][1] = 0.0f;
+    cgc.Value[296][0] = 441.40115f;
+    cgc.Value[296][1] = 0.0f;
+    cgc.Value[297][0] = 441.40613f;
+    cgc.Value[297][1] = 0.0f;
+    cgc.Value[298][0] = 441.41113f;
+    cgc.Value[298][1] = 0.0f;
+    cgc.Value[299][0] = 441.41614f;
+    cgc.Value[299][1] = 0.0f;
+    cgc.Value[300][0] = 441.42114f;
+    cgc.Value[300][1] = 0.0f;
+    cgc.Value[301][0] = 441.42615f;
+    cgc.Value[301][1] = 0.0f;
+    cgc.Value[302][0] = 441.43115f;
+    cgc.Value[302][1] = 0.0f;
+    cgc.Value[303][0] = 441.43616f;
+    cgc.Value[303][1] = 0.0f;
+    cgc.Value[304][0] = 441.44113f;
+    cgc.Value[304][1] = 0.0f;
+    cgc.Value[305][0] = 441.44614f;
+    cgc.Value[305][1] = 0.0f;
+    cgc.Value[306][0] = 441.45114f;
+    cgc.Value[306][1] = 0.0f;
+    cgc.Value[307][0] = 441.45615f;
+    cgc.Value[307][1] = 0.0f;
+    cgc.Value[308][0] = 441.46115f;
+    cgc.Value[308][1] = 0.0f;
+    cgc.Value[309][0] = 441.46616f;
+    cgc.Value[309][1] = 0.0f;
+    cgc.Value[310][0] = 441.47113f;
+    cgc.Value[310][1] = 0.0f;
+    cgc.Value[311][0] = 441.47614f;
+    cgc.Value[311][1] = 0.0f;
+    cgc.Value[312][0] = 441.48114f;
+    cgc.Value[312][1] = 0.0f;
+    cgc.Value[313][0] = 441.48615f;
+    cgc.Value[313][1] = 0.0f;
+    cgc.Value[314][0] = 441.49115f;
+    cgc.Value[314][1] = 0.0f;
+    cgc.Value[315][0] = 441.49615f;
+    cgc.Value[315][1] = 0.0f;
+    cgc.Value[316][0] = 441.50113f;
+    cgc.Value[316][1] = 0.0f;
+    cgc.Value[317][0] = 441.50613f;
+    cgc.Value[317][1] = 0.0f;
+    cgc.Value[318][0] = 441.51114f;
+    cgc.Value[318][1] = 0.0f;
+    cgc.Value[319][0] = 441.51614f;
+    cgc.Value[319][1] = 0.0f;
+    cgc.Value[320][0] = 441.52115f;
+    cgc.Value[320][1] = 0.0f;
+    cgc.Value[321][0] = 441.52615f;
+    cgc.Value[321][1] = 0.0f;
+    cgc.Value[322][0] = 441.53113f;
+    cgc.Value[322][1] = 0.0f;
+    cgc.Value[323][0] = 441.53613f;
+    cgc.Value[323][1] = 0.0f;
+    cgc.Value[324][0] = 441.54114f;
+    cgc.Value[324][1] = 0.0f;
+    cgc.Value[325][0] = 441.54614f;
+    cgc.Value[325][1] = 0.0f;
+    cgc.Value[326][0] = 441.55115f;
+    cgc.Value[326][1] = 0.0f;
+    cgc.Value[327][0] = 441.55615f;
+    cgc.Value[327][1] = 0.0f;
+    cgc.Value[328][0] = 441.56116f;
+    cgc.Value[328][1] = 0.0f;
+    cgc.Value[329][0] = 441.56613f;
+    cgc.Value[329][1] = 0.0f;
+    cgc.Value[330][0] = 441.57114f;
+    cgc.Value[330][1] = 0.0f;
+    cgc.Value[331][0] = 441.57614f;
+    cgc.Value[331][1] = 0.0f;
+    cgc.Value[332][0] = 441.58115f;
+    cgc.Value[332][1] = 0.0f;
+    cgc.Value[333][0] = 441.58615f;
+    cgc.Value[333][1] = 0.0f;
+    cgc.Value[334][0] = 441.59116f;
+    cgc.Value[334][1] = 0.0f;
+    cgc.Value[335][0] = 441.59613f;
+    cgc.Value[335][1] = 0.0f;
+    cgc.Value[336][0] = 441.60114f;
+    cgc.Value[336][1] = 0.0f;
+    cgc.Value[337][0] = 441.60614f;
+    cgc.Value[337][1] = 0.0f;
+    cgc.Value[338][0] = 441.61115f;
+    cgc.Value[338][1] = 0.0f;
+    cgc.Value[339][0] = 441.61615f;
+    cgc.Value[339][1] = 0.0f;
+    cgc.Value[340][0] = 441.62115f;
+    cgc.Value[340][1] = 0.0f;
+    cgc.Value[341][0] = 441.62613f;
+    cgc.Value[341][1] = 0.0f;
+    cgc.Value[342][0] = 441.63113f;
+    cgc.Value[342][1] = 0.0f;
+    cgc.Value[343][0] = 441.63614f;
+    cgc.Value[343][1] = 0.0f;
+    cgc.Value[344][0] = 441.64114f;
+    cgc.Value[344][1] = 0.0f;
+    cgc.Value[345][0] = 441.64615f;
+    cgc.Value[345][1] = 0.0f;
+    cgc.Value[346][0] = 441.65115f;
+    cgc.Value[346][1] = 0.0f;
+    cgc.Value[347][0] = 441.65613f;
+    cgc.Value[347][1] = 0.0f;
+    cgc.Value[348][0] = 441.66113f;
+    cgc.Value[348][1] = 0.0f;
+    cgc.Value[349][0] = 441.66614f;
+    cgc.Value[349][1] = 0.0f;
+    cgc.Value[350][0] = 441.67114f;
+    cgc.Value[350][1] = 0.0f;
+    cgc.Value[351][0] = 441.67615f;
+    cgc.Value[351][1] = 0.0f;
+    cgc.Value[352][0] = 441.68115f;
+    cgc.Value[352][1] = 0.0f;
+    cgc.Value[353][0] = 441.68616f;
+    cgc.Value[353][1] = 0.0f;
+    cgc.Value[354][0] = 441.69113f;
+    cgc.Value[354][1] = 0.0f;
+    cgc.Value[355][0] = 441.69614f;
+    cgc.Value[355][1] = 0.0f;
+    cgc.Value[356][0] = 441.70114f;
+    cgc.Value[356][1] = 0.0f;
+    cgc.Value[357][0] = 441.70615f;
+    cgc.Value[357][1] = 0.0f;
+    cgc.Value[358][0] = 441.71115f;
+    cgc.Value[358][1] = 0.0f;
+    cgc.Value[359][0] = 441.71616f;
+    cgc.Value[359][1] = 0.0f;
+    cgc.Value[360][0] = 441.72113f;
+    cgc.Value[360][1] = 583333.3f;
+    cgc.Value[361][0] = 441.72614f;
+    cgc.Value[361][1] = 0.0f;
+    cgc.Value[362][0] = 441.73114f;
+    cgc.Value[362][1] = 0.0f;
+    cgc.Value[363][0] = 441.73615f;
+    cgc.Value[363][1] = 0.0f;
+    cgc.Value[364][0] = 441.74115f;
+    cgc.Value[364][1] = 0.0f;
+    cgc.Value[365][0] = 441.74615f;
+    cgc.Value[365][1] = 0.0f;
+    cgc.Value[366][0] = 441.75113f;
+    cgc.Value[366][1] = 0.0f;
+    cgc.Value[367][0] = 441.75613f;
+    cgc.Value[367][1] = 0.0f;
+    cgc.Value[368][0] = 441.76114f;
+    cgc.Value[368][1] = 0.0f;
+    cgc.Value[369][0] = 441.76614f;
+    cgc.Value[369][1] = 0.0f;
+    cgc.Value[370][0] = 441.77115f;
+    cgc.Value[370][1] = 0.0f;
+    cgc.Value[371][0] = 441.77615f;
+    cgc.Value[371][1] = 0.0f;
+    cgc.Value[372][0] = 441.78113f;
+    cgc.Value[372][1] = 0.0f;
+    cgc.Value[373][0] = 441.78613f;
+    cgc.Value[373][1] = 0.0f;
+    cgc.Value[374][0] = 441.79114f;
+    cgc.Value[374][1] = 0.0f;
+    cgc.Value[375][0] = 441.79614f;
+    cgc.Value[375][1] = 0.0f;
+    cgc.Value[376][0] = 441.80115f;
+    cgc.Value[376][1] = 0.0f;
+    cgc.Value[377][0] = 441.80615f;
+    cgc.Value[377][1] = 0.0f;
+    cgc.Value[378][0] = 441.81116f;
+    cgc.Value[378][1] = 0.0f;
+    cgc.Value[379][0] = 441.81613f;
+    cgc.Value[379][1] = 0.0f;
+    cgc.Value[380][0] = 441.82114f;
+    cgc.Value[380][1] = 0.0f;
+    cgc.Value[381][0] = 441.82614f;
+    cgc.Value[381][1] = 0.0f;
+    cgc.Value[382][0] = 441.83115f;
+    cgc.Value[382][1] = 0.0f;
+    cgc.Value[383][0] = 441.83615f;
+    cgc.Value[383][1] = 0.0f;
+    cgc.Value[384][0] = 441.84116f;
+    cgc.Value[384][1] = 250000.0f;
+    cgc.Value[385][0] = 441.84613f;
+    cgc.Value[385][1] = 0.0f;
+    cgc.Value[386][0] = 441.85114f;
+    cgc.Value[386][1] = 0.0f;
+    cgc.Value[387][0] = 441.85614f;
+    cgc.Value[387][1] = 0.0f;
+    cgc.Value[388][0] = 441.86115f;
+    cgc.Value[388][1] = 0.0f;
+    cgc.Value[389][0] = 441.86615f;
+    cgc.Value[389][1] = 0.0f;
+    cgc.Value[390][0] = 441.87115f;
+    cgc.Value[390][1] = 0.0f;
+    cgc.Value[391][0] = 441.87613f;
+    cgc.Value[391][1] = 0.0f;
+    cgc.Value[392][0] = 441.88113f;
+    cgc.Value[392][1] = 0.0f;
+    cgc.Value[393][0] = 441.88614f;
+    cgc.Value[393][1] = 0.0f;
+    cgc.Value[394][0] = 441.89114f;
+    cgc.Value[394][1] = 0.0f;
+    cgc.Value[395][0] = 441.89615f;
+    cgc.Value[395][1] = 0.0f;
+    cgc.Value[396][0] = 441.90115f;
+    cgc.Value[396][1] = 0.0f;
+    cgc.Value[397][0] = 441.90613f;
+    cgc.Value[397][1] = 0.0f;
+    cgc.Value[398][0] = 441.91113f;
+    cgc.Value[398][1] = 0.0f;
+    cgc.Value[399][0] = 441.91614f;
+    cgc.Value[399][1] = 0.0f;
+    cgc.Value[400][0] = 441.92114f;
+    cgc.Value[400][1] = 0.0f;
+    cgc.Value[401][0] = 441.92615f;
+    cgc.Value[401][1] = 0.0f;
+    cgc.Value[402][0] = 441.93115f;
+    cgc.Value[402][1] = 0.0f;
+    cgc.Value[403][0] = 441.93616f;
+    cgc.Value[403][1] = 0.0f;
+    cgc.Value[404][0] = 441.94113f;
+    cgc.Value[404][1] = 0.0f;
+    cgc.Value[405][0] = 441.94614f;
+    cgc.Value[405][1] = 0.0f;
+    cgc.Value[406][0] = 441.95114f;
+    cgc.Value[406][1] = 0.0f;
+    cgc.Value[407][0] = 441.95615f;
+    cgc.Value[407][1] = 0.0f;
+    cgc.Value[408][0] = 441.96115f;
+    cgc.Value[408][1] = 0.0f;
+    cgc.Value[409][0] = 441.96616f;
+    cgc.Value[409][1] = 0.0f;
+    cgc.Value[410][0] = 441.97113f;
+    cgc.Value[410][1] = 0.0f;
+    cgc.Value[411][0] = 441.97614f;
+    cgc.Value[411][1] = 0.0f;
+    cgc.Value[412][0] = 441.98114f;
+    cgc.Value[412][1] = 0.0f;
+    cgc.Value[413][0] = 441.98615f;
+    cgc.Value[413][1] = 0.0f;
+    cgc.Value[414][0] = 441.99115f;
+    cgc.Value[414][1] = 0.0f;
+    cgc.Value[415][0] = 441.99615f;
+    cgc.Value[415][1] = 0.0f;
+    cgc.Value[416][0] = 442.00113f;
+    cgc.Value[416][1] = 0.0f;
+    cgc.Value[417][0] = 442.00613f;
+    cgc.Value[417][1] = 0.0f;
+    cgc.Value[418][0] = 442.01114f;
+    cgc.Value[418][1] = 0.0f;
+    cgc.Value[419][0] = 442.01614f;
+    cgc.Value[419][1] = 0.0f;
+    cgc.Value[420][0] = 442.02115f;
+    cgc.Value[420][1] = 0.0f;
+    cgc.Value[421][0] = 442.02615f;
+    cgc.Value[421][1] = 0.0f;
+    cgc.Value[422][0] = 442.03113f;
+    cgc.Value[422][1] = 0.0f;
+    cgc.Value[423][0] = 442.03613f;
+    cgc.Value[423][1] = 0.0f;
+    cgc.Value[424][0] = 442.04114f;
+    cgc.Value[424][1] = 0.0f;
+    cgc.Value[425][0] = 442.04614f;
+    cgc.Value[425][1] = 0.0f;
+    cgc.Value[426][0] = 442.05115f;
+    cgc.Value[426][1] = 0.0f;
+    cgc.Value[427][0] = 442.05615f;
+    cgc.Value[427][1] = 0.0f;
+    cgc.Value[428][0] = 442.06116f;
+    cgc.Value[428][1] = 0.0f;
+    cgc.Value[429][0] = 442.06613f;
+    cgc.Value[429][1] = 0.0f;
+    cgc.Value[430][0] = 442.07114f;
+    cgc.Value[430][1] = 0.0f;
+    cgc.Value[431][0] = 442.07614f;
+    cgc.Value[431][1] = 83333.336f;
+    cgc.Value[432][0] = 442.08115f;
+    cgc.Value[432][1] = 0.0f;
+    cgc.Value[433][0] = 442.08615f;
+    cgc.Value[433][1] = 0.0f;
+    cgc.Value[434][0] = 442.09116f;
+    cgc.Value[434][1] = 0.0f;
+    cgc.Value[435][0] = 442.09613f;
+    cgc.Value[435][1] = 0.0f;
+    cgc.Value[436][0] = 442.10114f;
+    cgc.Value[436][1] = 0.0f;
+    cgc.Value[437][0] = 442.10614f;
+    cgc.Value[437][1] = 0.0f;
+    cgc.Value[438][0] = 442.11115f;
+    cgc.Value[438][1] = 0.0f;
+    cgc.Value[439][0] = 442.11615f;
+    cgc.Value[439][1] = 0.0f;
+    cgc.Value[440][0] = 442.12115f;
+    cgc.Value[440][1] = 0.0f;
+    cgc.Value[441][0] = 442.12613f;
+    cgc.Value[441][1] = 0.0f;
+    cgc.Value[442][0] = 442.13113f;
+    cgc.Value[442][1] = 0.0f;
+    cgc.Value[443][0] = 442.13614f;
+    cgc.Value[443][1] = 0.0f;
+    cgc.Value[444][0] = 442.14114f;
+    cgc.Value[444][1] = 0.0f;
+    cgc.Value[445][0] = 442.14615f;
+    cgc.Value[445][1] = 0.0f;
+    cgc.Value[446][0] = 442.15115f;
+    cgc.Value[446][1] = 0.0f;
+    cgc.Value[447][0] = 442.15613f;
+    cgc.Value[447][1] = 0.0f;
+    cgc.Value[448][0] = 442.16113f;
+    cgc.Value[448][1] = 0.0f;
+    cgc.Value[449][0] = 442.16614f;
+    cgc.Value[449][1] = 0.0f;
+    cgc.Value[450][0] = 442.17114f;
+    cgc.Value[450][1] = 0.0f;
+    cgc.Value[451][0] = 442.17615f;
+    cgc.Value[451][1] = 0.0f;
+    cgc.Value[452][0] = 442.18115f;
+    cgc.Value[452][1] = 0.0f;
+    cgc.Value[453][0] = 442.18616f;
+    cgc.Value[453][1] = 0.0f;
+    cgc.Value[454][0] = 442.19113f;
+    cgc.Value[454][1] = 0.0f;
+    cgc.Value[455][0] = 442.19614f;
+    cgc.Value[455][1] = 0.0f;
+    cgc.Value[456][0] = 442.20114f;
+    cgc.Value[456][1] = 0.0f;
+    cgc.Value[457][0] = 442.20615f;
+    cgc.Value[457][1] = 0.0f;
+    cgc.Value[458][0] = 442.21115f;
+    cgc.Value[458][1] = 0.0f;
+    cgc.Value[459][0] = 442.21616f;
+    cgc.Value[459][1] = 0.0f;
+    cgc.Value[460][0] = 442.22113f;
+    cgc.Value[460][1] = 0.0f;
+    cgc.Value[461][0] = 442.22614f;
+    cgc.Value[461][1] = 0.0f;
+    cgc.Value[462][0] = 442.23114f;
+    cgc.Value[462][1] = 0.0f;
+    cgc.Value[463][0] = 442.23615f;
+    cgc.Value[463][1] = 0.0f;
+    cgc.Value[464][0] = 442.24115f;
+    cgc.Value[464][1] = 0.0f;
+    cgc.Value[465][0] = 442.24615f;
+    cgc.Value[465][1] = 0.0f;
+    cgc.Value[466][0] = 442.25113f;
+    cgc.Value[466][1] = 0.0f;
+    cgc.Value[467][0] = 442.25613f;
+    cgc.Value[467][1] = 0.0f;
+    cgc.Value[468][0] = 442.26114f;
+    cgc.Value[468][1] = 0.0f;
+    cgc.Value[469][0] = 442.26614f;
+    cgc.Value[469][1] = 0.0f;
+    cgc.Value[470][0] = 442.27115f;
+    cgc.Value[470][1] = 0.0f;
+    cgc.Value[471][0] = 442.27615f;
+    cgc.Value[471][1] = 0.0f;
+    cgc.Value[472][0] = 442.28113f;
+    cgc.Value[472][1] = 0.0f;
+    cgc.Value[473][0] = 442.28613f;
+    cgc.Value[473][1] = 0.0f;
+    cgc.Value[474][0] = 442.29114f;
+    cgc.Value[474][1] = 0.0f;
+    cgc.Value[475][0] = 442.29614f;
+    cgc.Value[475][1] = 0.0f;
+    cgc.Value[476][0] = 442.30115f;
+    cgc.Value[476][1] = 0.0f;
+    cgc.Value[477][0] = 442.30615f;
+    cgc.Value[477][1] = 0.0f;
+    cgc.Value[478][0] = 442.31116f;
+    cgc.Value[478][1] = 0.0f;
+    cgc.Value[479][0] = 442.31613f;
+    cgc.Value[479][1] = 0.0f;
+    cgc.Value[480][0] = 442.32114f;
+    cgc.Value[480][1] = 83333.336f;
+    cgc.Value[481][0] = 442.32614f;
+    cgc.Value[481][1] = 0.0f;
+    cgc.Value[482][0] = 442.33115f;
+    cgc.Value[482][1] = 0.0f;
+    cgc.Value[483][0] = 442.33615f;
+    cgc.Value[483][1] = 0.0f;
+    cgc.Value[484][0] = 442.34116f;
+    cgc.Value[484][1] = 0.0f;
+    cgc.Value[485][0] = 442.34613f;
+    cgc.Value[485][1] = 0.0f;
+    cgc.Value[486][0] = 442.35114f;
+    cgc.Value[486][1] = 0.0f;
+    cgc.Value[487][0] = 442.35614f;
+    cgc.Value[487][1] = 0.0f;
+    cgc.Value[488][0] = 442.36115f;
+    cgc.Value[488][1] = 0.0f;
+    cgc.Value[489][0] = 442.36615f;
+    cgc.Value[489][1] = 0.0f;
+    cgc.Value[490][0] = 442.37115f;
+    cgc.Value[490][1] = 0.0f;
+    cgc.Value[491][0] = 442.37613f;
+    cgc.Value[491][1] = 0.0f;
+    cgc.Value[492][0] = 442.38113f;
+    cgc.Value[492][1] = 0.0f;
+    cgc.Value[493][0] = 442.38614f;
+    cgc.Value[493][1] = 0.0f;
+    cgc.Value[494][0] = 442.39114f;
+    cgc.Value[494][1] = 0.0f;
+    cgc.Value[495][0] = 442.39615f;
+    cgc.Value[495][1] = 0.0f;
+    cgc.Value[496][0] = 442.40115f;
+    cgc.Value[496][1] = 0.0f;
+    cgc.Value[497][0] = 442.40613f;
+    cgc.Value[497][1] = 0.0f;
+    cgc.Value[498][0] = 442.41113f;
+    cgc.Value[498][1] = 0.0f;
+    cgc.Value[499][0] = 442.41614f;
+    cgc.Value[499][1] = 0.0f;
+    cgc.Value[500][0] = 442.42114f;
+    cgc.Value[500][1] = 0.0f;
+    cgc.Value[501][0] = 442.42615f;
+    cgc.Value[501][1] = 0.0f;
+    cgc.Value[502][0] = 442.43115f;
+    cgc.Value[502][1] = 0.0f;
+    cgc.Value[503][0] = 442.43616f;
+    cgc.Value[503][1] = 0.0f;
+    cgc.Value[504][0] = 442.44113f;
+    cgc.Value[504][1] = 0.0f;
+    cgc.Value[505][0] = 442.44614f;
+    cgc.Value[505][1] = 0.0f;
+    cgc.Value[506][0] = 442.45114f;
+    cgc.Value[506][1] = 0.0f;
+    cgc.Value[507][0] = 442.45615f;
+    cgc.Value[507][1] = 0.0f;
+    cgc.Value[508][0] = 442.46115f;
+    cgc.Value[508][1] = 0.0f;
+    cgc.Value[509][0] = 442.46616f;
+    cgc.Value[509][1] = 0.0f;
+    cgc.Value[510][0] = 442.47113f;
+    cgc.Value[510][1] = 0.0f;
+    cgc.Value[511][0] = 442.47614f;
+    cgc.Value[511][1] = 0.0f;
+    cgc.Value[512][0] = 442.48114f;
+    cgc.Value[512][1] = 0.0f;
+    cgc.Value[513][0] = 442.48615f;
+    cgc.Value[513][1] = 0.0f;
+    cgc.Value[514][0] = 442.49115f;
+    cgc.Value[514][1] = 0.0f;
+    cgc.Value[515][0] = 442.49615f;
+    cgc.Value[515][1] = 0.0f;
+    cgc.Value[516][0] = 442.50113f;
+    cgc.Value[516][1] = 0.0f;
+    cgc.Value[517][0] = 442.50613f;
+    cgc.Value[517][1] = 0.0f;
+    cgc.Value[518][0] = 442.51114f;
+    cgc.Value[518][1] = 0.0f;
+    cgc.Value[519][0] = 442.51614f;
+    cgc.Value[519][1] = 0.0f;
+    cgc.Value[520][0] = 442.52115f;
+    cgc.Value[520][1] = 0.0f;
+    cgc.Value[521][0] = 442.52615f;
+    cgc.Value[521][1] = 0.0f;
+    cgc.Value[522][0] = 442.53113f;
+    cgc.Value[522][1] = 0.0f;
+    cgc.Value[523][0] = 442.53613f;
+    cgc.Value[523][1] = 0.0f;
+    cgc.Value[524][0] = 442.54114f;
+    cgc.Value[524][1] = 0.0f;
+    cgc.Value[525][0] = 442.54614f;
+    cgc.Value[525][1] = 0.0f;
+    cgc.Value[526][0] = 442.55115f;
+    cgc.Value[526][1] = 0.0f;
+    cgc.Value[527][0] = 442.55615f;
+    cgc.Value[527][1] = 0.0f;
+    cgc.Value[528][0] = 442.56116f;
+    cgc.Value[528][1] = 166666.67f;
+    cgc.Value[529][0] = 442.56613f;
+    cgc.Value[529][1] = 0.0f;
+    cgc.Value[530][0] = 442.57114f;
+    cgc.Value[530][1] = 0.0f;
+    cgc.Value[531][0] = 442.57614f;
+    cgc.Value[531][1] = 0.0f;
+    cgc.Value[532][0] = 442.58115f;
+    cgc.Value[532][1] = 0.0f;
+    cgc.Value[533][0] = 442.58615f;
+    cgc.Value[533][1] = 0.0f;
+    cgc.Value[534][0] = 442.59116f;
+    cgc.Value[534][1] = 0.0f;
+    cgc.Value[535][0] = 442.59613f;
+    cgc.Value[535][1] = 0.0f;
+    cgc.Value[536][0] = 442.60114f;
+    cgc.Value[536][1] = 0.0f;
+    cgc.Value[537][0] = 442.60614f;
+    cgc.Value[537][1] = 0.0f;
+    cgc.Value[538][0] = 442.61115f;
+    cgc.Value[538][1] = 0.0f;
+    cgc.Value[539][0] = 442.61615f;
+    cgc.Value[539][1] = 0.0f;
+    cgc.Value[540][0] = 442.62115f;
+    cgc.Value[540][1] = 0.0f;
+    cgc.Value[541][0] = 442.62613f;
+    cgc.Value[541][1] = 0.0f;
+    cgc.Value[542][0] = 442.63113f;
+    cgc.Value[542][1] = 0.0f;
+    cgc.Value[543][0] = 442.63614f;
+    cgc.Value[543][1] = 0.0f;
+    cgc.Value[544][0] = 442.64114f;
+    cgc.Value[544][1] = 0.0f;
+    cgc.Value[545][0] = 442.64615f;
+    cgc.Value[545][1] = 0.0f;
+    cgc.Value[546][0] = 442.65115f;
+    cgc.Value[546][1] = 0.0f;
+    cgc.Value[547][0] = 442.65613f;
+    cgc.Value[547][1] = 0.0f;
+    cgc.Value[548][0] = 442.66113f;
+    cgc.Value[548][1] = 0.0f;
+    cgc.Value[549][0] = 442.66614f;
+    cgc.Value[549][1] = 0.0f;
+    cgc.Value[550][0] = 442.67114f;
+    cgc.Value[550][1] = 0.0f;
+    cgc.Value[551][0] = 442.67615f;
+    cgc.Value[551][1] = 0.0f;
+    cgc.Value[552][0] = 442.68115f;
+    cgc.Value[552][1] = 166666.67f;
+    cgc.Value[553][0] = 442.68616f;
+    cgc.Value[553][1] = 0.0f;
+    cgc.Value[554][0] = 442.69113f;
+    cgc.Value[554][1] = 0.0f;
+    cgc.Value[555][0] = 442.69614f;
+    cgc.Value[555][1] = 0.0f;
+    cgc.Value[556][0] = 442.70114f;
+    cgc.Value[556][1] = 0.0f;
+    cgc.Value[557][0] = 442.70615f;
+    cgc.Value[557][1] = 0.0f;
+    cgc.Value[558][0] = 442.71115f;
+    cgc.Value[558][1] = 0.0f;
+    cgc.Value[559][0] = 442.71616f;
+    cgc.Value[559][1] = 0.0f;
+    cgc.Value[560][0] = 442.72113f;
+    cgc.Value[560][1] = 0.0f;
+    cgc.Value[561][0] = 442.72614f;
+    cgc.Value[561][1] = 0.0f;
+    cgc.Value[562][0] = 442.73114f;
+    cgc.Value[562][1] = 0.0f;
+    cgc.Value[563][0] = 442.73615f;
+    cgc.Value[563][1] = 0.0f;
+    cgc.Value[564][0] = 442.74115f;
+    cgc.Value[564][1] = 0.0f;
+    cgc.Value[565][0] = 442.74615f;
+    cgc.Value[565][1] = 0.0f;
+    cgc.Value[566][0] = 442.75113f;
+    cgc.Value[566][1] = 0.0f;
+    cgc.Value[567][0] = 442.75613f;
+    cgc.Value[567][1] = 0.0f;
+    cgc.Value[568][0] = 442.76114f;
+    cgc.Value[568][1] = 0.0f;
+    cgc.Value[569][0] = 442.76614f;
+    cgc.Value[569][1] = 0.0f;
+    cgc.Value[570][0] = 442.77115f;
+    cgc.Value[570][1] = 0.0f;
+    cgc.Value[571][0] = 442.77615f;
+    cgc.Value[571][1] = 0.0f;
+    cgc.Value[572][0] = 442.78113f;
+    cgc.Value[572][1] = 0.0f;
+    cgc.Value[573][0] = 442.78613f;
+    cgc.Value[573][1] = 0.0f;
+    cgc.Value[574][0] = 442.79114f;
+    cgc.Value[574][1] = 0.0f;
+    cgc.Value[575][0] = 442.79614f;
+    cgc.Value[575][1] = 250000.0f;
+    cgc.Value[576][0] = 442.80115f;
+    cgc.Value[576][1] = 0.0f;
+    cgc.Value[577][0] = 442.80615f;
+    cgc.Value[577][1] = 0.0f;
+    cgc.Value[578][0] = 442.81116f;
+    cgc.Value[578][1] = 0.0f;
+    cgc.Value[579][0] = 442.81613f;
+    cgc.Value[579][1] = 0.0f;
+    cgc.Value[580][0] = 442.82114f;
+    cgc.Value[580][1] = 0.0f;
+    cgc.Value[581][0] = 442.82614f;
+    cgc.Value[581][1] = 0.0f;
+    cgc.Value[582][0] = 442.83115f;
+    cgc.Value[582][1] = 0.0f;
+    cgc.Value[583][0] = 442.83615f;
+    cgc.Value[583][1] = 0.0f;
+    cgc.Value[584][0] = 442.84116f;
+    cgc.Value[584][1] = 0.0f;
+    cgc.Value[585][0] = 442.84613f;
+    cgc.Value[585][1] = 0.0f;
+    cgc.Value[586][0] = 442.85114f;
+    cgc.Value[586][1] = 0.0f;
+    cgc.Value[587][0] = 442.85614f;
+    cgc.Value[587][1] = 0.0f;
+    cgc.Value[588][0] = 442.86115f;
+    cgc.Value[588][1] = 0.0f;
+    cgc.Value[589][0] = 442.86615f;
+    cgc.Value[589][1] = 0.0f;
+    cgc.Value[590][0] = 442.87115f;
+    cgc.Value[590][1] = 0.0f;
+    cgc.Value[591][0] = 442.87613f;
+    cgc.Value[591][1] = 0.0f;
+    cgc.Value[592][0] = 442.88113f;
+    cgc.Value[592][1] = 0.0f;
+    cgc.Value[593][0] = 442.88614f;
+    cgc.Value[593][1] = 0.0f;
+    cgc.Value[594][0] = 442.89114f;
+    cgc.Value[594][1] = 0.0f;
+    cgc.Value[595][0] = 442.89615f;
+    cgc.Value[595][1] = 0.0f;
+    cgc.Value[596][0] = 442.90115f;
+    cgc.Value[596][1] = 0.0f;
+    cgc.Value[597][0] = 442.90613f;
+    cgc.Value[597][1] = 0.0f;
+    cgc.Value[598][0] = 442.91113f;
+    cgc.Value[598][1] = 0.0f;
+    cgc.Value[599][0] = 442.91614f;
+    cgc.Value[599][1] = 0.0f;
+    cgc.Value[600][0] = 442.92114f;
+    cgc.Value[600][1] = 250000.0f;
+    cgc.Value[601][0] = 442.92615f;
+    cgc.Value[601][1] = 0.0f;
+    cgc.Value[602][0] = 442.93115f;
+    cgc.Value[602][1] = 0.0f;
+    cgc.Value[603][0] = 442.93616f;
+    cgc.Value[603][1] = 0.0f;
+    cgc.Value[604][0] = 442.94113f;
+    cgc.Value[604][1] = 0.0f;
+    cgc.Value[605][0] = 442.94614f;
+    cgc.Value[605][1] = 0.0f;
+    cgc.Value[606][0] = 442.95114f;
+    cgc.Value[606][1] = 0.0f;
+    cgc.Value[607][0] = 442.95615f;
+    cgc.Value[607][1] = 0.0f;
+    cgc.Value[608][0] = 442.96115f;
+    cgc.Value[608][1] = 0.0f;
+    cgc.Value[609][0] = 442.96616f;
+    cgc.Value[609][1] = 0.0f;
+    cgc.Value[610][0] = 442.97113f;
+    cgc.Value[610][1] = 0.0f;
+    cgc.Value[611][0] = 442.97614f;
+    cgc.Value[611][1] = 0.0f;
+    cgc.Value[612][0] = 442.98114f;
+    cgc.Value[612][1] = 0.0f;
+    cgc.Value[613][0] = 442.98615f;
+    cgc.Value[613][1] = 0.0f;
+    cgc.Value[614][0] = 442.99115f;
+    cgc.Value[614][1] = 0.0f;
+    cgc.Value[615][0] = 442.99615f;
+    cgc.Value[615][1] = 0.0f;
+    cgc.Value[616][0] = 443.00113f;
+    cgc.Value[616][1] = 0.0f;
+    cgc.Value[617][0] = 443.00613f;
+    cgc.Value[617][1] = 0.0f;
+    cgc.Value[618][0] = 443.01114f;
+    cgc.Value[618][1] = 0.0f;
+    cgc.Value[619][0] = 443.01614f;
+    cgc.Value[619][1] = 0.0f;
+    cgc.Value[620][0] = 443.02115f;
+    cgc.Value[620][1] = 0.0f;
+    cgc.Value[621][0] = 443.02615f;
+    cgc.Value[621][1] = 0.0f;
+    cgc.Value[622][0] = 443.03113f;
+    cgc.Value[622][1] = 0.0f;
+    cgc.Value[623][0] = 443.03613f;
+    cgc.Value[623][1] = 0.0f;
+    cgc.Value[624][0] = 443.04114f;
+    cgc.Value[624][1] = 83333.336f;
+    cgc.Value[625][0] = 443.04614f;
+    cgc.Value[625][1] = 0.0f;
+    cgc.Value[626][0] = 443.05115f;
+    cgc.Value[626][1] = 0.0f;
+    cgc.Value[627][0] = 443.05615f;
+    cgc.Value[627][1] = 0.0f;
+    cgc.Value[628][0] = 443.06116f;
+    cgc.Value[628][1] = 0.0f;
+    cgc.Value[629][0] = 443.06613f;
+    cgc.Value[629][1] = 0.0f;
+    cgc.Value[630][0] = 443.07114f;
+    cgc.Value[630][1] = 0.0f;
+    cgc.Value[631][0] = 443.07614f;
+    cgc.Value[631][1] = 0.0f;
+    cgc.Value[632][0] = 443.08115f;
+    cgc.Value[632][1] = 0.0f;
+    cgc.Value[633][0] = 443.08615f;
+    cgc.Value[633][1] = 0.0f;
+    cgc.Value[634][0] = 443.09116f;
+    cgc.Value[634][1] = 0.0f;
+    cgc.Value[635][0] = 443.09613f;
+    cgc.Value[635][1] = 0.0f;
+    cgc.Value[636][0] = 443.10114f;
+    cgc.Value[636][1] = 0.0f;
+    cgc.Value[637][0] = 443.10614f;
+    cgc.Value[637][1] = 0.0f;
+    cgc.Value[638][0] = 443.11115f;
+    cgc.Value[638][1] = 0.0f;
+    cgc.Value[639][0] = 443.11615f;
+    cgc.Value[639][1] = 0.0f;
+    cgc.Value[640][0] = 443.12115f;
+    cgc.Value[640][1] = 0.0f;
+    cgc.Value[641][0] = 443.12613f;
+    cgc.Value[641][1] = 0.0f;
+    cgc.Value[642][0] = 443.13113f;
+    cgc.Value[642][1] = 0.0f;
+    cgc.Value[643][0] = 443.13614f;
+    cgc.Value[643][1] = 0.0f;
+    cgc.Value[644][0] = 443.14114f;
+    cgc.Value[644][1] = 0.0f;
+    cgc.Value[645][0] = 443.14615f;
+    cgc.Value[645][1] = 0.0f;
+    cgc.Value[646][0] = 443.15115f;
+    cgc.Value[646][1] = 0.0f;
+    cgc.Value[647][0] = 443.15613f;
+    cgc.Value[647][1] = 0.0f;
+    cgc.Value[648][0] = 443.16113f;
+    cgc.Value[648][1] = 0.0f;
+    cgc.Value[649][0] = 443.16614f;
+    cgc.Value[649][1] = 0.0f;
+    cgc.Value[650][0] = 443.17114f;
+    cgc.Value[650][1] = 0.0f;
+    cgc.Value[651][0] = 443.17615f;
+    cgc.Value[651][1] = 0.0f;
+    cgc.Value[652][0] = 443.18115f;
+    cgc.Value[652][1] = 0.0f;
+    cgc.Value[653][0] = 443.18616f;
+    cgc.Value[653][1] = 0.0f;
+    cgc.Value[654][0] = 443.19113f;
+    cgc.Value[654][1] = 0.0f;
+    cgc.Value[655][0] = 443.19614f;
+    cgc.Value[655][1] = 0.0f;
+    cgc.Value[656][0] = 443.20114f;
+    cgc.Value[656][1] = 0.0f;
+    cgc.Value[657][0] = 443.20615f;
+    cgc.Value[657][1] = 0.0f;
+    cgc.Value[658][0] = 443.21115f;
+    cgc.Value[658][1] = 0.0f;
+    cgc.Value[659][0] = 443.21616f;
+    cgc.Value[659][1] = 0.0f;
+    cgc.Value[660][0] = 443.22113f;
+    cgc.Value[660][1] = 0.0f;
+    cgc.Value[661][0] = 443.22614f;
+    cgc.Value[661][1] = 0.0f;
+    cgc.Value[662][0] = 443.23114f;
+    cgc.Value[662][1] = 0.0f;
+    cgc.Value[663][0] = 443.23615f;
+    cgc.Value[663][1] = 0.0f;
+    cgc.Value[664][0] = 443.24115f;
+    cgc.Value[664][1] = 0.0f;
+    cgc.Value[665][0] = 443.24615f;
+    cgc.Value[665][1] = 0.0f;
+    cgc.Value[666][0] = 443.25113f;
+    cgc.Value[666][1] = 0.0f;
+    cgc.Value[667][0] = 443.25613f;
+    cgc.Value[667][1] = 0.0f;
+    cgc.Value[668][0] = 443.26114f;
+    cgc.Value[668][1] = 0.0f;
+    cgc.Value[669][0] = 443.26614f;
+    cgc.Value[669][1] = 0.0f;
+    cgc.Value[670][0] = 443.27115f;
+    cgc.Value[670][1] = 0.0f;
+    cgc.Value[671][0] = 443.27615f;
+    cgc.Value[671][1] = 0.0f;
+    cgc.Value[672][0] = 443.28113f;
+    cgc.Value[672][1] = 0.0f;
+    cgc.Value[673][0] = 443.28613f;
+    cgc.Value[673][1] = 0.0f;
+    cgc.Value[674][0] = 443.29114f;
+    cgc.Value[674][1] = 0.0f;
+    cgc.Value[675][0] = 443.29614f;
+    cgc.Value[675][1] = 0.0f;
+    cgc.Value[676][0] = 443.30115f;
+    cgc.Value[676][1] = 0.0f;
+    cgc.Value[677][0] = 443.30615f;
+    cgc.Value[677][1] = 0.0f;
+    cgc.Value[678][0] = 443.31116f;
+    cgc.Value[678][1] = 0.0f;
+    cgc.Value[679][0] = 443.31613f;
+    cgc.Value[679][1] = 0.0f;
+    cgc.Value[680][0] = 443.32114f;
+    cgc.Value[680][1] = 0.0f;
+    cgc.Value[681][0] = 443.32614f;
+    cgc.Value[681][1] = 0.0f;
+    cgc.Value[682][0] = 443.33115f;
+    cgc.Value[682][1] = 0.0f;
+    cgc.Value[683][0] = 443.33615f;
+    cgc.Value[683][1] = 0.0f;
+    cgc.Value[684][0] = 443.34116f;
+    cgc.Value[684][1] = 0.0f;
+    cgc.Value[685][0] = 443.34613f;
+    cgc.Value[685][1] = 0.0f;
+    cgc.Value[686][0] = 443.35114f;
+    cgc.Value[686][1] = 0.0f;
+    cgc.Value[687][0] = 443.35614f;
+    cgc.Value[687][1] = 0.0f;
+    cgc.Value[688][0] = 443.36115f;
+    cgc.Value[688][1] = 0.0f;
+    cgc.Value[689][0] = 443.36615f;
+    cgc.Value[689][1] = 0.0f;
+    cgc.Value[690][0] = 443.37115f;
+    cgc.Value[690][1] = 0.0f;
+    cgc.Value[691][0] = 443.37613f;
+    cgc.Value[691][1] = 0.0f;
+    cgc.Value[692][0] = 443.38113f;
+    cgc.Value[692][1] = 0.0f;
+    cgc.Value[693][0] = 443.38614f;
+    cgc.Value[693][1] = 0.0f;
+    cgc.Value[694][0] = 443.39114f;
+    cgc.Value[694][1] = 0.0f;
+    cgc.Value[695][0] = 443.39615f;
+    cgc.Value[695][1] = 0.0f;
+    cgc.Value[696][0] = 443.40115f;
+    cgc.Value[696][1] = 0.0f;
+    cgc.Value[697][0] = 443.40613f;
+    cgc.Value[697][1] = 0.0f;
+    cgc.Value[698][0] = 443.41113f;
+    cgc.Value[698][1] = 0.0f;
+    cgc.Value[699][0] = 443.41614f;
+    cgc.Value[699][1] = 0.0f;
+    cgc.Value[700][0] = 443.42114f;
+    cgc.Value[700][1] = 0.0f;
+    cgc.Value[701][0] = 443.42615f;
+    cgc.Value[701][1] = 0.0f;
+    cgc.Value[702][0] = 443.43115f;
+    cgc.Value[702][1] = 0.0f;
+    cgc.Value[703][0] = 443.43616f;
+    cgc.Value[703][1] = 0.0f;
+    cgc.Value[704][0] = 443.44113f;
+    cgc.Value[704][1] = 0.0f;
+    cgc.Value[705][0] = 443.44614f;
+    cgc.Value[705][1] = 0.0f;
+    cgc.Value[706][0] = 443.45114f;
+    cgc.Value[706][1] = 0.0f;
+    cgc.Value[707][0] = 443.45615f;
+    cgc.Value[707][1] = 0.0f;
+    cgc.Value[708][0] = 443.46115f;
+    cgc.Value[708][1] = 0.0f;
+    cgc.Value[709][0] = 443.46616f;
+    cgc.Value[709][1] = 0.0f;
+    cgc.Value[710][0] = 443.47113f;
+    cgc.Value[710][1] = 0.0f;
+    cgc.Value[711][0] = 443.47614f;
+    cgc.Value[711][1] = 0.0f;
+    cgc.Value[712][0] = 443.48114f;
+    cgc.Value[712][1] = 0.0f;
+    cgc.Value[713][0] = 443.48615f;
+    cgc.Value[713][1] = 0.0f;
+    cgc.Value[714][0] = 443.49115f;
+    cgc.Value[714][1] = 0.0f;
+    cgc.Value[715][0] = 443.49615f;
+    cgc.Value[715][1] = 0.0f;
+    cgc.Value[716][0] = 443.50113f;
+    cgc.Value[716][1] = 0.0f;
+    cgc.Value[717][0] = 443.50613f;
+    cgc.Value[717][1] = 0.0f;
+    cgc.Value[718][0] = 443.51114f;
+    cgc.Value[718][1] = 0.0f;
+    cgc.Value[719][0] = 443.51614f;
+    cgc.Value[719][1] = 0.0f;
+    cgc.Value[720][0] = 443.52115f;
+    cgc.Value[720][1] = 0.0f;
+    cgc.Value[721][0] = 443.52615f;
+    cgc.Value[721][1] = 0.0f;
+    cgc.Value[722][0] = 443.53113f;
+    cgc.Value[722][1] = 0.0f;
+    cgc.Value[723][0] = 443.53613f;
+    cgc.Value[723][1] = 0.0f;
+    cgc.Value[724][0] = 443.54114f;
+    cgc.Value[724][1] = 0.0f;
+    cgc.Value[725][0] = 443.54614f;
+    cgc.Value[725][1] = 0.0f;
+    cgc.Value[726][0] = 443.55115f;
+    cgc.Value[726][1] = 0.0f;
+    cgc.Value[727][0] = 443.55615f;
+    cgc.Value[727][1] = 0.0f;
+    cgc.Value[728][0] = 443.56116f;
+    cgc.Value[728][1] = 0.0f;
+    cgc.Value[729][0] = 443.56613f;
+    cgc.Value[729][1] = 0.0f;
+    cgc.Value[730][0] = 443.57114f;
+    cgc.Value[730][1] = 0.0f;
+    cgc.Value[731][0] = 443.57614f;
+    cgc.Value[731][1] = 0.0f;
+    cgc.Value[732][0] = 443.58115f;
+    cgc.Value[732][1] = 0.0f;
+    cgc.Value[733][0] = 443.58615f;
+    cgc.Value[733][1] = 0.0f;
+    cgc.Value[734][0] = 443.59116f;
+    cgc.Value[734][1] = 0.0f;
+    cgc.Value[735][0] = 443.59613f;
+    cgc.Value[735][1] = 0.0f;
+    cgc.Value[736][0] = 443.60114f;
+    cgc.Value[736][1] = 0.0f;
+    cgc.Value[737][0] = 443.60614f;
+    cgc.Value[737][1] = 0.0f;
+    cgc.Value[738][0] = 443.61115f;
+    cgc.Value[738][1] = 0.0f;
+    cgc.Value[739][0] = 443.61615f;
+    cgc.Value[739][1] = 0.0f;
+    cgc.Value[740][0] = 443.62115f;
+    cgc.Value[740][1] = 0.0f;
+    cgc.Value[741][0] = 443.62613f;
+    cgc.Value[741][1] = 0.0f;
+    cgc.Value[742][0] = 443.63113f;
+    cgc.Value[742][1] = 0.0f;
+    cgc.Value[743][0] = 443.63614f;
+    cgc.Value[743][1] = 0.0f;
+    cgc.Value[744][0] = 443.64114f;
+    cgc.Value[744][1] = 333333.34f;
+    cgc.Value[745][0] = 443.64615f;
+    cgc.Value[745][1] = 0.0f;
+    cgc.Value[746][0] = 443.65115f;
+    cgc.Value[746][1] = 0.0f;
+    cgc.Value[747][0] = 443.65613f;
+    cgc.Value[747][1] = 0.0f;
+    cgc.Value[748][0] = 443.66113f;
+    cgc.Value[748][1] = 0.0f;
+    cgc.Value[749][0] = 443.66614f;
+    cgc.Value[749][1] = 0.0f;
+    cgc.Value[750][0] = 443.67114f;
+    cgc.Value[750][1] = 0.0f;
+    cgc.Value[751][0] = 443.67615f;
+    cgc.Value[751][1] = 0.0f;
+    cgc.Value[752][0] = 443.68115f;
+    cgc.Value[752][1] = 0.0f;
+    cgc.Value[753][0] = 443.68616f;
+    cgc.Value[753][1] = 0.0f;
+    cgc.Value[754][0] = 443.69113f;
+    cgc.Value[754][1] = 0.0f;
+    cgc.Value[755][0] = 443.69614f;
+    cgc.Value[755][1] = 0.0f;
+    cgc.Value[756][0] = 443.70114f;
+    cgc.Value[756][1] = 0.0f;
+    cgc.Value[757][0] = 443.70615f;
+    cgc.Value[757][1] = 0.0f;
+    cgc.Value[758][0] = 443.71115f;
+    cgc.Value[758][1] = 0.0f;
+    cgc.Value[759][0] = 443.71616f;
+    cgc.Value[759][1] = 0.0f;
+    cgc.Value[760][0] = 443.72113f;
+    cgc.Value[760][1] = 0.0f;
+    cgc.Value[761][0] = 443.72614f;
+    cgc.Value[761][1] = 0.0f;
+    cgc.Value[762][0] = 443.73114f;
+    cgc.Value[762][1] = 0.0f;
+    cgc.Value[763][0] = 443.73615f;
+    cgc.Value[763][1] = 0.0f;
+    cgc.Value[764][0] = 443.74115f;
+    cgc.Value[764][1] = 0.0f;
+    cgc.Value[765][0] = 443.74615f;
+    cgc.Value[765][1] = 0.0f;
+    cgc.Value[766][0] = 443.75113f;
+    cgc.Value[766][1] = 0.0f;
+    cgc.Value[767][0] = 443.75613f;
+    cgc.Value[767][1] = 0.0f;
+    cgc.Value[768][0] = 443.76114f;
+    cgc.Value[768][1] = 0.0f;
+    cgc.Value[769][0] = 443.76614f;
+    cgc.Value[769][1] = 0.0f;
+    cgc.Value[770][0] = 443.77115f;
+    cgc.Value[770][1] = 0.0f;
+    cgc.Value[771][0] = 443.77615f;
+    cgc.Value[771][1] = 0.0f;
+    cgc.Value[772][0] = 443.78113f;
+    cgc.Value[772][1] = 0.0f;
+    cgc.Value[773][0] = 443.78613f;
+    cgc.Value[773][1] = 0.0f;
+    cgc.Value[774][0] = 443.79114f;
+    cgc.Value[774][1] = 0.0f;
+    cgc.Value[775][0] = 443.79614f;
+    cgc.Value[775][1] = 0.0f;
+    cgc.Value[776][0] = 443.80115f;
+    cgc.Value[776][1] = 0.0f;
+    cgc.Value[777][0] = 443.80615f;
+    cgc.Value[777][1] = 0.0f;
+    cgc.Value[778][0] = 443.81116f;
+    cgc.Value[778][1] = 0.0f;
+    cgc.Value[779][0] = 443.81613f;
+    cgc.Value[779][1] = 0.0f;
+    cgc.Value[780][0] = 443.82114f;
+    cgc.Value[780][1] = 0.0f;
+    cgc.Value[781][0] = 443.82614f;
+    cgc.Value[781][1] = 0.0f;
+    cgc.Value[782][0] = 443.83115f;
+    cgc.Value[782][1] = 0.0f;
+    cgc.Value[783][0] = 443.83615f;
+    cgc.Value[783][1] = 0.0f;
+    cgc.Value[784][0] = 443.84116f;
+    cgc.Value[784][1] = 0.0f;
+    cgc.Value[785][0] = 443.84613f;
+    cgc.Value[785][1] = 0.0f;
+    cgc.Value[786][0] = 443.85114f;
+    cgc.Value[786][1] = 0.0f;
+    cgc.Value[787][0] = 443.85614f;
+    cgc.Value[787][1] = 0.0f;
+    cgc.Value[788][0] = 443.86115f;
+    cgc.Value[788][1] = 0.0f;
+    cgc.Value[789][0] = 443.86615f;
+    cgc.Value[789][1] = 0.0f;
+    cgc.Value[790][0] = 443.87115f;
+    cgc.Value[790][1] = 0.0f;
+    cgc.Value[791][0] = 443.87613f;
+    cgc.Value[791][1] = 0.0f;
+    cgc.Value[792][0] = 443.88113f;
+    cgc.Value[792][1] = 166666.67f;
+    cgc.Value[793][0] = 443.88614f;
+    cgc.Value[793][1] = 0.0f;
+    cgc.Value[794][0] = 443.89114f;
+    cgc.Value[794][1] = 0.0f;
+    cgc.Value[795][0] = 443.89615f;
+    cgc.Value[795][1] = 0.0f;
+    cgc.Value[796][0] = 443.90115f;
+    cgc.Value[796][1] = 0.0f;
+    cgc.Value[797][0] = 443.90613f;
+    cgc.Value[797][1] = 0.0f;
+    cgc.Value[798][0] = 443.91113f;
+    cgc.Value[798][1] = 0.0f;
+    cgc.Value[799][0] = 443.91614f;
+    cgc.Value[799][1] = 0.0f;
+    LipidomicsChromatogram cx = new LipidomicsChromatogram(cgc);
+    cx.isProfile_ = true;
+    cx.Mz = 10.973999f;
+    cx.LowerMzBand = 3.973999f;
+    cx.UpperMzBand = 17.973999f;
+    
+    SavGolJNI sav_gol_jni = new SavGolJNI();
+    cx.Smooth(0f, 0, true, sav_gol_jni);
+  }
+  
+  
+  private void detectMSnWithLCB() {
+    try {
+//      LipidParameterSet param = new LipidParameterSet(464.546203613281f, "30", 1, "-OH", "", "C30 H59 N1 O3", "-H1 -O1",1,2);
+//
+//      CgProbe probe1 = new CgProbe(0,1);
+//      probe1.AreaStatus = CgAreaStatus.OK;
+//      probe1.Area = 1993875328f;
+//      probe1.AreaError = 398507968f;
+//      probe1.Background = 4764792f;
+//      probe1.Peak = 621.865234375f;
+//      probe1.LowerValley = 611.065124511718f;
+//      probe1.UpperValley = 631.46533203125f;
+//      probe1.Mz = 464.351196289062f;
+//      probe1.LowerMzBand = 0.43499755859375f;
+//      probe1.UpperMzBand = 0.589996337890625f;
+//      probe1.isotopeNumber = 0;
+//      param.AddProbe(probe1);
+//      String[] chromPaths = StringUtils.getChromFilePaths("C:\\Sphingolipids\\dataStandardsPrelim\\20190111\\positive\\01092018 CER and SPH Mixes positive-10uM MIX 1.chrom");
+    
+      LipidParameterSet param = new LipidParameterSet(829.798461914062f, "IS48", 1, "NH4", "", "C51 H89 O6 D7", "+N1 +H4",1,0);
+
+      CgProbe probe1 = new CgProbe(0,1);
+      probe1.AreaStatus = CgAreaStatus.OK;
+      probe1.Area = 1993875328f;
+      probe1.AreaError = 398507968f;
+      probe1.Background = 4764792f;
+      probe1.Peak = 989.653991699218f;
+      probe1.LowerValley = 982.716003417968f;
+      probe1.UpperValley = 1004.40997314453f;
+      probe1.Mz = 829.798583984375f;
+      probe1.LowerMzBand = 0.0130615234375f;
+      probe1.UpperMzBand = 0.0159912109375f;
+      probe1.isotopeNumber = 0;
+      param.AddProbe(probe1);
+      String[] chromPaths = StringUtils.getChromFilePaths("C:\\data\\Kristaps\\20171129\\TG quant NIST\\MCC007_Lipid01_NIST1_20171124_positive.chrom");
+
+      
+      System.out.println(chromPaths[1]);
+      LipidomicsAnalyzer lAnalyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
+      setStandardParameters(lAnalyzer);
+//      MSnAnalyzer analyzer = new MSnAnalyzer(null,"Cer","-OH",param,lAnalyzer,null,false,true,true);
+      MSnAnalyzer analyzer = new MSnAnalyzer(null,"TG","NH4",param,lAnalyzer,null,false,true,true);
+      
+      System.out.println("Status: "+analyzer.checkStatus());
+      if (!(analyzer.getResult() instanceof LipidomicsMSnSet)) return;
+      LipidomicsMSnSet result = (LipidomicsMSnSet)analyzer.getResult();
+      for (Object nameObject : result.getMSnIdentificationNames()){
+        if (nameObject instanceof Vector){
+          for (String name : (Vector<String>)nameObject){
+            System.out.println(result.getRt()+": "+name);
+          }
+        }else{
+          String name = (String)nameObject;
+          System.out.println(result.getRt()+": "+name);
+        }
+      }
+
+//      if (analyzer.checkStatus()!=LipidomicsMSnSet.NO_MSN_PRESENT && analyzer.checkStatus()!=LipidomicsMSnSet.DISCARD_HIT){
+//        Hashtable<String,CgProbe> headFragments = analyzer.getHeadGroupFragments();
+//        for (String fragmentName : headFragments.keySet()){
+//          CgProbe probe = headFragments.get(fragmentName);
+//          System.out.println(fragmentName+": \t"+probe.Mz+"\t"+probe.Area);
+//        }
+//        Hashtable<String,Hashtable<String,CgProbe>> chainFragments = analyzer.getChainFragments();
+//        for (String chain : chainFragments.keySet()){
+//          System.out.println("1. "+chain);
+//          Hashtable<String,CgProbe> frags = chainFragments.get(chain);
+//          for (String frag : frags.keySet()){
+//            CgProbe probe = frags.get(frag);
+//            System.out.println(frag+": \t"+probe.Mz+"\t"+probe.Area);
+//          }
+//        }
+//      }
+    }catch(Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+    
+  
   
 }

@@ -27,6 +27,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.lda.utils.StaticUtils;
@@ -65,8 +67,9 @@ public class MSnNamingVO
    * constructor using an detected identification and the maximum amount of time for merging in minutes
    * @param set the MSn identification
    * @param mergingTime maximum amount of time for merging in minutes
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  public MSnNamingVO(LipidomicsMSnSet set, float mergingTime){
+  public MSnNamingVO(LipidomicsMSnSet set, float mergingTime) throws LipidCombinameEncodingException{
     this(set.getNameStringWithoutRt(),set.getMSnIdentificationNames(), set.getStatus(), set.getRt(), mergingTime);
   }
   
@@ -110,11 +113,11 @@ public class MSnNamingVO
    * @param name the currently used combined name for the various fatty acids
    */
   private void detectAllPotentialFaCombinations(String name){
-    String nm = name.replaceAll("/", "_");
-    String[] faArray = nm.split("_");
+    String nm = name.replaceAll(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS, LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
+    String[] faArray = nm.split(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
     Vector<String> fas = new Vector<String>();
     for (String fa : faArray) fas.add(fa);
-    faNames_.addAll(StaticUtils.getPermutedChainNames(fas));
+    faNames_.addAll(StaticUtils.getPermutedChainNames(fas,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS));
   }
   
   /**

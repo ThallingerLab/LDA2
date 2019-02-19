@@ -46,6 +46,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import at.tugraz.genome.lda.LDAResultReader;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
@@ -71,7 +72,7 @@ public class LDAToFASummaryConverter extends ConverterBase
     dirName_ = dirName;
   }
   
-  public void convert() throws ExcelInputFileException, FileNotFoundException{
+  public void convert() throws ExcelInputFileException, FileNotFoundException, LipidCombinameEncodingException{
     File dir = new File(dirName_);
     File[] files = dir.listFiles();
     
@@ -113,7 +114,7 @@ public class LDAToFASummaryConverter extends ConverterBase
   }
   
   private void writeResults(LinkedHashSet<String> lipidClasses, LinkedHashMap<String,QuantificationResult> rawResults)
-      throws FileNotFoundException{
+      throws FileNotFoundException, LipidCombinameEncodingException{
     String outFilename = dirName_+File.separator+"Summary.xlsx";
     BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outFilename));
     try{
@@ -204,7 +205,7 @@ public class LDAToFASummaryConverter extends ConverterBase
   }
   
   
-  private LinkedHashMap<String,Hashtable<String,Hashtable<String,LinkedHashMap<String,String[]>>>> getSortedFattyAcids(String lClass, String speciesName, LinkedHashMap<String,QuantificationResult> rawResults){
+  private LinkedHashMap<String,Hashtable<String,Hashtable<String,LinkedHashMap<String,String[]>>>> getSortedFattyAcids(String lClass, String speciesName, LinkedHashMap<String,QuantificationResult> rawResults) throws LipidCombinameEncodingException{
     //first key: chain sorted; second key: modification; third key: experiment, fourth key: retention time; value: details
     Hashtable<String,Hashtable<String,Hashtable<String,LinkedHashMap<String,String[]>>>> details = new Hashtable<String,Hashtable<String,Hashtable<String,LinkedHashMap<String,String[]>>>>();
     for (String exp : rawResults.keySet()){
@@ -238,7 +239,7 @@ public class LDAToFASummaryConverter extends ConverterBase
     return detailsSorted;
   }
   
-  private Hashtable<String,Hashtable<String,LinkedHashMap<String,String[]>>> getAreasWithoutChainInfo(String lClass, String speciesName, LinkedHashMap<String,QuantificationResult> rawResults){
+  private Hashtable<String,Hashtable<String,LinkedHashMap<String,String[]>>> getAreasWithoutChainInfo(String lClass, String speciesName, LinkedHashMap<String,QuantificationResult> rawResults) throws LipidCombinameEncodingException{
     //first key: modification; second key: experiment, third key: retention time; value: details
     Hashtable<String,Hashtable<String,LinkedHashMap<String,String[]>>> areasWithoutChainInfo = new Hashtable<String,Hashtable<String,LinkedHashMap<String,String[]>>>();
     for (String exp : rawResults.keySet()){

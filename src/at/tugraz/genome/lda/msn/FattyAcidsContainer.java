@@ -27,9 +27,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Hashtable;
 
+import at.tugraz.genome.lda.Settings;
+import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
+import at.tugraz.genome.lda.exception.SheetNotPresentException;
 import at.tugraz.genome.lda.msn.parser.FALibParser;
+import at.tugraz.genome.lda.msn.parser.LCBLibParser;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 
 /**
@@ -54,12 +58,22 @@ public class FattyAcidsContainer
   
   /** hash containing the information
    * first key: Excel library name
-   * second key: amount of carbon atoms of chain
-   * third key: amount of double bonds of key
-   * fourth key: prefix
+   * second key: encoded number of hydroxylation sites
+   * third key: amount of carbon atoms of chain
+   * fourth key: amount of double bonds of key
+   * fifth key: prefix
    */
-  private Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> fattyAcids_;
-  
+  private Hashtable<String,Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>> fattyAcids_;
+
+  /** hash containing the information
+   * first key: Excel library name
+   * second key: encoded number of hydroxylation sites
+   * third key: amount of carbon atoms of chain
+   * fourth key: amount of double bonds of key
+   * fifth key: prefix
+   */  
+  private Hashtable<String,Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>> lcbs_;
+
   
   /**
    * constructor defines directory where the Excel libraries are stored
@@ -69,8 +83,9 @@ public class FattyAcidsContainer
    */
   private FattyAcidsContainer(String faDir) throws RulesException, IOException {
     faDir_ = faDir;
-    fattyAcids_ = new Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>();
-    extractFattyAcids();
+    fattyAcids_ = new Hashtable<String,Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>>();
+    lcbs_ = new Hashtable<String,Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>>();
+    extractChains();
   }
 
   /**
@@ -93,7 +108,7 @@ public class FattyAcidsContainer
    * @return true if the library is there
    */
   private boolean hasFALib(String faLibName){
-    return fattyAcids_.containsKey(faLibName);
+    return (fattyAcids_.containsKey(faLibName)||lcbs_.containsKey(faLibName));
   }
   
   /**
@@ -116,13 +131,13 @@ public class FattyAcidsContainer
   /**
    * returns the extracted fatty acid chains for the requested library
    * @param faLib name of the FA library
-   * @return the extracted fatty acid chains for the requested library
+   * @return the extracted fatty acid chains for the requested library; first key: oh encoded; second key: #C-atoms; third key #double bonds; fourth key: prefix 
    * @throws RulesException specifies in detail which rule has been infringed
    * @throws NoRuleException thrown if the library is not there
    * @throws IOException exception if there is something wrong about the file
    */
-  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getFattyAcidChains(String faLib) throws RulesException, NoRuleException, IOException {
-    return getFattyAcidChains(faLib, faDir_);
+  public static Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> getAllFattyAcidChains(String faLibName) throws RulesException, NoRuleException, IOException {
+    return getAllFattyAcidChains(faLibName, faDir_);
   }
 
   
@@ -130,12 +145,12 @@ public class FattyAcidsContainer
    * returns the extracted fatty acid chains for the requested library
    * @param faLibName name of the FA library
    * @param faLibDir directory where the Excel libraries are stored
-   * @return the extracted fatty acid chains for the requested library
+   * @return the extracted fatty acid chains for the requested library; first key: oh encoded; second key: #C-atoms; third key #double bonds; fourth key: prefix 
    * @throws RulesException specifies in detail which rule has been infringed
    * @throws NoRuleException thrown if the library is not there
    * @throws IOException exception if there is something wrong about the file
    */
-  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getFattyAcidChains(String faLibName, String faLibDir) throws RulesException, NoRuleException, IOException {
+  public static Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> getAllFattyAcidChains(String faLibName, String faLibDir) throws RulesException, NoRuleException, IOException {
     checkIfFALibExists(faLibName,faLibDir);
     return instance_.fattyAcids_.get(faLibName);
   }
@@ -145,20 +160,203 @@ public class FattyAcidsContainer
    * @throws RulesException specifies in detail which rule has been infringed
    * @throws IOException exception if there is something wrong about the file
    */
-  private void extractFattyAcids() throws RulesException, IOException {
+  private void extractChains() throws RulesException, IOException {
     File faLibDir = new File(faDir_);
     if (!faLibDir.exists()) throw new RulesException("The provided fatty acid lib directory does not exist!");
     if (!faLibDir.isDirectory()) throw new RulesException("The fatty acid lib directory is a file - not a directory!");
     File[] files = faLibDir.listFiles();
     for (File file : files){
       if (!file.getAbsolutePath().endsWith(FA_FILE_SUFFIX_NEW) && !file.getAbsolutePath().endsWith(FA_FILE_SUFFIX_OLD)) continue;
-      FALibParser parser = new FALibParser(file);
       try {
-        parser.parseFile();
-        fattyAcids_.put(file.getName().substring(0,file.getName().length()), parser.getFattyAcids());
+        try {
+          FALibParser parser = new FALibParser(file);
+          parser.parseFile();
+          fattyAcids_.put(file.getName().substring(0,file.getName().length()), parser.getFattyAcids());
+        } catch (SheetNotPresentException ex){
+          LCBLibParser parser = new LCBLibParser(file);
+          parser.parseFile();
+          lcbs_.put(file.getName().substring(0,file.getName().length()), parser.getResult());       
+        }
       } catch (RulesException ex){
         throw new RulesException(file.getName()+": "+ex.getMessage());
       }
+      
     }
   }
+  
+  /**
+   * returns the extracted fatty acid chains for the requested library
+   * @param faLibName name of the FA library
+   * @param encoded the encoded character for this number of hydroxylations
+   * @return the result hash - first integer is the amount of carbon atoms; second integer is the amount of double bonds; third key is the prefix
+   * @throws HydroxylationEncodingException thrown if the encoding does not exist
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the library is not there
+   * @throws IOException exception if there is something wrong about the file
+   */
+  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getFattyAcidChains(String faLibName, String encoded)
+      throws HydroxylationEncodingException, RulesException, NoRuleException, IOException {
+    return getFattyAcidChains(faLibName, faDir_, encoded);
+  }
+  
+  
+  /**
+   * returns the extracted fatty acid chains for the requested library
+   * @param faLibName name of the FA library
+   * @param faLibDir directory where the Excel libraries are stored
+   * @param encoded the encoded character for this number of hydroxylations
+   * @return the result hash - first integer is the amount of carbon atoms; second integer is the amount of double bonds; third key is the prefix
+   * @throws HydroxylationEncodingException thrown if the encoding does not exist
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the library is not there
+   * @throws IOException exception if there is something wrong about the file
+   */
+  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getFattyAcidChains(String faLibName, String faLibDir, String encoded)
+      throws HydroxylationEncodingException, RulesException, NoRuleException, IOException {
+    checkIfFALibExists(faLibName, faLibDir);
+    if (!instance_.fattyAcids_.get(faLibName).containsKey(encoded))
+      throw new HydroxylationEncodingException("The demanded hydroxylation encoding \""+encoded+"\" is not available in your FA-library: "+faLibName+"!");
+    return instance_.fattyAcids_.get(faLibName).get(encoded);
+  }
+
+
+  /**
+   * returns the available long chain base for the requested library
+   * @param faLibName name of the FA library
+   * @param hydroxyNr the number of hydroxylation sites
+   * @return the result hash - first integer is the amount of carbon atoms; second integer is the amount of double bonds; third key is the prefix
+   * @throws HydroxylationEncodingException thrown if the encoding does not exist
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the library is not there
+   * @throws IOException exception if there is something wrong about the file
+   */
+  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getFattyAcidChains(String faLibName, short hydroxyNr)
+      throws HydroxylationEncodingException, RulesException, NoRuleException, IOException {
+    return getFattyAcidChains(faLibName, faDir_, hydroxyNr);
+  }
+  
+  /**
+   * returns the extracted fatty acid chains for the requested library
+   * @param faLibName name of the FA library
+   * @param faLibDir directory where the Excel libraries are stored
+   * @param hydroxyNr the number of hydroxylation sites
+   * @return the result hash - first integer is the amount of carbon atoms; second integer is the amount of double bonds; third key is the prefix
+   * @throws HydroxylationEncodingException thrown if the encoding does not exist
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the library is not there
+   * @throws IOException exception if there is something wrong about the file
+   */
+  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getFattyAcidChains(String faLibName, String faLibDir, short hydroxyNr)
+      throws HydroxylationEncodingException, RulesException, NoRuleException, IOException {
+    String encoding = Settings.getFaHydroxyEncoding().getEncodedPrefix(hydroxyNr);
+    try {
+      return getFattyAcidChains(faLibName, faLibDir, encoding);
+    }catch(HydroxylationEncodingException hdx) {
+      throw new HydroxylationEncodingException("The demanded hydroxylation number \""+hydroxyNr+"\" is not available in your FA-library!");
+    }
+  }
+
+  
+  /**
+   * returns the available long chain base for the requested library
+   * @param lcbLibName name of the LCB library
+   * @return the extracted LCB chains for the requested library; first key: oh encoded; second key: #C-atoms; third key #double bonds; fourth key: prefix 
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the library is not there
+   * @throws IOException exception if there is something wrong about the file
+   */
+  public static Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> getAllLCBs(String lcbLibName) throws RulesException, NoRuleException, IOException {
+    return getAllLCBs(lcbLibName, faDir_);
+  }
+
+  
+  /**
+   * returns the available long chain base for the requested library
+   * @param lcbLibName name of the LCB library
+   * @param lcbLibDir directory where the Excel libraries are stored
+   * @return the extracted fatty acid chains for the requested library; first key: oh encoded; second key: #C-atoms; third key #double bonds; fourth key: prefix 
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the library is not there
+   * @throws IOException exception if there is something wrong about the file
+   */
+  public static Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> getAllLCBs(String lcbLibName, String lcbLibDir) throws RulesException, NoRuleException, IOException {
+    checkIfFALibExists(lcbLibName,lcbLibDir);
+    return instance_.lcbs_.get(lcbLibName);
+  }
+
+
+  
+  /**
+   * returns the available long chain base for the requested library
+   * @param lcbLibName name of the LCB library
+   * @param encoded the encoded character for this number of hydroxylations
+   * @return the result hash - first integer is the amount of carbon atoms; second integer is the amount of double bonds; third key is the prefix
+   * @throws HydroxylationEncodingException thrown if the encoding does not exist
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the library is not there
+   * @throws IOException exception if there is something wrong about the file
+   */
+  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getLCBs(String lcbLibName, String encoded)
+      throws HydroxylationEncodingException, RulesException, NoRuleException, IOException {
+    return getLCBs(lcbLibName, faDir_, encoded);
+  }
+  
+  
+  /**
+   * returns the available long chain base for the requested library
+   * @param lcbLibName name of the LCB library
+   * @param lcbLibDir directory where the Excel libraries are stored
+   * @param encoded the encoded character for this number of hydroxylations
+   * @return the result hash - first integer is the amount of carbon atoms; second integer is the amount of double bonds; third key is the prefix
+   * @throws HydroxylationEncodingException thrown if the encoding does not exist
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the library is not there
+   * @throws IOException exception if there is something wrong about the file
+   */
+  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getLCBs(String lcbLibName, String lcbLibDir, String encoded)
+      throws HydroxylationEncodingException, RulesException, NoRuleException, IOException {
+    checkIfFALibExists(lcbLibName, lcbLibDir);
+    if (!instance_.lcbs_.get(lcbLibName).containsKey(encoded))
+      throw new HydroxylationEncodingException("The demanded hydroxylation encoding \""+encoded+"\" is not available in your LCB-library: "+lcbLibName+"!");
+    return instance_.lcbs_.get(lcbLibName).get(encoded);
+  }
+
+
+  /**
+   * returns the available long chain base for the requested library
+   * @param lcbLibName name of the FA library
+   * @param lcbLibDir directory where the Excel libraries are stored
+   * @param hydroxyNr the number of hydroxylation sites
+   * @return the result hash - first integer is the amount of carbon atoms; second integer is the amount of double bonds; third key is the prefix
+   * @throws HydroxylationEncodingException thrown if the encoding does not exist
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the library is not there
+   * @throws IOException exception if there is something wrong about the file
+   */
+  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getLCBs(String lcbLibName, short hydroxyNr)
+      throws HydroxylationEncodingException, RulesException, NoRuleException, IOException {
+    return getLCBs(lcbLibName, faDir_, hydroxyNr);
+  }
+  
+  /**
+   * returns the available long chain base for the requested library
+   * @param lcbLibName name of the FA library
+   * @param lcbLibDir directory where the Excel libraries are stored
+   * @param hydroxyNr the number of hydroxylation sites
+   * @return the result hash - first integer is the amount of carbon atoms; second integer is the amount of double bonds; third key is the prefix
+   * @throws HydroxylationEncodingException thrown if the encoding does not exist
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the library is not there
+   * @throws IOException exception if there is something wrong about the file
+   */
+  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getLCBs(String lcbLibName, String lcbLibDir, short hydroxyNr)
+      throws HydroxylationEncodingException, RulesException, NoRuleException, IOException {
+    String encoding = Settings.getLcbHydroxyEncoding().getEncodedPrefix(hydroxyNr);
+    try {
+      return getLCBs(lcbLibName, lcbLibDir, encoding);
+    }catch(HydroxylationEncodingException hdx) {
+      throw new HydroxylationEncodingException("The demanded hydroxylation number \""+hydroxyNr+"\" is not available in your LCB-library!");
+    }
+  }
+
 }

@@ -44,6 +44,15 @@ public class GeneralSettingsVO
   private String chainLibrary_;
   /** the name of the long chain base library */
   private String lcbLibrary_;
+  /** the lowest possible number of hydroxylation sites for the FA moiety*/
+  private int faHydroxyRangeStart_;
+  /** the highest possible number of hydroxylation sites for the FA moiety*/
+  private int faHydroxyRangeStop_;
+  /** the lowest possible number of hydroxylation sites for the LCB moiety*/
+  private int lcbHydroxyRangeStart_;
+  /** the highest possible number of hydroxylation sites for the LCB moiety*/
+  private int lcbHydroxyRangeStop_;
+  
   /**  Java regular expression to extract the number carbon atoms from the analyte name */
   private String carbonAtomsRule_;
   /** Java regular expression to extract the number of double bonds from the analyte name */
@@ -78,6 +87,10 @@ public class GeneralSettingsVO
     amountOfLCBs_ = null;
     chainLibrary_ = null;
     lcbLibrary_ = null;
+    faHydroxyRangeStart_ = -1;
+    faHydroxyRangeStop_ = -1;
+    lcbHydroxyRangeStart_ = -1;
+    lcbHydroxyRangeStop_ = -1;
     carbonAtomsRule_ = null;
     doubleBondsRule_ = null;
     allowSingleChain_ = false;
@@ -97,7 +110,11 @@ public class GeneralSettingsVO
    * @param amountOfAlkenylChains how many alkenyl chains does this analyte class have
    * @param amountOfLCBs how many LCBs does this analyte class have
    * @param chainLibrary the name of the fatty acid chain library
-   * @param chainLibrary the name of the long chain base library
+   * @param lcbLibrary the name of the long chain base library
+   * @param faHydroxyRangeStart the lowest possible number of hydroxylation sites for the FA moiety
+   * @param faHydroxyRangeStop the highest possible number of hydroxylation sites for the FA moiety
+   * @param lcbHydroxyRangeStart the lowest possible number of hydroxylation sites for the LCB moiety
+   * @param lcbHydroxyRangeStop the highest possible number of hydroxylation sites for the LCB moiety
    * @param carbonAtomsRule Java regular expression to extract the number carbon atoms from the analyte name
    * @param doubleBondsRule Java regular expression to extract the number of double bonds from the analyte name
    * @param allowSingleChain is an identification which is based on a single chain already valid?
@@ -111,7 +128,8 @@ public class GeneralSettingsVO
    */
   public GeneralSettingsVO(Integer amountOfChains,
       Integer amountOfAlkylChains, Integer amountOfAlkenylChains, Short amountOfLCBs,
-      Integer addChainPositions, String chainLibrary, String lcbLibrary, String carbonAtomsRule,
+      Integer addChainPositions, String chainLibrary, String lcbLibrary, int faHydroxyRangeStart,
+      int faHydroxyRangeStop, int lcbHydroxyRangeStart, int lcbHydroxyRangeStop, String carbonAtomsRule,
       String doubleBondsRule, boolean allowSingleChain, String chainCutoff, String basePeakCutoff,
       String spectrumCoverage, boolean rtPostProcessing, boolean rtParallelSeries,
       Double rtMaxDeviation, int msIdentificationOrder)
@@ -124,6 +142,10 @@ public class GeneralSettingsVO
     this.addChainPositions_ = addChainPositions;
     this.chainLibrary_ = chainLibrary;
     this.lcbLibrary_ = lcbLibrary;
+    this.faHydroxyRangeStart_ = faHydroxyRangeStart;
+    this.faHydroxyRangeStop_ = faHydroxyRangeStop;
+    this.lcbHydroxyRangeStart_ = lcbHydroxyRangeStart;
+    this.lcbHydroxyRangeStop_ = lcbHydroxyRangeStop;
     this.carbonAtomsRule_ = carbonAtomsRule;
     this.doubleBondsRule_ = doubleBondsRule;
     this.allowSingleChain_ = allowSingleChain;
@@ -189,7 +211,44 @@ public class GeneralSettingsVO
   {
     return lcbLibrary_;
   }
+  
+  /**
+   * 
+   * @return the lowest possible number of hydroxylation sites for the FA moiety
+   */
+  public int getFaHydroxyRangeStart()
+  {
+    return faHydroxyRangeStart_;
+  }
 
+  /**
+   *     
+   * @return the highest possible number of hydroxylation sites for the FA moiety
+   */
+  public int getFaHydroxyRangeStop()
+  {
+    return faHydroxyRangeStop_;
+  }
+
+  /**
+   * 
+   * @return the lowest possible number of hydroxylation sites for the LCB moiety
+   */
+  public int getLcbHydroxyRangeStart()
+  {
+    return lcbHydroxyRangeStart_;
+  }
+
+  /**
+   * 
+   * @return the highest possible number of hydroxylation sites for the LCB moiety*
+   */
+  public int getLcbHydroxyRangeStop()
+  {
+    return lcbHydroxyRangeStop_;
+  }
+
+  
   /**
    * 
    * @return Java regular expression to extract the number carbon atoms from the analyte name

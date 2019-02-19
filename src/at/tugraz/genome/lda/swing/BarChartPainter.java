@@ -70,6 +70,7 @@ import at.tugraz.genome.lda.analysis.SampleLookup;
 import at.tugraz.genome.lda.analysis.exception.CalculationNotPossibleException;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.ExportException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.export.ExcelAndTextExporter;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.ExportOptionsVO;
@@ -963,7 +964,7 @@ public class BarChartPainter extends JPanel implements ActionListener
             catch (NumberFormatException ex) {ex.printStackTrace();new WarningMessage(new JFrame(), "Error", ex.getMessage());}
             catch (FileNotFoundException ex) {ex.printStackTrace();new WarningMessage(new JFrame(), "Error", ex.getMessage());}
             catch (IOException ex) {ex.printStackTrace();new WarningMessage(new JFrame(), "Error", ex.getMessage());}
-            catch (ExcelInputFileException | ExportException | SpectrummillParserException ex) {
+            catch (ExcelInputFileException | ExportException | SpectrummillParserException | LipidCombinameEncodingException ex) {
               ex.printStackTrace();
               new WarningMessage(new JFrame(), "Error", ex.getMessage());
             }
@@ -1000,7 +1001,7 @@ public class BarChartPainter extends JPanel implements ActionListener
             catch (NumberFormatException ex) {new WarningMessage(new JFrame(), "Error", ex.getMessage());}
             catch (FileNotFoundException ex) {new WarningMessage(new JFrame(), "Error", ex.getMessage());}
             catch (IOException ex) {new WarningMessage(new JFrame(), "Error", ex.getMessage());}
-            catch (ExcelInputFileException | ExportException | SpectrummillParserException ex) {
+            catch (ExcelInputFileException | ExportException | SpectrummillParserException | LipidCombinameEncodingException ex) {
               new WarningMessage(new JFrame(), "Error", ex.getMessage());
             }
           }  

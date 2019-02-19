@@ -39,7 +39,7 @@ import at.tugraz.genome.maspectras.quantification.CgParameterSet;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 
 /**
- * 
+ * class containing information about an analyte identification
  * @author Juergen Hartler
  *
  */
@@ -50,8 +50,11 @@ public class LipidParameterSet extends CgParameterSet
   private String analyteFormula_;
   private String modificationFormula_;
   private String chemicalFormula_;
+  private String chemicalFormulaWODeducts_;
   private Integer charge_;
   private String rt_;
+  /** (total) number of hydroxylation sites present on the molecule*/
+  private Integer ohNumber_;
   
   public final static String MOD_SEPARATOR = "_-_";
   public final static String MOD_SEPARATOR_HR = "_";
@@ -82,9 +85,41 @@ public class LipidParameterSet extends CgParameterSet
     this.percentalSplit_ = set.getPercentalSplit();
   }
   
+  /**
+   * this constructor is kept for backward compatibility - might be deprecated in future
+   * @param mz the anticipated m/z value
+   * @param name the name of the analyte class
+   * @param doubleBonds the number of double bonds - if any
+   * @param modificationName the name of the adduct/modification for ionization
+   * @param rt retention time
+   * @param analyteFormula the chemical formula of the neutral analyte
+   * @param modificationFormula the chemical formula of the modification
+   * @param charge the charge
+   */
   public LipidParameterSet(float mz, String name,
       Integer doubleBonds, String modificationName, String rt, String analyteFormula,
       String modificationFormula, Integer charge)
+  {
+    //TODO: the information about the hydroxylation sites has to come from somewhere else!!!!!!!
+    //this(mz, name, doubleBonds, modificationName, rt, analyteFormula, modificationFormula, charge, 0);
+    this(mz, name, doubleBonds, modificationName, rt, analyteFormula, modificationFormula, charge, 0);
+  }
+  
+  /**
+   * Constructor for LipidParameterSet
+   * @param mz the anticipated m/z value
+   * @param name the name of the analyte class
+   * @param doubleBonds the number of double bonds - if any
+   * @param modificationName the name of the adduct/modification for ionization
+   * @param rt retention time
+   * @param analyteFormula the chemical formula of the neutral analyte
+   * @param modificationFormula the chemical formula of the modification
+   * @param charge the charge
+   * @param ohNumber the number of hydroxylation sites (total)
+   */
+  public LipidParameterSet(float mz, String name,
+      Integer doubleBonds, String modificationName, String rt, String analyteFormula,
+      String modificationFormula, Integer charge, Integer ohNumber)
   {
     super(mz, name,mz,-1,-1, -1,-1, -1, -1, -1, -1, -1,
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
@@ -95,26 +130,46 @@ public class LipidParameterSet extends CgParameterSet
     if (modificationFormula_!=null && modificationFormula_.length()>1){
       try {
         Hashtable<String,Integer> formAnal = StaticUtils.categorizeFormula(this.analyteFormula_);
+        Hashtable<String,Integer> formAnalWODeducts = new Hashtable<String,Integer>(formAnal);
         Hashtable<String,Integer> formMod = StaticUtils.categorizeFormula(this.modificationFormula_);
         for (String element : formMod.keySet()){
           int amount = formMod.get(element);
-          if (formAnal.containsKey(element)) amount+=formAnal.get(element);
+          int amountWODeducts = amount;
+          if (formAnal.containsKey(element)) {
+            amount+=formAnal.get(element);
+            if (amountWODeducts>0)
+              amountWODeducts+=formAnalWODeducts.get(element);
+            else
+              amountWODeducts=formAnalWODeducts.get(element);
+          }
           formAnal.put(element, amount);
+          if (amountWODeducts>0)
+            formAnalWODeducts.put(element, amountWODeducts);
         }
         this.chemicalFormula_ = "";
         for (String element : formAnal.keySet()){
           chemicalFormula_ += element+String.valueOf(formAnal.get(element))+" ";
         }
         if (chemicalFormula_.length()>0) chemicalFormula_ = chemicalFormula_.substring(0,chemicalFormula_.length()-1); 
+        this.chemicalFormulaWODeducts_ = "";
+        for (String element : formAnalWODeducts.keySet()){
+          chemicalFormulaWODeducts_ += element+String.valueOf(formAnalWODeducts.get(element))+" ";
+        }
+        if (chemicalFormulaWODeducts_.length()>0) chemicalFormulaWODeducts_ = chemicalFormulaWODeducts_.substring(0,chemicalFormulaWODeducts_.length()-1); 
+
       } catch (ChemicalFormulaException e) {
         e.printStackTrace();
       }
-    } else chemicalFormula_ = analyteFormula_;
+    } else {
+      chemicalFormula_ = analyteFormula_;
+      chemicalFormulaWODeducts_ = analyteFormula_;
+    }
     charge_ = charge;
     this.rt_ = rt;
     this.lowerRtHardLimit_ = -1f;
     this.upperRtHardLimit_ = -1f;
     this.percentalSplit_ = -1;
+    this.ohNumber_ = ohNumber;
   }
   
   public String getNameString(){
@@ -187,6 +242,15 @@ public class LipidParameterSet extends CgParameterSet
   public String getChemicalFormula()
   {
     return chemicalFormula_;
+  }
+  
+  /**
+   * 
+   * @return the chemical formula that ignores any deductions by ionization
+   */
+  public String getChemicalFormulaWODeducts()
+  {
+    return chemicalFormulaWODeducts_;
   }
 
   public void setRt(String rt)
@@ -334,6 +398,17 @@ public class LipidParameterSet extends CgParameterSet
     return area;
   }
   
+  
+  /**
+   * returns the number of hydroxylation sites
+   * @return the number of hydroxylation sites
+   */
+  public Integer getOhNumber()
+  {
+    return ohNumber_;
+  }
+  
+
   /**
    * @param className required for adduct insensitive filtering (only the ones where RetentionTimePostprocessing=true should be used for the model)
    * @return true if the confidence in the peak is high enough to use it as model for the fitting of the RT prediction curve

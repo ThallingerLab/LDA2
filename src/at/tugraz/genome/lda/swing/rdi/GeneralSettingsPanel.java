@@ -546,7 +546,7 @@ public class GeneralSettingsPanel extends JPanel implements ActionListener
       return false;
     } else {
       try {
-        FattyAcidsContainer.getFattyAcidChains(chainsLibraryField_.getText());
+        FattyAcidsContainer.getAllFattyAcidChains(chainsLibraryField_.getText());
       }
       catch (RulesException | NoRuleException | IOException e) {
         if (verbose) new WarningMessage(new JFrame(), "Error", "There is something wrong with your selected chain library: "+e.getMessage());
@@ -800,10 +800,10 @@ public class GeneralSettingsPanel extends JPanel implements ActionListener
       msIdOrder = RulesContainer.ORDER_MSN_FIRST;
     Integer addPositions = readIntegerFromTextField(this.addChainPositions_);
     
-    //TODO: the number of LCB chains and the LCB chain library is not read from the GUI - appropriate input masks have to be implemented
+    //TODO: the number of LCB chains, the LCB chain library, the FaHydroxylationRange and the LcbHydroxylationRange the is not read from the GUI - appropriate input masks have to be implemented
     GeneralSettingsVO settings = new GeneralSettingsVO(new Integer(chainsAmountField_.getText()),
-        alkylChains, alkenylChains, null, addPositions, chainsLibraryField_.getText(), null,
-        carbonAtomsRuleField_.getText(), this.doubleBondRuleField_.getText(), isSingleChainAllowed,
+        alkylChains, alkenylChains, null, addPositions, chainsLibraryField_.getText(), null, -1, -1, -1,
+        -1, carbonAtomsRuleField_.getText(), this.doubleBondRuleField_.getText(), isSingleChainAllowed,
         chainCutoff, basePeakCutoff, spectrumCoverage, rtPostProcessing, rtParallelSeries, rtMaxDev,
         msIdOrder);
     return settings;

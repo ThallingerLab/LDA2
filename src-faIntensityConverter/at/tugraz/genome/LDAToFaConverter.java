@@ -38,6 +38,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import at.tugraz.genome.lda.LDAResultReader;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
@@ -57,7 +58,7 @@ public class LDAToFaConverter extends ConverterBase
     fileName_ = fileName;
   }
   
-  public void convert() throws ExcelInputFileException, FileNotFoundException{
+  public void convert() throws ExcelInputFileException, FileNotFoundException, LipidCombinameEncodingException{
     QuantificationResult returnParam = LDAResultReader.readResultFile(fileName_, new Hashtable<String,Boolean>());
     if (returnParam==null){
       System.out.println("It was not possible to translate the file: "+fileName_);

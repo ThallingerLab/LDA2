@@ -30,14 +30,15 @@ import java.util.List;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
-import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.analysis.ComparativeAnalysis;
 import at.tugraz.genome.lda.exception.ExportException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.export.LDAExporter;
 import at.tugraz.genome.lda.export.vos.EvidenceVO;
 import at.tugraz.genome.lda.export.vos.FeatureVO;
 import at.tugraz.genome.lda.export.vos.SpeciesExportVO;
 import at.tugraz.genome.lda.export.vos.SummaryVO;
+import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.vos.ResultAreaVO;
@@ -79,15 +80,19 @@ public class MztabUtils extends LDAExporter
    * @param resultsMol the values according to the heat map selection
    * @param adductsSorted key: the adducts sorted in consecutive manner starting with the strongest representative; value: contains this adduct position information
    * @param expsOfGroup key: group name; value sorted vector of experiments
+   * @param faHydroxyEncoding the OH encodings of the FA moiety
+   * @param lcbHydroxyEncoding the OH encodings of the LCB moiety
    * @return a combined object containing the various mzTab specific information
    * @throws ExportException when there is something wrong
    * @throws SpectrummillParserException when there are elements missing in the elementconfig.xml
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   public static SmallMztabMolecule createSmallMztabMolecule(short speciesType, int currentSummaryId, int currentFeatureId, int currentEvidenceId,
       int currentEvGroupingId, int maxIsotopes, ComparativeAnalysis analysisModule, Hashtable<String,MsRun> msruns,
       Hashtable<String,QuantificationResult> originalExcelResults, String molGroup, String molName, Hashtable<String,Vector<Double>> resultsMol,
-      LinkedHashMap<String,Boolean> adductsSorted, LinkedHashMap<String,Vector<String>> expsOfGroup)
-          throws ExportException, SpectrummillParserException{
+      LinkedHashMap<String,Boolean> adductsSorted, LinkedHashMap<String,Vector<String>> expsOfGroup, HydroxyEncoding faHydroxyEncoding,
+      HydroxyEncoding lcbHydroxyEncoding)
+          throws ExportException, SpectrummillParserException, LipidCombinameEncodingException{
     
     Hashtable<String,String> modFormulas = new Hashtable<String,String>();
     Hashtable<String,Integer> modCharges = new Hashtable<String,Integer>();
@@ -97,8 +102,8 @@ public class MztabUtils extends LDAExporter
     ResultCompVO comp = analysisModule.getResults().get(molGroup).get(molName).values().iterator().next();
     int isotopes = comp.getAvailableIsotopeNr(maxIsotopes);
     boolean isRtGrouped = analysisModule.isRtGrouped();
-    Parameter identificationMethod = new Parameter().name("LipidDataAnalyzer").value(Settings.VERSION);
-////    Hashtable<String,Vector<Double>> expMasses = new Hashtable<String,Vector<Double>>();
+    ////Parameter identificationMethod = new Parameter().name("LipidDataAnalyzer").value(Settings.VERSION);
+    Parameter identificationMethod = new Parameter().name("LipidDataAnalyzer").value("2.6.3_2");
     for (String expName : analysisModule.getExpNamesInSequence()){
       ResultAreaVO areaVO = analysisModule.getResultAreaVO(molGroup,molName,expName);
       if (areaVO!=null){
@@ -117,7 +122,7 @@ public class MztabUtils extends LDAExporter
     }
     SpeciesExportVO exportVO =  extractExportableSummaryInformation(speciesType,  true, currentSummaryId, currentFeatureId, true, currentEvidenceId,
         currentEvGroupingId, isRtGrouped, adductsSorted, analysisModule.getExpNamesInSequence(),expsOfGroup,  molName, resultsMol,
-        relevantOriginals, isotopes);
+        relevantOriginals, isotopes, faHydroxyEncoding, lcbHydroxyEncoding);
 //    System.out.println("------------------------------------------");
     //generates the mzTab SmallMoleculeSummary section
     Double smlArea;
