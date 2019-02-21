@@ -110,7 +110,7 @@ import org.xml.sax.SAXException;
 
 
 
-import uk.ac.ebi.pride.jmztab2.utils.MZTabFileParser;
+import de.isas.mztab2.io.MzTabFileParser;
 import de.isas.lipidomics.mztab2.validation.MzTabValidator;
 import uk.ac.ebi.pride.jmztab2.utils.errors.MZTabError;
 import uk.ac.ebi.pride.jmztab2.utils.errors.MZTabErrorList;
@@ -14201,7 +14201,7 @@ public void testTabFile() throws Exception {
     try {
       OutputStream out = System.out;
       MZTabErrorType.Level level = MZTabErrorType.Level.Error;
-      MZTabFileParser mzTabParser = new MZTabFileParser(inFile);
+      MzTabFileParser mzTabParser = new MzTabFileParser(inFile);
       MZTabErrorList errorList = mzTabParser.parse(out, level);
       System.out.println("111111111111111111");
       if (!errorList.isEmpty()) {
