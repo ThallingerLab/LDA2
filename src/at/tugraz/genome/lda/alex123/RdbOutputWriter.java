@@ -73,6 +73,7 @@ public class RdbOutputWriter
   public final static String SPECIES_COLUMN = "Lipid species";
   public final static String RT_GROUPING_COLUMN = "RT group";
   public final static String MOLECULAR_SPECIES_COLUMN = "Molecular lipid species";
+  public final static String MOLECULAR_SPECIES_COLUMN_RANK = "Mol. species rank";
   public final static String LIPID_CLASS_COLUMN = "Lipid class";
   public final static String LEVEL_PREFIX = "MS";
   public final static String FRAGMENT_NAMES_LEVEL_COLUMN_PART = " Fragment names";
@@ -115,6 +116,9 @@ public class RdbOutputWriter
   public final static String OH_INDEX_COLUMN = "OH index of lipid species";
   public final static String SUM_SPECIES_COLUMN = "Sum composition of lipid species";
   public final static String SUM_FORMULA_COLUMN = "Sum formula of lipid species";
+  /**the tab delimiter*/
+  public final static String TAB = "\t";
+
   
   
   /** the prefix for the internal standard*/
@@ -270,7 +274,7 @@ public class RdbOutputWriter
       headerLine.append("\t"+EVIDENCE_LEVEL_COLUMN+"\t"+SPECIES_COLUMN);
       if (isRtGrouped)
         headerLine.append("\t"+RT_GROUPING_COLUMN);
-      headerLine.append("\t"+MOLECULAR_SPECIES_COLUMN+"\t"+LIPID_CLASS_COLUMN);
+      headerLine.append("\t"+MOLECULAR_SPECIES_COLUMN+"\t"+MOLECULAR_SPECIES_COLUMN_RANK+"\t"+LIPID_CLASS_COLUMN);
       for (int i=2; i<=highestMSLevel; i++){
         String levelName = LEVEL_PREFIX+i;
          headerLine.append("\t"+levelName+FRAGMENT_NAMES_LEVEL_COLUMN_PART+"\t"+levelName+FRAGMENT_MZ_LEVEL_COLUMN_PART+"\t"+NUMBER_MS_SCANS_PREFIX+levelName+NUMBER_MS_SCANS_SUFFIX+"\t"+levelName+MSN_RTS_COLUMN_PART);
@@ -633,10 +637,12 @@ public class RdbOutputWriter
                     }
                   }
 
+                  int rank = 0;
                   for (Object msnNames : msnSet.getMSnIdentificationNames()){
                     String nameString = "";
                     double relativeShare = 1d;
                     String oneCombi = "";
+                    rank++;
                     if (msnNames instanceof Vector){
                       Vector<String> names = (Vector<String>)msnNames;
                       for (int j=0; j!= names.size();j++){
@@ -760,6 +766,7 @@ public class RdbOutputWriter
                     if (isRtGrouped)
                       line.append("\t").append(groupingId);
                     line.append("\t").append(molSpeciesId);
+                    line.append(TAB).append(String.valueOf(rank));
                     line.append("\t").append(classNameToWrite);
                     for (int j=2; j<=highestMSLevel; j++){
                       line.append("\t"+fragmentNameHash.get(j)+"\t"+fragmentMzHash.get(j)+"\t"+nrMSnSpectra.get(j)+"\t"+msnRetStrings.get(j));
@@ -803,7 +810,7 @@ public class RdbOutputWriter
                   line.append("\t").append(msLevel).append("\t").append(speciesToWrite);
                   if (isRtGrouped)
                     line.append("\t").append(groupingId);
-                  line.append("\t").append(molSpeciesId);
+                  line.append("\t").append(molSpeciesId+TAB);
                   line.append("\t").append(classNameToWrite);
                   for (int j=2; j<=highestMSLevel; j++){
                     line.append("\t\t\t\t");
