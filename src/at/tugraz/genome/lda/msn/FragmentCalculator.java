@@ -133,6 +133,8 @@ public class FragmentCalculator
     this.analyteFormulaWODeducts_ = formulaWoDeducts;
     this.precursorMass_ = precursorMass;
     this.ohNumber_ = ohNumber;
+    if (ohNumber_<0)
+      this.ohNumber_ = 0;
     initCalculator();
   }
   

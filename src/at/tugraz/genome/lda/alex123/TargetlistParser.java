@@ -34,6 +34,7 @@ import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.alex123.vos.TargetlistEntry;
 import at.tugraz.genome.lda.exception.AlexTargetlistParserException;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
+import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
@@ -385,7 +386,7 @@ public class TargetlistParser
       }
     }catch (IOException iox){
       throw new AlexTargetlistParserException(iox);
-    }catch (ChemicalFormulaException e) {
+    }catch (ChemicalFormulaException | HydroxylationEncodingException e) {
       throw new AlexTargetlistParserException(e);
     }catch (AlexTargetlistParserException alx){
       try{if (reader!=null)reader.close();}catch(Exception ex){}

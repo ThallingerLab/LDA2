@@ -281,6 +281,7 @@ public class MSnAnalyzer
    * @param precursorTolerance the tolerance m/z value for the precursor
    * @param name name of the analyte species
    * @param doubleBonds amount of double bonds of the analyte
+   * @param ohNumber the number of hydroxylation sites
    * @param analyteFormula chemical formula of the analyte
    * @param modificationFormula chemical formula of modification
    * @param charge charge state of the expected hit 
@@ -294,10 +295,10 @@ public class MSnAnalyzer
    * @throws HydroxylationEncodingException thrown if the encoding does not exist
    * @throws ChemicalFormulaException thrown if there is something wrong with the formula
    */
-  public MSnAnalyzer(String className, String modName, double precursorMz, double precursorTolerance, String name, int doubleBonds, String analyteFormula,
+  public MSnAnalyzer(String className, String modName, double precursorMz, double precursorTolerance, String name, int doubleBonds, int ohNumber, String analyteFormula,
       String modificationFormula, int charge, LipidomicsAnalyzer analyzer, boolean debug, boolean ignoreAbsolute) throws RulesException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException {
     this(className,modName,analyzer,debug,ignoreAbsolute);
-    set_ =  new LipidParameterSet((float)precursorMz, name, new Integer(doubleBonds), modName, "not appropriate", analyteFormula, modificationFormula, new Integer(charge));
+    set_ =  new LipidParameterSet((float)precursorMz, name, new Integer(doubleBonds), ohNumber, modName, "not appropriate", analyteFormula, modificationFormula, new Integer(charge));
     this.rulesDir_  = null;
     msnSpectraPresent_ = false;
     scanAllSpectraForCandidates(precursorMz, precursorTolerance);

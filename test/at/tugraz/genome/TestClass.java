@@ -2562,7 +2562,7 @@ public class TestClass extends JApplet implements AddScan
 //      probe1.isotopeNumber = 0;
 //      param.AddProbe(probe1);
       
-      LipidParameterSet param = new LipidParameterSet(874.785827636718f, "52", 3, "HH4", "", "H100 O6 C55", "+NH4",1);
+      LipidParameterSet param = new LipidParameterSet(874.785827636718f, "52", 3, 0, "HH4", "", "H100 O6 C55", "+NH4",1);
 
       CgProbe probe1 = new CgProbe(0,1);
       probe1.AreaStatus = CgAreaStatus.OK;
@@ -2792,7 +2792,7 @@ public class TestClass extends JApplet implements AddScan
     probe1.UpperMzBand = 0.015f;
     probe1.isotopeNumber = 0;*/
     
-    LipidParameterSet param = new LipidParameterSet(728.559387207031f, "36", 2, "-H", "", "C41 H80 O7 P1 N1", "-H",1);
+    LipidParameterSet param = new LipidParameterSet(728.559387207031f, "36", 2, 0, "-H", "", "C41 H80 O7 P1 N1", "-H",1);
     CgProbe probe1 = new CgProbe(0,1);
     probe1.AreaStatus = CgAreaStatus.OK;
     probe1.Area = 383439840f;
@@ -4321,7 +4321,7 @@ public void testTabFile() throws Exception {
       double mz = 638.40380859375;
       double tol = 0.015;
       long time = System.currentTimeMillis();
-      MSnAnalyzer analyzer = new MSnAnalyzer("PC","HCOO",mz, tol,"22",0,"C30 H60 O8 P1 N1","HCOO",1,lAnalyzer,true,false);
+      MSnAnalyzer analyzer = new MSnAnalyzer("PC","HCOO",mz, tol,"22",0,0,"C30 H60 O8 P1 N1","HCOO",1,lAnalyzer,true,false);
       Vector<Float> rts = analyzer.getFoundMatchingSpectraTimes();
       Vector<Double> mustMatchProbabs = aaParser.calculateChemicalFormulaIntensityDistribution("C31 H61 O10 P1 N1", 2, false).get(0);
       Vector<Double> probabs = aaParser.calculateChemicalFormulaIntensityDistribution("C31 H61 O10 P1 N1", 3, false).get(0);

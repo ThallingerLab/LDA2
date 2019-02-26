@@ -312,6 +312,7 @@ public class TooltipTexts
   public final static String DISPLAY_ADD_ANALYTE_RT = "<html>The RT identifier of the analyte.</html>";
   public final static String DISPLAY_ADD_ANALYTE_MASS = "<html>The m/z of the analyte.</html>";
   public final static String DISPLAY_ADD_ANALYTE_ACCEPT = "<html>Accept the settings and add the analyte.</html>";
+  public final static String DISPLAY_ADD_ANALYTE_OH = "<html>The number of hydroxylation sites.</html>";
   
   public final static String DIALOG_ADD_PEAK_START_TIME = "<html>The lower time border in minutes.</html>";
   public final static String DIALOG_ADD_PEAK_STOP_TIME = "<html>The upper time border in minutes.</html>";

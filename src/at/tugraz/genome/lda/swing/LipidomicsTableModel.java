@@ -29,6 +29,7 @@ import java.util.Vector;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
@@ -61,6 +62,8 @@ public class LipidomicsTableModel extends DefaultTableModel implements TableMode
   private boolean showMSn_;
   /** display the modification of the found hit */
   private boolean showMod_;
+  /** do these LipidParameterSets contain any OH information*/
+  private boolean hasOh_;
   
   /**
    * constructor providing all available information
@@ -73,12 +76,15 @@ public class LipidomicsTableModel extends DefaultTableModel implements TableMode
   public LipidomicsTableModel(Vector<LipidParameterSet> params, Vector<LipidParameterSet> paramsOriginal, boolean showMSn, boolean showMod){
     showMSn_ = showMSn;
     showMod_ = showMod;
+    hasOh_ = false;
     rowToName_ = new Hashtable<Integer,String>();
     rowToParam_ = new Hashtable<Integer,LipidParameterSet>();
     rowToOriginal_ = new Hashtable<Integer,Integer>();
     areaLookup_ = new Hashtable<Integer,String>();
     int rowCount = 0;
     for (LipidParameterSet param : params){
+      if (param.getOhNumber()>LipidomicsConstants.EXCEL_NO_OH_INFO)
+        hasOh_ = true;
       if (showMSn && param instanceof LipidomicsMSnSet && (((LipidomicsMSnSet)param).getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED)){
         LipidomicsMSnSet msnSet = (LipidomicsMSnSet)param;
         Vector<Object> detected = null;
@@ -240,6 +246,14 @@ public class LipidomicsTableModel extends DefaultTableModel implements TableMode
   public boolean isShowMSn()
   {
     return showMSn_;
+  }
+  
+  /**
+   * 
+   * @return true when OH information is present in this table
+   */
+  public boolean hasOhInfo() {
+    return hasOh_;
   }
   
   

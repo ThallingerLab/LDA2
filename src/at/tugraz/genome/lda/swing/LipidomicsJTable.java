@@ -78,6 +78,9 @@ public class LipidomicsJTable extends JTable implements ActionListener
   private final static String LABEL_RECALCULATE_MSN = "Recalculate MSn";
   /** display text for editing the retention time of a hit*/
   private final static String LABEL_EDIT_RT = "Edit Rt";
+  /** do these LipidParameterSets contain any OH information*/
+  private boolean hasOh_;
+
 
   public LipidomicsJTable(LipidomicsTableModel model,TableCellRenderer renderer,boolean showMs2,int orderType,boolean showRtInAddDialog,
       AnalyteAddRemoveListener parentListener)  {
@@ -186,6 +189,7 @@ public class LipidomicsJTable extends JTable implements ActionListener
       }  
     });
     this.setToolTipText(TooltipTexts.DISPLAY_SELECTION_TABLE);
+    this.hasOh_ = model.hasOhInfo();
   }
 
   public TableCellRenderer getCellRenderer(int row, int column) {
@@ -204,13 +208,15 @@ public class LipidomicsJTable extends JTable implements ActionListener
       LipidParameterSet params = parentListener_.getAnalyteInTableAtPosition(positionToAddNewAnalyte);
       String displayString = params.getNameString();
       if (params.getModificationName()!=null&&params.getModificationName().length()>0)displayString+="_"+params.getModificationName();
-      new AddAnalyteDialog(new JFrame(),"Enter new analyte", "Add a new analyte before "+displayString,params.getNameString(),params.Mz[0],params.getAnalyteFormula(),params.getModificationName(),params.getModificationFormula(),positionToAddNewAnalyte,showRt_,parentListener_);
+      new AddAnalyteDialog(new JFrame(),"Enter new analyte", "Add a new analyte before "+displayString,params.getNameString(),params.Mz[0],params.getAnalyteFormula(),
+          params.getModificationName(),params.getModificationFormula(),positionToAddNewAnalyte,showRt_,hasOh_ ? String.valueOf(params.getOhNumber()) : null,parentListener_);
     } else if (actionCommand.equalsIgnoreCase("Add analyte after")){
       int positionToAddNewAnalyte = getSelectionModel().getLeadSelectionIndex()+1;
       LipidParameterSet params = parentListener_.getAnalyteInTableAtPosition(positionToAddNewAnalyte-1);
       String displayString = params.getNameString();
       if (params.getModificationName()!=null&&params.getModificationName().length()>0)displayString+="_"+params.getModificationName();
-      new AddAnalyteDialog(new JFrame(),"Enter new analyte", "Add a new analyte after "+displayString,params.getNameString(),params.Mz[0],params.getAnalyteFormula(),params.getModificationName(),params.getModificationFormula(),positionToAddNewAnalyte,showRt_,parentListener_);
+      new AddAnalyteDialog(new JFrame(),"Enter new analyte", "Add a new analyte after "+displayString,params.getNameString(),params.Mz[0],params.getAnalyteFormula(),
+          params.getModificationName(),params.getModificationFormula(),positionToAddNewAnalyte,showRt_,hasOh_ ? String.valueOf(params.getOhNumber()) : null,parentListener_);
     } else if (actionCommand.equalsIgnoreCase("Delete analyte")){
       int[] indices = getSelectedRows();
       String displayString = "\n";

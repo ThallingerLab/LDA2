@@ -71,7 +71,7 @@ public class LipidParameterSet extends CgParameterSet
    * @param set the set to be cloned
    */
   public LipidParameterSet(LipidParameterSet set){
-    this(set.Mz[0],set.Peptide,set.doubleBonds_,set.modificationName_,set.rt_,set.analyteFormula_,
+    this(set.Mz[0],set.Peptide,set.doubleBonds_,set.ohNumber_,set.modificationName_,set.rt_,set.analyteFormula_,
         set.modificationFormula_,set.charge_);
     this.Mz = set.Mz;
     this.Area = set.Area;
@@ -90,6 +90,7 @@ public class LipidParameterSet extends CgParameterSet
    * @param mz the anticipated m/z value
    * @param name the name of the analyte class
    * @param doubleBonds the number of double bonds - if any
+   * @param ohNumber the number of hydroxylation sites
    * @param modificationName the name of the adduct/modification for ionization
    * @param rt retention time
    * @param analyteFormula the chemical formula of the neutral analyte
@@ -97,12 +98,12 @@ public class LipidParameterSet extends CgParameterSet
    * @param charge the charge
    */
   public LipidParameterSet(float mz, String name,
-      Integer doubleBonds, String modificationName, String rt, String analyteFormula,
+      Integer doubleBonds, Integer ohNumber, String modificationName, String rt, String analyteFormula,
       String modificationFormula, Integer charge)
   {
     //TODO: the information about the hydroxylation sites has to come from somewhere else!!!!!!!
     //this(mz, name, doubleBonds, modificationName, rt, analyteFormula, modificationFormula, charge, 0);
-    this(mz, name, doubleBonds, modificationName, rt, analyteFormula, modificationFormula, charge, 0);
+    this(mz, name, doubleBonds, modificationName, rt, analyteFormula, modificationFormula, charge, ohNumber);
   }
   
   /**

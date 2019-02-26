@@ -31,6 +31,7 @@ import java.util.Vector;
 
 import at.tugraz.genome.lda.alex123.vos.TargetlistEntry;
 import at.tugraz.genome.lda.exception.AlexTargetlistParserException;
+import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.vos.QuantVO;
 
 /**
@@ -255,8 +256,8 @@ public class RdbParser
         analyteSequence_.put(className, new Vector<String>(analyteSequence.get(className).keySet()));
       }
       
-    }catch (IOException iox){
-      throw new AlexTargetlistParserException(iox);
+    }catch (IOException | HydroxylationEncodingException ex){
+      throw new AlexTargetlistParserException(ex);
     }finally{
       try{if (reader!=null)reader.close();}catch(Exception ex){}
     }

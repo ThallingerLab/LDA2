@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2019 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -4954,7 +4954,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 // INFO: Settings.emptyEntriesForQuantAnalNotFound() is responsible for creating empty entries if the analyte cannot be quantified                  
                   if (totalArea>0 || Settings.emptyEntriesForQuantAnalNotFound()){
                     LipidParameterSet paramToQuantify = new LipidParameterSet(templateParam.Mz[0], templateParam.getName(),
-                      templateParam.getDoubleBonds(), templateParam.getModificationName(), rt, templateParam.getAnalyteFormula(),
+                      templateParam.getDoubleBonds(), templateParam.getOhNumber(), templateParam.getModificationName(), rt, templateParam.getAnalyteFormula(),
                       templateParam.getModificationFormula(),templateParam.getCharge());
                       paramToQuantify.LowerMzBand = templateParam.LowerMzBand;
                     paramToQuantify.UpperMzBand = templateParam.UpperMzBand;
@@ -5070,11 +5070,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   }
   
   public void addAnalyte(int position, AddAnalyteVO analyteDescrVO){
-
     Float exactMass = new Float(analyteDescrVO.getExactMass());
     LipidParameterSet set = new LipidParameterSet(exactMass, analyteDescrVO.getName(), 
-        analyteDescrVO.getDoubleBonds(), analyteDescrVO.getModName(), analyteDescrVO.getRt(), analyteDescrVO.getFormula(), 
-        analyteDescrVO.getModFormula(), new Integer(analyteDescrVO.getCharge()) );
+        analyteDescrVO.getDoubleBonds(), analyteDescrVO.getOh(), analyteDescrVO.getModName(),
+        analyteDescrVO.getRt(), analyteDescrVO.getFormula(), analyteDescrVO.getModFormula(),
+        new Integer(analyteDescrVO.getCharge()) );
       set.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance(exactMass);
       set.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance(exactMass);
       set.Area = 0;

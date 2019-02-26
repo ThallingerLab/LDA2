@@ -28,6 +28,7 @@ import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.exception.AlexTargetlistParserException;
+import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.utils.StaticUtils;
@@ -74,8 +75,6 @@ public class TargetlistEntry extends QuantVO
   private int carbonNumber_ = -1;
   /** the number of double bonds*/
   private int dbNumber_ = -1;
-  /** the number of OH groups*/
-  private int ohNumber_ = -1;
   /** the sum composition of this lipid species*/
   private String sumComposition_ = null;
   /** the sum formula as stored in the target list*/
@@ -128,6 +127,7 @@ public class TargetlistEntry extends QuantVO
    * @param fragmentSumComposition the sum composition of the fragment
    * @param fragmentFormula the chemical formula of the fragment
    * @throws AlexTargetlistParserException thrown whenever there is something wrong with the entries
+   * @throws HydroxylationEncodingException when there is no encoding for the provided ohNumber
    */
   public TargetlistEntry(String detector, String polarity, int msLevel,
       double mz, String fragment, String structure, String species,
@@ -137,19 +137,10 @@ public class TargetlistEntry extends QuantVO
       int charge, int carbonNumber, int dbNumber, int ohNumber,
       String sumComposition, String formula, String originalSumFormula, int fragmentCarbonNumber,
       int fragmentDbNumber, int fragmentOhNumber,
-      String fragmentSumComposition, String fragmentFormula) throws AlexTargetlistParserException
+      String fragmentSumComposition, String fragmentFormula) throws AlexTargetlistParserException, HydroxylationEncodingException
   {
-    super(lipidClass, species, -1, formula, mz, charge, adduct, adductFormula, -1f, 0f, 0f,
+    super(lipidClass, species, -1, ohNumber, formula, mz, charge, adduct, adductFormula, -1f, 0f, 0f,
         new Vector<Double>(), new Vector<Double>(),0);
-    if (super.analyteName_.startsWith(lipidClass+" "))
-      super.analyteName_ = super.analyteName_.substring((lipidClass+" ").length());
-    if (super.analyteName_.indexOf("/")==-1 && super.analyteName_.indexOf("_")==-1 && super.analyteName_.indexOf(":")!=-1){
-      String dbs = super.analyteName_.substring(super.analyteName_.lastIndexOf(":")+1);
-      try{
-        dbs_ = Integer.parseInt(dbs);
-        analyteName_ = analyteName_.substring(0,super.analyteName_.lastIndexOf(":"));
-      }catch(NumberFormatException nfx){}
-    }
     this.detector_ = detector;
     this.polarity_ = polarity;
     this.msLevel_ = msLevel;
@@ -168,7 +159,6 @@ public class TargetlistEntry extends QuantVO
     this.conflicts_ = conflicts;
     this.carbonNumber_ = carbonNumber;
     this.dbNumber_ = dbNumber;
-    this.ohNumber_ = ohNumber;
     this.sumComposition_ = sumComposition;
     this.originalSumFormula_ = originalSumFormula;
     this.fragmentCarbonNumber_ = fragmentCarbonNumber;
@@ -264,7 +254,7 @@ public class TargetlistEntry extends QuantVO
   public void setOriginalMolecularSpecies(String originalMolecularSpecies) throws AlexTargetlistParserException
   {
     this.originalMolecularSpecies_ = originalMolecularSpecies;
-    this.decodeMolecularSpecies(this.originalMolecularSpecies_, this.analyteClass_, this.analyteName_);
+    this.decodeMolecularSpecies(this.originalMolecularSpecies_, this.analyteClass_, super.getAnalyteName());
   }
   
   
@@ -376,14 +366,6 @@ public class TargetlistEntry extends QuantVO
   public int getDbNumber()
   {
     return dbNumber_;
-  }
-
-  /**
-   * @return the number of OH groups
-   */
-  public int getOhNumber()
-  {
-    return ohNumber_;
   }
 
   /**
@@ -576,6 +558,26 @@ public class TargetlistEntry extends QuantVO
     }
     parts.add(0,rest);
     return parts;
+  }
+  
+  
+  protected Object[] splitInCarbonNumberAndPrefix(String analyteClass, String analyteName) {
+    String rest = new String(analyteName);
+    Object[] prefixAndC = new Object[2];
+    if (rest.startsWith(analyteClass+" "))
+      rest = rest.substring((analyteClass+" ").length());
+    if (rest.indexOf("/")==-1 && rest.indexOf("_")==-1 && rest.indexOf(":")!=-1){
+      String dbs = rest.substring(rest.lastIndexOf(":")+1);
+      try{
+        dbs_ = Integer.parseInt(dbs);
+        rest = rest.substring(0,rest.lastIndexOf(":"));
+        prefixAndC = super.splitInCarbonNumberAndPrefix(analyteClass, rest);
+      }catch(NumberFormatException nfx){}
+    } else {
+      prefixAndC[0] = rest;
+      prefixAndC[1] = LipidomicsConstants.EXCEL_NO_OH_INFO;
+    }
+    return prefixAndC;
   }
   
 }

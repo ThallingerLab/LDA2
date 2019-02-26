@@ -38,10 +38,11 @@ public class AddAnalyteVO
   private String exactMass_;
   private String charge_;
   private String rt_;
+  private int oh_;
   
   
   public AddAnalyteVO(String name, String formula, String modName, String modFormula, String mzTolerance,
-      String exactMass, String charge, String rt)
+      String exactMass, String charge, String rt, int oh)
   {
     super();
     this.name_ = name;
@@ -52,6 +53,7 @@ public class AddAnalyteVO
     this.exactMass_ = exactMass;
     this.charge_ = charge;
     this.rt_ = rt;
+    this.oh_ = oh;
   }
 
 
@@ -110,6 +112,14 @@ public class AddAnalyteVO
   {
     return rt_;
   }
-  
+
+  /**
+   * 
+   * @return the number of hydroxylation sites
+   */
+  public int getOh()
+  {
+    return oh_;
+  }
   
 }

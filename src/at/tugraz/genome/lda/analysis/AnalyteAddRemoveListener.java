@@ -33,6 +33,11 @@ import at.tugraz.genome.lda.vos.AddAnalyteVO;
  */
 public interface AnalyteAddRemoveListener
 {
+  /**
+   * adds an analyte to the currently open Excel file
+   * @param position the position in class list where the analyte should be added
+   * @param analyteDescrVO the required information about the new analyte
+   */
   public void addAnalyte(int position, AddAnalyteVO analyteDescrVO);
   public void removeAnalyte(int[] indices);
   public LipidParameterSet getAnalyteInTableAtPosition(int position);

@@ -26,6 +26,8 @@ package at.tugraz.genome.lda.vos;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.Settings;
+import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.utils.StaticUtils;
 
 /**
@@ -36,8 +38,10 @@ import at.tugraz.genome.lda.utils.StaticUtils;
 public class QuantVO
 {
   protected String analyteClass_;
-  protected String analyteName_;
+  protected String prefixOrName_;
+  protected int carbons_;
   protected int dbs_;
+  protected int oh_;
   protected String analyteFormula_;
   protected double analyteMass_;
   protected int charge_;
@@ -57,17 +61,42 @@ public class QuantVO
   /** will this QuantVO be quantified by another isobar?*/
   protected boolean quantifiedByOtherIsobar_;
   
+  /**
+   * constructor for an object holding necessary information for 
+   * @param analyteClass the name of the lipid class
+   * @param analyteName the parsed name of the analyte
+   * @param dbs the number of double bonds
+   * @param ohNumber the number of hydroxylation sites
+   * @param analyteFormula the neutral chemical formula
+   * @param analyteMass the mass for this search
+   * @param charge the charge
+   * @param modName the name of the modification
+   * @param modFormula the chemical formula for the modification
+   * @param retTime the presumable retention time to search for the analyte
+   * @param usedMinusTime the time tolerance (from retTime) in negative direction
+   * @param usedPlusTime the time tolerance (from retTime) in positive direction
+   * @param mustMatchProbabs the relative intensities of the probabilities of isotopes that must match
+   * @param probabs the relative intensities of the probabilities of isotopes to be searched for
+   * @param negativeStartValue true when a negative isotopic distribution is assumed
+   * @throws HydroxylationEncodingException when there is no encoding for the provided ohNumber 
+   */
   public QuantVO(String analyteClass, String analyteName, int dbs,
-      String analyteFormula, double analyteMass, int charge,
+      int ohNumber, String analyteFormula, double analyteMass, int charge,
       String modName, String modFormula, float retTime,
       float usedMinusTime, float usedPlusTime,
       Vector<Double> mustMatchProbabs, Vector<Double> probabs,
-      int negativeStartValue)
+      int negativeStartValue) throws HydroxylationEncodingException
   {
     super();
     this.analyteClass_ = analyteClass;
-    this.analyteName_ = analyteName;
+    Object[] prefixAndC = splitInCarbonNumberAndPrefix(this.analyteClass_, analyteName);
+    this.prefixOrName_ = (String)prefixAndC[0];
+    this.carbons_ = (Integer)prefixAndC[1];
     this.dbs_ = dbs;
+    this.oh_ = ohNumber;
+    //this is a check whether an encoding for this OH number exists
+    if (oh_>0)
+      Settings.getLcbHydroxyEncoding().getEncodedPrefix((short)oh_);
     this.analyteFormula_ = analyteFormula;
     this.analyteMass_ = analyteMass;
     this.charge_ = charge;
@@ -92,12 +121,23 @@ public class QuantVO
   }
   public String getAnalyteName()
   {
-    return analyteName_;
+    try {
+      return prefixOrName_+(oh_>0 ? Settings.getLcbHydroxyEncoding().getEncodedPrefix((short)oh_) : "")
+          +(carbons_>=0 ? String.valueOf(carbons_) : "");
+    }catch (HydroxylationEncodingException e) {// this was caught before - this error cannot happen
+    }
+    return null;
   }
   public int getDbs()
   {
     return dbs_;
   }
+  
+  public int getOhNumber()
+  {
+    return oh_;
+  }
+
   public String getAnalyteFormula()
   {
     return analyteFormula_;
@@ -158,11 +198,10 @@ public class QuantVO
   }
   
   /**
-   * 
    * @return original string for the analyte name
    */
   public String getIdString(){
-    return StaticUtils.generateLipidNameString(analyteName_,dbs_);
+    return StaticUtils.generateLipidNameString(getAnalyteName(),dbs_);
   }
   
   /**
@@ -261,6 +300,25 @@ public class QuantVO
     return isobaricPlusTime_;
   }
   
-  
+  /**
+   * this method splits an arbitrary input name to a string part, and the number of carbons that come at the end
+   * @param analyteClass the class of the analyte
+   * @param analyteName the name of the analyte (without ":" and followed by the double bonds)
+   * @return [0] String containing prefix or analyte name; [1] Integer containing the number of carbons;
+   */
+  protected Object[] splitInCarbonNumberAndPrefix(String analyteClass, String analyteName) {
+    Object[] prefixAndC = new Object[2];
+    int cs = LipidomicsConstants.EXCEL_NO_OH_INFO;
+    char[] chars = analyteName.toCharArray();
+    int splitChar = chars.length;
+    while (splitChar>0 && Character.isDigit(chars[splitChar-1])) 
+      splitChar--;
+    String prefix = analyteName.substring(0,splitChar);
+    if (splitChar<chars.length)
+      cs = Integer.parseInt(analyteName.substring(splitChar));
+    prefixAndC[0] = prefix;
+    prefixAndC[1] = cs;
+    return prefixAndC;
+  }
   
 }

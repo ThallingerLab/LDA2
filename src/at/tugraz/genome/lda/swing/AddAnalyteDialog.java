@@ -68,11 +68,12 @@ public class AddAnalyteDialog extends JDialog implements ActionListener
   private JTextField exactMass_;
   private JTextField charge_;
   private JTextField rTime_;
+  private JTextField ohNumber_;
   private int positionToAddNewAnalyte_;
   private AnalyteAddRemoveListener parentListener_;
 
   public AddAnalyteDialog(JFrame parent, String title, String message, String analyteName, float mz, String analyteFormula,
-      String modName, String modFormula, int positionToAddNewAnalyte, boolean showRt, AnalyteAddRemoveListener parentListener) {
+      String modName, String modFormula, int positionToAddNewAnalyte, boolean showRt, String oh, AnalyteAddRemoveListener parentListener) {
     super(parent, title, true);
     parentListener_ = parentListener;
     positionToAddNewAnalyte_ = positionToAddNewAnalyte;
@@ -170,6 +171,25 @@ public class AddAnalyteDialog extends JDialog implements ActionListener
       inputPane.add(rTime_,new GridBagConstraints(3, 3, 1, 1, 0.0, 0.0
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     }
+    if (oh!=null) {
+      int xGrid = 2;
+      int yGrid = 3;
+      if (showRt) {
+        xGrid = 0;
+        yGrid = 4;
+      }
+      label = new JLabel("OH-groups: ");
+      label.setToolTipText(TooltipTexts.DISPLAY_ADD_ANALYTE_OH);
+      inputPane.add(label,new GridBagConstraints(xGrid, yGrid, 1, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+      ohNumber_ = new JTextField(5);
+      ohNumber_.setHorizontalAlignment(JTextField.RIGHT);
+      ohNumber_.setInputVerifier(new IntegerVerifier(true));
+      ohNumber_.setText(oh);
+      ohNumber_.setToolTipText(TooltipTexts.DISPLAY_ADD_ANALYTE_OH);
+      inputPane.add(ohNumber_,new GridBagConstraints(xGrid+1, yGrid, 1, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    }
     getContentPane().add(inputPane, BorderLayout.CENTER);    
     JPanel buttonPane = new JPanel();
     JButton cancelButton = new JButton("Cancel");
@@ -214,8 +234,10 @@ public class AddAnalyteDialog extends JDialog implements ActionListener
               modFormula = modFormula_.getText();
             String rt = "";
             if (this.rTime_!=null && rTime_.getText()!=null && rTime_.getText().length()>0) rt = rTime_.getText().trim();
+            int oh = LipidomicsConstants.EXCEL_NO_OH_INFO;
+            if (this.ohNumber_!=null && ohNumber_.getText()!=null && ohNumber_.getText().length()>0) oh = Integer.parseInt(ohNumber_.getText().trim());
             AddAnalyteVO addVO = new AddAnalyteVO(analyteName_.getText().trim(),analyteFormula_.getText().replaceAll(" ", "").trim(),
-                modification, modFormula.replaceAll(" ", ""),mzTolerance_.getText().trim(),exactMass_.getText().trim(),charge_.getText().trim(),rt);
+                modification, modFormula.replaceAll(" ", ""),mzTolerance_.getText().trim(),exactMass_.getText().trim(),charge_.getText().trim(),rt,oh);
             setVisible(false);
             dispose();
             parentListener_.addAnalyte(positionToAddNewAnalyte_, addVO);

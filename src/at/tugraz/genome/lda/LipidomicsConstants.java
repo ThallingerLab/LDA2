@@ -64,6 +64,9 @@ import at.tugraz.genome.lda.utils.StaticUtils;
  */
 public class LipidomicsConstants
 {
+  public final static String EXCEL_MS_OH = "OH";
+  public final static int EXCEL_NO_OH_INFO = -1;
+  
   public final static String EXCEL_MSN_SECTION_HEAD_FRAGMENTS = "Head group fragments";
   public final static String EXCEL_MSN_SECTION_HEAD_INTENSITIES = "Head group rules";
   public final static String EXCEL_MSN_SECTION_CHAIN_FRAGMENTS = "Chain fragments";

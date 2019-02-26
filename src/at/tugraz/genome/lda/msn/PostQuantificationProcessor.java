@@ -151,7 +151,8 @@ public class PostQuantificationProcessor
             if (!analytesMod.containsKey(mod) || unprocResult.containsKey(analyteName)) continue;
             QuantVO quantVO = analytesMod.get(mod);
             LipidParameterSet setForPred = new LipidParameterSet((float)quantVO.getAnalyteMass(), quantVO.getAnalyteName(),
-                quantVO.getDbs(), quantVO.getModName(), "-1.0", quantVO.getAnalyteFormula(), quantVO.getModFormula(), quantVO.getCharge());
+                quantVO.getDbs(), quantVO.getOhNumber(), quantVO.getModName(), "-1.0", quantVO.getAnalyteFormula(), quantVO.getModFormula(),
+                quantVO.getCharge());
             Hashtable<String,LipidParameterSet> forPred = new Hashtable<String,LipidParameterSet>();
             forPred.put(setForPred.getRt(), setForPred);
             unprocResult.put(analyteName, forPred);
@@ -231,6 +232,7 @@ public class PostQuantificationProcessor
         Hashtable<String,Hashtable<String,LipidParameterSet>> negatives = new Hashtable<String,Hashtable<String,LipidParameterSet>>();
         String anyValidRuleName = null;
         float maxDev = -1f;
+        //TODO: here have to introduce separate RT processing according to the number of OHs!!!
         for (String mod : postProcessData.get(className).keySet()){
           try{
             if (RulesContainer.isRtPostprocessing(StaticUtils.getRuleName(className,mod))){

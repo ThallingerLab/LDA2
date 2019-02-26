@@ -143,8 +143,9 @@ public class SingleQuantThread extends Thread
         Vector<Float> rts = new Vector<Float>();
         MSnAnalyzer msnAnalyzer = null;
         for (QuantVO oneSet : quantVOs){
-          msnAnalyzer = new MSnAnalyzer(oneSet.getAnalyteClass(),oneSet.getModName(),oneSet.getAnalyteMass(), (double)LipidomicsConstants.getMs2PrecursorTolerance(),
-              oneSet.getAnalyteName(),oneSet.getDbs(),oneSet.getAnalyteFormula(), oneSet.getModFormula(),oneSet.getCharge(),analyzer,false,quantVOs.size()>1);
+          msnAnalyzer = new MSnAnalyzer(oneSet.getAnalyteClass(),oneSet.getModName(),oneSet.getAnalyteMass(),(double)LipidomicsConstants.getMs2PrecursorTolerance(),
+              oneSet.getAnalyteName(),oneSet.getDbs(),oneSet.getOhNumber(),oneSet.getAnalyteFormula(), oneSet.getModFormula(),oneSet.getCharge(),analyzer,false,
+              quantVOs.size()>1);
           rts.addAll(msnAnalyzer.getFoundMatchingSpectraTimes());
         }
         if (rts.size()>0){
@@ -201,7 +202,7 @@ public class SingleQuantThread extends Thread
         Hashtable<QuantVO,LipidParameterSet> isobars = new Hashtable<QuantVO,LipidParameterSet>();
         for (QuantVO oneSet : quantVOs){
           LipidParameterSet param = createLipidParameterSet(oneHit,oneSet.getNegativeStartValue(), (float)oneSet.getAnalyteMass(),
-              oneSet.getAnalyteName(), oneSet.getDbs(), oneSet.getModName(), oneSet.getAnalyteFormula(), oneSet.getModFormula(), 
+              oneSet.getAnalyteName(), oneSet.getDbs(), oneSet.getOhNumber(), oneSet.getModName(), oneSet.getAnalyteFormula(), oneSet.getModFormula(), 
               oneSet.getCharge());
           if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
             adaptMzValuesOfShotgunHits(param);
@@ -815,8 +816,8 @@ public class SingleQuantThread extends Thread
           continue;
         }
         LipidParameterSet set = createLipidParameterSet(analyzer.mergeIdentifications(forMerging.values()),quantSet.getNegativeStartValue(),
-            (float)quantSet.getAnalyteMass(), quantSet.getAnalyteName(), quantSet.getDbs(), quantSet.getModName(), quantSet.getAnalyteFormula(),
-            quantSet.getModFormula(), quantSet.getCharge());
+            (float)quantSet.getAnalyteMass(), quantSet.getAnalyteName(), quantSet.getDbs(), quantSet.getOhNumber(), quantSet.getModName(),
+            quantSet.getAnalyteFormula(), quantSet.getModFormula(), quantSet.getCharge());
         try {
           //TODO: the parameter before the last one is set to true in the meantime - maybe play around with caching in the future to improve calculation time
           MSnAnalyzer msnAnalyzer = new MSnAnalyzer(quantSet.getAnalyteClass(),quantSet.getModName(),set,analyzer_,quantSet,true,false);  
@@ -845,6 +846,7 @@ public class SingleQuantThread extends Thread
    * @param analyteMass the theoretical mass of the identification
    * @param analyteName the name of the analyte
    * @param dbs the number of the double bonds of the analyte
+   * @param ohNumber the number of hydroxylation sites
    * @param modName the name of the adduct/deduct
    * @param analyteFormula the formula of the analyte
    * @param modFormula the name of the modification of the adduct/deduct
@@ -852,7 +854,8 @@ public class SingleQuantThread extends Thread
    * @return LipidParameterSet object 
    */
   private LipidParameterSet createLipidParameterSet(Hashtable<Integer,Vector<CgProbe>> oneHit, int negativeStartValue,
-      float analyteMass, String analyteName, int dbs, String modName, String analyteFormula, String modFormula, int charge){
+      float analyteMass, String analyteName, int dbs, int ohNumber, String modName, String analyteFormula, String modFormula,
+      int charge){
     Vector<Vector<CgProbe>> isotopicProbes2 = new Vector<Vector<CgProbe>>();
     // k is the isotope number
     float totalArea = 0;
@@ -879,7 +882,7 @@ public class SingleQuantThread extends Thread
     }
     if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE)
       rt = null;
-    LipidParameterSet param = new LipidParameterSet(analyteMass, analyteName, dbs, modName, rt, analyteFormula, modFormula,charge);
+    LipidParameterSet param = new LipidParameterSet(analyteMass, analyteName, dbs, ohNumber, modName, rt, analyteFormula, modFormula,charge);
     param.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance(analyteMass);
     param.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance(analyteMass);
     param.Area = totalArea;

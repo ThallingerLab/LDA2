@@ -527,7 +527,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
             
               Float mz = Float.parseFloat(precursorClassField.getText());
               if (StaticUtils.checkChemicalFormula(formulaField.getText())){
-                data_ = new LipidParameterSet(mz, data_.getName(), data_.getDoubleBonds(), adductClassField.getText(),
+                data_ = new LipidParameterSet(mz, data_.getName(), data_.getDoubleBonds(), data_.getOhNumber(), adductClassField.getText(),
                   data_.getRt(), formulaField.getText(), "",1);
                 data_.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance(mz);
                 data_.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance(mz);

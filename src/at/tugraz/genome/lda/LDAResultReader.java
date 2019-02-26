@@ -137,6 +137,7 @@ public class LDAResultReader
           Vector<LipidParameterSet> resultPrms = new Vector<LipidParameterSet>();
           int nameColumn = -1;
           int dbsColumn = -1;
+          int ohColumn = -1;
           int modificationColumn = -1;
           int formulaColumn = -1;
           int modFormulaColumn = -1;
@@ -180,6 +181,7 @@ public class LDAResultReader
             Row row = sheet.getRow(rowCount);
             String name = null;
             int dbs = -1;
+            int oh = LipidomicsConstants.EXCEL_NO_OH_INFO;
             int paramCharge = 1;
             String modification = null;
             String formula = null;
@@ -238,55 +240,57 @@ public class LDAResultReader
               if (rowCount==0){
                 if (contents.equalsIgnoreCase("Name"))
                   nameColumn = i;
-                if (contents.equalsIgnoreCase("Dbs"))
+                else if (contents.equalsIgnoreCase("Dbs"))
                   dbsColumn = i;
-                if (contents.equalsIgnoreCase("Modification"))
+                else if (contents.equalsIgnoreCase(LipidomicsConstants.EXCEL_MS_OH))
+                  ohColumn = i;
+                else if (contents.equalsIgnoreCase("Modification"))
                   modificationColumn = i;
-                if (contents.equalsIgnoreCase("Formula"))
+                else if (contents.equalsIgnoreCase("Formula"))
                   formulaColumn = i;
-                if (contents.equalsIgnoreCase("Mod-Formula"))
+                else if (contents.equalsIgnoreCase("Mod-Formula"))
                   modFormulaColumn = i;
-                if (contents.equalsIgnoreCase("RT"))
+                else if (contents.equalsIgnoreCase("RT"))
                   rtColumn = i;
-                if (contents.equalsIgnoreCase("Isotope"))
+                else if (contents.equalsIgnoreCase("Isotope"))
                   isotopeColumn = i;            
-                if (contents.equalsIgnoreCase("Area"))
+                else if (contents.equalsIgnoreCase("Area"))
                   areaColumn = i;            
-                if (contents.equalsIgnoreCase("AreaError"))
+                else if (contents.equalsIgnoreCase("AreaError"))
                   areaErrorColumn = i;
-                if (contents.equalsIgnoreCase("Background"))
+                else if (contents.equalsIgnoreCase("Background"))
                   backgroundColumn = i;
-                if (contents.equalsIgnoreCase("Charge"))
+                else if (contents.equalsIgnoreCase("Charge"))
                   chargeColumn = i;
-                if (contents.equalsIgnoreCase("Mz"))
+                else if (contents.equalsIgnoreCase("Mz"))
                   mzColumn = i;
-                if (contents.equalsIgnoreCase("MzTolerance"))
+                else if (contents.equalsIgnoreCase("MzTolerance"))
                   mzToleranceColumn = i;
-                if (contents.equalsIgnoreCase("Peak"))
+                else if (contents.equalsIgnoreCase("Peak"))
                   peakColumn = i;
-                if (contents.equalsIgnoreCase("LowerValley"))
+                else if (contents.equalsIgnoreCase("LowerValley"))
                   lowerValleyColumn = i;
-                if (contents.equalsIgnoreCase("UpperValley"))
+                else if (contents.equalsIgnoreCase("UpperValley"))
                   upperValleyColumn = i;
-                if (contents.equalsIgnoreCase("LowMz"))
+                else if (contents.equalsIgnoreCase("LowMz"))
                   lowMzColumn = i;
-                if (contents.equalsIgnoreCase("UpMz"))
+                else if (contents.equalsIgnoreCase("UpMz"))
                   upMzColumn = i;
-                if (contents.equalsIgnoreCase("EllCentTime"))
+                else if (contents.equalsIgnoreCase("EllCentTime"))
                   ellipseTimePosColumn = i;
-                if (contents.equalsIgnoreCase("EllCentMz"))
+                else if (contents.equalsIgnoreCase("EllCentMz"))
                   ellipseMzPosColumn = i;
-                if (contents.equalsIgnoreCase("EllStretchTime"))
+                else if (contents.equalsIgnoreCase("EllStretchTime"))
                   ellipseTimeStretchColumn = i;
-                if (contents.equalsIgnoreCase("EllStretchMz"))
+                else if (contents.equalsIgnoreCase("EllStretchMz"))
                   ellipseMzStretchColumn = i;
-                if (contents.equalsIgnoreCase("LowerRtHardLimit"))
+                else if (contents.equalsIgnoreCase("LowerRtHardLimit"))
                   lowerHardLimitColumn = i;
-                if (contents.equalsIgnoreCase("UpperRtHardLimit"))
+                else if (contents.equalsIgnoreCase("UpperRtHardLimit"))
                   upperHardLimitColumn = i;
-                if (contents.equalsIgnoreCase("PercentalSplit"))
+                else if (contents.equalsIgnoreCase("PercentalSplit"))
                   percentalSplitColumn = i;
-                if (contents.startsWith("level=")){
+                else if (contents.startsWith("level=")){
                   String levelString = contents.substring("level=".length()).trim();
                   msLevel = Integer.valueOf(levelString);
                 }else if (contents.equalsIgnoreCase(LDAResultReader.COLUMN_APEX_INTENSITY)){
@@ -313,6 +317,8 @@ public class LDAResultReader
                   name = contents;
                 if (i==dbsColumn&&contents!=null&&contents.length()>0){
                   dbs = numeric.intValue();
+                } else if (i==ohColumn&&contents!=null&&contents.length()>0){
+                  oh = numeric.intValue();
                 }if (i==modificationColumn)
                   modification = contents;
                 if (i==formulaColumn)
@@ -404,7 +410,7 @@ public class LDAResultReader
                 modification = "";
                 modFormula = "";
               }
-              params = new LipidParameterSet(mz, name, dbs, modification, rtString, formula, modFormula,paramCharge);
+              params = new LipidParameterSet(mz, name, dbs, oh, modification, rtString, formula, modFormula,paramCharge);
               if (lowerRtHardLimit>=0) params.setLowerRtHardLimit(lowerRtHardLimit);
               if (upperRtHardLimit>=0) params.setUpperRtHardLimit(upperRtHardLimit);
               if (percentalSplit>=0) params.setPercentalSplit(percentalSplit);
