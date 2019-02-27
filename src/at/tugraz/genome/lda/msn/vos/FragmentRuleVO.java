@@ -55,7 +55,9 @@ public class FragmentRuleVO
   private final static int ADD_FRAGMENT = 1;
   private final static int MINUS_FRAGMENT = -1;
   
-  
+
+  /** this fragment does not need to be necessarily present*/
+  public final static short MANDATORY_UNDEFINED = -1;
   /** this fragment does not need to be necessarily present*/
   public final static short MANDATORY_FALSE = 0;
   /** this fragment must be present, otherwise this hit/structure is discarded*/
@@ -64,6 +66,8 @@ public class FragmentRuleVO
   public final static short MANDATORY_OTHER = 2;
   /** this fragment is used for quantitation in PRM data and must be present*/
   public final static short MANDATORY_QUANT = 3;
+  /** this fragment is must be present to verify a lipid class - valid for chain fragments only*/
+  public final static short MANDATORY_CLASS = 4;
   
   // name of fragment
   private String name_;
@@ -83,11 +87,24 @@ public class FragmentRuleVO
   private Hashtable<String,Integer> elementAmounts_;
   //Formula
   private String formula_;
+  /** how many hydroxylations must be present for the detection of this fragment; key: number of hydroxylations; value: mandatory - should be null in case of no OH restrictions*/ 
+  private Hashtable<Short,Short> allowedOHs_;
   // the details of the chemical element
   private Hashtable<String,SmChemicalElementVO> elementDetails_;  
 
   /** the parts of the fragment formula that contains self defined fragments*/
   private Vector<String> selfDefinedParts_;
+  
+  
+  /**
+   * @deprecated
+   */
+  public FragmentRuleVO(String name, String formula, int charge, int msLevel,
+      short mandatory, Hashtable<String,FragmentRuleVO> headFragments, 
+      Hashtable<String,FragmentRuleVO> chainFragments, ElementConfigParser elementParser) throws RulesException
+  {
+    this(name,formula,charge,msLevel,mandatory,null,headFragments,chainFragments,elementParser);
+  }
   
   /**
    * all the information for the VO has to be provided in the constructor
@@ -95,14 +112,15 @@ public class FragmentRuleVO
    * @param formula the rule for the fragment
    * @param charge charge state in which the fragment is observed
    * @param msLevel MS Level in which the fragment may be found (e.g. MS2, MS3, etc.)
-   * @param must the fragment be present - different options possible according to the MANDATORY_... specifications in this class
+   * @param mandatory must the fragment be present - different options possible according to the MANDATORY_... specifications in this class
+   * @param allowedOHs how many hydroxylations must be present for the detection of this fragment; key: number of hydroxylations; value: mandatory - should be null in case of no OH restrictions
    * @param headFragments the previously parsed head fragments (the fragment may be a derivative of a previously parsed head fragment)
    * @param chainFragments the previously parsed chain fragments (the fragment may be a derivative of a previously parsed chain fragment)
    * @param elementParser elementParser for evaluating the chemical formula
    * @throws RulesException specifies in detail which rule has been infringed
    */
   public FragmentRuleVO(String name, String formula, int charge, int msLevel,
-      short mandatory, Hashtable<String,FragmentRuleVO> headFragments, 
+      short mandatory, Hashtable<Short,Short> allowedOHs, Hashtable<String,FragmentRuleVO> headFragments, 
       Hashtable<String,FragmentRuleVO> chainFragments, ElementConfigParser elementParser) throws RulesException
   {
     super();
@@ -112,6 +130,7 @@ public class FragmentRuleVO
     this.mandatory_ = mandatory;
     this.formula_ = formula;
     this.chainType_ = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
+    this.allowedOHs_ = allowedOHs;
     if (charge<1) throw new RulesException("The charge state of an analyte must be greater or equal 1");
     this.categorizeFormula(formula, headFragments, chainFragments, elementParser);
   }

@@ -629,7 +629,7 @@ public class FragmentCalculator
       Vector<Object> formulaAndMass = ruleVO.getFormulaAndMass(analyteFormula_, precursorMass_, chain, ruleVO.getCharge());
       FragmentVO fragVO = new FragmentVO(ruleVO.getName(),(Double)formulaAndMass.get(1),(String)formulaAndMass.get(0),ruleVO.getCharge(),ruleVO.getMsLevel(),
           ruleVO.isMandatory());
-      if (ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_TRUE || ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_QUANT) mandatoryFragments.add(fragVO);
+      if (ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_TRUE || ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_QUANT || ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_CLASS) mandatoryFragments.add(fragVO);
       else addFragments.add(fragVO);
     }
     chainFragments.put(true, mandatoryFragments);
@@ -658,7 +658,8 @@ public class FragmentCalculator
     boolean singleChainIdentification = RulesContainer.isSingleChainIdentification(ruleName_,rulesDir_);
     Vector<String> mandatoryFrags = new Vector<String>();
     for (FragmentRuleVO ruleVO : chainRules.values()){
-      if (ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_TRUE || ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_QUANT) mandatoryFrags.add(ruleVO.getName());
+      if (ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_TRUE || ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_QUANT || ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_CLASS)
+        mandatoryFrags.add(ruleVO.getName());
     }
     Vector<String> relevantCombinations = new Vector<String>();
     try {relevantCombinations =  getChainCombinationsReleveantForTheseChains(fas);

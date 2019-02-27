@@ -681,6 +681,8 @@ public class MSnAnalyzer
       }
     }
 //    }
+    //TODO: here a check has to be introduced whether there is a "class" fragment - if yes, and the size of the chainFragments is 0, then DISCARD_HIT
+    //pay attention that the mandatory=class might be present only in certain OH-combinations!!!!
     if (chainFragments_.size()==0) return;
     
 //    for (String chainId : chainFragments_.keySet()) {
@@ -758,6 +760,10 @@ public class MSnAnalyzer
       }
       combis = intRulesFulFilled;
     }
+    //TODO: here a further check has to be implemented that if all OH-combinations contain "class" fragments, and there are no more combinations left,the 
+    //the whole class has to be discarded
+
+    
     // remove hits that cannot occur in any combination
     // and count if the FA occurs in more than one combination
     int removedKeys = 1;
