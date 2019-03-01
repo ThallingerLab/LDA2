@@ -63,6 +63,9 @@ public class IntensityRuleVO
 
   /** which type of fatty acid chains are involved; if different chain types are involved use DIFF_CHAIN_TYPES*/
   protected short chainType_;
+  
+  /** how many hydroxylations must be present for the detection of this fragment; key: number of hydroxylations; value: mandatory - should be null in case of no OH restrictions*/ 
+  protected Hashtable<Short,Short> allowedOHs_;
 
   
   /**
@@ -100,12 +103,24 @@ public class IntensityRuleVO
   }
 
   /**
-   * 
+   * @deprecated
    * @return must this rule be fulfilled (e.g. to accept a head group, to accept chain fragment, or to assign a position)
    */
   public boolean isMandatory()
   {
     return mandatory_;
+  }
+
+  
+  /**
+   * @param ohNumber the number of hydroxylation sites
+   * @return must the fragment be present - different options possible according to the MANDATORY_... specifications in this class
+   */
+  public boolean isMandatory(short ohNumber)
+  {
+    if (ohNumber==LipidomicsConstants.EXCEL_NO_OH_INFO || this.allowedOHs_==null)  
+      return mandatory_;
+    return (this.allowedOHs_.get(ohNumber)==FragmentRuleVO.MANDATORY_TRUE);
   }
 
   /**
@@ -670,5 +685,25 @@ public class IntensityRuleVO
     return null;
   }
 
+  
+  /**
+   * sets how many hydroxylations must be present for the detection of this fragment; key: number of hydroxylations; value: mandatory - should be null in case of no OH restrictions
+   * @param allowedOHs
+   */
+  public void setAllowedOHs(Hashtable<Short,Short> allowedOHs) {
+    this.allowedOHs_ = allowedOHs;
+  }
+  
+  
+  /**
+   * checks whether this fragment is applicable for this OH configuration
+   * @param ohNumber the number of hydroxylation sites
+   * @return true when the fragment is applicable
+   */
+  public boolean hydroxylationValid(short ohNumber) {
+    if (ohNumber==LipidomicsConstants.EXCEL_NO_OH_INFO || this.allowedOHs_==null)
+      return true;
+    return (this.allowedOHs_.containsKey(ohNumber));
+  }
   
 }

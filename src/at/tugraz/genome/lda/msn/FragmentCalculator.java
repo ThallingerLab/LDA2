@@ -399,23 +399,26 @@ public class FragmentCalculator
 
   /**
    * 
+   * @param ohNumber the degree of hydroxylation to check for fragments
    * @return the FragmentVOs for the head rules - the first key: are these fragments mandatory
    * @throws RulesException specifies in detail which rule has been infringed
    * @throws NoRuleException thrown if the rules are not there
    * @throws IOException exception if there is something wrong about the file
    * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
    */
-  public Hashtable<Boolean,Vector<FragmentVO>> getHeadFragments() throws RulesException, NoRuleException, IOException, SpectrummillParserException{
+  public Hashtable<Boolean,Vector<FragmentVO>> getHeadFragments(int ohNumber) throws RulesException, NoRuleException, IOException, SpectrummillParserException{
     Hashtable<Boolean,Vector<FragmentVO>> allHeadFragments = new Hashtable<Boolean,Vector<FragmentVO>>();
     Vector<FragmentVO> mandatoryFragments = new Vector<FragmentVO>();
     Vector<FragmentVO> addFragments = new Vector<FragmentVO>();
     Hashtable<String,FragmentRuleVO> headRules = RulesContainer.getHeadFragmentRules(ruleName_,rulesDir_);
+    short oh = (short)ohNumber;
     for (FragmentRuleVO ruleVO : headRules.values()){
-      //TODO: I do not know how to handle MS3 spectra - which precursor mass and formula should I use???
+      if (!ruleVO.hydroxylationValid(oh))
+        continue;
       Vector<Object> formulaAndMass = ruleVO.getFormulaAndMass(analyteFormula_, precursorMass_, null, 0,ruleVO.getCharge());
       FragmentVO fragVO = new FragmentVO(ruleVO.getName(),(Double)formulaAndMass.get(1),(String)formulaAndMass.get(0),ruleVO.getCharge(),ruleVO.getMsLevel(),
-          ruleVO.isMandatory());
-      if (ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_TRUE || ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_QUANT) mandatoryFragments.add(fragVO);
+          ruleVO.isMandatory(oh));
+      if (ruleVO.isMandatory(oh)==FragmentRuleVO.MANDATORY_TRUE || ruleVO.isMandatory(oh)==FragmentRuleVO.MANDATORY_QUANT) mandatoryFragments.add(fragVO);
       else addFragments.add(fragVO);
     }
     
@@ -623,13 +626,14 @@ public class FragmentCalculator
     Vector<FragmentVO> mandatoryFragments = new Vector<FragmentVO>();
     Vector<FragmentVO> addFragments = new Vector<FragmentVO>();
     Hashtable<String,FragmentRuleVO> chainRules =  RulesContainer.getChainFragmentRules(ruleName_,rulesDir_);
+    short oh = (short)chain.getOhNumber();
     for (FragmentRuleVO ruleVO : chainRules.values()){
-      if (ruleVO.getChainType()!=chain.getChainType())
-        continue;      
+      if (ruleVO.getChainType()!=chain.getChainType() || !ruleVO.hydroxylationValid(oh))
+        continue;
       Vector<Object> formulaAndMass = ruleVO.getFormulaAndMass(analyteFormula_, precursorMass_, chain, ruleVO.getCharge());
       FragmentVO fragVO = new FragmentVO(ruleVO.getName(),(Double)formulaAndMass.get(1),(String)formulaAndMass.get(0),ruleVO.getCharge(),ruleVO.getMsLevel(),
-          ruleVO.isMandatory());
-      if (ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_TRUE || ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_QUANT || ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_CLASS) mandatoryFragments.add(fragVO);
+          ruleVO.isMandatory(oh));
+      if (ruleVO.isMandatory(oh)==FragmentRuleVO.MANDATORY_TRUE || ruleVO.isMandatory(oh)==FragmentRuleVO.MANDATORY_QUANT || ruleVO.isMandatory(oh)==FragmentRuleVO.MANDATORY_CLASS) mandatoryFragments.add(fragVO);
       else addFragments.add(fragVO);
     }
     chainFragments.put(true, mandatoryFragments);
@@ -1798,6 +1802,105 @@ public class FragmentCalculator
       }
     }
     return relevantChains;
+  }
+  
+  
+  /**
+   * returns true when all OH combinations contain class specific fragments
+   * @return true when all OH combinations contain class specific fragments
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public boolean containAllOhCombinationsClassSpecificFragments() throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    boolean foundClassFragments = false;
+    boolean oneCombiHasNoClassFragments = false;
+    Hashtable<String,FragmentRuleVO> chainRules =  RulesContainer.getChainFragmentRules(ruleName_,rulesDir_);
+    for (int[] ohs : this.possibleOhCombinations_) {
+      String combiId = getOhCombiId(ohs);
+      boolean containAllFaCombisClassFragments = false;
+      Vector<Vector<Integer>> faCombis = allowedFaHydroxylationsCombinations_.get(combiId);
+      if (faCombis.size()>0) {
+        containAllFaCombisClassFragments = true;
+        for (Vector<Integer> combi : faCombis) {
+          boolean containsClassFragments = false;
+          for (Integer oh : combi) {
+            for (FragmentRuleVO vo : chainRules.values()) {
+              if (vo.getChainType()!=LipidomicsConstants.CHAIN_TYPE_FA_ACYL && vo.getChainType()!=LipidomicsConstants.CHAIN_TYPE_FA_ALKYL &&
+                  vo.getChainType()!=LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL)
+                continue;
+              if (!vo.hydroxylationValid(oh.shortValue()))
+                continue;
+              if (vo.isMandatory(oh.shortValue())==FragmentRuleVO.MANDATORY_CLASS) {
+                containsClassFragments = true;
+                break;
+              }
+            }
+          }
+          if (!containsClassFragments) {
+            containAllFaCombisClassFragments = false;
+            break;
+          }
+        }
+      }
+      boolean containAllLcbCombisClassFragments = false;
+      Vector<Vector<Integer>> lcbCombis = allowedLcbHydroxylationsCombinations_.get(combiId);
+      if (lcbCombis.size()>0) {
+        containAllLcbCombisClassFragments = true;
+        for (Vector<Integer> combi : lcbCombis) {
+          boolean containsClassFragments = false;
+          for (Integer oh : combi) {
+            for (FragmentRuleVO vo : chainRules.values()) {
+              if (vo.getChainType()!=LipidomicsConstants.CHAIN_TYPE_LCB)
+                continue;
+              if (!vo.hydroxylationValid(oh.shortValue()))
+                continue;
+              if (vo.isMandatory(oh.shortValue())==FragmentRuleVO.MANDATORY_CLASS) {
+                containsClassFragments = true;
+                break;
+              }
+            }
+          }
+          if (!containsClassFragments) {
+            containAllLcbCombisClassFragments = false;
+            break;
+          }
+        }
+      }
+      if (containAllFaCombisClassFragments||containAllLcbCombisClassFragments)
+        foundClassFragments = true;
+      else {
+        oneCombiHasNoClassFragments = true;
+        break;
+      }
+    }
+    return (foundClassFragments && !oneCombiHasNoClassFragments);
+  }
+  
+  
+  /**
+   * verifies if all class specific chain fragments were found
+   * @param chain the chain object
+   * @param foundFragments the found fragments for this chain
+   * @return true if all class specific chain fragments were found
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public boolean areAllClassFragmentsForChainFound(FattyAcidVO chain, Hashtable<String,CgProbe> foundFragments) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    boolean foundAll = true;
+    Hashtable<String,FragmentRuleVO> chainRules =  RulesContainer.getChainFragmentRules(ruleName_,rulesDir_);
+    for (FragmentRuleVO fragVO : chainRules.values()) {
+      if (fragVO.getChainType()!=chain.getChainType() || fragVO.isMandatory((short)chain.getOhNumber())!=FragmentRuleVO.MANDATORY_CLASS)
+        continue;
+      if (foundFragments==null || !foundFragments.containsKey(fragVO.getName())) {
+        foundAll = false;
+        break;
+      }
+    }
+    return foundAll;
   }
   
 }

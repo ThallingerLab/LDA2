@@ -508,7 +508,7 @@ public class MSnAnalyzer
    */
   private void checkHeadGroupFragments(Hashtable<Integer,Vector<CgProbe>> probesWithMSnSpectra) throws RulesException, IOException, SpectrummillParserException, CgException, NoRuleException {
     //calculate the areas of the head groups
-    Hashtable<Boolean,Vector<FragmentVO>> headFragments = fragCalc_.getHeadFragments();
+    Hashtable<Boolean,Vector<FragmentVO>> headFragments = fragCalc_.getHeadFragments(set_.getOhNumber());
     Vector<FragmentVO> mandatoryHeadFragments = headFragments.get(true);
     Vector<FragmentVO> addHeadFragments = headFragments.get(false);
     boolean foundHeadFragments = false;
@@ -544,6 +544,8 @@ public class MSnAnalyzer
     //check if intensity rules are OK
     Vector<IntensityRuleVO> intRules = fragCalc_.getHeadIntensityRules();
     for (IntensityRuleVO intRule : intRules){
+      if (!intRule.hydroxylationValid(set_.getOhNumber().shortValue()))
+        continue;
       if (intRule.enoughFragmentsForRuleEvaluationFound(headGroupFragments_)){
         if (this.ignoreAbsolute_ && intRule.isAbsoluteComparison()){
           if (intRule.isRuleFulfilled(headGroupFragments_,getBasepeakIfRequired(intRule)))
@@ -556,7 +558,7 @@ public class MSnAnalyzer
           if (debug_){
             this.debugVO_.addViolatedHeadRule(intRule);
           }
-          if (intRule.isMandatory()){
+          if (intRule.isMandatory(set_.getOhNumber().shortValue())){
             status_ = LipidomicsMSnSet.DISCARD_HIT;
             return;
           }
@@ -663,7 +665,7 @@ public class MSnAnalyzer
               else{
               //TODO: possibly use another annotation for displaying the name in the debugVO than chain.getChainId()
                 if (debug_) debugVO_.addViolatedChainRule(chain.getChainId(), intRule); 
-                if (intRule.isMandatory()){
+                if (intRule.isMandatory((short)chain.getOhNumber())){
                   discardChain = true;
                   break;
                 }
@@ -673,6 +675,8 @@ public class MSnAnalyzer
         }
 //      System.out.println("!! "+fa.getName()+" ; "+discardChain);
         if (discardChain) continue;
+        if (!fragCalc_.areAllClassFragmentsForChainFound(chain,foundFragments))
+          continue;
         //this line should not be required any longer
         //String chainName = FragmentCalculator.getAcylAlkylOrAlkenylName(fa.getName(), chainType);
         chainFragments_.put(chain.getChainId(), foundFragments);
@@ -681,9 +685,11 @@ public class MSnAnalyzer
       }
     }
 //    }
-    //TODO: here a check has to be introduced whether there is a "class" fragment - if yes, and the size of the chainFragments is 0, then DISCARD_HIT
-    //pay attention that the mandatory=class might be present only in certain OH-combinations!!!!
-    if (chainFragments_.size()==0) return;
+    if (chainFragments_.size()==0) {
+      if (fragCalc_.containAllOhCombinationsClassSpecificFragments())
+        status_=LipidomicsMSnSet.DISCARD_HIT;
+      return;
+    }
     
 //    for (String chainId : chainFragments_.keySet()) {
 //      System.out.println("!!!!!!!!!!!!!!!!!!! "+chainId);
@@ -784,7 +790,11 @@ public class MSnAnalyzer
       }
       this.removeNotNecessaryFragments(allowedFAs,true);
       this.removeNotNecessaryDiffIntensityRules(combis.keySet());
-      if (combis.size()==0) return;
+      if (combis.size()==0) {
+        if (fragCalc_.containAllOhCombinationsClassSpecificFragments())
+          status_=LipidomicsMSnSet.DISCARD_HIT;
+        return;
+      }
       // area values for each fragment
       Hashtable<String,Double> areas = new Hashtable<String,Double>();
       // calculate a total area for each chain fragment

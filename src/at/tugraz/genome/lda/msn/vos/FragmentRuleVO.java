@@ -173,13 +173,23 @@ public class FragmentRuleVO
   }
 
   /**
-   * 
+   * @param ohNumber the number of hydroxylation sites
    * @return must the fragment be present - different options possible according to the MANDATORY_... specifications in this class
+   */
+  public short isMandatory(short ohNumber)
+  {
+    if (ohNumber==LipidomicsConstants.EXCEL_NO_OH_INFO || this.allowedOHs_==null)  
+      return mandatory_;
+    return (this.allowedOHs_.get(ohNumber));
+  }
+  
+  /**
+   * @deprecated
    */
   public short isMandatory()
   {
     return mandatory_;
-  } 
+  }
   
   
   /**
@@ -609,6 +619,18 @@ public class FragmentRuleVO
       }
     }
     return containsOnlyAllowed;
+  }
+  
+  
+  /**
+   * checks whether this fragment is applicable for this OH configuration
+   * @param ohNumber the number of hydroxylation sites
+   * @return true when the fragment is applicable
+   */
+  public boolean hydroxylationValid(short ohNumber) {
+    if (ohNumber==LipidomicsConstants.EXCEL_NO_OH_INFO || this.allowedOHs_==null)
+      return true;
+    return (this.allowedOHs_.containsKey(ohNumber));
   }
   
 }

@@ -508,7 +508,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
 
       //TODO: here, the analyteFormula without deducts is not implemented - has to be changed in future!
       FragmentCalculator fragCalc = new FragmentCalculator(null,className,modName,analyteName,formula,formula,mz,ohNumber);
-      Vector<FragmentVO> mandHeadFragments = fragCalc.getHeadFragments().get(true);
+      Vector<FragmentVO> mandHeadFragments = fragCalc.getHeadFragments(ohNumber).get(true);
       Hashtable<String,Vector<CgProbe>> headPeaks = new Hashtable<String,Vector<CgProbe>>();
       for (FragmentVO frag : mandHeadFragments){
         if (frag.isMandatory()!=FragmentRuleVO.MANDATORY_QUANT)

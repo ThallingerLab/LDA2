@@ -520,40 +520,9 @@ public class FragRuleParser
           msLevel = Integer.parseInt(value);
         }catch(NumberFormatException nfx){throw new RulesException("The value of "+FRAGMENT_LEVEL+" must be integer, the value \""+value+"\" is not! Error at line number "+lineNumber+"!");}
       }else if(key.equalsIgnoreCase(FRAGMENT_MANDATORY)){
-        mandatory = parseMandatoryLevel(value,currentSection,lineNumber);
+        mandatory = parseMandatoryLevel(value,currentSection,lineNumber, true);
       }else if(key.equalsIgnoreCase(FRAGMENT_HYDROXY)) {
-        allowedOhs = new Hashtable<Short,Short>();
-        String[] ohParts = value.split(",");
-        for (String ohPart : ohParts) {
-          short ohMandatory = FragmentRuleVO.MANDATORY_UNDEFINED;
-          String oh = ohPart;
-          //the expression contains an equal sign and specifies as such the mandatory level
-          if (ohPart.indexOf("=")!=-1) {
-            oh = ohPart.substring(0,ohPart.indexOf("="));
-            try {
-              ohMandatory = parseMandatoryLevel(ohPart.substring(ohPart.indexOf("=")+1),currentSection,lineNumber);
-            }catch (RulesException rex) {
-              throw new RulesException("The same applies for the "+FRAGMENT_MANDATORY+" definition of \""+FRAGMENT_HYDROXY+"\" as for \""+FRAGMENT_MANDATORY+"\": "+rex.getMessage());
-            }
-          }
-          short ohNumber = -1;
-          try {
-            ohNumber = Short.parseShort(oh);
-          //if it is not a number, it can be an encoded hydroxylation
-          }catch(NumberFormatException nfx) {
-            try {
-              ohNumber = Settings.getLcbHydroxyEncoding().getHydroxyNumber(oh);
-            }catch (HydroxylationEncodingException e) {
-              throw new RulesException("The OH-Number \""+oh+"\" of \""+FRAGMENT_HYDROXY+"\" is whether an integer number nor present in the hydroxylation encodings! Error at line number "+lineNumber+"!");
-            }
-          }
-          //check whether this number is present in the hydroxylation encodings
-          try { Settings.getLcbHydroxyEncoding().getEncodedPrefix(ohNumber);
-          }catch (HydroxylationEncodingException e) {
-            throw new RulesException("The OH-Number \""+ohNumber+"\" of \""+FRAGMENT_HYDROXY+"\" is not present in the hydroxylation encodings! Error at line number "+lineNumber+"!");
-          }
-          allowedOhs.put(ohNumber,ohMandatory);
-        }
+        allowedOhs = parseAllowedOHs(value,currentSection,lineNumber,true);
       }else{
         throw new RulesException("The section "+FRAGMENT_SUBSECTION_NAME+" does not support the key \""+key+"\"! Error at line number "+lineNumber+"!");        
       }
@@ -567,8 +536,6 @@ public class FragRuleParser
           allowedOhs.put(oh, mandatory);
       }
     }
-    if (allowedOhs!=null)
-      System.out.println("allowedOhs: "+allowedOhs);
     FragmentRuleVO ruleVO = new FragmentRuleVO(name,formula,charge,msLevel,mandatory,allowedOhs,headFragments_,chainFragments_,elementParser_);
     if (currentSection==HEAD_SECTION) headFragments_.put(name, ruleVO);
     if (currentSection==CHAINS_SECTION){
@@ -613,6 +580,7 @@ public class FragRuleParser
   private void parseIntensityEntry(String line,int lineNumber, int currentSection) throws RulesException{
     if (line.length()==0) return;
     boolean mandatory = false;
+    Hashtable<Short,Short> allowedOhs = null;
     StringTokenizer tokenizer = new StringTokenizer(line,"\t ");
     if (useAlex()) tokenizer = new StringTokenizer(line,"\t");
     IntensityRuleVO ruleVO = null;
@@ -629,6 +597,10 @@ public class FragRuleParser
         }
         ruleVO = extractIntensityVOFromEquation(value, lineNumber, currentSection, FragmentRuleVO.getStringKeyHash(this.headFragments_),FragmentRuleVO.getStringKeyHash(this.chainFragments_), amountOfChains);
       }else if(key.equalsIgnoreCase(FRAGMENT_MANDATORY)){
+        mandatory = parseMandatoryLevel(value,currentSection,lineNumber,false)==FragmentRuleVO.MANDATORY_TRUE;
+      }else if(key.equalsIgnoreCase(FRAGMENT_HYDROXY)) {
+        allowedOhs = parseAllowedOHs(value,currentSection,lineNumber,false);
+      }else if(key.equalsIgnoreCase(FRAGMENT_MANDATORY)){
         if (!(value.equalsIgnoreCase("true")||value.equalsIgnoreCase("false")||value.equalsIgnoreCase("yes")||value.equalsIgnoreCase("no")))
           throw new RulesException("The value of "+FRAGMENT_MANDATORY+" can contain the values \"true\",\"false\",\"yes\" and \"no\" only! Error at line number "+lineNumber+"!");
         if (value.equalsIgnoreCase("true")||value.equalsIgnoreCase("yes"))
@@ -639,7 +611,17 @@ public class FragRuleParser
     }
     
     if (ruleVO==null) throw new RulesException("An entry of "+INTENSITY_SUBSECTION+" must contain a an \""+INTENSITY_EQUATION+"=\" attribute! Error at line number "+lineNumber+"!");
+    if (allowedOhs!=null) {
+      short mand = FragmentRuleVO.MANDATORY_FALSE;
+      if (mandatory) mand = FragmentRuleVO.MANDATORY_TRUE;
+      for (short oh : allowedOhs.keySet()) {
+        if (allowedOhs.get(oh)==FragmentRuleVO.MANDATORY_UNDEFINED)
+          allowedOhs.put(oh, mand);
+      }
+    }
+    
     ruleVO.setMandatory(mandatory);
+    ruleVO.setAllowedOHs(allowedOhs);
     if (currentSection==HEAD_SECTION) headIntensities_.add(ruleVO);
     if (currentSection==CHAINS_SECTION){
       ruleVO.checkForDiffChainTypes(chainFragments_);
@@ -1554,14 +1536,20 @@ public class FragRuleParser
    * @param value the value to be parsed
    * @param currentSection the section in the rule file
    * @param lineNumber the line number (for error handling)
+   * @param extendedOption are more options than true and false allowed
    * @return internal unequivocal representation of the requested mandatory level
    * @throws RulesException when the value is not among the accepted ones
    */
-  private short parseMandatoryLevel(String value, int currentSection, int lineNumber) throws RulesException {
+  private short parseMandatoryLevel(String value, int currentSection, int lineNumber, boolean extendedOptions) throws RulesException {
     short mandatory = FragmentRuleVO.MANDATORY_FALSE;
-    if (!(value.equalsIgnoreCase("true")||value.equalsIgnoreCase("false")||value.equalsIgnoreCase("yes")||value.equalsIgnoreCase("no")
-        ||value.equalsIgnoreCase("other")||value.equalsIgnoreCase("quant")||value.equalsIgnoreCase("class")))
-      throw new RulesException("The value of "+FRAGMENT_MANDATORY+" can contain the values \"true\",\"false\",\"yes\",\"no\",\"class\", and \"other\" only! Error at line number "+lineNumber+"!");
+    if (extendedOptions) {
+      if (!(value.equalsIgnoreCase("true")||value.equalsIgnoreCase("false")||value.equalsIgnoreCase("yes")||value.equalsIgnoreCase("no")
+          ||value.equalsIgnoreCase("other")||value.equalsIgnoreCase("quant")||value.equalsIgnoreCase("class")))
+        throw new RulesException("The value of "+FRAGMENT_MANDATORY+" can contain the values \"true\",\"false\",\"yes\",\"no\",\"class\", and \"other\" only! Error at line number "+lineNumber+"!");
+    }else{
+      if (!(value.equalsIgnoreCase("true")||value.equalsIgnoreCase("false")||value.equalsIgnoreCase("yes")||value.equalsIgnoreCase("no")))
+        throw new RulesException("The value of "+FRAGMENT_MANDATORY+" can contain the values \"true\",\"false\",\"yes\" and \"no\" only! Error at line number "+lineNumber+"!");
+    }
     if (value.equalsIgnoreCase("true")||value.equalsIgnoreCase("yes"))
       mandatory = FragmentRuleVO.MANDATORY_TRUE;
     else if (value.equalsIgnoreCase("other"))
@@ -1574,6 +1562,52 @@ public class FragRuleParser
       mandatory = FragmentRuleVO.MANDATORY_CLASS;
     }
     return mandatory;
+  }
+  
+  
+  /**
+   * parses the allowed number hydroxylation sites and whether this fragment is mandatory for this hydroxylation configuration  
+   * @param value the value to be parsed
+   * @param currentSection the section in the rule file
+   * @param lineNumber the line number (for error handling)
+   * @param extendedOption are more options than true and false allowed
+   * @return allowed number of hydroxylation sites and whether this fragment is mandatory for this hydroxylation configuration 
+   * @throws RulesException when the value is not among the accepted ones
+   */
+  private Hashtable<Short,Short> parseAllowedOHs(String value, int currentSection, int lineNumber, boolean extendedOptions) throws RulesException {
+    Hashtable<Short,Short> allowedOhs = new Hashtable<Short,Short>();
+    String[] ohParts = value.split(",");
+    for (String ohPart : ohParts) {
+      short ohMandatory = FragmentRuleVO.MANDATORY_UNDEFINED;
+      String oh = ohPart;
+      //the expression contains an equal sign and specifies as such the mandatory level
+      if (ohPart.indexOf("=")!=-1) {
+        oh = ohPart.substring(0,ohPart.indexOf("="));
+        try {
+          ohMandatory = parseMandatoryLevel(ohPart.substring(ohPart.indexOf("=")+1),currentSection,lineNumber,extendedOptions);
+        }catch (RulesException rex) {
+          throw new RulesException("The same applies for the "+FRAGMENT_MANDATORY+" definition of \""+FRAGMENT_HYDROXY+"\" as for \""+FRAGMENT_MANDATORY+"\": "+rex.getMessage());
+        }
+      }
+      short ohNumber = -1;
+      try {
+        ohNumber = Short.parseShort(oh);
+      //if it is not a number, it can be an encoded hydroxylation
+      }catch(NumberFormatException nfx) {
+        try {
+          ohNumber = Settings.getLcbHydroxyEncoding().getHydroxyNumber(oh);
+        }catch (HydroxylationEncodingException e) {
+          throw new RulesException("The OH-Number \""+oh+"\" of \""+FRAGMENT_HYDROXY+"\" is whether an integer number nor present in the hydroxylation encodings! Error at line number "+lineNumber+"!");
+        }
+      }
+      //check whether this number is present in the hydroxylation encodings
+      try { Settings.getLcbHydroxyEncoding().getEncodedPrefix(ohNumber);
+      }catch (HydroxylationEncodingException e) {
+        throw new RulesException("The OH-Number \""+ohNumber+"\" of \""+FRAGMENT_HYDROXY+"\" is not present in the hydroxylation encodings! Error at line number "+lineNumber+"!");
+      }
+      allowedOhs.put(ohNumber,ohMandatory);
+    }
+    return allowedOhs;
   }
   
 }

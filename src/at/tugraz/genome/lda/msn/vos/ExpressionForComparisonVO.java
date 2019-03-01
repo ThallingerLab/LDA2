@@ -91,7 +91,7 @@ public class ExpressionForComparisonVO
     for (FragmentMultVO multVO : fragments_){
       double value = 0d;
       if (multVO.getFragmentName().equalsIgnoreCase(IntensityRuleVO.BASEPEAK_NAME)) value = basePeak;
-      else if (found.containsKey(multVO.getFragmentName())) value = found.get(multVO.getFragmentName()).Area;
+      else if (found!=null && found.containsKey(multVO.getFragmentName())) value = found.get(multVO.getFragmentName()).Area;
       value = value*multVO.getMultFactor();
       if (!multVO.isPositive()) value = value*-1d;
       sum += value;
