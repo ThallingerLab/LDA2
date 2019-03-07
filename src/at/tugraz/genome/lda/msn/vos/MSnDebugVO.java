@@ -26,6 +26,9 @@ package at.tugraz.genome.lda.msn.vos;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.Settings;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
+
 /**
  * 
  * @author Juergen Hartler
@@ -138,9 +141,10 @@ public class MSnDebugVO
   /**
    * adds violated head intensity rules
    * @param ruleVO the violated intensity rule 
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  public void addViolatedHeadRule(IntensityRuleVO ruleVO) {
-    violatedHeadRules_.put(ruleVO.getReadableRuleInterpretation(), ruleVO);
+  public void addViolatedHeadRule(IntensityRuleVO ruleVO) throws LipidCombinameEncodingException {
+    violatedHeadRules_.put(ruleVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), ruleVO);
   }
 
   /**

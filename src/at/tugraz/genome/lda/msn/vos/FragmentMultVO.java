@@ -34,6 +34,8 @@ public class FragmentMultVO
 {
   /** the name of the fragment */
   private String fragmentName_;
+  /** the type of the fragment none, acyl, alkyl or lcb*/
+  private short type_;
   /** the multiplication factor */
   private String multFactor_;
   /** shall the value be added or subtracted*/
@@ -45,15 +47,17 @@ public class FragmentMultVO
   /**
    * Constructor requiring all information for the VO; if there is no position appropriate - use 0 or -1
    * @param fragmentName the name of the fragment
+   * @param type the chain type (acyl/alkyl/alkenyl/lcb) as defined in LipidomicsConstants
    * @param multFactor multiplication factor
    * @param positive shall the value be added or subtracted (true for adding)
    * @param position if appropriate, the affected position - use 0 or -1
    */
-  public FragmentMultVO(String fragmentName, String multFactor,
+  public FragmentMultVO(String fragmentName, short type, String multFactor,
       Boolean positive, int position)
   {
     super();
     this.fragmentName_ = fragmentName;
+    this.type_ = type;
     this.multFactor_ = multFactor;
     this.positive_ = positive;
     this.position_ = position;
@@ -67,6 +71,14 @@ public class FragmentMultVO
   public String getFragmentName()
   {
     return fragmentName_;
+  }
+  
+  /**
+   * 
+   * @return the type of the fragment
+   */
+  public short getFragmentType() {
+    return type_;
   }
 
   /**

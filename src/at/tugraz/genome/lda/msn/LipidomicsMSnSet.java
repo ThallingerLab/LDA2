@@ -596,19 +596,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
    */
   public float getBasePeak(IntensityRuleVO rule)
   {
-    CgProbe probe = null;
-    Vector<String> nonBpNames = rule.getBiggerNonBasePeakNames();
-    for (String nonBpName : nonBpNames){
-      probe = getFragment(nonBpName,rule.getBiggerFA()!=null ? rule.getBiggerFA().getChainId() : null,headGroupFragments_,chainFragments_);
-      if (probe!=null) break;
-    }
-    if (probe!=null) return getBasePeak(probe.getMsLevel());
-
-    nonBpNames = rule.getSmallerNonBasePeakNames();
-    for (String nonBpName : nonBpNames){
-      probe = getFragment(nonBpName,rule.getSmallerFA()!=null ? rule.getSmallerFA().getChainId() : null,headGroupFragments_,chainFragments_);
-      if (probe!=null) break;
-    }   
+    CgProbe probe = rule.getAnyNonBasepeakFragment(headGroupFragments_,chainFragments_); 
     return getBasePeak(probe.getMsLevel());
   }
 
@@ -643,19 +631,15 @@ public class LipidomicsMSnSet extends LipidParameterSet
    */
   public static Hashtable<String,Float> getFragmentAreas(IntensityRuleVO ruleVO, Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments) {
     Hashtable<String,Float> areas = new Hashtable<String,Float>();
-    Vector<String> biggerNames =  ruleVO.getBiggerNonBasePeakNames();
-    FattyAcidVO biggerFA = ruleVO.getBiggerFA();
-    for (String biggerName : biggerNames){
-      Float biggerArea = getFragmentArea(biggerName,biggerFA!=null ? biggerFA.getChainId() : null,headGroupFragments,chainFragments);
+    for (String biggerName : ruleVO.getBiggerNonBasePeakNames().keySet()){
+      Float biggerArea = getFragmentArea(ruleVO,biggerName,headGroupFragments,chainFragments);
       if (biggerArea == null) continue;
       String identifier = biggerName;
       if (ruleVO.getBiggerPosition()>0) identifier += "["+String.valueOf(ruleVO.getBiggerPosition())+"]";
       areas.put(identifier, biggerArea);
     }
-    Vector<String> smallerNames =  ruleVO.getSmallerNonBasePeakNames();
-    FattyAcidVO smallerFA = ruleVO.getSmallerFA();
-    for (String smallerName : smallerNames){
-      Float smallerArea = getFragmentArea(smallerName,smallerFA!=null ? smallerFA.getChainId() : null,headGroupFragments,chainFragments);
+    for (String smallerName : ruleVO.getSmallerNonBasePeakNames().keySet()){
+      Float smallerArea = getFragmentArea(ruleVO,smallerName,headGroupFragments,chainFragments);
       if (smallerArea == null) continue;
       String identifier = smallerName;
       if (ruleVO.getSmallerPosition()>0) identifier += "["+String.valueOf(ruleVO.getSmallerPosition())+"]";
@@ -666,42 +650,19 @@ public class LipidomicsMSnSet extends LipidParameterSet
 
   /**
    * returns the area for one fragment
+   * @param intRule the IntensityRuleVO holding information about the found fragments
    * @param name name of the fragment
-   * @param faName fatty acid name - required for chain fragments
    * @param headGroupFragments the found head group fragments with its areas; key: fragment name; value: CgProbe peak identification object
    * @param chainFragments the found chain fragments with its areas; first key: fatty acid name; second key: name of the fragment; value: CgProbe peak identification object
    * @return area of the fragment
    */
-  private static Float getFragmentArea(String name, String faName, Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments){
+  private static Float getFragmentArea(IntensityRuleVO intRule, String name, Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments){
     Float area = null;
     if (name.equalsIgnoreCase(IntensityRuleVO.BASEPEAK_NAME)) return area;
-    CgProbe fragment = getFragment(name, faName, headGroupFragments, chainFragments);
+    CgProbe fragment = intRule.checkForFragmentAvailability(name, headGroupFragments, chainFragments);
     if (fragment!=null) area = fragment.Area;
     else area = -1f;
     return area;    
-  }
-  
-  /**
-   * returns the CgProbe peak identification object for one fragment
-   * @param name name of the wanted fragment
-   * @param faName fatty acid name - required for chain fragments
-   * @param headGroupFragments the found head group fragments with its areas; key: fragment name; value: CgProbe peak identification object
-   * @param chainFragments the found chain fragments with its areas; first key: fatty acid name; second key: name of the fragment; value: CgProbe peak identification object
-   * @return CgProbe peak identification object for one fragment
-   */
-  private static CgProbe getFragment(String name, String faName, Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments){
-    CgProbe fragment = null;
-    if (headGroupFragments!=null && headGroupFragments.size()>0 && headGroupFragments.containsKey(name)) fragment = headGroupFragments.get(name); 
-    else if (faName!=null && faName.length()>0 && chainFragments!=null){
-      if (chainFragments.containsKey(faName) && chainFragments.get(faName).containsKey(name)){
-        fragment = chainFragments.get(faName).get(name);
-      }else if (chainFragments.containsKey(LipidomicsConstants.ALKYL_PREFIX.concat(faName)) && chainFragments.get(LipidomicsConstants.ALKYL_PREFIX.concat(faName)).containsKey(name)){
-        fragment = chainFragments.get(LipidomicsConstants.ALKYL_PREFIX.concat(faName)).get(name);
-      }else if (chainFragments.containsKey(LipidomicsConstants.ALKENYL_PREFIX.concat(faName)) && chainFragments.get(LipidomicsConstants.ALKENYL_PREFIX.concat(faName)).containsKey(name)){
-        fragment = chainFragments.get(LipidomicsConstants.ALKENYL_PREFIX.concat(faName)).get(name);
-      }
-    }
-    return fragment;
   }
   
   /**

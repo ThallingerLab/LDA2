@@ -26,9 +26,12 @@ package at.tugraz.genome.lda.msn.vos;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.RulesException;
+import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.vos.ShortStringVO;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 
 /**
@@ -39,8 +42,13 @@ import at.tugraz.genome.maspectras.quantification.CgProbe;
  */
 public class IntensityPositionVO extends IntensityRuleVO
 {
-  private FattyAcidVO biggerFA_;
-  private FattyAcidVO smallerFA_;
+  /** the chains at the 'greater than' side of this rule*/
+  private Hashtable<String,FattyAcidVO> biggerChains_;
+  /** the chains at the 'smaller than' side of this rule*/
+  private Hashtable<String,FattyAcidVO> smallerChains_;
+  /** does this object hold hydroxylation information*/
+  private boolean hasOhInfo_;
+
   
   private boolean negated_;
   private int derivedPosition_;
@@ -50,11 +58,21 @@ public class IntensityPositionVO extends IntensityRuleVO
    * @param rule rule that was applied
    * @param biggerFA fatty acid that was verified at at the greater part of the comparator
    * @param smallerFA fatty acid that was verified at at the lesser part of the comparator
+   * @param hasOhInfo has this intensity rule chain information - this is important for generating the human readable name
    */
-  public IntensityPositionVO(IntensityRuleVO rule, FattyAcidVO biggerFA, FattyAcidVO smallerFA){
+  public IntensityPositionVO(IntensityRuleVO rule, FattyAcidVO biggerFA, FattyAcidVO smallerFA, boolean hasOhInfo){
     super(rule);
-    this.biggerFA_ = biggerFA;
-    this.smallerFA_ = smallerFA;
+    this.hasOhInfo_ = hasOhInfo;
+    biggerChains_ = new Hashtable<String,FattyAcidVO>();
+    smallerChains_ = new Hashtable<String,FattyAcidVO>();
+    for (FragmentMultVO frag : biggerExpression_.getFragments()) {
+      if (frag.getFragmentType()!=LipidomicsConstants.CHAIN_TYPE_NO_CHAIN)
+        biggerChains_.put(frag.getFragmentName(), biggerFA);
+    }
+    for (FragmentMultVO frag : smallerExpression_.getFragments()) {
+      if (frag.getFragmentType()!=LipidomicsConstants.CHAIN_TYPE_NO_CHAIN)
+        smallerChains_.put(frag.getFragmentName(), smallerFA);
+    }
     negated_ = false;
     derivedPosition_ = -1;
   }
@@ -64,7 +82,10 @@ public class IntensityPositionVO extends IntensityRuleVO
    */
   public FattyAcidVO getBiggerFA()
   {
-    return biggerFA_;
+    if (biggerChains_!=null && biggerChains_.size()>0)
+      return biggerChains_.values().iterator().next();
+    else
+      return null;
   }
 
   /**
@@ -72,24 +93,31 @@ public class IntensityPositionVO extends IntensityRuleVO
    */
   public FattyAcidVO getSmallerFA()
   {
-    return smallerFA_;
+    if (smallerChains_!=null && smallerChains_.size()>0)
+      return smallerChains_.values().iterator().next();
+    else
+      return null;
   }
   
   /**
-   * 
+   * @param faEncoding the hydroxylation encoding for FA chains
+   * @param lcbEncoding the hydroxylation encoding for LCB chains
    * @return the human readable String representation for storing in Excel
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  public String getReadableRuleInterpretation() {
+  public String getReadableRuleInterpretation(HydroxyEncoding faEncoding, HydroxyEncoding lcbEncoding) throws LipidCombinameEncodingException {
     Hashtable<String,String> originalToReplacementBigger = new Hashtable<String,String>();
-    for (String name : getBiggerNonBasePeakNames()){
+    for (String name : getBiggerNonBasePeakNames().keySet()){
       String nameString = name+"["+getBiggerPosition()+"]";
-      String value = StaticUtils.getChainFragmentDisplayName(name,biggerFA_.getCarbonDbsId())+"["+getBiggerPosition()+"]";
+      String value = StaticUtils.getChainFragmentDisplayName(name,StaticUtils.getHumanReadableChainName(this.biggerChains_.get(name), faEncoding,
+          lcbEncoding,hasOhInfo_,StaticUtils.isAnAlex123Fragment(name)))+"["+getBiggerPosition()+"]";
       originalToReplacementBigger.put(nameString, value);
     }
     Hashtable<String,String> originalToReplacementSmaller = new Hashtable<String,String>();
-    for (String name : getSmallerNonBasePeakNames()){
+    for (String name : getSmallerNonBasePeakNames().keySet()){
       String nameString = name+"["+getSmallerPosition()+"]";
-      String value = StaticUtils.getChainFragmentDisplayName(name,smallerFA_.getCarbonDbsId())+"["+getSmallerPosition()+"]";
+      String value = StaticUtils.getChainFragmentDisplayName(name,StaticUtils.getHumanReadableChainName(this.smallerChains_.get(name), faEncoding,
+          lcbEncoding,hasOhInfo_,StaticUtils.isAnAlex123Fragment(name)))+"["+getSmallerPosition()+"]";
       originalToReplacementSmaller.put(nameString, value);
     }
     String[] biggerSmaller = splitToBiggerAndSmallerPart(equation_);
@@ -103,7 +131,7 @@ public class IntensityPositionVO extends IntensityRuleVO
     } else if (equation_.indexOf("<")!=-1){
       returnString = smallerPart+"<"+biggerPart;
     }
-    if (negated_) returnString = biggerFA_.getCarbonDbsId()+"["+derivedPosition_+"] BECAUSE NOT FULFILLED: "+returnString;
+    if (negated_) returnString = getBiggerFA().getCarbonDbsId()+"["+derivedPosition_+"] BECAUSE NOT FULFILLED: "+returnString;
     return returnString;
   }
   
@@ -114,8 +142,17 @@ public class IntensityPositionVO extends IntensityRuleVO
     if (!super.equals(other)) return false;
     if (!(other instanceof IntensityPositionVO)) return false;
     IntensityPositionVO chain = (IntensityPositionVO)other;
-    if (!biggerFA_.getChainId().equalsIgnoreCase(chain.biggerFA_.getChainId())) return false;
-    if (!smallerFA_.getChainId().equalsIgnoreCase(chain.smallerFA_.getChainId())) return false;
+    if ((getBiggerFA()==null && chain.getBiggerFA()!=null)||(chain.getBiggerFA()==null && getBiggerFA()!=null))
+      return false;
+    if (chain.getBiggerFA()!=null && getBiggerFA()!=null) {
+      if (!getBiggerFA().getChainId().equalsIgnoreCase(chain.getBiggerFA().getChainId())) return false;
+    }
+    
+    if ((getSmallerFA()==null && chain.getSmallerFA()!=null)||(chain.getSmallerFA()==null && getSmallerFA()!=null))
+      return false;
+    if (chain.getSmallerFA()!=null && getSmallerFA()!=null) {
+      if (!getSmallerFA().getChainId().equalsIgnoreCase(chain.getSmallerFA().getChainId())) return false;
+    }
     return true;
   }
   
@@ -127,8 +164,9 @@ public class IntensityPositionVO extends IntensityRuleVO
   public int getPositionByFA(String fa){
     if (negated_) return derivedPosition_;
     int position=-1;
-    if (biggerFA_.getChainId().equalsIgnoreCase(fa)) position = getBiggerPosition();
-    else if (smallerFA_.getChainId().equalsIgnoreCase(fa)) position = getSmallerPosition();
+    FattyAcidVO faVO;
+    if ((faVO = getBiggerFA())!=null && faVO.getChainId().equalsIgnoreCase(fa)) position = getBiggerPosition();
+    else if ((faVO = getSmallerFA())!=null && faVO.getChainId().equalsIgnoreCase(fa)) position = getSmallerPosition();
     return position;
   }
 
@@ -138,10 +176,15 @@ public class IntensityPositionVO extends IntensityRuleVO
    * @param ruleVO rule that is required to form an IntensityPositionVO
    * @param chainFragments the found chain fragments with its areas; first key: fatty acid name; second key: name of the fragment; value: CgProbe peak identification object
    * @param missed fragments that were not found in the equation (required for reading of results, since for rules containing "+", not all of the fragments have to be found)
+   * @param faHydroxyEncoding the OH encodings of the FA moiety
+   * @param lcbHydroxyEncoding the OH encodings of the LCB moiety
+   * @param hasOhInfo has this intensity rule chain information - this is important for generating the human readable name
+   * @return the intensity rule VO including the relevant chains
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (not containing type and OH number) cannot be decoded
    */
   public static IntensityPositionVO getFattyAcidsFromReadableRule(String storedRule, IntensityRuleVO ruleVO,
-      Hashtable<String,Hashtable<String,CgProbe>> chainFragments, Hashtable<String,String> missed) throws LipidCombinameEncodingException{
+      Hashtable<String,Hashtable<String,CgProbe>> chainFragments, Hashtable<String,Short> missed, HydroxyEncoding faHydroxyEncoding,
+      HydroxyEncoding lcbHydroxyEncoding, boolean hasOhInfo) throws LipidCombinameEncodingException{
     String rule = new String(storedRule);
     int derivedPosition = -1;
     if (rule.indexOf("BECAUSE NOT FULFILLED: ")!=-1){
@@ -159,29 +202,22 @@ public class IntensityPositionVO extends IntensityRuleVO
       ruleSmaller = rule.substring(0,rule.indexOf("<"));
       ruleBigger = rule.substring(rule.indexOf("<")+1);
     }
-    int biggerIndex = ruleBigger.indexOf("["+ruleVO.getBiggerPosition()+"]");
-    int smallerIndex = ruleSmaller.indexOf("["+ruleVO.getSmallerPosition()+"]");
-    String biggerFA = ruleBigger.substring(0,biggerIndex);
-    String smallerFA = ruleSmaller.substring(0,smallerIndex);
-    Vector<String> biggerNbpNamesWoPos = ruleVO.getBiggerNonBasePeakNames();
-    Vector<String> smallerNbpNamesWoPos = ruleVO.getSmallerNonBasePeakNames();
-    biggerFA = IntensityChainVO.extractFANames(biggerFA, biggerNbpNamesWoPos);
-    smallerFA = IntensityChainVO.extractFANames(smallerFA, smallerNbpNamesWoPos);
+    Vector<ShortStringVO> biggerNbpNames =  FragmentRuleVO.getLengthSortedFragmentNames(new Hashtable<String,Short>(),ruleVO.getBiggerNonHeadAndBasePeakNames(),new Hashtable<String,Short>());
+    Vector<ShortStringVO> smallerNbpNames = FragmentRuleVO.getLengthSortedFragmentNames(new Hashtable<String,Short>(),ruleVO.getSmallerNonHeadAndBasePeakNames(),new Hashtable<String,Short>());
+    Hashtable<String,FattyAcidVO> biggerChains = IntensityChainVO.extractFANames(ruleBigger, biggerNbpNames, faHydroxyEncoding, lcbHydroxyEncoding);
+    Hashtable<String,FattyAcidVO> smallerChains = IntensityChainVO.extractFANames(ruleSmaller, smallerNbpNames, faHydroxyEncoding, lcbHydroxyEncoding);
+
     FattyAcidVO biggerVO = null;
     FattyAcidVO smallerVO = null;
-    Vector<String> biggerNbpNamesWiPos = new Vector<String>();
-    Vector<String> smallerNbpNamesWiPos = new Vector<String>();
-    for (String frag : biggerNbpNamesWoPos) biggerNbpNamesWiPos.add(frag+"["+ruleVO.getBiggerPosition()+"]");
-    for (String frag : smallerNbpNamesWoPos) smallerNbpNamesWiPos.add(frag+"["+ruleVO.getSmallerPosition()+"]");    
-    if (biggerFA!=null)
-      biggerVO = selectChainFromFoundFragments(biggerFA,biggerNbpNamesWiPos,chainFragments,missed);
+    if (biggerChains.size()>0)
+      biggerVO = biggerChains.values().iterator().next();
     else
-      biggerVO = selectChainFromFoundFragments(smallerFA,smallerNbpNamesWiPos,chainFragments,missed);    
-    if (smallerFA!=null) 
-      smallerVO = selectChainFromFoundFragments(smallerFA,smallerNbpNamesWiPos,chainFragments,missed);
+      biggerVO = smallerChains.values().iterator().next();    
+    if (smallerChains.size()>0)
+      smallerVO = smallerChains.values().iterator().next();
     else
-      smallerVO = selectChainFromFoundFragments(biggerFA,biggerNbpNamesWiPos,chainFragments,missed);
-    IntensityPositionVO posVO = new IntensityPositionVO(ruleVO,biggerVO,smallerVO);
+      smallerVO = biggerChains.values().iterator().next();
+    IntensityPositionVO posVO = new IntensityPositionVO(ruleVO,biggerVO,smallerVO,hasOhInfo);
     if (derivedPosition>-1) posVO = createNegatedVO(posVO, derivedPosition);
     return posVO;
   }
@@ -193,7 +229,7 @@ public class IntensityPositionVO extends IntensityRuleVO
   }
   
   public static IntensityPositionVO createNegatedVO(IntensityPositionVO posVO, int derivedPosition){
-    IntensityPositionVO vo = new IntensityPositionVO(posVO,posVO.getBiggerFA(),posVO.getSmallerFA());
+    IntensityPositionVO vo = new IntensityPositionVO(posVO,posVO.getBiggerFA(),posVO.getSmallerFA(),posVO.hasOhInfo_);
     vo.negated_ = true;
     vo.derivedPosition_  = derivedPosition;
     return vo;
@@ -207,6 +243,18 @@ public class IntensityPositionVO extends IntensityRuleVO
     return negated_;
   }
 
-  
+  public CgProbe checkForFragmentAvailability(String frag, Hashtable<String,CgProbe> headFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments) {
+    CgProbe probe = super.checkForFragmentAvailability(frag, headFragments, chainFragments);
+    if (probe==null) {
+      String chainId = null;
+      if (biggerChains_.containsKey(frag))
+        chainId = biggerChains_.get(frag).getChainId();
+      else if (smallerChains_.containsKey(frag))
+        chainId = smallerChains_.get(frag).getChainId();
+      if (chainId!=null && chainFragments.containsKey(chainId) && chainFragments.get(chainId).containsKey(frag))
+        probe = chainFragments.get(chainId).get(frag);
+    }
+    return probe;
+  }
   
 }

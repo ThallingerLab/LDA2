@@ -2363,8 +2363,9 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    * Returns a string of the intensity rules used
    * @param fulfilledIntensityRules
    * @return
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  private String showChainIntensityTabDetailsString(Hashtable<String,IntensityChainVO> chainIntensities)
+  private String showChainIntensityTabDetailsString(Hashtable<String,IntensityChainVO> chainIntensities) throws LipidCombinameEncodingException
   {  
     int counter = 0;
     String returnString = "";
@@ -2374,7 +2375,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       counter++;
       String currentKey = (String)chainIntensitiesEnum.nextElement();  
       IntensityChainVO intensityVo = (IntensityChainVO) chainIntensities.get(currentKey);      
-      returnString = returnString + counter + ". " + intensityVo.getReadableRuleInterpretation();
+      returnString = returnString + counter + ". " + intensityVo.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding());
     }
     return returnString;
   }
@@ -2407,7 +2408,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       Hashtable<String,IntensityRuleVO> unfulfilled = unfulfilledPosRules.get(combiName);
       for (IntensityRuleVO ruleVO : unfulfilled.values())
       {
-        toWrite = toWrite + combiName+":\tNOT "+ruleVO.getReadableRuleInterpretation()+"<br/>";
+        toWrite = toWrite + combiName+":\tNOT "+ruleVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding())+"<br/>";
       }
     }
     toWrite += "<br/>";
@@ -2420,7 +2421,8 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       {
         IntensityRuleVO rule1 = rulePair.get(0);
         IntensityRuleVO rule2 = rulePair.get(1);
-        toWrite = toWrite + combiName+":\t"+rule1.getReadableRuleInterpretation()+"\t!=\t"+rule2.getReadableRuleInterpretation();
+        toWrite = toWrite + combiName+":\t"+rule1.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding())+"\t!=\t"
+        +rule2.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding());
       }
     }
     
@@ -2522,7 +2524,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
           else if (rule instanceof IntensityRuleVO)
           {
           IntensityRuleVO ruleVO = (IntensityRuleVO)rule;
-          toWrite = toWrite + "<br>Violated chain rule: "+faName+"\t"+ruleVO.getReadableRuleInterpretation();
+          toWrite = toWrite + "<br>Violated chain rule: "+faName+"\t"+ruleVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding());
           }
         }
       }

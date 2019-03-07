@@ -26,8 +26,11 @@ package at.tugraz.genome.lda.msn.vos;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
+import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.vos.ShortStringVO;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 
 /**
@@ -39,71 +42,119 @@ import at.tugraz.genome.maspectras.quantification.CgProbe;
 public class IntensityChainVO extends IntensityRuleVO
 {
   
-  /** the fatty acid at the greater than side of this rule*/
-  private FattyAcidVO biggerFA_;
-  /** the fatty acid at the smaller than side of this rule*/
-  private FattyAcidVO smallerFA_;
+  /** the chains at the 'greater than' side of this rule*/
+  private Hashtable<String,FattyAcidVO> biggerChains_;
+  /** the chains at the 'smaller than' side of this rule*/
+  private Hashtable<String,FattyAcidVO> smallerChains_;
+  /** does this object hold hydroxylation information*/
+  private boolean hasOhInfo_;
   
 
   /**
    * constructor containing the original rule plus the fatty acid
    * @param rule rule that was applied
-   * @param fa fatty acid that was verified
+   * @chain chain the chain object this rule applies to
+   * @param hasOhInfo has this intensity rule chain information - this is important for generating the human readable name
    */
-  public IntensityChainVO(IntensityRuleVO rule, FattyAcidVO fa){
-    this(rule,fa,fa);
+  public IntensityChainVO(IntensityRuleVO rule, FattyAcidVO chain, boolean hasOhInfo){
+    this(rule,hasOhInfo);
+    Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
+    chains.add(chain);
+    assignChainsToExpressions(chains);
   }
-
   
   /**
-   * constructor containing the original rule plus the fatty acid
+   * common constructor of other options
    * @param rule rule that was applied
-   * @param biggerFA fatty acid with higher area that was verified
-   * @param smallerFA fatty acid with smaller area that was verified
+   * @param hasOhInfo has this intensity rule chain information - this is important for generating the human readable name
    */
-  public IntensityChainVO(IntensityRuleVO rule, FattyAcidVO biggerFA, FattyAcidVO smallerFA){
+  private IntensityChainVO(IntensityRuleVO rule, boolean hasOhInfo) {
     super(rule);
-    this.biggerFA_ = biggerFA;
-    this.smallerFA_ = smallerFA;
+    this.hasOhInfo_ = hasOhInfo;
   }
 
   
   /**
-   * @return fatty acid that was verified at at the greater part of the comparator
+   * constructor containing the original rule plus the participating chain objects
+   * @param rule intensity rule that was applied
+   * @param chains chain objects this rule applies to
+   * @param hasOhInfo has this intensity rule chain information - this is important for generating the human readable name
    */
-  public FattyAcidVO getBiggerFA()
-  {
-    return biggerFA_;
+  public IntensityChainVO(IntensityRuleVO rule, Vector<FattyAcidVO> chains, boolean hasOhInfo){
+    this(rule,hasOhInfo);
+    assignChainsToExpressions(chains);
+  }
+  
+  
+  /**
+   * constructor containing the original rule plus the fatty acids 
+   * @param rule rule that was applied
+   * @param biggerChains the chains at the 'greater than' side of this rule
+   * @param smallerChains chains at the 'smaller than' side of this rule
+   * @param hasOhInfo does this object hold hydroxylation information
+   */
+  private IntensityChainVO(IntensityRuleVO rule, Hashtable<String,FattyAcidVO> biggerChains,
+      Hashtable<String,FattyAcidVO> smallerChains, boolean hasOhInfo){
+    this(rule,hasOhInfo);
+    this.biggerChains_ = biggerChains;
+    this.smallerChains_ = smallerChains;
+  }
+  
+  
+  /**
+   * assings the chain objects to the fragmentation rules they affect
+   * @param chains the available chain objects
+   */
+  private void assignChainsToExpressions(Vector<FattyAcidVO> chains) {
+    biggerChains_ = new Hashtable<String,FattyAcidVO>();
+    smallerChains_ = new Hashtable<String,FattyAcidVO>();
+    for (FragmentMultVO frag : biggerExpression_.getFragments()) {
+      for (FattyAcidVO chain : chains) {
+        if (frag.getFragmentType()==chain.getChainType()) {
+          biggerChains_.put(frag.getFragmentName(), chain);
+          break;
+        }
+      }
+    }
+    for (FragmentMultVO frag : smallerExpression_.getFragments()) {
+      for (FattyAcidVO chain : chains) {
+        if (frag.getFragmentType()==chain.getChainType()) {
+          smallerChains_.put(frag.getFragmentName(), chain);
+          break;
+        }
+      }
+    }    
   }
 
+  
   /**
-   * @return fatty acid that was verified at at the lesser part of the comparator
-   */
-  public FattyAcidVO getSmallerFA()
-  {
-    return smallerFA_;
-  }
-
-
-
-  /**
-   * 
+   * @param faEncoding the hydroxylation encoding for FA chains
+   * @param lcbEncoding the hydroxylation encoding for LCB chains
    * @return the human readable String representation for storing in Excel
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  public String getReadableRuleInterpretation() {
+  public String getReadableRuleInterpretation(HydroxyEncoding faEncoding, HydroxyEncoding lcbEncoding) throws LipidCombinameEncodingException {
     Hashtable<String,String> originalToReplacementBigger = new Hashtable<String,String>();
-    for (String name : getBiggerNonBasePeakNames()){
-      String value = StaticUtils.getChainFragmentDisplayName(name, biggerFA_.getCarbonDbsId());
+    for (String name : getBiggerNonHeadAndBasePeakNames().keySet()){
+      String value = StaticUtils.getChainFragmentDisplayName(name,StaticUtils.getHumanReadableChainName(this.biggerChains_.get(name),faEncoding,
+          lcbEncoding,hasOhInfo_,StaticUtils.isAnAlex123Fragment(name)));
       originalToReplacementBigger.put(name, value);
     }
     Hashtable<String,String> originalToReplacementSmaller = new Hashtable<String,String>();
-    for (String name : getSmallerNonBasePeakNames()){
-      String value = StaticUtils.getChainFragmentDisplayName(name, smallerFA_.getCarbonDbsId());
+    for (String name : getSmallerNonHeadAndBasePeakNames().keySet()){
+      String value = StaticUtils.getChainFragmentDisplayName(name,StaticUtils.getHumanReadableChainName(this.smallerChains_.get(name),faEncoding,
+          lcbEncoding,hasOhInfo_,StaticUtils.isAnAlex123Fragment(name)));
       originalToReplacementSmaller.put(name, value);
     }
-    String[] biggerSmaller = splitToBiggerAndSmallerPart(equation_);
-    String biggerPart = biggerSmaller[0];
-    String smallerPart = biggerSmaller[1];
+    String biggerPart = "";
+    String smallerPart = "";
+    if (orRule_) {
+      biggerPart = equation_;
+    }else {
+      String[] biggerSmaller = splitToBiggerAndSmallerPart(equation_);
+      biggerPart = biggerSmaller[0];
+      smallerPart = biggerSmaller[1];
+    }
     biggerPart = replaceParts(biggerPart, originalToReplacementBigger);
     smallerPart = replaceParts(smallerPart, originalToReplacementSmaller);
     String returnString = "";
@@ -111,6 +162,8 @@ public class IntensityChainVO extends IntensityRuleVO
       returnString = biggerPart+">"+smallerPart;
     } else if (equation_.indexOf("<")!=-1){
       returnString = smallerPart+"<"+biggerPart;
+    }else if (equation_.indexOf("|")!=-1){
+      returnString = biggerPart;
     }
     return returnString;
   }
@@ -123,8 +176,16 @@ public class IntensityChainVO extends IntensityRuleVO
     if (!equals(other)) return false;
     if (!(other instanceof IntensityChainVO)) return false;
     IntensityChainVO chain = (IntensityChainVO)other;
-    if (!biggerFA_.getChainId().equalsIgnoreCase(chain.biggerFA_.getChainId())) return false;
-    if (!smallerFA_.getChainId().equalsIgnoreCase(chain.smallerFA_.getChainId())) return false;
+    if (chain.biggerChains_.size()!=biggerChains_.size()) return false;
+    for (String frag : biggerChains_.keySet()) {
+      if ((!chain.biggerChains_.containsKey(frag)) || chain.biggerChains_.get(frag)!=biggerChains_.get(frag))
+        return false;
+    }    
+    if (chain.smallerChains_.size()!=smallerChains_.size()) return false;
+    for (String frag : smallerChains_.keySet()) {
+      if ((!chain.smallerChains_.containsKey(frag)) || chain.smallerChains_.get(frag)!=smallerChains_.get(frag))
+        return false;
+    }    
     return true;
   }
   
@@ -134,72 +195,176 @@ public class IntensityChainVO extends IntensityRuleVO
    * @param ruleVO rule that is required to form an IntensityChainVO
    * @param chainFragments the found chain fragments with its areas; first key: fatty acid name; second key: name of the fragment; value: CgProbe peak identification object
    * @param missed fragments that were not found in the equation (required for reading of results, since for rules containing "+", not all of the fragments have to be found)
+   * @param faHydroxyEncoding the OH encodings of the FA moiety
+   * @param lcbHydroxyEncoding the OH encodings of the LCB moiety
+   * @param hasOhInfo does this object hold hydroxylation information
    * @return IntensityChainVO which includes the fatty acid
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (not containing type and OH number) cannot be decoded
    */
   public static IntensityChainVO getFattyAcidsFromReadableRule(String rule, IntensityRuleVO ruleVO, Hashtable<String,Hashtable<String,CgProbe>> chainFragments,
-      Hashtable<String,String> missed) throws LipidCombinameEncodingException{
-    String[] biggerSmaller = splitToBiggerAndSmallerPart(rule);
-    String biggerPart = biggerSmaller[0];
-    String smallerPart = biggerSmaller[1];
-    Vector<String> biggerNbpNames = ruleVO.getBiggerNonBasePeakNames();
-    Vector<String> smallerNbpNames = ruleVO.getSmallerNonBasePeakNames();
-    String biggerFA = extractFANames(biggerPart, biggerNbpNames);
-    String smallerFA = extractFANames(smallerPart, smallerNbpNames);
-    FattyAcidVO biggerVO = null;
-    FattyAcidVO smallerVO = null;
-    if (biggerFA!=null)
-      biggerVO = selectChainFromFoundFragments(biggerFA,biggerNbpNames,chainFragments,missed);
-    if (smallerFA!=null) 
-      smallerVO = selectChainFromFoundFragments(smallerFA,smallerNbpNames,chainFragments,missed);
-    if (biggerVO==null)
-      biggerVO = smallerVO;
-    if (smallerVO==null)
-      smallerVO = biggerVO;
-    return new IntensityChainVO(ruleVO,biggerVO,smallerVO);
+      Hashtable<String,Short> missed, HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding, boolean hasOhInfo) throws LipidCombinameEncodingException{
+    String biggerPart = "";
+    String smallerPart = "";
+    boolean orRule = rule.indexOf("|")!=-1 && rule.indexOf(">")==-1 && rule.indexOf("<")==-1;
+    if (orRule) {
+      biggerPart = rule;
+    }else {
+      String[] biggerSmaller = splitToBiggerAndSmallerPart(rule);
+      biggerPart = biggerSmaller[0];
+      smallerPart = biggerSmaller[1];
+    }
+    Vector<ShortStringVO> biggerNbpNames =  FragmentRuleVO.getLengthSortedFragmentNames(new Hashtable<String,Short>(),ruleVO.getBiggerNonHeadAndBasePeakNames(),missed);
+    Vector<ShortStringVO> smallerNbpNames = FragmentRuleVO.getLengthSortedFragmentNames(new Hashtable<String,Short>(),ruleVO.getSmallerNonHeadAndBasePeakNames(),missed);
+    Hashtable<String,FattyAcidVO> biggerChains = extractFANames(biggerPart, biggerNbpNames, faHydroxyEncoding, lcbHydroxyEncoding);
+    Hashtable<String,FattyAcidVO> smallerChains = extractFANames(smallerPart, smallerNbpNames, faHydroxyEncoding, lcbHydroxyEncoding);
+    return new IntensityChainVO(ruleVO,biggerChains, smallerChains, hasOhInfo);
   }
   
   
   /**
    * extracts the names of the fatty acids out of an equation part
-   * @param rulePart equation part
+   * @param ruleOriginal the smaller or bigger part of the equation
    * @param names the possible fragment names
-   * @return the name of the fatty acid
+   * @param faHydroxyEncoding the character encoding of the number of hydroxylation sites for the FA
+   * @param lcbHydroxyEncoding the character encoding of the number of hydroxylation sites for the LCB
+   * @return the names of the chains - key: fragment name; value: decoded chain object
+   * @throws LipidCombinameEncodingException thrown when a lipid id (containing type and OH number) cannot be decoded 
    */
-  public static String extractFANames(String rulePart, Vector<String> names){
-    String fa = null;
+  public static Hashtable<String,FattyAcidVO> extractFANames(String ruleOriginal, Vector<ShortStringVO> names, HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding) throws LipidCombinameEncodingException {
+    Hashtable<String,FattyAcidVO> fas = new Hashtable<String,FattyAcidVO>();
+    String rulePart = new String(ruleOriginal);
     char[] chars = rulePart.toCharArray();
-    //this is for Alex123 annotation
-    if (rulePart.indexOf("FA ")!=-1 && rulePart.length()>(rulePart.indexOf("FA ")+4) && (Character.isDigit(chars[rulePart.indexOf("FA ")+3])||
-        (chars[rulePart.indexOf("FA ")+4])=='-' && (chars[rulePart.indexOf("FA ")+3]=='P'||chars[rulePart.indexOf("FA ")+3]=='O'))){
-      fa = extracFANamesFromAlex123Annotation(rulePart);
+    if ((rulePart.indexOf("FA ")!=-1 && rulePart.length()>(rulePart.indexOf("FA ")+4) && (Character.isDigit(chars[rulePart.indexOf("FA ")+3])||
+        (chars[rulePart.indexOf("FA ")+4])=='-' && (chars[rulePart.indexOf("FA ")+3]=='P'||chars[rulePart.indexOf("FA ")+3]=='O'))) ||
+        (rulePart.indexOf("LCB ")!=-1 && rulePart.length()>(rulePart.indexOf("LCB ")+5) && Character.isDigit(chars[rulePart.indexOf("LCB ")+4]))){
+      fas = extracFANamesFromAlex123Annotation(rulePart,names,faHydroxyEncoding,lcbHydroxyEncoding);
     } else if (rulePart.indexOf("(")!=-1){
-      for (String name : names){
+      for (ShortStringVO nameVO : names){
+        String name = nameVO.getKey();
         if (rulePart.indexOf(name)==-1) continue;
+        if ((rulePart.indexOf(name)+name.length()+2)>rulePart.length() || !rulePart.substring(rulePart.indexOf(name)+name.length()).startsWith("("))
+          continue;
         String subPart = rulePart.substring(rulePart.indexOf(name)+name.length());
-        fa = subPart.substring(subPart.indexOf("(")+1,subPart.indexOf(")"));
-        break;
+        fas.put(nameVO.getKey(),StaticUtils.decodeHumanReadableChain(subPart.substring(subPart.indexOf("(")+1,subPart.indexOf(")")),faHydroxyEncoding,lcbHydroxyEncoding, false));
+        rulePart = rulePart.substring(0,rulePart.indexOf(name))+rulePart.substring(rulePart.indexOf(name)+subPart.indexOf(")")+1);
       }
     }
-    return fa;
+    return fas;
   }
   
-  private static String extracFANamesFromAlex123Annotation(String rulePart){
-    int start = rulePart.indexOf("FA ")+3;
-    int stop = start;
-    boolean isChain = true;
-    char[] chars = rulePart.toCharArray();
-    if (chars.length>(start+1) && chars[start+1]=='-' && (chars[start]=='O' || chars[start]=='P')){
-      stop = stop+2;
+  /**
+   * extracts the chain names of an Alex123 encoded intensity rule part
+   * @param rulePart the the smaller or bigger part of the equation
+   * @param names the possible fragment names
+   * @param faHydroxyEncoding the character encoding of the number of hydroxylation sites for the FA
+   * @param lcbHydroxyEncoding the character encoding of the number of hydroxylation sites for the LCB
+   * @return the names of the chains - key: fragment name; value: decoded chain object
+   * @throws LipidCombinameEncodingException thrown when a lipid id (containing type and OH number) cannot be decoded
+   */
+  private static Hashtable<String,FattyAcidVO> extracFANamesFromAlex123Annotation(String rulePart, Vector<ShortStringVO> names, HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding) throws LipidCombinameEncodingException{
+    Hashtable<String,FattyAcidVO> fas = new Hashtable<String,FattyAcidVO>();
+    String whole = new String(rulePart);
+    String part;
+    String chainString;
+    String oneChain;
+    for (ShortStringVO name : names) {
+      //System.out.println(name.getKey()+": "+name.getValue());
+      if (name.getValue()==LipidomicsConstants.CHAIN_TYPE_NO_CHAIN)
+        continue;
+      String[] split = new String[2];
+      if (name.getKey().indexOf("(")==-1)
+        throw new LipidCombinameEncodingException("The fragment: "+name.getKey()+" is not an Alex123 compatible chain part!");
+      split[0] = name.getKey().substring(0,name.getKey().indexOf("("));
+      split[1] = name.getKey().substring(name.getKey().indexOf("(")+1);
+      part = new String(whole);
+      int startIndex = 0;
+      int endIndex = 0;
+      chainString = null;
+      oneChain = null;
+      while (part.length()>name.getKey().length() && part.indexOf(split[0])!=-1) {
+        startIndex += part.indexOf(split[0]);
+        part = part.substring(startIndex);
+        if (part.indexOf("(")==-1)
+          break;
+        if (part.substring(part.indexOf("(")+1).startsWith(split[1])) {
+          if (part.substring(part.indexOf("(")).indexOf(")")==-1)
+            throw new LipidCombinameEncodingException("The rule part: "+rulePart+"cannot be decoded to the corresponding chains");
+          endIndex = startIndex+part.indexOf(")")+1;
+          if (part.toCharArray().length>(endIndex-startIndex+1)&&part.toCharArray()[endIndex+1]=='[') {
+            endIndex = startIndex+part.indexOf("]")+1;
+          }
+          chainString = whole.substring(startIndex, endIndex); 
+          oneChain = part.substring(split[0].length(), part.indexOf("(")).trim();
+          whole = whole.substring(0,startIndex)+whole.substring(endIndex);
+          break;
+        }else {
+          part = part.substring(startIndex);
+        }
+      }
+      if (chainString!=null) {
+        int prefixStop = 0;
+        char[] chainChars = oneChain.toCharArray();
+        for (int i=0; i!=chainChars.length; i++) {
+          if (Character.isDigit(chainChars[i])) break;
+          else prefixStop++;
+        }
+        String prefix = oneChain.substring(0,prefixStop);
+        oneChain = oneChain.substring(prefixStop);
+        int oh = 0;
+        if (oneChain.indexOf(LipidomicsConstants.ALEX_OH_SEPARATOR)!=-1) {
+          try {
+            oh = Integer.parseInt(oneChain.substring(oneChain.indexOf(LipidomicsConstants.ALEX_OH_SEPARATOR)+1));
+            oneChain = oneChain.substring(0,oneChain.indexOf(LipidomicsConstants.ALEX_OH_SEPARATOR));
+          }catch (NumberFormatException nfx) {
+            throw new LipidCombinameEncodingException("The rule part: "+rulePart+"cannot be decoded to the corresponding chains: there are problems with the OH encoding!");
+          }
+        }
+        try {
+          int[] cAndDbs = StaticUtils.parseCAndDbsFromChainId(oneChain);
+          fas.put(name.getKey(), new FattyAcidVO(name.getValue(),prefix,cAndDbs[0],cAndDbs[1],oh,-1, null));
+        }
+        catch (Exception e) {
+          e.printStackTrace();
+          throw new LipidCombinameEncodingException("The rule part: "+rulePart+"cannot be decoded to the corresponding chains: there are problems decoding the number of carbon atoms and double bonds!");
+        } 
+      }
     }
-    while (isChain && stop<rulePart.length()){
-      if (Character.isDigit(chars[stop]) || chars[stop]==':')
-        stop++;
-      else
-        isChain=false;
-    }
-    String fa = rulePart.substring(start,stop);
-    return fa;
+    return fas;
   }
   
+  public CgProbe checkForFragmentAvailability(String frag, Hashtable<String,CgProbe> headFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments) {
+    CgProbe probe = super.checkForFragmentAvailability(frag, headFragments, chainFragments);
+    if (probe==null) {
+      String chainId = null;
+      if (biggerChains_.containsKey(frag))
+        chainId = biggerChains_.get(frag).getChainId();
+      else if (smallerChains_.containsKey(frag))
+        chainId = smallerChains_.get(frag).getChainId();
+      if (chainId!=null && chainFragments.containsKey(chainId) && chainFragments.get(chainId).containsKey(frag))
+        probe = chainFragments.get(chainId).get(frag);
+    }
+    return probe;
+  }
+  
+  
+  /**
+   *
+   * @return all chain objects that participated in this equation (does not return missed chain objects)
+   */
+  public Vector<FattyAcidVO> getParticipatingChains(){
+    Hashtable<String,FattyAcidVO> hash = new Hashtable<String,FattyAcidVO>();
+    if (biggerChains_!=null) {
+      for (FattyAcidVO chain : this.biggerChains_.values()) {
+        if (!hash.containsKey(chain.getChainId()))
+          hash.put(chain.getChainId(), chain);
+      }
+    }
+    if (smallerChains_!=null) {
+      for (FattyAcidVO chain : this.smallerChains_.values()) {
+        if (!hash.containsKey(chain.getChainId()))
+          hash.put(chain.getChainId(), chain);
+      }
+    }
+    return new Vector<FattyAcidVO>(hash.values());
+  }
 }

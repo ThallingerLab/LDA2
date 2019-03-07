@@ -28,13 +28,15 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Set;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.RulesException;
+import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.utils.RangeInteger;
-import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.vos.ShortStringVO;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 
 /**
@@ -56,6 +58,8 @@ public class IntensityRuleVO
   protected String equation_;
   // must this rule be fulfilled (e.g. to accept a head group, to accept chain fragment, or to assign a position)
   protected boolean mandatory_;
+  /**is this an OR rule*/
+  protected boolean orRule_;
   
   protected ExpressionForComparisonVO biggerExpression_;
 
@@ -66,6 +70,8 @@ public class IntensityRuleVO
   
   /** how many hydroxylations must be present for the detection of this fragment; key: number of hydroxylations; value: mandatory - should be null in case of no OH restrictions*/ 
   protected Hashtable<Short,Short> allowedOHs_;
+  /** the available types the fragment originates of, i.e. head, acyl, alkyl, alkenyl, lcb*/
+  protected Set<Short> availableFragmentTypes_;
 
   
   /**
@@ -74,14 +80,26 @@ public class IntensityRuleVO
    * @param originalEquation the equation in its original format
    * @param biggerExpression object containing equation information of the bigger part of the equation
    * @param smallerExpression object containing equation information of the smaller part of the equation
+   * @param orRule is this an OR expression
    */
-  public IntensityRuleVO(int type, String originalEquation, ExpressionForComparisonVO biggerExpression, ExpressionForComparisonVO smallerExpression){
+  public IntensityRuleVO(int type, String originalEquation, ExpressionForComparisonVO biggerExpression, ExpressionForComparisonVO smallerExpression, boolean orRule){
     type_ = type;
     equation_ = originalEquation;
     mandatory_ = false;
     biggerExpression_ = biggerExpression;
     smallerExpression_ = smallerExpression;
     chainType_ = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
+    availableFragmentTypes_ = new HashSet<Short>();
+    if (biggerExpression_!=null) {
+      for (FragmentMultVO frag : biggerExpression_.getFragments())
+        availableFragmentTypes_.add(frag.getFragmentType());
+    }
+    if (smallerExpression_!=null) {
+      for (FragmentMultVO frag : smallerExpression_.getFragments())
+        availableFragmentTypes_.add(frag.getFragmentType());
+    }
+    this.orRule_ = orRule;
+    checkForDiffChainTypes();
   }
   
   /**
@@ -89,7 +107,7 @@ public class IntensityRuleVO
    * @param rule the IntensityRuleVO to be cloned
    */
   public IntensityRuleVO(IntensityRuleVO rule){
-    this(rule.type_,rule.equation_,rule.biggerExpression_,rule.smallerExpression_);
+    this(rule.type_,rule.equation_,rule.biggerExpression_,rule.smallerExpression_,rule.orRule_);
     this.mandatory_ = rule.mandatory_;
     this.chainType_ = rule.chainType_;
   }
@@ -178,10 +196,12 @@ public class IntensityRuleVO
   }
 
   /**
-   * 
-   * @return the human readable String representation
+   * @param faEncoding the hydroxylation encoding for FA chains
+   * @param lcbEncoding the hydroxylation encoding for LCB chains
+   * @return the human readable String representation for storing in Excel
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  public String getReadableRuleInterpretation() {
+  public String getReadableRuleInterpretation(HydroxyEncoding faEncoding, HydroxyEncoding lcbEncoding) throws LipidCombinameEncodingException {
     return new String(equation_);
   }
   
@@ -195,12 +215,15 @@ public class IntensityRuleVO
   public String getRuleValueInterpretation(Hashtable<String,Float> values, Float basePeak) throws RulesException{
     String returnString = new String(equation_);
     if (basePeak!=null && this.containsBasePeak()) values.put(BASEPEAK_NAME, basePeak);
-    Vector<String> lengthSortedNames = FragmentRuleVO.getLengthSortedFragmentNames(values.keySet(),new HashSet<String>());
-    for (String name : lengthSortedNames){
+    Hashtable<String,Short> head = new Hashtable<String,Short>();
+    for (String frag : values.keySet())
+      head.put(frag, LipidomicsConstants.CHAIN_TYPE_NO_CHAIN);
+    Vector<ShortStringVO> lengthSortedNames = FragmentRuleVO.getLengthSortedFragmentNames(head,new Hashtable<String,Short>());
+    for (ShortStringVO name : lengthSortedNames){
       Float value = 0f;
-      if (values.containsKey(name)) value = values.get(name);
-      while (returnString.indexOf(name)!=-1)
-        returnString = returnString.substring(0,returnString.indexOf(name))+String.valueOf(String.valueOf(value))+returnString.substring(returnString.indexOf(name)+name.length());
+      if (values.containsKey(name.getKey())) value = values.get(name.getKey());
+      while (returnString.indexOf(name.getKey())!=-1)
+        returnString = returnString.substring(0,returnString.indexOf(name.getKey()))+String.valueOf(String.valueOf(value))+returnString.substring(returnString.indexOf(name.getKey())+name.getKey().length());
     }
     return returnString;
   }
@@ -234,24 +257,43 @@ public class IntensityRuleVO
     basePeak = Float.parseFloat(baseString);
     return basePeak;
   }
-    
-  /**
-   * 
-   * @return the fatty acid name of the more intense side of the equation (if appropriate)
-   */
-  public FattyAcidVO getBiggerFA()
-  {
-    return null;
-  }
 
   /**
-   * 
-   * @return the fatty acid name of the less intense side of the equation (if appropriate)
+   * returns the first found fragment that is not a base peak fragment
+   * @param headFragments the found head fragments
+   * @param chainFragments the found chain fragments
+   * @return the first found fragment that is not a base peak fragment
    */
-  public FattyAcidVO getSmallerFA()
-  {
-    return null;
+  public CgProbe getAnyNonBasepeakFragment(Hashtable<String,CgProbe> headFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments) {
+    CgProbe probe = null;
+    Hashtable<String,Short> nonBpNames = getBiggerNonBasePeakNames();
+    for (String nonBpName : nonBpNames.keySet()){
+      probe = checkForFragmentAvailability(nonBpName,headFragments,chainFragments);
+      if (probe!=null) break;
+    }
+    if (probe!=null) return probe;
+    nonBpNames = getSmallerNonBasePeakNames();
+    for (String nonBpName : nonBpNames.keySet()){
+      probe = checkForFragmentAvailability(nonBpName,headFragments, chainFragments);
+      if (probe!=null) break;
+    }
+    return probe;
   }
+  
+  /**
+   * checks whether this fragment was detected
+   * @param frag the name of the fragment
+   * @param headFragments the found head fragments
+   * @param chainFragments the found chain fragments
+   * @return returns the idendified fragment
+   */
+  public CgProbe checkForFragmentAvailability(String frag, Hashtable<String,CgProbe> headFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments) {
+    if (headFragments.containsKey(frag))
+      return headFragments.get(frag);
+    else
+      return null;
+  }
+  
   
   /**
    * checks the objects for equality
@@ -299,31 +341,66 @@ public class IntensityRuleVO
    * 
    * @return all fragment names of the bigger side of the expression that are not the base peak
    */
-  public Vector<String> getBiggerNonBasePeakNames(){
-    Hashtable<String,String> allNonBasepeakNames = new Hashtable<String,String>();
+  public Hashtable<String,Short> getBiggerNonBasePeakNames(){
+    Hashtable<String,Short> allNonBasepeakNames = new Hashtable<String,Short>();
     for (FragmentMultVO multVO : biggerExpression_.getFragments()){
       if (!multVO.getFragmentName().equalsIgnoreCase(BASEPEAK_NAME)){
         String nonBpName = multVO.getFragmentName();
-        allNonBasepeakNames.put(nonBpName, nonBpName);
+        allNonBasepeakNames.put(nonBpName, multVO.getFragmentType());
       }
     }
-    return new Vector<String>(allNonBasepeakNames.values());
+    return allNonBasepeakNames;
   }
+    
   
   /**
    * 
    * @return all fragment names of the smaller side of the expression that are not the base peak
    */  
-  public Vector<String> getSmallerNonBasePeakNames(){
-    Hashtable<String,String> allNonBasepeakNames = new Hashtable<String,String>();
+  public Hashtable<String,Short> getSmallerNonBasePeakNames(){
+    Hashtable<String,Short> allNonBasepeakNames = new Hashtable<String,Short>();
     for (FragmentMultVO multVO : smallerExpression_.getFragments()){
       if (!multVO.getFragmentName().equalsIgnoreCase(BASEPEAK_NAME)){
         String nonBpName = multVO.getFragmentName();
-        allNonBasepeakNames.put(nonBpName, nonBpName);
+        allNonBasepeakNames.put(nonBpName, multVO.getFragmentType());
       }
     }    
-    return new Vector<String>(allNonBasepeakNames.values());
+    return allNonBasepeakNames;
   }
+  
+  /**
+   * 
+   * @return the fragment names on the greater than end of the equation which are whether base peak names nor head group fragments
+   */
+  protected Hashtable<String,Short> getBiggerNonHeadAndBasePeakNames() {
+    return getNonHeadAndBasePeakNames(biggerExpression_.getFragments());
+  }
+  
+  /**
+   * 
+   * @return the fragment names on the smaller than end of the equation which are whether base peak names nor head group fragments
+   */
+  protected Hashtable<String,Short> getSmallerNonHeadAndBasePeakNames() {
+    return getNonHeadAndBasePeakNames(smallerExpression_.getFragments());
+  }
+
+  /**
+   * returns all fragment names which are whether base peak names nor head group fragments
+   * @param parts the fragment parts
+   * @return fragment names which are whether base peak names nor head group fragments; key: fragment name; value: fragment type
+   */
+  private Hashtable<String,Short> getNonHeadAndBasePeakNames(Vector<FragmentMultVO> parts) {
+    Hashtable<String,Short> filteredNames = new Hashtable<String,Short>();
+    for (FragmentMultVO multVO : parts){
+      if (!multVO.getFragmentName().equalsIgnoreCase(BASEPEAK_NAME) && multVO.getFragmentType()!=LipidomicsConstants.CHAIN_TYPE_NO_CHAIN){
+        String name = multVO.getFragmentName();
+        filteredNames.put(name, multVO.getFragmentType());
+      }
+    }
+    return filteredNames;
+  }
+  
+
   
   /**
    * 
@@ -359,27 +436,42 @@ public class IntensityRuleVO
   }
   
   /**
-   * checks if there where enough fragments found to evaluate the equation, and if the bigger fragments are out of the first group (the latter is for chain fragments)
-   * @param found1 first set of found fragments; key: fragment name; value the peak identification object
-   * @param found2 second set of found fragments; key: fragment name; value the peak identification object
-   * @return boolean[2]: boolean[0] = true if enough fragments are found to evaluate this equation; boolean[0] = true if the bigger fragments are in the first group
+   * checks if there where enough fragments found to evaluate the equation
+   * @param headGroupFragments the detected head group fragments
+   * @param chainFragments the detected chain fragments
+   * @param chainsToCheck the chains for which this evaluation has to be performed
+   * @return true when there were enough fragments found to evaluate the rule
    */
-  public boolean[] enoughFragmentsForRuleEvaluationFound(Hashtable<String,CgProbe> found1, Hashtable<String,CgProbe> found2){
-    boolean biggerFragsFound = areFragmentsFound(biggerExpression_,found1);
-    boolean biggerFirst = false;
-    boolean smallerFragsFound = false;
-    if (biggerFragsFound){
-      smallerFragsFound = areFragmentsFound(smallerExpression_,found2);
-      biggerFirst = true;
-    } else{
-      biggerFragsFound = areFragmentsFound(biggerExpression_,found2);
-      smallerFragsFound = areFragmentsFound(smallerExpression_,found1);
+  public boolean enoughFragmentsForRuleEvaluationFound(Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments,
+      Vector<FattyAcidVO> chainsToCheck) {
+    Hashtable<String,CgProbe> foundFragments = getFragmentsForExpression(biggerExpression_, headGroupFragments, chainFragments,
+        chainsToCheck);
+    boolean biggerFragsFound = areFragmentsFound(biggerExpression_,foundFragments);
+    foundFragments = getFragmentsForExpression(smallerExpression_, headGroupFragments, chainFragments,
+        chainsToCheck);
+    boolean smallerFragsFound = areFragmentsFound(smallerExpression_,foundFragments);
+    return (biggerFragsFound && smallerFragsFound);
+  }
+  
+  /**
+   * returns all of the fragments that belong to a certain equation expression
+   * @param expression the equation expression
+   * @param headGroupFragments the detected head group fragments
+   * @param chainFragments the detected chain fragments
+   * @param chainsToCheck the chains for which this evaluation has to be performed
+   * @return all of the fragments that belong to a certain equation expression; key: fragment name; value: the detected fragment
+   */
+  private Hashtable<String,CgProbe> getFragmentsForExpression(ExpressionForComparisonVO expression, Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments,
+      Vector<FattyAcidVO> chainsToCheck) {
+    Hashtable<String,CgProbe> foundFragments = new Hashtable<String,CgProbe>(headGroupFragments);
+    for (FragmentMultVO fragVO : expression.getFragments()) {
+      for (FattyAcidVO chain : chainsToCheck) {
+        if (chain.getChainType()!=fragVO.getFragmentType() || !chainFragments.containsKey(chain.getChainId()))
+          continue;
+        foundFragments.putAll(chainFragments.get(chain.getChainId()));
+      }
     }
-    boolean enough = (biggerFragsFound && smallerFragsFound);
-    boolean[] result = new boolean[2];
-    result[0] = enough;
-    result[1] = biggerFirst;
-    return result;
+    return foundFragments;
   }
   
   /**
@@ -407,50 +499,55 @@ public class IntensityRuleVO
    * @return true if the rule is fulfilled
    */
   public boolean isRuleFulfilled(Hashtable<String,CgProbe> found, Float basePeak){
-    double biggerArea = biggerExpression_.evaluateExpression(found, basePeak);
-    double smallerArea = smallerExpression_.evaluateExpression(found, basePeak);
-    if (biggerArea>smallerArea) return true;
-    else return false;
+    if (this.orRule_) {
+      boolean oneFound = false;
+      for (FragmentMultVO mult : this.biggerExpression_.getFragments()) {
+        if (found.containsKey(mult.getFragmentName())) {
+          oneFound = true;
+        }
+      }
+      return oneFound;
+    } else {
+      double biggerArea = biggerExpression_.evaluateExpression(found, basePeak);
+      double smallerArea = smallerExpression_.evaluateExpression(found, basePeak);
+      if (biggerArea>smallerArea) return true;
+      else return false;
+    }
   }
   
- /**
-  * checks if the rule is OK (for chain fragment comparison)
-  * @param found1 first set of found fragments; key: fragment name; value the peak identification object
-  * @param found2 second set of found fragments; key: fragment name; value the peak identification object
-  * @param basePeak the base peak area
-  * @return true if the rule is fulfilled
-  */
-  public boolean isRuleFulfilled(Hashtable<String,CgProbe> found1, Hashtable<String,CgProbe> found2, Float basePeak){
-    boolean biggerFragsFound = areFragmentsFound(biggerExpression_,found1);
-    double biggerArea = 0d;
-    double smallerArea = 0d;
-    if (biggerFragsFound){
-      biggerArea = getBiggerArea(found1, basePeak);
-      smallerArea = getSmallerArea(found2, basePeak);
-    } else {
-      biggerArea = getBiggerArea(found2, basePeak);
-      smallerArea = getSmallerArea(found1, basePeak);      
-    }    
+  /**
+   * is this intensity rule fulfilled or violated
+   * @param headGroupFragments the detected head group fragments
+   * @param chainFragments the detected chain fragments
+   * @param chainsToCheck the chains for which this evaluation has to be performed
+   * @param basePeak intensity of the base peak
+   * @return true when this rule is fulfilled
+   */
+  public boolean isRuleFulfilled(Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments,
+      Vector<FattyAcidVO> chainsToCheck, Float basePeak) {
+    Hashtable<String,CgProbe> foundFragments = getFragmentsForExpression(biggerExpression_, headGroupFragments, chainFragments,
+        chainsToCheck);
+    double biggerArea = getBiggerArea(foundFragments,basePeak);
+    foundFragments = getFragmentsForExpression(smallerExpression_, headGroupFragments, chainFragments,
+        chainsToCheck);
+    double smallerArea = getSmallerArea(foundFragments,basePeak);
     if (biggerArea>smallerArea) return true;
-    else return false;
+    else return false; 
   }
   
   /**
    * checks if the rule contains chains of different types
-   * @param fragRules the fragmentation rules; key: name of the fragment; value: fragmentation rule
    */
-  public void checkForDiffChainTypes(Hashtable<String,FragmentRuleVO> fragRules){
+  public void checkForDiffChainTypes(){
     boolean foundOneType = false;
     chainType_ = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
     for (FragmentMultVO multVO : biggerExpression_.getFragments()){
       if (multVO.getFragmentName().equalsIgnoreCase(BASEPEAK_NAME)) continue;
-      if (!fragRules.containsKey(multVO.getFragmentName())) continue;
-      FragmentRuleVO ruleVO = fragRules.get(multVO.getFragmentName());
       if (!foundOneType){
-        chainType_ = ruleVO.getChainType();
+        chainType_ = multVO.getFragmentType();
         foundOneType = true;
       } else {
-        if (chainType_!=ruleVO.getChainType()){
+        if (chainType_!=multVO.getFragmentType()) {
           chainType_ = DIFF_CHAIN_TYPES;
           break;
         }
@@ -459,13 +556,11 @@ public class IntensityRuleVO
     if (chainType_ == DIFF_CHAIN_TYPES) return;
     for (FragmentMultVO multVO : smallerExpression_.getFragments()){
       if (multVO.getFragmentName().equalsIgnoreCase(BASEPEAK_NAME)) continue;
-      if (!fragRules.containsKey(multVO.getFragmentName())) continue;
-      FragmentRuleVO ruleVO = fragRules.get(multVO.getFragmentName());
       if (!foundOneType){
-        chainType_ = ruleVO.getChainType();
+        chainType_ = multVO.getFragmentType();
         foundOneType = true;
       } else {
-        if (chainType_!=ruleVO.getChainType()){
+        if (chainType_!=multVO.getFragmentType()) {
           chainType_ = DIFF_CHAIN_TYPES;
           break;
         }
@@ -497,32 +592,13 @@ public class IntensityRuleVO
    * returns the MSLevel this equation affects
    * @param headGroupFragments the found head group fragments with its areas; key: fragment name; value: CgProbe peak identification object
    * @param chainFragments the found chain fragments with its areas; first key: fatty acid name; second key: name of the fragment; value: CgProbe peak identification object
-   * @param biggerFA the fatty acid of the more intense part (if appropriate)
-   * @param smallerFA the fatty acid of the less intense part (if appropriate)
    * @return
    */
-  public int getMSLevel(Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments, FattyAcidVO biggerFA, FattyAcidVO smallerFA){
+  public int getMSLevel(Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments){
     int msLevel = -1;
-    for (String name : getBiggerNonBasePeakNames()){
-      if (headGroupFragments.containsKey(name)){
-        msLevel = headGroupFragments.get(name).getMsLevel();
-        break;
-      } else if (biggerFA!=null && chainFragments.containsKey(biggerFA.getChainId()) && chainFragments.get(biggerFA.getChainId()).containsKey(name)){
-        msLevel = chainFragments.get(biggerFA.getChainId()).get(name).getMsLevel();
-        break;
-      }
-    }
-    if (msLevel>-1) return msLevel;
-    for (String name : getSmallerNonBasePeakNames()){
-      if (headGroupFragments.containsKey(name)){
-        msLevel = headGroupFragments.get(name).getMsLevel();
-        break;
-      } else if (smallerFA!=null && chainFragments.containsKey(smallerFA.getChainId()) && chainFragments.get(smallerFA.getChainId()).containsKey(name)){
-        msLevel = chainFragments.get(smallerFA.getChainId()).get(name).getMsLevel();
-        break;
-      }
-    }
-    
+    CgProbe probe =  getAnyNonBasepeakFragment(headGroupFragments, chainFragments);
+    if (probe!=null)
+      msLevel = probe.getMsLevel();
     return msLevel;
   }
   
@@ -574,11 +650,15 @@ public class IntensityRuleVO
   protected String replaceParts(String rulePart, Hashtable<String,String> originalToReplacement){
     Vector<RangeInteger> ranges = new Vector<RangeInteger>();
     Hashtable<Integer,String> replacementIndices = new Hashtable<Integer,String>();
-    Vector<String> lengthSortedNames = FragmentRuleVO.getLengthSortedFragmentNames(originalToReplacement.keySet(),new HashSet<String>());
-    for (String name : lengthSortedNames){
-      int startIndex = getStartIndex(name,rulePart,ranges);
-      ranges.add(new RangeInteger(startIndex,startIndex+name.length()));
-      replacementIndices.put(startIndex, name);
+    //TODO: the fragmentNames was artificially created since only the name seems to be of interest - might need to be improved in future
+    Hashtable<String,Short> fragmentNames = new Hashtable<String,Short>();
+    for (String name : originalToReplacement.keySet())
+      fragmentNames.put(name, LipidomicsConstants.CHAIN_TYPE_NO_CHAIN);
+    Vector<ShortStringVO> lengthSortedNames = FragmentRuleVO.getLengthSortedFragmentNames(fragmentNames,new Hashtable<String,Short>());
+    for (ShortStringVO name : lengthSortedNames){
+      int startIndex = getStartIndex(name.getKey(),rulePart,ranges);
+      ranges.add(new RangeInteger(startIndex,startIndex+name.getKey().length()));
+      replacementIndices.put(startIndex, name.getKey());
     }
     String returnString = new String(rulePart);
     List<Integer> idxSorted = new ArrayList<Integer>(replacementIndices.keySet());
@@ -634,57 +714,6 @@ public class IntensityRuleVO
     return (this.biggerExpression_.isAbsoluteComparison() || this.smallerExpression_.isAbsoluteComparison());
   }
   
-  /**
-   * selects a corresponding chain VO from the found results
-   * @param chainCAndDb chain name specified by name and db
-   * @param nonBasepeakNames the fragment names, that are not the base peak
-   * @param chainFragments the found chain fragments with its areas; first key: fatty acid name; second key: name of the fragment; value: CgProbe peak identification object 
-   * @param ragments that were not found in the equation (required for reading of results, since for rules containing "+", not all of the fragments have to be found)
-   * @return the found chain VO
-   * @throws LipidCombinameEncodingException thrown when a lipid combi id (not containing type and OH number) cannot be decoded
-   */
-  protected static FattyAcidVO selectChainFromFoundFragments(String chainCAndDb, Vector<String> nonBasepeakNames, Hashtable<String,Hashtable<String,CgProbe>> chainFragments,
-      Hashtable<String,String> missed) throws LipidCombinameEncodingException{
-    //first, find all the fragments that were not missed
-    Vector<String> foundFragments = new Vector<String>();
-    for (String frag : nonBasepeakNames) {
-      if (!missed.containsKey(frag))
-        foundFragments.add(frag);
-    }
-    Object[] prefixCAndDbs = StaticUtils.parsePrefixCAndDbsFromChainId(chainCAndDb);
-    String prefix = (String)prefixCAndDbs[0];
-    int cAtoms = (Integer)prefixCAndDbs[1];
-    int dbs = (Integer)prefixCAndDbs[2];
-    String frag;
-    // in the case there are no found fragments, create a FattyAcidVO from the chainCAndDb
-    if (foundFragments.size()==0)
-      return new FattyAcidVO(LipidomicsConstants.CHAIN_TYPE_NO_CHAIN, prefix, cAtoms, dbs, -1, -1, null);
-    for (String chainId : chainFragments.keySet()){
-      if ((prefix.length()>0 && chainId.indexOf(prefix)==-1) || chainId.indexOf(String.valueOf(cAtoms))==-1 || chainId.indexOf(String.valueOf(dbs))==-1)
-        continue;
-      Hashtable<String,CgProbe> foundFrags = chainFragments.get(chainId);
-      //check if this chain contains one of the fragments
-      boolean fragFound = false;
-      for (String fragWiPos : foundFragments) {
-        frag = fragWiPos;
-        if (fragWiPos.indexOf("[")!=-1)
-          frag = frag.substring(0,fragWiPos.indexOf("["));
-        if (foundFrags.containsKey(frag)) {
-          fragFound = true;
-          break;
-        }
-      }
-      if (!fragFound)
-        continue;
-      //now check if the prefix the #C-atoms and the #dbs matches
-      FattyAcidVO chain = StaticUtils.decodeLipidNameForCreatingCombis(chainId);
-      if (!chain.getPrefix().equalsIgnoreCase(prefix) || chain.getcAtoms()!=cAtoms || chain.getDoubleBonds()!=dbs)
-        continue;
-      return chain;
-    }
-    return null;
-  }
-
   
   /**
    * sets how many hydroxylations must be present for the detection of this fragment; key: number of hydroxylations; value: mandatory - should be null in case of no OH restrictions
@@ -704,6 +733,23 @@ public class IntensityRuleVO
     if (ohNumber==LipidomicsConstants.EXCEL_NO_OH_INFO || this.allowedOHs_==null)
       return true;
     return (this.allowedOHs_.containsKey(ohNumber));
+  }
+  
+  /**
+   * 
+   * @return the available types the fragment originates of, i.e. head, acyl, alkyl, alkenyl, lcb
+   */
+  public Set<Short> getAvailableTypes(){
+    return availableFragmentTypes_;    
+  }
+
+  /**
+   * 
+   * @return whether this is an OR rule
+   */
+  public boolean isOrRule()
+  {
+    return orRule_;
   }
   
 }

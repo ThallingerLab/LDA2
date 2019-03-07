@@ -24,7 +24,6 @@
 package at.tugraz.genome.lda.msn.vos;
 
 import java.util.Hashtable;
-import java.util.Set;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
@@ -32,6 +31,7 @@ import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.vos.ShortStringVO;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
 import at.tugraz.genome.maspectras.parser.spectrummill.vos.SmChemicalElementVO;
 
@@ -129,7 +129,7 @@ public class FragmentRuleVO
     this.msLevel_ = msLevel;
     this.mandatory_ = mandatory;
     this.formula_ = formula;
-    this.chainType_ = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
+    this.chainType_ = LipidomicsConstants.CHAIN_TYPE_NO_CHAIN;
     this.allowedOHs_ = allowedOHs;
     if (charge<1) throw new RulesException("The charge state of an analyte must be greater or equal 1");
     this.categorizeFormula(formula, headFragments, chainFragments, elementParser);
@@ -317,10 +317,11 @@ public class FragmentRuleVO
    */
   private static Object[] containsChain(String formula) throws RulesException {
     int chainProcedure = NO_FRAGMENT;
-    int chainType = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
+    int chainType = LipidomicsConstants.CHAIN_TYPE_NO_CHAIN;
     if (formula.indexOf(CHAIN_NAME)!=-1 || formula.indexOf(ALKYL_CHAIN_NAME)!=-1 || formula.indexOf(ALKENYL_CHAIN_NAME)!=-1 ||
         formula.indexOf(LCB_NAME)!=-1){
       String chainName = CHAIN_NAME;
+      chainType = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
       if (formula.indexOf(ALKYL_CHAIN_NAME)!=-1){
         chainName = ALKYL_CHAIN_NAME;
         chainType = LipidomicsConstants.CHAIN_TYPE_FA_ALKYL;
@@ -356,9 +357,9 @@ public class FragmentRuleVO
    * @param fragHash the Hashtable<String,FragmentRuleVO>
    * @return hash table containing only the keys of a Hashtable<String,FragmentRuleVO> hash
    */
-  public static Hashtable<String,String> getStringKeyHash(Hashtable<String,FragmentRuleVO> fragHash){
-    Hashtable<String,String> hash = new Hashtable<String,String>();
-    for (String key: fragHash.keySet()) hash.put(key, key);
+  public static Hashtable<String,Short> getStringKeyHash(Hashtable<String,FragmentRuleVO> fragHash){
+    Hashtable<String,Short> hash = new Hashtable<String,Short>();
+    for (String key: fragHash.keySet()) hash.put(key, fragHash.get(key).getChainType());
     return hash;
   }
   
@@ -370,20 +371,20 @@ public class FragmentRuleVO
    * @return Object[0] = Vector<String> containing used VOs; Object[1] Vector<Integer> telling if chain has to be added or subtracted (ADD_CHAIN/MINUS_CHAIN); Object[1] = String (original formula reduced by the found self defined fragments)
    * @throws RulesException specifies in detail which rule has been infringed
    */
-  private static Object[] containsSelfDefinedFragments(String formula, Hashtable<String,String> headFragments, Hashtable<String,String> chainFragments) throws RulesException{
+  private static Object[] containsSelfDefinedFragments(String formula, Hashtable<String,Short> headFragments, Hashtable<String,Short> chainFragments) throws RulesException{
     Vector<String> selfDefinedParts = new Vector<String>();
     Vector<Integer> plusOrMinus = new Vector<Integer>();
     Hashtable<String,String> allFragments = new Hashtable<String,String>();
     for (String name : headFragments.keySet()) allFragments.put(name, name);
     for (String name : chainFragments.keySet()) allFragments.put(name, name);
-    Vector<String> lengthSortedFragmentNames = getLengthSortedFragmentNames(headFragments.keySet(),chainFragments.keySet());
+    Vector<ShortStringVO> lengthSortedFragmentNames = getLengthSortedFragmentNames(headFragments,chainFragments);
     
     // if I start with the longest names, I do not have the problem that a smaller name is contained in the name of another fragment
-    for (String name: lengthSortedFragmentNames){
-      Object[] result = checkSelfDefinedFragment(formula,name);
+    for (ShortStringVO name: lengthSortedFragmentNames){
+      Object[] result = checkSelfDefinedFragment(formula,name.getKey());
       Integer fragmentAction  = (Integer)result[0];
       if (fragmentAction==NO_FRAGMENT) continue;
-      selfDefinedParts.add(name);
+      selfDefinedParts.add(name.getKey());
       plusOrMinus.add(fragmentAction);
       formula = (String)result[1];
     }
@@ -402,47 +403,47 @@ public class FragmentRuleVO
    * @param chainFragments the names previously parsed chain fragments (the fragment may be a derivative of a previously parsed chain fragment)
    * @return fragment names sorted by length
    */
-  public static Vector<String> getLengthSortedFragmentNames(Set<String> headFragments, Set<String> chainFragments){
+  public static Vector<ShortStringVO> getLengthSortedFragmentNames(Hashtable<String,Short> headFragments, Hashtable<String,Short> chainFragments){
     return getLengthSortedFragmentNames(headFragments,chainFragments,null);
   }
   
-  public static Vector<String> getLengthSortedFragmentNames(Set<String> headFragments, Set<String> chainFragments, Set<String> missed){
-    Vector<String> lengthSortedFragmentNames = new Vector<String>();
-    for (String name : headFragments){
+  public static Vector<ShortStringVO> getLengthSortedFragmentNames(Hashtable<String,Short> headFragments, Hashtable<String,Short> chainFragments, Hashtable<String,Short> missed){
+    Vector<ShortStringVO> lengthSortedFragmentNames = new Vector<ShortStringVO>();
+    for (String name : headFragments.keySet()){
       boolean fragmentAdded = false;
       for (int i=0; i!=lengthSortedFragmentNames.size(); i++){
-        if (name.length()>lengthSortedFragmentNames.get(i).length()){
-          lengthSortedFragmentNames.add(i,name);
+        if (name.length()>lengthSortedFragmentNames.get(i).getKey().length()){
+          lengthSortedFragmentNames.add(i,new ShortStringVO(name,headFragments.get(name)));
           fragmentAdded = true;
           break;
         }
       }
-      if (!fragmentAdded) lengthSortedFragmentNames.add(name);
+      if (!fragmentAdded) lengthSortedFragmentNames.add(new ShortStringVO(name,headFragments.get(name)));
     }
-    for (String name : chainFragments){
+    for (String name : chainFragments.keySet()){
       boolean fragmentAdded = false;
       for (int i=0; i!=lengthSortedFragmentNames.size(); i++){
-        if (name.length()>lengthSortedFragmentNames.get(i).length()){
-          lengthSortedFragmentNames.add(i,name);
+        if (name.length()>lengthSortedFragmentNames.get(i).getKey().length()){
+          lengthSortedFragmentNames.add(i,new ShortStringVO(name,chainFragments.get(name)));
           fragmentAdded = true;
           break;
         }
       }
-      if (!fragmentAdded) lengthSortedFragmentNames.add(name);
+      if (!fragmentAdded) lengthSortedFragmentNames.add(new ShortStringVO(name,chainFragments.get(name)));
     }
     if (missed!=null){
-      for (String name : missed){
+      for (String name : missed.keySet()){
         String nm = new String(name);
         if (nm.indexOf("[")!=-1) nm = nm.substring(0,nm.indexOf("["));
         boolean fragmentAdded = false;
         for (int i=0; i!=lengthSortedFragmentNames.size(); i++){
-          if (nm.length()>lengthSortedFragmentNames.get(i).length()){
-            lengthSortedFragmentNames.add(i,nm);
+          if (nm.length()>lengthSortedFragmentNames.get(i).getKey().length()){
+            lengthSortedFragmentNames.add(i,new ShortStringVO(nm,missed.get(name)));
             fragmentAdded = true;
             break;
           }
         }
-        if (!fragmentAdded) lengthSortedFragmentNames.add(nm);
+        if (!fragmentAdded) lengthSortedFragmentNames.add(new ShortStringVO(nm,missed.get(name)));
       }      
     }
     return lengthSortedFragmentNames;
@@ -520,12 +521,8 @@ public class FragmentRuleVO
    * @return object vector containing: get(0): chemical formula; get(1) m/z value as double
    * @throws RulesException 
    */
-  //TODO: this is an intermediate solution, until the various hydroxylation options are available
   public Vector<Object> getFormulaAndMass(String precursorFormula, double precursorMass, FattyAcidVO vo, int charge) throws RulesException{
     FattyAcidVO fa = vo;
-    //TODO: currently dihydroxylated is here hardcoded
-    //if (chainType_==LCB_CHAIN)      
-    //  fa = FattyAcidsContainer.getFattyAcidChains(chainLib);
     return getFormulaAndMass(precursorFormula, precursorMass, fa.getFormula(), fa.getMass(), charge); 
   }
 

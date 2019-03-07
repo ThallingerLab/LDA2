@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -294,9 +295,10 @@ public class MSnAnalyzer
    * @throws CgException errors from the quantitation process
    * @throws HydroxylationEncodingException thrown if the encoding does not exist
    * @throws ChemicalFormulaException thrown if there is something wrong with the formula
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   public MSnAnalyzer(String className, String modName, double precursorMz, double precursorTolerance, String name, int doubleBonds, int ohNumber, String analyteFormula,
-      String modificationFormula, int charge, LipidomicsAnalyzer analyzer, boolean debug, boolean ignoreAbsolute) throws RulesException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException {
+      String modificationFormula, int charge, LipidomicsAnalyzer analyzer, boolean debug, boolean ignoreAbsolute) throws RulesException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException {
     this(className,modName,analyzer,debug,ignoreAbsolute);
     set_ =  new LipidParameterSet((float)precursorMz, name, new Integer(doubleBonds), ohNumber, modName, "not appropriate", analyteFormula, modificationFormula, new Integer(charge));
     this.rulesDir_  = null;
@@ -314,8 +316,9 @@ public class MSnAnalyzer
    * @throws CgException errors from the quantitation process
    * @throws HydroxylationEncodingException thrown if the encoding does not exist
    * @throws ChemicalFormulaException thrown if there is something wrong with the formula
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  private void scanAllSpectraForCandidates(double precursorMz, double precursorTolerance) throws RulesException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException {
+  private void scanAllSpectraForCandidates(double precursorMz, double precursorTolerance) throws RulesException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException {
     spectraFound_ = new Vector<Float>();
     Hashtable<Integer,Boolean> msLevels =  analyzer_.prepareMSnSpectraCache((float)(precursorMz-precursorTolerance), (float)(precursorMz+precursorTolerance),
         LipidomicsConstants.getMs2MinIntsForNoiseRemoval());
@@ -368,8 +371,9 @@ public class MSnAnalyzer
    * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
    * @throws CgException errors from the quantitation process
    * @throws NoRuleException thrown if the rules are not there
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  private void checkMSnEvidence(Hashtable<Integer,Boolean> msLevelsFromSpectralData) throws RulesException, IOException, SpectrummillParserException, CgException, NoRuleException {
+  private void checkMSnEvidence(Hashtable<Integer,Boolean> msLevelsFromSpectralData) throws RulesException, IOException, SpectrummillParserException, CgException, NoRuleException, LipidCombinameEncodingException {
     probesWithMSnSpectra_ = performStandardInitialProcesses(msLevelsFromSpectralData);
     Hashtable<Integer,Boolean> msLevels = fragCalc_.correctMsLevelsForExistingFragments(msLevelsFromSpectralData,probesWithMSnSpectra_);
     if (probesWithMSnSpectra_==null || probesWithMSnSpectra_.size()<1 || msLevels.size()<1){
@@ -505,8 +509,9 @@ public class MSnAnalyzer
    * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
    * @throws CgException errors from the quantitation process
    * @throws NoRuleException thrown if the rules are not there
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  private void checkHeadGroupFragments(Hashtable<Integer,Vector<CgProbe>> probesWithMSnSpectra) throws RulesException, IOException, SpectrummillParserException, CgException, NoRuleException {
+  private void checkHeadGroupFragments(Hashtable<Integer,Vector<CgProbe>> probesWithMSnSpectra) throws RulesException, IOException, SpectrummillParserException, CgException, NoRuleException, LipidCombinameEncodingException {
     //calculate the areas of the head groups
     Hashtable<Boolean,Vector<FragmentVO>> headFragments = fragCalc_.getHeadFragments(set_.getOhNumber());
     Vector<FragmentVO> mandatoryHeadFragments = headFragments.get(true);
@@ -546,7 +551,7 @@ public class MSnAnalyzer
     for (IntensityRuleVO intRule : intRules){
       if (!intRule.hydroxylationValid(set_.getOhNumber().shortValue()))
         continue;
-      if (intRule.enoughFragmentsForRuleEvaluationFound(headGroupFragments_)){
+      if (intRule.isOrRule() || intRule.enoughFragmentsForRuleEvaluationFound(headGroupFragments_)){
         if (this.ignoreAbsolute_ && intRule.isAbsoluteComparison()){
           if (intRule.isRuleFulfilled(headGroupFragments_,getBasepeakIfRequired(intRule)))
             fulfilledHeadIntensityRules_.put(intRule.getRuleIdentifier(), intRule);
@@ -594,11 +599,13 @@ public class MSnAnalyzer
    * @throws IOException exception if there is something wrong about the file
    * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
    * @throws CgException errors from the quantitation process
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  private void checkChainFragments(Hashtable<Integer,Vector<CgProbe>> probesWithMSnSpectra) throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException {
+  private void checkChainFragments(Hashtable<Integer,Vector<CgProbe>> probesWithMSnSpectra) throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException, LipidCombinameEncodingException {
     //the method getPossibleChainObjects() returns an aggregate of all possible chains (chain type, C atoms, double bonds, oh number)
     Vector<FattyAcidVO> fas = fragCalc_.getPossibleChainObjects();
     Hashtable<Short,Vector<IntensityRuleVO>> intRules = fragCalc_.getChainIntensityRulesSameChain();
+    Set<String> forbiddenChains = new HashSet<String>();
     for (FattyAcidVO chain : fas){
       Hashtable<Boolean,Vector<FragmentVO>> chainFragments = fragCalc_.getChainFragments(chain);
 //      for (Integer chainType : allChainFragments.keySet()){
@@ -653,20 +660,25 @@ public class MSnAnalyzer
           for (IntensityRuleVO intRule : intRules.get(chain.getChainType())){
             Hashtable<String,CgProbe> allFragments = new Hashtable<String,CgProbe>(foundFragments);
             allFragments.putAll(headGroupFragments_);
-            if (intRule.enoughFragmentsForRuleEvaluationFound(allFragments)){
+            if (intRule.isOrRule() || intRule.enoughFragmentsForRuleEvaluationFound(allFragments)){
               if (this.ignoreAbsolute_ && intRule.isAbsoluteComparison()){
                 if (intRule.isRuleFulfilled(headGroupFragments_,getBasepeakIfRequired(intRule))) {
-                  fulfilledChainIntensityRules.put(intRule.getRuleIdentifier(), new IntensityChainVO(intRule,chain));
+                  IntensityChainVO intChainVO = new IntensityChainVO(intRule,chain,set_.getOhNumber()>0);
+                  fulfilledChainIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
                 }
                 continue;
               }
-              if (intRule.isRuleFulfilled(allFragments,getBasepeakIfRequired(intRule)))
-                fulfilledChainIntensityRules.put(intRule.getRuleIdentifier(), new IntensityChainVO(intRule,chain));
-              else{
+              if (intRule.isRuleFulfilled(allFragments,getBasepeakIfRequired(intRule))) {
+                IntensityChainVO intChainVO = new IntensityChainVO(intRule,chain,set_.getOhNumber()>0);
+                fulfilledChainIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
+              }else{
               //TODO: possibly use another annotation for displaying the name in the debugVO than chain.getChainId()
                 if (debug_) debugVO_.addViolatedChainRule(chain.getChainId(), intRule); 
                 if (intRule.isMandatory((short)chain.getOhNumber())){
                   discardChain = true;
+                  if (intRule.isOrRule()) {
+                    forbiddenChains.add(chain.getChainId());
+                  }
                   break;
                 }
               }
@@ -690,7 +702,7 @@ public class MSnAnalyzer
         status_=LipidomicsMSnSet.DISCARD_HIT;
       return;
     }
-    
+
 //    for (String chainId : chainFragments_.keySet()) {
 //      System.out.println("!!!!!!!!!!!!!!!!!!! "+chainId);
 //      Hashtable<String,CgProbe> foundChains = chainFragments_.get(chainId);
@@ -704,60 +716,51 @@ public class MSnAnalyzer
 //      }
 //    }
     // this checks if intensity relationships of different chains are fulfilled
-    Hashtable<String,Vector<FattyAcidVO>> combis = fragCalc_.getChainFragmentCombinationsWithDetectedEvidence(chainFragments_.keySet(),chainFragments_);
+    Hashtable<String,Vector<FattyAcidVO>> combis = fragCalc_.getChainFragmentCombinationsWithDetectedEvidence(chainFragments_.keySet(),chainFragments_, forbiddenChains);
     Vector<IntensityRuleVO> diffRules = fragCalc_.getChainIntensityRulesDiffChain();
     if (combis.size()>0 && combis.values().iterator().next().size()>1 && diffRules.size()>0){
       Hashtable<String,Vector<FattyAcidVO>> intRulesFulFilled = new Hashtable<String,Vector<FattyAcidVO>>();
       for (String combiKey : combis.keySet()){
-        //System.out.println("combiKey: "+combiKey);
         Vector<FattyAcidVO> combi = combis.get(combiKey);
         if (combi.size()<2) continue;
         boolean discardCombi = false;
         Hashtable<String,IntensityChainVO> fulfilledChaindIntensityRules = new Hashtable<String,IntensityChainVO>();
-        for (int i=0; i<combi.size(); i++){
-          for (int j=i+1; j<combi.size(); j++){
-            FattyAcidVO fa1 = combi.get(i);
-            FattyAcidVO fa2 = combi.get(j);
-            Hashtable<String,CgProbe> allFragments1 = new Hashtable<String,CgProbe>();
-            if (chainFragments_.containsKey(fa1.getChainId())) allFragments1 = new Hashtable<String,CgProbe>(chainFragments_.get(fa1.getChainId()));
-            allFragments1.putAll(headGroupFragments_);
-            Hashtable<String,CgProbe> allFragments2 = new Hashtable<String,CgProbe>();
-            if (chainFragments_.containsKey(fa2.getChainId())) allFragments2 = new Hashtable<String,CgProbe>(chainFragments_.get(fa2.getChainId()));
-            allFragments2.putAll(headGroupFragments_);
-            for (IntensityRuleVO intRule : diffRules){
-              boolean[] enoughAndFirst = intRule.enoughFragmentsForRuleEvaluationFound(allFragments1,allFragments2);
-              if (enoughAndFirst[0]){
-                if (this.ignoreAbsolute_ && intRule.isAbsoluteComparison()){
-                  if (intRule.isRuleFulfilled(headGroupFragments_,getBasepeakIfRequired(intRule))){
-                    FattyAcidVO biggerFA = fa2;
-                    FattyAcidVO smallerFA = fa1;
-                    if (enoughAndFirst[1]){
-                      biggerFA = fa1;
-                      smallerFA = fa2;
-                    }
-                    fulfilledChaindIntensityRules.put(intRule.getRuleIdentifier(), new IntensityChainVO(intRule,biggerFA,smallerFA));                    
-                  }
-                  continue;
+//        System.out.println("combiKey: "+combiKey);
+        for (IntensityRuleVO intRule : diffRules){
+          Vector<Vector<FattyAcidVO>> combisToCheck = StaticUtils.getAllPotentialChainCombinationForThisRule(intRule, combi);
+          for (Vector<FattyAcidVO> chainsToCheck : combisToCheck) {
+            if (intRule.isOrRule() || intRule.enoughFragmentsForRuleEvaluationFound(headGroupFragments_,chainFragments_,chainsToCheck)) {
+//              System.out.println("I found enough fragments for this combination");
+//              for (FattyAcidVO chain : chainsToCheck) {
+//                System.out.println(chain.getChainId());
+//              }
+              //this is the special case when the absolute rules are neglected
+              if (this.ignoreAbsolute_ && intRule.isAbsoluteComparison()){
+                if (intRule.isRuleFulfilled(headGroupFragments_,getBasepeakIfRequired(intRule))){
+                  IntensityChainVO intChainVO = new IntensityChainVO(intRule,chainsToCheck,set_.getOhNumber()>0);
+                  fulfilledChaindIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
                 }
-                if (intRule.isRuleFulfilled(allFragments1,allFragments2,getBasepeakIfRequired(intRule))){
-                  FattyAcidVO biggerFA = fa2;
-                  FattyAcidVO smallerFA = fa1;
-                  if (enoughAndFirst[1]){
-                    biggerFA = fa1;
-                    smallerFA = fa2;
-                  }
-                  fulfilledChaindIntensityRules.put(intRule.getRuleIdentifier(), new IntensityChainVO(intRule,biggerFA,smallerFA));
-                }else{
-                  if (debug_) debugVO_.addViolatedChainRule(combiKey, intRule); 
-                  if (intRule.isMandatory()){
-                    discardCombi = true;
-                    break;
-                  }
+                continue;
+              }      
+              if (intRule.isRuleFulfilled(headGroupFragments_,chainFragments_,chainsToCheck,getBasepeakIfRequired(intRule))){
+//                System.out.println("This rules is fulfilled");
+//                for (FattyAcidVO chain : chainsToCheck) {
+//                  System.out.println("!!!!!!!!!!!!!! "+chain.getChainId());
+//                }
+                IntensityChainVO intChainVO = new IntensityChainVO(intRule,chainsToCheck,set_.getOhNumber()>0);
+                fulfilledChaindIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
+              }else{
+                if (debug_) debugVO_.addViolatedChainRule(combiKey, intRule); 
+                if (intRule.isMandatory()){
+                  discardCombi = true;
+                  break;
                 }
               }
             }
           }
+          //System.out.println("intRule: "+intRule.getRuleIdentifier());
         }
+                
         if (!discardCombi){
           if (fulfilledChaindIntensityRules.size()>0)
             fulfilledChainIntensityRules_.put(combiKey, fulfilledChaindIntensityRules);
@@ -766,9 +769,6 @@ public class MSnAnalyzer
       }
       combis = intRulesFulFilled;
     }
-    //TODO: here a further check has to be implemented that if all OH-combinations contain "class" fragments, and there are no more combinations left,the 
-    //the whole class has to be discarded
-
     
     // remove hits that cannot occur in any combination
     // and count if the FA occurs in more than one combination
@@ -1145,7 +1145,7 @@ public class MSnAnalyzer
               }
             }else { 
               contradicting++;
-              if (debug_) debugVO_.addUnfulfilledPositionRule(combiName, new IntensityPositionVO(rule,chain,chain));
+              if (debug_) debugVO_.addUnfulfilledPositionRule(combiName, new IntensityPositionVO(rule,chain,chain,set_.getOhNumber()>0));
             }
           }
         }
@@ -1277,7 +1277,7 @@ public class MSnAnalyzer
                     impossiblePositions.containsKey(secondFA.getChainId()) && impossiblePositions.get(secondFA.getChainId()).containsKey(poss[1]))
                   discard = true;
                 if (discard){
-                  if (debug_) debugVO_.addUnfulfilledPositionRule(combiName, new IntensityPositionVO(rule,firstFA,secondFA));
+                  if (debug_) debugVO_.addUnfulfilledPositionRule(combiName, new IntensityPositionVO(rule,firstFA,secondFA,set_.getOhNumber()>0));
                   continue;
                 }
                 // if there is a mandatory rule, the recommendation of the additional rule must fulfil it - otherwise the add rule is wrong
@@ -1300,7 +1300,7 @@ public class MSnAnalyzer
                   addRulesHash.put(id, rules);
                 }
               }else if (debug_){
-                debugVO_.addUnfulfilledPositionRule(combiName, new IntensityPositionVO(rule,firstFA,secondFA));
+                debugVO_.addUnfulfilledPositionRule(combiName, new IntensityPositionVO(rule,firstFA,secondFA,set_.getOhNumber()>0));
               }
             }
           }
@@ -1474,28 +1474,30 @@ public class MSnAnalyzer
           break;
         }
       }
+      if (faPos!=-1) {
       FattyAcidVO chain = chains.get(faPos);
-      for (int i=0;i!=chains.size();i++){
-        if (positions[i]>0) unassignedPositions.remove(positions[i]);
-      }
-      if (impossiblePositions.containsKey(chain.getChainId())){
-        for (Integer pos : impossiblePositions.get(chain.getChainId()).keySet()){
-          if (unassignedPositions.containsKey(pos)) unassignedPositions.remove(pos);
+        for (int i=0;i!=chains.size();i++){
+          if (positions[i]>0) unassignedPositions.remove(positions[i]);
         }
-      }
-      if (unassignedPositions.size()==1){
-        positions[faPos] = unassignedPositions.keySet().iterator().next();
-        String key = chain.getChainId()+"_"+String.valueOf(faPos);
-        Vector<IntensityPositionVO> evidence = new Vector<IntensityPositionVO>();
         if (impossiblePositions.containsKey(chain.getChainId())){
-          for (IntensityPositionVO posVO : impossiblePositions.get(chain.getChainId()).values()){
-            evidence.add(IntensityPositionVO.createNegatedVO(posVO,positions[faPos]));
+          for (Integer pos : impossiblePositions.get(chain.getChainId()).keySet()){
+            if (unassignedPositions.containsKey(pos)) unassignedPositions.remove(pos);
           }
         }
-        positionEvidence.put(positions[faPos], evidence);
-        posRec.remove(key);
-        unassignedPositions.remove(positions[faPos]);
-        removeWrongEvidence(chain.getChainId(),positions[faPos],posRec);
+        if (unassignedPositions.size()==1){
+          positions[faPos] = unassignedPositions.keySet().iterator().next();
+          String key = chain.getChainId()+"_"+String.valueOf(faPos);
+          Vector<IntensityPositionVO> evidence = new Vector<IntensityPositionVO>();
+          if (impossiblePositions.containsKey(chain.getChainId())){
+            for (IntensityPositionVO posVO : impossiblePositions.get(chain.getChainId()).values()){
+              evidence.add(IntensityPositionVO.createNegatedVO(posVO,positions[faPos]));
+            }
+          }
+          positionEvidence.put(positions[faPos], evidence);
+          posRec.remove(key);
+          unassignedPositions.remove(positions[faPos]);
+          removeWrongEvidence(chain.getChainId(),positions[faPos],posRec);
+        }
       }
     }
     positionEvidence = cleanWrongEvidence(chains, positions, positionEvidence);
@@ -1526,15 +1528,35 @@ public class MSnAnalyzer
     for (Integer pos : positionEvidence.keySet()){
       Vector<IntensityPositionVO> ok = new Vector<IntensityPositionVO>();
       for (IntensityPositionVO posVO : positionEvidence.get(pos)){
-        String biggerFA = posVO.getBiggerFA().getChainId();
-        int biggerPos = posVO.getBiggerPosition();
-        String smallerFA = posVO.getSmallerFA().getChainId();
-        int smallerPos = posVO.getSmallerPosition();
-        if (((unassigned.containsKey(biggerFA)||(faPosOK.containsKey(biggerFA)&&faPosOK.get(biggerFA).containsKey(biggerPos)))&&
-            (unassigned.containsKey(smallerFA)||(faPosOK.containsKey(smallerFA)&&faPosOK.get(smallerFA).containsKey(smallerPos))))||
-            posVO.isNegated()){
-          ok.add(posVO);
+        boolean addIt = true;
+        if (!posVO.isNegated()) {
+          addIt = false;
+          FattyAcidVO big = posVO.getBiggerFA();
+          boolean bigOk = true;
+          if (big!=null) {
+            String biggerFA = big.getChainId();
+            int biggerPos = posVO.getBiggerPosition();
+            if (!unassigned.containsKey(biggerFA) && !faPosOK.containsKey(biggerFA)&&faPosOK.get(biggerFA).containsKey(biggerPos))
+              bigOk = false;
+          }
+          FattyAcidVO small = posVO.getSmallerFA();
+          boolean smallOk = true;
+          if (small!=null) {
+            String smallerFA = small.getChainId();
+            int smallerPos = posVO.getSmallerPosition();
+            if (!unassigned.containsKey(smallerFA) && !faPosOK.containsKey(smallerFA)&&faPosOK.get(smallerFA).containsKey(smallerPos))
+              smallOk = false;
+          }
+          if (bigOk && smallOk)
+            addIt = true;
+//        int smallerPos = posVO.getSmallerPosition();
+//        if (((unassigned.containsKey(biggerFA)||(faPosOK.containsKey(biggerFA)&&faPosOK.get(biggerFA).containsKey(biggerPos)))&&
+//            (unassigned.containsKey(smallerFA)||(faPosOK.containsKey(smallerFA)&&faPosOK.get(smallerFA).containsKey(smallerPos))))||
+//            posVO.isNegated()){       
+//        }
         }
+        if (addIt)
+          ok.add(posVO);
       }
       cleaned.put(pos, ok);
     }
@@ -1757,7 +1779,7 @@ public class MSnAnalyzer
       biggerFA = secondFA;
       smallerFA = firstFA;
     }
-    return new IntensityPositionVO(rule,biggerFA,smallerFA);
+    return new IntensityPositionVO(rule,biggerFA,smallerFA,set_.getOhNumber()>0);
   }
     
   /**

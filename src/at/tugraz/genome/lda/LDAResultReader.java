@@ -988,11 +988,30 @@ public class LDAResultReader
           String uniqueRuleString = readableRuleInterpretation+";"+rule+";"+ruleValueInterpretation;
           String missedString = "";
           if (ruleMissedColumn>-1 && cellEntries.containsKey(ruleMissedColumn)) missedString = (String)cellEntries.get(ruleMissedColumn);
-          Hashtable<String,String> missed = new Hashtable<String,String>();
+          Hashtable<String,Short> missed = new Hashtable<String,Short>();
           StringTokenizer tokenizer = new StringTokenizer(missedString,";");
           while (tokenizer.hasMoreTokens()){
             String token = tokenizer.nextToken();
-            missed.put(token, token);
+            short type = LipidomicsConstants.CHAIN_TYPE_NO_CHAIN;
+            if (chainRules||positionRules){
+              boolean isAChain = false;
+              //is it a chain fragment in Alex notation
+              if (token.startsWith("FA ") || token.startsWith("-FA ") || token.startsWith("LCB ") || token.startsWith("-LCB ") ){
+                isAChain = true;
+              }else {
+                String remnant = new String(readableRuleInterpretation);
+                while (remnant.indexOf(token)!=-1) {
+                  remnant = remnant.substring(remnant.indexOf(token)+token.length());
+                  if (remnant.startsWith("(")) {
+                    isAChain = true;
+                    break;
+                  }
+                }
+              }
+              if (isAChain)
+                type = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
+            }           
+            missed.put(token, type);
           }
           if (uniqueRules.containsKey(uniqueRuleString)) continue;
           uniqueRules.put(uniqueRuleString, uniqueRuleString);
@@ -1000,17 +1019,21 @@ public class LDAResultReader
           if (headGroupRules) currentSection = FragRuleParser.HEAD_SECTION;
           else if (chainRules) currentSection = FragRuleParser.CHAINS_SECTION;
           else if (positionRules) currentSection = FragRuleParser.POSITION_SECTION;
-          Hashtable<String,String> head = new Hashtable<String,String>();
-          for (String key : headGroupFragments.keySet()) head.put(key,key);
-          Hashtable<String,String> chain = new Hashtable<String,String>();
-          for (Hashtable<String,CgProbe> fragments : chainFragments.values()){
-            for (String name : fragments.keySet()) chain.put(name, name);
+          Hashtable<String,Short> head = new Hashtable<String,Short>();
+          for (String key : headGroupFragments.keySet()) head.put(key,LipidomicsConstants.CHAIN_TYPE_NO_CHAIN);
+          Hashtable<String,Short> chain = new Hashtable<String,Short>();
+          for (String chainId : chainFragments.keySet()){
+            FattyAcidVO fa = StaticUtils.decodeLipidNameForCreatingCombis(chainId);
+            Hashtable<String,CgProbe> fragments = chainFragments.get(chainId);
+            for (String name : fragments.keySet()) chain.put(name, fa.getChainType());
           }
           IntensityRuleVO ruleVO = FragRuleParser.extractIntensityVOFromEquation(rule, -1, currentSection, head, chain, null, missed);
           if (chainRules || positionRules){
             IntensityRuleVO ruleInst = null;
-            if (chainRules) ruleInst = IntensityChainVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO,chainFragments,missed);
-            else if (positionRules) ruleInst = IntensityPositionVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO,chainFragments,missed);
+            if (chainRules) ruleInst = IntensityChainVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO,chainFragments,missed,
+                faHydroxyEncoding, lcbHydroxyEncoding, addingMSnEvidence.getOhNumber()>0);
+            else if (positionRules) ruleInst = IntensityPositionVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO,chainFragments,missed,
+                faHydroxyEncoding, lcbHydroxyEncoding, addingMSnEvidence.getOhNumber()>0);
             if (ruleInst!=null) ruleVO = ruleInst;
           }
           if (ruleVO.containsBasePeak()){
@@ -1019,32 +1042,29 @@ public class LDAResultReader
               if (values.get(name)<0) values.put(name, 0f);
             }
             float basePeak = ruleVO.extractBasePeakValue(ruleValueInterpretation,values);
-            int msLevel = ruleVO.getMSLevel(headGroupFragments, chainFragments, ruleVO.getBiggerFA(), ruleVO.getSmallerFA());
+            int msLevel = ruleVO.getMSLevel(headGroupFragments, chainFragments);
             if (msLevel>1) basePeakValues.put(msLevel, basePeak);
           }
           if (ruleVO!=null && headGroupRules) {
             headIntensityRules.put(ruleVO.getRuleIdentifier(), ruleVO);
           }
           else if (ruleVO!=null && chainRules){
-            //this line was replaced by the next one since this step was already perforemed before - I simply casted now the object
+            //this line was replaced by the next one since this step was already performed before - I simply casted now the object
             //IntensityChainVO chainVO =  IntensityChainVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO,chainFragments,missed);
             IntensityChainVO chainVO = (IntensityChainVO)ruleVO;
-            if (!chainVO.getBiggerFA().getChainId().equalsIgnoreCase(chainVO.getSmallerFA().getChainId())) chainVO.setChainType(IntensityChainVO.DIFF_CHAIN_TYPES);
             Hashtable<String,IntensityChainVO> rules = new Hashtable<String,IntensityChainVO>();
-            String id = "";
+            Vector<String> ids = new Vector<String>();
             if (chainVO.getChainType()==IntensityChainVO.DIFF_CHAIN_TYPES){
               Vector<String>  chains = new Vector<String>();
-              chains.add(chainVO.getBiggerFA().getChainId());
-              chains.add(chainVO.getSmallerFA().getChainId());
-              Vector<String> permut = StaticUtils.getPermutedChainNames(chains, LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
-              if (chainIntensityRules.contains(permut.get(0)))
-                id = permut.get(0);
-              else
-                id = permut.get(1);
-            } else id = chainVO.getBiggerFA().getChainId();
-            if (chainIntensityRules.containsKey(id)) rules = chainIntensityRules.get(id);
-            rules.put(ruleVO.getRuleIdentifier(), chainVO);
-            chainIntensityRules.put(id, rules);
+              for (FattyAcidVO faVO : chainVO.getParticipatingChains())
+                chains.add(faVO.getChainId());
+              ids = StaticUtils.getAllAffectedChainCombinations(validChainCombinations,chains);
+            } else ids.add(chainVO.getParticipatingChains().get(0).getChainId());
+            for (String id : ids) {
+              if (chainIntensityRules.containsKey(id)) rules = chainIntensityRules.get(id);
+              rules.put(ruleVO.getReadableRuleInterpretation(faHydroxyEncoding,lcbHydroxyEncoding), chainVO);
+              chainIntensityRules.put(id, rules);
+            }
           } else if (ruleVO!=null && positionRules){
             //this line was replaced by the next one since this step was already perforemed before - I simply casted now the object
             //IntensityPositionVO posVO = IntensityPositionVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO,chainFragments,missed);
@@ -1088,7 +1108,7 @@ public class LDAResultReader
               if (evidence.containsKey(position)) rules = evidence.get(position);
               boolean ruleIsThere = false;
               for (IntensityPositionVO other : rules){
-                if (other.getReadableRuleInterpretation().equalsIgnoreCase(posVO.getReadableRuleInterpretation())){
+                if (other.getReadableRuleInterpretation(faHydroxyEncoding, lcbHydroxyEncoding).equalsIgnoreCase(posVO.getReadableRuleInterpretation(faHydroxyEncoding, lcbHydroxyEncoding))){
                   ruleIsThere = true;
                   break;
                 }

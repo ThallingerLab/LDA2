@@ -519,7 +519,8 @@ public class QuantificationThread extends Thread
       for (LipidParameterSet param : params){
         if (param instanceof LipidomicsMSnSet){
           try {
-            msnRowCount = writeMSnEvidence(msnRowCount,resultMSnSheet,(LipidomicsMSnSet)param, headerStyle, msnLongestHeaders, msnLongestEntries);
+            msnRowCount = writeMSnEvidence(msnRowCount,resultMSnSheet,(LipidomicsMSnSet)param, headerStyle, msnLongestHeaders, msnLongestEntries,
+                quantRes.getFaHydroxyEncoding(),quantRes.getLcbHydroxyEncoding());
           }catch(Exception ex){
             ex.printStackTrace();
             throw ex;
@@ -704,6 +705,8 @@ public class QuantificationThread extends Thread
    * @param headerStyle style for the header row
    * @param longestHeaders the names of the longest header entries for each column - for setting the column width
    * @param longestEntries the length of the longest entries for each column - for setting the column width
+   * @param faHydroxyEncoding the character encoding of the number of hydroxylation sites for the
+   * @param lcbHydroxyEncoding the character encoding of the number of hydroxylation sites for the LCB
    * @return the next row where subsequent information can be written
    * @throws RulesException
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded 
@@ -711,7 +714,8 @@ public class QuantificationThread extends Thread
    */
   @SuppressWarnings("unchecked")
   private static int writeMSnEvidence(int msnRowCount, Sheet sheet, LipidomicsMSnSet param, CellStyle headerStyle,
-      Hashtable<Integer,String> longestHeaders, Hashtable<Integer,Integer> longestEntries) throws RulesException, LipidCombinameEncodingException, ChemicalFormulaException {
+      Hashtable<Integer,String> longestHeaders, Hashtable<Integer,Integer> longestEntries, HydroxyEncoding faHydroxyEncoding,
+      HydroxyEncoding lcbHydroxyEncoding) throws RulesException, LipidCombinameEncodingException, ChemicalFormulaException {
     int count = msnRowCount;
     Row row = sheet.createRow(count);
     count++;
@@ -745,7 +749,7 @@ public class QuantificationThread extends Thread
        writeMSnIntensityHeader(headGroupRow,headerStyle,  longestHeaders);
        Hashtable<String,String> uniqueRules = new Hashtable<String,String>();
        for (IntensityRuleVO ruleVO : headIntRules.values()){
-         if (writeMSnIntensity(sheet,count,ruleVO,param,uniqueRules,longestEntries)){
+         if (writeMSnIntensity(sheet,count,ruleVO,param,uniqueRules,longestEntries,faHydroxyEncoding,lcbHydroxyEncoding)){
            count++;
          }
        }
@@ -783,7 +787,7 @@ public class QuantificationThread extends Thread
         for (String faName : chainRules.keySet()){
           Hashtable<String,IntensityChainVO> rules = chainRules.get(faName);
           for (IntensityRuleVO rule : rules.values()){
-            if (writeMSnIntensity(sheet,count,rule,param,uniqueRules,longestEntries)){
+            if (writeMSnIntensity(sheet,count,rule,param,uniqueRules,longestEntries,faHydroxyEncoding,lcbHydroxyEncoding)){
               count++;
             }
           }
@@ -804,7 +808,7 @@ public class QuantificationThread extends Thread
         Hashtable<String,String> uniqueRules = new Hashtable<String,String>();
         Vector<IntensityRuleVO> rules = param.getFAsInSequenceAsInRule(combiName); 
         for (IntensityRuleVO rule : rules){
-          if (writeMSnIntensity(sheet,count,rule,param,uniqueRules,longestEntries)){
+          if (writeMSnIntensity(sheet,count,rule,param,uniqueRules,longestEntries,faHydroxyEncoding,lcbHydroxyEncoding)){
             count++;
           }  
         }
@@ -995,12 +999,15 @@ public class QuantificationThread extends Thread
    * @param row Excel row that shall be used for writing
    * @param ruleVO IntensityRuleVO to be written
    * @param param the lipid identification containing MSn evidence
+   * @param faHydroxyEncoding the character encoding of the number of hydroxylation sites for the
+   * @param lcbHydroxyEncoding the character encoding of the number of hydroxylation sites for the LCB
    * @return lengths for adaption of cell width: int[0] longest amount of characters for MSN_ROW_INTENSITY_RULE cell; int[1] longest amount of characters for MSN_ROW_INTENSITY_ORIGINAL cell; int[2] longest amount of characters for MSN_ROW_INTENSITY_VALUES cell
    * @throws RulesException if something is not possible
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   private static boolean writeMSnIntensity(Sheet sheet, int count, IntensityRuleVO ruleVO, LipidomicsMSnSet param, Hashtable<String,String> uniqueRules,
-     Hashtable<Integer,Integer> longestEntries) throws RulesException{
-    String ruleInterpretation = ruleVO.getReadableRuleInterpretation();
+     Hashtable<Integer,Integer> longestEntries, HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding) throws RulesException, LipidCombinameEncodingException{
+    String ruleInterpretation = ruleVO.getReadableRuleInterpretation(faHydroxyEncoding, lcbHydroxyEncoding);
     String rule = ruleVO.getRuleIdentifier();
     Hashtable<String,Float> fragmentAreas = param.getFragmentAreas(ruleVO);
     Hashtable<String,String> missedFragments = new Hashtable<String,String>();

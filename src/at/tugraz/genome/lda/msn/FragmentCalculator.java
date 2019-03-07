@@ -646,13 +646,15 @@ public class FragmentCalculator
    * 
    * @param foundFAs the fatty acids detected by MS evidence
    * @param chainFragments the found fragments for the fatty acid chains
+   * @param forbiddenChains chains that were removed by a mandatory OR combination
    * @return only fragment combinations where MS evidence was detected
    * @throws SpectrummillParserException if there is something wrong about the elementconfig.xml, or an element is not there
    * @throws IOException exception if there is something wrong about the file
    * @throws NoRuleException thrown if the rules are not there
    * @throws RulesException specifies in detail which rule has been infringed
    */
-  public Hashtable<String,Vector<FattyAcidVO>> getChainFragmentCombinationsWithDetectedEvidence(Collection<String> foundFAs, Hashtable<String,Hashtable<String,CgProbe>> chainFragments) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+  public Hashtable<String,Vector<FattyAcidVO>> getChainFragmentCombinationsWithDetectedEvidence(Collection<String> foundFAs, Hashtable<String,Hashtable<String,CgProbe>> chainFragments,
+      Set<String> forbiddenChains) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
     Hashtable<String,Vector<FattyAcidVO>> potentialChainCombinations = new Hashtable<String,Vector<FattyAcidVO>>();
     Hashtable<String,String> fas = new Hashtable<String,String>();
     for (String fa: foundFAs){
@@ -666,7 +668,7 @@ public class FragmentCalculator
         mandatoryFrags.add(ruleVO.getName());
     }
     Vector<String> relevantCombinations = new Vector<String>();
-    try {relevantCombinations =  getChainCombinationsReleveantForTheseChains(fas);
+    try {relevantCombinations =  getChainCombinationsReleveantForTheseChains(fas,forbiddenChains);
     }catch (LipidCombinameEncodingException e) {throw new RulesException(e);}
     for (String key : relevantCombinations){
       boolean oneFAIsThere = false;
@@ -1777,10 +1779,11 @@ public class FragmentCalculator
   /**
    * returns only combinations where fragments for chains were detected
    * @param chains the detected chains
+   * @param forbiddenChains chains that were removed by a mandatory OR combination
    * @return the combinations where fragments were detected
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  private Vector<String> getChainCombinationsReleveantForTheseChains(Hashtable<String,String> chains) throws LipidCombinameEncodingException{
+  private Vector<String> getChainCombinationsReleveantForTheseChains(Hashtable<String,String> chains, Set<String> forbiddenChains) throws LipidCombinameEncodingException{
     Vector<String> relevantChains = new Vector<String>();
     for (Hashtable<String,Vector<FattyAcidVO>> ohCombi : this.potentialChainCombinations_.values()) {
       for (String combiId : ohCombi.keySet()) {
@@ -1797,8 +1800,18 @@ public class FragmentCalculator
           if (relevant)
             break;
         }
-        if (relevant)
+        //check whether the combiId contains any of the forbidden chains
+        if (relevant) {
+          for (FattyAcidVO vo : StaticUtils.decodeLipidNamesFromChainCombi(combiId)) {
+            if (forbiddenChains.contains(vo.getChainId())) {
+              relevant = false;
+              break;
+            }
+          }
+        }
+        if (relevant) {
           relevantChains.add(combiId);
+        }
       }
     }
     return relevantChains;

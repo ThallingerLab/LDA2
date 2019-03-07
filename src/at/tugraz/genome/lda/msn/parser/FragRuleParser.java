@@ -47,6 +47,7 @@ import at.tugraz.genome.lda.msn.vos.FragmentRuleVO;
 import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
 import at.tugraz.genome.lda.utils.RangeInteger;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.vos.ShortStringVO;
 import at.tugraz.genome.lda.vos.rdi.GeneralSettingsVO;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
 
@@ -624,11 +625,9 @@ public class FragRuleParser
     ruleVO.setAllowedOHs(allowedOhs);
     if (currentSection==HEAD_SECTION) headIntensities_.add(ruleVO);
     if (currentSection==CHAINS_SECTION){
-      ruleVO.checkForDiffChainTypes(chainFragments_);
       chainIntensities_.add(ruleVO);
     }
     if (currentSection==POSITION_SECTION) {
-      ruleVO.checkForDiffChainTypes(chainFragments_);
       positionIntensities_.add(ruleVO);
     }
   }
@@ -644,8 +643,8 @@ public class FragRuleParser
    * @return the VO representative for the rule
    * @throws RulesException if the rule is not possible (e.g. if a fragment has not been defined before)
    */
-  public static IntensityRuleVO extractIntensityVOFromEquation(String equation, int lineNumber, int currentSection, Hashtable<String,String> headFragments, Hashtable<String,String> chainFragments, Integer amountOfChains) throws RulesException{
-    return extractIntensityVOFromEquation(equation, lineNumber, currentSection, headFragments, chainFragments, amountOfChains, new Hashtable<String,String>());
+  public static IntensityRuleVO extractIntensityVOFromEquation(String equation, int lineNumber, int currentSection, Hashtable<String,Short> headFragments, Hashtable<String,Short> chainFragments, Integer amountOfChains) throws RulesException{
+    return extractIntensityVOFromEquation(equation, lineNumber, currentSection, headFragments, chainFragments, amountOfChains, new Hashtable<String,Short>());
   }
   
   /**
@@ -660,7 +659,7 @@ public class FragRuleParser
    * @return the VO representative for the rule
    * @throws RulesException if the rule is not possible (e.g. if a fragment has not been defined before)
    */
-  public static IntensityRuleVO extractIntensityVOFromEquation(String equation, int lineNumber, int currentSection, Hashtable<String,String> headFragments, Hashtable<String,String> chainFragments, Integer amountOfChains, Hashtable<String,String> missed) throws RulesException{
+  public static IntensityRuleVO extractIntensityVOFromEquation(String equation, int lineNumber, int currentSection, Hashtable<String,Short> headFragments, Hashtable<String,Short> chainFragments, Integer amountOfChains, Hashtable<String,Short> missed) throws RulesException{
     Boolean biggerThan = null;
     String originalEquation = "";
 
@@ -668,25 +667,72 @@ public class FragRuleParser
     int comparatorIdx = 0;
     if (equation.indexOf(">")!=-1) comparatorIdx = equation.indexOf(">");
     if (equation.indexOf("<")!=-1) comparatorIdx = equation.indexOf("<");
-    if (comparatorIdx<1 || comparatorIdx>=(equation.length()-1)) throw new RulesException("The value of "+INTENSITY_EQUATION+" must contain a comparator sign (\">\" or \"<\")! Error at line number "+lineNumber+"!");
-    String leftSide = equation.substring(0,comparatorIdx);
-    String rightSide = equation.substring(comparatorIdx+1);
-    String comparator = equation.substring(comparatorIdx,comparatorIdx+1);
-    if (comparator.equalsIgnoreCase(">")) biggerThan = true;
-    else biggerThan = false;
-    if (leftSide.indexOf(">")!=-1 || leftSide.indexOf("<")!=-1 || leftSide.indexOf("=")!=-1)
-      throw new RulesException("The value of "+INTENSITY_EQUATION+" must contain only one comparator sign (\">\" or \"<\")! The entry at line number "+lineNumber+" contains more than one!");
-    if (rightSide.indexOf(">")!=-1 || rightSide.indexOf("<")!=-1 || rightSide.indexOf("=")!=-1)
-      throw new RulesException("The value of "+INTENSITY_EQUATION+" must contain only one comparator sign (\">\" or \"<\")! The entry at line number "+lineNumber+" contains more than one!"); 
-    ExpressionForComparisonVO leftExpression = parseIntensityFragment(leftSide,lineNumber,currentSection,comparator,amountOfChains, headFragments, chainFragments, missed);
-    ExpressionForComparisonVO rightExpression = parseIntensityFragment(rightSide,lineNumber,currentSection,comparator,amountOfChains, headFragments, chainFragments, missed);
-    ExpressionForComparisonVO biggerExpression = rightExpression;
-    ExpressionForComparisonVO smallerExpression = leftExpression;
-    if (biggerThan){
-      biggerExpression = leftExpression;
-      smallerExpression = rightExpression;
-    } 
-    IntensityRuleVO ruleVO = new IntensityRuleVO(currentSection,originalEquation,biggerExpression,smallerExpression);
+    ExpressionForComparisonVO biggerExpression = null;
+    ExpressionForComparisonVO smallerExpression = null;
+    boolean orRule = false;
+    if (comparatorIdx<1 || comparatorIdx>=(equation.length()-1)) {
+      if (equation.indexOf("|")==-1)
+        throw new RulesException("The value of "+INTENSITY_EQUATION+" must contain a comparator sign (\">\" or \"<\"), or the OR sign (\"|\")! Error at line number "+lineNumber+"!");
+      if (currentSection==POSITION_SECTION)
+        throw new RulesException("The OR sign (\"|\") is not allowed in a "+POSITION_SECTION_NAME+" section! Error at line number "+lineNumber+"!");
+      String[] orFragments = equation.split("\\|");
+      String orFragment;
+      Vector<FragmentMultVO> frags = new Vector<FragmentMultVO>();
+      for (String orFragmentFull : orFragments) {
+        //set the type to an impossible value
+        short type = -100;
+        orFragment = orFragmentFull.trim();
+        for (String fragName : headFragments.keySet()) {
+          if (fragName.equalsIgnoreCase(orFragment)) {
+            type = headFragments.get(orFragment);
+            break;
+          }
+        }
+        for (String fragName : chainFragments.keySet()) {
+          //if there was already a type found -> break
+          if (type>100)
+            break;
+          if (fragName.equalsIgnoreCase(orFragment)) {
+            type = chainFragments.get(fragName);
+            break;
+          }
+        }
+        for (String fragName : missed.keySet()) {
+          //if there was already a type found -> break
+          if (type>100)
+            break;
+          if (fragName.equalsIgnoreCase(orFragment)) {
+            type = missed.get(fragName);
+            break;
+          }
+        }
+        if (type<=-100)
+          throw new RulesException("An \""+INTENSITY_EQUATION+"\" must contain previously declared fragments! The value \""+orFragment+"\" of \""+equation+"\" was not declared! Error at line "+lineNumber+"!");
+        frags.add(new  FragmentMultVO(orFragment,type,"1",true,0));
+      }
+      biggerExpression = new ExpressionForComparisonVO(frags,"1");
+      smallerExpression = new ExpressionForComparisonVO(new Vector<FragmentMultVO>(),"1");
+      orRule = true;
+    }else {
+      String leftSide = equation.substring(0,comparatorIdx);
+      String rightSide = equation.substring(comparatorIdx+1);
+      String comparator = equation.substring(comparatorIdx,comparatorIdx+1);
+      if (comparator.equalsIgnoreCase(">")) biggerThan = true;
+      else biggerThan = false;
+      if (leftSide.indexOf(">")!=-1 || leftSide.indexOf("<")!=-1 || leftSide.indexOf("=")!=-1)
+        throw new RulesException("The value of "+INTENSITY_EQUATION+" must contain only one comparator sign (\">\" or \"<\")! The entry at line number "+lineNumber+" contains more than one!");
+      if (rightSide.indexOf(">")!=-1 || rightSide.indexOf("<")!=-1 || rightSide.indexOf("=")!=-1)
+        throw new RulesException("The value of "+INTENSITY_EQUATION+" must contain only one comparator sign (\">\" or \"<\")! The entry at line number "+lineNumber+" contains more than one!"); 
+      ExpressionForComparisonVO leftExpression = parseIntensityFragment(leftSide,lineNumber,currentSection,comparator,amountOfChains, headFragments, chainFragments, missed);
+      ExpressionForComparisonVO rightExpression = parseIntensityFragment(rightSide,lineNumber,currentSection,comparator,amountOfChains, headFragments, chainFragments, missed);
+      biggerExpression = rightExpression;
+      smallerExpression = leftExpression;
+      if (biggerThan){
+        biggerExpression = leftExpression;
+        smallerExpression = rightExpression;
+      }
+    }
+    IntensityRuleVO ruleVO = new IntensityRuleVO(currentSection,originalEquation,biggerExpression,smallerExpression,orRule);
     return ruleVO;
   }
   
@@ -703,10 +749,10 @@ public class FragRuleParser
    * @return an object containing all information on one side of the comparator (can be used to calculate the total value)
    * @throws RulesException if the rule is not possible (e.g. if a fragment has not been defined before)
    */
-  private static ExpressionForComparisonVO parseIntensityFragment(String originalValue, int lineNumber, int currentSection, String comp, Integer amountOfChains, Hashtable<String,String> headFragments, Hashtable<String,String> chainFragments, Hashtable<String,String> missed) throws RulesException{
+  private static ExpressionForComparisonVO parseIntensityFragment(String originalValue, int lineNumber, int currentSection, String comp, Integer amountOfChains, Hashtable<String,Short> headFragments, Hashtable<String,Short> chainFragments, Hashtable<String,Short> missed) throws RulesException{
     String globalMultiplier = "1";
     String value = new String(originalValue);
-    Vector<String> lengthSortedFragmentNames = FragmentRuleVO.getLengthSortedFragmentNames(headFragments.keySet(),chainFragments.keySet(),missed.keySet());
+    Vector<ShortStringVO> lengthSortedFragmentNames = FragmentRuleVO.getLengthSortedFragmentNames(headFragments,chainFragments,missed);
     //if there is a bracket, we can assume that there is a change in the global multiplier
     if (originalValue.indexOf("(")!=-1 || originalValue.indexOf(")")!=-1){
       if (originalValue.indexOf("(")==-1) throw new RulesException("An \""+INTENSITY_EQUATION+"\" containing an opening bracket must contain a closing bracket! The equation \""+value+"\" at line "+lineNumber+" does not!");
@@ -714,9 +760,9 @@ public class FragRuleParser
       if (originalValue.indexOf("(")>originalValue.indexOf(")")) throw new RulesException("An \""+INTENSITY_EQUATION+"\" must not start with a closing bracket before an opening bracket! The equation \""+value+"\" at line "+lineNumber+" does!");
       boolean isMathematicalBracket = true;
       if (useAlex()){
-        for (String fragment : lengthSortedFragmentNames){
-          if (fragment.indexOf("(")==-1 || originalValue.indexOf(fragment)==-1) continue;
-          if (originalValue.indexOf("(")!=originalValue.indexOf(fragment)+fragment.indexOf("(")) continue;
+        for (ShortStringVO fragment : lengthSortedFragmentNames){
+          if (fragment.getKey().indexOf("(")==-1 || originalValue.indexOf(fragment.getKey())==-1) continue;
+          if (originalValue.indexOf("(")!=originalValue.indexOf(fragment.getKey())+fragment.getKey().indexOf("(")) continue;
           isMathematicalBracket=false;
         }
       }
@@ -754,7 +800,7 @@ public class FragRuleParser
     return exprVO;
   }
   
-  private static Object[] extractMultiplicativeExpression(String inputValue, Vector<String> lengthSortedFragmentNames, String originalValue, int lineNumber, int currentSection, String comp,Integer amountOfChains) throws RulesException{
+  private static Object[] extractMultiplicativeExpression(String inputValue, Vector<ShortStringVO> lengthSortedFragmentNames, String originalValue, int lineNumber, int currentSection, String comp,Integer amountOfChains) throws RulesException{
     Object[] multiplicativeExpressionAndRemainingValue = new Object[2];
     Object[] fragAndStart = getFragmentAndStartPosition(inputValue,lengthSortedFragmentNames);
     if ((Integer)fragAndStart[1]<0){
@@ -764,6 +810,7 @@ public class FragRuleParser
     }
     String name = (String)fragAndStart[0];
     int startPos = (Integer)fragAndStart[1];
+    short type = (Short)fragAndStart[2];
     boolean positive = true;
     String beforeString = inputValue.substring(0,startPos).trim();
     char[] charsBefore = beforeString.toCharArray();
@@ -796,7 +843,7 @@ public class FragRuleParser
     String[] results = extractMultiplicationFactor(prevFragment, pastFragment, value, originalValue, lineNumber, currentSection, comp, amountOfChains);
     String multString = results[0];
     String position = results[1];
-    FragmentMultVO multVO = new FragmentMultVO(name, multString, positive, Integer.parseInt(position));
+    FragmentMultVO multVO = new FragmentMultVO(name, type, multString, positive, Integer.parseInt(position));
     multiplicativeExpressionAndRemainingValue[0] = multVO;
     multiplicativeExpressionAndRemainingValue[1] = value;
     return multiplicativeExpressionAndRemainingValue;
@@ -861,26 +908,30 @@ public class FragRuleParser
    * returns the fragment name and the index in the expression where it starts
    * @param value the expression
    * @param lengthSortedFragmentNames all available fragment names, sorted by name length in descending order
-   * @return Object array of 2 - [0] = name,String ; [1] = position in expression,Integer
+   * @return Object array of 2 - [0] = name,String ; [1] = position in expression,Integer; [2] = fragment type
    */
-  private static Object[] getFragmentAndStartPosition(String value, Vector<String> lengthSortedFragmentNames){
+  private static Object[] getFragmentAndStartPosition(String value, Vector<ShortStringVO> lengthSortedFragmentNames){
     String fragment = null;
     int start = -1;
+    short type = LipidomicsConstants.CHAIN_TYPE_NO_CHAIN;
     if (value.indexOf(IntensityRuleVO.BASEPEAK_NAME)!=-1){
       fragment = IntensityRuleVO.BASEPEAK_NAME;
       start = value.indexOf(IntensityRuleVO.BASEPEAK_NAME);
+      type = LipidomicsConstants.CHAIN_TYPE_NO_CHAIN;
     } else {
-      for (String frag : lengthSortedFragmentNames){
-        if (value.indexOf(frag)!=-1){
-          fragment = frag;
-          start = (value.indexOf(frag));
+      for (ShortStringVO frag : lengthSortedFragmentNames){
+        if (value.indexOf(frag.getKey())!=-1){
+          fragment = frag.getKey();
+          start = (value.indexOf(frag.getKey()));
+          type = frag.getValue();
           break;
         }
       }
     }
-    Object[] result = new Object[2];
+    Object[] result = new Object[3];
     result[0] = fragment;
     result[1] = start;
+    result[2] = type;
     return result;
   }
   

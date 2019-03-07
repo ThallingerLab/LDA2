@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
@@ -54,6 +55,7 @@ import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.msn.vos.FragmentRuleVO;
+import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.swing.RangeColor;
 import at.tugraz.genome.lda.vos.ResultCompVO;
@@ -711,7 +713,7 @@ public class StaticUtils
       if (element.equalsIgnoreCase("C") || element.equalsIgnoreCase("H") || formAnal.get(element)==0) continue;
       hillNotation += (formAnal.get(element)<0 ? "-" : "")+element+getHillNotationNumber(element,formAnal)+(space ? " " : "");
     }
-    return hillNotation;
+    return hillNotation.trim();
   }
   
   /**
@@ -1289,25 +1291,42 @@ public class StaticUtils
    */
   public static String getChainFragmentDisplayName(String name, String faName){
     String displayName = name+"("+faName+")";
+    if (isAnAlex123Fragment(name)){
+      String chainPrefix = "FA";
+      if (name.equals("LCB") || name.startsWith("LCB ") || name.startsWith("-LCB "))
+        chainPrefix = "LCB";
+      if (name.indexOf(faName)==-1) {
+        if (name.equals(chainPrefix))
+          displayName = chainPrefix+" "+faName;
+        else if (name.startsWith(chainPrefix+" "))
+          displayName = chainPrefix+" "+faName+name.substring((chainPrefix+" ").length());
+        else if (name.startsWith("-"+chainPrefix+" "))
+          displayName = "-"+chainPrefix+" "+faName+name.substring(("-"+chainPrefix+" ").length());
+      }else{      
+        displayName = name;
+      }
+    }
+    return displayName;
+  }
+  
+  
+  /**
+   * checks whether this is an Alex123 fragment encoding
+   * @param name the name of the fragment
+   * @return true when an Alex123 fragment encoding shall be used
+   */
+  public static boolean isAnAlex123Fragment(String name) {
     boolean useAlex = false;
     // this is an extension to support the Alex123 nomenclature
     try {
       Class.forName( "at.tugraz.genome.lda.Settings");
       useAlex = Settings.useAlex(); 
     } catch( ClassNotFoundException e ) { }
-    if (useAlex  && (name.equals("FA") || name.startsWith("FA ") || (name.startsWith("-FA ")))){
-      if (name.indexOf(faName)==-1) {
-        if (name.equals("FA"))
-          displayName = "FA "+faName;
-        else if (name.startsWith("FA "))
-          displayName = "FA "+faName+name.substring("FA ".length());
-        else if (name.startsWith("-FA "))
-          displayName = "-FA "+faName+name.substring("-FA ".length());
-      }else{      
-        displayName = name;
-      }
+    if (useAlex  && (name.equals("FA") || name.startsWith("FA ") || name.startsWith("-FA ") ||
+        name.equals("LCB") || name.startsWith("LCB ") || name.startsWith("-LCB "))){
+      return true;
     }
-    return displayName;
+    return false;
   }
   
   /**
@@ -1323,14 +1342,18 @@ public class StaticUtils
     String faName = "";
     String fragmentName = "";
     //this is for Alex123 naming
-    if (readableFragmentName.startsWith("FA ")||readableFragmentName.startsWith("-FA ")){
+    if (readableFragmentName.startsWith("FA ")||readableFragmentName.startsWith("-FA ")||
+        readableFragmentName.startsWith("LCB ")||readableFragmentName.startsWith("-LCB ")){
       int start = 0;
-      if (readableFragmentName.startsWith("FA ")){
-        fragmentName = "FA ";
-        start = "FA ".length();
+      String prefix = "FA";
+      if (readableFragmentName.startsWith("LCB ")||readableFragmentName.startsWith("-LCB "))
+        prefix = "LCB";
+      if (readableFragmentName.startsWith(prefix+" ")){
+        fragmentName = prefix+" ";
+        start = (prefix+" ").length();
       }else{
-        fragmentName = "-FA ";
-        start = "-FA ".length();        
+        fragmentName = "-"+prefix+" ";
+        start = ("-"+prefix+" ").length();        
       }
       boolean isChain = true;
       int stop = start;
@@ -1345,6 +1368,8 @@ public class StaticUtils
           isChain=false;
       }
       faName = readableFragmentName.substring(start,stop);
+      if (faName.indexOf(LipidomicsConstants.ALEX_OH_SEPARATOR)!=-1)
+        faName = faName.substring(0,faName.indexOf(LipidomicsConstants.ALEX_OH_SEPARATOR));
       fragmentName += readableFragmentName.substring(stop);
     }else{
       faName = readableFragmentName.substring(readableFragmentName.lastIndexOf("(")+1,readableFragmentName.lastIndexOf(")"));
@@ -1570,7 +1595,7 @@ public class StaticUtils
       if (combi.length()!=0) combi.append(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
       combi.append(getHumanReadableChainName(chain, faEncoding, lcbEncoding, ohPresent));
     }
-    return combi.toString();
+    return sortFASequenceUnassigned(combi.toString(),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
   }
   
   
@@ -1590,7 +1615,7 @@ public class StaticUtils
     return ohPresent;
   }
   
-  
+
   /**
    * returns the human readable display name for a lipid molecular species, based on the current conventions
    * @param chain the chain object
@@ -1602,6 +1627,22 @@ public class StaticUtils
    */
   public static String getHumanReadableChainName(FattyAcidVO chain, HydroxyEncoding faEncoding, HydroxyEncoding lcbEncoding, 
       boolean ohInCombi) throws LipidCombinameEncodingException {
+    return getHumanReadableChainName(chain,faEncoding,lcbEncoding,ohInCombi,false);
+  }
+
+  
+  
+  /**
+   * returns the human readable display name for a lipid molecular species, based on the current conventions
+   * @param chain the chain object
+   * @param faEncoding the hydroxylation encoding for FA chains
+   * @param lcbEncoding the hydroxylation encoding for LCB chains
+   * @param ohInCombi are there any OH groups in this species, so that the number of hydroxylation sites must be encoded
+   * @return the human readable display name for a lipid molecular species
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
+   */
+  public static String getHumanReadableChainName(FattyAcidVO chain, HydroxyEncoding faEncoding, HydroxyEncoding lcbEncoding, 
+      boolean ohInCombi, boolean useAlexEncoding) throws LipidCombinameEncodingException {
     HydroxyEncoding encoding = null;
     if (chain.getChainType()==LipidomicsConstants.CHAIN_TYPE_FA_ACYL || chain.getChainType()==LipidomicsConstants.CHAIN_TYPE_FA_ALKYL ||
         chain.getChainType()==LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL)
@@ -1609,19 +1650,25 @@ public class StaticUtils
     else if (chain.getChainType()==LipidomicsConstants.CHAIN_TYPE_LCB)
       encoding = lcbEncoding;
     StringBuilder encoded = new StringBuilder();
-    if (chain.getChainType()==LipidomicsConstants.CHAIN_TYPE_FA_ALKYL)
-      encoded.append(LipidomicsConstants.ALKYL_PREFIX);
-    else if (chain.getChainType()==LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL)
-      encoded.append(LipidomicsConstants.ALKENYL_PREFIX);
-    if (ohInCombi) {
-      if (encoding==null)
-        throw new LipidCombinameEncodingException("For lipid species containing OH groups, the corresponding encoding must be defined. For \""+chain.getChainId()+"\", this is not the case!");
-      try {encoded.append(encoding.getEncodedPrefix((short)chain.getOhNumber()));
-      }catch (HydroxylationEncodingException e) {
-        throw new LipidCombinameEncodingException(e);
+    if (useAlexEncoding) {
+      encoded.append(chain.getCarbonDbsId());
+      if (chain.getOhNumber()>0)
+        encoded.append(LipidomicsConstants.ALEX_OH_SEPARATOR+chain.getOhNumber());
+    }else{
+      if (chain.getChainType()==LipidomicsConstants.CHAIN_TYPE_FA_ALKYL)
+        encoded.append(LipidomicsConstants.ALKYL_PREFIX);
+      else if (chain.getChainType()==LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL)
+        encoded.append(LipidomicsConstants.ALKENYL_PREFIX);
+      if (ohInCombi) {
+        if (encoding==null)
+          throw new LipidCombinameEncodingException("For lipid species containing OH groups, the corresponding encoding must be defined. For \""+chain.getChainId()+"\", this is not the case!");
+        try {encoded.append(encoding.getEncodedPrefix((short)chain.getOhNumber()));
+        }catch (HydroxylationEncodingException e) {
+          throw new LipidCombinameEncodingException(e);
+        }
       }
+      encoded.append(chain.getCarbonDbsId());
     }
-    encoded.append(chain.getCarbonDbsId());
     return encoded.toString();
   }
   
@@ -1701,7 +1748,7 @@ public class StaticUtils
    * @return the decoded FA chain
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  private static FattyAcidVO decodeHumanReadableChain(String humanReadable, HydroxyEncoding faHydroxyEncoding,
+  public static FattyAcidVO decodeHumanReadableChain(String humanReadable, HydroxyEncoding faHydroxyEncoding,
       HydroxyEncoding lcbHydroxyEncoding, boolean isAlexOhEncodingname) throws LipidCombinameEncodingException {
     short chainType = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
     String prefix = "";
@@ -1903,4 +1950,107 @@ public class StaticUtils
     return sb.toString();
   }
   
+  /**
+   * generates vectors of potential FattyAcidVO combinations for checking of an intensity rule
+   * @param rule the intensity rule
+   * @param fas the available chain objects
+   * @return vectors of potential FattyAcidVO combinations for checking of an intensity rule
+   */
+  public static Vector<Vector<FattyAcidVO>> getAllPotentialChainCombinationForThisRule(IntensityRuleVO rule, Vector<FattyAcidVO> fas) {
+    Vector<Vector<FattyAcidVO>> combis = new Vector<Vector<FattyAcidVO>>();
+    Set<Short> chainTypesOfRule = rule.getAvailableTypes();
+    for (Short type : chainTypesOfRule) {
+      if (type==LipidomicsConstants.CHAIN_TYPE_NO_CHAIN)
+        continue;
+      combis = addChainsOfOneType(type,fas,combis);
+    }
+    return combis;
+  }
+  
+  /**
+   * adds chains of one type to the corresponding combinations
+   * @param type the chain type to add
+   * @param chains the available chains
+   * @param oldCombis the combis that were already generated
+   * @return the possible combinations
+   */
+  private static Vector<Vector<FattyAcidVO>> addChainsOfOneType(short type, Vector<FattyAcidVO> chains, Vector<Vector<FattyAcidVO>> oldCombis){
+    Vector<Vector<FattyAcidVO>> combis = new Vector<Vector<FattyAcidVO>>();
+    Vector<FattyAcidVO> sameType = new Vector<FattyAcidVO>();
+    for (FattyAcidVO fa : chains) {
+      if (fa.getChainType()==type) {
+        boolean add  = true;
+        for (FattyAcidVO otherFa : sameType) {
+          if (otherFa.getChainId().equalsIgnoreCase(fa.getChainId())) {
+            add = false;
+            break;
+          }
+        }
+        if (add)
+          sameType.add(fa);
+      }
+    }
+    
+    //if there is nothing to add for this type, simply return the previous results
+    if (sameType.size()==0)
+      return oldCombis;
+    
+    if (oldCombis.size()==0) {
+      for (FattyAcidVO fa : sameType) {
+        Vector<FattyAcidVO> combiFas = new Vector<FattyAcidVO>();
+        combiFas.add(fa);
+        combis.add(combiFas);
+      }
+    } else {
+      for (Vector<FattyAcidVO> oldFas : oldCombis) {
+        for (FattyAcidVO fa : sameType) {
+          Vector<FattyAcidVO> combiFas = new Vector<FattyAcidVO>(oldFas);
+          combiFas.add(fa);
+          combis.add(combiFas);
+        }
+      }
+    }
+    
+    return combis;
+  }
+  
+  /**
+   * returns all found chain combinations where this rule has an effect on
+   * @param validChainCombinations the found chain combinations
+   * @param chainsOfRule the chains that are contained in this rule
+   * @return all found chain combinations where this rule has an effect on
+   * @throws LipidCombinameEncodingException thrown whenever there is something wrong with the entries
+   */
+  public static Vector<String> getAllAffectedChainCombinations(Vector<String> validChainCombinations, Vector<String> chainsOfRule) throws LipidCombinameEncodingException{
+    Hashtable<String,Integer> chainAmounts;
+    int amount;
+    Vector<String> affectedCombinations = new Vector<String>();
+    for (String id : validChainCombinations) {
+      //first: build a hash table which and how many chains are present for this combinations
+      chainAmounts = new Hashtable<String,Integer>();
+      for (String chain : splitChainCombiToEncodedStrings(id,LipidomicsConstants.CHAIN_COMBI_SEPARATOR)) {
+        amount = chainAmounts.containsKey(chain) ? chainAmounts.get(chain) : 0;
+        amount++;
+        chainAmounts.put(chain, amount);
+      }
+      //second: check whether all of these chains can be found in this combination
+      boolean affected = true;
+      for (String chain : chainsOfRule) {
+        if (chainAmounts.containsKey(chain)) {
+          amount = chainAmounts.get(chain);
+          amount--;
+          if (amount<1)
+            chainAmounts.remove(chain);
+          else
+            chainAmounts.put(chain, amount);
+        }else {
+          affected = false;
+          break;
+        }
+      }
+      if (affected)
+        affectedCombinations.add(id);
+    }
+    return affectedCombinations;
+  }
 }
