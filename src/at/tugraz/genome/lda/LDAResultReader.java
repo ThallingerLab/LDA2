@@ -992,6 +992,9 @@ public class LDAResultReader
           StringTokenizer tokenizer = new StringTokenizer(missedString,";");
           while (tokenizer.hasMoreTokens()){
             String token = tokenizer.nextToken();
+            //this is necessary for position rules
+            if (token.indexOf("[")!=-1)
+              token = token.substring(0, token.indexOf("["));
             short type = LipidomicsConstants.CHAIN_TYPE_NO_CHAIN;
             if (chainRules||positionRules){
               boolean isAChain = false;
