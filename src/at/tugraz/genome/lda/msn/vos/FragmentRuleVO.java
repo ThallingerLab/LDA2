@@ -88,7 +88,7 @@ public class FragmentRuleVO
   //Formula
   private String formula_;
   /** how many hydroxylations must be present for the detection of this fragment; key: number of hydroxylations; value: mandatory - should be null in case of no OH restrictions*/ 
-  private Hashtable<Short,Short> allowedOHs_;
+  private RuleHydroxyRequirementSet allowedOHs_;
   // the details of the chemical element
   private Hashtable<String,SmChemicalElementVO> elementDetails_;  
 
@@ -120,7 +120,7 @@ public class FragmentRuleVO
    * @throws RulesException specifies in detail which rule has been infringed
    */
   public FragmentRuleVO(String name, String formula, int charge, int msLevel,
-      short mandatory, Hashtable<Short,Short> allowedOHs, Hashtable<String,FragmentRuleVO> headFragments, 
+      short mandatory, RuleHydroxyRequirementSet allowedOHs, Hashtable<String,FragmentRuleVO> headFragments, 
       Hashtable<String,FragmentRuleVO> chainFragments, ElementConfigParser elementParser) throws RulesException
   {
     super();
@@ -180,12 +180,10 @@ public class FragmentRuleVO
   {
     if (ohNumber==LipidomicsConstants.EXCEL_NO_OH_INFO || this.allowedOHs_==null)  
       return mandatory_;
-    return (this.allowedOHs_.get(ohNumber));
+    return (this.allowedOHs_.getEntry(ohNumber).get(0).getMandatory());
   }
   
-  /**
-   * @deprecated
-   */
+
   public short isMandatory()
   {
     return mandatory_;
@@ -627,7 +625,7 @@ public class FragmentRuleVO
   public boolean hydroxylationValid(short ohNumber) {
     if (ohNumber==LipidomicsConstants.EXCEL_NO_OH_INFO || this.allowedOHs_==null)
       return true;
-    return (this.allowedOHs_.containsKey(ohNumber));
+    return (this.allowedOHs_.hasEntry(ohNumber));
   }
   
 }

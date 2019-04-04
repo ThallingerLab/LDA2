@@ -69,7 +69,7 @@ public class IntensityRuleVO
   protected short chainType_;
   
   /** how many hydroxylations must be present for the detection of this fragment; key: number of hydroxylations; value: mandatory - should be null in case of no OH restrictions*/ 
-  protected Hashtable<Short,Short> allowedOHs_;
+  protected RuleHydroxyRequirementSet allowedOHs_;
   /** the available types the fragment originates of, i.e. head, acyl, alkyl, alkenyl, lcb*/
   protected Set<Short> availableFragmentTypes_;
 
@@ -121,7 +121,6 @@ public class IntensityRuleVO
   }
 
   /**
-   * @deprecated
    * @return must this rule be fulfilled (e.g. to accept a head group, to accept chain fragment, or to assign a position)
    */
   public boolean isMandatory()
@@ -131,15 +130,46 @@ public class IntensityRuleVO
 
   
   /**
-   * @param ohNumber the number of hydroxylation sites
+   * @param ohNumber the number of hydroxylation sites - this is to be used for one chain types (everything else but DIFF_CHAIN_TYPES)
    * @return must the fragment be present - different options possible according to the MANDATORY_... specifications in this class
    */
   public boolean isMandatory(short ohNumber)
   {
     if (ohNumber==LipidomicsConstants.EXCEL_NO_OH_INFO || this.allowedOHs_==null)  
       return mandatory_;
-    return (this.allowedOHs_.get(ohNumber)==FragmentRuleVO.MANDATORY_TRUE);
+    return (this.allowedOHs_.getEntry(ohNumber).get(0).getMandatory()==FragmentRuleVO.MANDATORY_TRUE);
   }
+  
+  
+  /**
+   * @param ohNumber the number of hydroxylation sites - this is to be used for one chain types (everything else but DIFF_CHAIN_TYPES)
+   * @return must the fragment be present - different options possible according to the MANDATORY_... specifications in this class
+   */
+  public boolean isMandatory(Vector<FattyAcidVO> combi)
+  {
+    if (this.allowedOHs_==null)  
+      return mandatory_;
+    boolean mandatory = mandatory_;
+    boolean overwritten = false;
+    for (FattyAcidVO chain : combi) {
+      if (this.allowedOHs_.hasEntry((short)chain.getOhNumber())) {
+        for (RuleHydroxyRequirementsVO req : this.allowedOHs_.getEntry((short)chain.getOhNumber())) {
+          if (req.chainType_==chain.getChainType() || req.getChainType()==LipidomicsConstants.CHAIN_TYPE_NO_CHAIN) {
+            // when a mandatory rule was overwritten by an OH-setting, and there is a second OH setting that would overwrite again, the mandatory=true will prevail
+            if (overwritten)
+              mandatory = mandatory||(req.getMandatory()==FragmentRuleVO.MANDATORY_TRUE);
+            // the OH-setting overwrites the default mandatory setting
+            else {
+              overwritten = true;
+              mandatory = req.getMandatory() == FragmentRuleVO.MANDATORY_TRUE;
+            }
+          }
+        }
+      }
+    }
+    return mandatory;
+  }
+
 
   /**
    * 
@@ -713,17 +743,26 @@ public class IntensityRuleVO
   public boolean isAbsoluteComparison(){
     return (this.biggerExpression_.isAbsoluteComparison() || this.smallerExpression_.isAbsoluteComparison());
   }
-  
-  
+
+
   /**
    * sets how many hydroxylations must be present for the detection of this fragment; key: number of hydroxylations; value: mandatory - should be null in case of no OH restrictions
-   * @param allowedOHs
+   * @param allowedOHs the hydroxylation requirements of the rule
+   * @param lineNumber the line number
+   * @throws RulesException thrown when the defined chain type is not possible
    */
-  public void setAllowedOHs(Hashtable<Short,Short> allowedOHs) {
-    this.allowedOHs_ = allowedOHs;
+  public void setAllowedOHs(RuleHydroxyRequirementSet allowedOHs, int lineNumber) throws RulesException {
+    allowedOHs_ = allowedOHs;
+    //check whether there are chain types set, and if yes, check whether they are possible
+    //if no, set them to the default chain type, and if there are diff chain types set them to $LCB
+    if (allowedOHs_!=null) {
+       Vector<FragmentMultVO> allFrags = new Vector<FragmentMultVO>(biggerExpression_.getFragments());
+       allFrags.addAll(smallerExpression_.getFragments());
+       allowedOHs_.checkAndCorrectChainTypes(chainType_,allFrags,lineNumber);
+    }
   }
-  
-  
+
+
   /**
    * checks whether this fragment is applicable for this OH configuration
    * @param ohNumber the number of hydroxylation sites
@@ -732,9 +771,33 @@ public class IntensityRuleVO
   public boolean hydroxylationValid(short ohNumber) {
     if (ohNumber==LipidomicsConstants.EXCEL_NO_OH_INFO || this.allowedOHs_==null)
       return true;
-    return (this.allowedOHs_.containsKey(ohNumber));
+    return (this.allowedOHs_.hasEntry(ohNumber));
   }
+
   
+  /**
+   * checks whether this fragment is applicable for this OH configuration
+   * @param combi the number of hydroxylation sites
+   * @return true when the fragment is applicable
+   */
+  public boolean hydroxylationValid(Vector<FattyAcidVO> combi) {
+    if (this.allowedOHs_==null)
+      return true;
+    boolean found = false;
+    for (FattyAcidVO chain : combi) {
+      if (this.allowedOHs_.hasEntry((short)chain.getOhNumber())) {
+        for (RuleHydroxyRequirementsVO req : this.allowedOHs_.getEntry((short)chain.getOhNumber())) {
+          if (req.chainType_==chain.getChainType() || req.getChainType()==LipidomicsConstants.CHAIN_TYPE_NO_CHAIN) {
+            found = true;
+            break;
+          }
+        }
+      }
+    }
+    return found;
+  }
+
+
   /**
    * 
    * @return the available types the fragment originates of, i.e. head, acyl, alkyl, alkenyl, lcb
@@ -751,5 +814,5 @@ public class IntensityRuleVO
   {
     return orRule_;
   }
-  
+
 }

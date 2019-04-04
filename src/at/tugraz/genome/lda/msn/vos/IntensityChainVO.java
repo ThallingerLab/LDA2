@@ -102,7 +102,7 @@ public class IntensityChainVO extends IntensityRuleVO
   
   
   /**
-   * assings the chain objects to the fragmentation rules they affect
+   * assigns the chain objects to the fragmentation rules they affect
    * @param chains the available chain objects
    */
   private void assignChainsToExpressions(Vector<FattyAcidVO> chains) {

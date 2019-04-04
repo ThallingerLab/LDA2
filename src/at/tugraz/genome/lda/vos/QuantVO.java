@@ -89,10 +89,11 @@ public class QuantVO
   {
     super();
     this.analyteClass_ = analyteClass;
+    //the next line must always come before splitInCarbonNumberAndPrefix to make TargetlistEntry work
+    this.dbs_ = dbs;
     Object[] prefixAndC = splitInCarbonNumberAndPrefix(this.analyteClass_, analyteName);
     this.prefixOrName_ = (String)prefixAndC[0];
     this.carbons_ = (Integer)prefixAndC[1];
-    this.dbs_ = dbs;
     this.oh_ = ohNumber;
     //this is a check whether an encoding for this OH number exists
     if (oh_>0)

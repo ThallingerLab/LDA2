@@ -29,7 +29,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.LineNumberReader;
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.Vector;
 import java.util.regex.Pattern;
@@ -45,6 +47,8 @@ import at.tugraz.genome.lda.msn.vos.ExpressionForComparisonVO;
 import at.tugraz.genome.lda.msn.vos.FragmentMultVO;
 import at.tugraz.genome.lda.msn.vos.FragmentRuleVO;
 import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
+import at.tugraz.genome.lda.msn.vos.RuleHydroxyRequirementSet;
+import at.tugraz.genome.lda.msn.vos.RuleHydroxyRequirementsVO;
 import at.tugraz.genome.lda.utils.RangeInteger;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.ShortStringVO;
@@ -121,7 +125,7 @@ public class FragRuleParser
   private final static String FRAGMENT_CHARGE = "Charge";
   private final static String FRAGMENT_LEVEL = "MSLevel";
   private final static String FRAGMENT_MANDATORY = "mandatory";
-  private final static String FRAGMENT_HYDROXY = "oh";
+  public final static String FRAGMENT_HYDROXY = "oh";
   
   // the various methods for the identification order
   private final static String ORDER_MS1_FIRST = "MS1First";
@@ -498,7 +502,7 @@ public class FragRuleParser
     short mandatory = FragmentRuleVO.MANDATORY_FALSE;
     String name = null;
     String formula = null;
-    Hashtable<Short,Short> allowedOhs = null;
+    RuleHydroxyRequirementSet ohRequirements = null;
     StringTokenizer tokenizer = new StringTokenizer(line,"\t ");
     if (useAlex()) tokenizer = new StringTokenizer(line,"\t");
     while (tokenizer.hasMoreTokens()){
@@ -523,7 +527,7 @@ public class FragRuleParser
       }else if(key.equalsIgnoreCase(FRAGMENT_MANDATORY)){
         mandatory = parseMandatoryLevel(value,currentSection,lineNumber, true);
       }else if(key.equalsIgnoreCase(FRAGMENT_HYDROXY)) {
-        allowedOhs = parseAllowedOHs(value,currentSection,lineNumber,true);
+        ohRequirements = parseAllowedOHs(value,currentSection,lineNumber,true);
       }else{
         throw new RulesException("The section "+FRAGMENT_SUBSECTION_NAME+" does not support the key \""+key+"\"! Error at line number "+lineNumber+"!");        
       }
@@ -531,13 +535,9 @@ public class FragRuleParser
     if (name==null || name.length()==0) throw new RulesException("A "+FRAGMENT_SUBSECTION_NAME+" entry must contain a key called \""+FRAGMENT_NAME+"\"! Error at line number "+lineNumber+"!");
     if (formula==null || formula.length()==0) throw new RulesException("A "+FRAGMENT_SUBSECTION_NAME+" entry must contain a key called \""+FRAGMENT_FORMULA+"\"! Error at line number "+lineNumber+"!");      
     checkNamePresent(name, lineNumber);
-    if (allowedOhs!=null) {
-      for (short oh : allowedOhs.keySet()) {
-        if (allowedOhs.get(oh)==FragmentRuleVO.MANDATORY_UNDEFINED)
-          allowedOhs.put(oh, mandatory);
-      }
-    }
-    FragmentRuleVO ruleVO = new FragmentRuleVO(name,formula,charge,msLevel,mandatory,allowedOhs,headFragments_,chainFragments_,elementParser_);
+    if (ohRequirements!=null) 
+      ohRequirements.setUndefinedMandatorySettings(mandatory);
+    FragmentRuleVO ruleVO = new FragmentRuleVO(name,formula,charge,msLevel,mandatory,ohRequirements,headFragments_,chainFragments_,elementParser_);
     if (currentSection==HEAD_SECTION) headFragments_.put(name, ruleVO);
     if (currentSection==CHAINS_SECTION){
       checkSelectedChainValid(ruleVO,lineNumber);
@@ -581,7 +581,7 @@ public class FragRuleParser
   private void parseIntensityEntry(String line,int lineNumber, int currentSection) throws RulesException{
     if (line.length()==0) return;
     boolean mandatory = false;
-    Hashtable<Short,Short> allowedOhs = null;
+    RuleHydroxyRequirementSet ohRequirements = null;
     StringTokenizer tokenizer = new StringTokenizer(line,"\t ");
     if (useAlex()) tokenizer = new StringTokenizer(line,"\t");
     IntensityRuleVO ruleVO = null;
@@ -600,7 +600,7 @@ public class FragRuleParser
       }else if(key.equalsIgnoreCase(FRAGMENT_MANDATORY)){
         mandatory = parseMandatoryLevel(value,currentSection,lineNumber,false)==FragmentRuleVO.MANDATORY_TRUE;
       }else if(key.equalsIgnoreCase(FRAGMENT_HYDROXY)) {
-        allowedOhs = parseAllowedOHs(value,currentSection,lineNumber,false);
+        ohRequirements = parseAllowedOHs(value,currentSection,lineNumber,false);
       }else if(key.equalsIgnoreCase(FRAGMENT_MANDATORY)){
         if (!(value.equalsIgnoreCase("true")||value.equalsIgnoreCase("false")||value.equalsIgnoreCase("yes")||value.equalsIgnoreCase("no")))
           throw new RulesException("The value of "+FRAGMENT_MANDATORY+" can contain the values \"true\",\"false\",\"yes\" and \"no\" only! Error at line number "+lineNumber+"!");
@@ -612,17 +612,13 @@ public class FragRuleParser
     }
     
     if (ruleVO==null) throw new RulesException("An entry of "+INTENSITY_SUBSECTION+" must contain a an \""+INTENSITY_EQUATION+"=\" attribute! Error at line number "+lineNumber+"!");
-    if (allowedOhs!=null) {
+    if (ohRequirements!=null) {
       short mand = FragmentRuleVO.MANDATORY_FALSE;
       if (mandatory) mand = FragmentRuleVO.MANDATORY_TRUE;
-      for (short oh : allowedOhs.keySet()) {
-        if (allowedOhs.get(oh)==FragmentRuleVO.MANDATORY_UNDEFINED)
-          allowedOhs.put(oh, mand);
-      }
+      ohRequirements.setUndefinedMandatorySettings(mand);
     }
-    
     ruleVO.setMandatory(mandatory);
-    ruleVO.setAllowedOHs(allowedOhs);
+    ruleVO.setAllowedOHs(ohRequirements,lineNumber);
     if (currentSection==HEAD_SECTION) headIntensities_.add(ruleVO);
     if (currentSection==CHAINS_SECTION){
       chainIntensities_.add(ruleVO);
@@ -1621,13 +1617,14 @@ public class FragRuleParser
    * @param value the value to be parsed
    * @param currentSection the section in the rule file
    * @param lineNumber the line number (for error handling)
-   * @param extendedOption are more options than true and false allowed
+   * @param fragmentDef is this oh entry from a fragment definition
    * @return allowed number of hydroxylation sites and whether this fragment is mandatory for this hydroxylation configuration 
    * @throws RulesException when the value is not among the accepted ones
    */
-  private Hashtable<Short,Short> parseAllowedOHs(String value, int currentSection, int lineNumber, boolean extendedOptions) throws RulesException {
-    Hashtable<Short,Short> allowedOhs = new Hashtable<Short,Short>();
+  private RuleHydroxyRequirementSet parseAllowedOHs(String value, int currentSection, int lineNumber, boolean fragmentDef) throws RulesException {
+    Set<String> allowedOHs = new HashSet<String>();
     String[] ohParts = value.split(",");
+    Vector<RuleHydroxyRequirementsVO> ohVOs = new Vector<RuleHydroxyRequirementsVO>();
     for (String ohPart : ohParts) {
       short ohMandatory = FragmentRuleVO.MANDATORY_UNDEFINED;
       String oh = ohPart;
@@ -1635,13 +1632,27 @@ public class FragRuleParser
       if (ohPart.indexOf("=")!=-1) {
         oh = ohPart.substring(0,ohPart.indexOf("="));
         try {
-          ohMandatory = parseMandatoryLevel(ohPart.substring(ohPart.indexOf("=")+1),currentSection,lineNumber,extendedOptions);
+          ohMandatory = parseMandatoryLevel(ohPart.substring(ohPart.indexOf("=")+1),currentSection,lineNumber,fragmentDef);
         }catch (RulesException rex) {
           throw new RulesException("The same applies for the "+FRAGMENT_MANDATORY+" definition of \""+FRAGMENT_HYDROXY+"\" as for \""+FRAGMENT_MANDATORY+"\": "+rex.getMessage());
         }
       }
       short ohNumber = -1;
+      short chainType = LipidomicsConstants.CHAIN_TYPE_NO_CHAIN;
       try {
+        if (oh.startsWith(FragmentRuleVO.CHAIN_NAME)) {
+          chainType = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
+          oh = oh.substring(FragmentRuleVO.CHAIN_NAME.length());
+        }else if (oh.startsWith(FragmentRuleVO.ALKYL_CHAIN_NAME)) {
+          chainType = LipidomicsConstants.CHAIN_TYPE_FA_ALKYL;
+          oh = oh.substring(FragmentRuleVO.ALKYL_CHAIN_NAME.length());
+        }else if (oh.startsWith(FragmentRuleVO.ALKENYL_CHAIN_NAME)){
+          chainType = LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL;
+          oh = oh.substring(FragmentRuleVO.ALKENYL_CHAIN_NAME.length());          
+        }else if (oh.startsWith(FragmentRuleVO.LCB_NAME)){
+          chainType = LipidomicsConstants.CHAIN_TYPE_LCB;
+          oh = oh.substring(FragmentRuleVO.LCB_NAME.length());          
+        }
         ohNumber = Short.parseShort(oh);
       //if it is not a number, it can be an encoded hydroxylation
       }catch(NumberFormatException nfx) {
@@ -1651,14 +1662,21 @@ public class FragRuleParser
           throw new RulesException("The OH-Number \""+oh+"\" of \""+FRAGMENT_HYDROXY+"\" is whether an integer number nor present in the hydroxylation encodings! Error at line number "+lineNumber+"!");
         }
       }
+      if ((fragmentDef || currentSection==HEAD_SECTION) && chainType != LipidomicsConstants.CHAIN_TYPE_NO_CHAIN) {
+        throw new RulesException("Hydroxylation specifications are neither for "+FRAGMENT_SUBSECTION_NAME+" nor for "+HEAD_SECTION_NAME +" sections allowed! Error at line number "+lineNumber+"!");
+      }
       //check whether this number is present in the hydroxylation encodings
       try { Settings.getLcbHydroxyEncoding().getEncodedPrefix(ohNumber);
       }catch (HydroxylationEncodingException e) {
         throw new RulesException("The OH-Number \""+ohNumber+"\" of \""+FRAGMENT_HYDROXY+"\" is not present in the hydroxylation encodings! Error at line number "+lineNumber+"!");
       }
-      allowedOhs.put(ohNumber,ohMandatory);
+      String id = String.valueOf(chainType)+","+String.valueOf(ohNumber);
+      if (allowedOHs.contains(id))
+        throw new RulesException("There is two times the same OH definition ("+ohPart+") at at line number "+lineNumber+"!");
+      allowedOHs.add(id);
+      ohVOs.add(new RuleHydroxyRequirementsVO(ohNumber,chainType,ohMandatory));
     }
-    return allowedOhs;
+    return new RuleHydroxyRequirementSet(ohVOs);
   }
   
 }

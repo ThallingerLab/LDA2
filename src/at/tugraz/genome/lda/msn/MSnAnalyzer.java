@@ -618,7 +618,7 @@ public class MSnAnalyzer
       Hashtable<String,CgProbe> foundFragments = new Hashtable<String,CgProbe>();
 //    System.out.println(fa.getName()+";"+mandatoryChainFragments.size());
       for (FragmentVO fragment : mandatoryChainFragments){
-        // a fragment cannot have any negative chemical elments
+        // a fragment cannot have any negative chemical elements
         if (fragment.getFormula().indexOf("-")!=-1) {
           discardChain = true;
           break;
@@ -659,6 +659,8 @@ public class MSnAnalyzer
         Hashtable<String,IntensityChainVO> fulfilledChainIntensityRules = new Hashtable<String,IntensityChainVO>();       
         if (intRules.containsKey(chain.getChainType())) {
           for (IntensityRuleVO intRule : intRules.get(chain.getChainType())){
+            if (!intRule.hydroxylationValid((short)chain.getOhNumber()))
+              continue;
             Hashtable<String,CgProbe> allFragments = new Hashtable<String,CgProbe>(foundFragments);
             allFragments.putAll(headGroupFragments_);
             if (intRule.isOrRule() || intRule.enoughFragmentsForRuleEvaluationFound(allFragments)){
@@ -740,6 +742,8 @@ public class MSnAnalyzer
         for (IntensityRuleVO intRule : diffRules){
           Vector<Vector<FattyAcidVO>> combisToCheck = StaticUtils.getAllPotentialChainCombinationForThisRule(intRule, combi);
           for (Vector<FattyAcidVO> chainsToCheck : combisToCheck) {
+            if (!intRule.hydroxylationValid(chainsToCheck))
+              continue;
             if (intRule.isOrRule() || intRule.enoughFragmentsForRuleEvaluationFound(headGroupFragments_,chainFragments_,chainsToCheck)) {
 //              System.out.println("I found enough fragments for this combination");
 //              for (FattyAcidVO chain : chainsToCheck) {
@@ -771,7 +775,7 @@ public class MSnAnalyzer
                 fulfilledChaindIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
               }else{
                 if (debug_) debugVO_.addViolatedChainRule(combiKey, intRule); 
-                if (intRule.isMandatory()){
+                if (intRule.isMandatory(chainsToCheck)){
                   discardCombi = true;
                   break;
                 }
@@ -795,71 +799,74 @@ public class MSnAnalyzer
     Hashtable<String,Double> areas = computeChainAreas();
     Hashtable<String,Double> combiAreas = computeCombiAreas(combis, faChainOccurrences, areas);
     String strongestCombi = getStrongestCombination(combiAreas);
-    Vector<String> chainsOfStrongestCombi = StaticUtils.splitChainCombiToEncodedStrings(strongestCombi, LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
     boolean discardAllCombis = false;
-    Vector<FattyAcidVO> chainsToCheck = new Vector<FattyAcidVO>();
-    for (String chain : chainsOfStrongestCombi) {
-      FattyAcidVO chainVO = StaticUtils.decodeLipidNameForCreatingCombis(chain);
-      chainsToCheck.add(chainVO);
-      if (!absRulesToCheck.containsKey(chain))
-        continue;
-      Vector<IntensityRuleVO> absRules = absRulesToCheck.get(chain);
-      Hashtable<String,IntensityChainVO> fulfilledChainIntensityRules = new Hashtable<String,IntensityChainVO>();
-      if (fulfilledChainIntensityRules_.containsKey(chain))
-        fulfilledChainIntensityRules = fulfilledChainIntensityRules_.get(chain);
-      Hashtable<String,CgProbe> allFragments = new Hashtable<String,CgProbe>(chainFragments_.get(chain));
-      allFragments.putAll(headGroupFragments_);
-      for (IntensityRuleVO intRule : absRules){
-        if (this.ignoreAbsolute_){
-          if (intRule.isRuleFulfilled(headGroupFragments_,getBasepeakIfRequired(intRule))) {
+    if (strongestCombi!=null) {
+      Vector<String> chainsOfStrongestCombi = StaticUtils.splitChainCombiToEncodedStrings(strongestCombi, LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
+      Vector<FattyAcidVO> chainsToCheck = new Vector<FattyAcidVO>();
+      for (String chain : chainsOfStrongestCombi) {
+        FattyAcidVO chainVO = StaticUtils.decodeLipidNameForCreatingCombis(chain);
+        chainsToCheck.add(chainVO);
+        if (!absRulesToCheck.containsKey(chain))
+          continue;
+        Vector<IntensityRuleVO> absRules = absRulesToCheck.get(chain);
+        Hashtable<String,IntensityChainVO> fulfilledChainIntensityRules = new Hashtable<String,IntensityChainVO>();
+        if (fulfilledChainIntensityRules_.containsKey(chain))
+          fulfilledChainIntensityRules = fulfilledChainIntensityRules_.get(chain);
+        Hashtable<String,CgProbe> allFragments = new Hashtable<String,CgProbe>(chainFragments_.get(chain));
+        allFragments.putAll(headGroupFragments_);
+        for (IntensityRuleVO intRule : absRules){
+          if (this.ignoreAbsolute_){
+            if (intRule.isRuleFulfilled(headGroupFragments_,getBasepeakIfRequired(intRule))) {
+              IntensityChainVO intChainVO = new IntensityChainVO(intRule,chainVO,set_.getOhNumber()>0);
+              fulfilledChainIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
+            }
+            continue;
+          }
+          if (intRule.isRuleFulfilled(allFragments,getBasepeakIfRequired(intRule))) {
             IntensityChainVO intChainVO = new IntensityChainVO(intRule,chainVO,set_.getOhNumber()>0);
             fulfilledChainIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
-          }
-          continue;
-        }
-        if (intRule.isRuleFulfilled(allFragments,getBasepeakIfRequired(intRule))) {
-          IntensityChainVO intChainVO = new IntensityChainVO(intRule,chainVO,set_.getOhNumber()>0);
-          fulfilledChainIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
-        }else{
-        //TODO: possibly use another annotation for displaying the name in the debugVO than chain.getChainId()
-          if (debug_) debugVO_.addViolatedChainRule(chain, intRule); 
-          if (intRule.isMandatory((short)chainVO.getOhNumber())){
-            discardAllCombis = true;
-            if (intRule.isOrRule()) {
-              forbiddenChains.add(chain);
+          }else{
+            //TODO: possibly use another annotation for displaying the name in the debugVO than chain.getChainId()
+            if (debug_) debugVO_.addViolatedChainRule(chain, intRule); 
+            if (intRule.isMandatory((short)chainVO.getOhNumber())){
+              discardAllCombis = true;
+              if (intRule.isOrRule()) {
+                forbiddenChains.add(chain);
+              }
+              break;
             }
-            break;
           }
         }
+        fulfilledChainIntensityRules = fulfilledChainIntensityRules_.put(chain,fulfilledChainIntensityRules); 
       }
-      fulfilledChainIntensityRules = fulfilledChainIntensityRules_.put(chain,fulfilledChainIntensityRules); 
-    }
-    if (absCombiRulesToCheck.containsKey(strongestCombi)){
-      Hashtable<String,IntensityChainVO> fulfilledChaindIntensityRules = new Hashtable<String,IntensityChainVO>();
-      if (fulfilledChainIntensityRules_.containsKey(strongestCombi))
-        fulfilledChaindIntensityRules = fulfilledChainIntensityRules_.get(strongestCombi);
-      for (IntensityRuleVO intRule : absCombiRulesToCheck.get(strongestCombi)) {
-        if (this.ignoreAbsolute_){
+      if (absCombiRulesToCheck.containsKey(strongestCombi)){
+        Hashtable<String,IntensityChainVO> fulfilledChaindIntensityRules = new Hashtable<String,IntensityChainVO>();
+        if (fulfilledChainIntensityRules_.containsKey(strongestCombi))
+          fulfilledChaindIntensityRules = fulfilledChainIntensityRules_.get(strongestCombi);
+        for (IntensityRuleVO intRule : absCombiRulesToCheck.get(strongestCombi)) {
+          if (this.ignoreAbsolute_){
+            if (intRule.isRuleFulfilled(headGroupFragments_,chainFragments_,chainsToCheck,getBasepeakIfRequired(intRule))){
+              IntensityChainVO intChainVO = new IntensityChainVO(intRule,chainsToCheck,set_.getOhNumber()>0);
+              fulfilledChaindIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
+            }
+            continue;
+          }
           if (intRule.isRuleFulfilled(headGroupFragments_,chainFragments_,chainsToCheck,getBasepeakIfRequired(intRule))){
             IntensityChainVO intChainVO = new IntensityChainVO(intRule,chainsToCheck,set_.getOhNumber()>0);
             fulfilledChaindIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
-          }
-          continue;
-        }
-        if (intRule.isRuleFulfilled(headGroupFragments_,chainFragments_,chainsToCheck,getBasepeakIfRequired(intRule))){
-          IntensityChainVO intChainVO = new IntensityChainVO(intRule,chainsToCheck,set_.getOhNumber()>0);
-          fulfilledChaindIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
-        }else{
-          if (debug_) debugVO_.addViolatedChainRule(strongestCombi, intRule); 
-          if (intRule.isMandatory()){
-            discardAllCombis = true;
-            break;
+          }else{
+            if (debug_) debugVO_.addViolatedChainRule(strongestCombi, intRule); 
+            if (intRule.isMandatory(chainsToCheck)){
+              discardAllCombis = true;
+              break;
+            }
           }
         }
+        fulfilledChainIntensityRules_.put(strongestCombi, fulfilledChaindIntensityRules);
       }
-      fulfilledChainIntensityRules_.put(strongestCombi, fulfilledChaindIntensityRules);
     }
     if (discardAllCombis) {
+      removeNotNecessaryFragments(new Hashtable<String,FattyAcidVO>(),false);
       if (fragCalc_.containAllOhCombinationsClassSpecificFragments())
         status_=LipidomicsMSnSet.DISCARD_HIT;
       return;
@@ -896,6 +903,7 @@ public class MSnAnalyzer
           removedKeys++;
           combiAreas.remove(key);
           combis.remove(key);
+          fulfilledChainIntensityRules_.remove(key);
         }
       }
       allowedFAs = new Hashtable<String,FattyAcidVO>();
@@ -2004,7 +2012,7 @@ public class MSnAnalyzer
   }  
   
   /**
-   * adds an IntensityRuleVO to an hash that stores a key for the position comparision, and a key if the rule is mandatory
+   * adds an IntensityRuleVO to an hash that stores a key for the position comparison, and a key if the rule is mandatory
    * @param positionSpecificRules the hash where the rule shall be added
    * @param identifier the position key
    * @param rule the rule to be added

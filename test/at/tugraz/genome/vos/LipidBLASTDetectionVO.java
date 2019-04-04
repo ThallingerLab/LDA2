@@ -70,7 +70,7 @@ public class LipidBLASTDetectionVO
     String[] classAndName = getClassAndName(ms1Name);
     this.lipidClass_ = classAndName[0];
     this.adduct_ = adduct;
-    if (this.adductLookup_.containsKey(adduct_)) this.adduct_ = this.adductLookup_.get(adduct_);
+    if (adductLookup_.containsKey(adduct_)) this.adduct_ = adductLookup_.get(adduct_);
     // error of LipidBlast - it should be [M+H]+ but is [M]+
     else if (lipidClass_.equalsIgnoreCase("SM") && adduct_.equalsIgnoreCase("[M]+")) this.adduct_ = "H";
     this.ms1Name_ = classAndName[1];

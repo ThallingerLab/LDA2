@@ -37,6 +37,9 @@ public class FoundBiologicalSpecies{
   
   
   public final static Hashtable<String,String> adductIonisations = new Hashtable<String,String>(){
+
+    private static final long serialVersionUID = 2968392068905177303L;
+
     {
       put("H","+H+");
       put("Na","+Na+");
