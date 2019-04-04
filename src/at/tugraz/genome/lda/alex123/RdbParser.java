@@ -88,6 +88,7 @@ public class RdbParser
       int conflictsColumn = -1;
       int dbNumberColumn = -1;
       int ohNumberColumn = -1;
+      int sumFormulaColumn = -1;
 
       String detector;
       String polarity;
@@ -105,6 +106,7 @@ public class RdbParser
       String conflicts;
       int dbNumber;
       int ohNumber;
+      String sumFormula;
       
       int classNumber = 1;
       Hashtable<String,Hashtable<String,QuantVO>> resultsOfClass;
@@ -130,6 +132,7 @@ public class RdbParser
           conflicts = null;
           dbNumber = -1;
           ohNumber = -1;
+          sumFormula = null;
           
           String[] columns = line.split("\t");
           if (detectorColumn>=0)
@@ -166,6 +169,8 @@ public class RdbParser
             ohNumber = Integer.parseInt(columns[ohNumberColumn]);
           if (dbNumberColumn>=0)
             dbNumber = Integer.parseInt(columns[dbNumberColumn]);
+          if (sumFormulaColumn>=0)
+            sumFormula = columns[sumFormulaColumn];
           if (lClass==null || species==null || lClass==null || adduct==null)
             continue;
           if (results_.containsKey(lClass) && results_.get(lClass).containsKey(species) && results_.get(lClass).get(species).containsKey(adduct)) {
@@ -188,7 +193,7 @@ public class RdbParser
               molecularSpecies, lClass, precursors.containsKey(2) ? precursors.get(2) : null,
               activations.containsKey(2) ? activations.get(2) : null, precursors.containsKey(3) ? precursors.get(3) : null,
               activations.containsKey(3) ? activations.get(3) : null, adduct, null, id, category, conflicts,
-              -1, -1, dbNumber, ohNumber, null, null, null, -1, -1, -1, null, null);
+              -1, -1, dbNumber, ohNumber, null, null, sumFormula, -1, -1, -1, null, null);
           
             resultsOfClass = new Hashtable<String,Hashtable<String,QuantVO>>();
             LinkedHashMap<String,String> analSequ;
@@ -247,6 +252,8 @@ public class RdbParser
               dbNumberColumn = columnNr;
             } else if (columns[columnNr].equalsIgnoreCase(RdbOutputWriter.OH_INDEX_COLUMN)){
               ohNumberColumn = columnNr;
+            } else if (columns[columnNr].equalsIgnoreCase(RdbOutputWriter.SUM_FORMULA_COLUMN)) {
+              sumFormulaColumn = columnNr;
             }
           }
           headerLineFound = true;

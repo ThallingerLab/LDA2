@@ -158,7 +158,7 @@ public class RdbOutputWriter
       Hashtable<String,Vector<String>> analyteSequence, Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects) throws RdbWriterException, ChemicalFormulaException, LipidCombinameEncodingException {
     //the third variable is not required - only backward compatibility that is not necessary for this method
     //the sixth and the seventh parameter is not required by this method - all of the molecules and isotopes have to be written
-    write(fileName,results,null,classSequence,analyteSequence,null,null,null,quantObjects);
+    write(fileName,results,null,classSequence,analyteSequence,null,null,null,quantObjects,false);
   }
   
   /**
@@ -169,9 +169,10 @@ public class RdbOutputWriter
    * @param classSequence the sequence in which the classes shall be written
    * @param correctAnalyteSequence the sequence in which the analytes of the classes shall be written
    * @param acceptedMolecules the molecules that are accepted by the GUI - to be used only by export via heat map
+   * @param analysisModule the comparative analysis module - containing information about the file comparisons by the heat map (only for exports by LDA files)
    * @param maxIsotopes the maximum isotopes settings - to be used only by export via heat map
    * @param quantObjects the quantification objects providing more information (only for Alex123 target lists)
-   * @param analysisModule the comparative analysis module - containing information about the file comparisons by the heat map (only for exports by LDA files)
+   * @param alexRtGrouper is this called from the AlexRtGrouper
    * @throws RdbWriterException if something is wrong with the writing
    * @throws ChemicalFormulaException if something is wrong with the chemical formulae
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
@@ -180,7 +181,8 @@ public class RdbOutputWriter
   private void write(String fileNameOut, Vector<QuantificationResult> results, Hashtable<Integer,String> expLookup,
       LinkedHashMap<String,Integer> classSequence, Hashtable<String,Vector<String>> correctAnalyteSequence,
       Hashtable<String,Hashtable<String,String>> acceptedMolecules, ComparativeAnalysis analysisModule,
-      Hashtable<String,Integer> maxIsotopes, Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects) throws RdbWriterException,
+      Hashtable<String,Integer> maxIsotopes, Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects,
+      boolean alexRtGrouper) throws RdbWriterException,
       ChemicalFormulaException, LipidCombinameEncodingException {
     boolean detectorColumn = false;
     boolean polarityColumn = false;
@@ -488,7 +490,7 @@ public class RdbOutputWriter
                     sumCompositionToWrite = "";
                   sumFormula = quantObject.getOriginalSumFormula();
                 }
-                if (isCompModulePresent) {
+                if (isCompModulePresent && !alexRtGrouper) {
                   sumFormula = set.getChemicalFormula();
                   Hashtable<String,Integer> categorized = StaticUtils.categorizeFormula(sumFormula);
                   if (Settings.useAlex() && result.getConstants()!=null && result.getConstants().isAlexTargetlist()){
@@ -865,6 +867,7 @@ public class RdbOutputWriter
    * @param maxIsotopes the maximum isotopes settings - to be used only by export via heat map
    * @param quantObjects the quantification objects providing more information (only if there are results from Alex123 target lists)
    * @param allowedExps which experiments (absolute path) are allowed to be written
+   * @param alexRtGrouper is this called from the AlexRtGrouper
    * @throws RdbWriterException if something is wrong with the writing
    * @throws ExcelInputFileException if something is wrong with the Excel quantitation files
    * @throws ChemicalFormulaException if something is wrong with the chemical formulae
@@ -872,7 +875,7 @@ public class RdbOutputWriter
    */
   public void write(String fileName, ComparativeAnalysis analysisModule, LinkedHashMap<String,Integer> classSequence,
       Hashtable<String,Vector<String>> analyteSequence, Hashtable<String,Hashtable<String,String>> acceptedMolecules, Hashtable<String,Integer> maxIsotopes,
-      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects, Vector<String> allowedExps)
+      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects, Vector<String> allowedExps, boolean alexRtGrouper)
           throws RdbWriterException, ExcelInputFileException, ChemicalFormulaException, LipidCombinameEncodingException{
     Vector<QuantificationResult> results = new Vector<QuantificationResult>();
     Hashtable<Integer,String> expLookup = new Hashtable<Integer,String>();
@@ -913,8 +916,8 @@ public class RdbOutputWriter
       molNamesInSequence = changedOrder;
     }
     this.write(fileName, results, expLookup, analysisModule.getClassSequence()!=null ? analysisModule.getClassSequence() : classSequence,
-        molNamesInSequence, acceptedMolecules, analysisModule, maxIsotopes,quantObjects!=null ? quantObjects : analysisModule.getQuantObjects());
-
+        molNamesInSequence, acceptedMolecules, analysisModule, maxIsotopes,quantObjects!=null ? quantObjects : analysisModule.getQuantObjects(),
+        alexRtGrouper);
   }
 
   

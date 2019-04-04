@@ -109,7 +109,7 @@ public class AlexRtGrouper
         Vector<String> excelFiles = new Vector<String>();
         excelFiles.add(excelFile.getAbsolutePath());
         rdbWriter.write(alexFile, analysisModule, classSequence,analyteSequence,
-            null, null,targetLists,excelFiles);   
+            null, null,targetLists,excelFiles,true);   
       }
     }
   }

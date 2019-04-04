@@ -5668,7 +5668,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         maxIsotopes.put(molGroup, heatmap.getSelectedIsotope());
       }
       RdbOutputWriter rdbWriter = new RdbOutputWriter(internalStandardPref,externalStandardPref);
-      rdbWriter.write(exportFile.getAbsolutePath(), analysisModule_, classSequence, null, acceptedMolecules,maxIsotopes,null,null);
+      rdbWriter.write(exportFile.getAbsolutePath(), analysisModule_, classSequence, null, acceptedMolecules,maxIsotopes,null,null,false);
     }
     catch (ExcelInputFileException e) {
       e.printStackTrace();
