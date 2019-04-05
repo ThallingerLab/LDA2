@@ -1906,7 +1906,7 @@ public class FragmentCalculator
     boolean foundAll = true;
     Hashtable<String,FragmentRuleVO> chainRules =  RulesContainer.getChainFragmentRules(ruleName_,rulesDir_);
     for (FragmentRuleVO fragVO : chainRules.values()) {
-      if (fragVO.getChainType()!=chain.getChainType() || fragVO.isMandatory((short)chain.getOhNumber())!=FragmentRuleVO.MANDATORY_CLASS)
+      if (fragVO.getChainType()!=chain.getChainType() || (fragVO.hydroxylationValid((short)chain.getOhNumber()) && fragVO.isMandatory((short)chain.getOhNumber())!=FragmentRuleVO.MANDATORY_CLASS))
         continue;
       if (foundFragments==null || !foundFragments.containsKey(fragVO.getName())) {
         foundAll = false;
