@@ -652,9 +652,10 @@ public class FragmentCalculator
    * @throws IOException exception if there is something wrong about the file
    * @throws NoRuleException thrown if the rules are not there
    * @throws RulesException specifies in detail which rule has been infringed
+   * @throws LipidCombinameEncodingException thrown when the lipid combination cannot be decoded
    */
   public Hashtable<String,Vector<FattyAcidVO>> getChainFragmentCombinationsWithDetectedEvidence(Collection<String> foundFAs, Hashtable<String,Hashtable<String,CgProbe>> chainFragments,
-      Set<String> forbiddenChains) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+      Set<String> forbiddenChains) throws RulesException, NoRuleException, IOException, SpectrummillParserException, LipidCombinameEncodingException {
     Hashtable<String,Vector<FattyAcidVO>> potentialChainCombinations = new Hashtable<String,Vector<FattyAcidVO>>();
     Hashtable<String,String> fas = new Hashtable<String,String>();
     for (String fa: foundFAs){
@@ -662,49 +663,40 @@ public class FragmentCalculator
     }
     Hashtable<String,FragmentRuleVO> chainRules =  RulesContainer.getChainFragmentRules(ruleName_,rulesDir_);
     boolean singleChainIdentification = RulesContainer.isSingleChainIdentification(ruleName_,rulesDir_);
-    Vector<String> mandatoryFrags = new Vector<String>();
-    for (FragmentRuleVO ruleVO : chainRules.values()){
-      if (ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_TRUE || ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_QUANT || ruleVO.isMandatory()==FragmentRuleVO.MANDATORY_CLASS)
-        mandatoryFrags.add(ruleVO.getName());
-    }
     Vector<String> relevantCombinations = new Vector<String>();
     try {relevantCombinations =  getChainCombinationsReleveantForTheseChains(fas,forbiddenChains);
     }catch (LipidCombinameEncodingException e) {throw new RulesException(e);}
+    short mandatory;
+    Vector<String> mandatoryFrags;
     for (String key : relevantCombinations){
+      boolean allFAsThere = true;
       boolean oneFAIsThere = false;
-      Hashtable<String,Boolean> mandatoryFound = new Hashtable<String,Boolean>();
-      for (String fragName : mandatoryFrags){
-        mandatoryFound.put(fragName, false);
-      }
-      try {
-        boolean allFAsThere = true;
-        Vector<FattyAcidVO> chains = StaticUtils.decodeLipidNamesFromChainCombi(key);
-        for (FattyAcidVO chain : chains){
-          if (!fas.containsKey(chain.getChainId())){
+      Vector<FattyAcidVO> chains = StaticUtils.decodeLipidNamesFromChainCombi(key);
+      for (FattyAcidVO chain : chains){
+        mandatoryFrags = new Vector<String>();
+        for (FragmentRuleVO ruleVO : chainRules.values()){
+          if (ruleVO.getChainType()!=chain.getChainType() || !ruleVO.hydroxylationValid((short)chain.getOhNumber()))
+            continue;
+          mandatory = ruleVO.isMandatory((short)chain.getOhNumber());
+          if (mandatory==FragmentRuleVO.MANDATORY_TRUE || mandatory==FragmentRuleVO.MANDATORY_QUANT || mandatory==FragmentRuleVO.MANDATORY_CLASS)
+            mandatoryFrags.add(ruleVO.getName());
+        }
+        if (!fas.containsKey(chain.getChainId())){
+          allFAsThere = false;
+        } else {
+          boolean chainValid = true;
+          for (String fragName : mandatoryFrags) {
+            if (!chainFragments.containsKey(chain.getChainId()) || !chainFragments.get(chain.getChainId()).containsKey(fragName))
+              chainValid = false;
+          }
+          if (chainValid)
+            oneFAIsThere = true;
+          else
             allFAsThere = false;
-          } else if (singleChainIdentification) {
-            if (mandatoryFrags.size()>0){
-              if (!chainFragments.containsKey(chain.getChainId())) continue;
-              for (String fragName : chainFragments.get(chain.getChainId()).keySet()){
-                if (mandatoryFound.containsKey(fragName)) mandatoryFound.put(fragName, true);
-              }
-            } else oneFAIsThere = true;
-          } else {
-          }
         }
-        if (mandatoryFound.size()>0){
-          boolean allTrue = true;
-          for (Boolean found : mandatoryFound.values()){
-            if (!found) allTrue = false;
-          }
-          if (allTrue) oneFAIsThere = true;
-        }
-        if (allFAsThere || (oneFAIsThere && singleChainIdentification)){
-          potentialChainCombinations.put(key, chains);
-        }
-      }catch(LipidCombinameEncodingException lcx) {
-        throw new RulesException(lcx);
       }
+      if (allFAsThere || (oneFAIsThere && singleChainIdentification))
+        potentialChainCombinations.put(key, chains);
     }
     return potentialChainCombinations;
   }
@@ -1906,7 +1898,7 @@ public class FragmentCalculator
     boolean foundAll = true;
     Hashtable<String,FragmentRuleVO> chainRules =  RulesContainer.getChainFragmentRules(ruleName_,rulesDir_);
     for (FragmentRuleVO fragVO : chainRules.values()) {
-      if (fragVO.getChainType()!=chain.getChainType() || (fragVO.hydroxylationValid((short)chain.getOhNumber()) && fragVO.isMandatory((short)chain.getOhNumber())!=FragmentRuleVO.MANDATORY_CLASS))
+      if (fragVO.getChainType()!=chain.getChainType() || !fragVO.hydroxylationValid((short)chain.getOhNumber()) || fragVO.isMandatory((short)chain.getOhNumber())!=FragmentRuleVO.MANDATORY_CLASS)
         continue;
       if (foundFragments==null || !foundFragments.containsKey(fragVO.getName())) {
         foundAll = false;

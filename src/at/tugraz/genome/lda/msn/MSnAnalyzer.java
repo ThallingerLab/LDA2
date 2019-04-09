@@ -793,6 +793,37 @@ public class MSnAnalyzer
       }
       combis = intRulesFulFilled;
     }
+    
+    //final check whether all OR combinations are fulfilled
+    Vector<IntensityRuleVO> orRules = new Vector<IntensityRuleVO>();
+    for (Vector<IntensityRuleVO> intRules2 : intRules.values()) {
+      for (IntensityRuleVO intRule : intRules2) {
+        if (intRule.isOrRule())
+          orRules.add(intRule);
+      }
+    }
+    if (orRules.size()>0) {
+      Vector<String> combisToRemove = new Vector<String>();
+      for (String combiKey : combis.keySet()){
+        Vector<FattyAcidVO> chainsToCheck = StaticUtils.decodeLipidNamesFromChainCombi(combiKey);
+        for (IntensityRuleVO intRule : orRules) {
+          if (!intRule.isRuleFulfilled(headGroupFragments_,chainFragments_,chainsToCheck,getBasepeakIfRequired(intRule))){
+            combisToRemove.add(combiKey);
+            break;
+          }
+        }
+      }
+      if (combisToRemove.size()>0) {
+        for (String combiKey : combisToRemove)
+          combis.remove(combiKey);
+        Hashtable<String,FattyAcidVO> allowedFAs = new Hashtable<String,FattyAcidVO>();
+        for (String combiKey : combis.keySet()){
+          for (FattyAcidVO chain : StaticUtils.decodeLipidNamesFromChainCombi(combiKey))
+            allowedFAs.put(chain.getChainId(), chain);
+        }
+        removeNotNecessaryFragments(allowedFAs, true);
+      }
+    }
 
     //the next lines are for checking absolute chain intensity rules
     Hashtable<String,Integer> faChainOccurrences = computeChainOccurrences(combis,new Hashtable<String,FattyAcidVO>());
