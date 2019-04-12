@@ -807,6 +807,8 @@ public class MSnAnalyzer
       for (String combiKey : combis.keySet()){
         Vector<FattyAcidVO> chainsToCheck = StaticUtils.decodeLipidNamesFromChainCombi(combiKey);
         for (IntensityRuleVO intRule : orRules) {
+          if (!intRule.hydroxylationValid(chainsToCheck))
+            continue;
           if (!intRule.isRuleFulfilled(headGroupFragments_,chainFragments_,chainsToCheck,getBasepeakIfRequired(intRule))){
             combisToRemove.add(combiKey);
             break;
