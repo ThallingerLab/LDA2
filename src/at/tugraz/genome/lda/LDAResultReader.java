@@ -1012,7 +1012,7 @@ public class LDAResultReader
                 }
               }
               if (isAChain)
-                type = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
+                type = LipidomicsConstants.CHAIN_TYPE_MISSED;
             }           
             missed.put(token, type);
           }

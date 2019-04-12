@@ -121,6 +121,8 @@ public class LipidomicsConstants
   public final static String CHAIN_TYPE_FA_NAME = "FA";
   /** the prefix to indicate an LCB chain*/
   public final static String CHAIN_TYPE_LCB_NAME = "LCB";
+  /** the prefix to indicate that this is an fragment that was missed*/
+  public final static short CHAIN_TYPE_MISSED = -2;
   /** the prefix to indicate a fatty acyl chain*/
   public final static short CHAIN_TYPE_NO_CHAIN = -1;
   /** the prefix to indicate a fatty acyl chain*/

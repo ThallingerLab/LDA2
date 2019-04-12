@@ -1012,7 +1012,8 @@ public class StaticUtils
       Vector<String> combiOrdered = new Vector<String>();
       boolean ohInCombi = false;
       if (param.getStatus()<LipidomicsMSnSet.FRAGMENTS_DETECTED) {
-        combiOrdered.add(relAreas.keySet().iterator().next());
+        if (relAreas!=null && relAreas.size()>0)
+          combiOrdered.add(relAreas.keySet().iterator().next());
       }else {        
         // the bigger areas should come first
         for (String combi : relAreas.keySet()){

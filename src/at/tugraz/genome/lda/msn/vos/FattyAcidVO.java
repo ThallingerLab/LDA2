@@ -83,7 +83,7 @@ public class FattyAcidVO
    * allows for chain type correction when a general parser was used
    * @param chainType the new chain type
    */
-  public void correctChainType_(short chainType)
+  public void correctChainType(short chainType)
   {
     this.chainType_ = chainType;
   }

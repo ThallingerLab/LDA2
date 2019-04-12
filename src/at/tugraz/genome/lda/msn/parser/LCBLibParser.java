@@ -121,7 +121,7 @@ public class LCBLibParser extends FALibParser
         for (Hashtable<Integer,Hashtable<String,FattyAcidVO>> sameC : result_.get(hydrKey).values()){
           for (Hashtable<String,FattyAcidVO> sameDb : sameC.values()) {
             for (FattyAcidVO fa : sameDb.values()) {
-              fa.correctChainType_(LipidomicsConstants.CHAIN_TYPE_LCB);
+              fa.correctChainType(LipidomicsConstants.CHAIN_TYPE_LCB);
             }
           }
         }
