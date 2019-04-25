@@ -749,16 +749,17 @@ public class IntensityRuleVO
    * sets how many hydroxylations must be present for the detection of this fragment; key: number of hydroxylations; value: mandatory - should be null in case of no OH restrictions
    * @param allowedOHs the hydroxylation requirements of the rule
    * @param lineNumber the line number
+   * @param headSection is this the head section
    * @throws RulesException thrown when the defined chain type is not possible
    */
-  public void setAllowedOHs(RuleHydroxyRequirementSet allowedOHs, int lineNumber) throws RulesException {
+  public void setAllowedOHs(RuleHydroxyRequirementSet allowedOHs, int lineNumber, boolean headSection) throws RulesException {
     allowedOHs_ = allowedOHs;
     //check whether there are chain types set, and if yes, check whether they are possible
     //if no, set them to the default chain type, and if there are diff chain types set them to $LCB
     if (allowedOHs_!=null) {
        Vector<FragmentMultVO> allFrags = new Vector<FragmentMultVO>(biggerExpression_.getFragments());
        allFrags.addAll(smallerExpression_.getFragments());
-       allowedOHs_.checkAndCorrectChainTypes(chainType_,allFrags,lineNumber);
+       allowedOHs_.checkAndCorrectChainTypes(chainType_,allFrags,lineNumber, headSection);
     }
   }
 

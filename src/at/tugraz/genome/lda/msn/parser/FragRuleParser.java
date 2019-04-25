@@ -618,7 +618,7 @@ public class FragRuleParser
       ohRequirements.setUndefinedMandatorySettings(mand);
     }
     ruleVO.setMandatory(mandatory);
-    ruleVO.setAllowedOHs(ohRequirements,lineNumber);
+    ruleVO.setAllowedOHs(ohRequirements,lineNumber,currentSection==HEAD_SECTION);
     if (currentSection==HEAD_SECTION) headIntensities_.add(ruleVO);
     if (currentSection==CHAINS_SECTION){
       chainIntensities_.add(ruleVO);

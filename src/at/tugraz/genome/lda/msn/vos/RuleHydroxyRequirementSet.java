@@ -98,9 +98,12 @@ public class RuleHydroxyRequirementSet
    * @param ruleChainType the chain type of the rule
    * @param allFrags the fragments of the intensity rule
    * @param lineNumber the line number of the rule set - for throwing errors
+   * @param headSection is this the head section
    * @throws RulesException thrown when there is something wrong with the rule
    */
-  public void checkAndCorrectChainTypes(short ruleChainType, Vector<FragmentMultVO> allFrags, int lineNumber) throws RulesException {
+  public void checkAndCorrectChainTypes(short ruleChainType, Vector<FragmentMultVO> allFrags, int lineNumber, boolean headSection) throws RulesException {
+    if (headSection)
+      return;
     if (ruleChainType!=IntensityRuleVO.DIFF_CHAIN_TYPES) {
       //there is only one type of chain possible - if no chain type set -> correct - if a chain type is set, it must be this one, otherwise throw an error
       for (RuleHydroxyRequirementsVO vo : requirements_) {

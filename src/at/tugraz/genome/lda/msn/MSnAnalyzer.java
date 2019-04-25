@@ -2148,7 +2148,7 @@ public class MSnAnalyzer
         //allOfMsLevel.put(quant, allOfQuant);
         //And the key is the name of the distinct fragment, and as such unique
         //So if anything makes sense at all, then it is the following line (or maybe it can be removed, since two same QuantVOs cannot happen anyway):
-        if (chromsForMzs.containsKey(quant)) continue;
+        ////if (chromsForMzs.containsKey(quant)) continue;
         //ATTENTION END: this attention message was generated on 20.11.2018; when there no problems occur until 19.11.2020: delete these comments
         
         for (String key: allOfQuant.keySet()){
