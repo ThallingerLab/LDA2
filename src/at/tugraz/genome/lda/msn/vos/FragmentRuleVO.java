@@ -89,6 +89,9 @@ public class FragmentRuleVO
   private String formula_;
   /** how many hydroxylations must be present for the detection of this fragment; key: number of hydroxylations; value: mandatory - should be null in case of no OH restrictions*/ 
   private RuleHydroxyRequirementSet allowedOHs_;
+  /** how many hydroxylations must be present for the detection of this fragment, for a partnering chain; key: number of hydroxylations; value: mandatory - should be null in case of no OH restrictions*/ 
+  private RuleHydroxyRequirementSet combiOHs_;
+
   // the details of the chemical element
   private Hashtable<String,SmChemicalElementVO> elementDetails_;  
 
@@ -103,7 +106,7 @@ public class FragmentRuleVO
       short mandatory, Hashtable<String,FragmentRuleVO> headFragments, 
       Hashtable<String,FragmentRuleVO> chainFragments, ElementConfigParser elementParser) throws RulesException
   {
-    this(name,formula,charge,msLevel,mandatory,null,headFragments,chainFragments,elementParser);
+    this(name,formula,charge,msLevel,mandatory,null,null,headFragments,chainFragments,elementParser);
   }
   
   /**
@@ -114,14 +117,16 @@ public class FragmentRuleVO
    * @param msLevel MS Level in which the fragment may be found (e.g. MS2, MS3, etc.)
    * @param mandatory must the fragment be present - different options possible according to the MANDATORY_... specifications in this class
    * @param allowedOHs how many hydroxylations must be present for the detection of this fragment; key: number of hydroxylations; value: mandatory - should be null in case of no OH restrictions
+   * @param combiOHs how many hydroxylations must be present for the detection of this fragment; key: number of hydroxylations; value: mandatory - should be null in case of no OH restrictions
    * @param headFragments the previously parsed head fragments (the fragment may be a derivative of a previously parsed head fragment)
    * @param chainFragments the previously parsed chain fragments (the fragment may be a derivative of a previously parsed chain fragment)
    * @param elementParser elementParser for evaluating the chemical formula
    * @throws RulesException specifies in detail which rule has been infringed
    */
   public FragmentRuleVO(String name, String formula, int charge, int msLevel,
-      short mandatory, RuleHydroxyRequirementSet allowedOHs, Hashtable<String,FragmentRuleVO> headFragments, 
-      Hashtable<String,FragmentRuleVO> chainFragments, ElementConfigParser elementParser) throws RulesException
+      short mandatory, RuleHydroxyRequirementSet allowedOHs, RuleHydroxyRequirementSet combiOHs,
+      Hashtable<String,FragmentRuleVO> headFragments, Hashtable<String,FragmentRuleVO> chainFragments,
+      ElementConfigParser elementParser) throws RulesException
   {
     super();
     this.name_ = name;
@@ -131,6 +136,7 @@ public class FragmentRuleVO
     this.formula_ = formula;
     this.chainType_ = LipidomicsConstants.CHAIN_TYPE_NO_CHAIN;
     this.allowedOHs_ = allowedOHs;
+    this.combiOHs_ = combiOHs;
     if (charge<1) throw new RulesException("The charge state of an analyte must be greater or equal 1");
     this.categorizeFormula(formula, headFragments, chainFragments, elementParser);
   }
@@ -182,6 +188,28 @@ public class FragmentRuleVO
       return mandatory_;
     return (this.allowedOHs_.getEntry(ohNumber).get(0).getMandatory());
   }
+  
+  /**
+   * 
+   * @return true when a combiOH is set
+   */
+  public boolean hasCombiOhRequirements() {
+    return this.combiOHs_!=null;
+  }
+  
+  /**
+   * @param chainType the type of the partnering chain
+   * @param ohNumber the number of hydroxylation sites
+   * @return must the fragment be present - different options possible according to the MANDATORY_... specifications in this class
+   */
+  public short isMandatoryInCombi(short chainType, short ohNumber)
+  {
+    short mand = FragmentRuleVO.MANDATORY_UNDEFINED;
+    if (this.combiOHs_!=null && this.combiOHs_.hasEntry(ohNumber))
+      mand = combiOHs_.getMandatory(chainType, ohNumber);
+    return mand;
+  }
+  
   
 
   public short isMandatory()

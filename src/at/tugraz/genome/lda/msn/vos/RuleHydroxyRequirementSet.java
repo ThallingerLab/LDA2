@@ -78,6 +78,24 @@ public class RuleHydroxyRequirementSet
   
   
   /**
+   * get mandatory level
+   * @param chainType the type of chain
+   * @param ohNumber the oh number
+   * @return mandatory level
+   */
+  public short getMandatory(short chainType, short ohNumber) {
+    short mand = FragmentRuleVO.MANDATORY_UNDEFINED;
+    Vector<RuleHydroxyRequirementsVO> reqs = getEntry(ohNumber);
+    for (RuleHydroxyRequirementsVO req : reqs) {
+      if (req.getChainType()==chainType) {
+        mand = req.getMandatory();
+      }
+    }
+    return mand;
+  }
+  
+  
+  /**
    * returns the hydroxylation requirements for one OH number
    * @param ohNumber the hydroxylation requirements to look for
    * @return list of hydroxylation requirements for one OH number

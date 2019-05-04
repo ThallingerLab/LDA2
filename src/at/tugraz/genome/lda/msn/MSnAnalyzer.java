@@ -794,7 +794,7 @@ public class MSnAnalyzer
       combis = intRulesFulFilled;
     }
     
-    //final check whether all OR combinations are fulfilled
+    //final check whether all OR combinations and combiOHs are fulfilled
     Vector<IntensityRuleVO> orRules = new Vector<IntensityRuleVO>();
     for (Vector<IntensityRuleVO> intRules2 : intRules.values()) {
       for (IntensityRuleVO intRule : intRules2) {
@@ -802,16 +802,55 @@ public class MSnAnalyzer
           orRules.add(intRule);
       }
     }
-    if (orRules.size()>0) {
+    Hashtable<String,FragmentRuleVO> combiOhRequirements = fragCalc_.getCombiOhFragments();
+    if (orRules.size()>0 || combiOhRequirements.size()>0) {
       Vector<String> combisToRemove = new Vector<String>();
       for (String combiKey : combis.keySet()){
         Vector<FattyAcidVO> chainsToCheck = StaticUtils.decodeLipidNamesFromChainCombi(combiKey);
+        boolean combiMarkedForRemoval = false;
         for (IntensityRuleVO intRule : orRules) {
           if (!intRule.hydroxylationValid(chainsToCheck))
             continue;
           if (!intRule.isRuleFulfilled(headGroupFragments_,chainFragments_,chainsToCheck,getBasepeakIfRequired(intRule))){
             combisToRemove.add(combiKey);
+            combiMarkedForRemoval = true;
             break;
+          }
+        }
+        if (!combiMarkedForRemoval) {
+          short mand = FragmentRuleVO.MANDATORY_UNDEFINED;
+          //check whether there is fragment that is mandatory for this combination
+          for (FragmentRuleVO ruleVO : combiOhRequirements.values()){
+            if (combiMarkedForRemoval)
+              continue;
+            Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
+            for (FattyAcidVO chain : chainsToCheck) {
+              if (ruleVO.getChainType()==chain.getChainType() && ruleVO.hydroxylationValid((short)chain.getOhNumber())) {
+                chains.add(chain);
+              }
+            }
+            if (chains.size()==0)
+              continue;
+            boolean isMandatory = false;
+            //check if any of the partnering chains in the combi triggers a mandatory fragment
+            for (FattyAcidVO chain : chainsToCheck) {
+              mand = ruleVO.isMandatoryInCombi(chain.getChainType(), (short)chain.getOhNumber());
+              if (mand==FragmentRuleVO.MANDATORY_TRUE || mand==FragmentRuleVO.MANDATORY_CLASS) {
+                isMandatory = true;
+                break;
+              }
+            }
+            //check whether the mandatory fragment is present
+            if (isMandatory) {
+              //check whether all of the affected chains have the mandatory fragment
+              for (FattyAcidVO chain : chains) {
+                if (!chainFragments_.containsKey(chain.getChainId()) || !chainFragments_.get(chain.getChainId()).containsKey(ruleVO.getName())) {
+                  combisToRemove.add(combiKey);
+                  combiMarkedForRemoval = true;
+                  break;
+                }
+              }
+            }
           }
         }
       }

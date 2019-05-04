@@ -1908,5 +1908,26 @@ public class FragmentCalculator
     return foundAll;
   }
   
+  
+  /**
+   * checks if there are any combiOh requirements in these chain rules
+   * @return fragment rules were there are combiOh requirements
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public Hashtable<String,FragmentRuleVO> getCombiOhFragments() throws RulesException, NoRuleException, IOException, SpectrummillParserException{
+    Hashtable<String,FragmentRuleVO> combiOhs = new Hashtable<String,FragmentRuleVO>();
+    Hashtable<String,FragmentRuleVO> allFrags = RulesContainer.getChainFragmentRules(ruleName_,rulesDir_);
+    for (String name : allFrags.keySet()) {
+      FragmentRuleVO rule = allFrags.get(name);
+      if (rule.hasCombiOhRequirements())
+        combiOhs.put(name, rule);
+    }
+    return combiOhs;
+  }
+ 
+  
 }
 
