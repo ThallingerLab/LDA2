@@ -172,16 +172,18 @@ public class OtherAdductChecker
             Hashtable<String,LipidParameterSet> forSplit = new Hashtable<String,LipidParameterSet>();
             if (force.size()>0) {
               forSplit = force;
-              for (String lipClass : same.keySet()) {
-                LipidParameterSet set = same.get(lipClass);
+              for (String rule : same.keySet()) {
+                String lipClass = rule.substring(0,rule.indexOf("_"));
+                LipidParameterSet set = same.get(rule);
                 uniqueId = getUniqueId(lipClass,set.getNameStringWithoutRt(),set.getModificationName(),rt);
                 if (!forSplit.containsKey(uniqueId))
                   toRemove.put(uniqueId, set);
               }
             // if there are no hits to force, all other ones have to be added to the split that are correct
             } else {
-              for (String lipClass : same.keySet()) {
-                LipidParameterSet set = same.get(lipClass);
+              for (String rule : same.keySet()) {
+                String lipClass = rule.substring(0,rule.indexOf("_"));
+                LipidParameterSet set = same.get(rule);
                 uniqueId = getUniqueId(lipClass,set.getNameStringWithoutRt(),set.getModificationName(),rt);
                 if (!toRemove.containsKey(uniqueId))
                   forSplit.put(uniqueId, set);
