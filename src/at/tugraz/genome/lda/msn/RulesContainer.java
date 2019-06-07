@@ -1184,6 +1184,162 @@ public class RulesContainer
 
   
   /**
+   * true when other adducts have to be found to allow for this adduct
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return true when other adducts have to be found to allow for this adduct
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static boolean requiresOtherValidAdduct(String ruleName) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    return requiresOtherValidAdduct(ruleName, currentRulesDir_);
+  }
+
+  
+  /**
+   * true when other adducts have to be found to allow for this adduct
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return true when other adducts have to be found to allow for this adduct
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static boolean requiresOtherValidAdduct(String ruleName, String rulesDir) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    RulesContainer cont = checkIfRuleExists(ruleName,rulesDir);
+    return cont.rules_.get(ruleName).requiresOtherValidAdduct();
+  }
+
+
+  /**
+   * returns the list of required adducts to declare this adduct valid
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return the list of required adducts to declare this adduct valid
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static Vector<String> getOtherRequiredAdducts(String ruleName) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    return getOtherRequiredAdducts(ruleName, currentRulesDir_);
+  }
+
+  
+  /**
+   * the list of required adducts to declare this adduct valid
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return true the list of required adducts to declare this adduct valid
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static Vector<String> getOtherRequiredAdducts(String ruleName, String rulesDir) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    RulesContainer cont = checkIfRuleExists(ruleName,rulesDir);
+    return cont.rules_.get(ruleName).getOtherRequiredAdducts();
+  }
+
+
+  /**
+   * returns true when all of the listed other adducts have to be found
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return true when all of the listed other adducts have to be found
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static boolean areAllOtherAdductsRequired(String ruleName) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    return areAllOtherAdductsRequired(ruleName, currentRulesDir_);
+  }
+
+  
+  /**
+   * returns true when all of the listed other adducts have to be found
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return true when all of the listed other adducts have to be found
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static boolean areAllOtherAdductsRequired(String ruleName, String rulesDir) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    RulesContainer cont = checkIfRuleExists(ruleName,rulesDir);
+    return cont.rules_.get(ruleName).areAllOtherAdductsRequired();
+  }
+  
+
+  /**
+   * returns the time tolerance to detect another adduct
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return time tolerance to detect another adduct
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static float getOtherTimeTolerance(String ruleName) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    return getOtherTimeTolerance(ruleName, currentRulesDir_);
+  }
+
+  
+  /**
+   * returns the time tolerance to detect another adduct
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return time tolerance to detect another adduct
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static float getOtherTimeTolerance(String ruleName, String rulesDir) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    RulesContainer cont = checkIfRuleExists(ruleName,rulesDir);
+    return cont.rules_.get(ruleName).getOtherTimeTolerance();
+  }
+  
+  
+  /**
+   * returns true when other overlapping species have to be removed when other adducts are found
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return true when other overlapping species have to be removed when other adducts are found
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static boolean forceOtherAdductValidity(String ruleName) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    return forceOtherAdductValidity(ruleName, currentRulesDir_);
+  }
+
+  
+  /**
+   * returns true when other overlapping species have to be removed when other adducts are found
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return true when other overlapping species have to be removed when other adducts are found
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static boolean forceOtherAdductValidity(String ruleName, String rulesDir) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    RulesContainer cont = checkIfRuleExists(ruleName,rulesDir);
+    return cont.rules_.get(ruleName).forceOtherAdductValidity();
+  }
+
+
+  
+  /**
    * removes all stored fragmentation rules
    */
   public static void clearCache(){

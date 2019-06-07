@@ -112,6 +112,12 @@ public class FragRuleParser
   private final static String GENERAL_ISOBAR_RATIO = "IsobarSCExclusionRatio";
   private final static String GENERAL_ISOBAR_FAR_RATIO = "IsobarSCFarExclusionRatio";
   private final static String GENERAL_ISOBAR_RT = "IsobarRtDiff";
+  //have other adducts to be found that this adduct is valid
+  private final static String GENERAL_OTHER_ADDUCT_REQUIRED = "ValidOnlyWithOtherAdduct";
+  //the time tolerance the other adducts have to be found
+  private final static String GENERAL_OTHER_ADDUCT_TIME_TOLERANCE = "OtherAdductValidityTolerance";
+  //when other adducts are found, other overlapping species are removed
+  private final static String GENERAL_OTHER_ADDUCT_FORCE = "ForceOtherAdductValidity";
   
   //for sphingolipids
   private final static String GENERAL_LCB_LIB = "LCBLibrary";
@@ -152,6 +158,10 @@ public class FragRuleParser
   private RangeInteger faHydroxyRange_;
   // specifies the range of hydroxylation sites for the lcb chain
   private RangeInteger lcbHydroxyRange_;
+  // have other adducts to be found that this adduct is valid
+  private Vector<String> otherRequiredAdducts_;
+  // have all other adducts to be found, or is one enough
+  private boolean allOtherAdductsHaveToBeFound_;
   
   
   // requires an ElementConfigParser to evaluate the chemical formulas
@@ -262,6 +272,8 @@ public class FragRuleParser
         if (lcbHydroxyRange_==null)
           throw new RulesException("A rule file that has more than one \""+GENERAL_LCBS+"\", must define a \""+GENERAL_LCB_HYDROXY_RANGE+"\"!");
       }
+      if (this.otherRequiredAdducts_!=null && !this.generalSettings_.containsKey(GENERAL_OTHER_ADDUCT_TIME_TOLERANCE))
+        throw new RulesException("A rule file that contains the parameter \""+GENERAL_OTHER_ADDUCT_REQUIRED+"\" must contain the parameter \""+GENERAL_OTHER_ADDUCT_TIME_TOLERANCE+"\"!");
       if (!foundHead_ && !foundChains_) throw new RulesException(NO_HEAD_AND_CHAINS_SECTION);
       if (headFragments_.size()==0 && chainFragments_.size()==0) throw new RulesException("The rules file does not contain any fragments in the "+FRAGMENT_SUBSECTION+"! There must be at least one fragment!");
       checkIfGeneralValuesAreThere();
@@ -282,6 +294,8 @@ public class FragRuleParser
     positionIntensities_ = new Vector<IntensityRuleVO>();
     faHydroxyRange_ = null;
     lcbHydroxyRange_ = null;
+    otherRequiredAdducts_ = null;
+    allOtherAdductsHaveToBeFound_ = false;
   }
   
   /**
@@ -432,6 +446,34 @@ public class FragRuleParser
       } catch (NumberFormatException nfx){
         throw new RulesException("The value of "+GENERAL_ISOBAR_RT+" must be float format; the value \""+value+"\" is not valid! Error at line number "+lineNumber+"!");
       }
+    } else if (key.equalsIgnoreCase(GENERAL_OTHER_ADDUCT_REQUIRED)){
+      otherRequiredAdducts_ = new Vector<String>();
+      allOtherAdductsHaveToBeFound_ = false;
+      String[] adducts = null; 
+      if (value.indexOf(",")!=-1) {
+        allOtherAdductsHaveToBeFound_ = true;
+        adducts = value.split(",");
+      } else if (value.indexOf("|")!=-1) {
+        adducts = value.split("|");
+      } else {
+        adducts = new String[1];
+        adducts[0] = value;
+      }
+      for (String adduct : adducts) {
+        if (adduct.length()>0) otherRequiredAdducts_.add(adduct);
+      }
+    } else if (key.equalsIgnoreCase(GENERAL_OTHER_ADDUCT_TIME_TOLERANCE)){
+      try{
+        float tt = new Float(value);
+        if (tt<0) throw new RulesException("The value of \""+GENERAL_OTHER_ADDUCT_TIME_TOLERANCE+"\" must be greater than 0! Error at line number "+lineNumber+"!");          
+        generalSettings_.put(GENERAL_OTHER_ADDUCT_TIME_TOLERANCE, value);
+      } catch (NumberFormatException nfx){
+        throw new RulesException("The value of "+GENERAL_OTHER_ADDUCT_TIME_TOLERANCE+" must be float format; the value \""+value+"\" is not valid! Error at line number "+lineNumber+"!");
+      }
+    } else if (key.equalsIgnoreCase(GENERAL_OTHER_ADDUCT_FORCE)){
+      boolean forceOtherAdduct = false;
+      if (value!=null && (value.equalsIgnoreCase("true")||value.equalsIgnoreCase("yes"))) forceOtherAdduct = true;
+      generalSettings_.put(GENERAL_OTHER_ADDUCT_FORCE, String.valueOf(forceOtherAdduct));
     } else {
       throw new RulesException("The section "+GENERAL_SECTION_NAME+" does not support the property "+key+"! Error at line number "+lineNumber+"!");
     }
@@ -1322,6 +1364,50 @@ public class FragRuleParser
   }
   
   /**
+   * 
+   * @return true when other adducts have to be found to allow for this adduct
+   */
+  public boolean requiresOtherValidAdduct() {
+    return (this.otherRequiredAdducts_!=null && this.otherRequiredAdducts_.size()>0);
+  }
+  
+  /**
+   * 
+   * @return list of required adducts to declare this adduct valid
+   */
+  public Vector<String> getOtherRequiredAdducts() {
+    return this.otherRequiredAdducts_;
+  }
+  
+  
+  /**
+   * 
+   * @return true when all of the listed other adducts have to be found
+   */
+  public boolean areAllOtherAdductsRequired() {
+    return allOtherAdductsHaveToBeFound_;
+  }
+  
+  
+  /**
+   * 
+   * @return tolerance to detect another adduct
+   */
+  public float getOtherTimeTolerance() {
+    float timeTolerance = 0f;
+    if (generalSettings_.containsKey(GENERAL_OTHER_ADDUCT_TIME_TOLERANCE)) timeTolerance = Float.parseFloat(generalSettings_.get(GENERAL_OTHER_ADDUCT_TIME_TOLERANCE));
+    return timeTolerance;
+  }
+  
+  
+  public boolean forceOtherAdductValidity() {
+    boolean forceOther = false;
+    if (generalSettings_.containsKey(GENERAL_OTHER_ADDUCT_FORCE)) forceOther = Boolean.parseBoolean(generalSettings_.get(GENERAL_OTHER_ADDUCT_FORCE));
+    return forceOther;
+  }
+  
+  
+  /**
    * writes a complete fragmentation ruleset, by providing the necessary parameters
    * @param dir the directory where the rules shall be written
    * @param lipidClass the lipid class the rules affect
@@ -1460,7 +1546,6 @@ public class FragRuleParser
         }
       }
     }
-
   }
   
   /**

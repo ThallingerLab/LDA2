@@ -62,6 +62,7 @@ import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
+import at.tugraz.genome.lda.msn.OtherAdductChecker;
 import at.tugraz.genome.lda.msn.PostQuantificationProcessor;
 import at.tugraz.genome.lda.msn.RulesContainer;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
@@ -1895,6 +1896,15 @@ public class QuantificationThread extends Thread
     }
     if (stopThread){
       if (!error){
+        //check here for results that need other adducts to be correct
+        if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE) {
+          try {
+            results_ = OtherAdductChecker.checkTheResultsForOtherAdducts(results_,unsplittedPeaks_,quantObjects,analyzers_.get(0),classSequence);
+          }
+          catch (CgException | LipidCombinameEncodingException e) {
+            e.printStackTrace();
+          }
+        }
         if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE && LipidomicsConstants.isMS2()){
           PostQuantificationProcessor processor = new PostQuantificationProcessor(results_,ms2Removed_,adductInsensitiveRtFilter);
           try {
