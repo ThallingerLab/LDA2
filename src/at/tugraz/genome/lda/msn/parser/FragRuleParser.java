@@ -453,14 +453,14 @@ public class FragRuleParser
       if (value.indexOf(",")!=-1) {
         allOtherAdductsHaveToBeFound_ = true;
         adducts = value.split(",");
-      } else if (value.indexOf("|")!=-1) {
-        adducts = value.split("|");
+      } else if (value.indexOf('|')!=-1) {
+        adducts = value.split(Pattern.quote("|"));
       } else {
         adducts = new String[1];
         adducts[0] = value;
       }
       for (String adduct : adducts) {
-        if (adduct.length()>0) otherRequiredAdducts_.add(adduct);
+        if (adduct.length()>0) otherRequiredAdducts_.add(adduct.trim());
       }
     } else if (key.equalsIgnoreCase(GENERAL_OTHER_ADDUCT_TIME_TOLERANCE)){
       try{
@@ -1400,6 +1400,10 @@ public class FragRuleParser
   }
   
   
+  /**
+   * 
+   * @return true when the adduct has to be forced
+   */
   public boolean forceOtherAdductValidity() {
     boolean forceOther = false;
     if (generalSettings_.containsKey(GENERAL_OTHER_ADDUCT_FORCE)) forceOther = Boolean.parseBoolean(generalSettings_.get(GENERAL_OTHER_ADDUCT_FORCE));

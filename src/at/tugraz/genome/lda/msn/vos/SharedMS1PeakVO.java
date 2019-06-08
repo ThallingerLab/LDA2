@@ -24,10 +24,12 @@
 package at.tugraz.genome.lda.msn.vos;
 
 import java.util.Hashtable;
+import java.util.Set;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
+import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 
@@ -250,4 +252,21 @@ public class SharedMS1PeakVO
 //    System.out.println(isMuchLower);
     return isMuchLower;
   }
+  
+  /**
+   * checks whether classes/adducts are present in the shared peak instances
+   * @param adducts the adducts to be checked
+   * @return true when classes/adducts are present
+   */
+  public boolean areAnyOfTheseAdductsPresent(Set<String> adducts) {
+    boolean there = false;
+    for (SharedPeakContributionVO contr :  contributions_){
+      if (adducts.contains(StaticUtils.getRuleName(contr.getQuantVO().getAnalyteClass(), contr.getQuantVO().getModName()))) {
+        there = true;
+        break;
+      }
+    }
+    return there;
+  }
+  
 }

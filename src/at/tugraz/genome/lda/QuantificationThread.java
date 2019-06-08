@@ -1916,6 +1916,17 @@ public class QuantificationThread extends Thread
           }
           results_ = reuniteWronglySeparatedPeaks(results_,quantObjects,unsplittedPeaks_);
         }
+        //so that the checkTheResultsForOtherAdducts is really 100% correct, remove all hits that fall below the
+        //base peak cutoff, and execute OtherAdductChecker.checkTheResultsForOtherAdducts again
+        if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE) {
+          try {
+            OtherAdductChecker.removePeaksThatFallBelowTheBasepeakCutoff(results_,extractHighestArea()*(basePeakCutoff/1000f));
+            results_ = OtherAdductChecker.checkTheResultsForOtherAdducts(results_,unsplittedPeaks_,quantObjects,analyzers_.get(0),classSequence);
+          }
+          catch (CgException | LipidCombinameEncodingException e) {
+            e.printStackTrace();
+          }
+        }
         executeFinalProcesses(classSequence,analyteSequence,quantObjects,basePeakCutoff,resultFile,chromFile);
       }
       finished_ = true;

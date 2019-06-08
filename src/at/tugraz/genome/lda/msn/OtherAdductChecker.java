@@ -23,6 +23,7 @@
 package at.tugraz.genome.lda.msn;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.Vector;
@@ -36,6 +37,7 @@ import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.quantification.CgException;
+import at.tugraz.genome.maspectras.quantification.CgProbe;
 
 /**
  * checks the results for other adducts and removes dependent results if they are not present
@@ -67,10 +69,11 @@ public class OtherAdductChecker
       LinkedHashMap<String,Integer> classSequence) throws CgException, LipidCombinameEncodingException{
     
     String ruleName;
-    boolean requiresOtherAdducts = false;
-    Vector<String> otherRequiredAdducts = null;
-    boolean allOtherAdductsRequired = false;
-    float timeTolerance = 0f;
+    Hashtable<String,Boolean> requiresOtherAdducts = new Hashtable<String,Boolean>();
+    Hashtable<String,Vector<String>> otherRequiredAdducts = new Hashtable<String,Vector<String>>();
+    Hashtable<String,Boolean> allOtherAdductsRequired = new Hashtable<String,Boolean>();
+    Hashtable<String,Float> timeTolerance = new Hashtable<String,Float>();
+    boolean requiresOther;
     boolean forceAdductValidity = false;
     String quantId;
     Hashtable<String,LipidParameterSet> correct = new Hashtable<String,LipidParameterSet>();
@@ -78,18 +81,19 @@ public class OtherAdductChecker
     Hashtable<String,String> interestingQuantVOs = new Hashtable<String,String>();
     Hashtable<String,Boolean> affectedMods = new Hashtable<String,Boolean>();
 
+    //build the other adduct requirement hash
     for (String lipidClass : results.keySet()) {
       for (String analyte : results.get(lipidClass).keySet()) {
         for (String mod : results.get(lipidClass).get(analyte).keySet()) {
-          Hashtable<String,LipidParameterSet> sameMod = results.get(lipidClass).get(analyte).get(mod);
-          requiresOtherAdducts = false;
+          requiresOther = false;
           ruleName = StaticUtils.getRuleName(lipidClass,mod);
           try{
             if (RulesContainer.requiresOtherValidAdduct(ruleName)) {
-              requiresOtherAdducts = true;
-              otherRequiredAdducts = RulesContainer.getOtherRequiredAdducts(ruleName);
-              allOtherAdductsRequired = RulesContainer.areAllOtherAdductsRequired(ruleName);
-              timeTolerance = RulesContainer.getOtherTimeTolerance(ruleName);
+              requiresOther = true;
+              requiresOtherAdducts.put(ruleName, requiresOther);
+              otherRequiredAdducts.put(ruleName,RulesContainer.getOtherRequiredAdducts(ruleName));
+              allOtherAdductsRequired.put(ruleName,RulesContainer.areAllOtherAdductsRequired(ruleName));
+              timeTolerance.put(ruleName,RulesContainer.getOtherTimeTolerance(ruleName));
               forceAdductValidity = RulesContainer.forceOtherAdductValidity(ruleName);
               affectedMods.put(ruleName, forceAdductValidity);
             }
@@ -101,14 +105,23 @@ public class OtherAdductChecker
           } catch (SpectrummillParserException e) {
             e.printStackTrace();
           }
-          if (!requiresOtherAdducts)
+        }
+      }  
+    }
+    
+    for (String lipidClass : results.keySet()) {
+      for (String analyte : results.get(lipidClass).keySet()) {
+        for (String mod : results.get(lipidClass).get(analyte).keySet()) {
+          ruleName = StaticUtils.getRuleName(lipidClass,mod);
+          Hashtable<String,LipidParameterSet> sameMod = results.get(lipidClass).get(analyte).get(mod);
+          if (!requiresOtherAdducts.containsKey(ruleName) || requiresOtherAdducts.get(ruleName)==false)
             continue;
           for (String rt : sameMod.keySet()) {
             boolean oneFound = false;
             boolean allFound = true;
-            for (String otherMod : otherRequiredAdducts) {
+            for (String otherMod : otherRequiredAdducts.get(ruleName)) {
               //System.out.println(lipidClass+analyte+"_"+mod+"_"+rt+":  "+otherMod+"-"+isOtherModPresentInResults(lipidClass,analyte,otherMod,rt,timeTolerance,results));
-              if (isOtherModPresentInResults(lipidClass,analyte,otherMod,rt,timeTolerance,results))
+              if (isOtherModPresentInResults(lipidClass,analyte,otherMod,rt,timeTolerance.get(ruleName),results))
                 oneFound = true;
               else
                 allFound = false;
@@ -116,7 +129,7 @@ public class OtherAdductChecker
             quantId = getUniqueId(lipidClass,analyte,mod,"");
             interestingQuantVOs.put(quantId, quantId);
             // the other adducts were found
-            if (oneFound && (!allOtherAdductsRequired || allFound)) 
+            if (oneFound && (!allOtherAdductsRequired.get(ruleName) || allFound)) 
               correct.put(getUniqueId(lipidClass,analyte,mod,rt),sameMod.get(rt));
             // the other adducts were not found
             else
@@ -213,14 +226,20 @@ public class OtherAdductChecker
               hitsWithQuant.get(quant).put(set.getRt(), set);
               peaksBeforeSplit.put(quant, new Hashtable<String,LipidParameterSet>());
             }
-            MSnPeakSeparator separator = new MSnPeakSeparator(hitsWithQuant, peaksBeforeSplit, analyzer,  classSequence.get(lipClass));
+            MSnPeakSeparator separator = new MSnPeakSeparator(hitsWithQuant, peaksBeforeSplit, analyzer,  classSequence.get(lipClass),new HashSet<String>());
             Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> hitsAccordingToQuant = separator.disentagleSharedMS1Peaks();
+            //if the hit was removed in the splitting process, add it for removal here
+            for (QuantVO quant : hitsWithQuant.keySet()) {
+              for (String ret : hitsWithQuant.get(quant).keySet()) {
+                if (!hitsAccordingToQuant.containsKey(quant) || !hitsAccordingToQuant.get(quant).containsKey(ret)) {
+                  toRemove.put(getUniqueId(quant.getAnalyteClass(),quant.getIdString(),quant.getModName(),ret), hitsWithQuant.get(quant).get(ret));
+                }
+              }
+            }
             //replace the unsplitted hits with the splitted ones
-            System.out.println("I am replacing now the unsplitted hits with the splitted ones");
             for (QuantVO quant : hitsAccordingToQuant.keySet()) {
               for (String ret : hitsAccordingToQuant.get(quant).keySet()) {
                 LipidParameterSet set = hitsAccordingToQuant.get(quant).get(ret);
-                System.out.println("1");
                 results.get(quant.getAnalyteClass()).get(quant.getIdString()).get(set.getModificationName()).put(ret, set);
               }
             }
@@ -343,6 +362,36 @@ public class OtherAdductChecker
       }
     }
     return params;
+  }
+  
+  
+  /**
+   * removes peaks that fall below the base peak cutoff
+   * @param results the results where lower entities shall be removed
+   * @param threshold the threshold for the removal
+   */
+  public static void removePeaksThatFallBelowTheBasepeakCutoff(Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>> results , float threshold) {
+    Hashtable<String,LipidParameterSet> toRemove = new Hashtable<String,LipidParameterSet>();
+    for (String anClass : results.keySet()) {
+      for (String analyte : results.get(anClass).keySet()) {
+        for (String mod : results.get(anClass).get(analyte).keySet()) {
+          for (String rt : results.get(anClass).get(analyte).get(mod).keySet()) {
+            LipidParameterSet set = results.get(anClass).get(analyte).get(mod).get(rt);
+            boolean oneOk = false;
+            for (CgProbe probe : set.getIsotopicProbes().get(0)){
+              if (probe.Area>threshold)
+                oneOk = true;
+            }
+            if (!oneOk)
+              toRemove.put(getUniqueId(anClass,analyte,mod,rt),set);
+          }
+        }
+      }
+    }
+    for (String id : toRemove.keySet()) {
+      Vector<String> params = getParamsFromId(id);
+      results.get(params.get(0)).get(params.get(1)).get(params.get(2)).remove(params.get(3));
+    }
   }
   
 }

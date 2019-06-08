@@ -25,6 +25,7 @@ package at.tugraz.genome.lda.msn;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Hashtable;
+import java.util.Set;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
@@ -56,9 +57,11 @@ public class MSnPeakSeparator
   /** object that holds MS data and can quantify fragments of interest*/
   private LipidomicsAnalyzer analyzer_;
   /** MS level of the quantitation*/
-  int msLevel_;
+  private int msLevel_;
   /** if a peak split has to be removed because a split partner has a wrong retention time, the unsplit peak version is stored*/
   private Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> peaksBeforeSplit_;
+  /** adducts where other adducts are required - have to be excluded from separating*/
+  private Set<String> adductsThatRequireOtherAdduct_;
 
   
   /**
@@ -66,13 +69,19 @@ public class MSnPeakSeparator
    * @param hitsAccordingToQuant hash table containing the peaks to split
    * @param analyzer object that holds MS data and can quantify fragments of interest
    * @param msLevel MS level of the quantitation errors from the quantitation process
+   * @param adductsThatRequireOtherAdduct class/adduct combinations that are in this list exclude a split
    */
   public MSnPeakSeparator(Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> hitsAccordingToQuant, 
-      Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> peaksBeforeSplit, LipidomicsAnalyzer analyzer, int msLevel) {
-    this.result_ = new Hashtable<QuantVO,Hashtable<String,LipidParameterSet>>(hitsAccordingToQuant);
+      Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> peaksBeforeSplit, LipidomicsAnalyzer analyzer, int msLevel,
+      Set<String> adductsThatRequireOtherAdduct) {
+    this.result_ = new Hashtable<QuantVO,Hashtable<String,LipidParameterSet>>();;
+    for (QuantVO quant : hitsAccordingToQuant.keySet()) {
+      this.result_.put(quant, new Hashtable<String,LipidParameterSet>(hitsAccordingToQuant.get(quant)));
+    }
     this.analyzer_ = analyzer;
     this.msLevel_ = msLevel;
     peaksBeforeSplit_ = peaksBeforeSplit;
+    adductsThatRequireOtherAdduct_ = adductsThatRequireOtherAdduct;
   }
   
   /**
@@ -89,6 +98,18 @@ public class MSnPeakSeparator
     //first detect which peaks are shared by different lipid classes
     Vector<SharedMS1PeakVO> sharedPeaks = detectSharedMS1PeakInstances(result_);
     Vector<Integer> sharedToRemove = new Vector<Integer>();
+    //remove the ones where other adducts are required -> do not disentangle these ones
+    for (int i=0; i!=sharedPeaks.size();i++){
+      SharedMS1PeakVO shared = sharedPeaks.get(i);
+      if (shared.areAnyOfTheseAdductsPresent(adductsThatRequireOtherAdduct_)) {
+        sharedToRemove.add(i);
+      }
+    }
+    for (int i=(sharedToRemove.size()-1);i!=-1;i--){
+      sharedPeaks.remove(sharedToRemove.get(i).intValue());
+    }
+    
+    sharedToRemove = new Vector<Integer>();
 //    System.out.println(sharedPeaks.size());
     for (int i=0; i!=sharedPeaks.size();i++){
       SharedMS1PeakVO shared = sharedPeaks.get(i);

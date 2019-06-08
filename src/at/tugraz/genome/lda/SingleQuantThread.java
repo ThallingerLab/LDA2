@@ -366,11 +366,13 @@ public class SingleQuantThread extends Thread
     
     // this is for detection of peaks that are shared by different lipid classes
     if (quantVOs.size()>1){
-      boolean areHitsPresentThatRelyOnOtherAdducts = false;
+      Set<String> adductsThatRequireOtherAdducts = new HashSet<String>();
+      String rule;
       for (QuantVO quant : hitsAccordingToQuant.keySet()) {
         try{
-          if (RulesContainer.requiresOtherValidAdduct(StaticUtils.getRuleName(quant.getAnalyteClass(),quant.getModName())))
-            areHitsPresentThatRelyOnOtherAdducts = true;
+          rule = StaticUtils.getRuleName(quant.getAnalyteClass(),quant.getModName());
+          if (RulesContainer.requiresOtherValidAdduct(rule))
+            adductsThatRequireOtherAdducts.add(rule);
         } catch(NoRuleException nrx){
         } catch (RulesException e) {
           e.printStackTrace();
@@ -382,10 +384,10 @@ public class SingleQuantThread extends Thread
       }
       //System.out.println("areHitsPresentThatRelyOnOtherAdducts: "+areHitsPresentThatRelyOnOtherAdducts);
       //this has to be done for hits where there are other adducts need to be detected - they have to be entagled later on
-      if (!areHitsPresentThatRelyOnOtherAdducts) {
-        MSnPeakSeparator separator = new MSnPeakSeparator(hitsAccordingToQuant, peaksBeforeSplit_, analyzer, msLevel);
-        hitsAccordingToQuant = separator.disentagleSharedMS1Peaks();
-      }
+//      if (!areHitsPresentThatRelyOnOtherAdducts) {
+      MSnPeakSeparator separator = new MSnPeakSeparator(hitsAccordingToQuant, peaksBeforeSplit_, analyzer, msLevel, adductsThatRequireOtherAdducts);
+      hitsAccordingToQuant = separator.disentagleSharedMS1Peaks();
+//      }
     }
     
     for (QuantVO oneSet : hitsAccordingToQuant.keySet()){
