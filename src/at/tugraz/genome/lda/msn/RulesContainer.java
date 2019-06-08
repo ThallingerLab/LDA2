@@ -1337,7 +1337,37 @@ public class RulesContainer
     return cont.rules_.get(ruleName).forceOtherAdductValidity();
   }
 
+  
+  /**
+   * returns true when a selection between two equally matching adducts has to be made based on retention time
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return true when other overlapping species have to be removed when other adducts are found
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static boolean choseMoreLikelyRtWhenEqualMSn(String ruleName) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    return choseMoreLikelyRtWhenEqualMSn(ruleName, currentRulesDir_);
+  }
 
+  
+  /**
+   * returns true when a selection between two equally matching adducts has to be made based on retention time
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return true when other overlapping species have to be removed when other adducts are found
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static boolean choseMoreLikelyRtWhenEqualMSn(String ruleName, String rulesDir) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    RulesContainer cont = checkIfRuleExists(ruleName,rulesDir);
+    return cont.rules_.get(ruleName).choseMoreLikelyRtWhenEqualMSn();
+  }
+  
   
   /**
    * removes all stored fragmentation rules
@@ -1350,6 +1380,5 @@ public class RulesContainer
     if (instances_!=null && instances_.containsKey(rulesDir))
       instances_.remove(rulesDir);
   }
-
   
 }

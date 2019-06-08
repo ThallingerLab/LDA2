@@ -23,14 +23,19 @@
 
 package at.tugraz.genome.lda.msn.vos;
 
+import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Set;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.exception.NoRuleException;
+import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
+import at.tugraz.genome.lda.msn.RulesContainer;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.QuantVO;
+import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 
 /**
@@ -269,4 +274,25 @@ public class SharedMS1PeakVO
     return there;
   }
   
+  /**
+   * 
+   * @return true if there is a contributing species that contains distinct fragments
+   */
+  public boolean haveAllChooseOnRtSetToTrue(){
+    boolean allTrue = contributions_.size()>1;
+    //for testing
+    for (SharedPeakContributionVO contr :  contributions_){      
+      try {
+        if (!RulesContainer.choseMoreLikelyRtWhenEqualMSn(StaticUtils.getRuleName(contr.getQuantVO().getAnalyteClass(),contr.getQuantVO().getModName()))) {
+          allTrue = false;
+          break;
+        }
+      }
+      catch (RulesException | NoRuleException | IOException
+          | SpectrummillParserException e) {
+        allTrue=false;
+      }
+    }
+    return allTrue;
+  }
 }

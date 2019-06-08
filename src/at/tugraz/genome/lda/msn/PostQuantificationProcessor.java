@@ -26,8 +26,10 @@ package at.tugraz.genome.lda.msn;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Set;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,6 +39,8 @@ import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.parser.FragRuleParser;
 import at.tugraz.genome.lda.msn.vos.RtPredictVO;
+import at.tugraz.genome.lda.msn.vos.SharedMS1PeakVO;
+import at.tugraz.genome.lda.msn.vos.SharedPeakContributionVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.utils.LMAsymptDecayTwoVariables;
 import at.tugraz.genome.lda.utils.LMAsymptVarDecayTwoVariables;
@@ -67,7 +71,8 @@ public class PostQuantificationProcessor
   
   private final static int MINIMUM_MEASUREMENTS = 7;
   private final static float COUNTER_SERIES_TOLERANCE = 3f;
-  
+  /** the predicted models - key class name or rule name, depending on adduct insensitive filter*/
+  private Hashtable<String,LevenbergMarquardtOptimizer> predictedModels_;
   
   /**
    * constructor requiring the analytes that have to be filtered and the ones for the negative filter (the ones for the negative filter may be empty)
@@ -79,6 +84,7 @@ public class PostQuantificationProcessor
     results_ = results;
     ms2Removed_ = ms2Removed;
     adductInsensitiveRtFilter_ = adductInsensitiveRtFilter;
+    predictedModels_ = new Hashtable<String,LevenbergMarquardtOptimizer>();
   }
   
   /**
@@ -272,7 +278,7 @@ public class PostQuantificationProcessor
         }
         float minDev = extractMinimumAcceptedDeviationValue(className,resultsModIgnored);
         try {
-          resultsModIgnored = filterRetentionTimeSeries(className,anyValidRuleName,resultsModIgnored,negatives,maxDev,minDev);
+          resultsModIgnored = filterRetentionTimeSeries(className,anyValidRuleName,resultsModIgnored,negatives,maxDev,minDev,true);
         }
         catch (LMException e) {
           System.out.println("Warning: "+className+" was not RT filtered: "+e.getMessage());
@@ -305,7 +311,7 @@ public class PostQuantificationProcessor
             float maxDev = -1f;
             if (RulesContainer.getRetentionTimeMaxDeviation(ruleName)!=null) maxDev = new Float(RulesContainer.getRetentionTimeMaxDeviation(ruleName));
             float minDev = extractMinimumAcceptedDeviationValue(className,postProcessData.get(className).get(mod));
-            result = filterRetentionTimeSeries(className,ruleName,postProcessData.get(className).get(mod),negatives,maxDev,minDev);
+            result = filterRetentionTimeSeries(className,ruleName,postProcessData.get(className).get(mod),negatives,maxDev,minDev,false);
           }
           catch (LMException e) {
             System.out.println("Warning: "+className+"_"+mod+" was not RT filtered: "+e.getMessage());
@@ -422,6 +428,7 @@ public class PostQuantificationProcessor
    * @param unprocessed the unprocessed analytes 
    * @param negatives hits removed by MSn - useable for counter curve
    * @param maxDev maximally allowed deviation from the model
+   * @param adductInsensitive was adduct insensitive processing chosen
    * @return hits that pass the filter
    * @throws RulesException specifies in detail which rule has been infringed
    * @throws NoRuleException thrown if the library is not there
@@ -430,7 +437,7 @@ public class PostQuantificationProcessor
    * @throws LMException exception if model adaption is not possible
    */
   private Hashtable<String,Hashtable<String,LipidParameterSet>> filterRetentionTimeSeries(String className, String ruleName, Hashtable<String,Hashtable<String,LipidParameterSet>> unprocessed,
-      Hashtable<String,Hashtable<String,LipidParameterSet>> negatives, float maxDev, float minDev) throws RulesException, NoRuleException, IOException, SpectrummillParserException, LMException{
+      Hashtable<String,Hashtable<String,LipidParameterSet>> negatives, float maxDev, float minDev, boolean adductInsensitive) throws RulesException, NoRuleException, IOException, SpectrummillParserException, LMException{
     // find the MSn identifications and group them according to their # C atoms and # double bonds
     Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> paramsOrdered = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>>();
     Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> unprocessedOrdered = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>>();
@@ -447,6 +454,10 @@ public class PostQuantificationProcessor
     @SuppressWarnings("rawtypes")
     Vector results = doIterativeLMOptimization(unprocessedOrdered,paramsOrdered,cAtomsRange,dbsRanges,negativesOrdered,tolerance,maxDev);
     LevenbergMarquardtOptimizer optimizer = (LevenbergMarquardtOptimizer)results.get(0);
+    if (adductInsensitive)
+      predictedModels_.put(className, optimizer);
+    else 
+      predictedModels_.put(ruleName, optimizer);
     LevenbergMarquardtOptimizer counterModel = (LevenbergMarquardtOptimizer)results.get(1);
     @SuppressWarnings("unchecked")
     Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> foundNegatives = (Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>>)results.get(2);
@@ -1157,5 +1168,101 @@ public class PostQuantificationProcessor
     float minDev = 0f;
     if (peakWidths.size()>0) minDev = Calculator.median(peakWidths)/(2f);
     return minDev;
+  }
+  
+  
+  /**
+   * makes a selection between two equally matching adducts based on retention time
+   * @param quantObjects the original quantitation instructions that were read from the Excel file
+   * @return results after the selection was made
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the library is not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   * @throws LMException exception if model adaption is not possible - should not be thrown, since only predicted models are used
+   */
+  public Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>> chooseMoreLikelyOne(Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects) throws RulesException, NoRuleException, IOException, SpectrummillParserException, LMException {
+    Set<String> affectedClasses = new HashSet<String>();
+    Set<String> affectedMods = new HashSet<String>();
+    Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> undecidedHits = new Hashtable<QuantVO,Hashtable<String,LipidParameterSet>>();
+    Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>> unprocessed = new Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>>();
+    for (String aClass : this.results_.keySet()) {
+      for (String anal : this.results_.get(aClass).keySet()) {
+        for (String mod : this.results_.get(aClass).get(anal).keySet()) {
+          for (String rt : this.results_.get(aClass).get(anal).get(mod).keySet()) {
+            LipidParameterSet set = this.results_.get(aClass).get(anal).get(mod).get(rt);
+            if (set.isChoseMoreLikelyRtWhenEqualMSn()) {
+              affectedClasses.add(aClass);
+              affectedMods.add(StaticUtils.getRuleName(aClass, set.getModificationName()));
+              QuantVO quant = quantObjects.get(aClass).get(anal).get(mod);
+              if (!undecidedHits.containsKey(quant))
+                undecidedHits.put(quant, new Hashtable<String,LipidParameterSet>());
+              undecidedHits.get(quant).put(rt, set);
+            }
+          }
+        }
+      }
+    }
+    for (String aClass : this.results_.keySet()) {
+      if (affectedClasses.contains(aClass))
+        unprocessed.put(aClass, this.results_.get(aClass));
+    }
+    correctByRetentionTimeSeries(unprocessed,ms2Removed_,adductInsensitiveRtFilter_);
+    Vector<SharedMS1PeakVO> sharedPeaks = MSnPeakSeparator.detectSharedMS1PeakInstances(undecidedHits);
+    float[] cAndDbs = new float[2];
+    Hashtable<String,LipidParameterSet> toRemove = new Hashtable<String,LipidParameterSet>();
+    String idi;
+    for (SharedMS1PeakVO shared : sharedPeaks) {
+      if (shared.getPartners().size()<2 || shared.hasAnyPartnerDistinctFragments() || !shared.haveAllChooseOnRtSetToTrue())
+        continue;
+      boolean forAllModelsFound = true;
+      float smallestDiff = Float.MAX_VALUE;
+      String correct = null;
+      for (SharedPeakContributionVO contr : shared.getPartners()) {
+        LevenbergMarquardtOptimizer predictedModel = null;
+        String ruleName = StaticUtils.getRuleName(contr.getQuantVO().getAnalyteClass(),contr.getQuantVO().getModName());
+        if (adductInsensitiveRtFilter_.get(contr.getQuantVO().getAnalyteClass())) {
+          if (predictedModels_.containsKey(contr.getQuantVO().getAnalyteClass()))
+            predictedModel = predictedModels_.get(contr.getQuantVO().getAnalyteClass());
+        }else {
+          if (predictedModels_.containsKey(ruleName))
+            predictedModel = predictedModels_.get(ruleName);
+        }
+        if (predictedModel==null) {
+          forAllModelsFound = false;
+          break;
+        }
+        Pattern cAtomsPattern =  Pattern.compile(RulesContainer.getCAtomsFromNamePattern(ruleName));
+        Pattern dbsPattern =  Pattern.compile(RulesContainer.getDoubleBondsFromNamePattern(ruleName));
+        Matcher cAtomsMatcher = cAtomsPattern.matcher(contr.getQuantVO().getIdString());
+        if (!cAtomsMatcher.matches()) throw new RulesException("The analyte "+contr.getQuantVO().getIdString()+" does not match the "+FragRuleParser.GENERAL_CATOMS_PARSE+" pattern \""+RulesContainer.getCAtomsFromNamePattern(ruleName)+"\" of the class "+ruleName+"!");
+        int cAtoms = Integer.parseInt(cAtomsMatcher.group(1));
+        Matcher dbsMatcher = dbsPattern.matcher(contr.getQuantVO().getIdString());
+        if (!dbsMatcher.matches()) throw new RulesException("The analyte "+contr.getQuantVO().getIdString()+" does not match the "+FragRuleParser.GENERAL_DBOND_PARSE+" pattern \""+RulesContainer.getDoubleBondsFromNamePattern(ruleName)+"\" of the class "+ruleName+"!");
+        int dbs = Integer.parseInt(dbsMatcher.group(1));
+        cAndDbs[0] = cAtoms;
+        cAndDbs[1] = dbs;
+        float fitRt = predictedModel.calculateFitValue(cAndDbs);
+        float rt = Float.parseFloat(contr.getSet().getRt());
+        float rtDiff = Math.abs(rt-fitRt);
+        if (rtDiff<smallestDiff) {
+          correct = OtherAdductChecker.getUniqueId(contr.getQuantVO().getAnalyteClass(), contr.getQuantVO().getIdString(), contr.getQuantVO().getModName(), contr.getSet().getRt());
+        }
+      }
+      if (!forAllModelsFound)
+        continue;
+      for (SharedPeakContributionVO contr : shared.getPartners()) {
+        idi = OtherAdductChecker.getUniqueId(contr.getQuantVO().getAnalyteClass(), contr.getQuantVO().getIdString(), contr.getQuantVO().getModName(), contr.getSet().getRt());
+        if (!correct.equalsIgnoreCase(idi))
+          toRemove.put(idi, contr.getSet());
+        else
+          contr.getSet().setPercentalSplit(100f);
+      }
+    }
+    for (String id : toRemove.keySet()) {
+      Vector<String> params = OtherAdductChecker.getParamsFromId(id);
+      results_.get(params.get(0)).get(params.get(1)).get(params.get(2)).remove(params.get(3));
+    }
+    return results_;
   }
 }

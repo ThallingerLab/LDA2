@@ -65,6 +65,8 @@ public class LipidParameterSet extends CgParameterSet
   private float upperRtHardLimit_;
   /** if there is a split according to MSn intensities - a percentage of the usable peak intensity is stored*/
   private float percentalSplit_;
+  /** if there is no distinct fragment, this is activated to choose the correct one based on the retention time when a parameter is set in the rules*/
+  private boolean choseMoreLikelyRtWhenEqualMSn_;
   
   /**
    * for creating a clone of a previous LipidParameterSet
@@ -171,6 +173,7 @@ public class LipidParameterSet extends CgParameterSet
     this.upperRtHardLimit_ = -1f;
     this.percentalSplit_ = -1;
     this.ohNumber_ = ohNumber;
+    this.choseMoreLikelyRtWhenEqualMSn_ = false;
   }
   
   public String getNameString(){
@@ -421,5 +424,26 @@ public class LipidParameterSet extends CgParameterSet
   public boolean isSuitableForRtProcessingHit(String className) throws RulesException, NoRuleException, IOException, SpectrummillParserException{
     return ((this instanceof LipidomicsMSnSet) && this.lowerRtHardLimit_<0f && this.upperRtHardLimit_<0f && this.percentalSplit_<0f && RulesContainer.isRtPostprocessing(StaticUtils.getRuleName(className,modificationName_)));
   }
+
+  
+  /**
+   * 
+   * @return true when a selection between two equally matching adducts has to be made based on retention time
+   */
+  public boolean isChoseMoreLikelyRtWhenEqualMSn()
+  {
+    return choseMoreLikelyRtWhenEqualMSn_;
+  }
+
+  /**
+   * sets whether a selection between two equally matching adducts has to be made based on retention time
+   * @param choseMoreLikelyRtWhenEqualMSn whether a selection between two equally matching adducts has to be made based on retention time
+   */
+  public void setChoseMoreLikelyRtWhenEqualMSn(boolean choseMoreLikelyRtWhenEqualMSn)
+  {
+    this.choseMoreLikelyRtWhenEqualMSn_ = choseMoreLikelyRtWhenEqualMSn;
+  }
+  
+  
   
 }

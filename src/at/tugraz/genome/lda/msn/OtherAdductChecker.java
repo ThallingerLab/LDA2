@@ -306,7 +306,7 @@ public class OtherAdductChecker
    * @param rt string representation of the retention time
    * @return unique id as key for hash tables consisting of the method parameters
    */
-  private static String getUniqueId(String lClass, String anal, String mod, String rt) {
+  public static String getUniqueId(String lClass, String anal, String mod, String rt) {
     return lClass+SEP+anal+SEP+mod+SEP+rt;
   }
   
@@ -349,7 +349,7 @@ public class OtherAdductChecker
    * @param id the unique id that was used for the hash tables
    * @return the individual parameters get(0): lipid class; get(1): analyte name; get(2): modification name; get(3): retention time
    */
-  private static Vector<String> getParamsFromId(String id){
+  public static Vector<String> getParamsFromId(String id){
     Vector<String> params = new Vector<String>();
     String rest = new String(id);
     while (rest.length()>0) {

@@ -118,6 +118,10 @@ public class FragRuleParser
   private final static String GENERAL_OTHER_ADDUCT_TIME_TOLERANCE = "OtherAdductValidityTolerance";
   //when other adducts are found, other overlapping species are removed
   private final static String GENERAL_OTHER_ADDUCT_FORCE = "ForceOtherAdductValidity";
+  //when a selection between two equally matching adducts has to be made based on retention time
+  private final static String GENERAL_CHOOSE_MORE_LIKELY_RT_WHEN_EQUAL = "ChooseMoreLikelyRtWhenOtherAdductEqual";
+
+  
   
   //for sphingolipids
   private final static String GENERAL_LCB_LIB = "LCBLibrary";
@@ -474,6 +478,10 @@ public class FragRuleParser
       boolean forceOtherAdduct = false;
       if (value!=null && (value.equalsIgnoreCase("true")||value.equalsIgnoreCase("yes"))) forceOtherAdduct = true;
       generalSettings_.put(GENERAL_OTHER_ADDUCT_FORCE, String.valueOf(forceOtherAdduct));
+    } else if (key.equalsIgnoreCase(GENERAL_CHOOSE_MORE_LIKELY_RT_WHEN_EQUAL)){
+      boolean forceOtherAdduct = false;
+      if (value!=null && (value.equalsIgnoreCase("true")||value.equalsIgnoreCase("yes"))) forceOtherAdduct = true;
+      generalSettings_.put(GENERAL_CHOOSE_MORE_LIKELY_RT_WHEN_EQUAL, String.valueOf(forceOtherAdduct));
     } else {
       throw new RulesException("The section "+GENERAL_SECTION_NAME+" does not support the property "+key+"! Error at line number "+lineNumber+"!");
     }
@@ -1409,7 +1417,18 @@ public class FragRuleParser
     if (generalSettings_.containsKey(GENERAL_OTHER_ADDUCT_FORCE)) forceOther = Boolean.parseBoolean(generalSettings_.get(GENERAL_OTHER_ADDUCT_FORCE));
     return forceOther;
   }
+
   
+  /**
+   * 
+   * @return true when a selection between two equally matching adducts has to be made based on retention time
+   */
+  public boolean choseMoreLikelyRtWhenEqualMSn() {
+    boolean forceOther = false;
+    if (generalSettings_.containsKey(GENERAL_CHOOSE_MORE_LIKELY_RT_WHEN_EQUAL)) forceOther = Boolean.parseBoolean(generalSettings_.get(GENERAL_CHOOSE_MORE_LIKELY_RT_WHEN_EQUAL));
+    return forceOther;
+  }
+
   
   /**
    * writes a complete fragmentation ruleset, by providing the necessary parameters

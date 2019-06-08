@@ -1908,6 +1908,13 @@ public class QuantificationThread extends Thread
         if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE && LipidomicsConstants.isMS2()){
           PostQuantificationProcessor processor = new PostQuantificationProcessor(results_,ms2Removed_,adductInsensitiveRtFilter);
           try {
+            results_ = processor.chooseMoreLikelyOne(quantObjects);
+          }
+          catch (Exception e) {
+            e.printStackTrace();
+            new WarningMessage(new JFrame(), "Warning","Choose more likely one could not be executed because of: "+e.getMessage()+"!");
+          }
+          try {
             results_ = processor.processData();
           }
           catch (Exception e) {

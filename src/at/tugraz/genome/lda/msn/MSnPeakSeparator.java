@@ -135,8 +135,12 @@ public class MSnPeakSeparator
         }
       }
       if (!shared.hasAnyPartnerDistinctFragments()) {
+        boolean chooseOneByRt = shared.haveAllChooseOnRtSetToTrue();
         for (SharedPeakContributionVO contr : shared.getPartners()){
           contr.getSet().setPercentalSplit(100f);
+          if (chooseOneByRt) {
+            contr.getSet().setChoseMoreLikelyRtWhenEqualMSn(true);
+          }
         }
         sharedToRemove.add(i);
         if (shared.getPartners().size()>0) checkIfAllPartnerFragmentsFulfillSpectrumCoverage(shared,result_,analyzer_);
@@ -395,7 +399,7 @@ public class MSnPeakSeparator
    * @return Vector of SharedMS1PeakVO which are peaks that match to more than one analyte, and contain SharedPeakContributionVO
    *         which hold the QuantVO, the LipidParameterSet, and information about distinct fragments
    */
-  private Vector<SharedMS1PeakVO> detectSharedMS1PeakInstances(Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> hitsAccordingToQuant){
+  public static Vector<SharedMS1PeakVO> detectSharedMS1PeakInstances(Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> hitsAccordingToQuant){
     Vector<SharedMS1PeakVO> sharedPeaks = new Vector<SharedMS1PeakVO>();
     Vector<QuantVO> quants = new Vector<QuantVO>(hitsAccordingToQuant.keySet());
     Hashtable<Integer,Hashtable<String,String>> alreadyAdded = new Hashtable<Integer,Hashtable<String,String>>();
