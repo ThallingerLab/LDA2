@@ -42,8 +42,11 @@ import at.tugraz.genome.lda.msn.vos.RtPredictVO;
 import at.tugraz.genome.lda.msn.vos.SharedMS1PeakVO;
 import at.tugraz.genome.lda.msn.vos.SharedPeakContributionVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
+import at.tugraz.genome.lda.utils.LMAsymptDecayThreeVariables;
 import at.tugraz.genome.lda.utils.LMAsymptDecayTwoVariables;
+import at.tugraz.genome.lda.utils.LMAsymptVarDecayThreeVariables;
 import at.tugraz.genome.lda.utils.LMAsymptVarDecayTwoVariables;
+import at.tugraz.genome.lda.utils.LMLogDecayThreeVariables;
 import at.tugraz.genome.lda.utils.LMLogDecayTwoVariables;
 import at.tugraz.genome.lda.utils.RangeInteger;
 import at.tugraz.genome.lda.utils.LevenbergMarquardtOptimizer;
@@ -73,6 +76,9 @@ public class PostQuantificationProcessor
   private final static float COUNTER_SERIES_TOLERANCE = 3f;
   /** the predicted models - key class name or rule name, depending on adduct insensitive filter*/
   private Hashtable<String,LevenbergMarquardtOptimizer> predictedModels_;
+  /** does the predicted model respect OH*/
+  private Hashtable<String,Boolean> respectOhs_;
+  
   
   /**
    * constructor requiring the analytes that have to be filtered and the ones for the negative filter (the ones for the negative filter may be empty)
@@ -85,6 +91,7 @@ public class PostQuantificationProcessor
     ms2Removed_ = ms2Removed;
     adductInsensitiveRtFilter_ = adductInsensitiveRtFilter;
     predictedModels_ = new Hashtable<String,LevenbergMarquardtOptimizer>();
+    respectOhs_ = new Hashtable<String,Boolean>();
   }
   
   /**
@@ -145,8 +152,21 @@ public class PostQuantificationProcessor
           float maxDev = -1f;
           if (RulesContainer.getRetentionTimeMaxDeviation(ruleName)!=null) maxDev = new Float(RulesContainer.getRetentionTimeMaxDeviation(ruleName));
           
+          //this is for oh
+          boolean diffOh = false;
+          int oh = -1;
+          for (Hashtable<Integer,Hashtable<String,LipidParameterSet>> sameC : paramsOrdered.values()){
+            for (Hashtable<String,LipidParameterSet> sameDbs : sameC.values()) {
+              for (LipidParameterSet set : sameDbs.values()) {
+                if (oh==-1)
+                  oh = set.getOhNumber();
+                else if (oh!=set.getOhNumber())
+                  diffOh = true;
+              }
+            }
+          }
           @SuppressWarnings("rawtypes")
-          Vector resultsLM = doIterativeLMOptimization(paramsOrdered,paramsOrdered,cAtomsRange,dbsRanges,negativesOrdered,tolerance,maxDev);
+          Vector resultsLM = doIterativeLMOptimization(paramsOrdered,paramsOrdered,cAtomsRange,dbsRanges,negativesOrdered,tolerance,maxDev,diffOh);
           LevenbergMarquardtOptimizer optimizer = (LevenbergMarquardtOptimizer)resultsLM.get(0);
           LevenbergMarquardtOptimizer counterModel = (LevenbergMarquardtOptimizer)resultsLM.get(1);
                     
@@ -234,6 +254,8 @@ public class PostQuantificationProcessor
     // start post processing for every class mod combination
     for (String className : postProcessData.keySet()){
       if (adductInsensitiveRtFilter_.get(className)){
+        boolean diffOh = false;
+        int oh = -1;
         Hashtable<String,Hashtable<String,LipidParameterSet>> resultsModIgnored = new Hashtable<String,Hashtable<String,LipidParameterSet>>();
         Hashtable<String,Hashtable<String,LipidParameterSet>> negatives = new Hashtable<String,Hashtable<String,LipidParameterSet>>();
         String anyValidRuleName = null;
@@ -260,6 +282,12 @@ public class PostQuantificationProcessor
                 while (sameAnalyte.containsKey(rt+"_"+count)) count++;
                 sameAnalyte.put(rt+"_"+String.valueOf(count), analytes.get(analyteName).get(rt));
               } else sameAnalyte.put(rt, analytes.get(analyteName).get(rt));
+              
+              //for oh
+              if (oh==-1)
+                oh = analytes.get(analyteName).get(rt).getOhNumber();
+              else if (oh!=analytes.get(analyteName).get(rt).getOhNumber())
+                diffOh = true;
             }
             resultsModIgnored.put(analyteName,sameAnalyte);
           }
@@ -278,7 +306,7 @@ public class PostQuantificationProcessor
         }
         float minDev = extractMinimumAcceptedDeviationValue(className,resultsModIgnored);
         try {
-          resultsModIgnored = filterRetentionTimeSeries(className,anyValidRuleName,resultsModIgnored,negatives,maxDev,minDev,true);
+          resultsModIgnored = filterRetentionTimeSeries(className,anyValidRuleName,resultsModIgnored,negatives,maxDev,minDev,true,diffOh);
         }
         catch (LMException e) {
           System.out.println("Warning: "+className+" was not RT filtered: "+e.getMessage());
@@ -307,11 +335,22 @@ public class PostQuantificationProcessor
           if (negativeExamples.containsKey(className) && negativeExamples.get(className).containsKey(mod)) negatives = negativeExamples.get(className).get(mod);
           String ruleName = StaticUtils.getRuleName(className, mod);
           Hashtable<String,Hashtable<String,LipidParameterSet>> result = postProcessData.get(className).get(mod);
+          //this is for oh
+          boolean diffOh = false;
+          int oh = -1;
+          for (Hashtable<String,LipidParameterSet> sameAnalyte : result.values()){
+            for (LipidParameterSet set : sameAnalyte.values()) {
+              if (oh==-1)
+                oh = set.getOhNumber();
+              else if (oh!=set.getOhNumber())
+                diffOh = true;
+           }
+          }
           try {
             float maxDev = -1f;
             if (RulesContainer.getRetentionTimeMaxDeviation(ruleName)!=null) maxDev = new Float(RulesContainer.getRetentionTimeMaxDeviation(ruleName));
             float minDev = extractMinimumAcceptedDeviationValue(className,postProcessData.get(className).get(mod));
-            result = filterRetentionTimeSeries(className,ruleName,postProcessData.get(className).get(mod),negatives,maxDev,minDev,false);
+            result = filterRetentionTimeSeries(className,ruleName,postProcessData.get(className).get(mod),negatives,maxDev,minDev,false,diffOh);
           }
           catch (LMException e) {
             System.out.println("Warning: "+className+"_"+mod+" was not RT filtered: "+e.getMessage());
@@ -429,6 +468,7 @@ public class PostQuantificationProcessor
    * @param negatives hits removed by MSn - useable for counter curve
    * @param maxDev maximally allowed deviation from the model
    * @param adductInsensitive was adduct insensitive processing chosen
+   * @param respectOh has the OH to be fitted too
    * @return hits that pass the filter
    * @throws RulesException specifies in detail which rule has been infringed
    * @throws NoRuleException thrown if the library is not there
@@ -437,7 +477,7 @@ public class PostQuantificationProcessor
    * @throws LMException exception if model adaption is not possible
    */
   private Hashtable<String,Hashtable<String,LipidParameterSet>> filterRetentionTimeSeries(String className, String ruleName, Hashtable<String,Hashtable<String,LipidParameterSet>> unprocessed,
-      Hashtable<String,Hashtable<String,LipidParameterSet>> negatives, float maxDev, float minDev, boolean adductInsensitive) throws RulesException, NoRuleException, IOException, SpectrummillParserException, LMException{
+      Hashtable<String,Hashtable<String,LipidParameterSet>> negatives, float maxDev, float minDev, boolean adductInsensitive, boolean respectOh) throws RulesException, NoRuleException, IOException, SpectrummillParserException, LMException{
     // find the MSn identifications and group them according to their # C atoms and # double bonds
     Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> paramsOrdered = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>>();
     Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> unprocessedOrdered = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>>();
@@ -452,18 +492,21 @@ public class PostQuantificationProcessor
     float tolerance = 4f;
     
     @SuppressWarnings("rawtypes")
-    Vector results = doIterativeLMOptimization(unprocessedOrdered,paramsOrdered,cAtomsRange,dbsRanges,negativesOrdered,tolerance,maxDev);
+    Vector results = doIterativeLMOptimization(unprocessedOrdered,paramsOrdered,cAtomsRange,dbsRanges,negativesOrdered,tolerance,maxDev,respectOh);
     LevenbergMarquardtOptimizer optimizer = (LevenbergMarquardtOptimizer)results.get(0);
-    if (adductInsensitive)
+    if (adductInsensitive) {
       predictedModels_.put(className, optimizer);
-    else 
+      respectOhs_.put(className, respectOh);
+    }else {
       predictedModels_.put(ruleName, optimizer);
+      respectOhs_.put(ruleName, respectOh);
+    }
     LevenbergMarquardtOptimizer counterModel = (LevenbergMarquardtOptimizer)results.get(1);
     @SuppressWarnings("unchecked")
     Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> foundNegatives = (Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>>)results.get(2);
 
     Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> newForModel = filterValidHitsBasedOnModel(optimizer,
-        unprocessedOrdered,cAtomsRange,dbsRanges,tolerance,maxDev,minDev,counterModel,foundNegatives);
+        unprocessedOrdered,cAtomsRange,dbsRanges,tolerance,maxDev,minDev,counterModel,foundNegatives,respectOh);
     
     Hashtable<String,Hashtable<String,LipidParameterSet>> filteredValues = new Hashtable<String,Hashtable<String,LipidParameterSet>>();
     Pattern cAtomsPattern =  Pattern.compile(RulesContainer.getCAtomsFromNamePattern(ruleName));
@@ -511,15 +554,17 @@ public class PostQuantificationProcessor
    * @param negatives MS/MS hits that do not belong to this class can be used to generate a counter model to remove hits
    * @param tolerance the multiplication factor for the mean deviation
    * @param maxDev the maximum RT deviation allowed
+   * @param respectOh has the OH to be fitted too
    * @return the optimized model in form of Levenberg-Marquardt object
    * @throws LMException exception if model adaption is not possible
    */
   @SuppressWarnings("rawtypes")
   private Vector doIterativeLMOptimization(Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> unprocessed,
       Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> forModel, RangeInteger cAtomsMaxRange, Hashtable<Integer,RangeInteger> dbsMaxRanges,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> negatives, float tolerance, float maxDev) throws LMException{
+      Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> negatives, float tolerance, float maxDev,
+      boolean respectOh) throws LMException{
     return doIterativeLMOptimization(unprocessed, forModel, cAtomsMaxRange, dbsMaxRanges, null, null, null,negatives,
-        new Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>>(),tolerance,maxDev,0);
+        new Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>>(),tolerance,maxDev,0,respectOh);
   }
   
   @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -527,7 +572,8 @@ public class PostQuantificationProcessor
       Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> forModel, RangeInteger cAtomsMaxRange, Hashtable<Integer,RangeInteger> dbsMaxRanges,
       RangeInteger cAtomsRange, Hashtable<Integer,RangeInteger> dbsRanges, LevenbergMarquardtOptimizer prevOptimizer,
       Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> negatives, 
-      Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> remainingNegatives, float tolerance, float maxDev, int count) throws LMException{
+      Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> remainingNegatives, float tolerance, float maxDev, int count,
+      boolean respectOh) throws LMException{
     // the first step is to optimize the model
 //    FloatMatrix prevParams = null;
 //    float prevMeanDeviation = Float.MAX_VALUE;
@@ -535,7 +581,7 @@ public class PostQuantificationProcessor
 //      prevParams = prevOptimizer.getResultParams();
 //      prevMeanDeviation = prevOptimizer.getMeanDeviation();
     }
-    LevenbergMarquardtOptimizer optimizer = optimizeLMModel(forModel, null);
+    LevenbergMarquardtOptimizer optimizer = optimizeLMModel(forModel, null,respectOh);
 //    if (optimizer.getMeanDeviation()>prevMeanDeviation) optimizer.setMaxDeviation(prevMeanDeviation);
     //System.out.println(optimizer.getResultChiSqr()+";"+optimizer.getMeanDeviation()+";"+optimizer.getResultLambda());
     
@@ -549,7 +595,7 @@ public class PostQuantificationProcessor
     Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> returnedNegatives = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>>();
     Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> unusedNegatives = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>>();
     try{
-      Vector result = checkForLMCounterModel(optimizer,negatives,remainingNegatives,currentCAtomsRange,currentDbsRanges,tolerance);
+      Vector result = checkForLMCounterModel(optimizer,negatives,remainingNegatives,currentCAtomsRange,currentDbsRanges,tolerance,respectOh);
        if (result!=null){
          counterModel = (LevenbergMarquardtOptimizer)result.get(0);
          returnedNegatives = (Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>>)result.get(1);
@@ -559,7 +605,7 @@ public class PostQuantificationProcessor
       System.out.println("Warning: calculation of counter model was not possible! Reason: "+lmx.getMessage());
     }
     if (counterModel!=null && count==0){
-      Vector<LevenbergMarquardtOptimizer> optimizers = evaluateFilterAgainBasedOnCounterModel(forModel,returnedNegatives,optimizer,counterModel);
+      Vector<LevenbergMarquardtOptimizer> optimizers = evaluateFilterAgainBasedOnCounterModel(forModel,returnedNegatives,optimizer,counterModel,respectOh);
       
 
       optimizer = optimizers.get(0);
@@ -573,7 +619,7 @@ public class PostQuantificationProcessor
     Hashtable<Integer,RangeInteger> newDbsRanges = (Hashtable<Integer,RangeInteger>) ranges.get(1);
     
     if (counterModel!=null){
-      Vector result = checkForLMCounterModel(optimizer,returnedNegatives,unusedNegatives,newCAtomsRange,newDbsRanges,tolerance);
+      Vector result = checkForLMCounterModel(optimizer,returnedNegatives,unusedNegatives,newCAtomsRange,newDbsRanges,tolerance,respectOh);
       if (result!=null && result.size()>0 && result.get(0)!=null){
         counterModel = (LevenbergMarquardtOptimizer)result.get(0);
         returnedNegatives = (Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>>)result.get(1);
@@ -608,17 +654,22 @@ public class PostQuantificationProcessor
    * optimizes the Levenberg-Marquardt model - data is transformed in adequate structure, optimizer initialized and model fitted
    * @param forModel data to be used for the Levenberg-Marquardt model 
    * @param prevParams params of a previous Levenberg-Marquardt model (to speed up optimization)
+   * @param respectOh has the OH to be fitted too
    * @return Levenberg-Marquardt optimizer class including the fitted model
    * @throws LMException exception if model adaption is not possible
    */
-  private LevenbergMarquardtOptimizer optimizeLMModel(Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> forModel, FloatMatrix prevParams) throws LMException{
+  private LevenbergMarquardtOptimizer optimizeLMModel(Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> forModel, FloatMatrix prevParams, boolean respectOh) throws LMException{
     int dataSize = 0;
     for (Hashtable<Integer,Hashtable<String,LipidParameterSet>> values1 : forModel.values()){
       for (Hashtable<String,LipidParameterSet> values2 : values1.values()){
         for (@SuppressWarnings("unused") LipidParameterSet set : values2.values()) dataSize++;
       }
     }
-    float[][] values = new float[dataSize][2];
+    float[][] values;
+    if (respectOh)
+      values = new float[dataSize][3];
+    else
+      values = new float[dataSize][2];
     float[] rtValues = new float[dataSize];
     int count = 0;
     for (Integer cAtoms : forModel.keySet()){
@@ -628,30 +679,54 @@ public class PostQuantificationProcessor
         for (String rt : sameCAndDbs.keySet()){
           values[count][0] = cAtoms;
           values[count][1] = dbs;
+          if (respectOh)
+            values[count][2] = sameCAndDbs.get(rt).getOhNumber();
           rtValues[count] = getRtFromRtString(rt);
           count++; 
         }
       }
     }
     LevenbergMarquardtOptimizer lmOptimizer = null;
-    try{
-      lmOptimizer = new LMAsymptVarDecayTwoVariables(values,rtValues,prevParams);
-    //LevenbergMarquardtOptimizer lmOptimizer = new LMLogDecayTwoVariables(values,rtValues,prevParams);
-    //LevenbergMarquardtOptimizer lmOptimizer = new LMEulerTwoVariables(values,rtValues,prevParams);
-    //LevenbergMarquardtOptimizer lmOptimizer = new LMQuadraticTwoVariables(values,rtValues,prevParams);
-      lmOptimizer.fit();
-    } catch (Exception ex){
+    if (respectOh) {
       try{
-        //System.out.println("Warning: trying fit with 1/x");
-        lmOptimizer = new LMAsymptDecayTwoVariables(values,rtValues,prevParams);
+        lmOptimizer = new LMAsymptVarDecayThreeVariables(values,rtValues,prevParams);
         lmOptimizer.fit();
-      } catch (Exception ex2){
-        //System.out.println("Warning: trying fit with log(x)");
+        //System.out.println("I used the three variables");
+      } catch (Exception ex){
         try{
-          lmOptimizer = new LMLogDecayTwoVariables(values,rtValues,prevParams);
+          //System.out.println("Warning: trying fit with 1/x");
+          lmOptimizer = new LMAsymptDecayThreeVariables(values,rtValues,prevParams);
           lmOptimizer.fit();
-        } catch (Exception ex3){
-          throw new LMException("The model could not be fitted!");
+        } catch (Exception ex2){
+          //System.out.println("Warning: trying fit with log(x)");
+          try{
+            lmOptimizer = new LMLogDecayThreeVariables(values,rtValues,prevParams);
+            lmOptimizer.fit();
+          } catch (Exception ex3){
+            throw new LMException("The model could not be fitted!");
+          }
+        }
+      }      
+    } else {
+      try{
+        lmOptimizer = new LMAsymptVarDecayTwoVariables(values,rtValues,prevParams);
+        //LevenbergMarquardtOptimizer lmOptimizer = new LMLogDecayTwoVariables(values,rtValues,prevParams);
+        //LevenbergMarquardtOptimizer lmOptimizer = new LMEulerTwoVariables(values,rtValues,prevParams);
+        //LevenbergMarquardtOptimizer lmOptimizer = new LMQuadraticTwoVariables(values,rtValues,prevParams);
+        lmOptimizer.fit();
+      } catch (Exception ex){
+        try{
+          //System.out.println("Warning: trying fit with 1/x");
+          lmOptimizer = new LMAsymptDecayTwoVariables(values,rtValues,prevParams);
+          lmOptimizer.fit();
+        } catch (Exception ex2){
+          //System.out.println("Warning: trying fit with log(x)");
+          try{
+            lmOptimizer = new LMLogDecayTwoVariables(values,rtValues,prevParams);
+            lmOptimizer.fit();
+          } catch (Exception ex3){
+            throw new LMException("The model could not be fitted!");
+          }
         }
       }
     }
@@ -805,7 +880,8 @@ public class PostQuantificationProcessor
   private Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> filterValidHitsBasedOnModel(LevenbergMarquardtOptimizer model,
       Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> unprocessed,
       RangeInteger cAtomsRange, Hashtable<Integer,RangeInteger> dbsRanges, float tolerance, float maxDev, float minDev,
-      LevenbergMarquardtOptimizer counterModel, Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> negatives) throws LMException {
+      LevenbergMarquardtOptimizer counterModel, Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> negatives,
+      boolean respectOh) throws LMException {
     Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> forModel = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>>();
 //    System.out.println("C-atoms range: "+cAtomsRange.getStart()+"-"+cAtomsRange.getStop());
 //    System.out.println("MeanDev: "+model.getMeanDeviation());
@@ -829,8 +905,12 @@ public class PostQuantificationProcessor
           }
           float rt = getRtFromRtString(rtString);
           float[] cAndDbs = new float[2];
+          if (respectOh)
+            cAndDbs = new float[3];
           cAndDbs[0] = cAtoms;
           cAndDbs[1] = dbs;
+          if (respectOh)
+            cAndDbs[2] = sameDbs.get(rtString).getOhNumber();
           float fitRt = model.calculateFitValue(cAndDbs);
           float counterRt = Float.NaN;
           if (counterModel!=null) counterRt = counterModel.calculateFitValue(cAndDbs);
@@ -934,14 +1014,14 @@ public class PostQuantificationProcessor
   @SuppressWarnings({ "rawtypes", "unchecked" })
   private Vector checkForLMCounterModel(LevenbergMarquardtOptimizer optimizer, Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> negatives,
       Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> remainingNegatives,
-      RangeInteger cAtomsRange, Hashtable<Integer,RangeInteger> dbsRanges, float tolerance) throws LMException{
+      RangeInteger cAtomsRange, Hashtable<Integer,RangeInteger> dbsRanges, float tolerance, boolean respectOh) throws LMException{
     Vector result = null;
     Vector<Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>>> results = filterAdequateNegatives(optimizer,negatives,remainingNegatives,cAtomsRange,dbsRanges,tolerance);
     if (results!=null){
       try{
         Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> usables = results.get(0);
         Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> notUsed = results.get(1);
-        LevenbergMarquardtOptimizer counterModel = optimizeLMModel(usables, null);
+        LevenbergMarquardtOptimizer counterModel = optimizeLMModel(usables, null, respectOh);
         result = new Vector();
         result.add(counterModel);
         result.add(usables);
@@ -1095,7 +1175,7 @@ public class PostQuantificationProcessor
   @SuppressWarnings("unchecked")
   private Vector<LevenbergMarquardtOptimizer> evaluateFilterAgainBasedOnCounterModel(Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> currentHits,
       Hashtable<Integer,Hashtable<Integer,Hashtable<String,LipidParameterSet>>> negatives,
-      LevenbergMarquardtOptimizer model , LevenbergMarquardtOptimizer counter) throws LMException{
+      LevenbergMarquardtOptimizer model , LevenbergMarquardtOptimizer counter, boolean respectOh) throws LMException{
     int countNegatives = 0;
     @SuppressWarnings("rawtypes")
     Vector models = new Vector();
@@ -1133,8 +1213,8 @@ public class PostQuantificationProcessor
       if (negSameC.size()>0) negatives.put(cAtoms, negSameC);
     }
     if (countNegatives>0){
-      LevenbergMarquardtOptimizer newModel = optimizeLMModel(forModel, null);
-      LevenbergMarquardtOptimizer newCounterModel = optimizeLMModel(negatives, null);
+      LevenbergMarquardtOptimizer newModel = optimizeLMModel(forModel, null, respectOh);
+      LevenbergMarquardtOptimizer newCounterModel = optimizeLMModel(negatives, null, respectOh);
       models.add(newModel);
       models.add(newCounterModel);
       models.add(negatives);
@@ -1209,7 +1289,6 @@ public class PostQuantificationProcessor
     }
     correctByRetentionTimeSeries(unprocessed,ms2Removed_,adductInsensitiveRtFilter_);
     Vector<SharedMS1PeakVO> sharedPeaks = MSnPeakSeparator.detectSharedMS1PeakInstances(undecidedHits);
-    float[] cAndDbs = new float[2];
     Hashtable<String,LipidParameterSet> toRemove = new Hashtable<String,LipidParameterSet>();
     String idi;
     for (SharedMS1PeakVO shared : sharedPeaks) {
@@ -1220,13 +1299,18 @@ public class PostQuantificationProcessor
       String correct = null;
       for (SharedPeakContributionVO contr : shared.getPartners()) {
         LevenbergMarquardtOptimizer predictedModel = null;
+        boolean respectOh = false;
         String ruleName = StaticUtils.getRuleName(contr.getQuantVO().getAnalyteClass(),contr.getQuantVO().getModName());
         if (adductInsensitiveRtFilter_.get(contr.getQuantVO().getAnalyteClass())) {
-          if (predictedModels_.containsKey(contr.getQuantVO().getAnalyteClass()))
+          if (predictedModels_.containsKey(contr.getQuantVO().getAnalyteClass())) {
             predictedModel = predictedModels_.get(contr.getQuantVO().getAnalyteClass());
+            respectOh = respectOhs_.get(contr.getQuantVO().getAnalyteClass());
+          }
         }else {
-          if (predictedModels_.containsKey(ruleName))
+          if (predictedModels_.containsKey(ruleName)) {
             predictedModel = predictedModels_.get(ruleName);
+            respectOh = respectOhs_.get(ruleName);
+          }
         }
         if (predictedModel==null) {
           forAllModelsFound = false;
@@ -1240,8 +1324,13 @@ public class PostQuantificationProcessor
         Matcher dbsMatcher = dbsPattern.matcher(contr.getQuantVO().getIdString());
         if (!dbsMatcher.matches()) throw new RulesException("The analyte "+contr.getQuantVO().getIdString()+" does not match the "+FragRuleParser.GENERAL_DBOND_PARSE+" pattern \""+RulesContainer.getDoubleBondsFromNamePattern(ruleName)+"\" of the class "+ruleName+"!");
         int dbs = Integer.parseInt(dbsMatcher.group(1));
+        float[] cAndDbs = new float[2];
+        if (respectOh)
+          cAndDbs = new float[3];
         cAndDbs[0] = cAtoms;
         cAndDbs[1] = dbs;
+        if (respectOh)
+          cAndDbs[2] = contr.getSet().getOhNumber();
         float fitRt = predictedModel.calculateFitValue(cAndDbs);
         float rt = Float.parseFloat(contr.getSet().getRt());
         float rtDiff = Math.abs(rt-fitRt);
