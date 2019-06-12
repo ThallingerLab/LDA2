@@ -472,7 +472,7 @@ public class MSnAnalyzer
         TargetlistEntry oneFragment = molSpecies.values().iterator().next();
         CgProbe probe = analyzer_.calculateMs2Area(oneFragment.getAnalyteMass(), oneFragment.getFragmentFormula(),
             oneFragment.getMsLevel(), oneFragment.getCharge(), false, probesWithMSnSpectra_.get(oneFragment.getMsLevel()));
-        if (probe.AreaStatus == CgAreaStatus.OK && (fragCalc_==null || checkBasePeakCutoff(probe,oneFragment.getMsLevel())) ){
+        if (probe.AreaStatus == CgAreaStatus.OK && (fragCalc_==null || checkCutoffs(probe,oneFragment.getMsLevel(),0f)) ){
           foundAnyFragments = true;
           //if (oneFragment.getStructure().equalsIgnoreCase(quantVO.getAnalyteClass()) || quantVO.getAnalyteClass().equalsIgnoreCase("IS "+oneFragment.getStructure())){
           if (!oneFragment.getStructure().startsWith("FA ") && !oneFragment.getStructure().startsWith("LCB ")){
@@ -521,13 +521,13 @@ public class MSnAnalyzer
       if (!probesWithMSnSpectra.containsKey(fragment.getMsLevel())) continue;
       CgProbe probe = analyzer_.calculateMs2Area(fragment.getMass(), fragment.getFormula(), fragment.getMsLevel(), fragment.getCharge(), fragment.isMandatory()==FragmentRuleVO.MANDATORY_OTHER, probesWithMSnSpectra.get(fragment.getMsLevel()));
 //      System.out.println("Mand: "+fragment.getName()+";"+fragment.getMass()+";"+probe.Area+";"+probe.AreaStatus+";"+checkBasePeakCutoff(probe,fragment.getMsLevel()));
-      if (probe.AreaStatus == CgAreaStatus.OK && checkBasePeakCutoff(probe,fragment.getMsLevel())){
+      if (probe.AreaStatus == CgAreaStatus.OK && checkCutoffs(probe,fragment.getMsLevel(),0f)){
         foundHeadFragments = true;
         headGroupFragments_.put(fragment.getName(),probe);
       }else{
         status_ = LipidomicsMSnSet.DISCARD_HIT;
         if (debug_){
-          debugVO_.addDiscardedHeadGroupFragment(fragment.getName(),findAreaDiscardReason(probe, fragment));
+          debugVO_.addDiscardedHeadGroupFragment(fragment.getName(),findAreaDiscardReason(probe, fragment,0f));
         }else{
           return;
         }
@@ -537,11 +537,11 @@ public class MSnAnalyzer
       if (!probesWithMSnSpectra.containsKey(fragment.getMsLevel())) continue;
       CgProbe probe = analyzer_.calculateMs2Area(fragment.getMass(), fragment.getFormula(), fragment.getMsLevel(), fragment.getCharge(), fragment.isMandatory()==FragmentRuleVO.MANDATORY_OTHER, probesWithMSnSpectra.get(fragment.getMsLevel()));
 //      System.out.println("Add: "+fragment.getName()+";"+fragment.getMass()+";"+probe.Area+";"+probe.AreaStatus+";"+checkBasePeakCutoff(probe,fragment.getMsLevel()));
-      if (probe.AreaStatus == CgAreaStatus.OK && checkBasePeakCutoff(probe,fragment.getMsLevel())){
+      if (probe.AreaStatus == CgAreaStatus.OK && checkCutoffs(probe,fragment.getMsLevel(),0f)){
         foundHeadFragments = true;
         headGroupFragments_.put(fragment.getName(),probe);
       } else if (debug_){
-        debugVO_.addDiscardedHeadGroupFragment(fragment.getName(),findAreaDiscardReason(probe, fragment));
+        debugVO_.addDiscardedHeadGroupFragment(fragment.getName(),findAreaDiscardReason(probe, fragment,0f));
       }
     }
     if (foundHeadFragments && status_!=LipidomicsMSnSet.DISCARD_HIT) this.status_ = LipidomicsMSnSet.HEAD_GROUP_DETECTED;
@@ -626,14 +626,14 @@ public class MSnAnalyzer
         //if (chain.getName().equalsIgnoreCase("18:1")) System.out.println(chain.getChainId()+";"+fragment.getName()+" ; "+fragment.getMass());
         if (!probesWithMSnSpectra.containsKey(fragment.getMsLevel())) continue;
         CgProbe probe = analyzer_.calculateMs2Area(fragment.getMass(), fragment.getFormula(), fragment.getMsLevel(), fragment.getCharge(), fragment.isMandatory()==FragmentRuleVO.MANDATORY_OTHER, probesWithMSnSpectra.get(fragment.getMsLevel()));
-        if (probe.AreaStatus == CgAreaStatus.OK && checkBasePeakCutoff(probe,fragment.getMsLevel())){
+        if (probe.AreaStatus == CgAreaStatus.OK && checkCutoffs(probe,fragment.getMsLevel(),RulesContainer.getChainAbsoluteThreshold(StaticUtils.getRuleName(this.className_, this.modName_)))){
           //if (chain.getName().equalsIgnoreCase("18:1")) System.out.println("!!! "+chain.getChainId()+";"+fragment.getMass()+";"+fragment.getName()+";"+probe.Area);
           foundChainFragments = true;
           foundFragments.put(fragment.getName(),probe);
 //        System.out.println(fa.getName()+";"+fragment.getName()+";"+fragment.getMass()+";"+probe.Area+"; Mand");
         }else{
           //TODO: possibly use another annotation for displaying the name in the debugVO than chain.getChainId()
-          if (debug_) debugVO_.addViolatedChainFragment(chain.getChainId(), fragment.getName(), findAreaDiscardReason(probe, fragment));
+          if (debug_) debugVO_.addViolatedChainFragment(chain.getChainId(), fragment.getName(), findAreaDiscardReason(probe, fragment,RulesContainer.getChainAbsoluteThreshold(StaticUtils.getRuleName(this.className_, this.modName_))));
           discardChain = true;
           break;
         }
@@ -646,13 +646,13 @@ public class MSnAnalyzer
 //      if (chainType==FragmentRuleVO.ALKYL_CHAIN && fa.getName().equalsIgnoreCase("18:1")) System.out.println("!!! 18:1: "+fragment.getMass());
         if (!probesWithMSnSpectra.containsKey(fragment.getMsLevel())) continue;
         CgProbe probe = analyzer_.calculateMs2Area(fragment.getMass(), fragment.getFormula(), fragment.getMsLevel(), fragment.getCharge(), fragment.isMandatory()==FragmentRuleVO.MANDATORY_OTHER, probesWithMSnSpectra.get(fragment.getMsLevel()));
-        if (probe.AreaStatus == CgAreaStatus.OK && checkBasePeakCutoff(probe,fragment.getMsLevel())){
+        if (probe.AreaStatus == CgAreaStatus.OK && checkCutoffs(probe,fragment.getMsLevel(),RulesContainer.getChainAbsoluteThreshold(StaticUtils.getRuleName(this.className_, this.modName_)))){
 //        System.out.println(fa.getName()+";"+fragment.getName()+";"+fragment.getMass()+";"+probe.Area+";"+probe.AreaStatus+"; Add");
           foundChainFragments = true;
           foundFragments.put(fragment.getName(),probe);
         } else {
           //TODO: possibly use another annotation for displaying the name in the debugVO than chain.getChainId()
-          if (debug_) debugVO_.addViolatedChainFragment(chain.getChainId(), fragment.getName(), findAreaDiscardReason(probe, fragment));          
+          if (debug_) debugVO_.addViolatedChainFragment(chain.getChainId(), fragment.getName(), findAreaDiscardReason(probe, fragment,RulesContainer.getChainAbsoluteThreshold(StaticUtils.getRuleName(this.className_, this.modName_))));          
         }
       }
       if (foundChainFragments){
@@ -1110,10 +1110,10 @@ public class MSnAnalyzer
    * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
    * @throws CgException errors from the quantitation process
    */
-  private boolean checkBasePeakCutoff(CgProbe probe, int msLevel)throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException {
+  private boolean checkCutoffs(CgProbe probe, int msLevel, float absThreshold)throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException {
     double cutoff = fragCalc_.getBasePeakCutoff();
     if (cutoff>0){
-      if (probe.Area > basePeakValues_.get(msLevel)*((float)cutoff)) return true;
+      if (probe.Area > basePeakValues_.get(msLevel)*((float)cutoff) && probe.Area>absThreshold) return true;
       else return false;
     }else return true;
   }
@@ -2039,6 +2039,7 @@ public class MSnAnalyzer
   /**
    * @param probe VO storing information about the peak
    * @param fragment the fragment that should be detected
+   * @param absThreshold an absolute threshold
    * @return the status why the probe was not detected
    * @throws RulesException specifies in detail which rule has been infringed
    * @throws NoRuleException thrown if the rules are not there
@@ -2046,10 +2047,10 @@ public class MSnAnalyzer
    * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
    * @throws CgException errors from the quantitation process
    */
-  private int findAreaDiscardReason(CgProbe probe, FragmentVO fragment) throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException{
+  private int findAreaDiscardReason(CgProbe probe, FragmentVO fragment, float absThreshold) throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException{
     int discardStatus = MSnDebugVO.NO_PEAK_THERE;
     if (probe.AreaStatus==CgAreaStatus.NothingThere) discardStatus = MSnDebugVO.NO_PEAK_THERE;
-    else if (!checkBasePeakCutoff(probe,fragment.getMsLevel())) discardStatus = MSnDebugVO.BELOW_BASE_PEAK_CUTOFF;
+    else if (!checkCutoffs(probe,fragment.getMsLevel(),absThreshold)) discardStatus = MSnDebugVO.BELOW_BASE_PEAK_CUTOFF;
     return discardStatus;
   }
   

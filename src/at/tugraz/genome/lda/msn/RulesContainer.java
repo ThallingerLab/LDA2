@@ -1292,7 +1292,7 @@ public class RulesContainer
 
   
   /**
-   * returns the time tolerance to detect another adduct
+   * returns an absolute threshold for detecting chains
    * @param ruleName name of the lipid class
    * @param rulesDir directory where the rule files are stored
    * @return time tolerance to detect another adduct
@@ -1305,6 +1305,38 @@ public class RulesContainer
     RulesContainer cont = checkIfRuleExists(ruleName,rulesDir);
     return cont.rules_.get(ruleName).getOtherTimeTolerance();
   }
+  
+
+  /**
+   * returns an absolute threshold for detecting chains
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return time tolerance to detect another adduct
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static float getChainAbsoluteThreshold(String ruleName) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    return getChainAbsoluteThreshold(ruleName, currentRulesDir_);
+  }
+
+  
+  /**
+   * returns the time tolerance to detect another adduct
+   * @param ruleName name of the lipid class
+   * @param rulesDir directory where the rule files are stored
+   * @return time tolerance to detect another adduct
+   * @throws RulesException specifies in detail which rules are not valid
+   * @throws NoRuleException thrown if the rules are not there
+   * @throws IOException general exception if there is something wrong about the file
+   * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
+   */
+  public static float getChainAbsoluteThreshold(String ruleName, String rulesDir) throws RulesException, NoRuleException, IOException, SpectrummillParserException {
+    RulesContainer cont = checkIfRuleExists(ruleName,rulesDir);
+    return cont.rules_.get(ruleName).getChainAbsoluteThreshold();
+  }
+
   
   
   /**

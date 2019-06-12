@@ -97,6 +97,7 @@ public class FragRuleParser
   public final static String GENERAL_DBOND_PARSE = "DoubleBondsFromName";
   private final static String GENERAL_CUTOFF = "BasePeakCutoff";
   private final static String GENERAL_CHAIN_CUTOFF = "ChainCutoff";
+  private final static String GENERAL_CHAIN_ABS_CUTOFF = "ChainFragmentAbsoluteThreshold";
   private final static String GENERAL_SPECTRUM_COVERAGE = "SpectrumCoverage";
   private final static String GENERAL_RT_PROCESSING = "RetentionTimePostprocessing";
   private final static String GENERAL_RT_PARALLEL_SERIES = "RetentionTimeParallelSeries";
@@ -473,6 +474,14 @@ public class FragRuleParser
         generalSettings_.put(GENERAL_OTHER_ADDUCT_TIME_TOLERANCE, value);
       } catch (NumberFormatException nfx){
         throw new RulesException("The value of "+GENERAL_OTHER_ADDUCT_TIME_TOLERANCE+" must be float format; the value \""+value+"\" is not valid! Error at line number "+lineNumber+"!");
+      }
+    } else if (key.equalsIgnoreCase(GENERAL_CHAIN_ABS_CUTOFF)){
+      try{
+        float tt = new Float(value);
+        if (tt<0) throw new RulesException("The value of \""+GENERAL_CHAIN_ABS_CUTOFF+"\" must be greater than 0! Error at line number "+lineNumber+"!");          
+        generalSettings_.put(GENERAL_CHAIN_ABS_CUTOFF, value);
+      } catch (NumberFormatException nfx){
+        throw new RulesException("The value of "+GENERAL_CHAIN_ABS_CUTOFF+" must be float format; the value \""+value+"\" is not valid! Error at line number "+lineNumber+"!");
       }
     } else if (key.equalsIgnoreCase(GENERAL_OTHER_ADDUCT_FORCE)){
       boolean forceOtherAdduct = false;
@@ -1406,6 +1415,18 @@ public class FragRuleParser
     if (generalSettings_.containsKey(GENERAL_OTHER_ADDUCT_TIME_TOLERANCE)) timeTolerance = Float.parseFloat(generalSettings_.get(GENERAL_OTHER_ADDUCT_TIME_TOLERANCE));
     return timeTolerance;
   }
+  
+
+  /**
+   * 
+   * @return an absolute threshold for detecting chains
+   */
+  public float getChainAbsoluteThreshold() {
+    float threshold = 0f;
+    if (generalSettings_.containsKey(GENERAL_CHAIN_ABS_CUTOFF)) threshold = Float.parseFloat(generalSettings_.get(GENERAL_CHAIN_ABS_CUTOFF));
+    return threshold;
+  }
+  
   
   
   /**
