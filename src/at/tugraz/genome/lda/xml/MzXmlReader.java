@@ -436,7 +436,7 @@ public class MzXmlReader implements XmlSpectraReader
       if (rdr_.getAttributeLocalName(i).equalsIgnoreCase("precision")) {
         precision = Integer.parseInt(rdr_.getAttributeValue(i));
       }  else if (rdr_.getAttributeLocalName(i) == "compressionType") {
-        compressionType = rdr_.getAttributeLocalName(i);
+        compressionType = rdr_.getAttributeValue(i);
       }
     }
     try {
