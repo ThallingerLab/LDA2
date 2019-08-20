@@ -28,6 +28,8 @@ import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.exception.ChemicalFormulaException;
+import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
@@ -205,8 +207,30 @@ public class OtherAdductChecker
             
             if (!ms2InformationPresent)
               continue;
-            if (forSplit.size()<2)
+            if (forSplit.size()<2) {
+              //if there is only one left, and this one has MS2 information -> check whether the $BASEPEAK rules are fulfilled
+              if (forSplit.size()==1) {
+                String id = forSplit.keySet().iterator().next();
+                String lipClass = getLipidClassFromUniqueId(id);
+                LipidParameterSet set = forSplit.get(id);
+                QuantVO quant = null;
+                for (QuantVO one : allQuants) {
+                  if (lipClass.equalsIgnoreCase(one.getAnalyteClass()) && set.getNameStringWithoutRt().equalsIgnoreCase(one.getIdString()) &&
+                    set.getModificationName().equalsIgnoreCase(one.getModName())) {
+                    quant = one;
+                    break;
+                  }
+                }
+                try {
+                  MSnAnalyzer msnAnalyzer = new MSnAnalyzer(quant.getAnalyteClass(),quant.getModName(),set,analyzer,quant,true,false);
+                  if (msnAnalyzer.checkStatus()==LipidomicsMSnSet.DISCARD_HIT)
+                    toRemove.put(id, set);
+                } catch (RulesException | IOException | SpectrummillParserException | HydroxylationEncodingException | ChemicalFormulaException e) {
+                  e.printStackTrace();
+                }  
+              }
               continue;
+            }
             Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> hitsWithQuant = new Hashtable<QuantVO,Hashtable<String,LipidParameterSet>>();
             Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> peaksBeforeSplit = new Hashtable<QuantVO,Hashtable<String,LipidParameterSet>>();
             String lipClass = null;
