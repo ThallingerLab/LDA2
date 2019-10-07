@@ -62,6 +62,7 @@ import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
+import at.tugraz.genome.lda.msn.MSnAnalyzer;
 import at.tugraz.genome.lda.msn.OtherAdductChecker;
 import at.tugraz.genome.lda.msn.PostQuantificationProcessor;
 import at.tugraz.genome.lda.msn.RulesContainer;
@@ -1596,6 +1597,9 @@ public class QuantificationThread extends Thread
           Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> hitsAccordingToQuant = singleThread.getResults();
           Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> ms2RemovedToQuant = singleThread.getMs2Removedhits();
           Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> beforeSplitToQuant = singleThread.getPeaksBeforeSplit();
+          
+          Hashtable<String,Hashtable<QuantVO,LipidParameterSet>> msnHitsWithSameRt = groupHitsWithSameRt(hitsAccordingToQuant);
+          
           for (QuantVO oneQuant : hitsAccordingToQuant.keySet()){
             Hashtable<String,LipidParameterSet> hitsOfOneMod = hitsAccordingToQuant.get(oneQuant);
             Hashtable<String,LipidParameterSet> ms2Removed = new Hashtable<String,LipidParameterSet>();
@@ -1707,6 +1711,40 @@ public class QuantificationThread extends Thread
               if (ms2Removed.size()>0) ms2Removed_.get(oneQuant.getAnalyteClass()).get(oneQuant.getIdString()).put(oneQuant.getModName(), ms2Removed);
             }
           }catch(Exception ex){}
+          }         
+          //check if an overlapping MS2 instance has been identified and, after the m/z check, the overlap still exists
+          //if not, apply the base peak rules
+          for (String rt : msnHitsWithSameRt.keySet()) {
+            if (msnHitsWithSameRt.get(rt) .size()<2)
+              continue;
+            int count = 0;
+            LipidParameterSet set = null;
+            QuantVO toQuant = null; 
+            for (QuantVO quant : msnHitsWithSameRt.get(rt).keySet()) {
+              if (results_.containsKey(quant.getAnalyteClass()) && results_.get(quant.getAnalyteClass()).containsKey(quant.getIdString()) &&
+                  results_.get(quant.getAnalyteClass()).get(quant.getIdString()).containsKey(quant.getModName()) &&
+                  results_.get(quant.getAnalyteClass()).get(quant.getIdString()).get(quant.getModName()).containsKey(rt)) {
+                set = results_.get(quant.getAnalyteClass()).get(quant.getIdString()).get(quant.getModName()).get(rt);
+                toQuant = quant;
+                count++;
+              }
+            }
+            if (count!=1 || !(set instanceof LipidomicsMSnSet))
+              continue;
+            try {
+              MSnAnalyzer msnAnalyzer = new MSnAnalyzer(toQuant.getAnalyteClass(),toQuant.getModName(),set,singleThread.getAnalyzer(),toQuant,true,false);
+              if (msnAnalyzer.checkStatus()<=LipidomicsMSnSet.DISCARD_HIT) {
+                results_.get(toQuant.getAnalyteClass()).get(toQuant.getIdString()).get(toQuant.getModName()).remove(rt);
+                if (results_.get(toQuant.getAnalyteClass()).get(toQuant.getIdString()).get(toQuant.getModName()).size()==0)
+                  results_.get(toQuant.getAnalyteClass()).get(toQuant.getIdString()).remove(toQuant.getModName());
+                if (results_.get(toQuant.getAnalyteClass()).get(toQuant.getIdString()).size()==0)
+                  results_.get(toQuant.getAnalyteClass()).remove(toQuant.getIdString());
+              }else {
+                results_.get(toQuant.getAnalyteClass()).get(toQuant.getIdString()).get(toQuant.getModName()).put(rt, msnAnalyzer.getResult());
+              }
+            } catch (RulesException | IOException | SpectrummillParserException | HydroxylationEncodingException | ChemicalFormulaException | CgException | LipidCombinameEncodingException e) {
+              e.printStackTrace();
+            }  
           }
         }
         quantStatus_.get(className).get(analyte).put(mod, STATUS_FINISHED);
@@ -2538,6 +2576,24 @@ public class QuantificationThread extends Thread
     encodings[0] = new HydroxyEncoding(usedFaEncodings);
     encodings[1] = new HydroxyEncoding(usedLcbEncodings);
     return encodings;
+  }
+  
+  /**
+   * this reorganizes the hash table returned from the SingleQuantTrhead, so that the retention time is the highest grouping parameter
+   * @param hitsAccordingToQuant hash table returned from the SingleQuantTrhead
+   * @return the reorganized hash table
+   */
+  private Hashtable<String,Hashtable<QuantVO,LipidParameterSet>> groupHitsWithSameRt(Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> hitsAccordingToQuant) {
+    Hashtable<String,Hashtable<QuantVO,LipidParameterSet>> sameRt = new Hashtable<String,Hashtable<QuantVO,LipidParameterSet>>();
+    for (QuantVO quant : hitsAccordingToQuant.keySet()) {
+      for (String rt : hitsAccordingToQuant.get(quant).keySet()) {
+        Hashtable<QuantVO,LipidParameterSet> hash = new Hashtable<QuantVO,LipidParameterSet>();
+        if (sameRt.containsKey(rt)) hash = sameRt.get(rt);
+        hash.put(quant, hitsAccordingToQuant.get(quant).get(rt));
+        sameRt.put(rt, hash);
+      }
+    }
+    return sameRt;
   }
 
 }

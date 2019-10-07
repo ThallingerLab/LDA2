@@ -716,6 +716,17 @@ public class SingleQuantThread extends Thread
     param.LowerMzBand = mzTolerance;
     param.UpperMzBand = mzTolerance;
   }
+
+  
+  /**
+   * @return the LipidomicsAnalyzer that was used for data access
+   */
+  public LipidomicsAnalyzer getAnalyzer()
+  {
+    return analyzer_;
+  }
+  
+  
   
   
 }
