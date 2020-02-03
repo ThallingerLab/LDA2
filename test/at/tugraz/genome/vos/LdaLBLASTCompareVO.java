@@ -42,6 +42,7 @@ public class LdaLBLASTCompareVO
   private int ldaIdentCode_;
   private int lbIdentCode_;
   private boolean ldaMs1Only_;
+  private float mz_;
   private boolean fasInOtherCombination_;
   private Vector<LdaLBLASTCompareVO> ms2Evidence_;
   
@@ -58,7 +59,7 @@ public class LdaLBLASTCompareVO
 
   
   public LdaLBLASTCompareVO(String correctName, String ldaName, String lbName, int ldaIdentCode, int lbIdentCode, String rt, String ldaRts, String lbRts,
-      boolean fp, double lbProb, boolean ldaMs1Only){
+      boolean fp, double lbProb, float mz, boolean ldaMs1Only){
     this.rt_ = rt;
     this.correctName_ = correctName;
     this.ldaName_ = ldaName;
@@ -69,6 +70,7 @@ public class LdaLBLASTCompareVO
     this.ldaRts_ = ldaRts;
     this.lbRts_ = lbRts;
     this.lbProb_ = lbProb;
+    this.mz_ = mz;
     this.ldaMs1Only_ = ldaMs1Only;
     ms2Evidence_ = new Vector<LdaLBLASTCompareVO>();
     ignoreLDA_ = false;
@@ -207,6 +209,18 @@ public boolean isFp()
   public void setAdduct(String adduct)
   {
     this.adduct_ = adduct;
+  }
+
+
+  public float getMz()
+  {
+    return mz_;
+  }
+
+
+  public void setMz(float mz)
+  {
+    this.mz_ = mz;
   }
   
   

@@ -120,6 +120,7 @@ import JSci.maths.statistics.ChiSqrDistribution;
 import JSci.maths.statistics.TDistribution;
 import at.tugraz.genome.dbutilities.SimpleValueObject;
 import at.tugraz.genome.exception.LipidBLASTException;
+import at.tugraz.genome.exception.MSDialException;
 import at.tugraz.genome.lda.BatchQuantThread;
 import at.tugraz.genome.lda.LDAResultReader;
 import at.tugraz.genome.lda.LipidDataAnalyzer;
@@ -135,6 +136,7 @@ import at.tugraz.genome.lda.alex123.vos.TargetlistEntry;
 import at.tugraz.genome.lda.exception.AlexTargetlistParserException;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
+import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.LMException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.RulesException;
@@ -143,8 +145,11 @@ import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.MSnAnalyzer;
 import at.tugraz.genome.lda.msn.PostQuantificationProcessor;
 import at.tugraz.genome.lda.msn.RulesContainer;
+import at.tugraz.genome.lda.msn.parser.FALibParser;
 import at.tugraz.genome.lda.msn.parser.FragRuleParser;
 import at.tugraz.genome.lda.msn.parser.LCBLibParser;
+import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
+import at.tugraz.genome.lda.msn.vos.IntensityChainVO;
 import at.tugraz.genome.lda.msn.vos.IntensityPositionVO;
 import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
 import at.tugraz.genome.lda.msn.vos.MSnDebugVO;
@@ -195,14 +200,23 @@ import at.tugraz.genome.maspectras.quantification.RawToChromatogramTranslator;
 import at.tugraz.genome.maspectras.utils.Calculator;
 import at.tugraz.genome.maspectras.utils.StringUtils;
 import at.tugraz.genome.parsers.LipidBLASTParser;
+import at.tugraz.genome.parsers.MSDialTxtParser;
+import at.tugraz.genome.parsers.MSFinderStructureParser;
 import at.tugraz.genome.util.FloatMatrix;
 import at.tugraz.genome.util.index.IndexFileException;
+import at.tugraz.genome.vos.BrainSpecies;
 import at.tugraz.genome.vos.FoundBiologicalSpecies;
+import at.tugraz.genome.vos.LdaDialStandardsEvidence;
 import at.tugraz.genome.vos.LdaLBLASTCompareVO;
 import at.tugraz.genome.vos.LdaLbStandardsEvidence;
 import at.tugraz.genome.vos.LipidBLASTDetectionVO;
 import at.tugraz.genome.vos.LipidBLASTIdentificationVO;
 import at.tugraz.genome.vos.LipidClassInfoVO;
+import at.tugraz.genome.vos.MSDialEntry;
+import at.tugraz.genome.vos.MSFinderEntry;
+import at.tugraz.genome.vos.MSFinderHitVO;
+import at.tugraz.genome.vos.Mix1Standards;
+import at.tugraz.genome.vos.Mix2Standards;
 import at.tugraz.genome.vos.ReferenceInfoVO;
 import at.tugraz.genome.voutils.GeneralComparator;
 //import at.tugraz.genome.thermo.IXRawfile;
@@ -284,6 +298,9 @@ public class TestClass extends JApplet implements AddScan
   private final static int POS_CORRECT = 4;
   
   private final static double RT_TOL = 0.6d;
+  
+  private final static double MSDIAL_MZ_TOL = 0.006d;
+  private final static float MSDIAL_RT_TOL = 0.25f;
 
   public TestClass()
   {
@@ -5673,7 +5690,7 @@ public void testTabFile() throws Exception {
     //the first key is the lipid class, the second key the ms1 species name, the third key the structural identification
     LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>>();
     Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
-    LinkedHashMap<String,String> adducts = new LinkedHashMap<String,String>();
+    LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
     
     ////this.getValidOrbitrapCIDSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
     this.getValid4000QTRAPSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
@@ -5696,7 +5713,7 @@ public void testTabFile() throws Exception {
     //the first key is the lipid class, the second key the ms1 species name, the third key the structural identification
     LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>>();
     Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
-    LinkedHashMap<String,String> adducts = new LinkedHashMap<String,String>();
+    LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
     ////this.getValidOrbitrapCIDSpeciesPositive(lipidClasses,lipidClassInfo,adducts);
     this.getValid4000QTRAPSpeciesPositive(lipidClasses,lipidClassInfo,adducts);
     
@@ -5723,7 +5740,8 @@ public void testTabFile() throws Exception {
 
   private void correctRetentionTimes(double correction, Collection<ReferenceInfoVO> toCorrect){
     for (ReferenceInfoVO ref : toCorrect){
-      ref.setCorrectRt(ref.getCorrectRt()+correction);
+      for (int i=0; i!=ref.getCorrectRts().length; i++)
+        ref.getCorrectRts()[i] = ref.getCorrectRts()[i]+correction;
     }
   }
 
@@ -5918,7 +5936,7 @@ public void testTabFile() throws Exception {
 //          if (!classInfo.getAdducts().containsKey(adduct)) continue;
           for (String adduct : classInfo.getAdducts().keySet()){
             if (!quantsOfAnalyte.containsKey(adduct)) continue;
-            Vector<LipidParameterSet> ldaAnalyte = getLDAAnalytes(ldaAnalytes, analyte, adduct, true);
+            Vector<LipidParameterSet> ldaAnalyte = getLDAAnalytes(ldaAnalytes, analyte, adduct, true, true, molecularSpecies.get(adduct).getCorrectRts());
             LipidBLASTIdentificationVO ident = lbsOfMod.get(adduct);
             if (ident!=null || ldaAnalyte.size()>0){
               LdaLBLASTCompareVO ms1Compare = getLdaLBlastSpeciesComparision(analyte,classInfo,molecularSpecies,ldaAnalyte,ident,analyzer,quantsOfAnalyte.get(adduct));
@@ -6995,8 +7013,9 @@ public void testTabFile() throws Exception {
           boolean includeInAnalysis = comparableAdducts.get(adduct)[0];
           for (String analyte : ms1Analytes.keySet()){
             ReferenceInfoVO correctStructureInfo = ms1Analytes.get(analyte);
-            LipidomicsMSnSet ldaAnalyte = (LipidomicsMSnSet)getLDAAnalyte(ldaAnalytes,analyte,adduct,false);
-            LipidBLASTIdentificationVO identVO = getLBAnalyte(lbAnalytes,analyte,adduct,correctStructureInfo.getCorrectRt(),comparableAdducts.get(adduct)[1]);
+            LipidomicsMSnSet ldaAnalyte = (LipidomicsMSnSet)getLDAAnalyte(ldaAnalytes,analyte,adduct,false,true,correctStructureInfo.getCorrectRts());
+            //WAS-DONE: for backward compatibility, the following was changed: getCorrectRts()[0]
+            LipidBLASTIdentificationVO identVO = getLBAnalyte(lbAnalytes,analyte,adduct,correctStructureInfo.getCorrectRts()[0],comparableAdducts.get(adduct)[1]);
             String correctStructure = correctStructureInfo.getMS2Name();
             
             LdaLbStandardsEvidence ldaLbEvidence = new LdaLbStandardsEvidence(analyte);
@@ -7033,7 +7052,7 @@ public void testTabFile() throws Exception {
               boolean msMSPresent = true;
               LipidParameterSet ldaMS1Result = null;
               if (evidence==0 && blastEvidence==0){
-                ldaMS1Result = getLDAAnalyte(ldaAnalytes,analyte,adduct,true);
+                ldaMS1Result = getLDAAnalyte(ldaAnalytes,analyte,adduct,true,true,correctStructureInfo.getCorrectRts());
                 if (!areThereAnyMSnSpectra(analyzer,ldaMS1Result,quantVOs.get(lipidClass).get(analyte).get(adduct))){
                   evidence = -1;
                   nameString = "no MS/MS";
@@ -7047,7 +7066,7 @@ public void testTabFile() throws Exception {
               CellStyle style = getStyleBasedOnEvidence(evidence, fullyCorrectStyle, faCorrectStyle, faFoundStyle,
                   ms1FoundStyle, notFoundStyle);
               if (evidence==0 && blastEvidence>0 ){
-                ldaMS1Result = getLDAAnalyte(ldaAnalytes,analyte,adduct,true);
+                ldaMS1Result = getLDAAnalyte(ldaAnalytes,analyte,adduct,true,true,correctStructureInfo.getCorrectRts());
                 if (ldaMS1Result!=null){
                   nameString = ldaMS1Result.getNameStringWithoutRt();
                   style=null;
@@ -7097,8 +7116,9 @@ public void testTabFile() throws Exception {
                   if (blastEvidence==0 && identVO!=null && identVO.hasRemovedRts()){
                     cell = row.createCell(commentColumn);
                     cell.setCellType(Cell.CELL_TYPE_STRING);
-                    String startRt = Calculator.FormatNumberToString(correctStructureInfo.getCorrectRt()-RT_TOL, 2);
-                    String stopRt = Calculator.FormatNumberToString(correctStructureInfo.getCorrectRt()+RT_TOL, 2);
+                    //WAS-DONE: for backward compatibility, the following was changed: getCorrectRts()[0]
+                    String startRt = Calculator.FormatNumberToString(correctStructureInfo.getCorrectRts()[0]-RT_TOL, 2);
+                    String stopRt = Calculator.FormatNumberToString(correctStructureInfo.getCorrectRts()[0]+RT_TOL, 2);
                     cell.setCellValue("LB reported hits outside the RT-tolerance "+startRt+"-"+stopRt+"min: "+identVO.getOutsideRtDetections(numberSns));
                   }
                   if (evidence>=MS1_FOUND){
@@ -7836,10 +7856,20 @@ public void testTabFile() throws Exception {
     else if (evidence==MS1_FOUND) style = ms1FoundStyle;
     else if (evidence==FA_FOUND) style = faFoundStyle;
     else if (evidence==FA_CORRECT) style = faCorrectStyle;
-    else if (evidence==POS_CORRECT) style = fullyCorrectStyle;
-    
+    else if (evidence==POS_CORRECT) style = fullyCorrectStyle;    
     return style;
   }
+  
+  private CellStyle getStyleBasedOnEvidenceDial(int evidence, CellStyle fullyCorrectStyle, CellStyle faCorrectStyle,
+      CellStyle faFoundStyle, CellStyle ms1FoundStyle, CellStyle notFoundStyle){
+    CellStyle style = null;
+    if (evidence==NOT_FOUND) style = notFoundStyle;
+    else if (evidence==MS1_FOUND) style = ms1FoundStyle;
+    else if (evidence==FA_FOUND) style = faFoundStyle;
+    else if (evidence==FA_CORRECT || evidence==POS_CORRECT) style = fullyCorrectStyle;
+    return style;
+  }
+
   
   private CellStyle getFullyCorrectStyle(Workbook wb){
     Color DARK_GREEN = new Color(0x00, 0xC0, 0x00);
@@ -7934,6 +7964,70 @@ public void testTabFile() throws Exception {
     result[3] = allRts;
     return result;
   }
+  
+  private Object[] checkDialEvidence(String lClass, String ms1Name, String correctStructure, Vector<MSDialEntry> entries, int amountSns){
+    int evidence = 0;
+    String name = "not reported";
+    double maxProb = 0d;
+    double maxProbMS1 = 0;
+    Vector<String> allRts = new Vector<String>();
+    boolean foundSumSpecies = false;
+    boolean foundSomethingElse = false;
+    boolean foundCorrectFAs = false;
+    boolean foundWrongFAs = false;
+    String proposedDisplayString = "";
+
+    for (MSDialEntry entry : entries) {
+      if (lClass.equalsIgnoreCase(entry.getLdaClassName()) && ms1Name.equalsIgnoreCase(entry.getLdaMs1Name())) {
+        foundSumSpecies = true;
+        proposedDisplayString += entry.getDialClassName()+" "+(entry.getDialMs2Name()==null ? entry.getDialMs1Name() : entry.getDialMs2Name())+" ";
+        if (entry.getLdaMs2Name()!=null) {
+          boolean[] correctness = checkForFACorrectness(correctStructure,entry.getLdaMs2Name());
+          if (!foundCorrectFAs || correctness[0]){
+            maxProb = 0d;
+            allRts = new Vector<String>();
+          }
+          if (!foundCorrectFAs || correctness[0]){
+            double prob = (double)entry.getScore();
+            if (prob>maxProb) maxProb = prob;
+          }
+          allRts.add(Calculator.FormatNumberToString(entry.getRt(),2d));
+          if (correctness[0]) foundCorrectFAs = true;
+          else foundWrongFAs = true;
+        } else if (entry.getLdaMs1Name()!=null) {
+          double prob = (double)entry.getScore();
+          if (prob>maxProbMS1) maxProbMS1 = prob;
+        }
+      }else {
+        proposedDisplayString += entry.getDialClassName()+" "+(entry.getDialMs2Name()==null ? entry.getDialMs1Name() : entry.getDialMs2Name())+" ";
+        foundSomethingElse = true;
+//        System.out.println(lClass+" "+correctStructure);
+//        System.out.println("Wrong: "+entry.getName());
+      }
+      if (proposedDisplayString.length()>0){
+        proposedDisplayString.substring(0, proposedDisplayString.length()-1);
+        name = proposedDisplayString;
+      }
+    }
+    if (foundSumSpecies) {
+      evidence = 1;
+      if (foundCorrectFAs){
+        evidence = 2;
+        if (!foundWrongFAs){
+          evidence = 3;
+        }
+      }
+    }
+    Object[] result = new Object[4];
+    result[0] = evidence;
+    result[1] = name;
+    result[2] = maxProb;
+    if (maxProb<=0)
+      result[2] = maxProbMS1;
+    result[3] = allRts;
+    return result;
+  }
+
 
   
   private Object[] checkLDAEvidence(String correct, LipidomicsMSnSet lda) throws LipidCombinameEncodingException{
@@ -8025,9 +8119,9 @@ public void testTabFile() throws Exception {
     return amounts;
   }
   
-  private LipidParameterSet getLDAAnalyte(Vector<LipidParameterSet> ldaAnalytes, String analyte, String adduct, boolean ignoreMSn){
+  private LipidParameterSet getLDAAnalyte(Vector<LipidParameterSet> ldaAnalytes, String analyte, String adduct, boolean ignoreMSn, boolean ignoreRt, double[] rts){
     LipidParameterSet result = null;
-    Vector<LipidParameterSet> sets = getLDAAnalytes(ldaAnalytes, analyte, adduct, ignoreMSn);
+    Vector<LipidParameterSet> sets = getLDAAnalytes(ldaAnalytes, analyte, adduct, ignoreMSn, ignoreRt, rts);
     for (LipidParameterSet set : sets){
       if (result==null || result.Area<set.Area) result = set;
     }
@@ -8035,12 +8129,24 @@ public void testTabFile() throws Exception {
   }
   
   private  Vector<LipidParameterSet> getLDAAnalytes(Vector<LipidParameterSet> ldaAnalytes, String analyte, String adduct, boolean ignoreMSn){
+    return getLDAAnalytes(ldaAnalytes, analyte, adduct, ignoreMSn, true, new double[0]);
+  }
+  
+  
+  private  Vector<LipidParameterSet> getLDAAnalytes(Vector<LipidParameterSet> ldaAnalytes, String analyte, String adduct, boolean ignoreMSn, boolean ignoreRt, double[] rts){
     Vector<LipidParameterSet> results = new Vector<LipidParameterSet>();
     for (LipidParameterSet set : ldaAnalytes){
       if (!set.getNameStringWithoutRt().equalsIgnoreCase(analyte)) continue;
       if (!set.getModificationName().equalsIgnoreCase(adduct)) continue;
       if (!ignoreMSn && !(set instanceof LipidomicsMSnSet)) continue;
-      results.add(set);
+      boolean rtOK = false;
+      double ldaRt = Double.parseDouble(set.getRt());
+      for (double rt : rts) {
+        if ((rt-MSDIAL_RT_TOL)<ldaRt && ldaRt<(rt+MSDIAL_RT_TOL))
+          rtOK = true;
+      }
+      if (rtOK||ignoreRt)
+        results.add(set);
     }
     return results;
   }
@@ -8055,22 +8161,48 @@ public void testTabFile() throws Exception {
     return result;
   }
   
+  private Vector<Vector<MSDialEntry>> getDialAnalytes(Vector<MSDialEntry> dialHits, double mz, double[] rts, boolean doRtFiltering){
+    Vector<MSDialEntry> result = new Vector<MSDialEntry>();
+    Vector<MSDialEntry> outsideRt = new Vector<MSDialEntry>();
+    for (MSDialEntry entry : dialHits) {
+      if ((mz-MSDIAL_MZ_TOL)<entry.getMz() && entry.getMz()<(mz+MSDIAL_MZ_TOL)){
+        boolean rtOK = false;
+        if (doRtFiltering) {
+          for (int i=0; i!=rts.length; i++) {
+            float rt = (float)rts[i];
+            if (((rt-MSDIAL_RT_TOL)<entry.getRt() && entry.getRt()<(rt+MSDIAL_RT_TOL)))
+              rtOK = true;
+          }
+        }else
+          rtOK = true;
+        if (rtOK)
+          result.add(entry);
+        else
+          outsideRt.add(entry);
+      }
+    }
+    Vector<Vector<MSDialEntry>> both = new Vector<Vector<MSDialEntry>>();
+    both.add(result);
+    both.add(outsideRt);
+    return both;
+  }
+  
   private LinkedHashMap<String,ReferenceInfoVO> getLPCStandards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("13:0", new ReferenceInfoVO("13:0",1.7d,true,false));
-    standards.put("14:0", new ReferenceInfoVO("14:0",2.3d,true,false));
-    standards.put("16:0", new ReferenceInfoVO("16:0",4.1d,true,false));
-    standards.put("18:0", new ReferenceInfoVO("18:0",6.8d,true,false));
-    standards.put("18:1", new ReferenceInfoVO("18:1",4.8d,true,false));    
+    standards.put("13:0", new ReferenceInfoVO("13:0",new double[]{1.7d},true,false));
+    standards.put("14:0", new ReferenceInfoVO("14:0",new double[]{2.3d},true,false));
+    standards.put("16:0", new ReferenceInfoVO("16:0",new double[]{4.1d},true,false));
+    standards.put("18:0", new ReferenceInfoVO("18:0",new double[]{6.8d},true,false));
+    standards.put("18:1", new ReferenceInfoVO("18:1",new double[]{4.8d},true,false));    
     return standards;
   }
   
   private LinkedHashMap<String,ReferenceInfoVO> getLPCExp2Standards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("13:0", new ReferenceInfoVO("13:0",1.7d,true,false));
-    standards.put("15:0", new ReferenceInfoVO("15:0",2.3d,true,false));
+    standards.put("13:0", new ReferenceInfoVO("13:0",new double[]{1.7d},true,false));
+    standards.put("15:0", new ReferenceInfoVO("15:0",new double[]{2.3d},true,false));
     return standards;
   }
 
@@ -8078,17 +8210,17 @@ public void testTabFile() throws Exception {
   private LinkedHashMap<String,ReferenceInfoVO> getLPEStandards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("14:0", new ReferenceInfoVO("14:0",2.4d,true,false));
-    standards.put("18:0", new ReferenceInfoVO("18:0",7.1d,true,false));
-    standards.put("18:1", new ReferenceInfoVO("18:1",5.0d,true,false));    
+    standards.put("14:0", new ReferenceInfoVO("14:0",new double[]{2.4d},true,false));
+    standards.put("18:0", new ReferenceInfoVO("18:0",new double[]{7.1d},true,false));
+    standards.put("18:1", new ReferenceInfoVO("18:1",new double[]{5.0d},true,false));    
     return standards;
   }
   
   private LinkedHashMap<String,ReferenceInfoVO> getLPEExp2Standards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("16:0", new ReferenceInfoVO("16:0",2.4d,true,false));
-    standards.put("18:0", new ReferenceInfoVO("18:0",7.1d,true,false));
+    standards.put("16:0", new ReferenceInfoVO("16:0",new double[]{2.4d},true,false));
+    standards.put("18:0", new ReferenceInfoVO("18:0",new double[]{7.1d},true,false));
     return standards;
   }
 
@@ -8096,67 +8228,67 @@ public void testTabFile() throws Exception {
   private LinkedHashMap<String,ReferenceInfoVO> getPSStandards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("32:0", new ReferenceInfoVO("16:0/16:0",24.8d,true,false));
-    standards.put("34:0", new ReferenceInfoVO("17:0/17:0",27.2d,true,false));
-    standards.put("34:1", new ReferenceInfoVO("16:0/18:1",24.8d,true,true));
-    standards.put("34:2", new ReferenceInfoVO("16:0/18:2",23.0d,true,true));
-    standards.put("36:0", new ReferenceInfoVO("18:0/18:0",31.0d,true,false));
-    standards.put("36:1", new ReferenceInfoVO("18:0/18:1",29.0d,true,true));
-    standards.put("36:2", new ReferenceInfoVO("18:0/18:2",26.0d,true,true));
+    standards.put("32:0", new ReferenceInfoVO("16:0/16:0",new double[]{24.8d},true,false));
+    standards.put("34:0", new ReferenceInfoVO("17:0/17:0",new double[]{27.2d},true,false));
+    standards.put("34:1", new ReferenceInfoVO("16:0/18:1",new double[]{24.8d},true,true));
+    standards.put("34:2", new ReferenceInfoVO("16:0/18:2",new double[]{23.0d},true,true));
+    standards.put("36:0", new ReferenceInfoVO("18:0/18:0",new double[]{31.0d},true,false));
+    standards.put("36:1", new ReferenceInfoVO("18:0/18:1",new double[]{29.0d},true,true));
+    standards.put("36:2", new ReferenceInfoVO("18:0/18:2",new double[]{26.0d},true,true));
     return standards;
   }
   
   private LinkedHashMap<String,ReferenceInfoVO> getLPSStandards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("16:0", new ReferenceInfoVO("16:0",3.6d,true,false));
-    standards.put("17:1", new ReferenceInfoVO("17:1",3.2d,true,false));
-    standards.put("18:0", new ReferenceInfoVO("18:0",6.5d,true,false));
-    standards.put("18:1", new ReferenceInfoVO("18:1",4.4d,true,false));    
+    standards.put("16:0", new ReferenceInfoVO("16:0",new double[]{3.6d},true,false));
+    standards.put("17:1", new ReferenceInfoVO("17:1",new double[]{3.2d},true,false));
+    standards.put("18:0", new ReferenceInfoVO("18:0",new double[]{6.5d},true,false));
+    standards.put("18:1", new ReferenceInfoVO("18:1",new double[]{4.4d},true,false));    
     return standards;
   }
 
   private LinkedHashMap<String,ReferenceInfoVO> getPCStandards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("32:0", new ReferenceInfoVO("14:0/18:0",25.3d,true,true));
-    standards.put("32:1", new ReferenceInfoVO("18:1/14:0",23.3d,true,true));
-    standards.put("34:0", new ReferenceInfoVO("16:0/18:0",27.6d,true,true));
-    standards.put("34:1", new ReferenceInfoVO("16:0/18:1",25.9d,true,true));
-    standards.put("36:0", new ReferenceInfoVO("18:0/18:0",29.9d,true,false));
-    standards.put("36:1", new ReferenceInfoVO("18:0/18:1",28.3d,true,true));
-    standards.put("36:2", new ReferenceInfoVO("18:0/18:2",26.6d,true,true));
-    standards.put("40:0", new ReferenceInfoVO("20:0/20:0",33.7d,true,false));
-    standards.put("48:2", new ReferenceInfoVO("24:1/24:1",36.8d,true,false));
+    standards.put("32:0", new ReferenceInfoVO("14:0/18:0",new double[]{25.3d},true,true));
+    standards.put("32:1", new ReferenceInfoVO("18:1/14:0",new double[]{23.3d},true,true));
+    standards.put("34:0", new ReferenceInfoVO("16:0/18:0",new double[]{27.6d},true,true));
+    standards.put("34:1", new ReferenceInfoVO("16:0/18:1",new double[]{25.9d},true,true));
+    standards.put("36:0", new ReferenceInfoVO("18:0/18:0",new double[]{29.9d},true,false));
+    standards.put("36:1", new ReferenceInfoVO("18:0/18:1",new double[]{28.3d},true,true));
+    standards.put("36:2", new ReferenceInfoVO("18:0/18:2",new double[]{26.6d},true,true));
+    standards.put("40:0", new ReferenceInfoVO("20:0/20:0",new double[]{33.7d},true,false));
+    standards.put("48:2", new ReferenceInfoVO("24:1/24:1",new double[]{36.8d},true,false));
     return standards;
   }
 
   private LinkedHashMap<String,ReferenceInfoVO> getPCExp2Standards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("31:1", new ReferenceInfoVO("17:0/14:1",23.3d,true,true));
-    standards.put("40:6", new ReferenceInfoVO("18:0/22:6",33.7d,true,false));
+    standards.put("31:1", new ReferenceInfoVO("17:0/14:1",new double[]{23.3d},true,true));
+    standards.put("40:6", new ReferenceInfoVO("18:0/22:6",new double[]{33.7d},true,false));
     return standards;
   }
 
   private LinkedHashMap<String,ReferenceInfoVO> getPEStandards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("32:0", new ReferenceInfoVO("16:0/16:0",25.7d,true,false));
-    standards.put("34:0", new ReferenceInfoVO("17:0/17:0",28.1d,true,false));
-    standards.put("34:1", new ReferenceInfoVO("16:0/18:1",26.3d,true,true));
-    standards.put("36:0", new ReferenceInfoVO("18:0/18:0",30.3d,true,false));
-    standards.put("36:1", new ReferenceInfoVO("18:0/18:1",28.7d,true,true));
-    standards.put("36:2", new ReferenceInfoVO("18:0/18:2",27.0d,true,true));
-    standards.put("36:4", new ReferenceInfoVO("16:0/20:4",24.5d,true,true));
+    standards.put("32:0", new ReferenceInfoVO("16:0/16:0",new double[]{25.7d},true,false));
+    standards.put("34:0", new ReferenceInfoVO("17:0/17:0",new double[]{28.1d},true,false));
+    standards.put("34:1", new ReferenceInfoVO("16:0/18:1",new double[]{26.3d},true,true));
+    standards.put("36:0", new ReferenceInfoVO("18:0/18:0",new double[]{30.3d},true,false));
+    standards.put("36:1", new ReferenceInfoVO("18:0/18:1",new double[]{28.7d},true,true));
+    standards.put("36:2", new ReferenceInfoVO("18:0/18:2",new double[]{27.0d},true,true));
+    standards.put("36:4", new ReferenceInfoVO("16:0/20:4",new double[]{24.5d},true,true));
     return standards;
   }
   
   private LinkedHashMap<String,ReferenceInfoVO> getPEExp2Standards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("34:1", new ReferenceInfoVO("16:0/18:1",26.3d,true,true));
-    standards.put("43:6", new ReferenceInfoVO("21:0/22:6",24.5d,true,true));
+    standards.put("34:1", new ReferenceInfoVO("16:0/18:1",new double[]{26.3d},true,true));
+    standards.put("43:6", new ReferenceInfoVO("21:0/22:6",new double[]{24.5d},true,true));
     return standards;
   }
 
@@ -8164,61 +8296,61 @@ public void testTabFile() throws Exception {
   private LinkedHashMap<String,ReferenceInfoVO> getPIStandards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("25:0", new ReferenceInfoVO("12:0/13:0",12.6d,true,true));
-    standards.put("31:1", new ReferenceInfoVO("17:0/14:1",19.7d,true,true));
-    standards.put("37:4", new ReferenceInfoVO("17:0/20:4",23.1d,true,true));
-    standards.put("43:6", new ReferenceInfoVO("21:0/22:6",27.4d,true,true));
+    standards.put("25:0", new ReferenceInfoVO("12:0/13:0",new double[]{12.6d},true,true));
+    standards.put("31:1", new ReferenceInfoVO("17:0/14:1",new double[]{19.7d},true,true));
+    standards.put("37:4", new ReferenceInfoVO("17:0/20:4",new double[]{23.1d},true,true));
+    standards.put("43:6", new ReferenceInfoVO("21:0/22:6",new double[]{27.4d},true,true));
     return standards;
   }
 
   private LinkedHashMap<String,ReferenceInfoVO> getPPCStandards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("36:1", new ReferenceInfoVO("P-18:0/18:1",29.3d,true,false));
-    standards.put("38:4", new ReferenceInfoVO("P-18:0/20:4",27.6d,true,false));
-    standards.put("40:6", new ReferenceInfoVO("P-18:0/22:6",27.6d,true,false));    
+    standards.put("36:1", new ReferenceInfoVO("P-18:0/18:1",new double[]{29.3d},true,false));
+    standards.put("38:4", new ReferenceInfoVO("P-18:0/20:4",new double[]{27.6d},true,false));
+    standards.put("40:6", new ReferenceInfoVO("P-18:0/22:6",new double[]{27.6d},true,false));    
     return standards;
   }
 
   private LinkedHashMap<String,ReferenceInfoVO> getPPEStandards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("36:1", new ReferenceInfoVO("P-18:0/18:1",29.8d,true,false));
-    standards.put("38:4", new ReferenceInfoVO("P-18:0/20:4",28.1d,true,false));
-    standards.put("40:6", new ReferenceInfoVO("P-18:0/22:6",27.5d,true,false));    
+    standards.put("36:1", new ReferenceInfoVO("P-18:0/18:1",new double[]{29.8d},true,false));
+    standards.put("38:4", new ReferenceInfoVO("P-18:0/20:4",new double[]{28.1d},true,false));
+    standards.put("40:6", new ReferenceInfoVO("P-18:0/22:6",new double[]{27.5d},true,false));    
     return standards;
   }
 
   private LinkedHashMap<String,ReferenceInfoVO> getPGStandards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("32:0", new ReferenceInfoVO("16:0/16:0",23.8d,true,false));
-    standards.put("34:0", new ReferenceInfoVO("17:0/17:0",26.2d,true,false));
-    standards.put("34:1", new ReferenceInfoVO("16:0/18:1",24.4d,true,true));
-    standards.put("36:0", new ReferenceInfoVO("18:0/18:0",28.4d,true,false));
-    standards.put("36:1", new ReferenceInfoVO("18:0/18:1",26.8d,true,true));
-    standards.put("36:2", new ReferenceInfoVO("18:0/18:2",25.1d,true,true));
+    standards.put("32:0", new ReferenceInfoVO("16:0/16:0",new double[]{23.8d},true,false));
+    standards.put("34:0", new ReferenceInfoVO("17:0/17:0",new double[]{26.2d},true,false));
+    standards.put("34:1", new ReferenceInfoVO("16:0/18:1",new double[]{24.4d},true,true));
+    standards.put("36:0", new ReferenceInfoVO("18:0/18:0",new double[]{28.4d},true,false));
+    standards.put("36:1", new ReferenceInfoVO("18:0/18:1",new double[]{26.8d},true,true));
+    standards.put("36:2", new ReferenceInfoVO("18:0/18:2",new double[]{25.1d},true,true));
     return standards;
   }
   
   private LinkedHashMap<String,ReferenceInfoVO> getSMStandards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("18:0", new ReferenceInfoVO("18:0",24.6d,true,false));
-    standards.put("18:1", new ReferenceInfoVO("18:1",22.7d,true,false));    
-    standards.put("24:0", new ReferenceInfoVO("24:0",31.8d,true,false));
-    standards.put("24:1", new ReferenceInfoVO("24:1",29.6d,true,false));
+    standards.put("18:0", new ReferenceInfoVO("18:0",new double[]{24.6d},true,false));
+    standards.put("18:1", new ReferenceInfoVO("18:1",new double[]{22.7d},true,false));    
+    standards.put("24:0", new ReferenceInfoVO("24:0",new double[]{31.8d},true,false));
+    standards.put("24:1", new ReferenceInfoVO("24:1",new double[]{29.6d},true,false));
     return standards;
   }
 
   private LinkedHashMap<String,ReferenceInfoVO> getCerStandards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("16:0", new ReferenceInfoVO("16:0",25.5d,true,false));
-    standards.put("17:0", new ReferenceInfoVO("17:0",26.8d,true,false));
-    standards.put("18:0", new ReferenceInfoVO("18:0",28.0d,true,false));
-    standards.put("18:1", new ReferenceInfoVO("18:1",26.3d,true,false));    
-    standards.put("20:0", new ReferenceInfoVO("20:0",30.4d,true,false));
+    standards.put("16:0", new ReferenceInfoVO("16:0",new double[]{25.5d},true,false));
+    standards.put("17:0", new ReferenceInfoVO("17:0",new double[]{26.8d},true,false));
+    standards.put("18:0", new ReferenceInfoVO("18:0",new double[]{28.0d},true,false));
+    standards.put("18:1", new ReferenceInfoVO("18:1",new double[]{26.3d},true,false));    
+    standards.put("20:0", new ReferenceInfoVO("20:0",new double[]{30.4d},true,false));
     return standards;
   }
 
@@ -8226,30 +8358,30 @@ public void testTabFile() throws Exception {
   private LinkedHashMap<String,ReferenceInfoVO> getDGStandards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("24:0", new ReferenceInfoVO("12:0/12:0/-",20.1d,true,true));
-    standards.put("32:0", new ReferenceInfoVO("16:0/16:0/-",30.5d,true,true));
-    standards.put("34:0", new ReferenceInfoVO("18:0/16:0/-",32.6d,true,true));
-    standards.put("34:1", new ReferenceInfoVO("16:0/-/18:1",30.9d,true,true));
-    standards.put("36:0", new ReferenceInfoVO("18:0/18:0/-",34.4d,true,true));
-    standards.put("36:2", new ReferenceInfoVO("18:1/-/18:1",31.9d,true,true));
-    standards.put("36:4", new ReferenceInfoVO("18:2/-/18:2",28.2d,true,true));
-    standards.put("38:0", new ReferenceInfoVO("20:0/18:0/-",35.9d,true,true));
+    standards.put("24:0", new ReferenceInfoVO("12:0/12:0/-",new double[]{20.1d},true,true));
+    standards.put("32:0", new ReferenceInfoVO("16:0/16:0/-",new double[]{30.5d},true,true));
+    standards.put("34:0", new ReferenceInfoVO("18:0/16:0/-",new double[]{32.6d},true,true));
+    standards.put("34:1", new ReferenceInfoVO("16:0/-/18:1",new double[]{30.9d},true,true));
+    standards.put("36:0", new ReferenceInfoVO("18:0/18:0/-",new double[]{34.4d},true,true));
+    standards.put("36:2", new ReferenceInfoVO("18:1/-/18:1",new double[]{31.9d},true,true));
+    standards.put("36:4", new ReferenceInfoVO("18:2/-/18:2",new double[]{28.2d},true,true));
+    standards.put("38:0", new ReferenceInfoVO("20:0/18:0/-",new double[]{35.9d},true,true));
     return standards;
   }
   
   private LinkedHashMap<String,ReferenceInfoVO> getTGStandards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
-    standards.put("d44:1", new ReferenceInfoVO("14:0/16:1/14:0",38.4d,false,false));
-    standards.put("48:0", new ReferenceInfoVO("16:0/16:0/16:0",41.6d,true,false));
-    standards.put("d48:1", new ReferenceInfoVO("15:0/18:1/15:0",40.7d,false,false));
-    standards.put("50:0", new ReferenceInfoVO("16:0/16:0/18:0",42.7d,true,false));
-    standards.put("50:1", new ReferenceInfoVO("16:0/16:0/18:1",41.8d,true,false));
-    standards.put("d51:1", new ReferenceInfoVO("17:0/17:1/17:0",42.2d,false,false));
-    standards.put("d58:7", new ReferenceInfoVO("20:2/18:3/20:2",40.4d,false,false));
-    standards.put("d58:10", new ReferenceInfoVO("20:4/18:2/20:4",38.8d,false,false));
-    standards.put("d60:1", new ReferenceInfoVO("20:0/20:1/20:0",38.8d,false,false));
-    standards.put("d62:16", new ReferenceInfoVO("20:5/22:6/20:5",36.1d,false,false));
+    standards.put("d44:1", new ReferenceInfoVO("14:0/16:1/14:0",new double[]{38.4d},false,false));
+    standards.put("48:0", new ReferenceInfoVO("16:0/16:0/16:0",new double[]{41.6d},true,false));
+    standards.put("d48:1", new ReferenceInfoVO("15:0/18:1/15:0",new double[]{40.7d},false,false));
+    standards.put("50:0", new ReferenceInfoVO("16:0/16:0/18:0",new double[]{42.7d},true,false));
+    standards.put("50:1", new ReferenceInfoVO("16:0/16:0/18:1",new double[]{41.8d},true,false));
+    standards.put("d51:1", new ReferenceInfoVO("17:0/17:1/17:0",new double[]{42.2d},false,false));
+    standards.put("d58:7", new ReferenceInfoVO("20:2/18:3/20:2",new double[]{40.4d},false,false));
+    standards.put("d58:10", new ReferenceInfoVO("20:4/18:2/20:4",new double[]{38.8d},false,false));
+    standards.put("d60:1", new ReferenceInfoVO("20:0/20:1/20:0",new double[]{38.8d},false,false));
+    standards.put("d62:16", new ReferenceInfoVO("20:5/22:6/20:5",new double[]{36.1d},false,false));
     return standards;
   }
   
@@ -8272,17 +8404,21 @@ public void testTabFile() throws Exception {
     return spectraThere;
   }
 
-  private boolean areThereAnyMSnSpectra(LipidomicsAnalyzer analyzer, QuantVO quantVO, LipidClassInfoVO info, LinkedHashMap<String,ReferenceInfoVO> species) throws CgException{
+  private boolean areThereAnyMSnSpectra(LipidomicsAnalyzer analyzer, float mz, LipidClassInfoVO info, LinkedHashMap<String,ReferenceInfoVO> species) throws CgException{
     boolean spectraThere = false;
-    Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache((float)(quantVO.getAnalyteMass()-LipidomicsConstants.getMs2PrecursorTolerance()), (float)(quantVO.getAnalyteMass()+LipidomicsConstants.getMs2PrecursorTolerance()),100);
+    Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache(mz-LipidomicsConstants.getMs2PrecursorTolerance(), mz+LipidomicsConstants.getMs2PrecursorTolerance(),100);
     if (info.checkRt() && msLevels!=null && msLevels.containsKey(2) && msLevels.get(2)){
       for (ReferenceInfoVO ref : species.values()){
-        float startRt  = (float)((ref.getCorrectRt()-info.getRtTolerance())*60d);
-        float stopRt  = (float)((ref.getCorrectRt()+info.getRtTolerance())*60d);
-        if (analyzer.areMSnSpectraInThisRegion(startRt,stopRt,2)){
-          spectraThere = true;
-          break;
+        for (int i=0; i!=ref.getCorrectRts().length; i++) {
+          float startRt  = (float)((ref.getCorrectRts()[i]-info.getRtTolerance())*60d);
+          float stopRt  = (float)((ref.getCorrectRts()[i]+info.getRtTolerance())*60d);
+          if (analyzer.areMSnSpectraInThisRegion(startRt,stopRt,2)){
+            spectraThere = true;
+            break;
+          }
         }
+        if (spectraThere)
+          break;
       }
       
     } else {
@@ -8349,7 +8485,8 @@ public void testTabFile() throws Exception {
     //now check if LDA or LB identified the analyte at the correct RT
     if (species!=null && species.size()>0){
       boolean ms1AnalyteDetected = false;
-      rtIdeal =  Calculator.FormatNumberToString(species.values().iterator().next().getCorrectRt(),1);
+      //WAS-DONE: for backward compatibility, the following was changed: getCorrectRts()[0]
+      rtIdeal =  Calculator.FormatNumberToString(species.values().iterator().next().getCorrectRts()[0],1);
       // this is the MS1 check of the LDA
       ldaMS1Evidence = -1;
       for (LipidParameterSet set : ldaMs2SpectraIdentified){
@@ -8387,7 +8524,7 @@ public void testTabFile() throws Exception {
       for (String lbRt : rtLBs.keySet()) rtLB += lbRt+" ";
       if (rtLB.length()>0) rtLB = rtLB.substring(0,rtLB.length()-1);
       if ((ldaMS1Evidence==-1||ldaMS1Evidence==-3)  && (lbMS1Evidence==-1||lbMS1Evidence==-3)){
-        if (!areThereAnyMSnSpectra(analyzer,quant,info,species)){
+        if (!areThereAnyMSnSpectra(analyzer,(float)quant.getAnalyteMass(),info,species)){
           if (ldaMS1Evidence==-3) ldaMS1Evidence=-2;
           if (lbMS1Evidence==-3) lbMS1Evidence=-2;
           if (ldaMS1Evidence==-1) ldaMS1Evidence=0;
@@ -8433,7 +8570,8 @@ public void testTabFile() throws Exception {
           String keyWOSlash = key.replaceAll("/", "_");
           boolean ms2AnalyteDetected = false;
           String ldaMS2Name = "not reported";
-          String rtMS2Ideal = Calculator.FormatNumberToString(ref.getCorrectRt(),1);
+          //WAS-DONE: for backward compatibility, the following was changed: getCorrectRts()[0]
+          String rtMS2Ideal = Calculator.FormatNumberToString(ref.getCorrectRts()[0],1);
           String rtMS2LDA = "";
           String rtMS2LB = "";
           // here starts the LDA check of the MS2 evidence
@@ -8531,7 +8669,7 @@ public void testTabFile() throws Exception {
           if (rtMS2LB.length()>1) rtMS2LB = rtMS2LB.substring(0,rtMS2LB.length()-1);
           if (ldaMS2Evidence!=-1 || lbMS2Evidence!=-1){
             ms2Compare.add(new LdaLBLASTCompareVO(key,ldaMS2Name,lbName,ldaMS2Evidence,lbMS2Evidence,rtMS2Ideal,rtMS2LDA,rtMS2LB,false,
-                lbMs2Prob, false));
+                lbMs2Prob, (float)quant.getAnalyteMass(), false));
           }
         }
       }
@@ -8620,7 +8758,7 @@ public void testTabFile() throws Exception {
         if (lbName.length()>1)lbName=lbName.substring(0,lbName.length()-1);
         if (rtMS2LB.length()>1) rtMS2LB = rtMS2LB.substring(0,rtMS2LB.length()-1);
         ms2Compare.add(new LdaLBLASTCompareVO(nameString+"_FP",nameString,lbName,-2,lbMS2Evidence,"",rtMS2LDA,rtMS2LB,true,
-            lbMs2Prob, false));
+            lbMs2Prob, (float)quant.getAnalyteMass(), false));
       }
     }
     //add now the ms2 FPs that were found by LipidBlast only
@@ -8668,7 +8806,7 @@ public void testTabFile() throws Exception {
           if (lbName.length()>1)lbName=lbName.substring(0,lbName.length()-1);
           if (rtMS2LB.length()>0) rtMS2LB = rtMS2LB.substring(0,rtMS2LB.length()-1);
           ms2Compare.add(new LdaLBLASTCompareVO(lbName+"_FP","not reported",lbName,0,lbMS2Evidence,"","",rtMS2LB,true,
-            lbMs2Prob, false));
+            lbMs2Prob, (float)quant.getAnalyteMass(), false));
         }
       }
     }
@@ -8678,7 +8816,7 @@ public void testTabFile() throws Exception {
     if (ldaMS1Evidence<1 && lbMS1Evidence<1 && noMS2) correctMS1Name += "_noMS2";
     if (createCompareVO){
       compare = new LdaLBLASTCompareVO(correctMS1Name,ldaMS1Name,lbMS1Name,ldaMS1Evidence,lbMS1Evidence,rtIdeal,rtLDA,rtLB,isFP,
-        lbProb, ms1Only);
+        lbProb, (float)quant.getAnalyteMass(), ms1Only);
       if (ms2Compare.size()>0) compare.setMs2Evidence(ms2Compare);
         
     }
@@ -8807,9 +8945,11 @@ public void testTabFile() throws Exception {
   private boolean isHitAtCorrectRt(double rt, LipidClassInfoVO info, ReferenceInfoVO ref){
     if (!info.checkRt()) return true;
     boolean isAtCorrectRt = false;
-    double startRt = ref.getCorrectRt()-info.getRtTolerance();
-    double stopRt = ref.getCorrectRt()+info.getRtTolerance();
-    if (startRt<=rt && rt<=stopRt) isAtCorrectRt = true;
+    for (int i=0; i!=ref.getCorrectRts().length; i++) {
+      double startRt = ref.getCorrectRts()[i]-info.getRtTolerance();
+      double stopRt = ref.getCorrectRts()[i]+info.getRtTolerance();
+      if (startRt<=rt && rt<=stopRt) isAtCorrectRt = true;
+    }
     return isAtCorrectRt;    
   }
 
@@ -9992,190 +10132,190 @@ public void testTabFile() throws Exception {
   
   
   private void getValidOrbitrapCIDSpeciesPositive(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
-      Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,String> adducts){
+      Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
     lipidClasses.put("P-PC", FoundBiologicalSpecies.getPPCSpeciesOrbitrap());
-    adducts.put("H", "H");
-    adducts.put("Na", "Na");
+    adducts.put("H", true);
+    adducts.put("Na", true);
     lipidClassInfo.put("P-PC", new LipidClassInfoVO(2,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("P-PE", FoundBiologicalSpecies.getPPESpeciesOrbitrap());
-    adducts.put("H", "H");
-    adducts.put("Na", "Na");
+    adducts.put("H", true);
+    adducts.put("Na", true);
     lipidClassInfo.put("P-PE", new LipidClassInfoVO(2,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("LPE", FoundBiologicalSpecies.getLPESpeciesOrbitrap());
-    adducts.put("H", "H");
-    adducts.put("Na", "Na");
+    adducts.put("H", false);
+    adducts.put("Na", false);
     lipidClassInfo.put("LPE", new LipidClassInfoVO(1,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("PS", FoundBiologicalSpecies.getPSSpeciesOrbitrap());
-    adducts.put("H", "H");
+    adducts.put("H", true);
     lipidClassInfo.put("PS", new LipidClassInfoVO(2,false,-1,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("PC", FoundBiologicalSpecies.getPCSpeciesOrbitrap());
-    adducts.put("H", "H");
-    adducts.put("Na", "Na");
-    adducts = new LinkedHashMap<String,String>();
+    adducts.put("H", true);
+    adducts.put("Na", true);
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClassInfo.put("PC", new LipidClassInfoVO(2,true,0.7d,adducts));
     lipidClasses.put("PE", FoundBiologicalSpecies.getPESpeciesOrbitrap());
-    adducts.put("H", "H");
-    adducts.put("Na", "Na");
+    adducts.put("H", true);
+    adducts.put("Na", true);
     lipidClassInfo.put("PE", new LipidClassInfoVO(2,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("Cer", FoundBiologicalSpecies.getCerSpeciesOrbitrap());
-    adducts.put("H", "H");
+    adducts.put("H", false);
     lipidClassInfo.put("Cer", new LipidClassInfoVO(1,true,0.7d,adducts));
     
     //this has to be before LPC, DG, TG and SM
     correctRetentionTimes(-0.2d,lipidClasses);
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("LPC", FoundBiologicalSpecies.getLPCSpeciesOrbitrap());
-    adducts.put("H", "H");
-    adducts.put("Na", "Na");
+    adducts.put("H", false);
+    adducts.put("Na", false);
     lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,1.2d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("DG", FoundBiologicalSpecies.getDGSpeciesOrbitrap());
-    adducts.put("Na", "Na");
-    adducts.put("NH4", "NH4");
+    adducts.put("Na", true);
+    adducts.put("NH4", true);
     lipidClassInfo.put("DG", new LipidClassInfoVO(3,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("TG", FoundBiologicalSpecies.getTGSpeciesOrbitrap());
-    adducts.put("NH4", "NH4");
-    adducts.put("Na", "Na");
+    adducts.put("NH4", true);
+    adducts.put("Na", true);
     lipidClassInfo.put("TG", new LipidClassInfoVO(3,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("SM", FoundBiologicalSpecies.getSMSpeciesOrbitrap());
-    adducts.put("H", "H");
-    adducts.put("Na", "Na");
+    adducts.put("H", false);
+    adducts.put("Na", false);
     lipidClassInfo.put("SM", new LipidClassInfoVO(1,true,0.7d,adducts));
   }
   
   private void getValid4000QTRAPSpeciesPositive(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
-      Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,String> adducts){
+      Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
     //it is not recommended to analyzer P-PC with LDA on a 4000 QTRAP
 //    lipidClasses.put("P-PC", FoundBiologicalSpecies.getPPCSpecies4000QTRAP());
 //    adducts.put("H", "H");
 //    adducts.put("Na", "Na");
 //    lipidClassInfo.put("P-PC", new LipidClassInfoVO(2,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("P-PE", FoundBiologicalSpecies.getPPESpecies4000QTRAP());
-    adducts.put("H", "H");
-    adducts.put("Na", "Na");
+    adducts.put("H", true);
+    adducts.put("Na", true);
     lipidClassInfo.put("P-PE", new LipidClassInfoVO(2,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("LPE", FoundBiologicalSpecies.getLPESpecies4000QTRAP());
-    adducts.put("H", "H");
-    adducts.put("Na", "Na");
+    adducts.put("H", false);
+    adducts.put("Na", false);
     lipidClassInfo.put("LPE", new LipidClassInfoVO(1,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("PS", FoundBiologicalSpecies.getPSSpecies4000QTRAP());
-    adducts.put("H", "H");
+    adducts.put("H", true);
     lipidClassInfo.put("PS", new LipidClassInfoVO(2,false,-1,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("PC", FoundBiologicalSpecies.getPCSpecies4000QTRAP());
-    adducts.put("H", "H");
-    adducts.put("Na", "Na");
+    adducts.put("H", true);
+    adducts.put("Na", true);
     lipidClassInfo.put("PC", new LipidClassInfoVO(2,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("PE", FoundBiologicalSpecies.getPESpecies4000QTRAP());
-    adducts.put("H", "H");
-    adducts.put("Na", "Na");
+    adducts.put("H", true);
+    adducts.put("Na", true);
     lipidClassInfo.put("PE", new LipidClassInfoVO(2,true,0.7d,adducts));
     
     //this has to be before LPC, DG, TG and SM
     ////correctRetentionTimes(-0.2d,lipidClasses);
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("LPC", FoundBiologicalSpecies.getLPCSpecies4000QTRAP());
-    adducts.put("H", "H");
-    adducts.put("Na", "Na");
+    adducts.put("H", false);
+    adducts.put("Na", false);
     lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,1.2d,adducts));
     //it is not recommended to analyze DG with a 4000 QTRAP
 //    adducts = new LinkedHashMap<String,String>();
 //    lipidClasses.put("DG", FoundBiologicalSpecies.getDGSpecies4000QTRAP());
 //    adducts.put("Na", "Na");
 //    lipidClassInfo.put("DG", new LipidClassInfoVO(3,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("TG", FoundBiologicalSpecies.getTGSpecies4000QTRAP());
-    adducts.put("NH4", "NH4");
-    adducts.put("Na", "Na");
+    adducts.put("NH4", true);
+    adducts.put("Na", true);
     lipidClassInfo.put("TG", new LipidClassInfoVO(3,true,0.6d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("SM", FoundBiologicalSpecies.getSMSpecies4000QTRAP());
-    adducts.put("H", "H");
-    adducts.put("Na", "Na");
+    adducts.put("H", true);
+    adducts.put("Na", true);
     lipidClassInfo.put("SM", new LipidClassInfoVO(1,true,0.7d,adducts));
 
   }
 
   private void getValidOrbitrapCIDSpeciesNegative(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
-      Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,String> adducts){
+      Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
     lipidClasses.put("PI", FoundBiologicalSpecies.getPISpeciesOrbitrap());
-    adducts.put("-H", "-H");
+    adducts.put("-H", true);
     lipidClassInfo.put("PI", new LipidClassInfoVO(2,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("P-PE", FoundBiologicalSpecies.getPPESpeciesOrbitrap());
-    adducts.put("-H", "-H");
+    adducts.put("-H", true);
     lipidClassInfo.put("P-PE", new LipidClassInfoVO(2,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("LPE", FoundBiologicalSpecies.getLPESpeciesOrbitrap());
-    adducts.put("-H", "-H");
+    adducts.put("-H", false);
     lipidClassInfo.put("LPE", new LipidClassInfoVO(1,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("PS", FoundBiologicalSpecies.getPSSpeciesOrbitrap());
-    adducts.put("-H", "-H");
+    adducts.put("-H", true);
     lipidClassInfo.put("PS", new LipidClassInfoVO(2,false,-1,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("PC", FoundBiologicalSpecies.getPCSpeciesOrbitrap());
-    adducts.put("HCOO", "HCOO");
-    adducts.put("-CH3", "-CH3");
+    adducts.put("HCOO", true);
+    adducts.put("-CH3", true);
     lipidClassInfo.put("PC", new LipidClassInfoVO(2,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("PE", FoundBiologicalSpecies.getPESpeciesOrbitrap());
-    adducts.put("-H", "-H");
+    adducts.put("-H", true);
     lipidClassInfo.put("PE", new LipidClassInfoVO(2,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("PG", FoundBiologicalSpecies.getPGSpeciesOrbitrap());
-    adducts.put("-H", "-H");
+    adducts.put("-H", true);
     lipidClassInfo.put("PG", new LipidClassInfoVO(2,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("Cer", FoundBiologicalSpecies.getCerSpeciesOrbitrap());
-    adducts.put("-H", "-H");
+    adducts.put("-H", false);
     lipidClassInfo.put("Cer", new LipidClassInfoVO(1,true,0.7d,adducts));
   }
   
   private void getValid4000QTRAPSpeciesNegative(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
-      Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,String> adducts){
+      Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
     lipidClasses.put("PI", FoundBiologicalSpecies.getPISpecies4000QTRAP());
-    adducts.put("-H", "-H");
+    adducts.put("-H", true);
     lipidClassInfo.put("PI", new LipidClassInfoVO(2,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("P-PE", FoundBiologicalSpecies.getPPESpecies4000QTRAP());
-    adducts.put("-H", "-H");
+    adducts.put("-H", true);
     lipidClassInfo.put("P-PE", new LipidClassInfoVO(2,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("LPE", FoundBiologicalSpecies.getLPESpecies4000QTRAP());
-    adducts.put("-H", "-H");
+    adducts.put("-H", false);
     lipidClassInfo.put("LPE", new LipidClassInfoVO(1,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("PS", FoundBiologicalSpecies.getPSSpecies4000QTRAP());
-    adducts.put("-H", "-H");
+    adducts.put("-H", true);
     lipidClassInfo.put("PS", new LipidClassInfoVO(2,true,0.7,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("PC", FoundBiologicalSpecies.getPCSpecies4000QTRAP());
-    adducts.put("HCOO", "HCOO");
-    adducts.put("-CH3", "-CH3");
+    adducts.put("HCOO", true);
+    adducts.put("-CH3", true);
     lipidClassInfo.put("PC", new LipidClassInfoVO(2,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("PE", FoundBiologicalSpecies.getPESpecies4000QTRAP());
-    adducts.put("-H", "-H");
+    adducts.put("-H", true);
     lipidClassInfo.put("PE", new LipidClassInfoVO(2,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("PG", FoundBiologicalSpecies.getPGSpecies4000QTRAP());
-    adducts.put("-H", "-H");
+    adducts.put("-H", true);
     lipidClassInfo.put("PG", new LipidClassInfoVO(2,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,String>();
+    adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("Cer", FoundBiologicalSpecies.getCerSpecies4000QTRAP());
-    adducts.put("-H", "-H");
+    adducts.put("-H", false);
     lipidClassInfo.put("Cer", new LipidClassInfoVO(1,true,0.7d,adducts));
   }
   
@@ -14218,7 +14358,7 @@ public void testTabFile() throws Exception {
   }
   
   private void evaluatePrmData(){
-    String chromFile = "D:\\Alex\\PRM\\PRM_Beispiel__006_Platelets_PRM_CerOH_HexCerOH.chrom";
+    String chromFile = "C:\\data\\Alex\\PRM\\PRM_Beispiel__006_Platelets_PRM_CerOH_HexCerOH.chrom";
 //    String quantFile = "D:\\Christer\\20170531\\target_lists_alex";
 //    boolean positiveIonMode = true;
     float mz = 716.522481811612f;
@@ -16396,7 +16536,7 @@ public void testTabFile() throws Exception {
   
   private void detectMSnWithLCB() {
     try {
-//      LipidParameterSet param = new LipidParameterSet(464.546203613281f, "30", 1, "-OH", "", "C30 H59 N1 O3", "-H1 -O1",1,2);
+//      LipidParameterSet param = new LipidParameterSet(464.546203613281f, "48", 1, "-OH", "", "C30 H59 N1 O3", "-H1 -O1",1,5);
 //
 //      CgProbe probe1 = new CgProbe(0,1);
 //      probe1.AreaStatus = CgAreaStatus.OK;
@@ -16412,30 +16552,98 @@ public void testTabFile() throws Exception {
 //      probe1.isotopeNumber = 0;
 //      param.AddProbe(probe1);
 //      String[] chromPaths = StringUtils.getChromFilePaths("C:\\Sphingolipids\\dataStandardsPrelim\\20190111\\positive\\01092018 CER and SPH Mixes positive-10uM MIX 1.chrom");
-    
-      LipidParameterSet param = new LipidParameterSet(829.798461914062f, "IS48", 1, "NH4", "", "C51 H89 O6 D7", "+N1 +H4",1,0);
+
+//      LipidParameterSet param = new LipidParameterSet(829.798461914062f, "IS48", 1, "NH4", "", "C51 H89 O6 D7", "+N1 +H4",1,0);
+//
+//      CgProbe probe1 = new CgProbe(0,1);
+//      probe1.AreaStatus = CgAreaStatus.OK;
+//      probe1.Area = 1993875328f;
+//      probe1.AreaError = 398507968f;
+//      probe1.Background = 4764792f;
+//      probe1.Peak = 989.653991699218f;
+//      probe1.LowerValley = 982.716003417968f;
+//      probe1.UpperValley = 1004.40997314453f;
+//      probe1.Mz = 829.798583984375f;
+//      probe1.LowerMzBand = 0.0130615234375f;
+//      probe1.UpperMzBand = 0.0159912109375f;
+//      probe1.isotopeNumber = 0;
+//      param.AddProbe(probe1);
+//      String[] chromPaths = StringUtils.getChromFilePaths("C:\\data\\Kristaps\\20171129\\TG quant NIST\\MCC007_Lipid01_NIST1_20171124_positive.chrom");
+
+//      LipidParameterSet param = new LipidParameterSet(752.559936523437f, "38", 3, "-1", "", "C43 H80 N O7 P", "-H",1,0);
+//
+//      CgProbe probe1 = new CgProbe(0,1);
+//      probe1.AreaStatus = CgAreaStatus.OK;
+//      probe1.Area = 1993875328f;
+//      probe1.AreaError = 398507968f;
+//      probe1.Background = 4764792f;
+//      probe1.Peak = 1732.79003906258f;
+//      probe1.LowerValley = 1706.17004394531f;
+//      probe1.UpperValley = 1756.91003417968f;
+//      probe1.Mz = 752.557983398437f;
+//      probe1.LowerMzBand = 0.00897216796875f;
+//      probe1.UpperMzBand = 0.00897216796875f;
+//      probe1.isotopeNumber = 0;
+//      param.AddProbe(probe1);
+//      String[] chromPaths = StringUtils.getChromFilePaths("C:\\data\\BiologicalExperiment\\Orbitrap_CID\\negative\\005_liver2-1_Orbitrap_CID_neg.chrom");
+
+//      LipidParameterSet param = new LipidParameterSet(268.227111816406f, "16", 1, "-OH", "", "C16 H31 N O3", "-H1 -O1",1,2);
+//
+//      CgProbe probe1 = new CgProbe(0,1);
+//      probe1.AreaStatus = CgAreaStatus.OK;
+//      probe1.Area = 1993875328f;
+//      probe1.AreaError = 398507968f;
+//      probe1.Background = 4764792f;
+//      probe1.Peak = 82.083999633789f;
+//      probe1.LowerValley = 63.7661018371582f;
+//      probe1.UpperValley = 105.580001831054f;
+//      probe1.Mz = 268.228088378906f;
+//      probe1.LowerMzBand = 0.003997802734375f;
+//      probe1.UpperMzBand = 0.0050048828125f;
+//      probe1.isotopeNumber = 0;
+//      param.AddProbe(probe1);
+//      String[] chromPaths = StringUtils.getChromFilePaths("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\Mix1\\Mix1_1.chrom");
+
+//      LipidParameterSet param = new LipidParameterSet(442.090179443359f, "26", 0, "-H", "", "C26 H53 N1 O4", "-H",1,3);
+//      CgProbe probe1 = new CgProbe(0,1);
+//      probe1.AreaStatus = CgAreaStatus.OK;
+//      probe1.Area = 199908520f;
+//      probe1.AreaError = 398507968f;
+//      probe1.Background = 4764792f;
+//      probe1.Peak = 504.243072509765f;
+//      probe1.LowerValley = 494.642974853515f;
+//      probe1.UpperValley = 513.843139648437f;
+//      probe1.Mz = 442.265167236328f;
+//      probe1.LowerMzBand = 0.504974365234375f;
+//      probe1.UpperMzBand = 0.58502197265625f;
+//      probe1.isotopeNumber = 0;
+//      param.AddProbe(probe1);
+//      String[] chromPaths = StringUtils.getChromFilePaths("C:\\Sphingolipids\\dataStandardsPrelim\\20190205\\negative\\02042019 IDA neg new-new CER SPH Mix 1 neg.chrom");
+
+      LipidParameterSet param = new LipidParameterSet(600.520874023437f, "34", 0, "HCOO", "", "C34 H69 N O4", "C1 H1 O2",1,3);
 
       CgProbe probe1 = new CgProbe(0,1);
       probe1.AreaStatus = CgAreaStatus.OK;
       probe1.Area = 1993875328f;
       probe1.AreaError = 398507968f;
       probe1.Background = 4764792f;
-      probe1.Peak = 989.653991699218f;
-      probe1.LowerValley = 982.716003417968f;
-      probe1.UpperValley = 1004.40997314453f;
-      probe1.Mz = 829.798583984375f;
-      probe1.LowerMzBand = 0.0130615234375f;
-      probe1.UpperMzBand = 0.0159912109375f;
+      probe1.Peak = 1244.77001953125f;
+      probe1.LowerValley = 1227.31994628906f;
+      probe1.UpperValley = 1259.92004394531f;
+      probe1.Mz = 600.52294921875f;
+      probe1.LowerMzBand = 0.00506591796875f;
+      probe1.UpperMzBand = 0.00897216796875f;
       probe1.isotopeNumber = 0;
       param.AddProbe(probe1);
-      String[] chromPaths = StringUtils.getChromFilePaths("C:\\data\\Kristaps\\20171129\\TG quant NIST\\MCC007_Lipid01_NIST1_20171124_positive.chrom");
+      String[] chromPaths = StringUtils.getChromFilePaths("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix1\\Mix1_neg_1.chrom");
 
       
       System.out.println(chromPaths[1]);
       LipidomicsAnalyzer lAnalyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
       setStandardParameters(lAnalyzer);
-//      MSnAnalyzer analyzer = new MSnAnalyzer(null,"Cer","-OH",param,lAnalyzer,null,false,true,true);
-      MSnAnalyzer analyzer = new MSnAnalyzer(null,"TG","NH4",param,lAnalyzer,null,false,true,true);
+      MSnAnalyzer analyzer = new MSnAnalyzer(null,"Cer","HCOO",param,lAnalyzer,null,false,true,true);
+//      MSnAnalyzer analyzer = new MSnAnalyzer(null,"P-PE","-H",param,lAnalyzer,null,false,true,true);
+//      MSnAnalyzer analyzer = new MSnAnalyzer(null,"TG","NH4",param,lAnalyzer,null,false,true,true);
       
       System.out.println("Status: "+analyzer.checkStatus());
       if (!(analyzer.getResult() instanceof LipidomicsMSnSet)) return;
@@ -16447,31 +16655,2992 @@ public void testTabFile() throws Exception {
           }
         }else{
           String name = (String)nameObject;
-          System.out.println(result.getRt()+": "+name);
+          System.out.println(result.getNameIncludingModification()+": "+name);
         }
       }
 
-//      if (analyzer.checkStatus()!=LipidomicsMSnSet.NO_MSN_PRESENT && analyzer.checkStatus()!=LipidomicsMSnSet.DISCARD_HIT){
+      if (analyzer.checkStatus()!=LipidomicsMSnSet.NO_MSN_PRESENT && analyzer.checkStatus()!=LipidomicsMSnSet.DISCARD_HIT){
 //        Hashtable<String,CgProbe> headFragments = analyzer.getHeadGroupFragments();
 //        for (String fragmentName : headFragments.keySet()){
 //          CgProbe probe = headFragments.get(fragmentName);
 //          System.out.println(fragmentName+": \t"+probe.Mz+"\t"+probe.Area);
 //        }
-//        Hashtable<String,Hashtable<String,CgProbe>> chainFragments = analyzer.getChainFragments();
-//        for (String chain : chainFragments.keySet()){
-//          System.out.println("1. "+chain);
-//          Hashtable<String,CgProbe> frags = chainFragments.get(chain);
-//          for (String frag : frags.keySet()){
-//            CgProbe probe = frags.get(frag);
-//            System.out.println(frag+": \t"+probe.Mz+"\t"+probe.Area);
-//          }
+//        for (IntensityRuleVO fulfilled : analyzer.getFulfilledHeadIntensityRules().values()) {
+//          System.out.println("fulfilled: "+fulfilled.getRuleIdentifier());
 //        }
-//      }
+        Hashtable<String,Hashtable<String,CgProbe>> chainFragments = analyzer.getChainFragments();
+        for (String chain : chainFragments.keySet()){
+          System.out.println("1. "+chain);
+          Hashtable<String,CgProbe> frags = chainFragments.get(chain);
+          for (String frag : frags.keySet()){
+            CgProbe probe = frags.get(frag);
+            System.out.println(frag+": \t"+probe.Mz+"\t"+probe.Area);
+          }
+        }
+        for (String key : analyzer.getFulfilledChainIntensityRules().keySet()) {
+          Hashtable<String,IntensityChainVO> rules = analyzer.getFulfilledChainIntensityRules().get(key);
+          for (IntensityChainVO rule : rules.values()) {
+            System.out.println("fulfilled: "+key+"   "+rule.getRuleIdentifier());
+          }
+        }
+      }
     }catch(Exception ex) {
       ex.printStackTrace();
     }
   }
+  
+  private void parseMSDialTxt() {
+    //MSDialTxtParser dialParser = new MSDialTxtParser("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\MS-Dial_Mix1\\export\\Mix1_neg_1.txt");
+    MSDialTxtParser dialParser = new MSDialTxtParser("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\MS-Dial_Mix1\\export\\Mix1_1.txt");
+    try {
+      dialParser.parse();
+      Vector<MSDialEntry> entries = dialParser.getResults();
+//      for (MSDialEntry entry : entries) {
+//        System.out.println(entry.getName());
+//      }
+      
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
     
+  }
   
   
+  private void compareLDABMSDialControlledPositiveProbes() {
+    LinkedHashMap<String,LinkedHashMap<String,Boolean[]>> comparableClassesAndAdducts = new LinkedHashMap<String,LinkedHashMap<String,Boolean[]>>();
+    Hashtable<String,LinkedHashMap<String,ReferenceInfoVO>> correctAnalytes = new Hashtable<String,LinkedHashMap<String,ReferenceInfoVO>>();
+    Hashtable<String,Integer> snPositions = new Hashtable<String,Integer>();
+    
+    String lipidClass = "SphBase";
+    //the first boolean tells if this adduct should be included in statistics, the second if it the analytes should be RT-filtered, the third one if chain identification should be included in statistics
+    LinkedHashMap<String,Boolean[]> adducts = new LinkedHashMap<String,Boolean[]>();
+    adducts.put("H",new Boolean[]{true,true,true});
+    adducts.put("Na",new Boolean[]{false,true,true});
+    adducts.put("-OH",new Boolean[]{false,true,true});
+    comparableClassesAndAdducts.put(lipidClass, adducts);
+    snPositions.put(lipidClass, 1);
+    //correctAnalytes.put(lipidClass, Mix1Standards.getSphBaseStandards());
+    correctAnalytes.put(lipidClass, Mix2Standards.getSphBaseStandards());
+    
+    lipidClass = "Cer";
+    //the first boolean tells if this adduct should be included in statistics, the second if it the analytes should be RT-filtered, the third one if chain identification should be included in statistics
+    adducts = new LinkedHashMap<String,Boolean[]>();
+    adducts.put("H",new Boolean[]{true,true,true});
+    adducts.put("Na",new Boolean[]{true,true,false});
+    adducts.put("-OH",new Boolean[]{false,true,true});
+    comparableClassesAndAdducts.put(lipidClass, adducts);
+    snPositions.put(lipidClass, 2);
+    //correctAnalytes.put(lipidClass, Mix1Standards.getCerStandards());
+    correctAnalytes.put(lipidClass, Mix2Standards.getCerStandards());
+    
+    lipidClass = "Cer1P";
+    //the first boolean tells if this adduct should be included in statistics, the second if it the analytes should be RT-filtered, the third one if chain identification should be included in statistics
+    adducts = new LinkedHashMap<String,Boolean[]>();
+    adducts.put("H",new Boolean[]{true,false,true});
+    adducts.put("Na",new Boolean[]{true,false,false});
+    adducts.put("-OH",new Boolean[]{false,false,true});
+    comparableClassesAndAdducts.put(lipidClass, adducts);
+    snPositions.put(lipidClass, 2);
+    //correctAnalytes.put(lipidClass, Mix1Standards.getCer1PStandards());
+    correctAnalytes.put(lipidClass, Mix2Standards.getCer1PStandards());
+    
+    lipidClass = "HexCer";
+    //the first boolean tells if this adduct should be included in statistics, the second if it the analytes should be RT-filtered, the third one if chain identification should be included in statistics
+    adducts = new LinkedHashMap<String,Boolean[]>();
+    adducts.put("H",new Boolean[]{true,true,true});
+    adducts.put("Na",new Boolean[]{true,true,false});
+    adducts.put("-OH",new Boolean[]{false,true,true});
+    comparableClassesAndAdducts.put(lipidClass, adducts);
+    snPositions.put(lipidClass, 2);
+    //correctAnalytes.put(lipidClass, Mix1Standards.getHexCerStandards());
+    correctAnalytes.put(lipidClass, Mix2Standards.getHexCerStandards());
+    
+    lipidClass = "SM";
+    //the first boolean tells if this adduct should be included in statistics, and the second if it the analytes should be RT-filtered
+    adducts = new LinkedHashMap<String,Boolean[]>();
+    adducts.put("H",new Boolean[]{true,true,false});
+    adducts.put("Na",new Boolean[]{true,true,false});
+    comparableClassesAndAdducts.put(lipidClass, adducts);
+    snPositions.put(lipidClass, 2);
+    //correctAnalytes.put(lipidClass, Mix1Standards.getSMStandards());
+    correctAnalytes.put(lipidClass, Mix2Standards.getSMStandards());
+
+    //correcting the RT shift in positive ion mode
+    for (LinkedHashMap<String,ReferenceInfoVO> classCorrect : correctAnalytes.values()) {
+      for (ReferenceInfoVO info : classCorrect.values()) {
+        for (int i=0; i!=info.getCorrectRts().length; i++) {
+          info.getCorrectRts()[i] = info.getCorrectRts()[i]-0.15d;        }
+      }
+    }
+    
+//    String chromFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\Mix1\\Mix1_5.chrom";
+//    String ldaFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\Mix1\\Mix1_5_stands_positive_Mix1.xlsx";
+//    String msDialFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\MS-Dial_Mix1\\export\\Mix1_5.txt";
+//    String quantFile = "C:\\Sphingolipids\\Experiment1\\massLists\\Orbitrap\\stands_positive_Mix1.xlsx";
+//    String outputFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\MS-Dial_Mix1\\Mix1_5_Dial_comp_generated.xlsx";
+
+    String chromFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\Mix2\\Mix2_5.chrom";
+    String ldaFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\Mix2\\Mix2_5_stands_positive_Mix2.xlsx";
+    String msDialFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\MS-Dial_Mix2\\export\\Mix2_5.txt";
+    String quantFile = "C:\\Sphingolipids\\Experiment1\\massLists\\Orbitrap\\stands_positive_Mix2.xlsx";
+    String outputFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\MS-Dial_Mix2\\Mix2_5_Dial_comp_generated.xlsx";
+
+    
+    compareLDAMSDialControlledProbes(comparableClassesAndAdducts,snPositions,correctAnalytes,chromFile,quantFile,ldaFile,msDialFile,/*msFinderFile,*/outputFile);
+
+    
+  }
+  
+  
+  private void compareLDABMSDialControlledNegativeProbes() {
+    LinkedHashMap<String,LinkedHashMap<String,Boolean[]>> comparableClassesAndAdducts = new LinkedHashMap<String,LinkedHashMap<String,Boolean[]>>();
+    Hashtable<String,LinkedHashMap<String,ReferenceInfoVO>> correctAnalytes = new Hashtable<String,LinkedHashMap<String,ReferenceInfoVO>>();
+    Hashtable<String,Integer> snPositions = new Hashtable<String,Integer>();
+    
+    String lipidClass = "Cer";
+    //the first boolean tells if this adduct should be included in statistics, the second if it the analytes should be RT-filtered, the third one if chain identification should be included in statistics
+    LinkedHashMap<String,Boolean[]> adducts = new LinkedHashMap<String,Boolean[]>();
+    adducts.put("HCOO",new Boolean[]{true,true,false});
+    adducts.put("-H",new Boolean[]{true,true,true});
+    adducts.put("Cl",new Boolean[]{false,true,false});
+    comparableClassesAndAdducts.put(lipidClass, adducts);
+    snPositions.put(lipidClass, 2);
+    //correctAnalytes.put(lipidClass, Mix1Standards.getCerStandards());
+    correctAnalytes.put(lipidClass, Mix2Standards.getCerStandards());
+    
+    lipidClass = "Cer1P";
+    //the first boolean tells if this adduct should be included in statistics, the second if it the analytes should be RT-filtered, the third one if chain identification should be included in statistics
+    adducts = new LinkedHashMap<String,Boolean[]>();
+    adducts.put("-H",new Boolean[]{true,false,true});
+    comparableClassesAndAdducts.put(lipidClass, adducts);
+    snPositions.put(lipidClass, 2);
+    //correctAnalytes.put(lipidClass, Mix1Standards.getCer1PStandards());
+    correctAnalytes.put(lipidClass, Mix2Standards.getCer1PStandards());
+    
+    lipidClass = "HexCer";
+    //the first boolean tells if this adduct should be included in statistics, the second if it the analytes should be RT-filtered, the third one if chain identification should be included in statistics
+    adducts = new LinkedHashMap<String,Boolean[]>();
+    adducts.put("HCOO",new Boolean[]{true,true,false});
+    adducts.put("-H",new Boolean[]{true,true,true});
+    adducts.put("Cl",new Boolean[]{false,true,false});
+    comparableClassesAndAdducts.put(lipidClass, adducts);
+    snPositions.put(lipidClass, 2);
+    //correctAnalytes.put(lipidClass, Mix1Standards.getHexCerStandards());
+    correctAnalytes.put(lipidClass, Mix2Standards.getHexCerStandards());
+    
+    lipidClass = "SM";
+    //the first boolean tells if this adduct should be included in statistics, and the second if it the analytes should be RT-filtered
+    adducts = new LinkedHashMap<String,Boolean[]>();
+    adducts.put("HCOO",new Boolean[]{true,true,false});
+    adducts.put("Cl",new Boolean[]{false,true,false});
+    comparableClassesAndAdducts.put(lipidClass, adducts);
+    snPositions.put(lipidClass, 2);
+    //correctAnalytes.put(lipidClass, Mix1Standards.getSMStandards());
+    correctAnalytes.put(lipidClass, Mix2Standards.getSMStandards());
+
+    
+//    String chromFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix1\\Mix1_neg_5.chrom";
+//    String ldaFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix1\\Mix1_neg_5_stands_negative_Mix1.xlsx";
+//    String msDialFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\MS-Dial_Mix1\\export\\Mix1_neg_5.txt";
+//    String quantFile = "C:\\Sphingolipids\\Experiment1\\massLists\\Orbitrap\\stands_negative_Mix1.xlsx";
+    //String msFinderFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\MS-Dial_Mix1\\export_MSFinder2\\Structure result-2101.txt";
+    //String msFinderFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\MS-Dial_Mix1\\export_MSFinder\\Structure result-2097.txt";
+//    String outputFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\MS-Dial_Mix1\\Mix1_neg_5_Dial_comp_generated.xlsx";
+
+    String chromFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix2\\Mix2_neg_5.chrom";
+    String ldaFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix2\\Mix2_neg_5_stands_negative_Mix2.xlsx";
+    String msDialFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\MS-Dial_Mix2\\export\\Mix2_neg_5.txt";
+    String quantFile = "C:\\Sphingolipids\\Experiment1\\massLists\\Orbitrap\\stands_negative_Mix2.xlsx";
+    String outputFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\MS-Dial_Mix2\\Mix2_neg_5_Dial_comp_generated.xlsx";
+    
+    compareLDAMSDialControlledProbes(comparableClassesAndAdducts,snPositions,correctAnalytes,chromFile,quantFile,ldaFile,msDialFile,/*msFinderFile,*/outputFile);
+
+  }
+  
+  private void compareLDAMSDialControlledProbes(LinkedHashMap<String,LinkedHashMap<String,Boolean[]>> comparableClassesAndAdducts,
+      Hashtable<String,Integer> snPositions, Hashtable<String,LinkedHashMap<String,ReferenceInfoVO>> correctAnalytes,
+      String chromFile, String quantFile, String ldaFile, String msdialFile,/* String msfinderFile,*/ String outputFile){
+    try{
+      BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile));
+      Workbook resultWorkbook = new XSSFWorkbook();
+      CellStyle headerStyle = getHeaderStyle(resultWorkbook);
+      CellStyle leftHeaderStyle = resultWorkbook.createCellStyle();
+      leftHeaderStyle.cloneStyleFrom(headerStyle);
+      leftHeaderStyle.setAlignment(CellStyle.ALIGN_LEFT);
+      headerStyle = leftHeaderStyle;
+      CellStyle centerStyle = getCenterStyle(resultWorkbook);
+
+      CellStyle fullyCorrectStyle = getFullyCorrectStyle(resultWorkbook);
+      CellStyle faCorrectStyle = getFACorrectStyle(resultWorkbook);
+      CellStyle faFoundStyle = getFAFoundStyle(resultWorkbook);
+      CellStyle ms1FoundStyle = getMS1FoundStyle(resultWorkbook);
+      CellStyle notFoundStyle = getNotFoundStyle(resultWorkbook);
+      Hashtable<String,Vector<LipidParameterSet>> resultsLDA = LDAResultReader.readResultFile(ldaFile, new Hashtable<String,Boolean>()).getIdentifications();
+      MSDialTxtParser msdialParser = new MSDialTxtParser(msdialFile);
+      msdialParser.parse();
+      //MSFinderStructureParser finderParser = new MSFinderStructureParser(msfinderFile);
+      //finderParser.parse();
+      //TODO: this might need to be changed
+     // Hashtable<String,Hashtable<String,Hashtable<String,LipidBLASTIdentificationVO>>> resultsLB = msdialParser.getResults();
+      Vector<MSDialEntry> resultsDial = msdialParser.getResults();
+      //Vector<MSFinderEntry> resultsFinder = finderParser.getResults();
+      String[] chromPaths = StringUtils.getChromFilePaths(chromFile);   
+      LipidomicsAnalyzer analyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
+      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,true).get(3);
+
+      ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = null;
+      Sheet summarySheet = resultWorkbook.createSheet("Summary");
+      Sheet detailsSheet = resultWorkbook.createSheet("Details");
+
+      int ms1Detectables = 0;
+      int faDetectables = 0;
+      int positionDetectables = 0;
+      
+      int ms1DetectedLDA = 0;
+      int faDetectedLDAWOFPs = 0;
+      int faDetectedLDA = 0;
+
+      int ms1DetectedDial = 0;
+      int faDetectedDialWOFPs = 0;
+      int faDetectedDial = 0;
+      
+      int rowCountDetails = 0;
+      int rowCountSummary = 0;
+      
+      int classColumn = 0;
+      int correctColumn = 1;
+      int width = (12+1)*256;
+      detailsSheet.setColumnWidth(correctColumn, width);
+      int adductColumn = 2;
+      int ldaColumn = 3;
+      width = (26+1)*256;
+      detailsSheet.setColumnWidth(ldaColumn, width);
+      int dialColumn = 4;
+      detailsSheet.setColumnWidth(dialColumn, width);
+      int dialProb = 5;
+      int ldaRt = 6;
+/****      int lbRts = 7;
+      int commentColumn = 8;*/
+      int commentColumn = 7;
+      
+      int sumTypeColumn = 0;
+      int ldaMs1Column = 1;
+      int ldaMs1PercentColumn = 2;
+      int dialMs1Column = 3;
+      int dialMs1PercentColumn = 4;
+      int ldaFaColumn = 5;
+      int ldaFaPercentColumn = 6;
+      int dialFaColumn = 7;
+      int dialFaPercentColumn = 8;
+      int ldaFaWoFPColumn = 9;
+      int ldaFaWoFPPercentColumn = 10;
+      int dialFaWoFPColumn = 11;
+      int dialFaWoFPPercentColumn = 12;
+
+      Row sumRow = summarySheet.createRow(rowCountSummary);
+      rowCountSummary++;
+      Cell sumCell = sumRow.createCell(ldaMs1Column);
+      sumCell.setCellStyle(leftHeaderStyle);
+      sumCell.setCellValue("LDA identified");
+      sumCell = sumRow.createCell(dialMs1Column);
+      sumCell.setCellStyle(leftHeaderStyle);
+      sumCell.setCellValue("MS-DIAL identified");
+      sumCell = sumRow.createCell(ldaFaColumn);
+      sumCell.setCellStyle(leftHeaderStyle);
+      sumCell.setCellValue("LDA FAs");
+      sumCell = sumRow.createCell(dialFaColumn);
+      sumCell.setCellStyle(leftHeaderStyle);
+      sumCell.setCellValue("MS-DIAL FAs");
+      sumCell = sumRow.createCell(ldaFaWoFPColumn);
+      sumCell.setCellStyle(leftHeaderStyle);
+      sumCell.setCellValue("LDA FAs no FPs");
+      sumCell = sumRow.createCell(dialFaWoFPColumn);
+      sumCell.setCellStyle(leftHeaderStyle);
+      sumCell.setCellValue("MS-DIAL FAs no FPs");
+      int typeColumn = 0;
+      int ldaHitsColumn = 4;
+      int ldaPercentColumn = 5;
+      int lbHitsColumn = 6;
+      int lbPercentColumn = 7;
+
+      
+      LinkedHashMap<String,LinkedHashMap<String,LdaDialStandardsEvidence>> speciesEvidence = new LinkedHashMap<String,LinkedHashMap<String,LdaDialStandardsEvidence>>();
+      
+      for (String lipidClass : comparableClassesAndAdducts.keySet()){
+        LinkedHashMap<String,Boolean[]> comparableAdducts = comparableClassesAndAdducts.get(lipidClass);
+        int numberSns = snPositions.get(lipidClass);
+        LinkedHashMap<String,ReferenceInfoVO> ms1Analytes = correctAnalytes.get(lipidClass);
+        Vector<LipidParameterSet> ldaAnalytes = resultsLDA.get(lipidClass);
+        //TODO: this part is for testing:
+        System.out.println("!!!!!!!!!!!!!!!!!!! "+lipidClass+" !!!!!!!!!!!!!!!!!!!");
+        /****        for (String name : ms1Analytes.keySet()) {
+          ReferenceInfoVO info = ms1Analytes.get(name);
+          for (String adduct : info.getAdducts().keySet()) {
+            float mz = (float)info.getAdducts().get(adduct).doubleValue();
+            String rts = "";
+            for (double rt : info.getCorrectRts()) {
+              if (rts.length()>0)
+                rts += ";";
+              rts += Calculator.FormatNumber(rt, 2);
+            }
+            System.out.println("1. "+name+"_"+adduct+"_"+rts);
+            for (MSDialEntry entry : resultsDial) {
+              if ((mz-0.006d)<entry.getMz() && entry.getMz()<(mz+0.006d)){
+                boolean found = false;
+                for (int i=0; i!=info.getCorrectRts().length; i++) {
+                  float rt = (float)info.getCorrectRts()[i];
+                  if (lipidClass.equalsIgnoreCase("Cer1P") || ((rt-0.25f)<entry.getRt() && entry.getRt()<(rt+0.25f))) {
+                    found = true;
+                  }
+                }
+                if (found)
+                  System.out.println("MS-Dial: "+entry.getName()+" "+entry.getRt()+" "+entry.getScore());
+              }
+            }
+            for (MSFinderEntry entry : resultsFinder) {
+              if ((mz-0.006d)<entry.getMz() && entry.getMz()<(mz+0.006d)){
+                boolean found = false;
+                for (int i=0; i!=info.getCorrectRts().length; i++) {
+                  float rt = (float)info.getCorrectRts()[i];
+                  if (lipidClass.equalsIgnoreCase("Cer1P") || ((rt-0.25f)<entry.getRt() && entry.getRt()<(rt+0.25f))) {
+                    found = true;
+                  }
+                }
+                if (found) {
+                  Hashtable<Integer,MSFinderHitVO> hits = entry.getHits();
+                  for (int i=0; i!=hits.size(); i++) {
+                    MSFinderHitVO hit = hits.get((i+1));
+                    System.out.println("MS-Finder: "+(i+1)+" "+hit.getStructureName()+"_"+entry.getAdduct()+" ; "+entry.getRt()+" ; "+hit.getScore());
+                    
+                  }                  
+                }
+
+              }
+            }
+          }*/
+        ////}
+              
+        LinkedHashMap<String,LdaDialStandardsEvidence> speciesEvidenceClass = new LinkedHashMap<String,LdaDialStandardsEvidence>();
+        Row row = detailsSheet.createRow(rowCountDetails);
+        rowCountDetails++;
+        Cell cell = row.createCell(classColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("Class");
+        cell = row.createCell(correctColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("Correct");
+        cell = row.createCell(adductColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("Adduct");
+        cell = row.createCell(ldaColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("LDA");
+        cell = row.createCell(dialColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("MS-DIAL");
+        cell = row.createCell(dialProb);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("DIAL-Prob");
+        cell = row.createCell(ldaRt);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("LDA-RT");
+/****        cell = row.createCell(lbRts);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("LB-RTs");*/
+        cell = row.createCell(commentColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("Comments");
+
+        int ms1DetectablesClass = 0;
+        int faDetectablesClass = 0;
+        int positionDetectablesClass = 0;
+        
+        int ms1DetectedLDAClass = 0;
+        int faDetectedLDAWOFPsClass = 0;
+        int faDetectedLDAClass = 0;
+
+        int ms1DetectedDialClass = 0;
+        int faDetectedDialWOFPsClass = 0;
+        int faDetectedDialClass = 0;
+        
+        for (String adduct : comparableAdducts.keySet()){
+
+          int ms1DetectablesAdduct = 0;
+          int faDetectablesAdduct = 0;
+          int positionDetectablesAdduct = 0;
+          
+          int ms1DetectedLDAAdduct = 0;
+          int faDetectedLDAWOFPsAdduct = 0;
+          int faDetectedLDAAdduct = 0;
+
+          int ms1DetectedDialAdduct = 0;
+          int faDetectedDialWOFPsAdduct = 0;
+          int faDetectedDialAdduct = 0;
+
+          boolean includeInAnalysis = comparableAdducts.get(adduct)[0];
+          boolean includeChains = comparableAdducts.get(adduct)[2];
+          String commentText;
+          
+          for (String analyte : ms1Analytes.keySet()){
+            ReferenceInfoVO correctStructureInfo = ms1Analytes.get(analyte);
+            String rts = "";
+            commentText = "";
+            if (!includeChains) 
+              commentText = "chains excluded from statistics";
+            for (double rt : correctStructureInfo.getCorrectRts()) {
+              if (rts.length()>0)
+                rts += ";";
+              rts += Calculator.FormatNumber(rt, 2);
+            }
+
+            //System.out.println("1. "+correctStructureInfo.getMS2Name()+"_"+adduct+"_"+rts);
+            LipidomicsMSnSet ldaAnalyte = (LipidomicsMSnSet)getLDAAnalyte(ldaAnalytes,analyte,adduct,false,lipidClass.equalsIgnoreCase("Cer1P"),correctStructureInfo.getCorrectRts());
+//            if (correctStructureInfo==null)
+//              System.out.println("11111");
+//            if (correctStructureInfo.getAdducts()==null)
+//              System.out.println("22222");
+//            if (correctStructureInfo.getAdducts().get(adduct)==null)
+//              System.out.println("33333");
+
+            Vector<Vector<MSDialEntry>> inAndoutRt = getDialAnalytes(resultsDial, correctStructureInfo.getAdducts().get(adduct).doubleValue(), correctStructureInfo.getCorrectRts(),comparableAdducts.get(adduct)[1]);
+            Vector<MSDialEntry> filteredDial = inAndoutRt.get(0);
+            Vector<MSDialEntry> outRt = inAndoutRt.get(1);
+            //            for (MSDialEntry entry : filteredDial) {
+//              System.out.println("MS-Dial: "+entry.getName()+" "+entry.getRt()+" "+entry.getScore());
+//            }
+            //LipidBLASTIdentificationVO identVO = getDialAnalyte(lbAnalytes,analyte,adduct,correctStructureInfo.getCorrectRts()[0],comparableAdducts.get(adduct)[1]);
+            String correctStructure = correctStructureInfo.getMS2Name();
+            
+            LdaDialStandardsEvidence ldaDialEvidence = new LdaDialStandardsEvidence(analyte);
+            if (speciesEvidenceClass.containsKey(analyte)) ldaDialEvidence = speciesEvidenceClass.get(analyte);
+              row = detailsSheet.createRow(rowCountDetails);
+              rowCountDetails++;
+              cell = row.createCell(classColumn);
+              cell.setCellType(Cell.CELL_TYPE_STRING);
+              cell.setCellValue(lipidClass);
+              cell = row.createCell(correctColumn);
+              cell.setCellType(Cell.CELL_TYPE_STRING);
+              cell.setCellValue(correctStructure);
+              cell = row.createCell(adductColumn);
+              cell.setCellType(Cell.CELL_TYPE_STRING);
+              cell.setCellValue(adduct);
+              
+              Object[] lda = checkLDAEvidence(correctStructure, ldaAnalyte);
+              String nameString = (String)lda[1];
+              int evidence = (Integer)lda[0];
+              //System.out.println(nameString+"_"+adduct+": "+evidence);
+                            
+              Object[] msDial = checkDialEvidence(lipidClass, analyte, correctStructure, filteredDial, numberSns);
+              String dialString = (String)msDial[1];
+              int dialEvidence = (Integer)msDial[0];
+              //System.out.println(nameString+"_"+adduct+": "+dialEvidence);
+              
+              boolean msMSPresent = true;
+              LipidParameterSet ldaMS1Result = null;
+              if (evidence==0 && dialEvidence==0){
+                ldaMS1Result = getLDAAnalyte(ldaAnalytes,analyte,adduct,true,true,correctStructureInfo.getCorrectRts());
+                if (!areThereAnyMSnSpectra(analyzer,ldaMS1Result,quantVOs.get(lipidClass).get(analyte).get(adduct))){
+                  evidence = -1;
+                  nameString = "no MS/MS";
+                  if (ldaMS1Result!=null) nameString = ldaMS1Result.getNameStringWithoutRt();      
+                  dialEvidence = -1;
+                  dialString = "no MS/MS";
+                  msMSPresent = false;
+                }               
+              }
+              cell = row.createCell(ldaColumn);
+              CellStyle style = getStyleBasedOnEvidenceDial(evidence, fullyCorrectStyle, faCorrectStyle, faFoundStyle,
+                  ms1FoundStyle, notFoundStyle);
+              if (evidence==0 && dialEvidence>0 ){
+                ldaMS1Result = getLDAAnalyte(ldaAnalytes,analyte,adduct,true,true,correctStructureInfo.getCorrectRts());
+                if (ldaMS1Result!=null){
+                  nameString = ldaMS1Result.getNameStringWithoutRt();
+                  style=null;
+                }
+              }
+              if (style!=null) cell.setCellStyle(style);
+              cell.setCellType(Cell.CELL_TYPE_STRING);
+              cell.setCellValue(nameString);
+
+              cell = row.createCell(dialColumn);
+              style = getStyleBasedOnEvidenceDial(dialEvidence, fullyCorrectStyle, faCorrectStyle, faFoundStyle,
+                  ms1FoundStyle, notFoundStyle);
+              if (style!=null) cell.setCellStyle(style);
+              cell.setCellType(Cell.CELL_TYPE_STRING);
+              cell.setCellValue(dialString);
+
+              if (dialEvidence>0){
+                cell = row.createCell(dialProb);
+                cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+                cell.setCellValue((Double)msDial[2]);
+                
+              }
+              if (evidence>0 || ldaMS1Result!=null){
+                cell = row.createCell(ldaRt);
+                cell.setCellType(Cell.CELL_TYPE_STRING);
+                if (evidence>0)
+                  cell.setCellValue(ldaAnalyte.getRt());
+                else
+                  cell.setCellValue(ldaMS1Result.getRt());
+              }
+              if (includeInAnalysis){
+                if (msMSPresent && correctStructureInfo.useInEvaluation()){
+                  ms1DetectablesClass++;
+                  ms1DetectablesAdduct++;
+                  //for debugging
+//                  if ((blastEvidence>=FA_FOUND)){
+//                    cell = row.createCell(commentColumn);
+//                    cell.setCellType(Cell.CELL_TYPE_STRING);
+//                    cell.setCellValue(((Vector<String>)lBlast[3]).toString());                
+//                  }
+                  if (dialEvidence==0 && outRt.size()>0){
+                    //WAS-DONE: for backward compatibility, the following was changed: getCorrectRts()[0]
+                    String startRt = Calculator.FormatNumberToString(correctStructureInfo.getCorrectRts()[0]-MSDIAL_RT_TOL, 2);
+                    String stopRt = Calculator.FormatNumberToString(correctStructureInfo.getCorrectRts()[0]+MSDIAL_RT_TOL, 2);
+                    String outRts = "";
+                    for (MSDialEntry outHit : outRt) outRts+=outHit.getName()+" "+Calculator.FormatNumber(outHit.getRt(),2d)+";";
+                    outRts = outRts.substring(0,outRts.length()-1);
+                    if (commentText.length()>0)
+                      commentText += "; ";
+                    commentText += "MS-DIAL reported hits outside the RT-tolerance "+startRt+"-"+stopRt+"min: "+outRts;
+                    
+                  }
+                  if (commentText.length()>0) {
+                    cell = row.createCell(commentColumn);
+                    cell.setCellType(Cell.CELL_TYPE_STRING);
+                    cell.setCellValue(commentText);
+                  }
+                  if (evidence>=MS1_FOUND){
+                    ms1DetectedLDAClass++;
+                    ms1DetectedLDAAdduct++;
+                    ldaDialEvidence.setMs1DetectedLDA(true);
+                  }
+                  if (dialEvidence>=MS1_FOUND){
+                    ms1DetectedDialClass++;
+                    ms1DetectedDialAdduct++;
+                    ldaDialEvidence.setMs1DetectedLB(true);
+                  }
+                  if (numberSns>1 && includeChains){
+                    faDetectablesClass++;
+                    faDetectablesAdduct++;
+                    ldaDialEvidence.setFaDetectable(true);
+                    if (correctStructureInfo.isPositionAvailable() && !(lipidClass.equalsIgnoreCase("DG") && adduct.equalsIgnoreCase("NH4"))){
+                      positionDetectablesClass++;
+                      positionDetectablesAdduct++;
+                    }
+                    if (evidence>=FA_CORRECT){
+                      faDetectedLDAWOFPsClass++;
+                      faDetectedLDAWOFPsAdduct++;
+                      ldaDialEvidence.setFaDetectedLDAWoFPs(true);
+                    }
+                    if (dialEvidence>=FA_CORRECT){
+                      faDetectedDialWOFPsClass++;
+                      faDetectedDialWOFPsAdduct++;
+                      ldaDialEvidence.setFaDetectedLBWoFPs(true);
+                    }
+                    if (evidence>=FA_FOUND){
+                      faDetectedLDAClass++;
+                      faDetectedLDAAdduct++;
+                      ldaDialEvidence.setFaDetectedLDA(true);
+                    }
+                    if (dialEvidence>=FA_FOUND){
+                      faDetectedDialClass++;
+                      faDetectedDialAdduct++;
+                      ldaDialEvidence.setFaDetectedLB(true);
+                    }
+                  }
+                  speciesEvidenceClass.put(analyte,ldaDialEvidence);
+//                } else if (!correctStructures.get(correctStructure)[0]){
+                }else{  
+                  cell = row.createCell(commentColumn);
+                  cell.setCellType(Cell.CELL_TYPE_STRING);
+                  cell.setCellValue("excluded from statistics");                  
+                }
+              }else{
+                cell = row.createCell(commentColumn);
+                cell.setCellType(Cell.CELL_TYPE_STRING);
+                cell.setCellValue("excluded from statistics");                
+              }
+//            }
+          }
+          
+          if (ms1DetectablesAdduct==0) continue;
+          
+          sumRow = summarySheet.createRow(rowCountSummary);
+          rowCountSummary++;
+          sumCell = sumRow.createCell(sumTypeColumn);
+          sumCell.setCellStyle(leftHeaderStyle);
+          sumCell.setCellValue(lipidClass+"_"+adduct);
+          
+          sumCell = sumRow.createCell(ldaMs1Column);
+          sumCell.setCellType(Cell.CELL_TYPE_STRING);
+          sumCell.setCellStyle(centerStyle);
+          sumCell.setCellValue(ms1DetectedLDAAdduct+"/"+ms1DetectablesAdduct);
+          sumCell = sumRow.createCell(ldaMs1PercentColumn);
+          sumCell.getCellStyle().setAlignment(CellStyle.ALIGN_CENTER);
+          sumCell.setCellType(Cell.CELL_TYPE_STRING);
+          sumCell.setCellStyle(centerStyle);
+          sumCell.setCellValue(Calculator.FormatNumberToString(((double)(100*ms1DetectedLDAAdduct))/((double)ms1DetectablesAdduct), 0)+"%");
+          sumCell = sumRow.createCell(dialMs1Column);
+          sumCell.setCellType(Cell.CELL_TYPE_STRING);
+          sumCell.setCellStyle(centerStyle);
+          sumCell.setCellValue(ms1DetectedDialAdduct+"/"+ms1DetectablesAdduct);
+          sumCell = sumRow.createCell(dialMs1PercentColumn);
+          sumCell.setCellType(Cell.CELL_TYPE_STRING);
+          sumCell.setCellStyle(centerStyle);
+          sumCell.setCellValue(Calculator.FormatNumberToString(((double)(100*ms1DetectedDialAdduct))/((double)ms1DetectablesAdduct), 0)+"%");
+          sumCell = sumRow.createCell(ldaFaColumn);
+          sumCell.setCellType(Cell.CELL_TYPE_STRING);
+          sumCell.setCellStyle(centerStyle);
+          if (includeChains && numberSns>1) sumCell.setCellValue(faDetectedLDAAdduct+"/"+faDetectablesAdduct);
+          else sumCell.setCellValue("NA");
+          sumCell = sumRow.createCell(ldaFaPercentColumn);
+          sumCell.setCellType(Cell.CELL_TYPE_STRING);
+          sumCell.setCellStyle(centerStyle);
+          if (includeChains && numberSns>1 && faDetectablesClass>0) sumCell.setCellValue(Calculator.FormatNumberToString(((double)(100*faDetectedLDAAdduct))/((double)faDetectablesAdduct), 0)+"%");
+          else sumCell.setCellValue("NA");
+          sumCell = sumRow.createCell(dialFaColumn);
+          sumCell.setCellType(Cell.CELL_TYPE_STRING);
+          sumCell.setCellStyle(centerStyle);
+          if (includeChains && numberSns>1 && faDetectablesClass>0) sumCell.setCellValue(faDetectedDialAdduct+"/"+faDetectablesAdduct);
+          else sumCell.setCellValue("NA");
+          sumCell = sumRow.createCell(dialFaPercentColumn);
+          sumCell.setCellType(Cell.CELL_TYPE_STRING);
+          sumCell.setCellStyle(centerStyle);
+          if (includeChains && numberSns>1 && faDetectablesClass>0) sumCell.setCellValue(Calculator.FormatNumberToString(((double)(100*faDetectedDialAdduct))/((double)faDetectablesAdduct), 0)+"%");
+          else sumCell.setCellValue("NA");
+          sumCell = sumRow.createCell(ldaFaWoFPColumn);
+          sumCell.setCellType(Cell.CELL_TYPE_STRING);
+          sumCell.setCellStyle(centerStyle);
+          if (includeChains && numberSns>1 && faDetectablesClass>0) sumCell.setCellValue(faDetectedLDAWOFPsAdduct+"/"+faDetectablesAdduct);
+          else sumCell.setCellValue("NA");
+          sumCell = sumRow.createCell(ldaFaWoFPPercentColumn);
+          sumCell.setCellType(Cell.CELL_TYPE_STRING);
+          sumCell.setCellStyle(centerStyle);
+          if (includeChains && numberSns>1 && faDetectablesClass>0) sumCell.setCellValue(Calculator.FormatNumberToString(((double)(100*faDetectedLDAWOFPsAdduct))/((double)faDetectablesAdduct), 0)+"%");
+          else sumCell.setCellValue("NA");
+          sumCell = sumRow.createCell(dialFaWoFPColumn);
+          sumCell.setCellType(Cell.CELL_TYPE_STRING);
+          sumCell.setCellStyle(centerStyle);
+          if (includeChains && numberSns>1 && faDetectablesClass>0) sumCell.setCellValue(faDetectedDialWOFPsAdduct+"/"+faDetectablesAdduct);
+          else sumCell.setCellValue("NA");
+          sumCell = sumRow.createCell(dialFaWoFPPercentColumn);
+          sumCell.setCellType(Cell.CELL_TYPE_STRING);
+          sumCell.setCellStyle(centerStyle);
+          if (includeChains && numberSns>1 && faDetectablesClass>0) sumCell.setCellValue(Calculator.FormatNumberToString(((double)(100*faDetectedDialWOFPsAdduct))/((double)faDetectablesAdduct), 0)+"%");
+          else sumCell.setCellValue("NA");
+
+          
+          ms1Detectables += ms1DetectablesAdduct;
+          faDetectables += faDetectablesAdduct;
+          positionDetectables += positionDetectablesAdduct;
+          ms1DetectedLDA += ms1DetectedLDAAdduct;
+          faDetectedLDAWOFPs += faDetectedLDAWOFPsAdduct;
+          faDetectedLDA += faDetectedLDAAdduct;
+          ms1DetectedDial += ms1DetectedDialAdduct;
+          faDetectedDialWOFPs += faDetectedDialWOFPsAdduct;
+          faDetectedDial += faDetectedDialAdduct;
+        }
+        rowCountDetails++;
+        row = detailsSheet.createRow(rowCountDetails);
+        rowCountDetails++;
+        cell = row.createCell(ldaHitsColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("LDA");
+        cell = row.createCell(lbHitsColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("MS-DIAL");
+                
+        row = detailsSheet.createRow(rowCountDetails);
+        rowCountDetails++;        
+        cell = row.createCell(typeColumn);
+        cell.setCellStyle(leftHeaderStyle);
+        cell.setCellValue("Identified Species");
+        cell = row.createCell(ldaHitsColumn);
+        cell.setCellType(Cell.CELL_TYPE_STRING);
+        cell.setCellValue(ms1DetectedLDAClass+"/"+ms1DetectablesClass);
+        cell = row.createCell(ldaPercentColumn);
+        cell.setCellType(Cell.CELL_TYPE_STRING);
+        if (ms1DetectablesClass==0)
+          cell.setCellValue("0%");
+        else
+          cell.setCellValue(Calculator.FormatNumberToString(((double)(100*ms1DetectedLDAClass))/((double)ms1DetectablesClass), 0)+"%");
+        cell = row.createCell(lbHitsColumn);
+        cell.setCellType(Cell.CELL_TYPE_STRING);
+        cell.setCellValue(ms1DetectedDialClass+"/"+ms1DetectablesClass);
+        cell = row.createCell(lbPercentColumn);
+        cell.setCellType(Cell.CELL_TYPE_STRING);
+        if (ms1DetectablesClass==0)
+          cell.setCellValue("0%");
+        else
+          cell.setCellValue(Calculator.FormatNumberToString(((double)(100*ms1DetectedDialClass))/((double)ms1DetectablesClass), 0)+"%");
+        
+        row = detailsSheet.createRow(rowCountDetails);
+        rowCountDetails++;        
+        cell = row.createCell(typeColumn);
+        cell.setCellStyle(leftHeaderStyle);
+        cell.setCellValue("Identified chain compositions");
+        cell = row.createCell(ldaHitsColumn);
+        cell.setCellType(Cell.CELL_TYPE_STRING);
+        if (numberSns>1 && ms1DetectablesClass>0 && faDetectablesClass>0) cell.setCellValue(faDetectedLDAClass+"/"+faDetectablesClass);
+        else cell.setCellValue("NA");
+        cell = row.createCell(ldaPercentColumn);
+        cell.setCellType(Cell.CELL_TYPE_STRING);
+        if (numberSns>1 && ms1DetectablesClass>0 && faDetectablesClass>0) cell.setCellValue(Calculator.FormatNumberToString(((double)(100*faDetectedLDAClass))/((double)faDetectablesClass), 0)+"%");
+        else cell.setCellValue("NA");
+        cell = row.createCell(lbHitsColumn);
+        cell.setCellType(Cell.CELL_TYPE_STRING);
+        if (numberSns>1 && ms1DetectablesClass>0 && faDetectablesClass>0) cell.setCellValue(faDetectedDialClass+"/"+faDetectablesClass);
+        else cell.setCellValue("NA");
+        cell = row.createCell(lbPercentColumn);
+        cell.setCellType(Cell.CELL_TYPE_STRING);
+        if (numberSns>1 && ms1DetectablesClass>0 && faDetectablesClass>0) cell.setCellValue(Calculator.FormatNumberToString(((double)(100*faDetectedDialClass))/((double)faDetectablesClass), 0)+"%");
+        else cell.setCellValue("NA");
+
+        row = detailsSheet.createRow(rowCountDetails);
+        rowCountDetails++;        
+        cell = row.createCell(typeColumn);
+        cell.setCellStyle(leftHeaderStyle);
+        cell.setCellValue("Identified chain compositions w.o. FPs");
+        cell = row.createCell(ldaHitsColumn);
+        cell.setCellType(Cell.CELL_TYPE_STRING);
+        if (numberSns>1 && ms1DetectablesClass>0 && faDetectablesClass>0) cell.setCellValue(faDetectedLDAWOFPsClass+"/"+faDetectablesClass);
+        else cell.setCellValue("NA");
+        cell = row.createCell(ldaPercentColumn);
+        cell.setCellType(Cell.CELL_TYPE_STRING);
+        if (numberSns>1 && ms1DetectablesClass>0 && faDetectablesClass>0) cell.setCellValue(Calculator.FormatNumberToString(((double)(100*faDetectedLDAWOFPsClass))/((double)faDetectablesClass), 0)+"%");
+        else cell.setCellValue("NA");
+        cell = row.createCell(lbHitsColumn);
+        cell.setCellType(Cell.CELL_TYPE_STRING);
+        if (numberSns>1 && ms1DetectablesClass>0 && faDetectablesClass>0) cell.setCellValue(faDetectedDialWOFPsClass+"/"+faDetectablesClass);
+        else cell.setCellValue("NA");
+        cell = row.createCell(lbPercentColumn);
+        cell.setCellType(Cell.CELL_TYPE_STRING);
+        if (numberSns>1 && ms1DetectablesClass>0 && faDetectablesClass>0) cell.setCellValue(Calculator.FormatNumberToString(((double)(100*faDetectedDialWOFPsClass))/((double)faDetectablesClass), 0)+"%");
+        else cell.setCellValue("NA");
+
+        rowCountDetails++;
+        rowCountDetails++;
+
+        if (ms1DetectablesClass==0) continue;
+        speciesEvidence.put(lipidClass, speciesEvidenceClass);
+                
+      }
+      rowCountSummary++;
+      
+      sumRow = summarySheet.createRow(rowCountSummary);
+      rowCountSummary++;
+      sumCell = sumRow.createCell(sumTypeColumn);
+      sumCell.setCellStyle(leftHeaderStyle);
+      sumCell.setCellValue("Total");
+      
+      sumCell = sumRow.createCell(ldaMs1Column);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      sumCell.setCellValue(ms1DetectedLDA+"/"+ms1Detectables);
+      sumCell = sumRow.createCell(ldaMs1PercentColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*ms1DetectedLDA)/((double)ms1Detectables), 0)+"%");
+      sumCell = sumRow.createCell(dialMs1Column);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      sumCell.setCellValue(ms1DetectedDial+"/"+ms1Detectables);
+      sumCell = sumRow.createCell(dialMs1PercentColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*ms1DetectedDial)/((double)ms1Detectables), 0)+"%");
+      sumCell = sumRow.createCell(ldaFaColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      if (faDetectables>0) sumCell.setCellValue(faDetectedLDA+"/"+faDetectables);
+      sumCell = sumRow.createCell(ldaFaPercentColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      if (faDetectables>0) sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*faDetectedLDA)/((double)faDetectables), 0)+"%");
+      sumCell = sumRow.createCell(dialFaColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      if (faDetectables>0) sumCell.setCellValue(faDetectedDial+"/"+faDetectables);
+      sumCell = sumRow.createCell(dialFaPercentColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      if (faDetectables>0) sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*faDetectedDial)/((double)faDetectables), 0)+"%");
+      sumCell = sumRow.createCell(ldaFaWoFPColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      if (faDetectables>0) sumCell.setCellValue(faDetectedLDAWOFPs+"/"+faDetectables);
+      sumCell = sumRow.createCell(ldaFaWoFPPercentColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      if (faDetectables>0) sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*faDetectedLDAWOFPs)/((double)faDetectables), 0)+"%");
+      sumCell = sumRow.createCell(dialFaWoFPColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      if (faDetectables>0) sumCell.setCellValue(faDetectedDialWOFPs+"/"+faDetectables);
+      sumCell = sumRow.createCell(dialFaWoFPPercentColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      if (faDetectables>0) sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*faDetectedDialWOFPs)/((double)faDetectables), 0)+"%");
+
+      rowCountSummary++;
+      rowCountSummary++;
+      rowCountSummary++;
+      sumRow = summarySheet.createRow(rowCountSummary);
+      rowCountSummary++;
+      sumCell = sumRow.createCell(ldaMs1Column);
+      sumCell.setCellStyle(leftHeaderStyle);
+      sumCell.setCellValue("LDA identified");
+      sumCell = sumRow.createCell(dialMs1Column);
+      sumCell.setCellStyle(leftHeaderStyle);
+      sumCell.setCellValue("MS-DIAL identified");
+      sumCell = sumRow.createCell(ldaFaColumn);
+      sumCell.setCellStyle(leftHeaderStyle);
+      sumCell.setCellValue("LDA FAs");
+      sumCell = sumRow.createCell(dialFaColumn);
+      sumCell.setCellStyle(leftHeaderStyle);
+      sumCell.setCellValue("MS-DIAL FAs");
+      sumCell = sumRow.createCell(ldaFaWoFPColumn);
+      sumCell.setCellStyle(leftHeaderStyle);
+      sumCell.setCellValue("LDA FAs no FPs");
+      sumCell = sumRow.createCell(dialFaWoFPColumn);
+      sumCell.setCellStyle(leftHeaderStyle);
+      sumCell.setCellValue("MS-DIAL FAs no FPs");
+      
+      ms1Detectables = 0;   
+      faDetectables = 0;
+      positionDetectables = 0;  
+      ms1DetectedLDA = 0;
+      faDetectedLDAWOFPs = 0;
+      faDetectedLDA = 0;
+      ms1DetectedDial = 0;
+      faDetectedDialWOFPs = 0;
+      faDetectedDial = 0;
+      for (String lipidClass : speciesEvidence.keySet()){
+        sumRow = summarySheet.createRow(rowCountSummary);
+        rowCountSummary++;
+        sumCell = sumRow.createCell(sumTypeColumn);
+        sumCell.setCellStyle(leftHeaderStyle);
+        sumCell.setCellValue(lipidClass);
+        
+        LinkedHashMap<String,LdaDialStandardsEvidence> evidenceClass =  speciesEvidence.get(lipidClass);
+        int ms1DetectablesClass = 0;
+        int faDetectablesClass = 0;
+        int positionDetectablesClass = 0;
+        int ms1DetectedLDAClass = 0;
+        int faDetectedLDAWOFPsClass = 0;
+        int faDetectedLDAClass = 0;
+        int posDetectedLDAClass = 0;
+        int ms1DetectedLBClass = 0;
+        int faDetectedLBWOFPsClass = 0;
+        int faDetectedLBClass = 0;
+        int posDetectedLBClass = 0;
+        for (LdaDialStandardsEvidence ev: evidenceClass.values()){
+          ms1DetectablesClass++;
+          if (ev.isMs1DetectedLDA()) ms1DetectedLDAClass++;
+          if (ev.isMs1DetectedLB()) ms1DetectedLBClass++;
+          if (ev.isFaDetectable()){
+            faDetectablesClass++;
+            if (ev.isFaDetectedLDA()) faDetectedLDAClass++;
+            if (ev.isFaDetectedLB()) faDetectedLBClass++;
+            if (ev.isFaDetectedLDAWoFPs()) faDetectedLDAWOFPsClass++;
+            if (ev.isFaDetectedLBWoFPs()) faDetectedLBWOFPsClass++;
+          }
+        }
+        
+        sumCell = sumRow.createCell(ldaMs1Column);
+        sumCell.setCellType(Cell.CELL_TYPE_STRING);
+        sumCell.setCellStyle(centerStyle);
+        sumCell.setCellValue(ms1DetectedLDAClass+"/"+ms1DetectablesClass);
+        sumCell = sumRow.createCell(ldaMs1PercentColumn);
+        sumCell.setCellType(Cell.CELL_TYPE_STRING);
+        sumCell.setCellStyle(centerStyle);
+        sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*ms1DetectedLDAClass)/((double)ms1DetectablesClass), 0)+"%");
+        sumCell = sumRow.createCell(dialMs1Column);
+        sumCell.setCellType(Cell.CELL_TYPE_STRING);
+        sumCell.setCellStyle(centerStyle);
+        sumCell.setCellValue(ms1DetectedLBClass+"/"+ms1DetectablesClass);
+        sumCell = sumRow.createCell(dialMs1PercentColumn);
+        sumCell.setCellType(Cell.CELL_TYPE_STRING);
+        sumCell.setCellStyle(centerStyle);
+        sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*ms1DetectedLBClass)/((double)ms1DetectablesClass), 0)+"%");
+        sumCell = sumRow.createCell(ldaFaColumn);
+        sumCell.setCellType(Cell.CELL_TYPE_STRING);
+        sumCell.setCellStyle(centerStyle);
+        if (faDetectablesClass>0) sumCell.setCellValue(faDetectedLDAClass+"/"+faDetectablesClass);
+        else sumCell.setCellValue("NA");
+        sumCell = sumRow.createCell(ldaFaPercentColumn);
+        sumCell.setCellType(Cell.CELL_TYPE_STRING);
+        sumCell.setCellStyle(centerStyle);
+        if (faDetectablesClass>0) sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*faDetectedLDAClass)/((double)faDetectablesClass), 0)+"%");
+        else sumCell.setCellValue("NA");
+        sumCell = sumRow.createCell(dialFaColumn);
+        sumCell.setCellType(Cell.CELL_TYPE_STRING);
+        sumCell.setCellStyle(centerStyle);
+        if (faDetectablesClass>0) sumCell.setCellValue(faDetectedLBClass+"/"+faDetectablesClass);
+        else sumCell.setCellValue("NA");
+        sumCell = sumRow.createCell(dialFaPercentColumn);
+        sumCell.setCellType(Cell.CELL_TYPE_STRING);
+        sumCell.setCellStyle(centerStyle);
+        if (faDetectablesClass>0) sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*faDetectedLBClass)/((double)faDetectablesClass), 0)+"%");
+        else sumCell.setCellValue("NA");
+        sumCell = sumRow.createCell(ldaFaWoFPColumn);
+        sumCell.setCellType(Cell.CELL_TYPE_STRING);
+        sumCell.setCellStyle(centerStyle);
+        if (faDetectablesClass>0) sumCell.setCellValue(faDetectedLDAWOFPsClass+"/"+faDetectablesClass);
+        else sumCell.setCellValue("NA");
+        sumCell = sumRow.createCell(ldaFaWoFPPercentColumn);
+        sumCell.setCellType(Cell.CELL_TYPE_STRING);
+        sumCell.setCellStyle(centerStyle);
+        if (faDetectablesClass>0) sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*faDetectedLDAWOFPsClass)/((double)faDetectablesClass), 0)+"%");
+        else sumCell.setCellValue("NA");
+        sumCell = sumRow.createCell(dialFaWoFPColumn);
+        sumCell.setCellType(Cell.CELL_TYPE_STRING);
+        sumCell.setCellStyle(centerStyle);
+        if (faDetectablesClass>0) sumCell.setCellValue(faDetectedLBWOFPsClass+"/"+faDetectablesClass);
+        else sumCell.setCellValue("NA");
+        sumCell = sumRow.createCell(dialFaWoFPPercentColumn);
+        sumCell.setCellType(Cell.CELL_TYPE_STRING);
+        sumCell.setCellStyle(centerStyle);
+        if (faDetectablesClass>0) sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*faDetectedLBWOFPsClass)/((double)faDetectablesClass), 0)+"%");
+        else sumCell.setCellValue("NA");
+
+        ms1Detectables += ms1DetectablesClass;
+        faDetectables += faDetectablesClass;
+        positionDetectables += positionDetectablesClass;
+        ms1DetectedLDA += ms1DetectedLDAClass;
+        faDetectedLDAWOFPs += faDetectedLDAWOFPsClass;
+        faDetectedLDA += faDetectedLDAClass;
+        ms1DetectedDial += ms1DetectedLBClass;
+        faDetectedDialWOFPs += faDetectedLBWOFPsClass;
+        faDetectedDial += faDetectedLBClass;
+      }
+      rowCountSummary++;
+      
+      sumRow = summarySheet.createRow(rowCountSummary);
+      rowCountSummary++;
+      sumCell = sumRow.createCell(sumTypeColumn);
+      sumCell.setCellStyle(leftHeaderStyle);
+      sumCell.setCellValue("Total");
+      
+      sumCell = sumRow.createCell(ldaMs1Column);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      sumCell.setCellValue(ms1DetectedLDA+"/"+ms1Detectables);
+      sumCell = sumRow.createCell(ldaMs1PercentColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*ms1DetectedLDA)/((double)ms1Detectables), 0)+"%");
+      sumCell = sumRow.createCell(dialMs1Column);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      sumCell.setCellValue(ms1DetectedDial+"/"+ms1Detectables);
+      sumCell = sumRow.createCell(dialMs1PercentColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*ms1DetectedDial)/((double)ms1Detectables), 0)+"%");
+      sumCell = sumRow.createCell(ldaFaColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      if (faDetectables>0) sumCell.setCellValue(faDetectedLDA+"/"+faDetectables);
+      sumCell = sumRow.createCell(ldaFaPercentColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      if (faDetectables>0) sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*faDetectedLDA)/((double)faDetectables), 0)+"%");
+      sumCell = sumRow.createCell(dialFaColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      if (faDetectables>0) sumCell.setCellValue(faDetectedDial+"/"+faDetectables);
+      sumCell = sumRow.createCell(dialFaPercentColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      if (faDetectables>0) sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*faDetectedDial)/((double)faDetectables), 0)+"%");
+      sumCell = sumRow.createCell(ldaFaWoFPColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      if (faDetectables>0) sumCell.setCellValue(faDetectedLDAWOFPs+"/"+faDetectables);
+      sumCell = sumRow.createCell(ldaFaWoFPPercentColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      if (faDetectables>0) sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*faDetectedLDAWOFPs)/((double)faDetectables), 0)+"%");
+      sumCell = sumRow.createCell(dialFaWoFPColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      if (faDetectables>0) sumCell.setCellValue(faDetectedDialWOFPs+"/"+faDetectables);
+      sumCell = sumRow.createCell(dialFaWoFPPercentColumn);
+      sumCell.setCellType(Cell.CELL_TYPE_STRING);
+      sumCell.setCellStyle(centerStyle);
+      if (faDetectables>0) sumCell.setCellValue(Calculator.FormatNumberToString((double)(100*faDetectedDialWOFPs)/((double)faDetectables), 0)+"%");
+      
+      //legend
+      rowCountSummary++;
+      rowCountSummary++;
+      rowCountSummary++;
+      sumRow = summarySheet.createRow(rowCountSummary);
+      rowCountSummary++;
+      sumCell = sumRow.createCell(sumTypeColumn);
+      sumCell.setCellStyle(leftHeaderStyle);
+      sumCell.setCellValue("Legend to the \"Details\" tab:");
+      sumRow = summarySheet.createRow(rowCountSummary);
+      rowCountSummary++;
+      sumCell = sumRow.createCell(sumTypeColumn);
+      sumCell.setCellStyle(fullyCorrectStyle);
+      sumCell.setCellValue("Green corresponds to a completely correct lipid species identifications");
+      sumRow = summarySheet.createRow(rowCountSummary);
+      rowCountSummary++;
+      sumCell = sumRow.createCell(sumTypeColumn);
+      sumCell.setCellStyle(faCorrectStyle);
+      sumCell.setCellValue("Cyan corresponds to correctly identified fatty acid (FA) position, without any false positives (FPs), and without  position assignment");
+      sumRow = summarySheet.createRow(rowCountSummary);
+      rowCountSummary++;
+      sumCell = sumRow.createCell(sumTypeColumn);
+      sumCell.setCellStyle(faFoundStyle);
+      sumCell.setCellValue("Dark yellow corresponds to correctly identified FA positions, but with additional FPs");
+      sumRow = summarySheet.createRow(rowCountSummary);
+      rowCountSummary++;
+      sumCell = sumRow.createCell(sumTypeColumn);
+      sumCell.setCellStyle(ms1FoundStyle);
+      sumCell.setCellValue("Orange corresponds to a detection of the lipid class, but without identifying the correct FAs");
+      sumRow = summarySheet.createRow(rowCountSummary);
+      rowCountSummary++;
+      sumCell = sumRow.createCell(sumTypeColumn);
+      sumCell.setCellStyle(notFoundStyle);
+      sumCell.setCellValue("Red corresponds to an undetected analyte (this color is not used if no MS/MS are present)");
+
+      summarySheet.setColumnWidth(0, 5000);
+      
+      resultWorkbook.write(out);
+      resultWorkbook.close();
+      out.close();
+    }catch(Exception ex){
+      ex.printStackTrace();
+    } 
+  }
+  
+  private void parseMSFinderStructure() {
+    MSFinderStructureParser finderParser = new MSFinderStructureParser("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\MS-Dial_Mix1\\export_MSFinder2\\Structure result-2101.txt");
+    try {
+      finderParser.parse();
+//      Vector<MSDialEntry> entries = dialParser.getResults();
+//      for (MSDialEntry entry : entries) {
+//        System.out.println(entry.getName());
+//      }
+      
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  private void generateIsoLabeledMassList() {
+    try{
+      ElementConfigParser parser = new ElementConfigParser("elementconfig.xml");
+      parser.parse();
+      FALibParser faParser = new FALibParser("C:\\Development\\LipidDataAnalyzer\\fattyAcids\\fattyAcidChains.xlsx");
+      faParser.parseFile();
+      Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> fas = faParser.getFattyAcids().get("n");
+      Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
+      for (Integer cAtoms : fas.keySet()) {
+        for (Integer dbs : fas.get(cAtoms).keySet()) {
+          for (String pref : fas.get(cAtoms).get(dbs).keySet()) {
+            chains.add(fas.get(cAtoms).get(dbs).get(pref));
+          }
+        }
+      }
+      //Vector<String> combis = FragmentCalculator.getAllPossibleChainCombinations(2,chains);
+      
+      // for PC 
+      //String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\PC_negative.xlsx";
+      // for PE 
+      //String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\PE_negative.xlsx";
+      // for PS 
+      //String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\PS_negative.xlsx";
+      // for PI 
+      //String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\PI_negative.xlsx";
+      // for PG 
+      //String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\PG_negative.xlsx";
+      // for P-PE 
+      //String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\P-PE_negative.xlsx";
+      // for LPC 
+      //String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\LPC_negative.xlsx";
+      // for LPE 
+      //String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\LPE_negative.xlsx";
+      // for LPE 
+      String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\LPS_negative.xlsx";
+      
+      BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(quantFile));
+      XSSFWorkbook resultWorkbook = new XSSFWorkbook();
+      XSSFCellStyle headerStyle = getHeaderStyle(resultWorkbook);
+      
+      //for PC mass list
+      //Sheet resultSheet = resultWorkbook.createSheet("PC");
+      //for PE mass list
+      //Sheet resultSheet = resultWorkbook.createSheet("PE");
+      //for PS mass list
+      //Sheet resultSheet = resultWorkbook.createSheet("PS");
+      //for PI mass list
+      //Sheet resultSheet = resultWorkbook.createSheet("PI");      
+      //for PG mass list
+      //Sheet resultSheet = resultWorkbook.createSheet("PG");      
+      //for P-PE mass list
+      //Sheet resultSheet = resultWorkbook.createSheet("P-PE");      
+      //for P-PE mass list
+      //Sheet resultSheet = resultWorkbook.createSheet("LPC");      
+      //for LPE mass list
+      //Sheet resultSheet = resultWorkbook.createSheet("LPE");      
+      //for LPS mass list
+      Sheet resultSheet = resultWorkbook.createSheet("LPS");      
+
+      
+      int rowCount = 4;
+      Row outRow = resultSheet.createRow(rowCount);
+      Cell label = outRow.createCell(0,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("Name");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(2,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("dbs");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(3,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("C");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(4,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("H");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(5,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("O");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(6,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("P");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(7,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("N");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(8,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("D");
+      label.setCellStyle(headerStyle);
+      //for sphingoid backbone chain library
+//      label = outRow.createCell(9,HSSFCell.CELL_TYPE_STRING);
+//      label.setCellValue("mass");
+//      label.setCellStyle(headerStyle);
+      //for all others
+      label = outRow.createCell(9,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("M");
+      label.setCellStyle(headerStyle);
+
+      
+      //for positive ion mode data
+//      label = outRow.createCell(10,HSSFCell.CELL_TYPE_STRING);      
+//      label.setCellValue("mass(form[+H] name[H])");
+//      label.setCellStyle(headerStyle);
+//      label = outRow.createCell(11,HSSFCell.CELL_TYPE_STRING);      
+//      label.setCellValue("mass(form[-OH] name[-OH])");
+//      label.setCellStyle(headerStyle);
+//      label = outRow.createCell(12,HSSFCell.CELL_TYPE_STRING);      
+//      label.setCellValue("mass(form[+Na] name[Na])");
+//      label.setCellStyle(headerStyle);
+      //for negative ion mode data
+      label = outRow.createCell(10,HSSFCell.CELL_TYPE_STRING);      
+      label.setCellValue("mass(form[-H] name[-H])");
+      label.setCellStyle(headerStyle);
+//      label = outRow.createCell(10,HSSFCell.CELL_TYPE_STRING);      
+//      label.setCellValue("mass(form[+HCOO] name[HCOO])");
+//      label.setCellStyle(headerStyle);
+//      label = outRow.createCell(11,HSSFCell.CELL_TYPE_STRING);      
+//      label.setCellValue("mass(form[-CH3] name[-CH3])");
+//      label.setCellStyle(headerStyle);
+
+//      label = outRow.createCell(12,HSSFCell.CELL_TYPE_STRING);      
+//      label.setCellValue("mass(form[+Cl] name[Cl])");
+//      label.setCellStyle(headerStyle);
+      
+      //for all except for sphingoid backbone chain library
+      label = outRow.createCell(11,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("tR (min)");
+      label.setCellStyle(headerStyle);
+      rowCount++;
+      
+      Hashtable<Integer,Integer> cDbsCombi = new Hashtable<Integer,Integer>();
+
+      
+      //for PC, PE, PS, PI, PG, P-PE
+//      for (int i=20; i!=49; i++) {
+//        for (int j=0; j!=13; j++) {
+//          if (j>4 && i<30)
+//            continue;
+//          else if (j>6 && i<36)
+//            continue;
+//          else if (j>8 && i<38)
+//            continue;
+//          else if (j>10 && i<40)
+//            continue;
+//          cDbsCombi.put(i, j);
+//        }
+//      }
+
+      //for LPC, LPE, LPS
+      for (int i=12; i!=27; i++) {
+        for (int j=0; j!=9; j++) {
+          if (j>4 && i<16)
+            continue;
+          else if (j>6 && i<20)
+            continue;
+          cDbsCombi.put(i, j);
+        }
+      }
+
+      
+      //for sphingoid backbone chain library
+      //for (int cAtoms=10; cAtoms<21; cAtoms+=1){
+      
+      //for PC, PE, PS, PI, PG, P-PE
+      //for (int cAtoms=20; cAtoms<49; cAtoms+=1){
+      //for LPC, LPE, LPS
+      for (int cAtoms=12; cAtoms<27; cAtoms+=1){
+        int dbs = 0;
+        int dbsMax = cDbsCombi.get(cAtoms)+1;
+        while (dbs<dbsMax){
+          //for PC, PE, PS, PI, PG, P-PE
+          //Vector<Vector<FattyAcidVO>> filtered = getPossCombis(2,cAtoms,dbs,chains, new Vector<FattyAcidVO>());
+          //for LPC, LPE
+          Vector<Vector<FattyAcidVO>> filtered = getPossCombis(1,cAtoms,dbs,chains, new Vector<FattyAcidVO>());
+          int maxDeut = 0;
+          for (Vector<FattyAcidVO> combs : filtered) {
+            int nrDeut = 0;
+            for (FattyAcidVO fa : combs) {
+              if (fa.getPrefix().length()>0)
+                nrDeut++;
+            }
+            if (nrDeut>maxDeut)
+              maxDeut = nrDeut;
+          }
+//            for (String combi:combis) {
+//              System.out.println(combi);
+//            }
+
+          for (int i=0; i!=(maxDeut+1); i++){ 
+        
+            //for PC chain library
+//            int totalC = cAtoms+8;
+//            int hAtoms = totalC*2-2*dbs;
+//            int oAtoms = 8;
+//            int pAtoms = 1;
+//            int nAtoms = 1;
+
+            //for PE chain library
+//            int totalC = cAtoms+5;
+//            int hAtoms = totalC*2-2*dbs;
+//            int oAtoms = 8;
+//            int pAtoms = 1;
+//            int nAtoms = 1;
+
+            //for PS chain library
+//            int totalC = cAtoms+9;
+//            int hAtoms = totalC*2-2*dbs-3;
+//            int oAtoms = 13;
+//            int pAtoms = 1;
+//            int nAtoms = 0;
+
+            //for PG chain library
+//            int totalC = cAtoms+6;
+//            int hAtoms = totalC*2-2*dbs-1;
+//            int oAtoms = 10;
+//            int pAtoms = 1;
+//            int nAtoms = 0;
+
+            //for P-PE chain library
+//            int totalC = cAtoms+5;
+//            int hAtoms = totalC*2-2*dbs;
+//            int oAtoms = 7;
+//            int pAtoms = 1;
+//            int nAtoms = 1;
+
+            //for LPC chain library
+//            int totalC = cAtoms+8;
+//            int hAtoms = totalC*2-2*dbs+2;
+//            int oAtoms = 7;
+//            int pAtoms = 1;
+//            int nAtoms = 1;
+
+//            //for LPE chain library
+//            int totalC = cAtoms+5;
+//            int hAtoms = totalC*2-2*dbs+2;
+//            int oAtoms = 7;
+//            int pAtoms = 1;
+//            int nAtoms = 1;
+
+            //for LPS chain library
+            int totalC = cAtoms+6;
+            int hAtoms = totalC*2-2*dbs;
+            int oAtoms = 9;
+            int pAtoms = 1;
+            int nAtoms = 1;
+
+            
+            int dAtoms = 0;
+            String name = "";
+            for (int j=0; j!=i; j++) {
+              name+="D";
+              hAtoms -= 11;
+              dAtoms += 11;
+            }
+
+            
+            
+            double massNeutral = parser.getElementDetails("C").getMonoMass()*((double)totalC)+parser.getElementDetails("H").getMonoMass()*((double)hAtoms)+
+                parser.getElementDetails("O").getMonoMass()*((double)oAtoms)+parser.getElementDetails("P").getMonoMass()*((double)pAtoms)+
+                parser.getElementDetails("N").getMonoMass()*((double)nAtoms)+parser.getElementDetails("D").getMonoMass()*((double)dAtoms);
+            //double massCharged = massNeutral+parser.getElementDetails("H").getMonoMass()+parser.getElementDetails("C").getMonoMass()+2d*parser.getElementDetails("O").getMonoMass();
+          
+            //for positive ion mode
+            //protonated
+//            double massH = massNeutral+parser.getElementDetails("h").getMonoMass();
+//            //water loss
+//            double massOH = massNeutral+parser.getElementDetails("h").getMonoMass()-2*parser.getElementDetails("H").getMonoMass()-parser.getElementDetails("O").getMonoMass();
+//            //sodiated
+//            double massNa = massNeutral+parser.getElementDetails("na").getMonoMass();
+
+          //for negative ion mode
+          //deprotonated
+          double massH = massNeutral-parser.getElementDetails("h").getMonoMass();
+          //formate
+//          double massHCOO = massNeutral-parser.getElementDetails("h").getMonoMass()+2*parser.getElementDetails("H").getMonoMass()+parser.getElementDetails("C").getMonoMass()+2*parser.getElementDetails("O").getMonoMass();  
+//          //methyl loss
+//          double massCH3 = massNeutral-parser.getElementDetails("h").getMonoMass()-2*parser.getElementDetails("H").getMonoMass()-parser.getElementDetails("C").getMonoMass();
+
+            
+            outRow = resultSheet.createRow(rowCount);
+            label = outRow.createCell(0,HSSFCell.CELL_TYPE_NUMERIC);
+            label.setCellValue(name+cAtoms);
+            label = outRow.createCell(1,HSSFCell.CELL_TYPE_STRING);
+            label.setCellValue(":");       
+            label = outRow.createCell(2,HSSFCell.CELL_TYPE_NUMERIC);
+            label.setCellValue(dbs);
+            label = outRow.createCell(3,HSSFCell.CELL_TYPE_NUMERIC);
+            label.setCellValue(totalC);
+            label = outRow.createCell(4,HSSFCell.CELL_TYPE_NUMERIC);
+            label.setCellValue(hAtoms);
+            label = outRow.createCell(5,HSSFCell.CELL_TYPE_NUMERIC);
+            label.setCellValue(oAtoms);
+            label = outRow.createCell(6,HSSFCell.CELL_TYPE_NUMERIC);
+            label.setCellValue(pAtoms);
+            label = outRow.createCell(7,HSSFCell.CELL_TYPE_NUMERIC);
+            label.setCellValue(nAtoms);
+            label = outRow.createCell(8,HSSFCell.CELL_TYPE_NUMERIC);
+            label.setCellValue(dAtoms);
+            label = outRow.createCell(9,HSSFCell.CELL_TYPE_NUMERIC);
+            label.setCellValue(massNeutral);
+          
+          //positive
+//          label = outRow.createCell(10,HSSFCell.CELL_TYPE_NUMERIC);
+//          label.setCellValue(massH);
+//          label = outRow.createCell(11,HSSFCell.CELL_TYPE_NUMERIC);
+//          label.setCellValue(massOH);
+//          label = outRow.createCell(12,HSSFCell.CELL_TYPE_NUMERIC);
+//          label.setCellValue(massNa);
+          //negative
+            label = outRow.createCell(10,HSSFCell.CELL_TYPE_NUMERIC);
+            label.setCellValue(massH);
+//            label = outRow.createCell(10,HSSFCell.CELL_TYPE_NUMERIC);
+//            label.setCellValue(massHCOO);
+//            label = outRow.createCell(11,HSSFCell.CELL_TYPE_NUMERIC);
+//            label.setCellValue(massCH3);
+            
+//            label = outRow.createCell(12,HSSFCell.CELL_TYPE_NUMERIC);
+//            label.setCellValue(massCl);
+            rowCount++;
+          }
+          dbs++;
+        }
+      }
+      
+      resultWorkbook.write(out);
+      out.close();
+    } catch (Exception ex){
+      ex.printStackTrace();
+    }
+
+  }
+  private Vector<Vector<FattyAcidVO>> getPossCombis(int chains, int cAtoms, int dbs, Vector<FattyAcidVO> fas, Vector<FattyAcidVO> added){
+    Vector<Vector<FattyAcidVO>> combis = new Vector<Vector<FattyAcidVO>>();
+    for (FattyAcidVO fa : fas) {
+      Vector<FattyAcidVO> toAdd = new Vector<FattyAcidVO>(added);
+      toAdd.add(fa);
+      if (chains>1) {
+        Vector<Vector<FattyAcidVO>> combis2 = getPossCombis(chains-1, cAtoms, dbs, fas, toAdd);
+        if (combis2.size()>0) {
+          combis.addAll(combis2);
+        }
+      }else{
+        //System.out.println(toAdd.size());
+        if (checkTotalCDbsValid(toAdd,cAtoms,dbs)) {
+          String comb = "";
+          for (FattyAcidVO fax : toAdd)
+            comb += fax.getCarbonDbsId()+"_";
+          //System.out.println(cAtoms+":"+dbs+": "+comb);
+          combis.add(toAdd);
+        }
+      }
+    }
+    return combis;
+  }
+  
+  private boolean checkTotalCDbsValid(Vector<FattyAcidVO> toAdd, int cAtoms, int dbs) {
+    int totC = 0;
+    int totD = 0;
+    for (FattyAcidVO fa : toAdd) {
+      totC += fa.getcAtoms();
+      totD += fa.getDoubleBonds();
+    }
+    return (totC==cAtoms && totD==dbs);
+  }
+  
+  
+  private void getValidSphingoOrbitrapCIDSpeciesPositive(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
+      Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("SphBase", BrainSpecies.getSphBaseSpeciesOrbitrap());
+    adducts.put("H", false);
+    lipidClassInfo.put("SphBase", new LipidClassInfoVO(1,true,0.4d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("Cer", BrainSpecies.getCerSpeciesOrbitrap());
+    adducts.put("H", true);
+//    adducts.put("Na", false);
+    lipidClassInfo.put("Cer", new LipidClassInfoVO(2,true,0.4d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("Cer1P", BrainSpecies.getCer1PSpeciesOrbitrap());
+    adducts.put("H", true);
+//    adducts.put("Na", false);
+    lipidClassInfo.put("Cer1P", new LipidClassInfoVO(2,false,0.4d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("HexCer", BrainSpecies.getHexCerSpeciesOrbitrap());
+    adducts.put("H", true);
+//    adducts.put("Na", false);
+    lipidClassInfo.put("HexCer", new LipidClassInfoVO(2,true,0.4d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("SM", BrainSpecies.getSMSpeciesOrbitrap());
+    adducts.put("H", false);
+    adducts.put("Na", false);
+    lipidClassInfo.put("SM", new LipidClassInfoVO(1,true,0.4d,adducts));    
+  }
+  
+  private void getValidSphingoOrbitrapCIDSpeciesNegative(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
+      Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("Cer", BrainSpecies.getCerSpeciesOrbitrap());
+    adducts.put("HCOO", false);
+    adducts.put("-H", true);
+    lipidClassInfo.put("Cer", new LipidClassInfoVO(2,true,0.4d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("Cer1P", BrainSpecies.getCer1PSpeciesOrbitrap());
+    adducts.put("-H", true);
+    lipidClassInfo.put("Cer1P", new LipidClassInfoVO(2,false,0.4d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("HexCer", BrainSpecies.getHexCerSpeciesOrbitrap());
+    adducts.put("HCOO", false);
+    adducts.put("-H", true);
+    lipidClassInfo.put("HexCer", new LipidClassInfoVO(2,true,0.4d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("SM", BrainSpecies.getSMSpeciesOrbitrap());
+    adducts.put("HCOO", false);
+    lipidClassInfo.put("SM", new LipidClassInfoVO(2,true,0.4d,adducts));    
+  }
+
+  
+  private void compareLDAMSDialNaturalProbesPositive(){
+    //the first key is the lipid class, the second key the ms1 species name, the third key the structural identification
+    LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>>();
+    Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
+    LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
+    //TODO: the implementation of this method is not complete - only a test case
+    this.getValidSphingoOrbitrapCIDSpeciesPositive(lipidClasses,lipidClassInfo,adducts);
+    for (LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> correctAnalytes: lipidClasses.values()) {
+      for (LinkedHashMap<String,ReferenceInfoVO> classCorrect : correctAnalytes.values()) {
+        for (ReferenceInfoVO info : classCorrect.values()) {
+          for (int i=0; i!=info.getCorrectRts().length; i++) {
+            info.getCorrectRts()[i] = info.getCorrectRts()[i]-0.05d;        }
+        }
+      }
+    }
+    ////this.getValid4000QTRAPSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
+
+    String chromFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_5.chrom";
+    String quantFile = "C:\\Sphingolipids\\Brain\\massLists\\Orbitrap\\sphingos_positive.xlsx";
+    String ldaFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_5_sphingos_positive.xlsx";
+    String msDialFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\MS-Dial_positive\\export\\Brain_pos_5.txt";
+    String outputFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\MS-Dial_positive\\Brain_pos_5_comp_generated.xlsx";
+
+    performMSDialComparisonOfNaturalProbes(lipidClasses,lipidClassInfo,chromFile,quantFile,ldaFile,msDialFile,outputFile);    
+  }
+  
+  private void compareLDAMSDialNaturalProbesNegative(){
+    //the first key is the lipid class, the second key the ms1 species name, the third key the structural identification
+    LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>>();
+    Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
+    LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
+    
+    //TODO: the implementation of this method is not complete - only a test case
+    this.getValidSphingoOrbitrapCIDSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
+    ////this.getValid4000QTRAPSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
+
+    String chromFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\negative\\Brain_neg_1.chrom";
+    String quantFile = "C:\\Sphingolipids\\Brain\\massLists\\Orbitrap\\sphingos_negative.xlsx";
+    String ldaFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\negative\\Brain_neg_1_sphingos_negative.xlsx";
+    String msDialFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\MS-Dial_negative\\export\\Brain_neg_1.txt";
+    String outputFile = "C:\\\\Sphingolipids\\\\Brain\\\\Orbitrap\\\\MS-Dial_negative\\Brain_neg_1_comp_generated.xlsx";
+//    String chromFile = "D:\\BiologicalExperiment\\QTRAP\\negative\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg.chrom";
+//    String quantFile = "D:\\BiologicalExperiment\\massLists\\negative\\QTRAP\\negative.xlsx";
+//    String ldaFile = "D:\\BiologicalExperiment\\QTRAP\\negative\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_negative.xlsx";
+//    String lbFile = "D:\\BiologicalExperiment\\LipidBlast\\4000QTRAP\\negative\\output\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_MF450.mgf.tsv";
+//    String outputFile = "D:\\BiologicalExperiment\\LipidBlast\\4000QTRAP\\negative\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_MF450_comp_generated.xlsx";
+
+    performMSDialComparisonOfNaturalProbes(lipidClasses,lipidClassInfo,chromFile,quantFile,ldaFile,msDialFile,outputFile);
+  }
+
+  private void  performMSDialComparisonOfNaturalProbes(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses, 
+      Hashtable<String,LipidClassInfoVO> lipidClassInfo, String chromFile, String quantFile, String ldaFile, String msDialFile, String outputFile){
+    try{
+      Vector quantValues = QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f, true);
+      ////Vector quantValues = null;
+      String[] chromPaths = StringUtils.getChromFilePaths(chromFile);   
+      LipidomicsAnalyzer analyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
+
+      Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)quantValues.get(1);
+      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>) quantValues.get(3);
+      BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile));
+      Workbook resultWorkbook = new XSSFWorkbook();
+      CellStyle fullyCorrectStyle = getFullyCorrectStyle(resultWorkbook);
+      CellStyle headerStyle = getHeaderStyle(resultWorkbook);
+      CellStyle leftHeaderStyle = getLeftHeaderStyle(resultWorkbook);
+      CellStyle boldStyle = getBoldStyle(resultWorkbook);
+      CellStyle notFoundStyle = getNotFoundStyle(resultWorkbook);
+      CellStyle ambigStyle = getFACorrectStyle(resultWorkbook);
+      CellStyle onlyMS1Style = getMS1FoundStyle(resultWorkbook);
+      CellStyle percentageStyle = getPercentageStyle(resultWorkbook);
+      leftHeaderStyle.cloneStyleFrom(headerStyle);
+      leftHeaderStyle.setAlignment(CellStyle.ALIGN_LEFT);
+      Hashtable<String,Vector<LipidParameterSet>> resultsLDA = LDAResultReader.readResultFile(ldaFile, new Hashtable<String,Boolean>()).getIdentifications();
+      MSDialTxtParser msdialParser = new MSDialTxtParser(msDialFile);
+      msdialParser.parse();
+      //Hashtable<String,Hashtable<String,Hashtable<String,LipidBLASTIdentificationVO>>> resultsLB = lBlastParser.getResults_();
+      Hashtable<String,Hashtable<String,Hashtable<String,Vector<MSDialEntry>>>> resultsDial = msdialParser.getStructuredResults();
+      Hashtable<String,Hashtable<String,Hashtable<String,Vector<MSDialEntry>>>> dialMS1Only = msdialParser.getStructuredMS1Only();
+      
+      //check which DIAL classes were not found
+      for (String dialClass : resultsDial.keySet()) {
+        if (!lipidClasses.containsKey(dialClass))
+          System.out.println("!!!!! The following MS-DIAL class is not supported: "+dialClass);
+      }
+      
+      //remove DIAL hits with four or more hydroxygens
+      for (String lClass : resultsDial.keySet()) {
+        Vector<String> toRemove = new Vector<String>();
+        int[] cAndDbs;
+        for (String analyte : resultsDial.get(lClass).keySet()) {
+          if ((lClass.equalsIgnoreCase("Cer") || lClass.equalsIgnoreCase("Cer1P") || lClass.equalsIgnoreCase("HexCer")) && analyte.startsWith("q"))
+            toRemove.add(analyte);
+          else if (lClass.equalsIgnoreCase("Cer") || lClass.equalsIgnoreCase("Cer1P") || lClass.equalsIgnoreCase("HexCer") || lClass.equalsIgnoreCase("SM")){
+            cAndDbs = StaticUtils.parseCAndDbsFromChainId(analyte.substring(1));
+            if (cAndDbs[0]<26 && cAndDbs[1]>1)
+              toRemove.add(analyte);
+            else if (cAndDbs[0]<28 && cAndDbs[1]>2)
+              toRemove.add(analyte);
+            else if (cAndDbs[0]<32 && cAndDbs[1]>3)
+              toRemove.add(analyte);
+            else if (cAndDbs[0]<34 && cAndDbs[1]>4)
+              toRemove.add(analyte);
+            else if (cAndDbs[0]<36 && cAndDbs[1]>5)
+              toRemove.add(analyte);
+            else if (cAndDbs[0]<20 || cAndDbs[0]>48 || cAndDbs[1]>7)
+              toRemove.add(analyte);
+          }
+        }
+        for (String analyte : toRemove) {
+          resultsDial.get(lClass).remove(analyte);
+        }
+      }
+      
+      for (String lClass : lipidClasses.keySet()){
+        LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = lipidClasses.get(lClass);
+        LipidClassInfoVO classInfo = lipidClassInfo.get(lClass);
+        Sheet sheet = resultWorkbook.createSheet(lClass);
+        int rowCount = 0;
+        Row row =  sheet.createRow(rowCount);
+        int classColumn = 0;
+        int width = (14+1)*256;
+        int ms1Column = 1;
+        sheet.setColumnWidth(ms1Column, width);
+        int adductColumn = 2;
+        width = (12+1)*256;
+        int ldaIdentification = 3;
+        sheet.setColumnWidth(ldaIdentification, width);
+        int lbIdentification = 4;
+        width = (12+1)*256;
+        sheet.setColumnWidth(lbIdentification, width);
+        int ldaMS1CodeColumn = 5;
+        width = (12+1)*256;
+        sheet.setColumnWidth(ldaMS1CodeColumn, width);
+        int lbMS1CodeColumn = 6;
+        width = (12+1)*256;
+        sheet.setColumnWidth(lbMS1CodeColumn, width);
+        int structureColumn = 7;
+        int ldaIdentificationMS2 = 8;
+        int lbIdentificationMS2 = 9;
+        int ldaMS2CodeColumn = 10;
+        int lbMS2CodeColumn = 11;
+        int amountMS2Columns = 5;
+        int rtColumn = 7;
+        int rtLDAColumn = 8;
+        int rtLBColumn = 9;
+        int probLBColumn = 10;
+        int mzColumn = 11;
+        int commentColumn = 12;
+        int ldaMS1IgnoreColumn = 13;
+        int lbMS1IgnoreColumn = 14;
+        int ldaMS2IgnoreColumn = 15;
+        int lbMS2IgnoreColumn = 16;
+        
+        int ldaIdentCode;
+        int dialIdentCode;
+       
+        int ldaMS2IdentCode;
+        int dialMS2IdentCode;
+        
+        rowCount++;
+        Cell cell = row.createCell(classColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("Class");
+        cell = row.createCell(ms1Column);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("Name");
+        cell = row.createCell(adductColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("Adduct");
+        cell = row.createCell(ldaIdentification);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("LDA");
+        cell = row.createCell(lbIdentification);
+        width = (16+1)*256;
+        sheet.setColumnWidth(lbIdentification, width);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("MS-Dial");
+        cell = row.createCell(ldaMS1CodeColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("LDA-Code");
+        cell = row.createCell(lbMS1CodeColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("MS-Dial-Code");
+        if (classInfo.getSns()>1){
+          width = (20+1)*256;
+          sheet.setColumnWidth(structureColumn, width);
+          cell = row.createCell(structureColumn);
+          cell.setCellStyle(headerStyle);
+          cell.setCellValue("Structure");
+          width = (12+1)*256;
+          sheet.setColumnWidth(ldaIdentificationMS2, width);
+          cell = row.createCell(ldaIdentificationMS2);
+          cell.setCellStyle(headerStyle);
+          cell.setCellValue("LDA");
+          width = (22+1)*256;
+          sheet.setColumnWidth(lbIdentificationMS2, width);
+          cell = row.createCell(lbIdentificationMS2);
+          cell.setCellStyle(headerStyle);
+          cell.setCellValue("MS-Dial");
+          width = (12+1)*256;
+          sheet.setColumnWidth(ldaMS2CodeColumn, width);
+          cell = row.createCell(ldaMS2CodeColumn);
+          cell.setCellStyle(headerStyle);
+          cell.setCellValue("LDA-Code");
+          width = (12+1)*256;
+          sheet.setColumnWidth(lbMS2CodeColumn, width);
+          cell = row.createCell(lbMS2CodeColumn);
+          cell.setCellStyle(headerStyle);
+          cell.setCellValue("MS-Dial-Code");
+         
+          rtColumn += amountMS2Columns;
+          rtLDAColumn += amountMS2Columns;
+          rtLBColumn += amountMS2Columns;
+          probLBColumn += amountMS2Columns;
+          mzColumn += amountMS2Columns;
+          commentColumn += amountMS2Columns;
+          ldaMS1IgnoreColumn += amountMS2Columns;
+          lbMS1IgnoreColumn += amountMS2Columns;
+          ldaMS2IgnoreColumn += amountMS2Columns;
+          lbMS2IgnoreColumn += amountMS2Columns;
+          
+          width = (16+1)*256;
+          sheet.setColumnWidth(ldaMS2IgnoreColumn, width);
+          cell = row.createCell(ldaMS2IgnoreColumn);
+          cell.setCellStyle(headerStyle);
+          cell.setCellValue("LDAMS2-Ignore");
+          width = (16+1)*256;
+          sheet.setColumnWidth(lbMS2IgnoreColumn, width);
+          cell = row.createCell(lbMS2IgnoreColumn);
+          cell.setCellStyle(headerStyle);
+          cell.setCellValue("MSDMS2-Ignore");
+        }
+        width = (9+1)*256;
+        sheet.setColumnWidth(rtColumn, width);
+        cell = row.createCell(rtColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("RT-ideal");
+        width = (9+1)*256;
+        sheet.setColumnWidth(rtLDAColumn, width);
+        cell = row.createCell(rtLDAColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("RT-LDA");
+        width = (9+1)*256;
+        sheet.setColumnWidth(rtLBColumn, width);
+        cell = row.createCell(rtLBColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("RT-MS-Dial");
+        width = (9+1)*256;
+        sheet.setColumnWidth(probLBColumn, width);
+        cell = row.createCell(probLBColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("MSD-Prob");
+        width = (26+1)*256;
+        sheet.setColumnWidth(commentColumn, width);
+        cell = row.createCell(mzColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("m/z");
+        width = (30+1)*256;
+        sheet.setColumnWidth(commentColumn, width);
+        cell = row.createCell(commentColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("Comment");      
+        width = (16+1)*256;
+        sheet.setColumnWidth(ldaMS1IgnoreColumn, width);
+        cell = row.createCell(ldaMS1IgnoreColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("LDAMS1-Ignore");
+        width = (16+1)*256;
+        sheet.setColumnWidth(lbMS1IgnoreColumn, width);
+        cell = row.createCell(lbMS1IgnoreColumn);
+        cell.setCellStyle(headerStyle);
+        cell.setCellValue("MSDMS1-Ignore");
+
+
+        int finalRowNumberAnalytes = 0;
+        Hashtable<String,Hashtable<String,QuantVO>> quantsOfClass = quantVOs.get(lClass);
+        Vector<LipidParameterSet> ldaAnalytes = resultsLDA.get(lClass);
+        Hashtable<String,Hashtable<String,Vector<MSDialEntry>>> dialAnalytes = new Hashtable<String,Hashtable<String,Vector<MSDialEntry>>>();
+        if (resultsDial.containsKey(lClass)) dialAnalytes = resultsDial.get(lClass);
+        Vector<String> dialsNotInQuantFile = new Vector<String>(); 
+        //check which DIAL analytes were not found
+        for (String analyte : dialAnalytes.keySet()) {
+          boolean found = false;
+          for (String inQuant : analyteSequence.get(lClass)) {
+            if (analyte.equalsIgnoreCase(inQuant)) {
+              found = true;
+              break;
+            }
+          }
+          if (!found)
+            dialsNotInQuantFile.add(analyte);
+        }
+        
+        Vector<String> allAnalytes = new Vector<String>(analyteSequence.get(lClass));
+        //put the missing MS-Dial hits at the correct position in the allAnalytes table
+        for (String analyte : dialsNotInQuantFile) {
+          //int[0] nr of C atoms; int[1] nr of dbs; int[2] nr of OH
+          int[] cAtomsDbsAndOh = decodeAnalyte(analyte);
+          int addPosition = 0;
+          for (String other : allAnalytes) {
+            int[] otherCAtomsDbsAndOh = decodeAnalyte(other);
+            if (cAtomsDbsAndOh[0]<otherCAtomsDbsAndOh[0])
+              break;
+            else if (cAtomsDbsAndOh[0]==otherCAtomsDbsAndOh[0]) {
+              if (cAtomsDbsAndOh[1]<otherCAtomsDbsAndOh[1])
+                break;
+              else if (cAtomsDbsAndOh[1]==otherCAtomsDbsAndOh[1]&&cAtomsDbsAndOh[2]<otherCAtomsDbsAndOh[2])
+                break;
+            }
+            addPosition++;
+          }
+          allAnalytes.add(addPosition,analyte);
+        }
+        for (String analyte : allAnalytes){
+          if (analyte.startsWith("IS")) continue;
+          Hashtable<String,QuantVO> quantsOfAnalyte = quantsOfClass.get(analyte);
+          Hashtable<String,Vector<MSDialEntry>> dialsOfMod = new Hashtable<String,Vector<MSDialEntry>>();
+          if (dialAnalytes.containsKey(analyte)) dialsOfMod = dialAnalytes.get(analyte);
+          LinkedHashMap<String,ReferenceInfoVO> molecularSpecies = null;
+          if (species.containsKey(analyte)) molecularSpecies = species.get(analyte);
+          boolean doNotUse = true;
+          if (molecularSpecies==null || molecularSpecies.size()==0)
+            doNotUse = false;
+          else {
+            for (ReferenceInfoVO info : molecularSpecies.values()) {
+              if (info.useInEvaluation()) doNotUse = false;
+            }
+          }
+          Vector<LdaLBLASTCompareVO> comparesOfOneSpecies = new Vector<LdaLBLASTCompareVO>();
+          
+         for (String adduct : classInfo.getAdducts().keySet()){
+            //if (!quantsOfAnalyte.containsKey(adduct)) continue;
+           Vector<LipidParameterSet> ldaAnalyte = getLDAAnalytes(ldaAnalytes, analyte, adduct, true);
+           Vector<MSDialEntry> ident = dialsOfMod.get(adduct);
+           if (ident!=null || ldaAnalyte.size()>0){
+             float mz = 0f;
+             if (quantsOfAnalyte!=null && quantsOfAnalyte.containsKey(adduct))
+               mz = (float)quantsOfAnalyte.get(adduct).getAnalyteMass();
+             else if (ldaAnalyte.size()>0)
+               mz = ldaAnalyte.get(0).Mz[0];
+             else if (ident!=null && ident.size()>0)
+               mz = (float)ident.get(0).getMz();
+             Vector<MSDialEntry> dialMS1 = null;
+             if (dialMS1Only.containsKey(lClass) && dialMS1Only.get(lClass).containsKey(analyte) && dialMS1Only.get(lClass).get(analyte).containsKey(adduct))
+               dialMS1 = dialMS1Only.get(lClass).get(analyte).get(adduct);
+             LdaLBLASTCompareVO ms1Compare = getLdaMSDialSpeciesComparision(analyte,classInfo,molecularSpecies,ldaAnalyte,ident,dialMS1,analyzer,mz,lClass,classInfo.getAdducts().get(adduct));
+             if (ms1Compare==null) continue;
+             ms1Compare.setAdduct(adduct);
+             comparesOfOneSpecies.add(ms1Compare);
+           }
+          }
+          setIgnoresForSpeciesLevelEvaluation(comparesOfOneSpecies,classInfo.getSns()>1);
+          for (LdaLBLASTCompareVO ms1Compare : comparesOfOneSpecies){
+            row =  sheet.createRow(rowCount);
+            rowCount++;
+            cell = row.createCell(classColumn);
+            cell.setCellType(Cell.CELL_TYPE_STRING);
+            cell.setCellValue(lClass);
+            cell = row.createCell(ms1Column);
+            cell.setCellType(Cell.CELL_TYPE_STRING);
+            if (ms1Compare.isFp()) cell.setCellStyle(notFoundStyle);
+            else cell.setCellStyle(fullyCorrectStyle );
+            cell.setCellValue(ms1Compare.getCorrectName()+(doNotUse?"_noDial":""));
+            cell = row.createCell(adductColumn);
+            cell.setCellType(Cell.CELL_TYPE_STRING);
+            cell.setCellValue(ms1Compare.getAdduct());
+              
+            CellStyle ldaMS1Style = getStyleBasedOnEvidence(ms1Compare.getLdaIdentCode(),ms1Compare.isFp(),fullyCorrectStyle,
+                ambigStyle,onlyMS1Style,notFoundStyle);
+            CellStyle lbMS1Style = getStyleBasedOnEvidence(ms1Compare.getLbIdentCode(),ms1Compare.isFp(),fullyCorrectStyle,
+                ambigStyle,onlyMS1Style,notFoundStyle);
+              
+              
+              cell = row.createCell(ldaIdentification);
+              cell.setCellType(Cell.CELL_TYPE_STRING);
+              if (ldaMS1Style!=null) cell.setCellStyle(ldaMS1Style);
+              cell.setCellValue(ms1Compare.getLdaName());
+              cell = row.createCell(lbIdentification);
+              cell.setCellType(Cell.CELL_TYPE_STRING);
+              if (lbMS1Style!=null) cell.setCellStyle(lbMS1Style);
+              cell.setCellValue(ms1Compare.getLbName());
+              cell = row.createCell(ldaMS1CodeColumn);
+              cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+              if (ldaMS1Style!=null) cell.setCellStyle(ldaMS1Style);
+              ldaIdentCode = ms1Compare.getLdaIdentCode();
+              if (doNotUse)
+                ldaIdentCode = 0;
+              cell.setCellValue(ldaIdentCode);
+              cell = row.createCell(lbMS1CodeColumn);
+              cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+              if (lbMS1Style!=null) cell.setCellStyle(lbMS1Style);
+              cell.setCellValue(ms1Compare.getLbIdentCode());
+              if (ms1Compare.isIgnoreLDA()){
+                cell = row.createCell(ldaMS1IgnoreColumn);
+                cell.setCellValue(true);
+              }
+              if (ms1Compare.isIgnoreLB()){
+                cell = row.createCell(lbMS1IgnoreColumn);
+                cell.setCellValue(true);
+              }
+              
+
+//              if (analyte.equalsIgnoreCase("t40:0")) {
+//                System.out.println("t40:0: "+ms1Compare.getRt());
+//              }
+
+              if (classInfo.getSns()<2 || ms1Compare.getMs2Evidence().size()==0 || !classInfo.getAdducts().get(ms1Compare.getAdduct()) || doNotUse){
+                cell = row.createCell(rtColumn);
+                cell.setCellType(Cell.CELL_TYPE_STRING);
+                cell.setCellValue(ms1Compare.getRt());
+                cell = row.createCell(rtLDAColumn);
+                cell.setCellType(Cell.CELL_TYPE_STRING);
+                cell.setCellValue(ms1Compare.getLdaRts());
+                cell = row.createCell(rtLBColumn);
+                cell.setCellType(Cell.CELL_TYPE_STRING);
+                cell.setCellValue(ms1Compare.getLbRts());
+                if (ms1Compare.getLbIdentCode()>0 || ms1Compare.getLbIdentCode()<-1){
+                  cell = row.createCell(probLBColumn);
+                  cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+                  cell.setCellValue(ms1Compare.getLbProb());
+                }
+                cell = row.createCell(mzColumn);
+                cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+                cell.setCellValue(ms1Compare.getMz());                
+                if (ms1Compare.isLdaMs1Only() || ms1Compare.areFasInOtherCombination() || doNotUse){
+                  cell = row.createCell(commentColumn);
+                  cell.setCellType(Cell.CELL_TYPE_STRING);
+                  if (ms1Compare.isLdaMs1Only())
+                    cell.setCellValue("not counted: only MS1 identification");
+                  else if (ms1Compare.areFasInOtherCombination())
+                    cell.setCellValue("not counted: only possible as additional combination");
+                  else if (doNotUse) {
+                    cell.setCellValue("not counted: MS-DIAL cannot identify monohydroxylated species");
+                  }
+                }
+
+              }
+              
+              boolean chainInfo = false;
+              if (classInfo.getSns()>1 && !classInfo.getAdducts().get(ms1Compare.getAdduct())) {
+                for (LdaLBLASTCompareVO comp : ms1Compare.getMs2Evidence()) {
+                  if (comp.getLdaIdentCode()>0 || comp.getLbIdentCode()>0)
+                    chainInfo = true;
+                }
+              }
+              for (int i=0; i!=ms1Compare.getMs2Evidence().size(); i++){
+                LdaLBLASTCompareVO comp = ms1Compare.getMs2Evidence().get(i);
+                if (i!=0){
+                  row =  sheet.createRow(rowCount);
+                  rowCount++;
+                }
+                cell = row.createCell(structureColumn);
+                cell.setCellType(Cell.CELL_TYPE_STRING);
+                if (comp.isFp()) cell.setCellStyle(notFoundStyle);
+                else cell.setCellStyle(fullyCorrectStyle );
+                cell.setCellValue(comp.getCorrectName());
+
+                CellStyle ldaMS2Style = getStyleBasedOnEvidence(comp.getLdaIdentCode(),comp.isFp(),fullyCorrectStyle,
+                    ambigStyle,onlyMS1Style,notFoundStyle);
+                CellStyle lbMS2Style = getStyleBasedOnEvidence(comp.getLbIdentCode(),comp.isFp(),fullyCorrectStyle,
+                    ambigStyle,onlyMS1Style,notFoundStyle);
+                cell = row.createCell(ldaIdentificationMS2);
+                cell.setCellType(Cell.CELL_TYPE_STRING);
+                if (ldaMS1Style!=null) cell.setCellStyle(ldaMS2Style);
+                cell.setCellValue(comp.getLdaName());
+                cell = row.createCell(lbIdentificationMS2);
+                cell.setCellType(Cell.CELL_TYPE_STRING);
+                if (lbMS1Style!=null) cell.setCellStyle(lbMS2Style);
+                cell.setCellValue(comp.getLbName());
+                cell = row.createCell(ldaMS2CodeColumn);
+                cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+                if (ldaMS2Style!=null) cell.setCellStyle(ldaMS2Style);
+                ldaMS2IdentCode = comp.getLdaIdentCode();
+                if (!classInfo.getAdducts().get(ms1Compare.getAdduct()) && ldaMS2IdentCode!=0) {
+                    ldaMS2IdentCode = 0;
+                }
+                cell.setCellValue(ldaMS2IdentCode);
+                cell = row.createCell(lbMS2CodeColumn);
+                cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+                if (lbMS1Style!=null) cell.setCellStyle(lbMS2Style);
+                dialMS2IdentCode = comp.getLbIdentCode();
+                if (!classInfo.getAdducts().get(ms1Compare.getAdduct()) && dialMS2IdentCode!=0) {
+                    dialMS2IdentCode = 0;
+                }
+                cell.setCellValue(dialMS2IdentCode);
+                if (classInfo.getAdducts().get(ms1Compare.getAdduct()) || chainInfo) {
+                  cell = row.createCell(rtColumn);
+                  cell.setCellType(Cell.CELL_TYPE_STRING);
+                  cell.setCellValue(comp.getRt());
+                }
+                if (ldaMS2IdentCode!=0) {
+                  cell = row.createCell(rtLDAColumn);
+                  cell.setCellType(Cell.CELL_TYPE_STRING);
+                  cell.setCellValue(comp.getLdaRts());
+                }
+                cell = row.createCell(rtLBColumn);
+                cell.setCellType(Cell.CELL_TYPE_STRING);
+                cell.setCellValue(comp.getLbRts());
+                if (comp.getLbIdentCode()>0 || comp.getLbIdentCode()<-1){
+                  cell = row.createCell(probLBColumn);
+                  cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+                  cell.setCellValue(comp.getLbProb());
+                }
+                cell = row.createCell(mzColumn);
+                cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+                cell.setCellValue(comp.getMz());
+                if (comp.isIgnoreLDA()){
+                  cell = row.createCell(ldaMS2IgnoreColumn);
+                  cell.setCellValue(true);
+                }
+                if (comp.isIgnoreLB()){
+                  cell = row.createCell(lbMS2IgnoreColumn);
+                  cell.setCellValue(true);
+                }
+                if (!classInfo.getAdducts().get(ms1Compare.getAdduct())) {
+                  cell = row.createCell(commentColumn);
+                  cell.setCellType(Cell.CELL_TYPE_STRING);
+                  cell.setCellValue("structure not counted: MS-DIAL cannot identify structures from MS3");
+                }
+              }
+          }
+        }
+        finalRowNumberAnalytes = rowCount;
+
+        rowCount++;
+        rowCount++;        
+        // now starts the summary section of the details tab
+        int legendColumn = 0;
+        int adductResultColumn = 5;
+        int legend2Column = 7;
+        int classResultColumn = 10;
+        
+        String ldaIgnore = "N";
+        String lbIgnore = "O";
+        if (classInfo.getSns()>1){
+          ldaIgnore = "S";
+          lbIgnore = "T";          
+        }
+        String ldaMS2Ignore = "U";
+        String dialMS2Ignore = "V";          
+        
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(leftHeaderStyle);
+        cell.setCellValue("Species evaluation");
+        cell = row.createCell(legend2Column);
+        cell.setCellStyle(leftHeaderStyle);
+        cell.setCellValue("Species evaluation - adduct insensitive");
+        
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        int totalSumRow = rowCount;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("Total number of identified species:");
+        cell = row.createCell(adductResultColumn);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("COUNTIFS(B2:B"+finalRowNumberAnalytes+",\"<>*_*\",B2:B"+finalRowNumberAnalytes+",\"<>\")");       
+        cell = row.createCell(legend2Column);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("Total number of identified species:");
+        cell = row.createCell(classResultColumn);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("COUNTIFS(B2:B"+finalRowNumberAnalytes+",\"<>*_*\",B2:B"+finalRowNumberAnalytes+",\"<>\","+ldaIgnore+"2:"+ldaIgnore+finalRowNumberAnalytes+",\"<>TRUE\")");
+
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        int ldaCorrectRow = rowCount;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("Total number of identified LDA species:");
+        cell = row.createCell(adductResultColumn);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("COUNTIFS(F2:F"+finalRowNumberAnalytes+",\">0\")");       
+        cell = row.createCell(legend2Column);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("Total number of identified LDA species:");
+        cell = row.createCell(classResultColumn);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("COUNTIFS(F2:F"+finalRowNumberAnalytes+",\">0\","+ldaIgnore+"2:"+ldaIgnore+finalRowNumberAnalytes+",\"<>TRUE\")");
+        
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        int lbCorrectRow = rowCount;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("Total number of identified MS-DIAL species:");
+        cell = row.createCell(adductResultColumn);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("COUNTIFS(G2:G"+finalRowNumberAnalytes+",\">0\")");       
+        cell = row.createCell(legend2Column);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("Total number of identified MS-DIAL species:");
+        cell = row.createCell(classResultColumn);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("COUNTIFS(G2:G"+finalRowNumberAnalytes+",\">0\","+lbIgnore+"2:"+lbIgnore+finalRowNumberAnalytes+",\"<>TRUE\")");
+        
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        int ldaFPRow = rowCount;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("False positives LDA:");
+        cell = row.createCell(adductResultColumn);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("COUNTIFS(F2:F"+finalRowNumberAnalytes+",\"<>-1\",F2:F"+finalRowNumberAnalytes+",\"<>0\",F2:F"+finalRowNumberAnalytes+",\"<2\")");
+        cell = row.createCell(legend2Column);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("False positives LDA:");
+        cell = row.createCell(classResultColumn);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("COUNTIFS(F2:F"+finalRowNumberAnalytes+",\"<>-1\",F2:F"+finalRowNumberAnalytes+",\"<>0\",F2:F"+finalRowNumberAnalytes+",\"<2\","+ldaIgnore+"2:"+ldaIgnore+finalRowNumberAnalytes+",\"<>TRUE\")");
+
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        int lbFPRow = rowCount;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("False positives MS-DIAL:");
+        cell = row.createCell(adductResultColumn);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("COUNTIFS(G2:G"+finalRowNumberAnalytes+",\"<>-1\",G2:G"+finalRowNumberAnalytes+",\"<>0\",G2:G"+finalRowNumberAnalytes+",\"<2\")");
+        cell = row.createCell(legend2Column);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("False positives MS-DIAL:");
+        cell = row.createCell(classResultColumn);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("COUNTIFS(G2:G"+finalRowNumberAnalytes+",\"<>-1\",G2:G"+finalRowNumberAnalytes+",\"<>0\",G2:G"+finalRowNumberAnalytes+",\"<2\","+lbIgnore+"2:"+lbIgnore+finalRowNumberAnalytes+",\"<>TRUE\")");
+
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("False negatives LDA:");
+        cell = row.createCell(adductResultColumn);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("COUNTIFS(F2:F"+finalRowNumberAnalytes+",\"=-1\")+COUNTIFS(F2:F"+finalRowNumberAnalytes+",\"=-3\")");
+        cell = row.createCell(legend2Column);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("False negatives LDA:");
+        cell = row.createCell(classResultColumn);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("COUNTIFS(F2:F"+finalRowNumberAnalytes+",\"=-1\","+ldaIgnore+"2:"+ldaIgnore+finalRowNumberAnalytes+",\"<>TRUE\")+COUNTIFS(F2:F"+finalRowNumberAnalytes+",\"=-3\","+ldaIgnore+"2:"+ldaIgnore+finalRowNumberAnalytes+",\"<>TRUE\")");
+
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("False negatives MS-DIAL:");
+        cell = row.createCell(adductResultColumn);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("COUNTIFS(G2:G"+finalRowNumberAnalytes+",\"=-1\")+COUNTIFS(G2:G"+finalRowNumberAnalytes+",\"=-3\")");
+        cell = row.createCell(legend2Column);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("False negatives MS-DIAL:");
+        cell = row.createCell(classResultColumn);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("COUNTIFS(G2:G"+finalRowNumberAnalytes+",\"=-1\","+lbIgnore+"2:"+lbIgnore+finalRowNumberAnalytes+",\"<>TRUE\")+COUNTIFS(G2:G"+finalRowNumberAnalytes+",\"=-3\","+lbIgnore+"2:"+lbIgnore+finalRowNumberAnalytes+",\"<>TRUE\")");
+
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("Sensitivity LDA:");
+        cell = row.createCell(adductResultColumn);
+        cell.setCellStyle(percentageStyle);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("F"+ldaCorrectRow+"/F"+totalSumRow);
+        cell = row.createCell(legend2Column);
+        cell.setCellStyle(percentageStyle);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("Sensitivity LDA:");
+        cell = row.createCell(classResultColumn);
+        cell.setCellStyle(percentageStyle);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("K"+ldaCorrectRow+"/K"+totalSumRow);
+        
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("Sensitivity MS-DIAL");
+        cell = row.createCell(adductResultColumn);
+        cell.setCellStyle(percentageStyle);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("F"+lbCorrectRow+"/F"+totalSumRow);
+        cell = row.createCell(legend2Column);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("Sensitivity MS-DIAL:");
+        cell = row.createCell(classResultColumn);
+        cell.setCellStyle(percentageStyle);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("K"+lbCorrectRow+"/K"+totalSumRow);
+        
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("Positive Predictive Value LDA:");
+        cell = row.createCell(adductResultColumn);
+        cell.setCellStyle(percentageStyle);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("F"+ldaCorrectRow+"/(F"+ldaCorrectRow+"+F"+ldaFPRow+")");
+        cell = row.createCell(legend2Column);
+        cell.setCellStyle(percentageStyle);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("Positive Predictive Value LDA:");
+        cell = row.createCell(classResultColumn);
+        cell.setCellStyle(percentageStyle);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("K"+ldaCorrectRow+"/(K"+ldaCorrectRow+"+K"+ldaFPRow+")");
+
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("Positive Predictive Value MS-DIAL:");
+        cell = row.createCell(adductResultColumn);
+        cell.setCellStyle(percentageStyle);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("F"+lbCorrectRow+"/(F"+lbCorrectRow+"+F"+lbFPRow+")");
+        cell = row.createCell(legend2Column);
+        cell.setCellStyle(percentageStyle);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("Positive Predictive Value MS-DIAL:");
+        cell = row.createCell(classResultColumn);
+        cell.setCellStyle(percentageStyle);
+        cell.setCellType(Cell.CELL_TYPE_FORMULA);
+        cell.setCellFormula("K"+lbCorrectRow+"/(K"+lbCorrectRow+"+K"+lbFPRow+")");
+
+        if (classInfo.getSns()>1){
+          rowCount++;
+          rowCount++;
+          row =  sheet.createRow(rowCount);
+          rowCount++;
+          cell = row.createCell(legendColumn);
+          cell.setCellStyle(leftHeaderStyle);
+          cell.setCellValue("Molecular species/structure evaluation");
+          cell = row.createCell(legend2Column);
+          cell.setCellStyle(leftHeaderStyle);
+          cell.setCellValue("Molecular species/structure evaluation - adduct insensitive:");
+          
+          row =  sheet.createRow(rowCount);
+          rowCount++;
+          totalSumRow = rowCount;
+          cell = row.createCell(legendColumn);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("Total number of identified species:");
+          cell = row.createCell(adductResultColumn);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("COUNTIFS(H2:H"+finalRowNumberAnalytes+",\"<>*_FP\",H2:H"+finalRowNumberAnalytes+",\"<>\",H2:H"+finalRowNumberAnalytes+",\"<>no structure\",H2:H"+finalRowNumberAnalytes+",\"<>*_noDIAL\")");       
+          cell = row.createCell(legend2Column);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("Total number of identified species:");
+          cell = row.createCell(classResultColumn);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("COUNTIFS(H2:H"+finalRowNumberAnalytes+",\"<>*_FP\",H2:H"+finalRowNumberAnalytes+",\"<>\",H2:H"+finalRowNumberAnalytes+",\"<>no structure\",H2:H"+finalRowNumberAnalytes+",\"<>*_noDIAL\","+ldaMS2Ignore+"2:"+ldaMS2Ignore+finalRowNumberAnalytes+",\"<>TRUE\")");                 
+          row =  sheet.createRow(rowCount);
+          rowCount++;
+          ldaCorrectRow = rowCount;
+          cell = row.createCell(legendColumn);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("Total number of identified LDA species:");
+          cell = row.createCell(adductResultColumn);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("COUNTIFS(K2:K"+finalRowNumberAnalytes+",\">0\")");     
+          cell = row.createCell(legend2Column);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("Total number of identified LDA species:");
+          cell = row.createCell(classResultColumn);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("COUNTIFS(K2:K"+finalRowNumberAnalytes+",\">0\","+ldaMS2Ignore+"2:"+ldaMS2Ignore+finalRowNumberAnalytes+",\"<>TRUE\")");
+          
+          row =  sheet.createRow(rowCount);
+          rowCount++;
+          lbCorrectRow = rowCount;
+          cell = row.createCell(legendColumn);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("Total number of identified MS-DIAL species:");
+          cell = row.createCell(adductResultColumn);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("COUNTIFS(L2:L"+finalRowNumberAnalytes+",\">0\")");       
+          cell = row.createCell(legend2Column);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("Total number of identified MS-DIAL species:");
+          cell = row.createCell(classResultColumn);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("COUNTIFS(L2:L"+finalRowNumberAnalytes+",\">0\","+dialMS2Ignore+"2:"+dialMS2Ignore+finalRowNumberAnalytes+",\"<>TRUE\")");
+          
+          row =  sheet.createRow(rowCount);
+          rowCount++;
+          ldaFPRow = rowCount;
+          cell = row.createCell(legendColumn);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("False positives LDA:");
+          cell = row.createCell(adductResultColumn);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("COUNTIFS(K2:K"+finalRowNumberAnalytes+",\"<>-1\",K2:K"+finalRowNumberAnalytes+",\"<>0\",K2:K"+finalRowNumberAnalytes+",\"<2\")");
+          cell = row.createCell(legend2Column);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("False positives LDA:");
+          cell = row.createCell(classResultColumn);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("COUNTIFS(K2:K"+finalRowNumberAnalytes+",\"<>-1\",K2:K"+finalRowNumberAnalytes+",\"<>0\",K2:K"+finalRowNumberAnalytes+",\"<2\","+ldaMS2Ignore+"2:"+ldaMS2Ignore+finalRowNumberAnalytes+",\"<>TRUE\")");
+
+          row =  sheet.createRow(rowCount);
+          rowCount++;
+          lbFPRow = rowCount;
+          cell = row.createCell(legendColumn);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("False positives MS-DIAL:");
+          cell = row.createCell(adductResultColumn);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("COUNTIFS(L2:L"+finalRowNumberAnalytes+",\"<>-1\",L2:L"+finalRowNumberAnalytes+",\"<>0\",L2:L"+finalRowNumberAnalytes+",\"<2\")");
+          cell = row.createCell(legend2Column);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("False positives MS-DIAL:");
+          cell = row.createCell(classResultColumn);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("COUNTIFS(L2:L"+finalRowNumberAnalytes+",\"<>-1\",L2:L"+finalRowNumberAnalytes+",\"<>0\",L2:L"+finalRowNumberAnalytes+",\"<2\","+dialMS2Ignore+"2:"+dialMS2Ignore+finalRowNumberAnalytes+",\"<>TRUE\")");
+
+          row =  sheet.createRow(rowCount);
+          rowCount++;
+          cell = row.createCell(legendColumn);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("False negatives LDA:");
+          cell = row.createCell(adductResultColumn);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("COUNTIFS(K2:K"+finalRowNumberAnalytes+",\"=-1\")+COUNTIFS(K2:K"+finalRowNumberAnalytes+",\"=-3\")");
+          cell = row.createCell(legend2Column);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("False negatives LDA:");
+          cell = row.createCell(classResultColumn);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("COUNTIFS(K2:K"+finalRowNumberAnalytes+",\"=-1\","+ldaMS2Ignore+"2:"+ldaMS2Ignore+finalRowNumberAnalytes+",\"<>TRUE\")+COUNTIFS(K2:K"+finalRowNumberAnalytes+",\"=-3\","+ldaMS2Ignore+"2:"+ldaMS2Ignore+finalRowNumberAnalytes+",\"<>TRUE\")");
+
+          row =  sheet.createRow(rowCount);
+          rowCount++;
+          cell = row.createCell(legendColumn);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("False negatives MS-DIAL:");
+          cell = row.createCell(adductResultColumn);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("COUNTIFS(L2:L"+finalRowNumberAnalytes+",\"=-1\")+COUNTIFS(L2:L"+finalRowNumberAnalytes+",\"=-3\")");
+          cell = row.createCell(legend2Column);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("False negatives MS-DIAL:");
+          cell = row.createCell(classResultColumn);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("COUNTIFS(L2:L"+finalRowNumberAnalytes+",\"=-1\","+dialMS2Ignore+"2:"+dialMS2Ignore+finalRowNumberAnalytes+",\"<>TRUE\")+COUNTIFS(L2:L"+finalRowNumberAnalytes+",\"=-3\","+dialMS2Ignore+"2:"+dialMS2Ignore+finalRowNumberAnalytes+",\"<>TRUE\")");
+
+          row =  sheet.createRow(rowCount);
+          rowCount++;
+          cell = row.createCell(legendColumn);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("Sensitivity LDA:");
+          cell = row.createCell(adductResultColumn);
+          cell.setCellStyle(percentageStyle);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("F"+ldaCorrectRow+"/F"+totalSumRow);
+          cell = row.createCell(legend2Column);
+          cell.setCellStyle(percentageStyle);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("Sensitivity LDA:");
+          cell = row.createCell(classResultColumn);
+          cell.setCellStyle(percentageStyle);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("K"+ldaCorrectRow+"/K"+totalSumRow);
+          
+          row =  sheet.createRow(rowCount);
+          rowCount++;
+          cell = row.createCell(legendColumn);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("Sensitivity MS-DIAL");
+          cell = row.createCell(adductResultColumn);
+          cell.setCellStyle(percentageStyle);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("F"+lbCorrectRow+"/F"+totalSumRow);
+          cell = row.createCell(legend2Column);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("Sensitivity MS-DIAL:");
+          cell = row.createCell(classResultColumn);
+          cell.setCellStyle(percentageStyle);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("K"+lbCorrectRow+"/K"+totalSumRow);
+          
+          row =  sheet.createRow(rowCount);
+          rowCount++;
+          cell = row.createCell(legendColumn);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("Positive Predictive Value LDA:");
+          cell = row.createCell(adductResultColumn);
+          cell.setCellStyle(percentageStyle);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("F"+ldaCorrectRow+"/(F"+ldaCorrectRow+"+F"+ldaFPRow+")");
+          cell = row.createCell(legend2Column);
+          cell.setCellStyle(percentageStyle);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("Positive Predictive Value LDA:");
+          cell = row.createCell(classResultColumn);
+          cell.setCellStyle(percentageStyle);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("K"+ldaCorrectRow+"/(K"+ldaCorrectRow+"+K"+ldaFPRow+")");
+
+          row =  sheet.createRow(rowCount);
+          rowCount++;
+          cell = row.createCell(legendColumn);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("Positive Predictive Value MS-DIAL:");
+          cell = row.createCell(adductResultColumn);
+          cell.setCellStyle(percentageStyle);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("F"+lbCorrectRow+"/(F"+lbCorrectRow+"+F"+lbFPRow+")");
+          cell = row.createCell(legend2Column);
+          cell.setCellStyle(percentageStyle);
+          cell.setCellStyle(boldStyle);
+          cell.setCellValue("Positive Predictive Value MS-DIAL:");
+          cell = row.createCell(classResultColumn);
+          cell.setCellStyle(percentageStyle);
+          cell.setCellType(Cell.CELL_TYPE_FORMULA);
+          cell.setCellFormula("K"+lbCorrectRow+"/(K"+lbCorrectRow+"+K"+lbFPRow+")");
+          
+        }
+        rowCount++;
+        rowCount++;
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(leftHeaderStyle);
+        cell.setCellValue("Legend:");
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(fullyCorrectStyle);
+        cell.setCellValue("the name is green if the species is correct");
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(notFoundStyle);
+        cell.setCellValue("the name is red if it is a false positive");
+        rowCount++;
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(fullyCorrectStyle);
+        cell.setCellValue("the LDA/MS-DIAL columns are green, if the hit was found");
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(ambigStyle);
+        cell.setCellValue("the LDA/MS-DIAL column are cyan, if the hit was found additionally at a wrong RT");
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(onlyMS1Style);
+        cell.setCellValue("the LDA/MS-DIAL column are orange, if the hit was found only at a wrong RT");
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(notFoundStyle);
+        cell.setCellValue("the LDA/MS-DIAL column are red, if the hit was not reported at all or if the hit is an FP");
+        
+        rowCount++;
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellStyle(boldStyle);
+        cell.setCellValue("Identification Codes:");
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellValue("2: correctly identified without any FPs");
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellValue("1: correct hit found, but FPs at wrong retention times are reported");
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellValue("0: identified only by MS1, or FP not detected");
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellValue("-1: false negative hit");
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellValue("-2: false positive hit");
+        row =  sheet.createRow(rowCount);
+        rowCount++;
+        cell = row.createCell(legendColumn);
+        cell.setCellValue("-3: false negative and false positive hit, e.g., hit at correct RT not found, but something at wrong RT reported");
+      }
+            
+      resultWorkbook.write(out);
+      out.close();
+    }catch(Exception ex){
+      ex.printStackTrace();
+    }      
+  }
+
+  /**
+   *     
+   * @param analyte
+   * @return int[0] nr of C atoms; int[1] nr of dbs; int[2] nr of OH
+   * @throws HydroxylationEncodingException 
+   */
+  private int[] decodeAnalyte(String analyte) throws HydroxylationEncodingException {
+    int[] result = new int[3];
+    result[2] = Settings.getLcbHydroxyEncoding().getHydroxyNumber(analyte.substring(0,1));
+    analyte = analyte.substring(1);
+    result[0] = Integer.parseInt(analyte.substring(0,analyte.indexOf(":")));
+    result[1] = Integer.parseInt(analyte.substring(analyte.indexOf(":")+1));
+    return result;
+  }
+  
+  
+  private LdaLBLASTCompareVO getLdaMSDialSpeciesComparision(String ms1Analyte, LipidClassInfoVO info, LinkedHashMap<String,ReferenceInfoVO> species,
+      Vector<LipidParameterSet> ldaAnalytes, Vector<MSDialEntry> ident, Vector<MSDialEntry> dialMS1, LipidomicsAnalyzer analyzer,float mz, String lipidClass,
+      boolean useStructure) throws Exception{  
+    //split LDA identifications in MS1 identifications and ones where spectra were found
+    //this vector contains identifications where no ms2 is present
+    Vector<LipidParameterSet> ldaMS1Only = new Vector<LipidParameterSet>();
+    //this vector contains all ms2 identifications, including the ones where no structural information can be obtained
+    Vector<LipidParameterSet> ldaMs2SpectraIdentified = new Vector<LipidParameterSet>();
+    //this hashtable contains identifications where the fatty acids were determined
+    Hashtable<String,Vector<LipidomicsMSnSet>> ldaMs2Evidence = new Hashtable<String,Vector<LipidomicsMSnSet>>();
+    Hashtable<String,String> ldaOKAccordingToReference = new Hashtable<String,String>();
+    Hashtable<String,String> dialOKAccordingToReference = new Hashtable<String,String>();
+
+    boolean isFP = false;
+    boolean doNotUseInEvaluation = false;
+    for (LipidParameterSet set : ldaAnalytes){
+      if (set instanceof LipidomicsMSnSet){
+        LipidomicsMSnSet ldaAnalyte = (LipidomicsMSnSet)set;
+        ldaMs2SpectraIdentified.add(set);
+        boolean ms1Only = ldaAnalyte.getStatus()==2 ? true : false;
+        if (!ms1Only) {
+          for (Object msnNames : ldaAnalyte.getMSnIdentificationNames()){
+            Vector<LipidomicsMSnSet> sameMs2Ident = new Vector<LipidomicsMSnSet>();
+            String nameString = null;
+            if (msnNames instanceof Vector){
+              nameString = ((Vector<String>)msnNames).get(0);
+            }else{
+              nameString = ((String)msnNames);
+            }
+            nameString = nameString.replaceAll("/", "_");
+            ////if (quant.getAnalyteClass().equalsIgnoreCase("DG")&&set.getModificationName().equalsIgnoreCase("NH4"))nameString+="_-";
+            for (String key : ldaMs2Evidence.keySet()){
+              if (StaticUtils.isAPermutedVersion(key, nameString,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)){
+                nameString = key;
+                sameMs2Ident = ldaMs2Evidence.get(key);
+              }
+            }
+            sameMs2Ident.add(ldaAnalyte);
+            ldaMs2Evidence.put(nameString, sameMs2Ident);
+          }
+        }
+      } else ldaMS1Only.add(set);
+    }
+    
+    String correctMS1Name = new String(ms1Analyte);
+    int ldaMS1Evidence = 0;
+    String ldaMS1Name = "not reported";
+    int dialMS1Evidence = 0;
+    String dialMS1Name = "not reported";
+    String suggestedDialName = "";
+    String rtIdeal = "";
+    String rtLDA = "";
+    String rtDial = "";
+    LinkedHashMap<String,String> rtsDial = new LinkedHashMap<String,String>();
+    double dialScore = 0d;
+    double dialWrongScore = 0d;
+    boolean noMS2 = false;
+    boolean ms1Only = false;
+    Vector<LdaLBLASTCompareVO> ms2Compare = new Vector<LdaLBLASTCompareVO>();
+    //now check if LDA or LB identified the analyte at the correct RT
+    if (species!=null && species.size()>0){
+      doNotUseInEvaluation = true;
+      for (ReferenceInfoVO refInfo : species.values()) {
+        if (refInfo.useInEvaluation()) {
+          doNotUseInEvaluation = false;
+          break;
+        }
+      }
+      boolean ms1AnalyteDetected = false;
+      for (ReferenceInfoVO ref : species.values()) {
+        for (double rt : ref.getCorrectRts()) {
+          if (rtIdeal.indexOf(Calculator.FormatNumberToString(rt,2))==-1)
+            rtIdeal += Calculator.FormatNumberToString(rt,2)+" ";
+        }
+      }
+      if (rtIdeal.length()>0) rtIdeal = rtIdeal.substring(0,rtIdeal.length()-1);
+
+
+      // this is the MS1 check of the LDA
+      ldaMS1Evidence = -1;
+      for (LipidParameterSet set : ldaMs2SpectraIdentified){
+        boolean isAtCorrectRt = isHitAtCorrectRt(Double.parseDouble(set.getRt()), info, species);
+        if (isAtCorrectRt){
+          ms1AnalyteDetected = true;
+          if (ldaMS1Evidence==-3 || ldaMS1Evidence==-2) ldaMS1Evidence=1;
+          else if (ldaMS1Evidence==-1 || ldaMS1Evidence==0) ldaMS1Evidence=2;
+        } else {
+          if (ldaMS1Evidence==-2||ldaMS1Evidence==-1) ldaMS1Evidence=-3;
+          else if (ldaMS1Evidence==0) ldaMS1Evidence=-2;
+          else if (ldaMS1Evidence==2) ldaMS1Evidence=1;          
+        }
+        rtLDA += set.getRt()+" ";
+      }
+      if (rtLDA.length()>0) rtLDA = rtLDA.substring(0,rtLDA.length()-1);      
+      //this is the ms1 check of MS-DIAL
+      dialMS1Evidence = -1;
+      String hitRt;
+      if (ident!=null){
+        for (MSDialEntry detect : ident){
+          hitRt = Calculator.FormatNumberToString(detect.getRt(),2d);
+          rtsDial.put(hitRt, hitRt);
+          boolean isAtCorrectRt = isHitAtCorrectRt(detect.getRt(), info, species);
+          if (isAtCorrectRt){
+            ms1AnalyteDetected = true;
+            if (detect.getScore()>dialScore) {
+              dialScore = detect.getScore();
+              suggestedDialName = detect.getDialClassName()+" "+detect.getDialMs1Name();
+            }
+            if (dialMS1Evidence==-3 || dialMS1Evidence==-2) dialMS1Evidence=1;
+            else if (dialMS1Evidence==-1 || dialMS1Evidence==0) dialMS1Evidence=2;            
+          } else {
+            if (dialMS1Evidence==-2||dialMS1Evidence==-1) dialMS1Evidence=-3;
+            else if (dialMS1Evidence==0) dialMS1Evidence=-2;
+            else if (dialMS1Evidence==2) dialMS1Evidence=1;
+            if (dialMS1Evidence==-2 || dialMS1Evidence==-3) {
+              if (detect.getScore()>dialWrongScore) {
+                dialWrongScore = detect.getScore();
+                suggestedDialName = detect.getDialClassName()+" "+detect.getDialMs1Name();
+              }              
+            }
+          }        
+        }
+      }
+      for (String dialRt : rtsDial.keySet()) rtDial += dialRt+" ";
+      if (rtDial.length()>0) rtDial = rtDial.substring(0,rtDial.length()-1);
+      if ((ldaMS1Evidence==-1||ldaMS1Evidence==-3)  && (dialMS1Evidence==-1||dialMS1Evidence==-3)){
+        if (!areThereAnyMSnSpectra(analyzer,mz,info,species)){
+          if (ldaMS1Evidence==-3) ldaMS1Evidence=-2;
+          if (dialMS1Evidence==-3) dialMS1Evidence=-2;
+          if (ldaMS1Evidence==-1) ldaMS1Evidence=0;
+          if (dialMS1Evidence==-1) dialMS1Evidence=0;
+          noMS2 = true;
+        }else{
+          ms1AnalyteDetected = true;
+        }
+      }
+      
+      //this sets the displayed names for the MS1 identifications for LDA and MS-DIAL
+      if (ldaMS1Evidence>0 || ldaMS1Evidence<-1) ldaMS1Name = ms1Analyte;
+      else{
+        boolean foundMS1Only = false;
+        String rt = "";
+        for (LipidParameterSet set : ldaMS1Only){
+          if (isHitAtCorrectRt(Double.parseDouble(set.getRt()), info, species)){
+            rt += set.getRt()+" ";
+            foundMS1Only = true;
+          }
+        }
+        if (foundMS1Only){
+          ldaMS1Name = ms1Analyte;
+          ms1Only = true;
+          rt = rt.substring(0,rt.length()-1);
+          rtLDA = rt;
+          if (dialMS1Evidence<1 && ldaMS1Evidence==-1){
+            ms1AnalyteDetected = true;
+            ldaMS1Evidence=0;
+          }
+        }
+      }
+      if (dialMS1Evidence>0 || dialMS1Evidence<-1) dialMS1Name =  suggestedDialName;//lbMS1Name = ms1Analyte;
+      if (!ms1AnalyteDetected && !noMS2){
+        correctMS1Name += "_FP";
+        isFP = true;
+      }
+      //here the check for the ms2 evidence starts
+      if (info.getSns()>1 && ms1AnalyteDetected && (ldaMS1Evidence>0||dialMS1Evidence>0)){
+        for (String key : species.keySet()){
+          ReferenceInfoVO ref = species.get(key);
+          String keyWOSlash = key.replaceAll("/", "_");
+          boolean ms2AnalyteDetected = false;
+          String ldaMS2Name = "not reported";
+          String rtMS2Ideal = "";
+          for (double rt : ref.getCorrectRts()) {
+            if (rtMS2Ideal.indexOf(Calculator.FormatNumberToString(rt,2))==-1)
+              rtMS2Ideal += Calculator.FormatNumberToString(rt,2)+" ";
+          }
+          if (rtMS2Ideal.length()>0)
+            rtMS2Ideal = rtMS2Ideal.substring(0,rtMS2Ideal.length()-1);
+          String rtMS2LDA = "";
+          String rtMS2Dial = "";
+          // here starts the LDA check of the MS2 evidence
+          int ldaMS2Evidence = -1;
+          String nameString = null;
+          for (String ldaName : ldaMs2Evidence.keySet()){
+            Vector<LipidomicsMSnSet> ldaHits = ldaMs2Evidence.get(ldaName);
+            if (ldaHits.size()==0) continue;
+            String toCompare = new String(ldaName);
+            if (lipidClass.equalsIgnoreCase("DG")&&ldaHits.get(0).getModificationName().equalsIgnoreCase("NH4")){
+              toCompare += "_-";
+            }
+                                                                                                                             
+            if (!StaticUtils.isAPermutedVersion(keyWOSlash, toCompare,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)) continue;
+            ldaOKAccordingToReference.put(ldaName, ldaName);
+            boolean nameDidNotChange = false;
+            for (LipidomicsMSnSet set : ldaHits){              
+              // display name for LDA
+              for (Object msnNames : set.getMSnIdentificationNames()){
+                String oneName = null;
+                if (msnNames instanceof Vector){
+                  oneName = ((Vector<String>)msnNames).get(0);
+                }else{
+                  oneName = ((String)msnNames);
+                }
+                if (!oneName.replaceAll("/","_").equalsIgnoreCase(ldaName))continue;
+                if (msnNames instanceof Vector){
+                  oneName = "";
+                  for (String name: ((Vector<String>)msnNames)){
+                    oneName+=name+";";
+                  }
+                  oneName = oneName.substring(0,oneName.length()-1);
+                }else{
+                  oneName = ((String)msnNames);
+                }
+                if (nameString==null){
+                  nameDidNotChange = true;
+                  nameString = oneName;
+                }else if (nameDidNotChange){
+                  if (!nameString.equalsIgnoreCase(oneName)){
+                    nameDidNotChange = false;
+                    nameString = ldaName;
+                  }
+                }
+              }
+              
+              boolean isAtCorrectRt = isHitAtCorrectRt(Double.parseDouble(set.getRt()), info, ref);
+              if (isAtCorrectRt){
+                ms2AnalyteDetected = true;
+                if (ldaMS2Evidence==-3 || ldaMS2Evidence==-2) ldaMS2Evidence=1;
+                else if (ldaMS2Evidence==-1 || ldaMS2Evidence==0) ldaMS2Evidence=2;
+              } else {
+                if (ldaMS2Evidence==-2||ldaMS2Evidence==-1) ldaMS2Evidence=-3;
+                else if (ldaMS2Evidence==0) ldaMS2Evidence=-2;
+                else if (ldaMS2Evidence==2) ldaMS2Evidence=1;          
+              }
+              rtMS2LDA += set.getRt()+" ";
+            }
+            if (ldaMS2Evidence>0 || ldaMS2Evidence<-1) ldaMS2Name = nameString; 
+          }
+          if (rtMS2LDA.length()>0) rtMS2LDA.substring(0,rtMS2LDA.length()-1);
+          
+          // here starts the LB check of the MS2 evidence
+          Hashtable<String,String> dialNames = new  Hashtable<String,String>();
+          int dialMS2Evidence = -1;
+          double dialMs2Score = 0d;
+          if (ident!=null && ident.size()>0){
+            //for (String lbName : ident.getIdentifications(info.getSns())){
+            boolean foundCorrectRt = false;
+            for (MSDialEntry entry : ident){
+              if (entry.getDialMs2Name()==null || entry.getDialMs2Name().length()==0)
+                continue;
+              String dialMs2Name = entry.getDialMs2Name();
+              if (entry.getLdaMs2Name()!=null && entry.getLdaMs2Name().length()>0)
+                dialMs2Name = entry.getLdaMs2Name();
+              if (!StaticUtils.isAPermutedVersion(keyWOSlash, dialMs2Name.replaceAll("/", "_"),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)) continue;
+              dialNames.put(entry.getDialMs2Name(), entry.getDialMs2Name());
+              dialOKAccordingToReference.put(dialMs2Name, dialMs2Name);
+              double score = entry.getScore();
+              if (!foundCorrectRt && score>dialMs2Score) dialMs2Score=score;
+              //for (String rt : ident.getRetentionTimes(lbName, info.getSns())){
+              boolean isAtCorrectRt = isHitAtCorrectRt(entry.getRt(), info, ref);
+              if (isAtCorrectRt){
+                ms2AnalyteDetected = true;
+                if (!foundCorrectRt)
+                  dialMs2Score=score;
+                if (score>dialMs2Score) dialMs2Score=score;                  
+                foundCorrectRt=true;
+                if (dialMS2Evidence==-3 || dialMS2Evidence==-2) dialMS2Evidence=1;
+                else if (dialMS2Evidence==-1 || dialMS2Evidence==0) dialMS2Evidence=2;
+              } else {
+                if (dialMS2Evidence==-2||dialMS2Evidence==-1) dialMS2Evidence=-3;
+                else if (dialMS2Evidence==0) dialMS2Evidence=-2;
+                else if (dialMS2Evidence==2) dialMS2Evidence=1;          
+              }
+              rtMS2Dial += entry.getRt()+" ";
+              //}
+            }
+          }
+          String dialName = "";
+          if (dialMS2Evidence!=-1 && dialNames.size()>0){
+            for (String name : dialNames.keySet()) dialName+=name+" ";
+          }
+          if (dialName.length()>1)dialName=dialName.substring(0,dialName.length()-1);
+          else dialName = "not reported";
+          if (rtMS2Dial.length()>1) rtMS2Dial = rtMS2Dial.substring(0,rtMS2Dial.length()-1);
+          if (ldaMS2Evidence!=-1 || dialMS2Evidence!=-1){
+            if (!useStructure && dialMS2Evidence==-1) {
+              dialMS2Evidence = 0;
+            }
+            ms2Compare.add(new LdaLBLASTCompareVO(key+(!useStructure ? "_noDIAL" : ""),ldaMS2Name,dialName,ldaMS2Evidence,dialMS2Evidence,rtMS2Ideal,rtMS2LDA,rtMS2Dial,false,
+                dialMs2Score, mz, false));
+          }
+        }
+      }
+    }else{
+      //System.out.println("!!!!!!!!!!!! "+ms1Analyte);
+      correctMS1Name += "_FP";
+      for (LipidParameterSet set : ldaMs2SpectraIdentified){
+        ldaMS1Name = ms1Analyte;
+        ldaMS1Evidence = LdaLBLASTCompareVO.FALSE_POSITIVE;
+      }
+      LinkedHashMap<String,String> rts = new LinkedHashMap<String,String>();
+      if (ident!=null && ident.size()>0){
+        ////dialMS1Name = ms1Analyte;
+        dialMS1Evidence = LdaLBLASTCompareVO.FALSE_POSITIVE;
+        for (MSDialEntry detect : ident){
+          if (detect.getScore()>dialScore) {
+            dialScore = detect.getScore();
+            dialMS1Name = detect.getDialClassName()+" "+detect.getDialMs1Name();
+          }
+          String rtString = Calculator.FormatNumberToString(detect.getRt(),2);
+          rts.put(rtString,rtString);
+        }
+      }
+      if (rts.size()>0){
+        for(String rt : rts.keySet()) rtDial += rt+" ";
+        rtDial = rtDial.substring(0,rtDial.length()-1);
+      }
+      isFP = true;
+    }
+    //add now the ms2 FPs of the LDA including the ones that MS-DIAL shows too
+    if (info.getSns()>1 && (ldaMS1Evidence<-1 || ldaMS1Evidence>0)){
+      for (String ldaKey : ldaMs2Evidence.keySet()){
+        if (ldaOKAccordingToReference.containsKey(ldaKey)) continue;
+        Vector<LipidomicsMSnSet> ldaHits = ldaMs2Evidence.get(ldaKey);
+        String nameString = null;
+        if (ldaHits.size()==0) continue;
+        boolean nameDidNotChange = false;
+        String rtMS2LDA = "";
+        for (LipidomicsMSnSet set : ldaHits){
+          for (Object msnNames : set.getMSnIdentificationNames()){
+            String oneName = null;
+            if (msnNames instanceof Vector){
+              oneName = ((Vector<String>)msnNames).get(0);
+            }else{
+              oneName = ((String)msnNames);
+            }
+            if (!oneName.replaceAll("/","_").equalsIgnoreCase(ldaKey))continue;
+            if (msnNames instanceof Vector){
+              oneName = "";
+              for (String name: ((Vector<String>)msnNames)){
+                oneName+=name+";";
+              }
+              oneName = oneName.substring(0,oneName.length()-1);
+            }else{
+              oneName = ((String)msnNames);
+            }
+            if (nameString==null){
+              nameDidNotChange = true;
+              nameString = oneName;
+            }else if (nameDidNotChange){
+              if (!nameString.equalsIgnoreCase(oneName)){
+                nameDidNotChange = false;
+                nameString = ldaKey;
+              }
+            }
+            rtMS2LDA += set.getRt()+" ";
+          }
+        }
+        int dialMS2Evidence = 0;
+        double dialMs2Prob = 0d;
+        String rtMS2Dial = "";
+        Hashtable<String,String> dialNames = new  Hashtable<String,String>();
+        //check if MS-DIAL finds the FP too
+        if (ident!=null && (dialMS1Evidence<-1  || dialMS1Evidence>0)){
+          //for (String lbNm : ident.getIdentifications(info.getSns())){
+          for (MSDialEntry entry : ident){
+            if (entry.getDialMs2Name()==null || entry.getDialMs2Name().length()==0)
+              continue;
+            String dialMs2Name = entry.getDialMs2Name();
+            if (entry.getLdaMs2Name()!=null && entry.getLdaMs2Name().length()>0)
+              dialMs2Name = entry.getLdaMs2Name();
+            if (!StaticUtils.isAPermutedVersion(ldaKey, dialMs2Name.replaceAll("/", "_"),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)) continue;
+            dialMS2Evidence = LdaLBLASTCompareVO.FALSE_POSITIVE;
+            dialNames.put(entry.getDialMs2Name(), entry.getDialMs2Name());
+            dialOKAccordingToReference.put(dialMs2Name, dialMs2Name);
+            double score = entry.getScore();
+            if (score>dialMs2Prob) dialMs2Prob=score;
+            //for (String rt : ident.getRetentionTimes(lbNm, info.getSns())){
+            String rtString = Calculator.FormatNumberToString(entry.getRt(),2);
+            rtMS2Dial += rtString+" ";              
+            //}
+          }         
+        }
+        String dialName = "";
+        if (dialMS2Evidence!=-1 && dialNames.size()>0){
+          for (String name : dialNames.keySet()) dialName+=name+" ";
+        }
+        if (dialName.length()>1)dialName=dialName.substring(0,dialName.length()-1);
+        if (rtMS2Dial.length()>1) rtMS2Dial = rtMS2Dial.substring(0,rtMS2Dial.length()-1);
+        ms2Compare.add(new LdaLBLASTCompareVO(nameString+"_FP",nameString,dialName,-2,dialMS2Evidence,"",rtMS2LDA,rtMS2Dial,true,
+            dialMs2Prob, mz, false));
+      }
+    }
+    //add now the ms2 FPs that were found by MS-DIAL only
+    if (info.getSns()>1 && ident!=null && (dialMS1Evidence<-1  || dialMS1Evidence>0)){
+      int dialMS2Evidence = 0;
+      Hashtable<String,String> dialNames = new  Hashtable<String,String>();
+      Hashtable<String, Hashtable<String,String>> dialNameVariations = new Hashtable<String, Hashtable<String,String>>();
+      Hashtable<String,String> rtsMS2Dial = new Hashtable<String,String>();
+      Hashtable<String,Double> scores = new Hashtable<String,Double>();
+      //for (String lbNm : ident.getIdentifications(info.getSns())){
+      for (MSDialEntry entry : ident){
+        if (entry.getDialMs2Name()==null || entry.getDialMs2Name().length()==0)
+          continue;
+        String dialMs2Name = entry.getDialMs2Name();
+        if (entry.getLdaMs2Name()!=null && entry.getLdaMs2Name().length()>0)
+          dialMs2Name = entry.getLdaMs2Name();
+        if (dialOKAccordingToReference.containsKey(dialMs2Name)) continue;
+        dialMS2Evidence = LdaLBLASTCompareVO.FALSE_POSITIVE;
+        Hashtable<String,String> nameVariations = new Hashtable<String,String>();
+        String rts = "";
+        double score = 0d;
+        String key = dialMs2Name;
+        for (String other : dialNames.keySet()){
+          if (StaticUtils.isAPermutedVersion(other.replaceAll("/", "_"),dialMs2Name.replaceAll("/","_"),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)){
+            nameVariations = dialNameVariations.get(other);
+            
+            rts = rtsMS2Dial.get(other);
+            key = other;
+            break;
+          }
+        }
+        nameVariations.put(entry.getDialMs2Name(), entry.getDialMs2Name());
+        double scr = entry.getScore();
+        if (scr>score) score = scr;
+        //for (String rt : ident.getRetentionTimes(lbNm, info.getSns())){
+        String rtString = Calculator.FormatNumberToString(entry.getRt(),2);
+        rts += rtString+" ";              
+        //}
+        dialNames.put(key, dialMs2Name);
+        dialNameVariations.put(key, nameVariations);
+        rtsMS2Dial.put(key, rts);
+        scores.put(key, score);
+      }
+      if (dialMS2Evidence==LdaLBLASTCompareVO.FALSE_POSITIVE && dialNames.size()>0){
+        for (String key : dialNames.keySet()){
+          String dialName = "";
+          Hashtable<String,String> nameVariations = dialNameVariations.get(key);
+          String rtMS2Dial = rtsMS2Dial.get(key);
+          double dialMs2Score = scores.get(key);
+          if (dialMS2Evidence!=-1 && dialNames.size()>0){
+            for (String name : nameVariations.keySet()) dialName+=name+" ";
+          }
+          if (dialName.length()>1)dialName=dialName.substring(0,dialName.length()-1);
+          if (rtMS2Dial.length()>0) rtMS2Dial = rtMS2Dial.substring(0,rtMS2Dial.length()-1);
+          ms2Compare.add(new LdaLBLASTCompareVO(dialName+"_FP","not reported",dialName,0,dialMS2Evidence,"","",rtMS2Dial,true,
+              dialMs2Score, mz, false));
+        }
+      }
+    }
+    LdaLBLASTCompareVO compare = null;
+    boolean createCompareVO = true;
+    if (ldaMS1Evidence==0 && dialMS1Evidence==0 && !ms1Only) createCompareVO = false;
+    if (ldaMS1Evidence<1 && dialMS1Evidence<1 && noMS2) {
+      correctMS1Name += "_noMS2";
+      if (dialMS1Evidence==0 && dialMS1!=null && dialMS1.size()>0) {
+        String hitRt;
+        for (MSDialEntry detect : dialMS1) {
+          hitRt = Calculator.FormatNumberToString(detect.getRt(),2d);
+          rtsDial.put(hitRt, hitRt);
+          boolean isAtCorrectRt = isHitAtCorrectRt(detect.getRt(), info, species);
+          if (isAtCorrectRt){
+            dialMS1Name = detect.getDialClassName()+" "+detect.getDialMs1Name();
+            break;
+          }        
+        }
+      }
+    }
+    if (createCompareVO){
+      if (doNotUseInEvaluation)
+        dialMS1Evidence = 0;
+      compare = new LdaLBLASTCompareVO(correctMS1Name,ldaMS1Name,dialMS1Name,ldaMS1Evidence,dialMS1Evidence,rtIdeal,rtLDA,rtDial,isFP,
+        dialScore, mz, ms1Only);
+      if (ms2Compare.size()>0) compare.setMs2Evidence(ms2Compare);
+        
+    }
+    return compare;
+  }
 }

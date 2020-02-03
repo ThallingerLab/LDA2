@@ -6352,6 +6352,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   public void newRule(int position) 
   {     
     LipidParameterSet data = getAnalyteInTableAtPosition(position);
+    if (data!=null) {
+      if (data instanceof LipidomicsMSnSet)
+        try {
+          data = new LipidomicsMSnSet((LipidomicsMSnSet)data);
+        } catch (LipidCombinameEncodingException e) {
+          e.printStackTrace();
+        }
+      else
+        data = new LipidParameterSet(data);
+    }
     currentSelected_ = position;
     try 
     {      

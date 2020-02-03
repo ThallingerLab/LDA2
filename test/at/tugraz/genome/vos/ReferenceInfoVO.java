@@ -23,6 +23,8 @@
 
 package at.tugraz.genome.vos;
 
+import java.util.Hashtable;
+
 /**
  * 
  * @author Juergen Hartler
@@ -34,17 +36,29 @@ public class ReferenceInfoVO
   private String ms2Name_;
   private boolean useInEvaluation_;
   private boolean positionAvailable_;
-  private double correctRt_;
+  private double[] correctRts_;
+  private Hashtable<String,Double> adducts_ = new Hashtable<String,Double>();
   
   
+
+  public ReferenceInfoVO(String ms2Name, double[] correctRts, boolean useInEvaluation, boolean positionAvailable) {
+    this(ms2Name, useInEvaluation, positionAvailable);
+    this.correctRts_ = correctRts;
+  }
   
+  public ReferenceInfoVO(String ms2Name, double correctRt, boolean useInEvaluation, boolean positionAvailable) {
+    this(ms2Name, useInEvaluation, positionAvailable);
+    this.correctRts_ = new double[1];
+    this.correctRts_[0] = correctRt;
+  }
+
   
-  public ReferenceInfoVO(String ms2Name, double correctRt,boolean useInEvaluation, boolean positionAvailable)
+  private ReferenceInfoVO(String ms2Name, boolean useInEvaluation, boolean positionAvailable)
   {
     this.ms2Name_ = ms2Name;
     this.useInEvaluation_ = useInEvaluation;
     this.positionAvailable_ = positionAvailable;
-    this.correctRt_ = correctRt;
+    this.adducts_ = new Hashtable<String,Double>();
   }
   
   public String getMS2Name(){
@@ -58,13 +72,21 @@ public class ReferenceInfoVO
   {
     return positionAvailable_;
   }
-  public double getCorrectRt()
+  public double[] getCorrectRts()
   {
-    return correctRt_;
+    return correctRts_;
   }
-  public double setCorrectRt(double rt)
+  public double[] setCorrectRts(double[] rts)
   {
-    return this.correctRt_=rt;
+    return this.correctRts_=rts;
+  }
+  public void addAdduct(String adduct, double mass) {
+    this.adducts_.put(adduct, mass);
+  }
+
+  public Hashtable<String,Double> getAdducts()
+  {
+    return adducts_;
   }
   
 }

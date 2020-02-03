@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2019 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,55 +19,60 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
+package at.tugraz.genome.exception;
 
-package at.tugraz.genome.vos;
-
-import java.util.LinkedHashMap;
 
 /**
  * 
  * @author Juergen Hartler
  *
  */
-public class LipidClassInfoVO
+public class MSDialException extends Exception
 {
-  private int sns_;
-  private boolean checkRt_;
-  private double rtTolerance_;
-  private LinkedHashMap<String,Boolean> adducts_;
 
-  
-  
-  public LipidClassInfoVO(int sns, boolean checkRt, double rtTolerance,
-     LinkedHashMap<String,Boolean> adducts)
-  {
-    super();
-    this.sns_ = sns;
-    this.checkRt_ = checkRt;
-    this.rtTolerance_ = rtTolerance;
-    this.adducts_ = adducts;
+
+  /**
+   * 
+   */
+  private static final long serialVersionUID = -8018437179687717888L;
+
+
+  /**
+   *  Constructor for MSDialException.
+   */
+  public MSDialException() {
+      super();
   }
 
-  public int getSns()
-  {
-    return sns_;
+
+  /**
+   *  Constructor for MSDialException.
+   *
+   *@param  message
+   */
+  public MSDialException(String message) {
+      super(message);
   }
-  
-  public boolean checkRt()
-  {
-    return checkRt_;
+
+
+  /**
+   *  Constructor for MSDialException.
+   *
+   *@param  message
+   *@param  cause
+   */
+  public MSDialException(String message, Throwable cause) {
+      super(message, cause);
   }
-  
-  public double getRtTolerance()
-  {
-    return rtTolerance_;
+
+
+  /**
+   *  Constructor for MSDialException.
+   *
+   *@param  cause
+   */
+  public MSDialException(Throwable cause) {
+      super(cause);
   }
-  
-  public LinkedHashMap<String,Boolean> getAdducts()
-  {
-    return adducts_;
-  }
-  
-  
 }
