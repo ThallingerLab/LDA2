@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.analysis.ComparativeAnalysis;
 import at.tugraz.genome.lda.exception.ExportException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
@@ -102,8 +103,7 @@ public class MztabUtils extends LDAExporter
     ResultCompVO comp = analysisModule.getResults().get(molGroup).get(molName).values().iterator().next();
     int isotopes = comp.getAvailableIsotopeNr(maxIsotopes);
     boolean isRtGrouped = analysisModule.isRtGrouped();
-    ////Parameter identificationMethod = new Parameter().name("LipidDataAnalyzer").value(Settings.VERSION);
-    Parameter identificationMethod = new Parameter().name("LipidDataAnalyzer").value("2.6.3_2");
+    Parameter identificationMethod = new Parameter().name("LipidDataAnalyzer").value(Settings.VERSION);
     for (String expName : analysisModule.getExpNamesInSequence()){
       ResultAreaVO areaVO = analysisModule.getResultAreaVO(molGroup,molName,expName);
       if (areaVO!=null){
@@ -251,7 +251,7 @@ public class MztabUtils extends LDAExporter
         evidence.setMsLevel(new Parameter().cvLabel("MS").cvAccession("MS:1000511").name("ms level").value(String.valueOf(vo.getMsLevel())));
         List<SpectraRef> spectraNrs = new ArrayList<SpectraRef>();
         for (Integer scanNr : vo.getScanNrs()){
-          spectraNrs.add(new SpectraRef().msRun(msruns.get(vo.getExpName())).reference("index="+scanNr.toString()));
+          spectraNrs.add(new SpectraRef().msRun(msruns.get(vo.getExpName())).reference("scan="+scanNr.toString()));
         }
         evidence.setSpectraRef(spectraNrs);
         List<Double> confidenceMeasures = new ArrayList<Double>();
