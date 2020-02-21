@@ -58,6 +58,7 @@ public class MzXMLMergerForWaters
   public MzXMLMergerForWaters (String mzXMLBaseFile, int msLevels){
     this.mzXMLBaseFile_ = mzXMLBaseFile;
     this.msLevels_ = msLevels;
+    mergedFileName_ = mzXMLBaseFile_.substring(0,mzXMLBaseFile_.length()-".mzXML".length())+"_merged.mzXML";
   }
   
   /**
@@ -79,7 +80,6 @@ public class MzXMLMergerForWaters
       totalNumberOfScans += scanReader.getScanCount();
       readers_.put(i, scanReader);
     }
-    mergedFileName_ = mzXMLBaseFile_.substring(0,mzXMLBaseFile_.length()-".mzXML".length())+"_merged.mzXML";
     BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(mergedFileName_));
     // this writes out the general contents of the mzXML file
     byte[] bytes = replaceScanCount(readers_.get(1).getCachedContents(),totalNumberOfScans).getBytes();
@@ -95,6 +95,7 @@ public class MzXMLMergerForWaters
     String lastScanEntry = null;
     int lastMSLevel = 1;
     Vector<String> closingLines = new Vector<String>();
+    boolean foundMS1Scan = false;
     boolean lastIteration = false;
     while (!lastIteration){
       if (allFinished()) lastIteration = true;
@@ -124,8 +125,11 @@ public class MzXMLMergerForWaters
         out.write(bytes);
       }
       if (!lastIteration){
-        lastScanEntry = scanReader.getCachedContents();
-        lastMSLevel = scanReader.getMsLevel();
+        if (foundMS1Scan || scanReader.getMsLevel()==1) {
+          foundMS1Scan = true;
+          lastScanEntry = scanReader.getCachedContents();
+          lastMSLevel = scanReader.getMsLevel();
+        }
         scanReader.readNextScan();
       }
     }

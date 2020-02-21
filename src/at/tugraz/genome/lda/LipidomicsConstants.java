@@ -252,6 +252,8 @@ public class LipidomicsConstants
   private int ms2ChromMultiplicationFactorForInt_;
   private String threeDViewerMs2DefaultTimeResolution_;
   private String threeDViewerMs2DefaultMZResolution_;
+  /** typically, for Waters files Mass++ is used; however, when you want to use msconvert, set this parameter to true*/
+  private boolean useMsconvertForWaters_;
   
   /** the name of the instrument in PSI controlled vocabulary*/
   private Parameter mzTabInstrumentName_;
@@ -479,6 +481,7 @@ public class LipidomicsConstants
   private final static String CHAIN_CUTOFF = "chainCutoffValue";
   private final static String CHAIN_CUTOFF_DEFAULT = "0.01";
   private final static String ALEX_TARGETLIST = "alexTargetlist";
+  private final static String USE_MSCONVERT_FOR_WATERS = "useMsconvertForWaters";
 
   
   private final static String MZTAB_INSTRUMENT = "mzTabInstrumentName";
@@ -731,6 +734,11 @@ public class LipidomicsConstants
     if (alexTargetlistString!=null&&(alexTargetlistString.equalsIgnoreCase("true")||alexTargetlistString.equalsIgnoreCase("yes")))
       alexTargetlist_ = true;
     alexTargetlistUsed_ = new Hashtable<String,Boolean>();
+    
+    String useMsconvertForWatersString = properties.getProperty(USE_MSCONVERT_FOR_WATERS,"false");
+    useMsconvertForWaters_ = false;
+    if (useMsconvertForWatersString!=null&&(useMsconvertForWatersString.equalsIgnoreCase("true")||useMsconvertForWatersString.equalsIgnoreCase("yes")))
+      useMsconvertForWaters_ = true;
     
     mzTabInstrumentName_ = extractEBIParam(MZTAB_INSTRUMENT,properties);
     mzTabInstrumentSource_ = extractEBIParam(MZTAB_IONSOURCE,properties);
@@ -2150,6 +2158,11 @@ public class LipidomicsConstants
       if (ALEX_TARGETLIST.length()>longestKey) longestKey = ALEX_TARGETLIST.length();
       if (String.valueOf(alexTargetlist_).length()>longestValue) longestValue = String.valueOf(alexTargetlist_).length();
     }
+    if (useMsconvertForWaters_==true) {
+      rowCount = createPropertyRow(sheet,rowCount,USE_MSCONVERT_FOR_WATERS,String.valueOf(useMsconvertForWaters_));
+      if (USE_MSCONVERT_FOR_WATERS.length()>longestKey) longestKey = USE_MSCONVERT_FOR_WATERS.length();
+      if (String.valueOf(useMsconvertForWaters_).length()>longestValue) longestValue = String.valueOf(useMsconvertForWaters_).length();
+    }
     
     
     String key;
@@ -2354,6 +2367,13 @@ public class LipidomicsConstants
   public void setAlexTargetlist(boolean alexTargetlist)
   {
     this.alexTargetlist_ = alexTargetlist;
+  }
+  
+  /** typically, for Waters files Mass++ is used; however, when msconvert shall be used, this returns true*/
+  public static boolean useMsconvertForWaters()
+  {
+    if (instance_ == null) LipidomicsConstants.getInstance();
+    return instance_.useMsconvertForWaters_;
   }
 
   /** lookup for classes whether MSn fragments were defined*/

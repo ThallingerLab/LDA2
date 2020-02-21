@@ -186,7 +186,7 @@ public class Settings
         mergeMultipleMSMSFiles_ = true;
       }
       skipLastMzXML_ = false;
-      String skipLastMzXMLString = properties.getProperty("OverviewIsotopicValues", null);
+      String skipLastMzXMLString = properties.getProperty("SkipLastMzXML", null);
       if (skipLastMzXMLString!=null&&(skipLastMzXMLString.equalsIgnoreCase("true")||skipLastMzXMLString.equalsIgnoreCase("yes"))){
         skipLastMzXML_ = true;
       }

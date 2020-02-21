@@ -27,6 +27,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 
 import at.tugraz.genome.lda.parser.MzXMLMergerForWaters;
+import at.tugraz.genome.lda.utils.StaticUtils;
 
 /**
  * 
@@ -38,12 +39,14 @@ public class RawToMzxmlThread extends Thread
   
   String[] params_;
   boolean isMassPlusPlus_;
+  boolean watersMsConvert_;
   boolean finished_ = false;
   String errorString_;
   
-  public RawToMzxmlThread(String[] params, boolean isMassPlusPlus){
+  public RawToMzxmlThread(String[] params, boolean isMassPlusPlus, boolean watersMsConvert){
     params_ = params;
     isMassPlusPlus_ = isMassPlusPlus;
+    watersMsConvert_ = watersMsConvert;
   }
   
   private static void startRawToMzxmlTranslation(String[] params) throws Exception{
@@ -69,25 +72,47 @@ public class RawToMzxmlThread extends Thread
   public void run(){
     try{
       RawToMzxmlThread.startRawToMzxmlTranslation(params_);
-      if (isMassPlusPlus_){
+      if (isMassPlusPlus_ || watersMsConvert_){
         File[] files = (new File(params_[2])).listFiles();
         int msLevels = 0;
         for (int i=0;i!=files.length;i++){
           if (files[i].getName().startsWith("_FUN") && files[i].getAbsolutePath().endsWith(".DAT"))
             msLevels++;
         }
-        String outputBaseFile = new String(params_[5]);
-        for (int i=2;i<=msLevels;i++){
-          System.out.println("MS-Level: "+i);
-          params_[5] = outputBaseFile+String.valueOf(i);
-          params_[7] = String.valueOf((i-1));
-          RawToMzxmlThread.startRawToMzxmlTranslation(params_);
+        String outputBaseFile = "";
+        if (isMassPlusPlus_) {
+          outputBaseFile = new String(params_[5]);
+          for (int i=2;i<=msLevels;i++){
+            System.out.println("MS-Level: "+i);
+            params_[5] = outputBaseFile+String.valueOf(i);
+            params_[7] = String.valueOf((i-1));
+            RawToMzxmlThread.startRawToMzxmlTranslation(params_);
+          }
+        }
+        if (watersMsConvert_) {
+          outputBaseFile = params_[2].substring(0,params_[2].lastIndexOf("."))+".mzXML";
+          for (int i=2;i<=msLevels;i++){
+            params_[params_.length-1] = "msLevel "+i;              
+            params_[4] = StaticUtils.extractDirName(params_[2])+"/"+i;
+            RawToMzxmlThread.startRawToMzxmlTranslation(params_);
+            String fileName = StaticUtils.extractFileName(params_[2]);
+            fileName = fileName.substring(0,fileName.lastIndexOf("."))+".mzXML";
+            File outputFile = new File(params_[4]+"/"+fileName);
+            outputFile.renameTo(new File(outputBaseFile+String.valueOf(i)));
+            File oldDir = new File(params_[4]);
+            oldDir.delete();
+          }
         }
         if (msLevels>1 && Settings.mergeMultipleMSMSFiles()){
           int mergingLevels = msLevels;
           if (Settings.skipLastMzXML()) mergingLevels--;
           MzXMLMergerForWaters merger = new MzXMLMergerForWaters(outputBaseFile,mergingLevels);
-          merger.merge();
+          if (mergingLevels>1) {
+            merger.merge();
+          }else {
+            File mergedFile = new File(outputBaseFile);
+            mergedFile.renameTo(new File(merger.getMergedFileName()));            
+          }
           // here I have to implement the deletion of the other mzXML files and the renaming of the merged file
           for (int i=1; i<=msLevels;i++){
             String fileName = new String(outputBaseFile);

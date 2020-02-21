@@ -240,6 +240,7 @@ public class BatchQuantThread extends Thread
             File mzXMLFile = new File(filePair.getRawFile().getAbsolutePath().substring(0,filePair.getRawFile().getAbsolutePath().length()-suffix.length())+".mzXML");
             if (!headerFile.exists()&&!mzXMLFile.exists()){
               boolean isMassPlusPlus = false;
+              boolean watersMsConvert = false;
               filePair.setStatus("Trans to mzXML");
               this.quantTable_.scrollToCenter(this.currentLine_, 0);
               this.quantTable_.getSelectionModel().setSelectionInterval(this.currentLine_, this.currentLine_);
@@ -263,7 +264,10 @@ public class BatchQuantThread extends Thread
               }
               if (rawFile.isDirectory()){
                 if (suffix.equalsIgnoreCase(".RAW")){
-                  if (Settings.getMassPlusPlusPath()!=null&&Settings.getMassPlusPlusPath().length()>0){
+                  if (LipidomicsConstants.useMsconvertForWaters()) {
+                    params =BatchQuantThread.getMsConvertParamsWaters(filePair.getRawFile().getAbsolutePath());
+                    watersMsConvert = true;
+                  } else if (Settings.getMassPlusPlusPath()!=null&&Settings.getMassPlusPlusPath().length()>0){
                     params = new String[8];
                     params[0] = Settings.getMassPlusPlusPath();
                     params[1] = "-in";
@@ -287,7 +291,7 @@ public class BatchQuantThread extends Thread
                   }                    
                 }
               }
-              this.rawmzThread_ = new RawToMzxmlThread(params,isMassPlusPlus);
+              this.rawmzThread_ = new RawToMzxmlThread(params,isMassPlusPlus,watersMsConvert);
               rawmzThread_.start();
               threadStarted = true;
             }
@@ -362,6 +366,17 @@ public class BatchQuantThread extends Thread
     params[2] = fileToTranslate;
     params[3] = "-o";
     params[4] = StaticUtils.extractDirName(fileToTranslate);                  
+    return params;
+  }
+  
+  public static String[] getMsConvertParamsWaters(String fileToTranslate){
+    String[] paramsNormal = getMsConvertParams(fileToTranslate);
+    String[] params = new String[paramsNormal.length+2];
+    for (int i=0; i!=paramsNormal.length; i++) {
+      params[i] = paramsNormal[i];
+    }
+    params[paramsNormal.length] = "--filter";
+    params[paramsNormal.length+1] = "msLevel 1";
     return params;
   }
   

@@ -2605,6 +2605,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                                      ||   (suffix.equalsIgnoreCase(".d") &&Settings.getMsConvertPath()!=null&&Settings.getMsConvertPath().length()>0)))){
               String[] params = new String[3];
               boolean isMassPlusPlus = false;
+              boolean watersMsConvert = false;
               if (rawFile.isFile()){
                 if (!LipidomicsConstants.isMS2()||(Settings.getMsConvertPath()!=null&&Settings.getMsConvertPath().length()>0)){
                   if (Settings.getMsConvertPath()!=null&&Settings.getMsConvertPath().length()>0){
@@ -2624,7 +2625,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                 if (suffix.equalsIgnoreCase(".RAW")){
                   if (!LipidomicsConstants.isMS2()||(Settings.getMassPlusPlusPath()!=null&&Settings.getMassPlusPlusPath().length()>0)){
                     String outputFile = fileToTranslate.substring(0,fileToTranslate.lastIndexOf("."))+".mzXML";
-                    if (Settings.getMassPlusPlusPath()!=null&&Settings.getMassPlusPlusPath().length()>0){
+                    if (LipidomicsConstants.useMsconvertForWaters()) {
+                      params =BatchQuantThread.getMsConvertParamsWaters(fileToTranslate);
+                      watersMsConvert = true;
+                    }else if (Settings.getMassPlusPlusPath()!=null&&Settings.getMassPlusPlusPath().length()>0){
                       params = new String[8];
                       params[0] = Settings.getMassPlusPlusPath();
                       params[1] = "-in";
@@ -2661,7 +2665,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                 System.out.println("Translating to mzXML");
                 this.progressBar_.setValue(5);
                 this.quantifyingLabel_.setText("Translating to mzXML");
-                rawmzThread_ = new RawToMzxmlThread(params,isMassPlusPlus);
+                rawmzThread_ = new RawToMzxmlThread(params,isMassPlusPlus,watersMsConvert);
                 rawmzThread_.start();
                 threadStarted = true;
               }  
