@@ -2623,7 +2623,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
               }
               if (rawFile.isDirectory()){
                 if (suffix.equalsIgnoreCase(".RAW")){
-                  if (!LipidomicsConstants.isMS2()||(Settings.getMassPlusPlusPath()!=null&&Settings.getMassPlusPlusPath().length()>0)){
+                  if (!LipidomicsConstants.isMS2()||(Settings.getMassPlusPlusPath()!=null&&Settings.getMassPlusPlusPath().length()>0)||LipidomicsConstants.useMsconvertForWaters()){
                     String outputFile = fileToTranslate.substring(0,fileToTranslate.lastIndexOf("."))+".mzXML";
                     if (LipidomicsConstants.useMsconvertForWaters()) {
                       params =BatchQuantThread.getMsConvertParamsWaters(fileToTranslate);
