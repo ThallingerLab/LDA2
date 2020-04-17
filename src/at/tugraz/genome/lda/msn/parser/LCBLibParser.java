@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.Hashtable;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -83,6 +84,7 @@ public class LCBLibParser extends FALibParser
    */
   public void parseFile() throws RulesException, IOException{
     result_ = new Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>();
+    availablePrefixes_ = new HashSet<String>();
     //first, create a hashtable of all available hydroxylation sites
     HydroxyEncoding hydroxies = Settings.getLcbHydroxyEncoding();
     short hydroxyKey;

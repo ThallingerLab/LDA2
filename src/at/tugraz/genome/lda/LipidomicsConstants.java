@@ -183,6 +183,8 @@ public class LipidomicsConstants
   private boolean isotopeCorrection_;
   private boolean removeFromOtherIsotopes_;
   private boolean respectIsotopicDistribution_;
+  /** check if number of labels in species name corresponds with number of labels in chains*/
+  private boolean checkChainLabelCombination_;
   private boolean useNoiseCutoff_;
   private float noiseCutoffDeviationValue_;
   private Float minimumRelativeIntensity_;
@@ -349,6 +351,8 @@ public class LipidomicsConstants
   private final static String REMOVE_FROM_OTHER_ISOTOPE_DEFAULT = "true";
   private final static String RESPECT_ISO_DISTRI = "respectIsotopicDistribution";
   private final static String RESPECT_ISO_DISTRI_DEFAULT = "true";
+  private final static String CHECK_CHAIN_LABEL_COMBINATION = "checkChainLabelCombinationFromSpeciesName";
+  private final static String CHECK_CHAIN_LABEL_COMBINATION_DEFAULT = "false";
   private final static String NOISE_CUTOFF = "useNoiseCutoff";
   private final static String NOISE_CUTOFF_DEFAULT = "false";
   private final static String NOISE_DEVIATION = "noiseCutoffDeviationValue";
@@ -599,6 +603,10 @@ public class LipidomicsConstants
     String respectIsotopesString = properties.getProperty(RESPECT_ISO_DISTRI,RESPECT_ISO_DISTRI_DEFAULT);
     if (respectIsotopesString!=null && (respectIsotopesString.equalsIgnoreCase("no")||respectIsotopesString.equalsIgnoreCase("false")))
       respectIsotopicDistribution_ = false;
+    checkChainLabelCombination_ = false;
+    String checkChainLabelCombinationString = properties.getProperty(CHECK_CHAIN_LABEL_COMBINATION,CHECK_CHAIN_LABEL_COMBINATION_DEFAULT);
+    if (checkChainLabelCombinationString!=null && (checkChainLabelCombinationString.equalsIgnoreCase("yes")||checkChainLabelCombinationString.equalsIgnoreCase("true")))
+      checkChainLabelCombination_ = true;
     useNoiseCutoff_ = false;
     String cutoffString = properties.getProperty(NOISE_CUTOFF,NOISE_CUTOFF_DEFAULT);
     if (cutoffString!=null && (cutoffString.equalsIgnoreCase("yes")||cutoffString.equalsIgnoreCase("true")))
@@ -852,7 +860,16 @@ public class LipidomicsConstants
     return instance_.useNoiseCutoff_;
   }
   
-
+  /**
+   * 
+   * @return check if number of labels in species name corresponds with number of labels in chains
+   */
+  public static boolean checkChainLabelCombination()
+  {
+    if (instance_ == null) LipidomicsConstants.getInstance();
+    return instance_.checkChainLabelCombination_;
+  }
+  
   public static float getNoiseCutoffDeviationValue()
   {
     if (instance_ == null) LipidomicsConstants.getInstance();
@@ -1966,6 +1983,9 @@ public class LipidomicsConstants
       rowCount = createPropertyRow(sheet,rowCount,RESPECT_ISO_DISTRI,String.valueOf(respectIsotopicDistribution_));
       if (RESPECT_ISO_DISTRI.length()>longestKey) longestKey = RESPECT_ISO_DISTRI.length();
       if (String.valueOf(respectIsotopicDistribution_).length()>longestValue) longestValue = String.valueOf(respectIsotopicDistribution_).length();
+      rowCount = createPropertyRow(sheet,rowCount,CHECK_CHAIN_LABEL_COMBINATION,String.valueOf(checkChainLabelCombination_));
+      if (CHECK_CHAIN_LABEL_COMBINATION.length()>longestKey) longestKey = CHECK_CHAIN_LABEL_COMBINATION.length();
+      if (String.valueOf(checkChainLabelCombination_).length()>longestValue) longestValue = String.valueOf(checkChainLabelCombination_).length();
       rowCount = createPropertyRow(sheet,rowCount,NOISE_CUTOFF,String.valueOf(useNoiseCutoff_));
       if (NOISE_CUTOFF.length()>longestKey) longestKey = NOISE_CUTOFF.length();
       if (String.valueOf(useNoiseCutoff_).length()>longestValue) longestValue = String.valueOf(useNoiseCutoff_).length();

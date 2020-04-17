@@ -26,6 +26,7 @@ package at.tugraz.genome.lda.msn;
 import java.io.File;
 import java.io.IOException;
 import java.util.Hashtable;
+import java.util.Set;
 
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
@@ -64,6 +65,12 @@ public class FattyAcidsContainer
    * fifth key: prefix
    */
   private Hashtable<String,Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>> fattyAcids_;
+  
+  /**
+   * the available isotopic labels
+   */
+  private Hashtable<String,Set<String>> availableLabels_;
+  
 
   /** hash containing the information
    * first key: Excel library name
@@ -85,6 +92,7 @@ public class FattyAcidsContainer
     faDir_ = faDir;
     fattyAcids_ = new Hashtable<String,Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>>();
     lcbs_ = new Hashtable<String,Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>>();
+    availableLabels_ = new Hashtable<String,Set<String>>();
     extractChains();
   }
 
@@ -172,15 +180,16 @@ public class FattyAcidsContainer
           FALibParser parser = new FALibParser(file);
           parser.parseFile();
           fattyAcids_.put(file.getName().substring(0,file.getName().length()), parser.getFattyAcids());
+          availableLabels_.put(file.getName().substring(0,file.getName().length()),parser.getAvailableLabels());
         } catch (SheetNotPresentException ex){
           LCBLibParser parser = new LCBLibParser(file);
           parser.parseFile();
-          lcbs_.put(file.getName().substring(0,file.getName().length()), parser.getResult());       
+          lcbs_.put(file.getName().substring(0,file.getName().length()), parser.getResult());
+          availableLabels_.put(file.getName().substring(0,file.getName().length()),parser.getAvailableLabels());
         }
       } catch (RulesException ex){
         throw new RulesException(file.getName()+": "+ex.getMessage());
       }
-      
     }
   }
   
@@ -357,6 +366,33 @@ public class FattyAcidsContainer
     }catch(HydroxylationEncodingException hdx) {
       throw new HydroxylationEncodingException("The demanded hydroxylation number \""+hydroxyNr+"\" is not available in your LCB-library!");
     }
+  }
+  
+  /**
+   * returns the available isotopic labels for the requested library
+   * @param libName name of the LCB library
+   * @return the extracted isotopic labels for the requested library 
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the library is not there
+   * @throws IOException exception if there is something wrong about the file
+   */
+  public static Set<String> getAvailableLabels(String libName) throws RulesException, NoRuleException, IOException {
+    return getAvailableLabels(libName, faDir_);
+  }
+
+  
+  /**
+   * returns the available isotopic labels for the requested library
+   * @param libName name of the LCB library
+   * @param libDir directory where the Excel libraries are stored
+   * @return the extracted isotopic labels for the requested library
+   * @throws RulesException specifies in detail which rule has been infringed
+   * @throws NoRuleException thrown if the library is not there
+   * @throws IOException exception if there is something wrong about the file
+   */
+  public static Set<String>  getAvailableLabels(String libName, String libDir) throws RulesException, NoRuleException, IOException {
+    checkIfFALibExists(libName,libDir);
+    return instance_.availableLabels_.get(libName);
   }
 
 }

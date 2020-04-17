@@ -76,6 +76,8 @@ public class FragmentCalculator
   private String ruleName_;
   /** the name of the analyte - containing the number of C atoms and double bonds */
   private String analyteName_;
+  /** if there is isotopic labeling used, this part contains the labeling encoding */
+  private String labelInName_;
   /** the chemical formula of the analyte (precursor) */
   private String analyteFormula_;
   /** the chemical formula of the analyte (precursor) - without deductions by ionization modifications */
@@ -104,6 +106,14 @@ public class FragmentCalculator
   private Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableAlkenylChainsBeforeCombiCheck_;
   /** the principally (from the chemical formula) possible FA chains*/
   private Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableLCBChainsBeforeCombiCheck_;
+  /** the available isotopic labels*/
+  private Hashtable<String,Integer> availableLabels_;
+  /** the available isotopic labels*/
+  private Hashtable<String,String> singleLabelLookup_;
+  /** the single labels*/
+  private Set<String> availableSingleLabels_;
+  /** how many labels are allowed in the chains*/
+  private Hashtable<String,Integer> allowedLabelsInChains_;
   
 
   /**
@@ -166,7 +176,20 @@ public class FragmentCalculator
         calculatePossibleFaLcbHydroxyCombinations(fattyChains,lcbChains);
         int cAtoms = getIntValueFromParsingRule(RulesContainer.getCAtomsFromNamePattern(ruleName_,rulesDir_), analyteName_, ruleName_, FragRuleParser.GENERAL_CATOMS_PARSE);
         int dbs = getIntValueFromParsingRule(RulesContainer.getDoubleBondsFromNamePattern(ruleName_,rulesDir_), analyteName_, ruleName_, FragRuleParser.GENERAL_DBOND_PARSE);
+        if (LipidomicsConstants.checkChainLabelCombination()) {
+          this.labelInName_ = this.analyteName_.substring(0,this.analyteName_.indexOf(String.valueOf(cAtoms)));
+        }
+        
         checkChainsForPlausibility(chainLib,lcbLib,cAtoms,dbs,alkylChains>0,alkenylChains>0);
+        
+        
+//        for (String label : this.availableSingleLabels_) {
+//          System.out.println("Single Label: "+label);
+//        }
+//        for (String key : this.availableLabels_.keySet()) {
+//          System.out.println("Label: "+key+"-"+this.availableLabels_.get(key));
+//        }
+
 //        System.out.println("FA-chains");
 //        for (int c : this.availableFAChainsBeforeCombiCheck_.get(0).keySet()) {
 //          for (int db : this.availableFAChainsBeforeCombiCheck_.get(0).get(c).keySet()){
@@ -668,6 +691,12 @@ public class FragmentCalculator
     }catch (LipidCombinameEncodingException e) {throw new RulesException(e);}
     short mandatory;
     Vector<String> mandatoryFrags;
+    Hashtable<String,Integer> labelsOfChainsBase = new Hashtable<String,Integer>();
+    Hashtable<String,Integer> labelsOfChains;
+    String singleLabel;
+    for (String label : this.availableSingleLabels_) {
+      labelsOfChainsBase.put(label, 0);
+    }
     for (String key : relevantCombinations){
       boolean allFAsThere = true;
       boolean oneFAIsThere = false;
@@ -695,8 +724,27 @@ public class FragmentCalculator
             allFAsThere = false;
         }
       }
-      if (allFAsThere || (oneFAIsThere && singleChainIdentification))
-        potentialChainCombinations.put(key, chains);
+      if (allFAsThere || (oneFAIsThere && singleChainIdentification)) {
+        boolean labelingIsOK = true;
+        if (LipidomicsConstants.checkChainLabelCombination()) {
+          labelsOfChains = new Hashtable<String,Integer>(labelsOfChainsBase);
+          for (FattyAcidVO chain : chains){
+            if (chain.getPrefix()!=null && chain.getPrefix().length()>0) {
+              singleLabel = singleLabelLookup_.get(chain.getPrefix());
+              labelsOfChains.put(singleLabel, labelsOfChains.get(singleLabel)+this.availableLabels_.get(chain.getPrefix()));
+            }
+          }
+          for (String label : this.allowedLabelsInChains_.keySet()) {
+            if (this.allowedLabelsInChains_.get(label) != labelsOfChains.get(label)) {
+              labelingIsOK = false;
+              break;
+            }
+          }
+        }
+        
+        if (labelingIsOK)
+          potentialChainCombinations.put(key, chains);
+      }
     }
     return potentialChainCombinations;
   }
@@ -827,11 +875,16 @@ public class FragmentCalculator
    */
   private void checkChainsForPlausibility(String chainLib, String lcbLib, int cAtoms, int dbs,
       boolean alkylPresent, boolean alkenylPresent) throws RulesException, NoRuleException, IOException, HydroxylationEncodingException, ChemicalFormulaException{
+    availableLabels_ = new Hashtable<String,Integer>();
+    singleLabelLookup_ = new Hashtable<String,String>();
+    availableSingleLabels_ = new HashSet<String>();
+    allowedLabelsInChains_ = new Hashtable<String,Integer>();
     if (chainLib==null) {
       availableFAChainsBeforeCombiCheck_ = null;
     } else {
       availableFAChainsBeforeCombiCheck_ = new Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>();
       Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> faHydroxies = FattyAcidsContainer.getAllFattyAcidChains(chainLib);
+      addAvailableLabels(FattyAcidsContainer.getAvailableLabels(chainLib));
       for (int ohNumber : getPossibleFaHydroxylations()) {
         String encoded = HydroxyEncoding.HYDROXYLATION_ZERO;
         if (ohNumber!=0) encoded = Settings.getFaHydroxyEncoding().getEncodedPrefix((short)ohNumber);
@@ -851,12 +904,88 @@ public class FragmentCalculator
     } else {
       availableLCBChainsBeforeCombiCheck_ = new Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>();
       Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> lcbHydroxies = FattyAcidsContainer.getAllLCBs(lcbLib);
+      addAvailableLabels(FattyAcidsContainer.getAvailableLabels(lcbLib));
       for (int ohNumber : getPossibleLcbHydroxylations()) {
         String encoded = Settings.getLcbHydroxyEncoding().getEncodedPrefix((short)ohNumber);
         //System.out.println("LCB: "+ohNumber);
         checkPlausibilityAndAddToHash(availableLCBChainsBeforeCombiCheck_,lcbHydroxies.get(encoded),ohNumber,cAtoms,dbs);
       }
-    } 
+    }
+    
+    if (LipidomicsConstants.checkChainLabelCombination()) {
+      for (String label : availableSingleLabels_) {
+        allowedLabelsInChains_.put(label, 0);        
+      }
+      Vector<String> lengthSortedLabels = new Vector<String>();
+      for (String label : availableSingleLabels_) {
+        int posToAdd = -1;
+        for (int i=0; i!=lengthSortedLabels.size(); i++) {
+          if (label.length()>lengthSortedLabels.get(i).length()) {
+            posToAdd = i;
+            break;
+          }
+        }
+        if (posToAdd==-1)
+          lengthSortedLabels.add(label);
+        else
+          lengthSortedLabels.add(posToAdd,label);
+      }
+      String restOfName = new String(this.labelInName_);
+      for (String label : lengthSortedLabels) {
+        while (restOfName.indexOf(label)!=-1) {
+          allowedLabelsInChains_.put(label, allowedLabelsInChains_.get(label)+1);
+          restOfName = restOfName.substring(0,restOfName.indexOf(label))+restOfName.substring(restOfName.indexOf(label)+label.length());
+        }
+        if (restOfName.length()==0)
+          break;
+      }
+    }
+  }
+  
+  
+  /**
+   * adds the possible isotopic labels stored in the chain libraries to the hashes availableLabels_ and availableSingleLabels_;
+   * @param labels
+   */
+  private void addAvailableLabels(Set<String> labels) {
+    char[] labelChars;
+    StringBuilder sb;
+    char ch;
+    int current;
+    int iter;
+    for (String label : labels) {
+      if (this.availableLabels_.containsKey(label))
+        continue;
+      labelChars = label.toCharArray();
+      sb = new StringBuilder();
+      for (int i=0; i!=label.length(); i++) {
+        ch = labelChars[i];
+        if (sb.length()==0) {
+          sb.append(ch);
+        }else {
+          if (label.substring(i,label.length()).startsWith(sb.toString())) {
+            current = i;
+            iter = 1;
+            while(label.substring(current,label.length()).startsWith(sb.toString())) {
+              current +=  sb.length();
+              iter++;
+            }
+            if (current==label.length()) {
+              availableSingleLabels_.add(sb.toString());
+              singleLabelLookup_.put(label,sb.toString());
+              availableLabels_.put(label, iter);
+              break;
+            }
+          }
+          sb.append(ch);
+        }
+      }
+      if (!availableLabels_.containsKey(label)) {
+        availableSingleLabels_.add(sb.toString());
+        singleLabelLookup_.put(label,sb.toString());
+        availableLabels_.put(label, 1);
+      }
+    }
   }
   
   

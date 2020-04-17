@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -68,7 +69,10 @@ public class FALibParser
    * the third integer is the amount of double bonds
    * the fourth key is the prefix
    */
-  private Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> result_;
+ private Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> result_;
+  
+  /** the prefixes for a chain - should be the isotopic labels*/
+  protected Set<String> availablePrefixes_;
   
   /**
    * Constructor specifying the Excel file to parse
@@ -97,6 +101,7 @@ public class FALibParser
    */
   public void parseFile() throws RulesException, IOException, SheetNotPresentException{
     result_ = new Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>();
+    availablePrefixes_ = new HashSet<String>();
     InputStream myxls = null;
     try{
       myxls = new FileInputStream(inputFile_);
@@ -298,6 +303,8 @@ public class FALibParser
         }
 
         FattyAcidVO faVO = new FattyAcidVO(LipidomicsConstants.CHAIN_TYPE_FA_ACYL, prefix,cAtoms,dbs,ohNumber,mass,chemicalFormula);
+        if (prefix!=null && prefix.length()>0)
+          this.availablePrefixes_.add(prefix);
         Hashtable<Integer,Hashtable<String,FattyAcidVO>> fasWithSameC = new Hashtable<Integer,Hashtable<String,FattyAcidVO>>();
         if (result.containsKey(cAtoms)) fasWithSameC = result.get(cAtoms);
         Hashtable<String,FattyAcidVO> fasWithSameDbs = new Hashtable<String,FattyAcidVO>();
@@ -318,5 +325,13 @@ public class FALibParser
    */
   public Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> getFattyAcids(){
     return result_;
+  }
+  
+  /**
+   * 
+   * @return the isotopic labels
+   */
+  public Set<String> getAvailableLabels(){
+    return this.availablePrefixes_;
   }
 }
