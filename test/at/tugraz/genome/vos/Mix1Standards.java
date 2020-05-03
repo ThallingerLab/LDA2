@@ -73,7 +73,7 @@ public class Mix1Standards
     standards.get("d32:1").addAdduct("H", 510.488071397d);
     standards.get("d32:1").addAdduct("-OH", 492.477506697d);
     standards.get("d32:1").addAdduct("Na", 532.470017097d);  
-    standards.put("t34:0", new ReferenceInfoVO("t18:0/n16:0",new double[]{20.8d},true,false));
+    standards.put("t34:0", new ReferenceInfoVO("t18:0/n16:0",new double[]{20.7d},true,false));
     standards.get("t34:0").addAdduct("-H", 554.515383637d);
     standards.get("t34:0").addAdduct("HCOO", 600.520862967d);
     standards.get("t34:0").addAdduct("Cl", 590.492061937d);
@@ -87,7 +87,7 @@ public class Mix1Standards
     standards.get("d34:2").addAdduct("H", 536.503721467d);
     standards.get("d34:2").addAdduct("-OH", 518.493156767d);
     standards.get("d34:2").addAdduct("Na", 558.485667167d);    
-    standards.put("d36:0", new ReferenceInfoVO("d18:0/n18:0",new double[]{24.9d},true,false));
+    standards.put("d36:0", new ReferenceInfoVO("d18:0/n18:0",new double[]{24.8d},true,false));
     standards.get("d36:0").addAdduct("-H", 566.551769147d);
     standards.get("d36:0").addAdduct("HCOO", 612.557248477d);
     standards.get("d36:0").addAdduct("Cl", 602.528447447d);
@@ -197,7 +197,6 @@ public class Mix1Standards
     return standards;
   }
   
-  
   public static LinkedHashMap<String,ReferenceInfoVO> getSMStandards(){
     LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
     // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
@@ -216,6 +215,28 @@ public class Mix1Standards
     standards.get("d42:2").addAdduct("Cl", 847.646528039d);
     standards.get("d42:2").addAdduct("H", 813.684402339d);
     standards.get("d42:2").addAdduct("Na", 835.666348039d);
+    return standards;
+  }
+  
+  public static LinkedHashMap<String,ReferenceInfoVO> getLSMStandards(){
+    LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
+    // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
+    standards.put("d18:0", new ReferenceInfoVO("d18:0",new double[]{2.02d},true,false));
+    standards.get("d18:0").addAdduct("HCOO", 511.351762969d);
+    standards.get("d18:0").addAdduct("Cl", 501.3229619d);
+    standards.get("d18:0").addAdduct("H", 467.360836239);
+    standards.get("d18:0").addAdduct("-OH", 449.350271539d);
+    standards.get("d18:0").addAdduct("Na", 489.342781939d);
+    return standards;
+  }
+  
+  public static LinkedHashMap<String,ReferenceInfoVO> getS1PStandards(){
+    LinkedHashMap<String,ReferenceInfoVO> standards = new LinkedHashMap<String,ReferenceInfoVO>();
+    // the first boolean is if the standard shall be used in the evaluation, and the second if a position is detectable
+    standards.put("d17:0", new ReferenceInfoVO("d17:0",new double[]{2.10d},true,false));
+    standards.get("d17:0").addAdduct("H", 368.2560367829d);
+    standards.put("d17:1", new ReferenceInfoVO("d17:1",new double[]{1.83d},true,false));
+    standards.get("d17:1").addAdduct("H", 366.240386712d);
     return standards;
   }
   

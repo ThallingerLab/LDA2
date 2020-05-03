@@ -76,6 +76,9 @@ public abstract class LDAExporter
   protected static Hashtable<String,Vector<LipidParameterSet>> getRelevantOriginalResults(Vector<LipidParameterSet> all, ResultAreaVO areaVO){
     Hashtable<String,Vector<LipidParameterSet>> results = new Hashtable<String,Vector<LipidParameterSet>>();
     for (LipidParameterSet set : all){
+      //the next line is for the export of MSn data only
+//      if (!(set instanceof LipidomicsMSnSet))
+//        continue;
       if (!areaVO.getMoleculeNameWoRT().equalsIgnoreCase(set.getNameStringWithoutRt()))
         continue;
       if (!areaVO.belongsRtToThisAreaVO(set.getRt(), set.getModificationName()))
@@ -131,6 +134,7 @@ public abstract class LDAExporter
       boolean usePositionIdentification = false;
       //use position if there is no contradicting evidence
       if (positionsFound.size()==1){
+        ////the second check was removed for sphingolipid export
         int detections = positionsFound.values().iterator().next();
         //this is for ambiguous identifications
         if (ambiguous!=null && ambiguous.containsKey(woPosition)){
@@ -159,6 +163,7 @@ public abstract class LDAExporter
         //use a position when it was found more than once, and at least more than half of the times of the
         //detected cases
         if (detections>1 && detections>(totalCount/2))
+        //the line before, is the last line for the removal, for sphingolipid export  
           usePositionIdentification = true;
       }
         
@@ -633,6 +638,9 @@ public abstract class LDAExporter
           molecularSpecies.add(molSpecies); 
       }
       for (String aSpecies : species){
+        //the next line is for the export of MSn data only
+//        if (rtsOfMods.get(molName)==null)
+//          continue;
         Hashtable<String,Double> areas = calculateRelativeAreas(aSpecies,resultsMol,percentalSplits);
         Float rTime = getRtOfHighestPeak(aSpecies,areas,highestRts);
         Vector<String> adducts = getSortedModifications(adductsSorted,modsOfSpecies.get(aSpecies));

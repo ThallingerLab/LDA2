@@ -54,6 +54,9 @@ public class FoundBiologicalSpecies{
   };
   
   public final static Hashtable<String,String> modToIonisationMode = new Hashtable<String,String>(){
+
+    private static final long serialVersionUID = 179548399794419935L;
+    
     {
       put("H","+");
       put("Na","+");
@@ -4600,4 +4603,66 @@ public class FoundBiologicalSpecies{
     classes.put("TG", species);
     return classes;
   }
+  
+  public static Hashtable<String,LinkedHashMap<String,String>> getSphingoOrbitrapModifications(){
+    Hashtable<String,LinkedHashMap<String,String>> mods = new Hashtable<String,LinkedHashMap<String,String>>();
+    
+    LinkedHashMap<String,String> modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("H","+");
+    modsOfClass.put("-OH","+");
+    mods.put("SphBase", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("H","+");
+    modsOfClass.put("-OH","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("Cl","-");
+    modsOfClass.put("-H","-");
+    mods.put("Cer", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("H","+");
+    modsOfClass.put("-OH","+");
+    modsOfClass.put("-H","-");
+    mods.put("Cer1P", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("H","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("Cl","-");
+    mods.put("SM", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("H","+");
+    modsOfClass.put("-OH","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("Cl","-");
+    mods.put("LSM", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("Na","+");
+    modsOfClass.put("H","+");
+    modsOfClass.put("-OH","+");
+    modsOfClass.put("HCOO","-");
+    modsOfClass.put("Cl","-");
+    modsOfClass.put("-H","-");
+    mods.put("HexCer", modsOfClass);
+    
+    modsOfClass = new LinkedHashMap<String,String>();
+    modsOfClass.put("H","+");
+    mods.put("S1P", modsOfClass);
+    
+    return mods;
+  }
+  
+  public static Hashtable<String,Range> getSphingoOrbitrapPreElutionRanges(){
+    Hashtable<String,Range> ranges = new Hashtable<String,Range>();
+    return ranges;
+  }
+  
 }

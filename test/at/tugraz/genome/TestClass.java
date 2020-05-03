@@ -395,9 +395,18 @@ public class TestClass extends JApplet implements AddScan
     //this.batchQuantByCommandLine();
     //this.groupAlexResultsByRt();
     //generateSphingolipidMassList();
+    //generateIsoLabeledMassList();
     //parseLCBList();
     //replicateCudaBug();
-    detectMSnWithLCB();
+    //detectMSnWithLCB();
+    //parseMSDialTxt();
+    //this.compareLDABMSDialControlledPositiveProbes();
+    //this.compareLDABMSDialControlledNegativeProbes();
+    //this.compareLDAMSDialNaturalProbesPositive();
+    //this.compareLDAMSDialNaturalProbesNegative();
+    //parseMSFinderStructure();
+    //this.generateDetailsSphingosBiologicalExperiment();
+    this.generateDetailsSphingosControlExperiment();
   }
 
   private void testExportPanel()
@@ -899,7 +908,8 @@ public class TestClass extends JApplet implements AddScan
     ElementConfigParser parser = new ElementConfigParser("elementconfig.xml");
     try {
       parser.parse();
-      System.out.println(parser.calculateTheoreticalMass("C5 H11 O5 P1 N1", false));
+      //System.out.println(parser.calculateTheoreticalMass("C18 H31 O1", false));
+      System.out.println(parser.calculateTheoreticalMass("C18 H33 N1", false));
       //System.out.println(parser.calculateTheoreticalMass("C44 H83 O8 P1 N1", false));
     }
     catch (SpectrummillParserException e) {
@@ -1210,7 +1220,7 @@ public class TestClass extends JApplet implements AddScan
       //Vector<Double> mustMatchProbabs = aaParser.calculateChemicalFormulaIntensityDistribution("C6 H12 O6", 5, false).get(0);
 //      Vector<Double> mustMatchProbabs = StaticUtils.calculateChemicalFormulaIntensityDistribution(aaParser, "C100 O26 H95", 5, false);
       //Vector<Double> mustMatchProbabs = StaticUtils.calculateChemicalFormulaIntensityDistribution(aaParser, "Cc6 H11 O6", 5, false);
-      Vector<Double> mustMatchProbabs = StaticUtils.calculateChemicalFormulaIntensityDistribution(aaParser, "C6 H12 O6", 5, false);
+      Vector<Double> mustMatchProbabs = StaticUtils.calculateChemicalFormulaIntensityDistribution(aaParser, "C48 H93 O8 P1 N2", 5, false);
       
       for (Double prob : mustMatchProbabs){
         System.out.println(prob);
@@ -10319,10 +10329,239 @@ public void testTabFile() throws Exception {
     lipidClassInfo.put("Cer", new LipidClassInfoVO(1,true,0.7d,adducts));
   }
   
+  private void generateDetailsSphingosBiologicalExperiment(){
+    Vector<String> quantitationFiles = new Vector<String>();
+    quantitationFiles.add("C:\\Sphingolipids\\Brain\\massLists\\sphingos_positive.xlsx");
+    quantitationFiles.add("C:\\Sphingolipids\\Brain\\massLists\\sphingos_negative.xlsx");
+    
+    //Brain
+//    String positivelistfile = "c:\\sphingolipids\\brain\\orbitrap\\brain_speciesdetectable_msms_orbitrap_cid.xlsx";
+//    String resultfile = "c:\\sphingolipids\\brain\\orbitrap\\speciesdetectable_msms_orbitrap_details_generated.xlsx";
+//    String sheetname = "brain - orbitrap velos pro cid";
+
+    //Plasma
+    String positiveListFile = "C:\\Sphingolipids\\NIST\\Orbitrap\\NIST_SpeciesDetectable_MSMS_Orbitrap_CID.xlsx";
+    String resultFile = "C:\\Sphingolipids\\NIST\\Orbitrap\\SpeciesDetectable_MSMS_Orbitrap_Details_generated.xlsx";
+    String sheetName = "Plasma - Orbitrap Velos Pro CID";
+
+    
+    
+    LinkedHashMap<String,Vector<String>> ldaFilesIonMode = new LinkedHashMap<String,Vector<String>>();
+    Vector<String> filesOfOneIonMode = new Vector<String>();
+    //Brain
+//    filesOfOneIonMode.add("C:\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_1_sphingos_positive.xlsx");
+//    filesOfOneIonMode.add("C:\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_2_sphingos_positive.xlsx");
+//    filesOfOneIonMode.add("C:\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_3_sphingos_positive.xlsx");
+//    filesOfOneIonMode.add("C:\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_4_sphingos_positive.xlsx");
+//    filesOfOneIonMode.add("C:\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_5_sphingos_positive.xlsx");
+    //Plasma
+    filesOfOneIonMode.add("C:\\Sphingolipids\\NIST\\Orbitrap\\positive\\Serum_pos_1_sphingos_positive.xlsx");
+    filesOfOneIonMode.add("C:\\Sphingolipids\\NIST\\Orbitrap\\positive\\Serum_pos_2_sphingos_positive.xlsx");
+    filesOfOneIonMode.add("C:\\Sphingolipids\\NIST\\Orbitrap\\positive\\Serum_pos_3_sphingos_positive.xlsx");
+    filesOfOneIonMode.add("C:\\Sphingolipids\\NIST\\Orbitrap\\positive\\Serum_pos_4_sphingos_positive.xlsx");
+    filesOfOneIonMode.add("C:\\Sphingolipids\\NIST\\Orbitrap\\positive\\Serum_pos_5_sphingos_positive.xlsx");    
+    ldaFilesIonMode.put("+", filesOfOneIonMode);
+  
+    filesOfOneIonMode = new Vector<String>();
+    //Brain
+//    filesOfOneIonMode.add("C:\\Sphingolipids\\Brain\\Orbitrap\\negative\\Brain_neg_1_sphingos_negative.xlsx");
+//    filesOfOneIonMode.add("C:\\Sphingolipids\\Brain\\Orbitrap\\negative\\Brain_neg_2_sphingos_negative.xlsx");
+//    filesOfOneIonMode.add("C:\\Sphingolipids\\Brain\\Orbitrap\\negative\\Brain_neg_3_sphingos_negative.xlsx");
+//    filesOfOneIonMode.add("C:\\Sphingolipids\\Brain\\Orbitrap\\negative\\Brain_neg_4_sphingos_negative.xlsx");
+//    filesOfOneIonMode.add("C:\\Sphingolipids\\Brain\\Orbitrap\\negative\\Brain_neg_5_sphingos_negative.xlsx");
+    //Plasma
+    filesOfOneIonMode.add("C:\\Sphingolipids\\NIST\\Orbitrap\\negative\\Serum_neg_1_sphingos_negative.xlsx");
+    filesOfOneIonMode.add("C:\\Sphingolipids\\NIST\\Orbitrap\\negative\\Serum_neg_2_sphingos_negative.xlsx");
+    filesOfOneIonMode.add("C:\\Sphingolipids\\NIST\\Orbitrap\\negative\\Serum_neg_3_sphingos_negative.xlsx");
+    filesOfOneIonMode.add("C:\\Sphingolipids\\NIST\\Orbitrap\\negative\\Serum_neg_4_sphingos_negative.xlsx");
+    filesOfOneIonMode.add("C:\\Sphingolipids\\NIST\\Orbitrap\\negative\\Serum_neg_5_sphingos_negative.xlsx");
+    ldaFilesIonMode.put("-", filesOfOneIonMode);
+
+    int decimalPlacesForMz = 4;
+    double highestMzStdevAllowed = 0.002d;
+    double highestRtStdevAllowed = 0.2;
+    double highestAbundanceCVAllowed = 50;
+    Hashtable<String,LinkedHashMap<String,String>> mods = FoundBiologicalSpecies.getSphingoOrbitrapModifications();
+    Hashtable<String,Range> preElutionRanges = FoundBiologicalSpecies.getSphingoOrbitrapPreElutionRanges();
+    
+    BufferedOutputStream out = null;
+    Hashtable<String,String> appliedMzCorrection = new Hashtable<String,String>();
+    int highestNumberOfFiles = 0;
+    if (ldaFilesIonMode.get("+").size()>highestNumberOfFiles) highestNumberOfFiles = ldaFilesIonMode.get("+").size();
+    if (ldaFilesIonMode.get("-").size()>highestNumberOfFiles) highestNumberOfFiles = ldaFilesIonMode.get("-").size();
+
+    try{
+      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();          
+      for (String quantFile : quantitationFiles){
+        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
+        ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = null;
+        for (String className : oneFile.keySet()){
+          Hashtable<String,Hashtable<String,QuantVO>> oneClass= oneFile.get(className);
+          Hashtable<String,Hashtable<String,QuantVO>> ofClass = new Hashtable<String,Hashtable<String,QuantVO>>();
+          if (theoreticalMasses.containsKey(className)) ofClass = theoreticalMasses.get(className);
+          for (String analyte:oneClass.keySet()){
+            Hashtable<String,QuantVO> oneAnalyte = oneClass.get(analyte);
+            Hashtable<String,QuantVO> ofAnalyte = new Hashtable<String,QuantVO>();
+            if (ofClass.containsKey(analyte)) ofAnalyte = ofClass.get(analyte);
+            for (String mod:oneAnalyte.keySet()) ofAnalyte.put(mod, oneAnalyte.get(mod));
+            ofClass.put(analyte, ofAnalyte);
+          }
+          theoreticalMasses.put(className,ofClass);
+        }
+      }
+      LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,String>>> positiveList = this.readPositiveList(positiveListFile);
+//    for (String className : positiveList.keySet()){
+//      System.out.println(className);
+//      for (String species : positiveList.get(className).keySet()){
+//        System.out.println("     "+species);
+//        for (String structure : positiveList.get(className).get(species).values()){
+//          System.out.println("            "+structure);
+//        }
+//      }
+//    }
+
+      //this hashtable is for checking if all of the species are in the positive list
+      LinkedHashMap<String,LinkedHashMap<String,Vector<LipidParameterSet>>> checkPositiveList = new LinkedHashMap<String,LinkedHashMap<String,Vector<LipidParameterSet>>>();
+      Hashtable<String,Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>> results = new Hashtable<String,Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>>();
+      for (String polarity : ldaFilesIonMode.keySet()){
+        for (String ldaFile : ldaFilesIonMode.get(polarity)){
+          String fileName = ldaFile.substring(ldaFile.lastIndexOf("\\")+1);
+          QuantificationResult quantResult = LDAResultReader.readResultFile(ldaFile,  new Hashtable<String,Boolean>());
+          if (quantResult.getConstants().getShift()==0d) appliedMzCorrection.put(fileName, "0");
+          else{
+            System.out.println(quantResult.getConstants().getShift());
+            appliedMzCorrection.put(fileName, Calculator.FormatNumberToString(quantResult.getConstants().getShift(),decimalPlacesForMz));
+          }
+          Hashtable<String,Vector<LipidParameterSet>> idents = quantResult.getIdentifications();
+          //this is for checking if all classes are present
+          for (String className : idents.keySet()){
+            Vector<LipidParameterSet> classResult = idents.get(className);
+            //this is for checking if all classes are present
+            boolean found = false;
+            for (LipidParameterSet set : classResult){
+              if (set instanceof LipidomicsMSnSet){
+                found = true;
+                break;
+              }
+            }
+            if (found && !positiveList.containsKey(className)){
+              System.out.println("The positive list does not contain the lipid class "+className+"! But we identified it in "+fileName);
+            }
+          // end of checking if all classes are present
+          
+          //this is for checking if all of the species are in the positive list
+//          LinkedHashMap<String,Vector<LipidParameterSet>> classCheck = new LinkedHashMap<String,Vector<LipidParameterSet>>();
+//          if (checkPositiveList.containsKey(className)) classCheck = checkPositiveList.get(className);
+//          classCheck.put(fileName, classResult);
+//          checkPositiveList.put(className, classCheck);
+            // end of checking if all of the species are in the positive list
+
+          }
+        
+          Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>> resultsOfExp = new Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>();
+          for (String className : positiveList.keySet()){
+            if (!idents.containsKey(className)) continue;
+            Vector<LipidParameterSet> classResult = idents.get(className);
+            LinkedHashMap<String,LinkedHashMap<String,String>> posAnalytes = positiveList.get(className);
+            Hashtable<String,Vector<LipidomicsMSnSet>> msnFound = new Hashtable<String,Vector<LipidomicsMSnSet>>();
+            for (LipidParameterSet set : classResult){
+              if (!(set instanceof LipidomicsMSnSet) || !posAnalytes.containsKey(set.getNameStringWithoutRt())) continue;
+              float rt = Float.parseFloat(set.getRt());
+              if (sheetName.equalsIgnoreCase("Q Exactive") && (className.equalsIgnoreCase("TG"))){
+                if (set.getNameStringWithoutRt().equalsIgnoreCase("58:5") && rt<41.7f) continue;
+                else if (set.getNameStringWithoutRt().equalsIgnoreCase("58:7") && rt<40.45f) continue;
+                
+              }
+                  
+              Vector<LipidomicsMSnSet> ofOneAnalyte = new Vector<LipidomicsMSnSet>();
+              if (msnFound.containsKey(set.getNameStringWithoutRt())) ofOneAnalyte = msnFound.get(set.getNameStringWithoutRt());
+                ofOneAnalyte.add((LipidomicsMSnSet)set);
+                msnFound.put(set.getNameStringWithoutRt(), ofOneAnalyte);
+            }
+            resultsOfExp.put(className, msnFound);
+          }
+          results.put(fileName, resultsOfExp);
+        }
+      }
+      
+      Workbook resultWorkbook = createDetailsExcelFile(sheetName,highestNumberOfFiles,decimalPlacesForMz,highestMzStdevAllowed,highestRtStdevAllowed,
+          highestAbundanceCVAllowed,ldaFilesIonMode,null,appliedMzCorrection,mods,preElutionRanges,positiveList,null,theoreticalMasses,results,false,false);
+      out = new BufferedOutputStream(new FileOutputStream(resultFile));
+      resultWorkbook.write(out);
+      resultWorkbook.close();
+
+      // this is for checking the positive list
+//      for (String className : checkPositiveList.keySet()){
+//        LinkedHashMap<String,Vector<LipidParameterSet>> result = checkPositiveList.get(className);
+//        for (String fileName : result.keySet()){
+//          Vector<LipidParameterSet> classResults = result.get(fileName);
+//          for (LipidParameterSet set : classResults){
+//            if (!(set instanceof LipidomicsMSnSet)) continue;
+//            LipidomicsMSnSet msn = (LipidomicsMSnSet)set;
+//            for (Object msnNames : msn.getMSnIdentificationNames()){    
+//              String nameString = "";
+//              String faId = "";
+//              if (msnNames instanceof Vector){
+//                for (String name : (Vector<String>)msnNames){
+//                  nameString += name+"|";
+//                }
+//                faId = nameString.substring(0,nameString.indexOf("|"));
+//                nameString = nameString.substring(0,nameString.length()-1);
+//              }else{
+//                nameString = (String)msnNames;
+//                faId = nameString;
+//              }
+//              LinkedHashMap<String,LinkedHashMap<String,String>> posOfClass = positiveList.get(className);
+//              if (msn.getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED && !faId.equalsIgnoreCase(msn.getNameStringWithoutRt())){
+//                if (!posOfClass.containsKey(msn.getNameStringWithoutRt())){
+//                  System.out.println("The positive list does not contain "+className+" "+msn.getNameStringWithoutRt()+" "+msn.getModificationName()+"! But we identified it in "+fileName);
+//                  continue;
+//                }
+//                LinkedHashMap<String,String> posStructures = posOfClass.get(msn.getNameStringWithoutRt());
+//                boolean found = false;
+//                if ((sheetName.equalsIgnoreCase("Orbitrap Velos Pro CID")||sheetName.equalsIgnoreCase("Orbitrap Velos Pro HCD"))
+//                    && className.equalsIgnoreCase("DG")){
+//                  faId = faId.replaceAll("/", "_");
+//                  if (faId.split("_").length==2) faId += "_-";
+//                }
+//                for (String struct : posStructures.keySet()){
+//                  if (StaticUtils.isAPermutedVersion(faId.replaceAll("/", "_"), struct.replaceAll("/", "_"),"_")){
+//                    found = true;
+//                    break;
+//                  }
+//                }
+//                if (!found) System.out.println("The positive list does not contain the structure "+className+" "+msn.getNameStringWithoutRt()+" "+faId+"_"+msn.getModificationName()+"! But we identified it in "+fileName);
+//              }else{
+//                if (posOfClass==null || !posOfClass.containsKey(faId)) System.out.println("The positive list does not contain "+className+" "+msn.getNameStringWithoutRt()+"_"+msn.getModificationName()+"! But we identified it in "+fileName);
+//              }
+//            }
+//          }
+//        }
+//      }
+
+
+    }catch (Exception ex){
+      ex.printStackTrace();
+    }finally{
+      if (out!=null){
+        try {
+          out.close();
+        }
+        catch (IOException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+      }
+    }
+  }
+  
+  
   private void generateDetailsBiologicalExperiment(){
     Vector<String> quantitationFiles = new Vector<String>();
     quantitationFiles.add("D:\\BiologicalExperiment\\massLists\\positive\\positive.xlsx");
     quantitationFiles.add("D:\\BiologicalExperiment\\massLists\\negative\\negative.xlsx");
+    
+    
 
     // these are the values for the G6550A QTOF
 //    String positiveListFile = "D:\\BiologicalExperiment\\Singapore\\SpeciesDetectable_MSMS_Singapore.xlsx";
@@ -10636,7 +10875,7 @@ public void testTabFile() throws Exception {
       
       
       Workbook resultWorkbook = createDetailsExcelFile(sheetName,highestNumberOfFiles,decimalPlacesForMz,highestMzStdevAllowed,highestRtStdevAllowed,
-          highestAbundanceCVAllowed,ldaFilesIonMode,appliedMzCorrection,mods,preElutionRanges,positiveList,theoreticalMasses,results,false,false);
+          highestAbundanceCVAllowed,ldaFilesIonMode,null,appliedMzCorrection,mods,preElutionRanges,positiveList,null,theoreticalMasses,results,false,false);
       out = new BufferedOutputStream(new FileOutputStream(resultFile));
       resultWorkbook.write(out);
       resultWorkbook.close();
@@ -11044,7 +11283,7 @@ public void testTabFile() throws Exception {
       }
       
       Workbook resultWorkbook = createDetailsExcelFile(sheetName,highestNumberOfFiles,decimalPlacesForMz,highestMzStdevAllowed,highestRtStdevAllowed,
-          highestAbundanceCVAllowed,ldaFilesIonMode,appliedMzCorrection,mods,preElutionRanges,positiveList,theoreticalMasses,results,true,false);
+          highestAbundanceCVAllowed,ldaFilesIonMode,null,appliedMzCorrection,mods,preElutionRanges,positiveList,null,theoreticalMasses,results,true,false);
       out = new BufferedOutputStream(new FileOutputStream(resultFile));
       resultWorkbook.write(out);
       resultWorkbook.close();
@@ -11301,7 +11540,7 @@ public void testTabFile() throws Exception {
       }
 
       Workbook resultWorkbook = createDetailsExcelFile(sheetName,highestNumberOfFiles,decimalPlacesForMz,highestMzStdevAllowed,highestRtStdevAllowed,
-          highestAbundanceCVAllowed,ldaFilesIonMode,appliedMzCorrection,mods,preElutionRanges,positiveList,theoreticalMasses,results,true,false);
+          highestAbundanceCVAllowed,ldaFilesIonMode,null,appliedMzCorrection,mods,preElutionRanges,positiveList,null,theoreticalMasses,results,true,false);
       out = new BufferedOutputStream(new FileOutputStream(resultFile));
       resultWorkbook.write(out);
       resultWorkbook.close();
@@ -11592,7 +11831,7 @@ public void testTabFile() throws Exception {
       }
 
       Workbook resultWorkbook = createDetailsExcelFile(sheetName,highestNumberOfFiles,decimalPlacesForMz,highestMzStdevAllowed,highestRtStdevAllowed,
-          highestAbundanceCVAllowed,ldaFilesIonMode,appliedMzCorrection,mods,preElutionRanges,positiveList,theoreticalMasses,results,false,true);
+          highestAbundanceCVAllowed,ldaFilesIonMode,null,appliedMzCorrection,mods,preElutionRanges,positiveList,null,theoreticalMasses,results,false,true);
       out = new BufferedOutputStream(new FileOutputStream(resultFile));
       resultWorkbook.write(out);
       resultWorkbook.close();
@@ -11668,9 +11907,10 @@ public void testTabFile() throws Exception {
   }
   
   private Workbook createDetailsExcelFile(String sheetName, int highestNumberOfFiles, int decimalPlacesForMz, double highestMzStdevAllowed,
-      double highestRtStdevAllowed, double highestAbundanceCVAllowed, LinkedHashMap<String,Vector<String>> ldaFilesIonMode,
+      double highestRtStdevAllowed, double highestAbundanceCVAllowed, LinkedHashMap<String,Vector<String>> ldaFilesIonMode,  LinkedHashMap<Integer,LinkedHashMap<String,Vector<String>>> ldaFilesIonModeMixes,
       Hashtable<String,String> appliedMzCorrection, Hashtable<String,LinkedHashMap<String,String>> mods, Hashtable<String,Range> preElutionRanges,
-      LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,String>>> positiveList, Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses,
+      LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,String>>> positives, LinkedHashMap<Integer,LinkedHashMap<String,LinkedHashMap<String,Object>>> positiveListMixes,
+      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses,
       Hashtable<String,Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>> results, boolean isExperiment1, boolean isExperiment3) throws Exception{
     //this writes the output in the Excel format
     Workbook resultWorkbook = new XSSFWorkbook();
@@ -11679,8 +11919,18 @@ public void testTabFile() throws Exception {
     CellStyle centerStyle = getCenterStyle(resultWorkbook);
     CellStyle rightIndentStyle = getRightIndentStyle(resultWorkbook);
     Sheet sheet = resultWorkbook.createSheet(sheetName);
-
-    
+    LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,String>>> positiveList;
+    Hashtable<String,Hashtable<String,Integer>> mixLookup = null;
+    Hashtable<String,Hashtable<String,Vector<Range>>> doublePeakRanges = new Hashtable<String,Hashtable<String,Vector<Range>>>();
+    Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>>>> specificResults = new Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>>>>();
+    if (positives!=null) {
+      positiveList = positives;
+    }else {
+      Vector returns = createCombinedPositiveListFromMixes(positiveListMixes);
+      positiveList = (LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,String>>>) returns.get(0);
+      mixLookup = (Hashtable<String,Hashtable<String,Integer>>) returns.get(1);
+      doublePeakRanges = (Hashtable<String,Hashtable<String,Vector<Range>>>)returns.get(2);
+    }
     int speciesPos = 0;
     String speciesHeader = "Species";
     int longestSpecies = 0;
@@ -11689,56 +11939,63 @@ public void testTabFile() throws Exception {
     int longestStructure = 0;
     int ionModePos = 2;
     String ionModeHeader = "Ion Mode";
-    int longestIonMode = 0;      
-    int identificationPos = 3;
+    int longestIonMode = 0;
+    int mixPos = 3;
+    String mixHeader = "Mix";
+    int longestMix = 0;
+    int mixAdd = 0;
+    if (positiveListMixes!=null)
+      mixAdd++;
+    
+    int identificationPos = 3+mixAdd;
     String identificationHeader = "Assigned Structures";
     int longestIdentification = 0;
-    int detectionFrequencyPos = 3+highestNumberOfFiles;
+    int detectionFrequencyPos = 3+mixAdd+highestNumberOfFiles;
     String detectionFrequencyHeader = "Frequency";
     int longestDetectionFrequency = 0;
-    int detectionMolFrequencyPos = 4+highestNumberOfFiles;
+    int detectionMolFrequencyPos = 4+mixAdd+highestNumberOfFiles;
     String detectionMolFrequencyHeader = "Mol.-Frequency";
     int longestDetectionMolFrequency = 0;
-    int formulaPos = 5+highestNumberOfFiles;
+    int formulaPos = 5+mixAdd+highestNumberOfFiles;
     String formulaHeader = "Formula";
     int longestFormula = 0;
-    int modPos = 6+highestNumberOfFiles;
+    int modPos = 6+mixAdd+highestNumberOfFiles;
     String modHeader = "Adduct";
     int longestMod = 0;
-    int theoreticalMzPos = 7+highestNumberOfFiles;
+    int theoreticalMzPos = 7+mixAdd+highestNumberOfFiles;
     String theoreticalMzHeader = "Target m/z";
     int longestTheoreticalMz = 0;
-    int averageMeasuredMzPos = 8+highestNumberOfFiles;
+    int averageMeasuredMzPos = 8+mixAdd+highestNumberOfFiles;
     String measuredMzHeader = "Measured m/z";
     String averageMeasuredMzHeader = "Avg";
     int longestAverageMeasuredMz = 0;
-    int stdevMeasuredMzPos = 9+highestNumberOfFiles;
+    int stdevMeasuredMzPos = 9+mixAdd+highestNumberOfFiles;
     String stdevMeasuredMzHeader = "Stdev";
     int longestStdevMeasuredMz = 0;
-    int measuredMzValuesPos = 10+highestNumberOfFiles;
+    int measuredMzValuesPos = 10+mixAdd+highestNumberOfFiles;
     String measuredMzValuesHeader = "Measured m/z values";
     int longestMeasuredMzValues = 0;
-    int retentionTimeAveragePos = 10+highestNumberOfFiles*2;
+    int retentionTimeAveragePos = 10+mixAdd+highestNumberOfFiles*2;
     String retentionTimeHeader = "Retention time";
     String retentionTimeAverageHeader = "Avg";
     int longestRetentionTimeAverage = 0;
-    int retentionTimesDeviationPos = 11+highestNumberOfFiles*2;
+    int retentionTimesDeviationPos = 11+mixAdd+highestNumberOfFiles*2;
     String retentionTimesDeviationHeader = "Stdev";
     int longestRetentionTimesDeviation = 0;
-    int retentionTimesMeasuredPos = 12+highestNumberOfFiles*2;
+    int retentionTimesMeasuredPos = 12+mixAdd+highestNumberOfFiles*2;
     String retentionTimesMeasuredHeader = "Retention times measured";
     int longestRetentionTimesMeasured = 0;
-    int commentPos = 12+highestNumberOfFiles*3;
+    int commentPos = 12+mixAdd+highestNumberOfFiles*3;
     String commentHeader = "Comment";
     int longestComment = 0;
-    int abundancePos = 13+highestNumberOfFiles*3;
+    int abundancePos = 13+mixAdd+highestNumberOfFiles*3;
     String abundanceHeader = "Abundance";
     String abundanceAverageHeader = "Avg";
     int longestAbundance = 0;
-    int abundanceStdevPos = 14+highestNumberOfFiles*3;
+    int abundanceStdevPos = 14+mixAdd+highestNumberOfFiles*3;
     String abundanceStdevHeader = "Stdev";
     int longestAbundanceStdev = 0;
-    int abundanceCVPos = 15+highestNumberOfFiles*3;
+    int abundanceCVPos = 15+mixAdd+highestNumberOfFiles*3;
     String abundanceCVHeader = "CV%";
     int longestAbundanceCV = 0;
     
@@ -11753,8 +12010,8 @@ public void testTabFile() throws Exception {
         if (!appliedMzCorrection.get(fileName).equalsIgnoreCase("0")) massShiftString = " (massShift="+appliedMzCorrection.get(fileName)+")";
         fileNumber++;
         row = sheet.createRow(rowCount);          
-        this.createCell(row, centerStyle, ionModePos, polarity);
-        this.createCell(row, null, ionModePos+fileNumber, fileNumber+" = "+fileName+massShiftString);         
+        this.createCell(row, centerStyle, ionModePos+mixAdd, polarity);
+        this.createCell(row, null, ionModePos+mixAdd+fileNumber, fileNumber+" = "+fileName+massShiftString);         
         this.createCell(row, centerStyle, measuredMzValuesPos-1, polarity);
         this.createCell(row, null, measuredMzValuesPos+(fileNumber-1), fileNumber+" = "+fileName+massShiftString);
         this.createCell(row, centerStyle, retentionTimesMeasuredPos-1, polarity);
@@ -11786,6 +12043,8 @@ public void testTabFile() throws Exception {
     this.createCell(row, headerStyle, speciesPos, speciesHeader);
     this.createCell(row, headerStyle, structurePos, structureHeader);
     this.createCell(row, headerStyle, ionModePos, ionModeHeader);
+    if (positiveListMixes!=null)
+      this.createCell(row, headerStyle, mixPos, mixHeader);
     for (int i=0;i!=highestNumberOfFiles;i++){
       this.createCell(row, headerStyle, identificationPos+i, String.valueOf(i+1));
       this.createCell(row, headerStyle, measuredMzValuesPos+i, String.valueOf(i+1));
@@ -11815,16 +12074,33 @@ public void testTabFile() throws Exception {
       for (String molName : posAnalytes.keySet()){
         LinkedHashMap<String,String> posStructures = posAnalytes.get(molName);
         Vector<LDAIdentificationDetailsVO> compareVOs = new Vector<LDAIdentificationDetailsVO>();
+        LinkedHashMap<String,Vector<String>> ldaFilesIonMode2 = ldaFilesIonMode;
+        int mix = 0;
+        Vector<Range> ranges = null;
+        if (ldaFilesIonModeMixes!=null) {
+          mix = mixLookup.get(className).get(molName);
+          ldaFilesIonMode2 =  ldaFilesIonModeMixes.get(mix);
+          if (doublePeakRanges!=null && doublePeakRanges.containsKey(className) && doublePeakRanges.get(className).containsKey(molName))
+            ranges = doublePeakRanges.get(className).get(molName);
+        }
         if (posStructures.size()>0){
           //if there are no structures present, this hash prevents to add repeatedly the same information
           Hashtable<String,String> noStructuresMod = new  Hashtable<String,String>();
           for (String posStructure:posStructures.keySet()){
-            for (LDAIdentificationDetailsVO identVO : extractInfoOfAvailableStructures(sheetName,className,molName,posStructure,posStructures,modsOfClass,ldaFilesIonMode,results,theoreticalMasses,decimalPlacesForMz,preElutionRanges,
-                isExperiment1,isExperiment3)){
+            Vector<LDAIdentificationDetailsVO> identVOs = new Vector<LDAIdentificationDetailsVO>();
+            if (ranges==null)
+              identVOs = extractInfoOfAvailableStructures(sheetName,className,molName,posStructure,posStructures,modsOfClass,ldaFilesIonMode2,results,theoreticalMasses,decimalPlacesForMz,preElutionRanges,
+                isExperiment1,isExperiment3,null);
+            else {
+              for (Range range : ranges)
+                identVOs.addAll(extractInfoOfAvailableStructures(sheetName,className,molName,posStructure,posStructures,modsOfClass,ldaFilesIonMode2,results,theoreticalMasses,decimalPlacesForMz,preElutionRanges,
+                    isExperiment1,isExperiment3,range));
+            } 
+            for (LDAIdentificationDetailsVO identVO : identVOs){
               if (identVO.containsAnyFileStructures){
                 if (identVO.structureFound) compareVOs.add(identVO);
               }else{
-                if (!noStructuresMod.containsKey(identVO.originalMod)){
+                if (!noStructuresMod.containsKey(identVO.originalMod) || ranges!=null){
                   compareVOs.add(identVO);
                   noStructuresMod.put(identVO.originalMod, identVO.originalMod);
                 }
@@ -11832,8 +12108,14 @@ public void testTabFile() throws Exception {
             }
           }  
         }else{
-          compareVOs.addAll(extractInfoOfAvailableStructures(sheetName,className,molName,null,null,modsOfClass,ldaFilesIonMode,results,theoreticalMasses,decimalPlacesForMz,preElutionRanges,isExperiment1,
-              isExperiment3));
+          if (ranges==null)
+            compareVOs.addAll(extractInfoOfAvailableStructures(sheetName,className,molName,null,null,modsOfClass,ldaFilesIonMode2,results,theoreticalMasses,decimalPlacesForMz,preElutionRanges,isExperiment1,
+              isExperiment3,null));
+          else {
+            for (Range range : ranges)
+              compareVOs.addAll(extractInfoOfAvailableStructures(sheetName,className,molName,null,null,modsOfClass,ldaFilesIonMode2,results,theoreticalMasses,decimalPlacesForMz,preElutionRanges,isExperiment1,
+                  isExperiment3,range));
+          }
         }
         for (LDAIdentificationDetailsVO identVO : compareVOs){
           rowCount++;
@@ -11876,6 +12158,12 @@ public void testTabFile() throws Exception {
           
           if (identVO.ionMode.length()>longestMod) longestIonMode = identVO.ionMode.length();
           this.createCell(row, centerStyle, ionModePos, identVO.ionMode);
+          
+          if (positiveListMixes!=null) {
+            String mixString = String.valueOf(mix);
+            if (mixString.length()>longestMix) longestMix = mixString.length();
+            this.createCell(row, centerStyle, mixPos, mixString);
+          }
           
           //if (className.equalsIgnoreCase("PC") && identVO.originalMod.equalsIgnoreCase("Na")) System.out.println(className+" "+molName+" "+structure);            
           String[] idents = identVO.identification.split("\\|");
@@ -11987,7 +12275,7 @@ public void testTabFile() throws Exception {
           
           columnCount = startColumnForRawAreas;
           for (int i=0;i!=highestNumberOfFiles;i++){
-            String fullPath = ldaFilesIonMode.get(identVO.ionMode).get(i);
+            String fullPath = ldaFilesIonMode2.get(identVO.ionMode).get(i);
             String fileName = fullPath.substring(fullPath.lastIndexOf("\\")+1);
             if (identVO.measuredAreas.containsKey(fileName))
             this.createCell(row, cellStyle, columnCount, String.valueOf(identVO.measuredAreas.get(fileName)));
@@ -12000,6 +12288,8 @@ public void testTabFile() throws Exception {
     setColumnWidth(sheet, speciesPos, speciesHeader, longestSpecies);
     setColumnWidth(sheet, structurePos, structureHeader, longestStructure);
     setColumnWidth(sheet, ionModePos, ionModeHeader, longestIonMode);
+    if (positiveListMixes!=null)
+      setColumnWidth(sheet, mixPos, mixHeader+"  ", longestMix);
     //setColumnWidth(sheet, identificationPos, identificationHeader, longestIdentification);
     int columnWidth =  (longestIdentification+1)*256;
     for (int i=0; i!=highestNumberOfFiles; i++){
@@ -12043,6 +12333,8 @@ public void testTabFile() throws Exception {
       String className = sheet.getSheetName();
       LinkedHashMap<String,LinkedHashMap<String,String>> classResults = new LinkedHashMap<String,LinkedHashMap<String,String>>();
       Row row = sheet.getRow(0);
+      if (row==null)
+        continue;
       Vector<Integer> speciesColumn = new Vector<Integer>();
       int structureColumn = -1;
       for (int j=0; j!=row.getLastCellNum(); j++){
@@ -12281,7 +12573,7 @@ public void testTabFile() throws Exception {
   private Vector<LDAIdentificationDetailsVO> extractInfoOfAvailableStructures(String machineName, String className, String molName, String structure,LinkedHashMap<String,String> posStructures,
       LinkedHashMap<String,String> modsOfClass, LinkedHashMap<String,Vector<String>> ldaFilesIonMode, Hashtable<String,Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>> results,
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses, int mzDecPlaces, Hashtable<String,Range> preElutionRanges, boolean isExperiment1,
-      boolean isExperiment3) throws Exception{
+      boolean isExperiment3, Range range) throws Exception{
     Vector<LDAIdentificationDetailsVO> detailsVOs = new Vector<LDAIdentificationDetailsVO>();
     for (String mod : modsOfClass.keySet()){
       String identification = "";
@@ -12304,7 +12596,12 @@ public void testTabFile() throws Exception {
         rts.add(new Vector<Double>());
       }
       String ionMode = modsOfClass.get(mod);//FoundBiologicalSpecies.getIonModeOfAdduct(mod);
-      if (!ldaFilesIonMode.containsKey(ionMode)) continue;
+//      if (!ldaFilesIonMode.containsKey(filesId)) {
+//        
+//        continue;
+//      }
+      if (!ldaFilesIonMode.containsKey(ionMode))
+        continue;
       for (int i=0; i!=ldaFilesIonMode.get(ionMode).size(); i++){
         String filePath = ldaFilesIonMode.get(ionMode).get(i);
         String fileName = filePath.substring(filePath.lastIndexOf("\\")+1);
@@ -12315,7 +12612,15 @@ public void testTabFile() throws Exception {
           Vector<LipidomicsMSnSet> molResults = fileResults.get(className).get(molName);
           Vector<LipidomicsMSnSet> foundOfMod = new Vector<LipidomicsMSnSet>();
           for (LipidomicsMSnSet msn : molResults){
-            if(msn.getModificationName().equalsIgnoreCase(mod)) foundOfMod.add(msn);
+            if(msn.getModificationName().equalsIgnoreCase(mod)) {
+              if (range==null)
+                foundOfMod.add(msn);
+              else {
+                float rtInSecs = Float.valueOf(msn.getRt())*60f;
+                if (range.insideRange(rtInSecs))
+                  foundOfMod.add(msn);
+              }
+            }
           }
           String struct = null;
           if (structure!=null) struct = structure.replaceAll("/", "_");
@@ -12577,8 +12882,8 @@ public void testTabFile() throws Exception {
         rtString = rtString.substring(0,rtString.length()-1);
         details.identification = identification;
         details.occurence = occurrence;
-        if (className.equalsIgnoreCase("LPC") || className.equalsIgnoreCase("LPE") || className.equalsIgnoreCase("LPS")||
-            className.equalsIgnoreCase("SM") || className.equalsIgnoreCase("Cer")){
+        if (className.equalsIgnoreCase("LPC") || className.equalsIgnoreCase("LPE") || className.equalsIgnoreCase("LPS")/*||
+            className.equalsIgnoreCase("SM") || className.equalsIgnoreCase("Cer")*/){
           details.structOccurrence = occurrence;
         }else{
           details.structOccurrence = structuresFound.size();
@@ -12632,6 +12937,11 @@ public void testTabFile() throws Exception {
         details.measuredAreas = usableAreas;
       }
     }
+//    if (range!=null) {
+//      for (LDAIdentificationDetailsVO id : detailsVOs) {
+//        System.out.println(id.identification+" "+id.originalMod+" "+id.rts);
+//      }
+//    }
     return detailsVOs;
   }
   
@@ -19643,4 +19953,381 @@ public void testTabFile() throws Exception {
     }
     return compare;
   }
+  
+  
+  private void generateDetailsSphingosControlExperiment(){
+    Vector<String> quantitationFiles = new Vector<String>();
+    quantitationFiles.add("C:\\Sphingolipids\\Experiment1\\massLists\\Orbitrap\\stands_positive_Mix1.xlsx");
+    quantitationFiles.add("C:\\Sphingolipids\\Experiment1\\massLists\\Orbitrap\\stands_positive_Mix2.xlsx");
+    quantitationFiles.add("C:\\Sphingolipids\\Experiment1\\massLists\\Orbitrap\\stands_negative_Mix1.xlsx");
+    quantitationFiles.add("C:\\Sphingolipids\\Experiment1\\massLists\\Orbitrap\\stands_negative_Mix2.xlsx");
+    
+    
+
+    
+    //these are the values for the Orbitrap Velos Pro CID CID
+    String resultFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\SpeciesDetectable_MSMS_Orbitrap_CID_Details_generated.xlsx";
+    String sheetName = "Orbitrap Velos Pro CID";
+    
+    
+    LinkedHashMap<Integer,LinkedHashMap<String,Vector<String>>> ldaFilesIonMode = new LinkedHashMap<Integer,LinkedHashMap<String,Vector<String>>>();
+    LinkedHashMap<String,Vector<String>> filesOfOneMix = new LinkedHashMap<String,Vector<String>>();
+    Vector<String> filesOfMix = new Vector<String>();
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\Mix1\\Mix1_1_stands_positive_Mix1.xlsx");
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\Mix1\\Mix1_2_stands_positive_Mix1.xlsx");
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\Mix1\\Mix1_3_stands_positive_Mix1.xlsx");
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\Mix1\\Mix1_4_stands_positive_Mix1.xlsx");
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\Mix1\\Mix1_5_stands_positive_Mix1.xlsx");
+    filesOfOneMix.put("+",filesOfMix);
+    filesOfMix = new Vector<String>();
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix1\\Mix1_neg_1_stands_negative_Mix1.xlsx");
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix1\\Mix1_neg_2_stands_negative_Mix1.xlsx");
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix1\\Mix1_neg_3_stands_negative_Mix1.xlsx");
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix1\\Mix1_neg_4_stands_negative_Mix1.xlsx");
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix1\\Mix1_neg_5_stands_negative_Mix1.xlsx");
+    filesOfOneMix.put("-",filesOfMix);
+    ldaFilesIonMode.put(1, filesOfOneMix);
+    
+    filesOfOneMix = new LinkedHashMap<String,Vector<String>>();
+    filesOfMix = new Vector<String>();
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\Mix2\\Mix2_1_stands_positive_Mix2.xlsx");
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\Mix2\\Mix2_2_stands_positive_Mix2.xlsx");
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\Mix2\\Mix2_3_stands_positive_Mix2.xlsx");
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\Mix2\\Mix2_4_stands_positive_Mix2.xlsx");
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\Mix2\\Mix2_5_stands_positive_Mix2.xlsx");
+    filesOfOneMix.put("+",filesOfMix);    
+    filesOfMix = new Vector<String>();    
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix2\\Mix2_neg_1_stands_negative_Mix2.xlsx");
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix2\\Mix2_neg_2_stands_negative_Mix2.xlsx");
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix2\\Mix2_neg_3_stands_negative_Mix2.xlsx");
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix2\\Mix2_neg_4_stands_negative_Mix2.xlsx");
+    filesOfMix.add("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix2\\Mix2_neg_5_stands_negative_Mix2.xlsx");
+    filesOfOneMix.put("-",filesOfMix);
+    ldaFilesIonMode.put(2, filesOfOneMix);
+          
+    int decimalPlacesForMz = 4;
+    double highestMzStdevAllowed = 0.002d;
+    double highestRtStdevAllowed = 0.2;
+    double highestAbundanceCVAllowed = 50;
+    Hashtable<String,LinkedHashMap<String,String>> mods = FoundBiologicalSpecies.getSphingoOrbitrapModifications();
+    Hashtable<String,Range> preElutionRanges = FoundBiologicalSpecies.getSphingoOrbitrapPreElutionRanges();
+    
+    BufferedOutputStream out = null;
+    Hashtable<String,String> appliedMzCorrection = new Hashtable<String,String>();
+    int highestNumberOfFiles = 0;
+    if (ldaFilesIonMode.get(1).get("+").size()>highestNumberOfFiles) highestNumberOfFiles = ldaFilesIonMode.get(1).get("+").size();
+    if (ldaFilesIonMode.get(2).get("+").size()>highestNumberOfFiles) highestNumberOfFiles = ldaFilesIonMode.get(2).get("+").size();
+    if (ldaFilesIonMode.get(1).get("-").size()>highestNumberOfFiles) highestNumberOfFiles = ldaFilesIonMode.get(1).get("-").size();
+    if (ldaFilesIonMode.get(2).get("-").size()>highestNumberOfFiles) highestNumberOfFiles = ldaFilesIonMode.get(2).get("-").size();
+
+    try{
+      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();          
+      for (String quantFile : quantitationFiles){
+        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
+        ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = null;
+        for (String className : oneFile.keySet()){
+          Hashtable<String,Hashtable<String,QuantVO>> oneClass= oneFile.get(className);
+          Hashtable<String,Hashtable<String,QuantVO>> ofClass = new Hashtable<String,Hashtable<String,QuantVO>>();
+          if (theoreticalMasses.containsKey(className)) ofClass = theoreticalMasses.get(className);
+          for (String analyte:oneClass.keySet()){
+            Hashtable<String,QuantVO> oneAnalyte = oneClass.get(analyte);
+            String analyteString = new String(analyte);
+            Hashtable<String,QuantVO> ofAnalyte = new Hashtable<String,QuantVO>();
+            if (ofClass.containsKey(analyteString)) ofAnalyte = ofClass.get(analyteString);
+            for (String mod:oneAnalyte.keySet()) ofAnalyte.put(mod, oneAnalyte.get(mod));
+            ofClass.put(analyteString, ofAnalyte);
+          }
+          theoreticalMasses.put(className,ofClass);
+        }
+      }
+   
+    
+      LinkedHashMap<Integer,LinkedHashMap<String,LinkedHashMap<String,Object>>> positiveList = this.getPositiveListOfSphingoStandards();
+//      for (String className : positiveList.keySet()){
+//        System.out.println(className);
+//        for (String species : positiveList.get(className).keySet()){
+//          System.out.println("     "+species);
+//          for (String structure : positiveList.get(className).get(species).values()){
+//            System.out.println("            "+structure);
+//          }
+//        }
+//      }
+      
+      Hashtable<String,Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>> results = new Hashtable<String,Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>>();
+      Vector<Integer> mixes = new Vector<Integer>();
+      mixes.add(1);
+      mixes.add(2);
+      LinkedHashMap<String,LinkedHashMap<String,Object>> positives;
+      
+      //this hashtable is for checking if all of the species are in the positive list
+      Hashtable<Integer,LinkedHashMap<String,LinkedHashMap<String,Vector<LipidParameterSet>>>> checkPositiveList = new Hashtable<Integer,LinkedHashMap<String,LinkedHashMap<String,Vector<LipidParameterSet>>>>();
+      for(Integer mix : mixes)
+        checkPositiveList.put(mix, new LinkedHashMap<String,LinkedHashMap<String,Vector<LipidParameterSet>>>());
+      
+      for (Integer mix : mixes) {
+        for (String polarity : ldaFilesIonMode.get(mix).keySet()){
+          positives = positiveList.get(mix);
+          for (String ldaFile : ldaFilesIonMode.get(mix).get(polarity)){
+            String fileName = ldaFile.substring(ldaFile.lastIndexOf("\\")+1);
+            QuantificationResult quantResult = LDAResultReader.readResultFile(ldaFile,  new Hashtable<String,Boolean>());
+            if (quantResult.getConstants().getShift()==0d) appliedMzCorrection.put(fileName, "0");
+            else{
+              System.out.println(quantResult.getConstants().getShift());
+              appliedMzCorrection.put(fileName, Calculator.FormatNumberToString(quantResult.getConstants().getShift(),decimalPlacesForMz));
+            }
+            Hashtable<String,Vector<LipidParameterSet>> idents = quantResult.getIdentifications();
+            //this is for checking if all classes are present
+            for (String className : idents.keySet()){
+              Vector<LipidParameterSet> classResult = idents.get(className);
+              //this is for checking if all classes are present
+              boolean found = false;
+              for (LipidParameterSet set : classResult){
+                if (set instanceof LipidomicsMSnSet){
+                  found = true;
+                  break;
+                }
+              }
+              if (found && !positives.containsKey(className)){
+                System.out.println("The positive list does not contain the lipid class "+className+"! But we identified it in "+fileName);
+            }
+          // end of checking if all classes are present
+          
+          //this is for checking if all of the species are in the positive list
+//            LinkedHashMap<String,Vector<LipidParameterSet>> classCheck = new LinkedHashMap<String,Vector<LipidParameterSet>>();
+//            if (checkPositiveList.get(mix).containsKey(className)) classCheck = checkPositiveList.get(mix).get(className);
+//            classCheck.put(fileName, classResult);
+//            checkPositiveList.get(mix).put(className, classCheck);
+            // end of checking if all of the species are in the positive list
+
+          }
+        
+            Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>> resultsOfExp = new Hashtable<String,Hashtable<String,Vector<LipidomicsMSnSet>>>();
+            for (String className : positives.keySet()){
+              if (!idents.containsKey(className)) continue;
+              Vector<LipidParameterSet> classResult = idents.get(className);
+              LinkedHashMap<String,Object> posAnalytes = positives.get(className);
+              Hashtable<String,Vector<LipidomicsMSnSet>> msnFound = new Hashtable<String,Vector<LipidomicsMSnSet>>();
+              for (LipidParameterSet set : classResult){
+                String analyte = set.getNameStringWithoutRt();
+                if (!(set instanceof LipidomicsMSnSet) || !posAnalytes.containsKey(analyte)) continue;
+                double ldaRt =  Double.parseDouble(set.getRt());
+                ReferenceInfoVO infoVO = null;
+                if (posAnalytes.get(analyte) instanceof ReferenceInfoVO)
+                  infoVO = (ReferenceInfoVO) posAnalytes.get(analyte);
+                else if (posAnalytes.get(analyte) instanceof LinkedHashMap)
+                  infoVO = ((LinkedHashMap<String,ReferenceInfoVO>)posAnalytes.get(analyte)).values().iterator().next();
+                boolean rtOK = false;
+                for (double rt : infoVO.getCorrectRts()) {
+                  if ((rt-MSDIAL_RT_TOL)<ldaRt && ldaRt<(rt+MSDIAL_RT_TOL))
+                    rtOK = true;
+                }
+                
+                if (!rtOK && !className.equalsIgnoreCase("Cer1P"))
+                  continue;
+                Vector<LipidomicsMSnSet> ofOneAnalyte = new Vector<LipidomicsMSnSet>();
+                if (msnFound.containsKey(analyte)) ofOneAnalyte = msnFound.get(analyte);
+                  ofOneAnalyte.add((LipidomicsMSnSet)set);
+                  msnFound.put(analyte, ofOneAnalyte);
+              }
+              resultsOfExp.put(className, msnFound);
+            }
+            results.put(fileName, resultsOfExp);
+          }
+        }
+      }
+      
+
+      LinkedHashMap<String,Vector<String>> ldaFilesIonModeForWriting = new LinkedHashMap<String,Vector<String>>();
+      String key;
+      for (Integer mix : ldaFilesIonMode.keySet()) {
+        for (String polarity : ldaFilesIonMode.get(mix).keySet()) {
+          key = polarity + " Mix" + String.valueOf(mix);
+          ldaFilesIonModeForWriting.put(key, ldaFilesIonMode.get(mix).get(polarity));
+        }
+      }
+      Workbook resultWorkbook = createDetailsExcelFile(sheetName,highestNumberOfFiles,decimalPlacesForMz,highestMzStdevAllowed,highestRtStdevAllowed,
+          highestAbundanceCVAllowed,ldaFilesIonModeForWriting,ldaFilesIonMode,appliedMzCorrection,mods,preElutionRanges, null ,positiveList,theoreticalMasses,results,true,false);
+              //LinkedHashMap<Integer,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>>
+      out = new BufferedOutputStream(new FileOutputStream(resultFile));
+      resultWorkbook.write(out);
+      resultWorkbook.close();
+      
+    // this is for checking the positive list
+//    for (Integer mix : mixes) {
+//    for (String className : checkPositiveList.get(mix).keySet()){
+//      LinkedHashMap<String,Vector<LipidParameterSet>> result = checkPositiveList.get(mix).get(className);
+//      LinkedHashMap<String,Object> posOfClass = positiveList.get(mix).get(className);
+//      for (String fileName : result.keySet()){
+//        Vector<LipidParameterSet> classResults = result.get(fileName);
+//        for (LipidParameterSet set : classResults){
+//          if (!(set instanceof LipidomicsMSnSet)) continue;
+//          String analyte = set.getNameStringWithoutRt();
+//          LipidomicsMSnSet msn = (LipidomicsMSnSet)set;
+//          double ldaRt =  Double.parseDouble(set.getRt());
+//          ReferenceInfoVO infoVO = null;         
+//          if (posOfClass.get(analyte) instanceof ReferenceInfoVO)
+//            infoVO = (ReferenceInfoVO) posOfClass.get(analyte);
+//          else if (posOfClass.get(analyte) instanceof LinkedHashMap)
+//            infoVO = ((LinkedHashMap<String,ReferenceInfoVO>)posOfClass.get(analyte)).values().iterator().next();
+//          boolean rtOK = false;
+//          if (infoVO!=null) {
+//            for (double rt : infoVO.getCorrectRts()) {
+//              if (((rt-MSDIAL_RT_TOL)<ldaRt && ldaRt<(rt+MSDIAL_RT_TOL))||className.equalsIgnoreCase("Cer1P"))
+//                rtOK = true;
+//            }
+//          }
+//          for (Object msnNames : msn.getMSnIdentificationNames()){    
+//            String nameString = "";
+//            String faId = "";
+//            if (msnNames instanceof Vector){
+//              for (String name : (Vector<String>)msnNames){
+//                nameString += name+"|";
+//              }
+//              faId = nameString.substring(0,nameString.indexOf("|"));
+//              nameString = nameString.substring(0,nameString.length()-1);
+//            }else{
+//              nameString = (String)msnNames;
+//              faId = nameString;
+//            }
+//            if (msn.getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED && !faId.equalsIgnoreCase(msn.getNameStringWithoutRt())){
+//              
+//              if (className.equalsIgnoreCase("TG") && analyte.startsWith("d")) analyte = analyte.substring(1);
+//              if (!posOfClass.containsKey(analyte)){
+//                System.out.println("The positive list does not contain "+className+" "+analyte+"_"+msn.getModificationName()+" "+msn.getRt()+"! But we identified it in "+fileName);
+//                continue;
+//              }
+//              boolean found = false;
+//              if (posOfClass.get(analyte) instanceof LinkedHashMap) {
+//                LinkedHashMap<String,ReferenceInfoVO> posStructures = (LinkedHashMap<String,ReferenceInfoVO>)posOfClass.get(analyte);
+//                for (String struct : posStructures.keySet()){
+//                  if (StaticUtils.isAPermutedVersion(faId.replaceAll("/", "_"), struct.replaceAll("/", "_"),"_")){
+//                    found = true;
+//                    break;
+//                  }
+//                }
+//              }
+//              if (!found || !rtOK) System.out.println("The positive list does not contain the structure "+className+analyte+" "+faId+"_"+msn.getModificationName()+" "+msn.getRt()+"! But we identified it in "+fileName);
+//            }else{
+//              if (posOfClass==null || (!posOfClass.containsKey(analyte)) || !rtOK) System.out.println("The positive list does not contain "+className+" "+msn.getNameStringWithoutRt()+"_"+msn.getModificationName()+" "+msn.getRt()+"! But we identified it in "+fileName);
+//            }
+//          }
+//        }
+//      }
+//    }
+//    }  
+      
+    }catch (Exception ex){
+      ex.printStackTrace();
+    }finally{
+      if (out!=null){
+        try {
+          out.close();
+        }
+        catch (IOException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+      }
+    }
+  }
+  
+  private LinkedHashMap<Integer,LinkedHashMap<String,LinkedHashMap<String,Object>>> getPositiveListOfSphingoStandards() {
+    LinkedHashMap<Integer,LinkedHashMap<String,LinkedHashMap<String,Object>>> fullPositiveList = new LinkedHashMap<Integer,LinkedHashMap<String,LinkedHashMap<String,Object>>>();
+    LinkedHashMap<String,LinkedHashMap<String,Object>> mix1 = new LinkedHashMap<String,LinkedHashMap<String,Object>>();
+    LinkedHashMap<String,LinkedHashMap<String,Object>> mix2 = new LinkedHashMap<String,LinkedHashMap<String,Object>>();
+    addSphingoStandardsToPositiveList("SphBase",mix1,Mix1Standards.getSphBaseStandards());
+    addSphingoStandardsToPositiveList("SphBase",mix2,Mix2Standards.getSphBaseStandards());    
+    addSphingoStandardsToPositiveList("Cer",mix1,Mix1Standards.getCerStandards());
+    addSphingoStandardsToPositiveList("Cer",mix2,Mix2Standards.getCerStandards());    
+    addSphingoStandardsToPositiveList("Cer1P",mix1,Mix1Standards.getCer1PStandards());
+    addSphingoStandardsToPositiveList("Cer1P",mix2,Mix2Standards.getCer1PStandards());    
+    addSphingoStandardsToPositiveList("SM",mix1,Mix1Standards.getSMStandards());
+    addSphingoStandardsToPositiveList("SM",mix2,Mix2Standards.getSMStandards());    
+    addSphingoStandardsToPositiveList("LSM",mix1,Mix1Standards.getLSMStandards());
+    addSphingoStandardsToPositiveList("LSM",mix2,Mix2Standards.getLSMStandards());    
+    addSphingoStandardsToPositiveList("HexCer",mix1,Mix1Standards.getHexCerStandards());
+    addSphingoStandardsToPositiveList("HexCer",mix2,Mix2Standards.getHexCerStandards());    
+    addSphingoStandardsToPositiveList("S1P",mix1,Mix1Standards.getS1PStandards());
+    addSphingoStandardsToPositiveList("S1P",mix2,Mix2Standards.getS1PStandards());    
+    fullPositiveList.put(1,mix1);
+    fullPositiveList.put(2,mix2);
+    return fullPositiveList;
+  }
+  
+  
+  private void addSphingoStandardsToPositiveList(String lipidClass, LinkedHashMap<String,LinkedHashMap<String,Object>> results,
+      LinkedHashMap<String,ReferenceInfoVO> standards){
+    LinkedHashMap<String,Object> positives = new LinkedHashMap<String,Object>();
+    for (String species : standards.keySet()){
+      String speciesString = new String(species);
+      ReferenceInfoVO info = standards.get(species);
+      LinkedHashMap<String,ReferenceInfoVO> mols = new LinkedHashMap<String,ReferenceInfoVO>();
+      if (!lipidClass.equalsIgnoreCase("SphBase") && !lipidClass.equalsIgnoreCase("LSM") && !lipidClass.equalsIgnoreCase("S1P")){
+        mols.put(info.getMS2Name(), info);
+        positives.put(speciesString, mols);
+      }else {
+        positives.put(speciesString, info);
+      }
+      
+    }
+    results.put(lipidClass, positives);
+  }
+  
+  
+  private Vector createCombinedPositiveListFromMixes(LinkedHashMap<Integer,LinkedHashMap<String,LinkedHashMap<String,Object>>> positiveListMixes) throws LipidCombinameEncodingException {
+    LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,String>>> positiveList = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,String>>>();
+    Hashtable<String,Hashtable<String,Integer>> lookup = new Hashtable<String,Hashtable<String,Integer>>();
+    Hashtable<String,Hashtable<String,Vector<Range>>> doublePeakRanges = new Hashtable<String,Hashtable<String,Vector<Range>>>();
+    for (String lClass : positiveListMixes.get(1).keySet()) {
+      Vector<String> lipidNames = new Vector<String>();
+      Hashtable<String,Integer> mixLookup = new Hashtable<String,Integer>();
+      for (Integer mix : positiveListMixes.keySet()) {
+        for (String analyte : positiveListMixes.get(mix).get(lClass).keySet()) {
+          lipidNames.add(analyte);
+          mixLookup.put(analyte, mix);
+        }
+      }
+      lookup.put(lClass, mixLookup);
+      lipidNames = StaticUtils.sortChainNames(lipidNames,true);
+      LinkedHashMap<String,LinkedHashMap<String,String>> positivesClass = new LinkedHashMap<String,LinkedHashMap<String,String>>();
+      for (String name : lipidNames) {
+        LinkedHashMap<String,String> molNames = new LinkedHashMap<String,String>();
+        Object obj = positiveListMixes.get(mixLookup.get(name)).get(lClass).get(name);
+        ReferenceInfoVO infoVO = null;
+        if (obj instanceof LinkedHashMap) {
+          for (String molName: ((LinkedHashMap<String,ReferenceInfoVO>)obj).keySet()){
+            molNames.put(molName, molName);
+            //TODO: this can be improved to support several molecular species of standards
+            infoVO = ((LinkedHashMap<String,ReferenceInfoVO>)obj).get(molName);
+          }
+        }else if (obj instanceof ReferenceInfoVO)
+          infoVO = (ReferenceInfoVO)obj;
+        if (infoVO!=null && infoVO.getCorrectRts().length>1) {
+          Hashtable<String,Vector<Range>> rangesAnalyte = new Hashtable<String,Vector<Range>>();
+          if (doublePeakRanges.containsKey(lClass)) rangesAnalyte = doublePeakRanges.get(lClass);
+          double[] rts = infoVO.getCorrectRts();
+          Vector<Range> ranges = new Vector<Range>();
+          for (int i=0; i!=rts.length; i++) {
+            float start = 0f;
+            float end = Float.MAX_VALUE;
+            if (i>0)
+              start = ((float)rts[i-1]+(float)rts[i])/2f;
+            if ((i+1)<rts.length)
+              end = ((float)rts[i+1]+(float)rts[i])/2f;
+            ranges.add(new Range(start*60f,end*60f));
+          }
+          rangesAnalyte.put(name, ranges);
+          doublePeakRanges.put(lClass, rangesAnalyte);         
+        }
+        positivesClass.put(name, molNames);
+      }
+      positiveList.put(lClass, positivesClass);
+    }
+    Vector returnValues = new Vector();
+    returnValues.add(positiveList);
+    returnValues.add(lookup);
+    returnValues.add(doublePeakRanges);
+    return returnValues;
+  }
+  
 }

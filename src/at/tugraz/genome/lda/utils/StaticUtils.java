@@ -2054,4 +2054,55 @@ public class StaticUtils
     }
     return affectedCombinations;
   }
+  
+  
+  /**
+   * takes a list of unsorted chain (or species) names and sorts them in ascending carbon number, followed by ascending double bond, and followed by ascending OH number
+   * @param unsorted unsorted chain (or species) names
+   * @param ohInCombi are there hydroxylation encodings in the chain names
+   * @return sorted list of chain (or species) names
+   * @throws LipidCombinameEncodingException thrown whenever there is something wrong with the hydroxylation encodings
+   */
+  public static Vector<String> sortChainNames(Vector<String> unsorted, boolean ohInCombi) throws LipidCombinameEncodingException{
+    Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> hash = new Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>();
+    FattyAcidVO fa;
+    //for building the hash
+    for (String name : unsorted) {
+      fa = decodeHumanReadableChain(name,Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),false);
+      Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> sameCarbons = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>();
+      if (hash.containsKey(fa.getcAtoms())) sameCarbons = hash.get(fa.getcAtoms());
+      Hashtable<Integer,Hashtable<String,FattyAcidVO>> sameDbs = new Hashtable<Integer,Hashtable<String,FattyAcidVO>>();
+      if (sameCarbons.containsKey(fa.getDoubleBonds())) sameDbs = sameCarbons.get(fa.getDoubleBonds());
+      Hashtable<String,FattyAcidVO> sameOh = new Hashtable<String,FattyAcidVO>();
+      sameOh.put(fa.getPrefix(), fa);
+      sameDbs.put(fa.getOhNumber(), sameOh);
+      sameCarbons.put(fa.getDoubleBonds(), sameDbs);
+      hash.put(fa.getcAtoms(), sameCarbons);
+    }
+    //sorting
+    Vector<String> sorted = new Vector<String>();
+    List<Integer> carbons = new ArrayList<Integer>(hash.keySet());
+    Collections.sort(carbons);
+    for (Integer carbon : carbons) {
+      List<Integer> dbs = new ArrayList<Integer>(hash.get(carbon).keySet());
+      Collections.sort(dbs);
+      for (Integer db : dbs) {
+        List<Integer> ohs = new ArrayList<Integer>(hash.get(carbon).get(db).keySet());
+        Collections.sort(ohs);
+        for (Integer oh : ohs) {
+          List<String> prefixes = new ArrayList<String>(hash.get(carbon).get(db).get(oh).keySet());
+          if (prefixes.contains("")) {
+            sorted.add(StaticUtils.getHumanReadableChainName(hash.get(carbon).get(db).get(oh).get(""),Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),ohInCombi));
+            prefixes.remove("");
+          }
+          Collections.sort(prefixes);
+          for (String prefix : prefixes) {
+            sorted.add(StaticUtils.getHumanReadableChainName(hash.get(carbon).get(db).get(oh).get(prefix),Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),ohInCombi));
+          }
+        }
+      }
+    }
+    return sorted;
+  }
+  
 }
