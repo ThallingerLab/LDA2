@@ -11,7 +11,8 @@ SpectrumCoverage=5%
 FaHydroxylationRange=0-1
 LcbHydroxylationRange=1-3
 RetentionTimePostprocessing=false
-
+ValidOnlyWithOtherAdduct=HCOO
+OtherAdductValidityTolerance=0.2
 
 [HEAD]
 !FRAGMENTS
