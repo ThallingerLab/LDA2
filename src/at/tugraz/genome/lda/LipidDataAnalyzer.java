@@ -1040,14 +1040,38 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
     centerPanel.add(new JLabel(" "),new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+
     
-    helpText = new JLabel("To access the study data description document click one of the links:");
+    helpText = new JLabel("To access the sphingolipid data description document click one of the links:");
     helpText.setToolTipText(TooltipTexts.HELP_EXAMPLES);
     centerPanel.add(helpText,new GridBagConstraints(0, 4, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
-    linkAddress = "http://genome.tugraz.at/lda2/data/DataDescription.pdf";
+    linkAddress = "http://genome.tugraz.at/lda2/data/review/DataDescription.pdf";
     linkText = new JHyperlink(linkAddress,linkAddress);
     centerPanel.add(linkText,new GridBagConstraints(0, 5, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    rootPath = baseRootPath+"/examples/SphingolipidDataDescription.pdf";
+//      rootPath = (new File((new URL(rootPath)).toURI())).getCanonicalPath();
+    rootPath = rootPath.replaceAll("\\\\", "/");
+    if (rootPath.indexOf("file:")!=-1)rootPath = rootPath.substring(rootPath.indexOf("file:")+"file:".length());
+    while (rootPath.startsWith("/")) rootPath = rootPath.substring(1);    
+    rootPath = "file:///"+rootPath;
+    linkText = new JHyperlink("Local instance in /examples folder",rootPath);
+    centerPanel.add(linkText,new GridBagConstraints(0, 6, 1, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    centerPanel.add(new JLabel(" "),new GridBagConstraints(0, 7, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+
+    
+    helpText = new JLabel("To access the phospholipid data description document click one of the links:");
+    helpText.setToolTipText(TooltipTexts.HELP_EXAMPLES);
+    centerPanel.add(helpText,new GridBagConstraints(0, 8, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    linkAddress = "http://genome.tugraz.at/lda2/data/DataDescription.pdf";
+    linkText = new JHyperlink(linkAddress,linkAddress);
+    centerPanel.add(linkText,new GridBagConstraints(0, 9, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
     
     rootPath = baseRootPath+"/examples/DataDescription.pdf";
@@ -1058,23 +1082,23 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     while (rootPath.startsWith("/")) rootPath = rootPath.substring(1);    
     rootPath = "file:///"+rootPath;
     linkText = new JHyperlink("Local instance in /examples folder",rootPath);
-    centerPanel.add(linkText,new GridBagConstraints(0, 6, 1, 1, 0.0, 0.0
+    centerPanel.add(linkText,new GridBagConstraints(0, 10, 1, 1, 0.0, 0.0
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
     
-    centerPanel.add(new JLabel(" "),new GridBagConstraints(0, 7, 1, 1, 0.0, 0.0
+    centerPanel.add(new JLabel(" "),new GridBagConstraints(0, 11, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
     helpText = new JLabel("The study data is available from our homepage:");
     helpText.setToolTipText(TooltipTexts.HELP_EXAMPLE_DOWNLOAD);
-    centerPanel.add(helpText,new GridBagConstraints(0, 8, 1, 1, 0.0, 0.0
+    centerPanel.add(helpText,new GridBagConstraints(0, 12, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
     linkText = new JHyperlink("Link to Genome download","http://genome.tugraz.at/lda2/lda_data.shtml");
-    centerPanel.add(linkText,new GridBagConstraints(0, 9, 1, 1, 0.0, 0.0
+    centerPanel.add(linkText,new GridBagConstraints(0, 13, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
     helpText = new JLabel("Please consult the examples document chapter to avoid unnecessary downloads!");
-    centerPanel.add(helpText,new GridBagConstraints(0, 10, 1, 1, 0.0, 0.0
+    centerPanel.add(helpText,new GridBagConstraints(0, 14, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
 
-    centerPanel.add(new JLabel(" "),new GridBagConstraints(0, 11, 1, 1, 0.0, 0.0
+    centerPanel.add(new JLabel(" "),new GridBagConstraints(0, 15, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));    
   }
   
