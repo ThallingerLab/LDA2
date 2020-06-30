@@ -26,6 +26,7 @@ Name=NL_PChead_50_WRONG	Formula=$PRECURSOR-CH3Cl	Charge=1	MSLevel=2	mandatory=ot
 !INTENSITIES
 Equation=NL_PChead_60>Precursor			mandatory=true
 Equation=NL_PChead_60*2>NL_PChead_50_WRONG	mandatory=true
+Equation=PChead_168+NL_PChead_60>0.7*$BASEPEAK	mandatory=true
 
 
 [CHAINS]

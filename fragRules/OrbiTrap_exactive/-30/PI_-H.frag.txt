@@ -25,7 +25,7 @@ Name=PIhead_315		Formula=C9H16O10P		Charge=1	MSLevel=2	mandatory=false
 
 [CHAINS]
 !FRAGMENTS
-Name=Carboxy		Formula=$CHAIN-H		Charge=1	MSLevel=2	mandatory=true
+Name=Carboxy		Formula=$CHAIN-H		Charge=1	MSLevel=2	mandatory=class
 Name=NL_Carboxy		Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=false
 Name=NL_Ketene		Formula=$PRECURSOR-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false
 Name=NL_Carboxy_Ino	Formula=NL_Carboxy-C6H10O5	Charge=1	MSLevel=2	mandatory=false

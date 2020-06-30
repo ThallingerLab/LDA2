@@ -7,7 +7,7 @@ CAtomsFromName=\D*(\d+):\d+
 DoubleBondsFromName=\D*\d+:(\d+)
 BasePeakCutoff=0.1%
 ChainCutoff=30%
-SpectrumCoverage=1%
+SpectrumCoverage=5%
 FaHydroxylationRange=0-1
 LcbHydroxylationRange=1-3
 RetentionTimePostprocessing=true
@@ -28,7 +28,7 @@ Name=NL_2H2O_WRONG		Formula=$PRECURSOR-H4O2			Charge=1	MSLevel=2	mandatory=other
 
 
 !INTENSITIES
-Equation=NL_formic_acid_46>0.5*$BASEPEAK			mandatory=true		
+Equation=NL_formic_acid_46>0.2*$BASEPEAK			mandatory=true		
 Equation=NL_formic_acid_46*2.5>NL_sphingosine_256_WRONG		mandatory=true		
 Equation=NL_formic_acid_46*5>Precursor				mandatory=true		
 Equation=NL_formic_acid_46*0.6>NL_H2O_WRONG			mandatory=true		oh=2,3

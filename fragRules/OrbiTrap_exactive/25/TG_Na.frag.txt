@@ -6,8 +6,9 @@ DoubleBondsFromName=\D*\d+:(\d+)
 BasePeakCutoff=0.1%
 ChainCutoff=50%
 SpectrumCoverage=10%
-RetentionTimePostprocessing=false
-
+RetentionTimePostprocessing=true
+ValidOnlyWithOtherAdduct=NH4
+OtherAdductValidityTolerance=0.1
 
 [HEAD]
 !FRAGMENTS

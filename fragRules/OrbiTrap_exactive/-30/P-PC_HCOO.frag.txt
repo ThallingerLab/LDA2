@@ -18,7 +18,7 @@ Name=NL_PChead_60		Formula=$PRECURSOR-C2O2H4	Charge=1	MSLevel=2	mandatory=true
 Name=Phosphate_79		Formula=PO3			Charge=1	MSLevel=2	mandatory=false
 Name=PChead_168			Formula=C4H11NO4P		Charge=1	MSLevel=2	mandatory=false
 Name=PChead_224			Formula=C7H15O5NP		Charge=1	MSLevel=2	mandatory=false
-Name=plasmalogen_fragment_403	Formula=C21H40O5P		Charge=1	MSLevel=2	mandatory=false
+Name=plasmalogen_fragment_403	Formula=C21H40O5P		Charge=1	MSLevel=2	mandatory=true
 
 !INTENSITIES
 Equation=NL_PChead_60>plasmalogen_fragment_403		mandatory=true
@@ -26,7 +26,7 @@ Equation=NL_PChead_60*1.5>PChead_168			mandatory=true
 
 [CHAINS]
 !FRAGMENTS
-Name=Carboxy		Formula=$CHAIN-H			Charge=1	MSLevel=2	mandatory=true
+Name=Carboxy		Formula=$CHAIN-H			Charge=1	MSLevel=2	mandatory=class
 Name=Alkenyl		Formula=$ALKENYLCHAIN-H			Charge=1	MSLevel=2	mandatory=false
 Name=NL_Carboxy_head	Formula=NL_PChead_60-$CHAIN		Charge=1	MSLevel=2	mandatory=false
 Name=NL_Ketene_head	Formula=NL_PChead_60-$CHAIN+H2O		Charge=1	MSLevel=2	mandatory=false

@@ -8,7 +8,8 @@ RetentionTimePostprocessing=false
 SpectrumCoverage=10%
 ChainCutoff=20%
 AddChainPositions=1
-
+ValidOnlyWithOtherAdduct=NH4
+OtherAdductValidityTolerance=0.1
 
 [HEAD]
 !FRAGMENTS

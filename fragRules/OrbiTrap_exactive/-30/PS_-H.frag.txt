@@ -5,7 +5,7 @@ CAtomsFromName=\D*(\d+):\d+
 DoubleBondsFromName=\D*\d+:(\d+)
 BasePeakCutoff=0.5%
 RetentionTimePostprocessing=true
-SpectrumCoverage=10%
+SpectrumCoverage=20%
 ChainCutoff=25%
 
 
@@ -24,14 +24,17 @@ Equation=phosphate_79+PL153>NL_PChead_60_WRONG*1.5	mandatory=true
 
 [CHAINS]
 !FRAGMENTS
-Name=Carboxy		Formula=$CHAIN-H			Charge=1	MSLevel=2	mandatory=false
+Name=Carboxy		Formula=$CHAIN-H			Charge=1	MSLevel=2	mandatory=class
+Name=Carboxy_iso	Formula=$CHAIN-H2			Charge=1	MSLevel=2	mandatory=other
 Name=NL_Carboxy_serine	Formula=$PRECURSOR-$CHAIN-C3H5NO2	Charge=1	MSLevel=2	mandatory=false
 Name=NL_Ketene_serine	Formula=$PRECURSOR-$CHAIN+H2O-C3H5NO2	Charge=1	MSLevel=2	mandatory=false
 
 !INTENSITIES
 Equation=Carboxy+NL_Carboxy_serine+PL153*0>PL153*0	mandatory=true
 Equation=NL_Carboxy_serine*1.5>NL_Ketene_serine		mandatory=true
-
+Equation=Carboxy*2.5>NL_Ketene_serine			mandatory=true
+Equation=Carboxy*2.5>NL_Carboxy_serine			mandatory=true
+Equation=Carboxy*0.5>Carboxy_iso			mandatory=true
 
 [POSITION]
 !INTENSITIES
