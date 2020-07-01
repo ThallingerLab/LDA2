@@ -507,7 +507,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
       this.prepareMSnSpectraCache(mz-mzTolerance, mz+mzTolerance,LipidomicsConstants.getMs2MinIntsForNoiseRemoval());
 
       //TODO: here, the analyteFormula without deducts is not implemented - has to be changed in future!
-      FragmentCalculator fragCalc = new FragmentCalculator(null,className,modName,analyteName,formula,formula,mz,ohNumber);
+      FragmentCalculator fragCalc = new FragmentCalculator(null,className,modName,analyteName,formula,formula,mz,charge,ohNumber);
       Vector<FragmentVO> mandHeadFragments = fragCalc.getHeadFragments(ohNumber).get(true);
       Hashtable<String,Vector<CgProbe>> headPeaks = new Hashtable<String,Vector<CgProbe>>();
       for (FragmentVO frag : mandHeadFragments){

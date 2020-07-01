@@ -232,13 +232,13 @@ public class MSnAnalyzer
         //This is checking if there exist any rules - used only for definition of a base peak cutoff!!!! - I am not sure if I should remove this
         try{
           fragCalc_ = new FragmentCalculator(rulesDir_,className_,modName_,set_.getNameStringWithoutRt(),set_.getChemicalFormula(),
-              set_.getChemicalFormulaWODeducts(),set_.Mz[0],set_.getOhNumber());          
+              set_.getChemicalFormulaWODeducts(),set_.Mz[0],set_.getCharge(),set_.getOhNumber());          
         } catch (NoRuleException nrx){
         }
         this.checkMSnByAlexFragments((TargetlistEntry)quantVO,msLevels_);
       }else{
         fragCalc_ = new FragmentCalculator(rulesDir_,className_,modName_,set_.getNameStringWithoutRt(),set_.getChemicalFormula(),
-            set_.getChemicalFormulaWODeducts(),set_.Mz[0],set_.getOhNumber());
+            set_.getChemicalFormulaWODeducts(),set_.Mz[0],set_.getCharge(),set_.getOhNumber());
         this.checkMSnEvidence(msLevels_);
       }
       transferResultsToLipidParameterSet();
@@ -328,7 +328,7 @@ public class MSnAnalyzer
         return;
       }
       fragCalc_ = new FragmentCalculator(rulesDir_,className_,modName_,set_.getNameStringWithoutRt(),set_.getChemicalFormula(),set_.getChemicalFormulaWODeducts(),
-          set_.Mz[0],set_.getOhNumber());
+          set_.Mz[0],set_.getCharge(),set_.getOhNumber());
       Vector<Range> ranges = analyzer_.findSingleSpectraRanges(fragCalc_.getSpectrumLevelRange());
       if (ranges.size()>0) this.msnSpectraPresent_ = false;
       for (Range range : ranges){

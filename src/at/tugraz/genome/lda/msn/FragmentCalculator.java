@@ -83,7 +83,9 @@ public class FragmentCalculator
   /** the chemical formula of the analyte (precursor) - without deductions by ionization modifications */
   private String analyteFormulaWODeducts_;
   /** the m/z value of the precursor */
-  private double precursorMass_;
+  private double precursorMz_;
+  /** the charge of the precursor */
+  private int precursorCharge_;
   /** (total) number of hydroxylation sites present on the molecule*/
   private int ohNumber_;
   /** information about the chemical elements*/
@@ -125,7 +127,8 @@ public class FragmentCalculator
    * @param analyteName the name of the analyte - containing the number of C atoms and double bonds
    * @param analyteFormula  chemical formula of the analyte (precursor)
    * @param formulaWoDeducts chemical formula of the analyte (precursor), but modifications causing element reductions are not counted
-   * @param precursorMass m/z value of the precursor
+   * @param precursorMz m/z value of the precursor
+   * @param precursorCharge charge of the precursor
    * @param ohNumber (total) number of hydroxylation sites present on the molecule
    * @throws RulesException specifies in detail which rule has been infringed
    * @throws NoRuleException thrown if the rules are not there
@@ -135,13 +138,14 @@ public class FragmentCalculator
    * @throws ChemicalFormulaException thrown if there is something wrong with the formula
    */
   public FragmentCalculator(String rulesDir, String className, String modName, String analyteName, String analyteFormula, String formulaWoDeducts,
-      double precursorMass, int ohNumber) throws RulesException, NoRuleException, IOException, SpectrummillParserException, HydroxylationEncodingException, ChemicalFormulaException {
+      double precursorMz, int precursorCharge, int ohNumber) throws RulesException, NoRuleException, IOException, SpectrummillParserException, HydroxylationEncodingException, ChemicalFormulaException {
     this.rulesDir_ = rulesDir;
     this.ruleName_ = StaticUtils.getRuleName(className, modName);
     this.analyteName_ = analyteName;
     this.analyteFormula_ = analyteFormula;
     this.analyteFormulaWODeducts_ = formulaWoDeducts;
-    this.precursorMass_ = precursorMass;
+    this.precursorMz_ = precursorMz;
+    this.precursorCharge_ = precursorCharge;
     this.ohNumber_ = ohNumber;
     if (ohNumber_<0)
       this.ohNumber_ = 0;
@@ -438,7 +442,7 @@ public class FragmentCalculator
     for (FragmentRuleVO ruleVO : headRules.values()){
       if (!ruleVO.hydroxylationValid(oh))
         continue;
-      Vector<Object> formulaAndMass = ruleVO.getFormulaAndMass(analyteFormula_, precursorMass_, null, 0,ruleVO.getCharge());
+      Vector<Object> formulaAndMass = ruleVO.getFormulaAndMz(analyteFormula_, precursorMz_*precursorCharge_, null, 0,ruleVO.getCharge());
       FragmentVO fragVO = new FragmentVO(ruleVO.getName(),(Double)formulaAndMass.get(1),(String)formulaAndMass.get(0),ruleVO.getCharge(),ruleVO.getMsLevel(),
           ruleVO.isMandatory(oh));
       if (ruleVO.isMandatory(oh)==FragmentRuleVO.MANDATORY_TRUE || ruleVO.isMandatory(oh)==FragmentRuleVO.MANDATORY_QUANT) mandatoryFragments.add(fragVO);
@@ -653,7 +657,7 @@ public class FragmentCalculator
     for (FragmentRuleVO ruleVO : chainRules.values()){
       if (ruleVO.getChainType()!=chain.getChainType() || !ruleVO.hydroxylationValid(oh))
         continue;
-      Vector<Object> formulaAndMass = ruleVO.getFormulaAndMass(analyteFormula_, precursorMass_, chain, ruleVO.getCharge());
+      Vector<Object> formulaAndMass = ruleVO.getFormulaAndMass(analyteFormula_, precursorMz_*precursorCharge_, chain, ruleVO.getCharge());
       FragmentVO fragVO = new FragmentVO(ruleVO.getName(),(Double)formulaAndMass.get(1),(String)formulaAndMass.get(0),ruleVO.getCharge(),ruleVO.getMsLevel(),
           ruleVO.isMandatory(oh));
       if (ruleVO.isMandatory(oh)==FragmentRuleVO.MANDATORY_TRUE || ruleVO.isMandatory(oh)==FragmentRuleVO.MANDATORY_QUANT || ruleVO.isMandatory(oh)==FragmentRuleVO.MANDATORY_CLASS) mandatoryFragments.add(fragVO);

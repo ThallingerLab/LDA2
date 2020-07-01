@@ -541,7 +541,7 @@ public class FragmentRuleVO
   /**
    * calculates the chemical formula of a fragment (by the rules and known precursor and, if necessary, known chain)
    * @param precursorFormula chemical formula of the precursor
-   * @param precursorMass m/z of the precursor
+   * @param precursorMass mass value of the precursor (not m/z)
    * @param vo
    * @param charge charge state in which the fragment shall be observed
    * @return object vector containing: get(0): chemical formula; get(1) m/z value as double
@@ -549,7 +549,7 @@ public class FragmentRuleVO
    */
   public Vector<Object> getFormulaAndMass(String precursorFormula, double precursorMass, FattyAcidVO vo, int charge) throws RulesException{
     FattyAcidVO fa = vo;
-    return getFormulaAndMass(precursorFormula, precursorMass, fa.getFormula(), fa.getMass(), charge); 
+    return getFormulaAndMz(precursorFormula, precursorMass, fa.getFormula(), fa.getMass(), charge); 
   }
 
   
@@ -557,14 +557,14 @@ public class FragmentRuleVO
   /**
    * calculates the chemical formula of a fragment (by the rules and known precursor and, if necessary, known chain)
    * @param precursorFormula chemical formula of the precursor
-   * @param precursorMass m/z of the precursor
+   * @param precursorMz mass value of the precursor (not m/z)
    * @param chainFormula chemical formula of the analyte chain object
    * @param chainMass mass (not m/z) of the analyte chain object
    * @param charge charge state in which the fragment shall be observed
    * @return object vector containing: get(0): chemical formula; get(1) m/z value as double
    * @throws RulesException 
    */
-  public Vector<Object> getFormulaAndMass(String precursorFormula, double precursorMass, String chainFormula, double chainMass, int charge) throws RulesException{   
+  public Vector<Object> getFormulaAndMz(String precursorFormula, double precursorMass, String chainFormula, double chainMass, int charge) throws RulesException{   
     Vector<Object> formulaAndMass = new Vector<Object>();
     String formula = "";
     Double mass = 0d;
@@ -586,9 +586,9 @@ public class FragmentRuleVO
       }
       double realChainMass = chainMass;
       if (chainAction_==ADD_FRAGMENT){
-        mass += realChainMass/((double)charge);
+        mass += realChainMass;
       }else if (chainAction_==MINUS_FRAGMENT){
-        mass -= realChainMass/((double)charge);
+        mass -= realChainMass;
       }
       for (String element:chainAmounts.keySet()){
         int amount = 0;
@@ -604,7 +604,7 @@ public class FragmentRuleVO
       int elementAmount = elementAmounts_.get(element);
       amount += elementAmount;
       formulaAmounts.put(element, amount);
-      mass += (elementAmount*elementDetails_.get(element).getMonoMass())/((double)charge);
+      mass += elementAmount*elementDetails_.get(element).getMonoMass();
     }
     for (String element : formulaAmounts.keySet()){
       if (formulaAmounts.get(element)>0) formula += "+";
@@ -614,7 +614,7 @@ public class FragmentRuleVO
       }
     }
     formulaAndMass.add(formula);
-    formulaAndMass.add(mass);
+    formulaAndMass.add(mass/((double)charge));
     return formulaAndMass;
   }
 
