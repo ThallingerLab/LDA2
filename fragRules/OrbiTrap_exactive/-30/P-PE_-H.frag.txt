@@ -38,7 +38,7 @@ Equation=Alkenyl<(PEhead_140+PEhead_196)*2	mandatory=true
 Equation=Carboxy>0.3*$BASEPEAK		mandatory=true
 Equation=Carboxy>0.5*Precursor		mandatory=true
 Equation=NL_Carboxy|NL_Ketene		mandatory=true
-
+Equation=Carboxy+Alkenyl*0>Alkenyl*0		mandatory=true
 
 [POSITION]
 !INTENSITIES

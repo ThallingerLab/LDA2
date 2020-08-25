@@ -232,7 +232,7 @@ public class Settings
       }
 
       //for reading the hydroxylation encoding config file of the LCB
-      faHydroxyEncodingPath_ = properties.getProperty("FaHydroxyEncodingPath", "FaHydroxylationEncoding.txt");
+      faHydroxyEncodingPath_ = properties.getProperty("FaHydroxyEncodingPath", "faHydroxylationEncoding.txt");
       if (faHydroxyEncodingPath_==null || faHydroxyEncodingPath_.length()==0)
         throw new Exception("In order to work, LDA must have a lookup file for the encoding of the FA hydroxylation sites. Please specify it in the \"FahydroxyEncodingPath\" settings of the .settings file");
       File hydroxyEncoding = new File(faHydroxyEncodingPath_);

@@ -1,0 +1,26 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.2%
+SpectrumCoverage=5%
+RetentionTimePostprocessing=true
+ChainCutoff=50%
+ValidOnlyWithOtherAdduct=Na|NH4
+OtherAdductValidityTolerance=0.2
+
+[HEAD]
+!FRAGMENTS
+Name=Frag95		Formula=C7H11			Charge=1	MSLevel=2	mandatory=false
+Name=NL_H2O		Formula=$PRECURSOR-H2O		Charge=1	MSLevel=2	mandatory=false
+Name=Frag109		Formula=C8H13			Charge=1	MSLevel=2	mandatory=false
+Name=NL_glycerol_92	Formula=NL_H2O-C3H6O2		Charge=1	MSLevel=2	mandatory=false
+Name=NL_glycerol_110	Formula=NL_glycerol_92-H2O	Charge=1	MSLevel=2	mandatory=false
+Name=Precursor		Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=other
+
+
+!INTENSITIES
+Equation=Frag95+NL_H2O+NL_glycerol_92+NL_glycerol_110>Precursor		mandatory=false
+Equation=Frag95|NL_H2O|NL_glycerol_92|NL_glycerol_110			mandatory=true
+
