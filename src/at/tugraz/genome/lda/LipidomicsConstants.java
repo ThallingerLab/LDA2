@@ -279,6 +279,8 @@ public class LipidomicsConstants
   private Hashtable<String,String> mzTabAdductLookup_;
   /** contains CV for SEP ontology*/
   private boolean cvSepRequired_;
+  /** contains CV for CHMO ontology*/
+  private boolean cvChmoRequired_;
   /** contains CV for NCBITaxon ontology*/
   private boolean cvNcbiTaxonRequired_;
   /** contains CV for CL ontology*/
@@ -542,6 +544,7 @@ public class LipidomicsConstants
     cvClRequired_ = false;
     cvBtoRequired_ = false;  
     cvDoidRequired_ = false;
+    cvChmoRequired_ = false;
   }
   
   private LipidomicsConstants(){
@@ -1623,6 +1626,15 @@ public class LipidomicsConstants
     return instance_.cvDoidRequired_;
   }
   
+  /**
+   * 
+   * @return contains CV for CHMO ontology
+   */
+  public static boolean isCvChmoRequired(){
+    LipidomicsConstants.getInstance();
+    return instance_.cvChmoRequired_;    
+  }
+  
   public static void switchToOtherConfFile(File newConfFile){
     instance_.readConstantsFile(newConfFile.getAbsolutePath());
   }
@@ -1662,6 +1674,7 @@ public class LipidomicsConstants
           else if (!cvClRequired_ && cvLabel.equalsIgnoreCase("CL")) cvClRequired_ = true;
           else if (!cvBtoRequired_ && cvLabel.equalsIgnoreCase("BTO")) cvBtoRequired_ = true;
           else if (!cvDoidRequired_ && cvLabel.equalsIgnoreCase("DOID")) cvDoidRequired_ = true;
+          if (!cvChmoRequired_ && cvLabel.equalsIgnoreCase("CHMO")) cvChmoRequired_ = true;
         }
         //TODO: I used her "" instead of null, since the jmzTab lib has a small bug
         String accession = "";

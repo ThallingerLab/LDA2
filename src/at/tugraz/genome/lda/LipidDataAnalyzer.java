@@ -5431,6 +5431,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       cvs.add(label);
       cvId++;
     }
+    if (LipidomicsConstants.isCvChmoRequired()){
+      label = new CV().id(cvId).label("CHMO").fullName("Chemical Methods Ontology").version("14-11-2019").uri("http://purl.obolibrary.org/obo/chmo.owl");
+      cvs.add(label);
+      cvId++;
+    }
     if (LipidomicsConstants.isCvNcbiTaxonRequired()){      
       label = new CV().id(cvId).label("NCBITaxon").fullName("NCBI organismal classification").version("2018-03-02").uri("https://www.ebi.ac.uk/ols/ontologies/ncbitaxon");
       cvs.add(label);
