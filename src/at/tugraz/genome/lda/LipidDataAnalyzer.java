@@ -5441,7 +5441,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       cvs.add(label);
       cvId++;
     }
-    if (LipidomicsConstants.isClRequired()){      
+    if (LipidomicsConstants.isCvNcbiTaxonRequired()){      
       label = new CV().id(cvId).label("CL").fullName("Cell Ontology").version("2018-07-07").uri("https://www.ebi.ac.uk/ols/ontologies/cl");
       cvs.add(label);
       cvId++;
