@@ -37,6 +37,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import at.tugraz.genome.lda.QuantificationThread;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 
 /**
  * 
@@ -55,11 +56,11 @@ public class ClassNamesExtractor
     this.resultFiles_ = resultFiles;
   }
 
-  public void parseInput() throws ExcelInputFileException{
+  public void parseInput() throws ExcelInputFileException, LipidCombinameEncodingException{
     extractInformation();
   }
 
-  protected void extractInformation() throws ExcelInputFileException{
+  protected void extractInformation() throws ExcelInputFileException, LipidCombinameEncodingException{
     lipidClasses_ = new Vector<String>();
     classesHash_ = new Hashtable<String,String>();
     for (int i=0; i!=resultFiles_.size();i++){
@@ -68,7 +69,7 @@ public class ClassNamesExtractor
     }
   }
   
-  protected void parseResultFile(File resultFile) throws ExcelInputFileException{
+  protected void parseResultFile(File resultFile) throws ExcelInputFileException, LipidCombinameEncodingException{
     try {
       InputStream myxls = new FileInputStream(resultFile);
       Workbook workbook = null;

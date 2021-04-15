@@ -846,7 +846,7 @@ public class QuantificationThread extends Thread
       cellCount++;
     }
     
-    //writing the retention times of the uses spectra
+    //writing the retention times of the used spectra
     List<Integer> msLevels = new ArrayList<Integer>(param.getMsnRetentionTimes().keySet());
     Collections.sort(msLevels);
     for (int msLevel : msLevels){

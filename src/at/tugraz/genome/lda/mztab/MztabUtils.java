@@ -109,7 +109,7 @@ public class MztabUtils extends LDAExporter
       if (areaVO!=null){
         if (areaVO.isAStandard())
           isRtGrouped = false;
-        Hashtable<String,Vector<LipidParameterSet>> sets = getRelevantOriginalResults(originalExcelResults.get(expName).getIdentifications().get(molGroup),areaVO);
+        Hashtable<String,Vector<LipidParameterSet>> sets = getRelevantOriginalResults(originalExcelResults.get(expName).getIdentifications().get(molGroup),areaVO,false);
         relevantOriginals.put(expName, sets);
         for (String mod : adductsSorted.keySet()){
           if (!modFormulas.containsKey(mod)&&areaVO.hasModification(mod)){

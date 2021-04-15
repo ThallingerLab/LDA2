@@ -111,6 +111,8 @@ import at.tugraz.genome.lda.exception.RdbWriterException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.exception.SettingsException;
 import at.tugraz.genome.lda.export.LDAExporter;
+import at.tugraz.genome.lda.export.OmegaMasslistExporter;
+import at.tugraz.genome.lda.export.vos.AnalyteOmegaInfoVO;
 import at.tugraz.genome.lda.interfaces.ColorChangeListener;
 import at.tugraz.genome.lda.listeners.AnnotationThresholdListener;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
@@ -138,6 +140,7 @@ import at.tugraz.genome.lda.swing.JHyperlink;
 import at.tugraz.genome.lda.swing.LipidomicsJTable;
 import at.tugraz.genome.lda.swing.LipidomicsTableCellRenderer;
 import at.tugraz.genome.lda.swing.LipidomicsTableModel;
+import at.tugraz.genome.lda.swing.OmegaExportDialog;
 import at.tugraz.genome.lda.swing.RangeColor;
 import at.tugraz.genome.lda.swing.RecalculateMSnDialog;
 import at.tugraz.genome.lda.swing.ResultDisplaySettings;
@@ -151,8 +154,10 @@ import at.tugraz.genome.lda.vos.AbsoluteSettingsVO;
 import at.tugraz.genome.lda.vos.AddAnalyteVO;
 import at.tugraz.genome.lda.vos.AutoAnalyteAddVO;
 import at.tugraz.genome.lda.vos.IntegerStringVO;
+import at.tugraz.genome.lda.vos.IsotopicLabelVO;
 import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.lda.vos.RawQuantificationPairVO;
+import at.tugraz.genome.lda.vos.ResultAreaVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
 import at.tugraz.genome.lda.xml.AbsoluteQuantSettingsWholeReader;
@@ -486,6 +491,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private ExportSettingsPanel exportSettingsGroup_ = null;
   /** the lock range must be updated if true*/
   private boolean lockRangeUpdateRequired_ = false;
+  /** the export dialog for omega retention time map*/
+  private OmegaExportDialog  omegaExport_ = null;
 
   
   public LipidDataAnalyzer(){
@@ -2945,10 +2952,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
             resultLoadButton_.setVisible(true); 
             resultSaveButton_.setVisible(true); 
             quantSettingsPanel_.showSettingsPanel(extractor);
-          }
-          catch (ExcelInputFileException e) {
+          } catch (ExcelInputFileException e) {
             e.printStackTrace();
             new WarningMessage(new JFrame(), "Error", "Some of the input files contain invalid information!");
+          } catch (LipidCombinameEncodingException e) {
+            e.printStackTrace();
+            new WarningMessage(new JFrame(), "Error", "There is something wrong with the lipid names in your result file!");
           }
         }else{
           @SuppressWarnings("unused")
@@ -2980,6 +2989,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           catch (ExcelInputFileException e) {
             e.printStackTrace();
             new WarningMessage(new JFrame(), "Error", "Some of the input files contain invalid information!");
+          } catch (LipidCombinameEncodingException e) {
+            e.printStackTrace();
+            new WarningMessage(new JFrame(), "Error", "There is something wrong with the lipid names in your result file!");
           }
         }else{
           @SuppressWarnings("unused")
@@ -3222,6 +3234,31 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       exportSettings_.setVisible(false);
       if (exportSettingsGroup_!=null)
         exportSettingsGroup_.setVisible(false);
+    } else if (command.equalsIgnoreCase("AcceptOmegaExport")) {
+      Vector<IsotopicLabelVO> labelInfo = omegaExport_.getEnteredLabelInformation();
+      //TODO: this is only for debugging
+      for (IsotopicLabelVO label : labelInfo)
+        System.out.println(label);
+      
+      // get the directory where to store the omega mass list file
+      exportFileChooser_.setFileSelectionMode(JFileChooser.FILES_ONLY);
+      String fileName = "n-Masslist.xlsx";
+      String confirmDialogTitle = "\u03C9-RT export";
+      FileNameExtensionFilter filter = new FileNameExtensionFilter("Microsoft Office Excel Woorkbook (*.xlsx)","xlsx");
+      exportFileChooser_.setSelectedFile(new File(fileName));
+      exportFileChooser_.setFileFilter(filter);
+      if (JOptionPane.showConfirmDialog(this, "Only selected analytes with the current isotopes selected will be exported! Continue?",confirmDialogTitle,JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){
+        int returnVal = exportFileChooser_.showSaveDialog(new JFrame());
+        if (returnVal != JFileChooser.APPROVE_OPTION)
+          return;
+        File fileToStore = exportFileChooser_.getSelectedFile();
+        @SuppressWarnings("rawtypes")
+        Vector results = HeatMapDrawing.checkFileStorage(fileToStore,"txt",resultsPanel_);
+        fileToStore = (File)results.get(0);
+        if ((Boolean)results.get(1))
+          exportOmegaMasslist(fileToStore,labelInfo);
+      }
+      exportFileChooser_.setSelectedFile(new File(""));
     }
   }
   
@@ -3363,6 +3400,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       try {
         analysisModule_.parseInput();
         analysisModule_.calculateStatistics();
+        analysisModule_.getNrOfChainsOfClass();
         this.expDisplayNamesLookup_ = analysisModule_.getExpNames();
         if (this.groupsPanel_.getGroups().size()>0){
           groupDisplayNamesLookup_ = new Hashtable<String,String>();
@@ -3409,7 +3447,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     exportSettingsGroup_ = null;
     if (this.groupsPanel_.getGroups().size()>0)
       exportSettingsGroup_ = new ExportSettingsPanel(true,this);
-
+    
+    omegaExport_ = new OmegaExportDialog("\u03C9-RT export",analysisModule_.getIsoLabels(),this);
+    omegaExport_.setVisible(false);
+    
     for (String molGroup : analysisResults.keySet()){
       JPanel aResultsViewPanel = new JPanel(new BorderLayout());
       JTabbedPane resultsViewTabs= new JTabbedPane();
@@ -3454,7 +3495,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       ResultSelectionSettings selectionSettings = new ResultSelectionSettings(null,molNames,true);
       ResultSelectionSettings combinedChartSettings = new ResultSelectionSettings(null,molNames,false);
       HeatMapDrawing drawing = new HeatMapDrawing(molGroup,resultsOfOneGroup, expNames,molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,null,
-          displaySettings,selectionSettings,combinedChartSettings,exportSettings_,analysisModule_.getRtTolerance());
+          displaySettings,selectionSettings,combinedChartSettings,exportSettings_,omegaExport_, analysisModule_.getRtTolerance());
       displaySettings.addActionListener(drawing);
       selectionSettings.addActionListener(drawing);
       combinedChartSettings.addActionListener(drawing);
@@ -3476,7 +3517,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         JPanel groupPanel = new JPanel();
         groupPanel.setLayout(new BorderLayout());
         HeatMapDrawing groupDrawing = new HeatMapDrawing(molGroup,groupedResultsOfOneGroup, this.groupsPanel_.getGroups(),molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,
-            drawing, displaySettings,selectionSettings,combinedChartSettings,exportSettingsGroup_,analysisModule_.getRtTolerance());
+            drawing, displaySettings,selectionSettings,combinedChartSettings,exportSettingsGroup_,omegaExport_,analysisModule_.getRtTolerance());
         displaySettings.addActionListener(groupDrawing);
         selectionSettings.addActionListener(groupDrawing);
         combinedChartSettings.addActionListener(groupDrawing);
@@ -5441,7 +5482,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       cvs.add(label);
       cvId++;
     }
-    if (LipidomicsConstants.isCvNcbiTaxonRequired()){      
+    if (LipidomicsConstants.isClRequired()){      
       label = new CV().id(cvId).label("CL").fullName("Cell Ontology").version("2018-07-07").uri("https://www.ebi.ac.uk/ols/ontologies/cl");
       cvs.add(label);
       cvId++;
@@ -5679,6 +5720,159 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     }
 	  }
   
+  /**
+   * exports the mass list with the omega position information
+   * @param exportFile the file to export the omega mass lists
+   * @param labelInfo the information about the isotopic labels
+   */
+  @SuppressWarnings("unchecked")
+  public void exportOmegaMasslist(File exportFile, Vector<IsotopicLabelVO> labelInfo){
+    System.out.println("omega export");
+    long time = System.currentTimeMillis();
+    LinkedHashMap<String,Integer> classSequence = null;
+    Hashtable<String,Vector<String>> correctAnalyteSequence = null;
+    Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = null;
+    boolean throwError = false;
+    //Hashtable<String,Hashtable<String,Hashtable<String,Vector<Double>>>> resultsStatsSection = new Hashtable<String,Hashtable<String,Hashtable<String,Vector<Double>>>>();
+    if (correctOrderFile_.getText()!=null && correctOrderFile_.getText().length()>0){
+      try {
+        boolean ionMode = false;
+        if (this.ionModeOrder_!=null && ((String)ionModeOrder_.getSelectedItem()).equalsIgnoreCase("+"))
+          ionMode = true;
+        @SuppressWarnings("rawtypes")
+        Vector quantInfo = QuantificationThread.getCorrectAnalyteSequence(correctOrderFile_.getText(),ionMode);
+        classSequence = (LinkedHashMap<String,Integer>)quantInfo.get(0);
+        correctAnalyteSequence = (Hashtable<String,Vector<String>>)quantInfo.get(1);
+        quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(3);
+        
+//        for (String molGroup:this.heatmaps_.keySet()) {
+//          HeatMapDrawing heatmap = this.heatmaps_.get(molGroup);
+//          Hashtable<String,Hashtable<String,Vector<Double>>> results = heatmap.getResultValues("relative value");
+//          resultsStatsSection.put(molGroup, results);
+//        }
+
+      }
+      catch (Exception e) {
+        throwError = true;
+      }
+    }else
+      throwError = true;
+    if (throwError) {
+      new WarningMessage(new JFrame(), "Error", "For an \u03C9-RT export, you have to provide a conventional quantification file at \"\"Quant file (for correct analyte order):\"");
+      return;      
+    }
+    try {
+      Hashtable<String,Hashtable<String,Hashtable<String,Vector<AnalyteOmegaInfoVO>>>> acceptedMolecules = new Hashtable<String,Hashtable<String,Hashtable<String,Vector<AnalyteOmegaInfoVO>>>>();
+      Hashtable<String,Integer> maxIsotopes = new Hashtable<String,Integer>();
+      Hashtable<String,String> usedLabels = null;
+      for (String molGroup:this.heatmaps_.keySet()) {
+        Hashtable<String,Hashtable<String,Vector<AnalyteOmegaInfoVO>>> molsOfClass = new Hashtable<String,Hashtable<String,Vector<AnalyteOmegaInfoVO>>>();
+        HeatMapDrawing heatmap = this.heatmaps_.get(molGroup);
+        for (String molName: heatmap.getSelectedMoleculeNames()){
+          AnalyteOmegaInfoVO omegaInfo = ifOmegaLabelExtractInfo(molGroup,molName,labelInfo);
+          if (omegaInfo!=null) {
+            if (!molsOfClass.containsKey(omegaInfo.getAnalyteName()))
+              molsOfClass.put(omegaInfo.getAnalyteName(), new Hashtable<String,Vector<AnalyteOmegaInfoVO>>());
+            usedLabels = new Hashtable<String,String>();
+            for (IsotopicLabelVO label : omegaInfo.getLabels()) {
+              if (usedLabels.containsKey(label.getLabelId()))
+                continue;
+              if (!molsOfClass.get(omegaInfo.getAnalyteName()).containsKey(label.getLabelId()))
+                molsOfClass.get(omegaInfo.getAnalyteName()).put(label.getLabelId(), new Vector<AnalyteOmegaInfoVO>());
+              molsOfClass.get(omegaInfo.getAnalyteName()).get(label.getLabelId()).add(omegaInfo);
+              usedLabels.put(label.getLabelId(), label.getLabelId());
+            }
+
+          }
+        }
+        acceptedMolecules.put(molGroup, molsOfClass);
+        maxIsotopes.put(molGroup, heatmap.getSelectedIsotope());
+      }
+      
+      Hashtable<Integer,Hashtable<String,IsotopicLabelVO>> sameOmegaLabels = new  Hashtable<Integer,Hashtable<String,IsotopicLabelVO>>();
+      for (IsotopicLabelVO label : labelInfo) {
+        if (!sameOmegaLabels.containsKey(label.getOmegaPosition()))
+          sameOmegaLabels.put(label.getOmegaPosition(), new Hashtable<String,IsotopicLabelVO>());
+        sameOmegaLabels.get(label.getOmegaPosition()).put(label.getLabelId(), label);
+      }
+
+      OmegaMasslistExporter omegaExporter = new OmegaMasslistExporter(exportFile.getAbsolutePath());
+      omegaExporter.export(classSequence, correctAnalyteSequence, quantObjects, acceptedMolecules, analysisModule_,sameOmegaLabels);
+    }
+    catch (ExportException | LipidCombinameEncodingException e) {
+      e.printStackTrace();
+      @SuppressWarnings("unused")
+      WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "The \\u03C9-RT mass list cannot be written: "+e.getMessage());
+    }
+    long usedTime = (System.currentTimeMillis()-time)/1000l;
+    System.out.println("Used time: "+(usedTime/60l)+"minutes "+usedTime%60l+" seconds");
+  }
+  
+  
+  /**
+   * extracts information on whether a detection is an isotopically labeled species and which labels have been applied
+   * @param className name of the lipid class
+   * @param name the name of the molecule
+   * @param labelInfo the value objects containg information about a label
+   * @return an AnalyteOmegaInfoVO if the detection is an isotopically labeled species, null otherwise
+   */
+  private AnalyteOmegaInfoVO ifOmegaLabelExtractInfo(String className, String name, Vector<IsotopicLabelVO> labelInfo) {
+    boolean isLabel = false;
+    //if it does not start with a label indicator, we can immediately return false;
+    for (IsotopicLabelVO info : labelInfo) {
+      if (name.startsWith(info.getLabelId())) {
+        isLabel = true;
+        break;
+      }
+    }
+    if (!isLabel)
+      return null; 
+    //the avoid false positive label identifications by molecules whose name simply starts with the same letter as a label, we have to make a further check
+    String analyze = new String(name);
+    boolean isALabel = true;
+    boolean foundLabel;
+    Vector<IsotopicLabelVO> detectedLabels = new Vector<IsotopicLabelVO>();
+    while (isALabel) {
+      foundLabel = false;
+      for (IsotopicLabelVO info : labelInfo) {
+        if (analyze.startsWith(info.getLabelId())) {
+          foundLabel = true;
+          analyze = analyze.substring(info.getLabelId().length());
+          detectedLabels.add(info);
+          break;
+        }
+      }
+      if (!foundLabel)
+        isALabel = false;
+    }
+    //TODO: this does not work if no RT-grouping is set
+    String analyteName = analyze.substring(0,analyze.lastIndexOf("_"));
+    //this is for sphingolipids
+    if (analyze.length()>0 && analysisModule_.getLcbHydroxyEncoding()!=null && analysisModule_.getLcbHydroxyEncoding().containsValue(analyze.substring(0,1)))
+      analyze = analyze.substring(1);
+    if (analyze.length()==0)
+      return null;
+    if (Character.isDigit(analyze.toCharArray()[0])) {
+      boolean isMSnEvidence = false;
+      ResultAreaVO resultVO = null;
+      for (String exp : this.analysisModule_.getExpNamesInSequence()) {
+        resultVO = analysisModule_.getResultAreaVO(className,name,exp);
+        if (resultVO!=null && resultVO.isMsnEvidenceThere()) {
+          isMSnEvidence = true;
+          break;
+        }
+      }
+      if (!isMSnEvidence)
+        return null;
+      boolean oneDoubleBond = false;
+      if (analyteName.indexOf(":")!=-1 && analyteName.substring(analyteName.indexOf(":")+1).equalsIgnoreCase("1"))
+        oneDoubleBond = true;
+      return new AnalyteOmegaInfoVO(analyteName,name,detectedLabels,oneDoubleBond);
+    }else
+      return null;
+  }
+  
+  
   public void exportRdb(File exportFile){
     System.out.println("RDB export");
     // save the internal and external standard prefix
@@ -5719,6 +5913,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "The Alex123-file cannot be written: "+cfe.getMessage());
     }
   }
+  
   
   @SuppressWarnings("unchecked")
   public void exportMaf(File exportFile){

@@ -218,6 +218,7 @@ public class TooltipTexts
   public final static String EXPORT_RDB = "<html>Export data in relational database format.</html>";
   public final static String EXPORT_TXT = "<html>Export data tab-delimited plain text format.</html>";
   public final static String EXPORT_CHROMS = "<html>Export the chromatograms in a picture.</html>";
+  public final static String EXPORT_N_RTs = "<html>Export mass list for &omega identification.</html>";
   public final static String EXPORT_MAF = "<html>Exports data in MAF format.</html>";
   
   public final static String HEATMAP_SHOW_INT = "<html>Display the internal standards in the heat map or not.</html>";
@@ -352,5 +353,11 @@ public class TooltipTexts
   public final static String RDI_GENERAL_ADDPOSITIONS = "<html>Are ther more chain positions possible than fatty acids<br/>"
       + "&nbsp;&nbsp;&nbsp;&nbsp;plus this is e.g. the case for DG class.<sup>n</sup><html/>";
 
-
+  public final static String ISO_LABEL_LABELID = "<html>The designator for the label in the data</html>";
+  public final static String ISO_LABEL_OMEGA = "<html>The omega position of the isotopically labeled chain</html>";
+  public final static String ISO_LABEL_FORMULA = "<html>The caused difference in the elemental composition by the label</html>";
+  public final static String ISO_LABEL_RTSHIFT = "<html>The caused difference in the retention time by the label</html>";
+  public final static String ISO_DELETE = "<html>Deletes the label.</html>";
+  public final static String ISO_ADD = "<html>Adds another row to enter information about a label</html>";
+  
 }

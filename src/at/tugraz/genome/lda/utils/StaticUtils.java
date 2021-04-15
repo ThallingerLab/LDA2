@@ -58,6 +58,8 @@ import at.tugraz.genome.lda.msn.vos.FragmentRuleVO;
 import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.swing.RangeColor;
+import at.tugraz.genome.lda.vos.IntegerStringVO;
+import at.tugraz.genome.lda.vos.IsotopicLabelVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
 import at.tugraz.genome.lda.xml.RawToChromThread;
@@ -67,6 +69,7 @@ import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.maspectras.utils.StringUtils;
+import at.tugraz.genome.voutils.GeneralComparator;
 
 /**
  * 
@@ -700,20 +703,55 @@ public class StaticUtils
    * @return formula in hill notation
    */
   public static String getFormulaInHillNotation(Hashtable<String,Integer> formAnal, boolean space){
+    return getFormulaInHillNotation(formAnal, space, false);
+  }
+  
+  /**
+   * returns a catogorized formula in its Hill notation
+   * @param formAnal the categorized formula
+   * @param space make a space between the elements
+   * @param plusSign puts a plus in front of the added elements 
+   * @return formula in hill notation
+   */
+  private static String getFormulaInHillNotation(Hashtable<String,Integer> formAnal, boolean space, boolean plusSign){
     String hillNotation = "";
     if (formAnal.containsKey("C") && formAnal.get("C")!=0){
-      hillNotation += (formAnal.get("C")<0 ? "-" : "")+"C"+getHillNotationNumber("C",formAnal)+(space ? " " : "");
+      hillNotation += ((plusSign&&formAnal.get("C")>0) ? "+" : "")+(formAnal.get("C")<0 ? "-" : "")+"C"+getHillNotationNumber("C",formAnal)+(space ? " " : "");
     }
     if (formAnal.containsKey("H") && formAnal.get("H")!=0){
-      hillNotation += (formAnal.get("H")<0 ? "-" : "")+"H"+getHillNotationNumber("H",formAnal)+(space ? " " : "");
+      hillNotation += ((plusSign&&formAnal.get("H")>0) ? "+" : "")+(formAnal.get("H")<0 ? "-" : "")+"H"+getHillNotationNumber("H",formAnal)+(space ? " " : "");
     }
     List<String> list = new ArrayList<String>(formAnal.keySet());
     Collections.sort(list);
     for (String element : list){
       if (element.equalsIgnoreCase("C") || element.equalsIgnoreCase("H") || formAnal.get(element)==0) continue;
-      hillNotation += (formAnal.get(element)<0 ? "-" : "")+element+getHillNotationNumber(element,formAnal)+(space ? " " : "");
+      hillNotation += ((plusSign&&formAnal.get(element)>0) ? "+" : "")+(formAnal.get(element)<0 ? "-" : "")+element+getHillNotationNumber(element,formAnal)+(space ? " " : "");
     }
     return hillNotation.trim();
+  }
+
+  /**
+   * returns a catogorized formula in its Hill notation - the positive ones
+   * @param formAnal the categorized formula
+   * @param space make a space between the elements
+   * @return formula in hill notation
+   */
+  public static String getFormulaInHillNotation_PlusFirst(Hashtable<String,Integer> formAnal, boolean space) {
+    Hashtable<String,Integer> added = new Hashtable<String,Integer>();
+    Hashtable<String,Integer> subtracted = new Hashtable<String,Integer>();
+    String hillNotationPlusFirst = "";
+    for (String element : formAnal.keySet()) {
+      if (formAnal.get(element)>0)
+        added.put(element, formAnal.get(element));
+      else if (formAnal.get(element)<0)
+        subtracted.put(element, formAnal.get(element));
+    }
+    if (added.size()>0) {
+      hillNotationPlusFirst += getFormulaInHillNotation(added, space, true)+(subtracted.size()>0 ? " " : "");
+    }
+    if (subtracted.size()>0)
+      hillNotationPlusFirst += getFormulaInHillNotation(subtracted, space, true);
+    return hillNotationPlusFirst;
   }
   
   /**
@@ -2052,8 +2090,83 @@ public class StaticUtils
       if (affected)
         affectedCombinations.add(id);
     }
-    return affectedCombinations;
+    return affectedCombinations;  
   }
+  
+  @SuppressWarnings("unchecked")
+  public static Vector<String> sortChainCombinations(Set<String> unsorted) throws LipidCombinameEncodingException{
+    if (unsorted.size()<2)
+      return new Vector<String>(unsorted);
+    Hashtable<String,Vector<FattyAcidVO>> unsortedHash = new Hashtable<String,Vector<FattyAcidVO>>();
+    String fa1Encoded;
+    Vector<FattyAcidVO> unsortedFAs;
+    Vector<FattyAcidVO> sortedFAs;
+    int count;
+    for (String combi : unsorted) {
+      unsortedHash.put(combi, decodeLipidNamesFromChainCombi(combi));
+    }
+    String encodedFA;
+    int nrOfChains = unsortedHash.values().iterator().next().size();
+    int[][] positions = new int[unsorted.size()][nrOfChains-1];
+    Hashtable<Integer,Integer> nrOfOptionsEachLevel = new Hashtable<Integer,Integer>();
+    for (int i=0; i!=(nrOfChains-1); i++) {
+      Hashtable<String,String> there = new Hashtable<String,String>();
+      unsortedFAs = new Vector<FattyAcidVO>();
+      for (Vector<FattyAcidVO> fas : unsortedHash.values()) {
+        encodedFA = encodeLipidNameForCreatingCombis(fas.get(i),true);
+        if (there.containsKey(encodedFA))
+          continue;
+        there.put(encodedFA, encodedFA);
+        unsortedFAs.add(fas.get(i));
+      }
+      sortedFAs = sortChainVOs(unsortedFAs);
+      nrOfOptionsEachLevel.put(0, sortedFAs.size());
+      count = 0;
+      for (Vector<FattyAcidVO> fas : unsortedHash.values()) {
+        fa1Encoded = encodeLipidNameForCreatingCombis(fas.get(i),true);
+        for (int j=0; j!=sortedFAs.size(); j++) {
+          if (fa1Encoded.equalsIgnoreCase(encodeLipidNameForCreatingCombis(sortedFAs.get(j),true)))
+            positions[count][i] = j;
+        }
+        count++;
+      }
+    }
+    count = 0;
+    List<IntegerStringVO> toSort = new ArrayList<IntegerStringVO>();
+    for (String combi : unsortedHash.keySet()) {
+      int multFactor = 1;
+      int totalValue = 0;
+      for (int i=(nrOfChains-2); i!=-1; i--) {
+        totalValue += positions[count][i]*multFactor;
+        multFactor = multFactor*nrOfOptionsEachLevel.get(i);
+      }
+      toSort.add(new IntegerStringVO(combi,totalValue));
+      count++;
+    }
+    Collections.sort(toSort,new GeneralComparator("at.tugraz.genome.lda.vos.IntegerStringVO", "getValue", "java.lang.Integer"));
+//    Hashtable<String,String> keyToCombi = new Hashtable<String,String>();
+//    count = 0;
+//    for (String combi : unsorted) {
+//      StringBuilder key = new StringBuilder();
+//      for (int i=0; i!=positions[count].length; i++) {
+//        if (key.length()!=0)
+//          key.append("-");
+//        key.append(String.valueOf(positions[count][i]));
+//      }
+//      keyToCombi.put(key.toString(), combi);
+//      count++;
+//    }
+//    Vector<String> sorted = new Vector<String>();
+//    
+//    for (int i=0; i!=(nrOfChains-1); i++) {
+//      sdfa
+//    }
+    Vector<String> sorted = new Vector<String>();
+    for (IntegerStringVO vo : toSort)
+      sorted.add(vo.getKey());
+    return sorted;
+  }
+  
   
   
   /**
@@ -2064,25 +2177,48 @@ public class StaticUtils
    * @throws LipidCombinameEncodingException thrown whenever there is something wrong with the hydroxylation encodings
    */
   public static Vector<String> sortChainNames(Vector<String> unsorted, boolean ohInCombi) throws LipidCombinameEncodingException{
+    Vector<FattyAcidVO> fas = new Vector<FattyAcidVO>();
+    for (String name : unsorted)
+      fas.add(decodeHumanReadableChain(name,Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),false));
+    Vector<FattyAcidVO> sortedChains = sortChainVOs(fas);
+    Vector<String> sorted = new Vector<String>();
+    for (FattyAcidVO vo : sortedChains)
+      sorted.add(StaticUtils.getHumanReadableChainName(vo,Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),ohInCombi));
+    return sorted;
+  }
+  
+  
+  /**
+   * takes a list of unsorted chains and sorts them in ascending carbon number, followed by ascending double bond, and followed by ascending OH number
+   * @param unsorted vector containing FattyAcidVOs
+   * @return sorted list of chains
+   */
+  public static Vector<FattyAcidVO> sortChainVOs(Vector<FattyAcidVO> unsorted){
     Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> hash = new Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>();
-    FattyAcidVO fa;
+    Hashtable<String,Integer> frequencyOfFA = new Hashtable<String,Integer>();
     //for building the hash
-    for (String name : unsorted) {
-      fa = decodeHumanReadableChain(name,Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),false);
+    String encoded;
+    for (FattyAcidVO fa : unsorted) {
+      encoded = encodeLipidNameForCreatingCombis(fa, true);
+      if (!frequencyOfFA.containsKey(encoded))
+        frequencyOfFA.put(encoded, 0);
+      frequencyOfFA.put(encoded, (frequencyOfFA.get(encoded)+1));
       Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> sameCarbons = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>();
       if (hash.containsKey(fa.getcAtoms())) sameCarbons = hash.get(fa.getcAtoms());
       Hashtable<Integer,Hashtable<String,FattyAcidVO>> sameDbs = new Hashtable<Integer,Hashtable<String,FattyAcidVO>>();
       if (sameCarbons.containsKey(fa.getDoubleBonds())) sameDbs = sameCarbons.get(fa.getDoubleBonds());
       Hashtable<String,FattyAcidVO> sameOh = new Hashtable<String,FattyAcidVO>();
+      if (sameDbs.containsKey(fa.getOhNumber())) sameOh = sameDbs.get(fa.getOhNumber());
       sameOh.put(fa.getPrefix(), fa);
       sameDbs.put(fa.getOhNumber(), sameOh);
       sameCarbons.put(fa.getDoubleBonds(), sameDbs);
       hash.put(fa.getcAtoms(), sameCarbons);
     }
     //sorting
-    Vector<String> sorted = new Vector<String>();
+    Vector<FattyAcidVO> sorted = new Vector<FattyAcidVO>();
     List<Integer> carbons = new ArrayList<Integer>(hash.keySet());
     Collections.sort(carbons);
+    FattyAcidVO fac;
     for (Integer carbon : carbons) {
       List<Integer> dbs = new ArrayList<Integer>(hash.get(carbon).keySet());
       Collections.sort(dbs);
@@ -2092,17 +2228,114 @@ public class StaticUtils
         for (Integer oh : ohs) {
           List<String> prefixes = new ArrayList<String>(hash.get(carbon).get(db).get(oh).keySet());
           if (prefixes.contains("")) {
-            sorted.add(StaticUtils.getHumanReadableChainName(hash.get(carbon).get(db).get(oh).get(""),Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),ohInCombi));
+            fac = hash.get(carbon).get(db).get(oh).get("");
+            encoded = encodeLipidNameForCreatingCombis(fac, true);
+            for (int i=0; i!=frequencyOfFA.get(encoded); i++)
+              sorted.add(fac);
             prefixes.remove("");
           }
           Collections.sort(prefixes);
           for (String prefix : prefixes) {
-            sorted.add(StaticUtils.getHumanReadableChainName(hash.get(carbon).get(db).get(oh).get(prefix),Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),ohInCombi));
+            fac = hash.get(carbon).get(db).get(oh).get(prefix);
+            encoded = encodeLipidNameForCreatingCombis(fac, true);
+            for (int i=0; i!=frequencyOfFA.get(encoded); i++)
+              sorted.add(fac);
           }
         }
       }
     }
     return sorted;
+
+  }
+  
+  /**
+   * adds the possible isotopic labels stored in the chain libraries to the provided hashes singleLabelLookup, availableLabels and availableSingleLabels;
+   * @param labels the labels found in the mass lists or data
+   * @param availableSingleLabels the names of the unique single lables
+   * @param singleLabelLookup lookup from a (combined) label to the single label
+   * @param availableLabels of how many single labels does this label consist of
+   */
+  public static void extractIsoLabelInformation(Set<String> labels, Set<String> availableSingleLabels, Hashtable<String,String> singleLabelLookup, Hashtable<String,Integer> availableLabels) {
+    char[] labelChars;
+    StringBuilder sb;
+    char ch;
+    int current;
+    int iter;
+    for (String label : labels) {
+      if (availableLabels.containsKey(label))
+        continue;
+      labelChars = label.toCharArray();
+      sb = new StringBuilder();
+      for (int i=0; i!=label.length(); i++) {
+        ch = labelChars[i];
+        if (sb.length()==0) {
+          sb.append(ch);
+        }else {
+          if (label.substring(i,label.length()).startsWith(sb.toString())) {
+            current = i;
+            iter = 1;
+            while(label.substring(current,label.length()).startsWith(sb.toString())) {
+              current +=  sb.length();
+              iter++;
+            }
+            if (current==label.length()) {
+              availableSingleLabels.add(sb.toString());
+              singleLabelLookup.put(label,sb.toString());
+              availableLabels.put(label, iter);
+              break;
+            }
+          }
+          sb.append(ch);
+        }
+      }
+      if (!availableLabels.containsKey(label)) {
+        availableSingleLabels.add(sb.toString());
+        singleLabelLookup.put(label,sb.toString());
+        availableLabels.put(label, 1);
+      }
+    }
+  }
+
+  
+  /**
+   * checks whether two formulas stored in hash table form are the same
+   * TODO: the algorithm asks that both hash table sizes are the same - when one has the amount of zero would be the same as a missing element, but this use case is not covered
+   * @param one hash table containing the first formula; key: chemical element; value: the number of elements
+   * @param two hash table containing the second formula; key: chemical element; value: the number of elements
+   * @return true when both formulas are the same
+   */
+  public static boolean isChemicalFormulaTheSame(Hashtable<String,Integer> one, Hashtable<String,Integer> two) {
+    if (one.size()!=two.size())
+      return false;
+    for (String element : one.keySet()) {
+      if (!two.containsKey(element) || one.get(element)!=two.get(element))
+        return false;
+    }
+    return true;
+  }
+  
+  /**
+   * this removes the label from the lipid chain combination encoded in the LDA style
+   * @param encoded the chain encoded in the LDA style
+   * @param labels the labels attached to this species
+   * @return the chain combination encoded in the LDA style of the unlabeled species
+   * @throws LipidCombinameEncodingException
+   */
+  public static String removeLabelsFromChains(String encoded, Vector<IsotopicLabelVO> labels) throws LipidCombinameEncodingException {
+    Vector<FattyAcidVO> chains = decodeLipidNamesFromChainCombi(encoded);
+    for (IsotopicLabelVO label : labels) {
+      for (FattyAcidVO acidVO : chains) {
+        if (acidVO.getPrefix().startsWith(label.getLabelId())) {
+          acidVO.setPrefix(acidVO.getPrefix().substring(label.getLabelId().length()));
+          break;
+        }
+      }
+    }
+    for (FattyAcidVO acidVO : chains) {
+      if (acidVO.getPrefix().length()>0)
+        throw new LipidCombinameEncodingException("There is still a label left: "+encodeLipidCombi(chains));
+    }
+    return encodeLipidCombi(chains);
   }
   
 }

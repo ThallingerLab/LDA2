@@ -71,11 +71,14 @@ public abstract class LDAExporter
    * extracts original information that belongs exactly to one data point (rectangle) in the heat map
    * @param all all detected results of a certain experiment and lipid class
    * @param areaVO the value object corresponding to one data point (rectangle) in the heat map
+   * @param msnOnly if true, only species verified by MSn evidence are exported
    * @return the original information relevant to this one data point (rectangle)
    */
-  protected static Hashtable<String,Vector<LipidParameterSet>> getRelevantOriginalResults(Vector<LipidParameterSet> all, ResultAreaVO areaVO){
+  protected static Hashtable<String,Vector<LipidParameterSet>> getRelevantOriginalResults(Vector<LipidParameterSet> all, ResultAreaVO areaVO, boolean msnOnly){
     Hashtable<String,Vector<LipidParameterSet>> results = new Hashtable<String,Vector<LipidParameterSet>>();
     for (LipidParameterSet set : all){
+      if (msnOnly && !(set instanceof LipidomicsMSnSet))
+        continue;
       //the next line is for the export of MSn data only
 //      if (!(set instanceof LipidomicsMSnSet))
 //        continue;
@@ -162,6 +165,7 @@ public abstract class LDAExporter
         }
         //use a position when it was found more than once, and at least more than half of the times of the
         //detected cases
+        ////TODO: the next line is only excluded for JOE - I am not sure whether I actually need this removal!!!!!
         if (detections>1 && detections>(totalCount/2))
         //the line before, is the last line for the removal, for sphingolipid export  
           usePositionIdentification = true;

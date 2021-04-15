@@ -98,6 +98,18 @@ public class FattyAcidVO
   {
     return prefix_;
   }
+  
+  
+  /**
+   * 
+   * @param prefix the prefix
+   */
+  public void setPrefix(String prefix)
+  {
+    this.prefix_ = prefix;
+  }
+
+
 
   /**
    * 

@@ -125,7 +125,7 @@ public class ExcelAndTextExporter extends LDAExporter
           if (areaVO!=null){
             if (areaVO.isAStandard())
               rtGroupingUsed = false;
-            Hashtable<String,Vector<LipidParameterSet>> sets = getRelevantOriginalResults(originalExcelResults.get(expId).getIdentifications().get(sheetName),areaVO);
+            Hashtable<String,Vector<LipidParameterSet>> sets = getRelevantOriginalResults(originalExcelResults.get(expId).getIdentifications().get(sheetName),areaVO,false);
             relevantOriginals.put(expId, sets);
           }
         }

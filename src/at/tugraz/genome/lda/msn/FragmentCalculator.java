@@ -952,44 +952,7 @@ public class FragmentCalculator
    * @param labels
    */
   private void addAvailableLabels(Set<String> labels) {
-    char[] labelChars;
-    StringBuilder sb;
-    char ch;
-    int current;
-    int iter;
-    for (String label : labels) {
-      if (this.availableLabels_.containsKey(label))
-        continue;
-      labelChars = label.toCharArray();
-      sb = new StringBuilder();
-      for (int i=0; i!=label.length(); i++) {
-        ch = labelChars[i];
-        if (sb.length()==0) {
-          sb.append(ch);
-        }else {
-          if (label.substring(i,label.length()).startsWith(sb.toString())) {
-            current = i;
-            iter = 1;
-            while(label.substring(current,label.length()).startsWith(sb.toString())) {
-              current +=  sb.length();
-              iter++;
-            }
-            if (current==label.length()) {
-              availableSingleLabels_.add(sb.toString());
-              singleLabelLookup_.put(label,sb.toString());
-              availableLabels_.put(label, iter);
-              break;
-            }
-          }
-          sb.append(ch);
-        }
-      }
-      if (!availableLabels_.containsKey(label)) {
-        availableSingleLabels_.add(sb.toString());
-        singleLabelLookup_.put(label,sb.toString());
-        availableLabels_.put(label, 1);
-      }
-    }
+    StaticUtils.extractIsoLabelInformation(labels, availableSingleLabels_, singleLabelLookup_, availableLabels_);
   }
   
   

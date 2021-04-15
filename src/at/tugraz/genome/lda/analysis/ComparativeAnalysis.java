@@ -41,12 +41,18 @@ import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
+import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
+import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
+import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
+import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.utils.DoubleCalculator;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.AbsoluteSettingsVO;
 import at.tugraz.genome.lda.vos.DoubleStringVO;
 import at.tugraz.genome.lda.vos.InternalStandardStatistics;
+import at.tugraz.genome.lda.vos.IsotopicLabelVO;
 import at.tugraz.genome.lda.vos.LipidClassSettingVO;
 import at.tugraz.genome.lda.vos.ProbeVolConcVO;
 import at.tugraz.genome.lda.vos.QuantVO;
@@ -202,6 +208,16 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
   
   private double expRtGroupingTime_;
   
+  /** list of potential isotopic labels*/
+  private List<IsotopicLabelVO> isoLabels_;
+  
+  /** the character encoding of the number of hydroxylation sites for the FA*/
+  private HydroxyEncoding faHydroxyEncoding_;
+  /** the character encoding of the number of hydroxylation sites for the LCB*/
+  private HydroxyEncoding lcbHydroxyEncoding_;
+  /** how many attached chains contains this class*/
+  private Hashtable<String,Integer> chainsOfClass_; 
+  
   
   public ComparativeAnalysis(Vector<File> resultFiles, String isSelectionPrefix, String esSelectionPrefix, AbsoluteSettingsVO absSetting, Hashtable<String,Double> classCutoffs, int maxCutoffIsotope, 
       LinkedHashMap<String,Integer> classSequence, Hashtable<String,Vector<String>> correctAnalyteSequence, Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects,
@@ -222,9 +238,12 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
     expRtGroupingTime_ = expRtGroupingTime;
     classCutoffs_ = classCutoffs;
     maxCutoffIsotope_ = maxCutoffIsotope;
+    faHydroxyEncoding_ = null;
+    lcbHydroxyEncoding_ = null;
+    chainsOfClass_ = new Hashtable<String,Integer>();
   }
   
-  public void parseInput() throws ExcelInputFileException{
+  public void parseInput() throws ExcelInputFileException, LipidCombinameEncodingException{
     elementParser_ = Settings.getElementParser();
     unprocessedResults_ = new Hashtable<String,Hashtable<String,Vector<Hashtable<String,ResultAreaVO>>>>();
     isNullResult_ = new Hashtable<String,Hashtable<String,Hashtable<String,Boolean>>>();
@@ -250,7 +269,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
     }
   }
   
-  public void calculateStatistics()  {
+  public void calculateStatistics() throws LipidCombinameEncodingException  {
     this.extractInternalStandardStatistics();
     this.extractExternalStandardStatistics();
     this.calculateRelativeComparisonValues();
@@ -951,16 +970,24 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
     return ratio;
   }
   
-  protected void parseResultFile(File resultFile, String fileName) throws ExcelInputFileException{
+  protected void parseResultFile(File resultFile, String fileName) throws ExcelInputFileException, LipidCombinameEncodingException{
     Hashtable<String,Vector<LipidParameterSet>> results = new Hashtable<String,Vector<LipidParameterSet>>();
     Hashtable<String,Boolean> showMods = new Hashtable<String,Boolean>();
-    results = LDAResultReader.readResultFile(resultFile.getAbsolutePath(), showMods).getIdentifications();
+    QuantificationResult quantRes = LDAResultReader.readResultFile(resultFile.getAbsolutePath(), showMods);
+    int nrChains;
+    if (quantRes.getLcbHydroxyEncoding()!=null)
+      this.lcbHydroxyEncoding_ = quantRes.getLcbHydroxyEncoding();
+    if (quantRes.getFaHydroxyEncoding()!=null)
+      this.faHydroxyEncoding_ = quantRes.getFaHydroxyEncoding();  
+    results = quantRes.getIdentifications();
 
     Hashtable<String,Vector<Hashtable<String,ResultAreaVO>>> areaSheetVOs = new Hashtable<String,Vector<Hashtable<String,ResultAreaVO>>>();    
     ElementConfigParser elementParser = Settings.getElementParser();
     try{
       if (LipidomicsConstants.isotopicCorrection()) results = IsotopeCorrector.correctIsotopicPattern(elementParser_,results);
       for (String sheetName : results.keySet()){
+        if (!chainsOfClass_.containsKey(sheetName))
+          chainsOfClass_.put(sheetName, 0);
         Hashtable<String,Hashtable<String,ResultAreaVO>> areaVOs = new Hashtable<String,Hashtable<String,ResultAreaVO>>();
         Hashtable<String,String> modifications = new Hashtable<String,String>();
         Vector<String> orderedAnalytes = new Vector<String>();
@@ -1072,8 +1099,22 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
             }
             areaVO.setRetentionTime(recentModification,retentionTime);
             areaVO.setMoreThanOnePeak(recentModification,moreThanOnePeak);
-
-
+            //add the MSn information
+            if (param instanceof LipidomicsMSnSet) {
+              LipidomicsMSnSet msn = (LipidomicsMSnSet)param;
+              areaVO.setMsnEvidence(true);
+              //TODO: here I use only the ones where I find chain information!!!!
+              if (msn.getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED) {
+                Hashtable<String,Double> fullAreas = new Hashtable<String,Double>();
+                for (String combi : msn.getChainCombinationRelativeAreas().keySet()) {
+                  fullAreas.put(combi, msn.getChainCombinationRelativeAreas().get(combi)*((double)param.Area));
+                }
+                nrChains = areaVO.addChainInformation(recentModification,fullAreas);
+                if (nrChains>this.chainsOfClass_.get(sheetName))
+                  this.chainsOfClass_.put(sheetName, nrChains);
+              }
+               
+            }
             Hashtable<String,ResultAreaVO> sameMoleculeDiffRet = new Hashtable<String,ResultAreaVO>();      
             if (areaVOs.containsKey(areaVO.getMoleculeNameWoRT())) sameMoleculeDiffRet = areaVOs.get(areaVO.getMoleculeNameWoRT());
             sameMoleculeDiffRet.put(areaVO.getRt(),areaVO);
@@ -1429,7 +1470,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
   }
   
   @SuppressWarnings("unchecked")
-  private void calculateRelativeComparisonValues(){
+  private void calculateRelativeComparisonValues() throws LipidCombinameEncodingException{
     allMoleculeNames_ = new Hashtable<String,Vector<String>>();
     Hashtable<String,Hashtable<String,Hashtable<String,ResultAreaVO>>> comparativeAreas = new Hashtable<String,Hashtable<String,Hashtable<String,ResultAreaVO>>>();
     Hashtable<String,Hashtable<String,Integer>> comparativeMaxIsotopes_ = new Hashtable<String,Hashtable<String,Integer>>();
@@ -1506,35 +1547,44 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
       comparativeAreas.put(groupName, comparativeAreasOneGroup);
       comparativeMaxIsotopes_.put(groupName, maxIsotopes);
     }
+    this.extractPotentialIsotopicLabels();
     // with this the order is brought into the one of the original input file
     if (correctAnalyteSequence_!=null){
       for (String groupName : correctAnalyteSequence_.keySet()){
         Vector<String> analytesInSequence = correctAnalyteSequence_.get(groupName);
         if (!allMoleculeNames_.containsKey(groupName)) continue;
         Vector<String> unorderedSequence = allMoleculeNames_.get(groupName);
-        Vector<String> correctOrder = new Vector<String>();
-        for (String anal : analytesInSequence){
-          Vector<DoubleStringVO> sameRt = new Vector<DoubleStringVO>();
-          for (String isThereAnal : unorderedSequence){
-            if (expRtGroupingTime_>0 && !isThereAnal.startsWith(isSelectionPrefix_) && !isThereAnal.startsWith(esSelectionPrefix_)){
-              if (isThereAnal.startsWith(anal)&&isThereAnal.toCharArray()[anal.length()]=='_'){
-                try{
-                  String rtString = isThereAnal.substring(anal.length()+1);
-                  double rt = Double.parseDouble(rtString);
-                  sameRt.add(new DoubleStringVO(rtString,rt));
-                } catch (NumberFormatException nfx){}
-              }
-            }else{
-              if (anal.equalsIgnoreCase(isThereAnal)){
-                correctOrder.add(anal);
-                break;
+        Vector<String> correctOrder = new Vector<String>();        
+        for (String analPlain : analytesInSequence){
+          Vector<String> analytesInclIsotopicLabels = new Vector<String>();
+          analytesInclIsotopicLabels.add(analPlain);
+          for (IsotopicLabelVO labelVO : isoLabels_) {
+            for (String prefix : labelVO.getPrefixes().keySet())
+              analytesInclIsotopicLabels.add(prefix+analPlain);
+          }
+          for (String anal : analytesInclIsotopicLabels) {
+            Vector<DoubleStringVO> sameRt = new Vector<DoubleStringVO>();
+            for (String isThereAnal : unorderedSequence){
+              if (expRtGroupingTime_>0 && !isThereAnal.startsWith(isSelectionPrefix_) && !isThereAnal.startsWith(esSelectionPrefix_)){
+                if (isThereAnal.startsWith(anal)&&isThereAnal.toCharArray()[anal.length()]=='_'){
+                  try{
+                    String rtString = isThereAnal.substring(anal.length()+1);
+                    double rt = Double.parseDouble(rtString);
+                    sameRt.add(new DoubleStringVO(rtString,rt));
+                  } catch (NumberFormatException nfx){}
+                }
+              }else{
+                if (anal.equalsIgnoreCase(isThereAnal)){
+                  correctOrder.add(anal);
+                  break;
+                }
               }
             }
-          }
-          if (expRtGroupingTime_>0){
-            Collections.sort(sameRt,new GeneralComparator("at.tugraz.genome.lda.vos.DoubleStringVO", "getValue", "java.lang.Double"));
-            for (DoubleStringVO rt : sameRt){
-              correctOrder.add(anal+"_"+rt.getKey());
+            if (expRtGroupingTime_>0){
+              Collections.sort(sameRt,new GeneralComparator("at.tugraz.genome.lda.vos.DoubleStringVO", "getValue", "java.lang.Double"));
+              for (DoubleStringVO rt : sameRt){
+                correctOrder.add(anal+"_"+rt.getKey());
+              }
             }
           }
         }
@@ -2748,6 +2798,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
     correctAnalyteSequence_ = null;
     if (quantObjects_!=null)quantObjects_.clear();
     quantObjects_ = null;
+    this.isoLabels_ = null;
   }
   
   public Vector<String> getExpsOfGroup (String group){
@@ -3104,5 +3155,630 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
   protected void disableRtGrouping(){
     this.expRtGroupingTime_ = -1d;
   }
+  
+  
+  @SuppressWarnings("unchecked")
+  /**
+   * extracts information about potential labels out of the provided data
+   */
+  private void extractPotentialIsotopicLabels() throws LipidCombinameEncodingException {
+    char[] aChars;
+    int stop;
+    String lab;
+    
+    //first, check which prefixes are present, and which labels do they cause
+    isoLabels_ = new ArrayList<IsotopicLabelVO>();
+    Set<String> prefixes = new HashSet<String>(); 
+    String pref;
+    for(String lClass : this.allMoleculeNames_.keySet()) {
+      for (String anal : this.allMoleculeNames_.get(lClass)) {
+        aChars = anal.toCharArray();
+        if (Character.isDigit(aChars[0]))
+          continue;
+        if (anal.startsWith(isSelectionPrefix_) && anal.length()>isSelectionPrefix_.length() && Character.isDigit(aChars[isSelectionPrefix_.length()]))
+          continue;
+        if (anal.startsWith(esSelectionPrefix_) && anal.length()>esSelectionPrefix_.length() && Character.isDigit(aChars[esSelectionPrefix_.length()]))
+          continue;
+        stop = 0;
+        while (!Character.isDigit(aChars[stop]))
+          stop++;
+        pref = anal.substring(0,stop);
+        if (!lcbHydroxyEncoding_.values().contains(pref) && !faHydroxyEncoding_.values().contains(pref))
+          prefixes.add(pref);
+      }
+    }
+    Set<String> singleLabels = new HashSet<String>();
+    Hashtable<String,String> singleLabelLookup = new Hashtable<String,String>();
+    Hashtable<String,Integer> labelToNrOfSingles = new Hashtable<String,Integer>();
+    StaticUtils.extractIsoLabelInformation(prefixes, singleLabels, singleLabelLookup, labelToNrOfSingles);
+    Hashtable<String,Set<String>> singlesToPrefixes = new Hashtable<String,Set<String>>();
+    for (String prefix : singleLabelLookup.keySet()) {
+      lab = singleLabelLookup.get(prefix);
+      if (!singlesToPrefixes.containsKey(lab))
+        singlesToPrefixes.put(lab, new HashSet<String>());
+      singlesToPrefixes.get(lab).add(prefix);
+    }
+    
+    String analOnly;
+    Hashtable<String,Integer> diffsPerLabel;
+    //label information is extracted - now look for partners
+    for (String label : singleLabels) {
+      Set<String> possPrefixes = singlesToPrefixes.get(label);
+      // key: molecule name; value Hashtable containing the difference in the chemical formula: key: element sign; value: difference
+      Hashtable<String,Hashtable<String,Integer>> partnerChemFormDiff = new Hashtable<String,Hashtable<String,Integer>>();
+      for(String lClass : this.allMoleculeNames_.keySet()) {
+        for (String anal : this.allMoleculeNames_.get(lClass)) {
+          analOnly = new String(anal);
+          if (expRtGroupingTime_>0)
+            analOnly = analOnly.substring(0,analOnly.lastIndexOf("_"));
+          aChars = analOnly.toCharArray();
+          if (!Character.isDigit(aChars[0]))
+            continue;
+          for (String prefix : possPrefixes) {
+            Hashtable<String,Integer> labelDiffs = checkForIsoPartnerMassDifference(lClass, analOnly, prefix+analOnly);
+            if (labelDiffs == null)
+              continue;
+            boolean ok = true;
+            for (String element : labelDiffs.keySet()) {
+              if (!(labelDiffs.get(element)%labelToNrOfSingles.get(prefix)==0))
+                ok = false;
+            }
+            if (ok) {
+              diffsPerLabel = new Hashtable<String,Integer>();
+              for (String element : labelDiffs.keySet()) diffsPerLabel.put(element, labelDiffs.get(element)/labelToNrOfSingles.get(prefix));
+              partnerChemFormDiff.put(prefix+analOnly, diffsPerLabel);
+            }
+          }
+        }
+      }
+      Hashtable<String,Integer> numberOfDifferences = new Hashtable<String,Integer>();
+      Hashtable<String,Hashtable<String,Integer>> formulaLookup = new Hashtable<String,Hashtable<String,Integer>>();
+      for (String mol : partnerChemFormDiff.keySet()) {
+        String formula = StaticUtils.getFormulaInHillNotation(partnerChemFormDiff.get(mol),false);
+        if (!numberOfDifferences.containsKey(formula)) {
+          numberOfDifferences.put(formula, 0);
+          formulaLookup.put(formula, partnerChemFormDiff.get(mol));
+        }
+        numberOfDifferences.put(formula, numberOfDifferences.get(formula)+1);
+      }
+
+      String mostOftenChange = null;
+      int highestNumber = 0;
+      int totalNumber = 0;
+      for (String formula : numberOfDifferences.keySet()) {
+        if (numberOfDifferences.get(formula)>highestNumber) {
+          mostOftenChange = formula;
+          highestNumber = numberOfDifferences.get(formula);
+        }
+        totalNumber += numberOfDifferences.get(formula);
+      }
+      //if the same formula difference has been detected in 80% of the cases, this label is accepted
+      if (numberOfDifferences.get(mostOftenChange)>=((totalNumber*4)/5)) {
+        List<String> prefixesOnly = new ArrayList<String>(singlesToPrefixes.get(label));
+        Collections.sort(prefixesOnly);
+        LinkedHashMap<String,Integer> prefixesAndNr = new LinkedHashMap<String,Integer>();
+        for (String prefix : prefixesOnly)
+          prefixesAndNr.put(prefix, labelToNrOfSingles.get(prefix));
+        isoLabels_.add(new IsotopicLabelVO(label,formulaLookup.get(mostOftenChange),prefixesAndNr));
+      }
+    }
+    Collections.sort(isoLabels_,new GeneralComparator("at.tugraz.genome.lda.vos.IsotopicLabelVO", "getLabelId", "java.lang.String"));
+    
+    // now extract the best matching retention times
+    if (isoLabels_.size()==0 || !(expRtGroupingTime_>0))
+      return;
+    // the RT differences for each label
+    Hashtable<String,Vector<Float>> labelRtDiffs = new Hashtable<String,Vector<Float>>();
+    for (IsotopicLabelVO label : isoLabels_)
+      labelRtDiffs.put(label.getLabelId(), new Vector<Float>());
+    Vector<Object> isoAnal;
+    Hashtable<String,Integer> elements = new Hashtable<String,Integer>();
+    Hashtable<String,Integer> chainFrequencies;
+    int mostOftenDetection;
+    int timesFound;
+    String name;
+    String mostOftenFound;
+//    int nrIsos = 0;
+    DoubleStringVO isoPartner;
+    double diff;
+    for (String lClass : allMoleculeNames_.keySet()) {
+      Hashtable<String,Vector<ResultAreaVO>> resultsOfClass = this.allResults_.get(lClass);
+      Hashtable<String,String> usedAnalytes = new Hashtable<String,String>();
+      for (String analWithRt : this.allMoleculeNames_.get(lClass)) {
+        String anal = analWithRt.substring(0,analWithRt.lastIndexOf("_"));        
+        if (usedAnalytes.containsKey(anal) || anal.startsWith(isSelectionPrefix_) || anal.startsWith(esSelectionPrefix_))
+          continue;
+        usedAnalytes.put(anal,anal);
+        // first, we have to select the analyte only if it is not an isotopic label
+        boolean mightBeIsoLabel = false;
+        for (IsotopicLabelVO isoLabel : isoLabels_) {
+          if (anal.startsWith(isoLabel.getLabelId())) {
+            mightBeIsoLabel = true;
+            break;
+          }
+        }
+        if (mightBeIsoLabel)
+          continue;
+        //now, get the RTs of all the unlabeled hits of this analyte in the sample
+        List<DoubleStringVO> foundRTs = new ArrayList<DoubleStringVO>();
+        for (String otherAnal : this.allMoleculeNames_.get(lClass)) {
+          if (otherAnal.startsWith(anal) && otherAnal.lastIndexOf("_")==anal.length()) {
+            foundRTs.add(new DoubleStringVO(otherAnal,new Double(otherAnal.substring(otherAnal.lastIndexOf("_")+1))));
+          }
+        }
+        Collections.sort(foundRTs,new GeneralComparator("at.tugraz.genome.lda.vos.DoubleStringVO", "getValue", "java.lang.Double"));
+        
+        //now get the elemental composition of the unlabeled sample, and read the strongest matching chain information if any
+        Hashtable<String,Integer> unlabeledElements = new Hashtable<String,Integer>();
+        Hashtable<String,String> mostOftenChainCombination = new Hashtable<String,String>();
+        Hashtable<String,Hashtable<String,String>> mostOftenChainCombiInEachFile = new Hashtable<String,Hashtable<String,String>>();
+        for (DoubleStringVO vo : foundRTs)
+          mostOftenChainCombiInEachFile.put(vo.getKey(), new Hashtable<String,String>());
+        for (String file : resultsOfClass.keySet()) {
+          Vector<ResultAreaVO> resultsOfFile = resultsOfClass.get(file);
+          for (ResultAreaVO areaVO : resultsOfFile) {
+            if (!areaVO.getMoleculeNameWoRT().equalsIgnoreCase(anal))
+              continue;
+            if (unlabeledElements.size()==0)
+              unlabeledElements = areaVO.getChemicalFormulaElements();
+            if (areaVO.getStrongestChainIdentification()!=null)
+              mostOftenChainCombiInEachFile.get(areaVO.getMoleculeName()).put(file, areaVO.getStrongestChainIdentification());
+          }
+        }
+        // calculate mostOftenChainIdentification
+        for (String analWRT : mostOftenChainCombiInEachFile.keySet()) {
+          chainFrequencies = new Hashtable<String,Integer>();
+          mostOftenDetection = 0;
+          Hashtable<String,String> eachFile = mostOftenChainCombiInEachFile.get(analWRT);
+          mostOftenFound = "";
+          for (String chainCombi : eachFile.values()) {
+            timesFound = 0;
+            name = chainCombi;
+            if (chainFrequencies.containsKey(name))
+              timesFound = chainFrequencies.get(name);
+            else {
+              for (String otherCombi : chainFrequencies.keySet()) {
+                if (StaticUtils.isAPermutedVersion(name, otherCombi, LipidomicsConstants.CHAIN_COMBI_SEPARATOR)) {
+                  name = otherCombi;
+                  timesFound = chainFrequencies.get(name);
+                }
+              }
+            }
+            timesFound++;
+            chainFrequencies.put(name, timesFound);
+            if (timesFound>mostOftenDetection) {
+              mostOftenDetection = timesFound;
+              mostOftenFound = name;
+            }
+          }
+          if (mostOftenDetection>0)
+            mostOftenChainCombination.put(analWRT, mostOftenFound);
+        }
+        
+        //now, search for the labeled species and check which one comes closest to the unlabeled ones
+        for (IsotopicLabelVO label : isoLabels_) {
+          //now, we use the original data to get an more accurate comparison
+          Hashtable<String,Integer> labeledSpecies = new Hashtable<String,Integer>();
+          Hashtable<String,Hashtable<String,Integer>> labeledSpeciesElements = new Hashtable<String,Hashtable<String,Integer>>();
+          for (String prefix : label.getPrefixes().keySet()) {
+            labeledSpecies.put(prefix+anal, label.getPrefixes().get(prefix));
+            elements = new Hashtable<String,Integer>(unlabeledElements);
+            addLabelElements(elements,label.getLabelElements(),label.getPrefixes().get(prefix));
+            labeledSpeciesElements.put(prefix+anal, elements);
+          }
+          for (String file : resultsOfClass.keySet()) {
+            Vector<ResultAreaVO> resultsOfFile = resultsOfClass.get(file);
+            for (ResultAreaVO areaVO : resultsOfFile) {
+              if (!labeledSpecies.containsKey(areaVO.getMoleculeNameWoRT()))
+                continue;
+              if (!StaticUtils.isChemicalFormulaTheSame(areaVO.getChemicalFormulaElements(),labeledSpeciesElements.get(areaVO.getMoleculeNameWoRT())))
+                continue;
+              double isoRt = Double.parseDouble(areaVO.getRt());
+              Vector<DoubleStringVO> closestInformation = findClosestPartners(isoRt,foundRTs);
+              String[] chainIdentifications = getChainIdentifications(closestInformation,file,mostOftenChainCombiInEachFile,mostOftenChainCombination);
+//              if (!lClass.equalsIgnoreCase("PI"))
+//                continue;
+//              System.out.println(areaVO.getMoleculeName());
+              isoAnal = checkChainInformationOrSelectClosestPartner(label, labeledSpecies.get(areaVO.getMoleculeNameWoRT()), closestInformation, areaVO.getStrongestChainIdentification(), chainIdentifications);
+              if (isoAnal.size()==0)
+                continue;
+              isoPartner = (DoubleStringVO)isoAnal.get(0);
+              diff = isoPartner.getValue();
+              if (closestInformation.get(1).getKey()!=null && closestInformation.get(1).getKey().equalsIgnoreCase(isoPartner.getKey()))
+                diff = diff*-1d;
+              diff = diff/((double)labeledSpecies.get(areaVO.getMoleculeNameWoRT()));            
+              if ((Boolean)isoAnal.get(1))
+//                System.out.println("diff: "+diff);
+                labelRtDiffs.get(label.getLabelId()).add((float)diff);
+              
+              
+//              The next step is to look for the closest identifications in the one or the other direction. If there is information about molecular species -> the one is taken that matches, if both match the closer one shall be selected
+//              Then the RT difference is written into the list for each isotopic label (if the molecular species matches, it is written twice, otherwise only once)
+              
+              
+              //if (lClass.equalsIgnoreCase("PI")) {
+                //System.out.println(areaVO.getMoleculeName()+": "+(closestPartners[0]!=null ? closestPartners[0] : "")+" "+(closestPartners[1]!=null ? closestPartners[1] : ""));
+                //System.out.println(areaVO.getMoleculeName()+" "+(areaVO.getStrongestChainIdentification()!=null?areaVO.getStrongestChainIdentification():"")+": "+(chainIdentifications[0]!=null ? chainIdentifications[0] : "")+" "+(chainIdentifications[1]!=null ? chainIdentifications[1] : ""));
+ //               nrIsos++;
+              //}  
+            }
+          }
+        }
+        
+//      if (lClass.equalsIgnoreCase("PI"))
+//      System.out.println(anal+": "+otherAnal);
+
+        
+//        if (lClass.equalsIgnoreCase("PI"))
+//          System.out.println("anal: "+anal);
+      }
+    }
+    //calculate the median of the retention time and add it to the label
+    for (IsotopicLabelVO label : isoLabels_) {
+      if (labelRtDiffs.get(label.getLabelId()).size()>0) {
+        List<Float> values = new ArrayList<Float>(labelRtDiffs.get(label.getLabelId()));
+        Collections.sort(values);
+        label.setRtShift(Calculator.median(labelRtDiffs.get(label.getLabelId())));
+        //System.out.println(label.getLabelId()+": "+label.getRtShift()+"     "+labelRtDiffs.get(label.getLabelId()).size());
+      }
+    }
+    //some omega-positions are not that frequent in nature - thus, the prediction should rather be based on the more frequent ones
+    //a prediction is done on the number of labels, where linearity is assumed (a single isotopic label causes the same shift)
+    //first, group together the labels that are caused by the same isotope
+    Hashtable<String,Vector<IsotopicLabelVO>> labelsOfSameIsotope = new Hashtable<String,Vector<IsotopicLabelVO>>();
+    List<String> isotopes;
+    String isotopeId;
+    //first, group together the labels that are caused by the same isotope
+    for (IsotopicLabelVO label : isoLabels_) {
+      isotopes = new ArrayList<String>();
+      for (String element : label.getLabelElements().keySet()) {
+        if (label.getLabelElements().get(element)>0)
+          isotopes.add(element);
+      }
+      Collections.sort(isotopes);
+      isotopeId = "";
+      for (String iso : isotopes) 
+        isotopeId += iso;
+      if (!labelsOfSameIsotope.containsKey(isotopeId))
+        labelsOfSameIsotope.put(isotopeId, new Vector<IsotopicLabelVO>());
+      labelsOfSameIsotope.get(isotopeId).add(label);
+    }
+    //now calculate the retention time values weighted by the frequency of their occurrence
+    for (Vector<IsotopicLabelVO> labels : labelsOfSameIsotope.values()) {
+      isotopes = new ArrayList<String>();
+      for (String element : labels.get(0).getLabelElements().keySet()) {
+        if (labels.get(0).getLabelElements().get(element)>0)
+          isotopes.add(element);
+      }
+      float totalShift = 0f;
+      int totalDivisor = 0;
+      int nrElements;
+      for (IsotopicLabelVO label : labels) {
+        if (label.getRtShift()==null)
+          continue;
+        nrElements = 0;
+        for (String element : isotopes)
+          nrElements += label.getLabelElements().get(element);
+        totalShift += ((float)labelRtDiffs.get(label.getLabelId()).size())*(label.getRtShift()/((float)nrElements));
+        totalDivisor += labelRtDiffs.get(label.getLabelId()).size();
+      }
+      float shiftEachLabelElement = totalShift/((float)totalDivisor);
+//      System.out.println("shiftEachLabelElement: "+shiftEachLabelElement);
+      for (IsotopicLabelVO label : labels) {
+        nrElements = 0;
+        for (String element : isotopes)
+          nrElements += label.getLabelElements().get(element);
+        label.setRtShift(shiftEachLabelElement*((float)nrElements));
+      }
+    }
+    // the results
+//    for (IsotopicLabelVO label : isoLabels_) {
+//      System.out.println(label.getLabelId()+": "+label.getRtShift());
+//    }
+    
+//    System.out.println("nrIsos: "+nrIsos);
+  }
+  
+  
+  /**
+   * searches for elemental composition of the difference between labeled partners
+   * @param lClass the lipid class
+   * @param unlabeled the name of the unlabeled version
+   * @param labeled the name of the labeled version
+   * @return the difference in elements for the labeling
+   */
+  private Hashtable<String,Integer> checkForIsoPartnerMassDifference(String lClass, String unlabeled, String labeled){
+    Hashtable<String,Integer> result = null;
+    String analOnly;
+    int diff;
+    for (String anal : this.allMoleculeNames_.get(lClass)) {
+      if (!anal.startsWith(labeled))
+        continue;
+      analOnly = new String(anal);
+      if (expRtGroupingTime_>0)
+        analOnly = analOnly.substring(0,analOnly.lastIndexOf("_"));
+      if (!analOnly.equalsIgnoreCase(labeled))
+        continue;
+      Hashtable<String,Integer> formulaUnlabeled = getFormulaFromResultAreaVOHash(lClass, unlabeled);
+      Hashtable<String,Integer> formulaLabeled = getFormulaFromResultAreaVOHash(lClass, labeled);
+      if (formulaUnlabeled==null || formulaLabeled==null)
+        continue;
+      result = new Hashtable<String,Integer>();
+      for (String element : formulaLabeled.keySet()) {
+        diff = formulaLabeled.get(element)-(formulaUnlabeled.containsKey(element) ? formulaUnlabeled.get(element) : 0);
+        //TODO: I am not sure whether I should display the subtracted chemical elements
+////        if (diff<1)
+////          continue;
+        result.put(element, diff);
+      }
+    }
+    return result;
+  }
+  
+  
+  /**
+   * searches in the allResultsHash_ for a specific analyte and returns the chemical formula as hash table
+   * @param lClass the class name of the analyte
+   * @param anal the name of the analyte
+   * @return the chemical formula as hash table
+   */
+  private Hashtable<String,Integer> getFormulaFromResultAreaVOHash(String lClass, String anal){
+    Hashtable<String,Integer> formula = null;
+    for (Hashtable<String,ResultAreaVO> hitsPerFile : allResultsHash_.get(lClass).values()) {
+      for (String otherAnal : hitsPerFile.keySet()) {
+        String other = (expRtGroupingTime_>0 ? otherAnal.substring(0,otherAnal.lastIndexOf("_")) : otherAnal);
+        if (!anal.contentEquals(other))
+          continue;
+        formula = hitsPerFile.get(otherAnal).getChemicalFormulaElements();
+        break;        
+      }
+      if (formula!=null)
+        break;
+    }
+    return formula;
+  }
+
+  /**
+   * 
+   * @return list of potential isotopic labels
+   */
+  public List<IsotopicLabelVO> getIsoLabels()
+  {
+    return isoLabels_;
+  }
+  
+  /**
+   * adds the number of elements to a chemical formula in form of a hashtable
+   * @param elements the chemical formula
+   * @param labelElements the label elements that have to be added
+   * @param nrOfLabels how often has this label been applied to this species
+   */
+  private void addLabelElements(Hashtable<String,Integer> elements, Hashtable<String,Integer> labelElements, int nrOfLabels) {
+    for (String element : labelElements.keySet()) {
+      int nrOfElements = 0;
+      if (elements.containsKey(element))
+        nrOfElements = elements.get(element);
+      nrOfElements += nrOfLabels*labelElements.get(element);
+      elements.put(element, nrOfElements);
+    }
+  }
+  
+  /**
+   * searches for the closest unlabeled partners out of list if identifications - the partner eluting sooner and later are returned
+   * @param isoRt the retention time of the isotopically labeled species
+   * @param foundRTs the retention times of the detected unlabeled species
+   * @return a vector containing two species: the first one is the unlabeled partner that elutes sooner, the second one elutes later; if no partner is detected, the DoubleStringVO.getKey() returns null 
+   */
+  private Vector<DoubleStringVO> findClosestPartners(double isoRt, List<DoubleStringVO> foundRTs) {
+    Vector<DoubleStringVO> closestInformation = new Vector<DoubleStringVO>();
+    String[] partners = new String[2];
+    partners[0] = null;
+    partners[1] = null;
+    Double[] timeDiffs = new Double[2];
+    timeDiffs[0] = Double.MAX_VALUE;
+    timeDiffs[1] = Double.MAX_VALUE;
+    for (DoubleStringVO hit : foundRTs) {
+      if (hit.getValue()<=isoRt) {
+        if ((isoRt-hit.getValue())<timeDiffs[0]) {
+          timeDiffs[0] = isoRt-hit.getValue();
+          partners[0] = hit.getKey();
+        }
+      }else{
+        if ((hit.getValue()-isoRt)<timeDiffs[1]) {
+          timeDiffs[1] = (hit.getValue()-isoRt);
+          partners[1] = hit.getKey();
+        }
+      }
+    }
+    closestInformation.add(new DoubleStringVO(partners[0],timeDiffs[0]));
+    closestInformation.add(new DoubleStringVO(partners[1],timeDiffs[1]));
+    return closestInformation;
+  }
+  
+  /**
+   * detects the strongest chain identification of closely eluting unlabeled species
+   * @param closestInfo a vector containing two species: the first one is the unlabeled partner that elutes sooner, the second one elutes later; if no partner is detected, the DoubleStringVO.getKey() returns null; the DoubleStringVO.getValue() contains the retention time difference
+   * @param file the file where the detection had been found
+   * @param mostOftenChainCombiInEachFile a hash table containing information about the strongest chain identification in each search; first key: the molecule name inclusive retention time; second key: the file name; value: the chain identification
+   * @param mostOftenChainCombination a hash table containing the strongest, most often detected chain identification detected in all of the provided MS-runs; key: the molecule name inclusive retention time; value: the chain identification
+   * @return the strongest chain identification of closely eluting unlabeled species; String[0] is the sooner eluting partner; String[1] is the later eluting partner; the corresponding values are null if there was no partner identified
+   */
+  private String[] getChainIdentifications(Vector<DoubleStringVO> closestInfo, String file, Hashtable<String,Hashtable<String,String>> mostOftenChainCombiInEachFile,
+      Hashtable<String,String> mostOftenChainCombination) {
+    String[] partnerChains = new String[2];
+    partnerChains[0]=null;
+    partnerChains[1]=null;
+    
+    if (closestInfo.get(0).getKey()!=null && mostOftenChainCombiInEachFile.get(closestInfo.get(0).getKey()).containsKey(file))
+      partnerChains[0] = mostOftenChainCombiInEachFile.get(closestInfo.get(0).getKey()).get(file);
+    else if (closestInfo.get(0).getKey()!=null && mostOftenChainCombination.containsKey(closestInfo.get(0).getKey()))
+      partnerChains[0] = mostOftenChainCombination.get(closestInfo.get(0).getKey());
+    
+    if (closestInfo.get(1).getKey()!=null && mostOftenChainCombiInEachFile.get(closestInfo.get(1).getKey()).containsKey(file))
+      partnerChains[1] = mostOftenChainCombiInEachFile.get(closestInfo.get(1).getKey()).get(file);
+    else if (closestInfo.get(1).getKey()!=null && mostOftenChainCombination.containsKey(closestInfo.get(1).getKey()))
+      partnerChains[1] = mostOftenChainCombination.get(closestInfo.get(1).getKey());
+    
+    return partnerChains;
+  }
+  
+  
+  @SuppressWarnings("unused")
+  /**
+   * detects the partner that has the same chain identification as the isotopically labeled species; or if there are no chain identifications, the closest partner
+   * @param label value object containing information about the isotopic label
+   * @param nrOfLabels the number of labels applied to to this isotopically labeled species
+   * @param closestInfo a vector containing two species: the first one is the unlabeled partner that elutes sooner, the second one elutes later; if no partner is detected, the DoubleStringVO.getKey() returns null; the DoubleStringVO.getValue() contains the retention time difference
+   * @param labeledChain the chain identification of the isotopically labeled species
+   * @param chainIdentifications the strongest chain identification of closely eluting unlabeled species; String[0] is the sooner eluting partner; String[1] is the later eluting partner; the corresponding values are null if there was no partner identified
+   * @return vector of two values; the first one is a DoubleStringVO with the closest partner; the second is a boolean that is true when the closest partner has the same chain identification
+   * @throws LipidCombinameEncodingException thrown if the encoded lipid name does not follow the LDA syntax
+   */
+  private Vector<Object> checkChainInformationOrSelectClosestPartner(IsotopicLabelVO label, int nrOfLabels, Vector<DoubleStringVO> closestInfo, String labeledChain, String[] chainIdentifications) throws LipidCombinameEncodingException {
+    Vector<Object> partnerValues = new Vector<Object>();
+    DoubleStringVO partner = null;
+    boolean isChainIdent = false;
+    if (labeledChain!=null && (chainIdentifications[0]!=null || chainIdentifications[1]!=null)) {
+//      System.out.println(labeledChain+";"+closestInfo.get(0).getKey()+" "+chainIdentifications[0]+";"+closestInfo.get(1).getKey()+" "+chainIdentifications[1]);
+      isChainIdent = true;
+      boolean containsFirstChain = containsLabeledChain(label, nrOfLabels, labeledChain, chainIdentifications[0]);
+      boolean containsSecondChain = containsLabeledChain(label, nrOfLabels, labeledChain, chainIdentifications[1]);
+      if (containsFirstChain && containsSecondChain) {
+        if (closestInfo.get(1).getValue()<closestInfo.get(0).getValue())
+          partner = closestInfo.get(1);
+        else
+          partner = closestInfo.get(0);
+      }else if (containsFirstChain)
+        partner = closestInfo.get(0);
+      else if (containsSecondChain)
+        partner = closestInfo.get(1);
+    } else if (labeledChain==null && (chainIdentifications[0]==null || chainIdentifications[1]==null)) {
+      if (closestInfo.get(1).getValue()<closestInfo.get(0).getValue())
+        partner = closestInfo.get(1);
+      else
+        partner = closestInfo.get(0);
+    }
+    if (partner!=null) {
+      partnerValues.add(partner);
+      partnerValues.add(isChainIdent);
+    }
+    return partnerValues;
+  }
+  
+  /**
+   * checks whether the unlabeled chain identification is the same as the one carrying the isotopic label
+   * @param label value object containing information about the isotopic label
+   * @param nrOfLabels the number of labels applied to to this isotopically labeled species
+   * @param labeledChain the identification of the labeled chain in its LDA encoded stale
+   * @param chainIdentification the identification of the unlabeled chain in its LDA encoded style
+   * @return true when the unlabeled chain and the labeled version are principally the same (except for the additional label)
+   * @throws LipidCombinameEncodingException thrown if the encoded lipid name does not follow the LDA syntax
+   */
+  private boolean containsLabeledChain(IsotopicLabelVO label, int nrOfLabels, String labeledChain, String chainIdentification) throws LipidCombinameEncodingException {
+    if (chainIdentification==null)
+      return false;
+    Vector<String> permutedLabels = createPermutedLabeledChains(label,nrOfLabels,chainIdentification);
+    for (String permutedLabel : permutedLabels) {
+      if (StaticUtils.isAPermutedVersion(permutedLabel, labeledChain, LipidomicsConstants.CHAIN_COMBI_SEPARATOR))
+        return true;
+    }
+    return false;
+  }
+  
+  /**
+   * creates a list of possible chain combinations out of the unlabeled species carrying the label(s) at different chain positions 
+   * @param label value object containing information about the isotopic label
+   * @param nrOfLabels the number of labels applied to to this isotopically labeled species
+   * @param chainIdentification the identification of the unlabeled chain in its LDA encoded style
+   * @return a list of possible chain combinations species carrying the label(s) at different chain positions 
+   * @throws LipidCombinameEncodingException thrown if the encoded lipid name does not follow the LDA syntax
+   */
+  private Vector<String> createPermutedLabeledChains(IsotopicLabelVO label, int nrOfLabels, String chainIdentification) throws LipidCombinameEncodingException {
+    Vector<FattyAcidVO> fas = StaticUtils.decodeLipidNamesFromChainCombi(chainIdentification);
+    Vector<Vector<Boolean>> labelPositions = getAllPossibleCombinations(fas.size());
+    Vector<Vector<Boolean>> correctLabelNr = new Vector<Vector<Boolean>>();
+    for (Vector<Boolean> combi : labelPositions) {
+      int labels = 0;
+      for (Boolean labelThere : combi) {
+        if (labelThere) labels++;
+      }
+      if (labels==nrOfLabels)
+        correctLabelNr.add(combi);
+    }
+    Vector<String> chainCombis = new Vector<String>();
+    //this was added that only species with at least two chains are used for the retention time shift detection
+    if (fas.size()<2)
+      return chainCombis;
+    for (Vector<Boolean> correct : correctLabelNr) {
+      Vector<FattyAcidVO> fasNew = new Vector<FattyAcidVO>();
+      for (int i=0;i!=correct.size();i++) {
+        if (correct.get(i)) {
+          FattyAcidVO old = fas.get(i);
+          //it does not matter if I take the wrong old masses
+          fasNew.add(new FattyAcidVO(old.getChainType(), label.getLabelId(), old.getcAtoms(), old.getDoubleBonds(), old.getOhNumber(), old.getMass(), old.getFormula()));
+        }else {
+          fasNew.add(fas.get(i));
+        }
+      }
+      chainCombis.add(StaticUtils.encodeLipidCombi(fasNew));
+    }
+    return chainCombis;
+  }
+  
+  Vector<Vector<Boolean>> getAllPossibleCombinations(int size){
+    Vector<Vector<Boolean>> combis = new Vector<Vector<Boolean>>();
+    if (size>1) {
+      Vector<Vector<Boolean>> otherCombis = getAllPossibleCombinations(size-1);
+      for (Vector<Boolean> combi : otherCombis) {
+        Vector<Boolean> newCombi = new Vector<Boolean>(combi);
+        newCombi.add(0,true);
+        combis.add(newCombi);
+      }
+      for (Vector<Boolean> combi : otherCombis) {
+        Vector<Boolean> newCombi = new Vector<Boolean>(combi);
+        newCombi.add(0,false);
+        combis.add(newCombi);
+      }
+    }else {
+      Vector<Boolean> newCombi = new Vector<Boolean>();
+      newCombi.add(true);
+      combis.add(newCombi);
+      newCombi = new Vector<Boolean>();
+      newCombi.add(false);
+      combis.add(newCombi);
+
+    }
+    return combis;
+  }
+
+  /**
+   * 
+   * @return the character encoding of the number of hydroxylation sites for the FA
+   */
+  public HydroxyEncoding getFaHydroxyEncoding()
+  {
+    return faHydroxyEncoding_;
+  }
+
+  /**
+   * 
+   * @return the character encoding of the number of hydroxylation sites for the LCB
+   */
+  public HydroxyEncoding getLcbHydroxyEncoding()
+  {
+    return lcbHydroxyEncoding_;
+  }
+
+  /**
+   * 
+   * @return a hash table containing the number of chains for each lipid class
+   */
+  public Hashtable<String,Integer> getNrOfChainsOfClass()
+  {
+    return chainsOfClass_;
+  }
+  
+  
+  
   
 }

@@ -139,6 +139,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   protected ResultDisplaySettings displaySettings_;
   protected ResultSelectionSettings selectionSettings_;
   protected ExportSettingsPanel exportSettings_;
+  protected OmegaExportDialog omegaExport_;
   protected ResultSelectionSettings combinedChartSettings_;
   protected boolean isGrouped_ = false;
   protected Hashtable<String,String> preferredUnit_ = null;
@@ -212,13 +213,14 @@ public class HeatMapDrawing extends JPanel implements ActionListener
    * @param selectionSettings a dialog box for choosing the values to be displayed in the heat map
    * @param combinedChartSettings a dialog box for choosing the values to be displayed in a combined chart
    * @param exportSettings a dialog box for choosing parameters for the export
+   * @param omegaExport a dialog box for exporting an omega retention time mass list
    * @param rtTolerance the retention time tolerance value (if selected, otherwise null)
    */
   public HeatMapDrawing(String molGroupName,Hashtable<String,Hashtable<String,ResultCompVO>> resultsOfOneGroup, Vector<String> experimentNames, 
       Vector<String> moleculeNames, Hashtable<String,Integer> isLookup, Hashtable<String,Integer> esLookup, int maxIsotopesOfGroup,
       Vector<String> modifications, JLabel statusText, HeatMapClickListener listener, String groupName, HeatMapDrawing ungroupedPartner,
       ResultDisplaySettings displaySettings, ResultSelectionSettings selectionSettings, ResultSelectionSettings combinedChartSettings,
-      ExportSettingsPanel exportSettings, Double rtTolerance){
+      ExportSettingsPanel exportSettings, OmegaExportDialog omegaExport, Double rtTolerance){
     selectedMolecules_ = new Hashtable<String,String>();
     selectedSingleMolecules_ = new Hashtable<String,Hashtable<String,Color>>();
     selectedSingleMoleculesMods_ = new Hashtable<String,Hashtable<String,String>>(); 
@@ -364,6 +366,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
 //    selectionSettings_ = new ResultSelectionSettings(moleculeNames_,true,this);
 //    combinedChartSettings_ = new ResultSelectionSettings(moleculeNames_,false,this);
     exportSettings_ = exportSettings;
+    omegaExport_ = omegaExport;
     
     exportFileChooser_ = new JFileChooser();
     exportFileChooser_.setPreferredSize(new Dimension(600,500));
@@ -538,7 +541,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       if (returnVal == JFileChooser.APPROVE_OPTION) {
         File fileToStore = exportFileChooser_.getSelectedFile();
         @SuppressWarnings("rawtypes")
-        Vector results = this.checkFileStorage(fileToStore,"png");
+        Vector results = checkFileStorage(fileToStore,"png",this);
         fileToStore = (File)results.get(0);
         if ((Boolean)results.get(1)){
           try {
@@ -552,7 +555,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       if (returnVal == JFileChooser.APPROVE_OPTION) {
         File fileToStore = exportFileChooser_.getSelectedFile();
         @SuppressWarnings("rawtypes")
-        Vector results = this.checkFileStorage(fileToStore,"svg");
+        Vector results = checkFileStorage(fileToStore,"svg",this);
         fileToStore = (File)results.get(0);
         if ((Boolean)results.get(1)){
           try {
@@ -585,7 +588,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
           if (returnVal == JFileChooser.APPROVE_OPTION) {
             File fileToStore = exportFileChooser_.getSelectedFile();
             @SuppressWarnings("rawtypes")
-            Vector results = this.checkFileStorage(fileToStore,"xlsx");
+            Vector results = checkFileStorage(fileToStore,"xlsx",this);
             fileToStore = (File)results.get(0);
             if ((Boolean)results.get(1)){
               try {
@@ -615,7 +618,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
           if (returnVal == JFileChooser.APPROVE_OPTION) {
             File fileToStore = exportFileChooser_.getSelectedFile();
             @SuppressWarnings("rawtypes")
-            Vector results = this.checkFileStorage(fileToStore,"txt");
+            Vector results = checkFileStorage(fileToStore,"txt",this);
             fileToStore = (File)results.get(0);
             if ((Boolean)results.get(1)){
               try {
@@ -677,7 +680,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     	    if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_MZTAB)){
           File fileToStore = exportFileChooser_.getSelectedFile();
           @SuppressWarnings("rawtypes")
-          Vector results = this.checkFileStorage(fileToStore,"txt");
+          Vector results = checkFileStorage(fileToStore,"txt",this);
           fileToStore = (File)results.get(0);
           if ((Boolean)results.get(1))
     	        heatMapListener_.exportMzTab(fileToStore, expOptions.getSpeciesType());
@@ -688,6 +691,8 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     	
     } else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_CHROMS)){
       chromExport_.setVisible(true);
+    } else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_N_RT)){
+      omegaExport_.setVisible(true);
     } else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_MAF)) {
     // get the directory where to store the maf.tsv file (1 per experiment)
       exportFileChooser_.setFileSelectionMode(JFileChooser.FILES_ONLY);
@@ -762,9 +767,9 @@ public class HeatMapDrawing extends JPanel implements ActionListener
           @SuppressWarnings("rawtypes")
           Vector results = null;
           if (chromExport_.getPictureType().equalsIgnoreCase(ExportPanel.EXPORT_PNG))
-            results = this.checkFileStorage(fileToStore,"png");
+            results = checkFileStorage(fileToStore,"png",this);
           if (chromExport_.getPictureType().equalsIgnoreCase(ExportPanel.EXPORT_SVG))
-            results = this.checkFileStorage(fileToStore,"svg");
+            results = checkFileStorage(fileToStore,"svg",this);
           fileToStore = (File)results.get(0);
           if ((Boolean)results.get(1) && chromExportThread_==null){
             chromExportThread_ = new ChromExportThread(groupName_,fileToStore,chromExport_.getPictureDimension(),
@@ -1004,18 +1009,18 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   }
   
   @SuppressWarnings({ "unchecked", "rawtypes" })
-  private Vector checkFileStorage (File file, String suffix){
+  public static Vector checkFileStorage (File file, String suffix, JPanel panel){
     Vector results = new Vector();
     boolean store = true;
     File fileToStore = new File(file.getAbsolutePath());
     if (fileToStore.exists()){
-      if (JOptionPane.showConfirmDialog(this, "The file "+fileToStore.getName()+" exists! Replace existing file?") != JOptionPane.YES_OPTION)
+      if (JOptionPane.showConfirmDialog(panel, "The file "+fileToStore.getName()+" exists! Replace existing file?") != JOptionPane.YES_OPTION)
         store = false;
     }else{
       if (fileToStore.getName().indexOf(".")==-1){
         fileToStore = new File(fileToStore.getAbsoluteFile()+"."+suffix);
         if (fileToStore.exists()){
-          if (JOptionPane.showConfirmDialog(this, "The file "+fileToStore.getName()+" exists! Replace existing file?") != JOptionPane.YES_OPTION)
+          if (JOptionPane.showConfirmDialog(panel, "The file "+fileToStore.getName()+" exists! Replace existing file?") != JOptionPane.YES_OPTION)
             store = false;
         }  
       }  
@@ -1583,6 +1588,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       timer_.purge();
     }
     timer_ = null;
+    omegaExport_ = null;
   }
   
   public Hashtable<String,Hashtable<String,Vector<Double>>> getResultValues(String valueType) throws NumberFormatException, CalculationNotPossibleException{

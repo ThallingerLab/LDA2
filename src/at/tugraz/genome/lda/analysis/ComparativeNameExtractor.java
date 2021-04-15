@@ -44,6 +44,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.QuantificationThread;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.SettingsException;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleStringVO;
@@ -97,7 +98,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
     this.filesOfGroup_ = filesOfGroup;  
   }
     
-  protected void extractInformation() throws ExcelInputFileException{
+  protected void extractInformation() throws ExcelInputFileException, LipidCombinameEncodingException{
     expNameCut1_ = new  Vector<String>();
     expNameCut2_ = new  Vector<String>();
     if (resultFiles_.size()>1){
@@ -155,7 +156,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
     
   }
   
-  protected void parseResultFile(File resultFile, String fileName) throws ExcelInputFileException{
+  protected void parseResultFile(File resultFile, String fileName) throws ExcelInputFileException, LipidCombinameEncodingException{
     try {
       InputStream myxls = new FileInputStream(resultFile);
       Workbook workbook = null;

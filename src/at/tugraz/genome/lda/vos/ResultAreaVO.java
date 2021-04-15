@@ -26,14 +26,17 @@ package at.tugraz.genome.lda.vos;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
+import at.tugraz.genome.voutils.GeneralComparator;
 
 /**
  * 
@@ -64,6 +67,14 @@ public class ResultAreaVO
   private boolean internalStandard_;
   /** true when this value is an external standard*/
   private boolean externalStandard_;
+  /** sum chain information over all adducts*/
+  private LinkedHashMap<String,Double> chainInformationTotal_;
+  /** chain information for each adduct*/
+  private Hashtable<String,LinkedHashMap<String,Double>> chainInformationForEachModification_;
+  /** is MSn evidence available*/
+  private boolean msnEvidence_;
+  
+  
   
   /**
    * public constructor for creating a ResultAreaVO
@@ -85,6 +96,7 @@ public class ResultAreaVO
     this.rtOriginal_ = rt;
     this.rt_ = rt;
     allOriginalRts_ = new Hashtable<String,Hashtable<String,String>>();
+    chainInformationForEachModification_ = new Hashtable<String,LinkedHashMap<String,Double>>(); 
   }
   
   /**
@@ -121,6 +133,8 @@ public class ResultAreaVO
     if(percentalSplit>=1) percentalSplit_ = percentalSplit/100f;
     internalStandard_ = internalStandard;
     externalStandard_ = externalStandard;
+    chainInformationTotal_ = new LinkedHashMap<String,Double>();
+    msnEvidence_ = false;
   }
   
   
@@ -155,6 +169,67 @@ public class ResultAreaVO
       rts.put(rt, rt);
       allOriginalRts_.put(modToAdd, rts);
     }
+  }
+
+  /**
+   * adds information about detected chains
+   * @param modName the modification name the chains were detected for
+   * @param areas a hash table of the areas for each coeluting species
+   * @param returns the nr of chains detected for this species
+   * @throws LipidCombinameEncodingException thrown if there is something wrong with the lipid name encoding
+   */
+  public int addChainInformation(String modName, Hashtable<String,Double> areas) throws LipidCombinameEncodingException {
+    double area;
+    int nrChains = 0;
+    int nrChainsDecoded;
+    LinkedHashMap<String,Double> chainInformation = new LinkedHashMap<String,Double>();
+    if (chainInformationForEachModification_.containsKey(modName))
+      chainInformation = chainInformationForEachModification_.get(modName);
+    List<DoubleStringVO> modValues = new ArrayList<DoubleStringVO>();
+    List<DoubleStringVO> totalValues = new ArrayList<DoubleStringVO>();
+    for (String combiName : areas.keySet()) {
+      area = 0d;
+      String name = StaticUtils.encodeLipidCombi(StaticUtils.sortChainVOs(StaticUtils.decodeLipidNamesFromChainCombi(combiName)));
+      //String name = combiName;
+      //find out if there is already a combination with this name
+      if (chainInformation.containsKey(name)) 
+        area = chainInformation.get(name);
+//      }else {
+//        for (String otherCombi : chainInformation.keySet()) {
+//          if (StaticUtils.isAPermutedVersion(name, otherCombi, LipidomicsConstants.CHAIN_COMBI_SEPARATOR)) {
+//            name = otherCombi;
+//            area = chainInformation.get(name);
+//            break;
+//          }
+//        }
+//      }
+      area+=areas.get(combiName);
+      nrChainsDecoded = StaticUtils.decodeLipidNamesFromChainCombi(combiName).size();
+      if (nrChainsDecoded>nrChains)
+        nrChains = nrChainsDecoded;
+      modValues.add(new DoubleStringVO(name,area));
+      //do the same for the total areas
+//      String totalName = name;
+      area=0;
+      if (chainInformationTotal_.containsKey(name))
+        area = chainInformationTotal_.get(name);
+//      if (chainInformationTotal_.containsKey(totalName)) {
+//        area = chainInformationTotal_.get(totalName);
+//      } else {
+//        for (String otherCombi : chainInformation.keySet()) {
+//          if (StaticUtils.isAPermutedVersion(totalName, otherCombi, LipidomicsConstants.CHAIN_COMBI_SEPARATOR)) {
+//            totalName = otherCombi;
+//            area = chainInformation.get(totalName);
+//            break;
+//          }
+//        }       
+//      }
+      area+=areas.get(combiName);
+      totalValues.add(new DoubleStringVO(name,area));      
+    }
+    chainInformationForEachModification_.put(modName, getAreaSortedLinkedHashMap(modValues));
+    chainInformationTotal_ = getAreaSortedLinkedHashMap(totalValues);
+    return nrChains;
   }
   
   
@@ -233,6 +308,13 @@ public class ResultAreaVO
   
   public String getChemicalFormulaBase(){
     return getChemicalFormula("");
+  }
+  
+  /**
+   * @return the chemical formula as a hash table
+   */
+  public Hashtable<String,Integer> getChemicalFormulaElements(){
+    return this.chemicalFormula_;
   }
   
   public Vector<Double> getWeightedNeutralMass()
@@ -515,6 +597,62 @@ public class ResultAreaVO
    */
   public boolean isAStandard(){
     return (internalStandard_ || this.externalStandard_);
+  }
+  
+  
+  /**
+   * returns a list of the chain information sorted by the area (strongest one first)
+   * @param areasInput the unsorted list of areas
+   * @return a list of the chain information sorted by the area (strongest one first)
+   */
+  @SuppressWarnings("unchecked")
+  private LinkedHashMap<String,Double> getAreaSortedLinkedHashMap(List<DoubleStringVO> areasInput) {
+    List<DoubleStringVO> areas = new ArrayList<DoubleStringVO>(areasInput);
+    Collections.sort(areas,new GeneralComparator("at.tugraz.genome.lda.vos.DoubleStringVO", "getValue", "java.lang.Double"));
+    LinkedHashMap<String,Double> sorted = new LinkedHashMap<String,Double>();
+    for (int i=(areas.size()-1); i!=-1; i--) {
+      sorted.put(areas.get(i).getKey(), areas.get(i).getValue());
+    }
+    return sorted;
+  }
+  
+  
+  /**
+   * 
+   * @return the strongest chain identification
+   */
+  public String getStrongestChainIdentification() {
+    if (chainInformationTotal_!=null&&chainInformationTotal_.size()>0)
+      return this.chainInformationTotal_.keySet().iterator().next();
+    else
+      return null;
+  }
+
+  /**
+   * 
+   * @return whether MSn evidence is present
+   */
+  public boolean isMsnEvidenceThere()
+  {
+    return msnEvidence_;
+  }
+
+  /**
+   * set whether MSn evidence is present
+   * @param msnEvidence is MSn evidence present
+   */
+  public void setMsnEvidence(boolean msnEvidence)
+  {
+    this.msnEvidence_ = msnEvidence;
+  }
+
+  /**
+   * 
+   * @return sum chain information over all adducts
+   */
+  public LinkedHashMap<String,Double> getChainInformationTotal()
+  {
+    return chainInformationTotal_;
   }
   
 }
