@@ -5805,7 +5805,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "The \\u03C9-RT mass list cannot be written: "+e.getMessage());
     }
     long usedTime = (System.currentTimeMillis()-time)/1000l;
-    System.out.println("Used time: "+(usedTime/60l)+"minutes "+usedTime%60l+" seconds");
+    System.out.println("Used time: "+(usedTime/60l)+" minutes "+usedTime%60l+" seconds");
   }
   
   

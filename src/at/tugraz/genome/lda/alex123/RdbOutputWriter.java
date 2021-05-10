@@ -338,7 +338,11 @@ public class RdbOutputWriter
           if (selectedMolHash!=null) {
             Vector<String> molsWithRt;
             for (String molWithRt : selectedMolHash.keySet()) {
-              String molName = molWithRt.substring(0,molWithRt.lastIndexOf("_"));
+              String molName;
+              if (analysisModule.isISorES(className, molWithRt))
+                molName = new String(molWithRt);
+              else
+                molName = molWithRt.substring(0,molWithRt.lastIndexOf("_"));
               molsWithRt = new Vector<String>();
               if (fromSpeciesToSpeciesWithRt.containsKey(molName))
                 molsWithRt = fromSpeciesToSpeciesWithRt.get(molName);
@@ -384,7 +388,7 @@ public class RdbOutputWriter
             if ((selectedMolHash==null || selectedMolHash.containsKey(molName)) && foundSpecies.containsKey(molName)){
               Hashtable<String,QuantVO> quantsOfAnalyte = null;
               String molNameWoRt = molName;
-              if (isRtGrouped)
+              if (isRtGrouped && !analysisModule.isISorES(className, molName))
                 molNameWoRt = className+" "+molName.substring(0,molName.lastIndexOf("_"));
               if (quantsOfClass!=null && quantsOfClass.containsKey(molNameWoRt)) quantsOfAnalyte = quantsOfClass.get(molNameWoRt);
               String speciesId = "";
@@ -509,6 +513,8 @@ public class RdbOutputWriter
                   groupingId = molName.substring(molName.lastIndexOf("_")+1);
                   if (speciesToWrite.endsWith("_"+groupingId))
                     speciesToWrite = speciesToWrite.substring(0,speciesToWrite.lastIndexOf("_"));
+                  if (analysisModule.isISorES(className, molName))
+                    groupingId = "";
                 }
                   
                 

@@ -3209,7 +3209,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
       for(String lClass : this.allMoleculeNames_.keySet()) {
         for (String anal : this.allMoleculeNames_.get(lClass)) {
           analOnly = new String(anal);
-          if (expRtGroupingTime_>0)
+          if (expRtGroupingTime_>0 && !this.isISorES(lClass,anal))
             analOnly = analOnly.substring(0,analOnly.lastIndexOf("_"));
           aChars = analOnly.toCharArray();
           if (!Character.isDigit(aChars[0]))
@@ -3253,7 +3253,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
         totalNumber += numberOfDifferences.get(formula);
       }
       //if the same formula difference has been detected in 80% of the cases, this label is accepted
-      if (numberOfDifferences.get(mostOftenChange)>=((totalNumber*4)/5)) {
+      if (mostOftenChange!=null && numberOfDifferences.get(mostOftenChange)>=((totalNumber*4)/5)) {
         List<String> prefixesOnly = new ArrayList<String>(singlesToPrefixes.get(label));
         Collections.sort(prefixesOnly);
         LinkedHashMap<String,Integer> prefixesAndNr = new LinkedHashMap<String,Integer>();
@@ -3778,7 +3778,19 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
     return chainsOfClass_;
   }
   
-  
+  /**
+   * checks whether this species is an internal or external standard
+   * @param className name of the analyte class
+   * @param analyteName name of the analyte
+   * @return true if the analyte is an internal or external standard
+   */
+  public boolean isISorES(String className, String analyteName) {
+    if (this.allISNames_.containsKey(className) && this.allISNames_.get(className).containsKey(analyteName))
+      return true;
+    if (this.allESNames_.containsKey(className) && this.allESNames_.get(className).containsKey(analyteName))
+      return true;
+    return false;
+  }
   
   
 }
