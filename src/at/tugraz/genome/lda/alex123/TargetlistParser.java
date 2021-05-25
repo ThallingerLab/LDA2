@@ -314,6 +314,10 @@ public class TargetlistParser
               StaticUtils.getFormulaInHillNotation(adductCategorized,true), id, category, conflicts, charge,
               carbonNumber, dbNumber, ohNumber, sumComposition, StaticUtils.getFormulaInHillNotation(formulaCategorized,true),
               formula, fragmentCarbonNumber, fragmentDbNumber, fragmentOhNumber, fragmentSumComposition, fragmentFormula);
+//          if (lipidClass.endsWith(" O-") || lipidClass.endsWith(" P-") || lipidClass.equalsIgnoreCase("Cer")) {
+//            System.out.println("LDA: "+entry.getAnalyteClass()+" | "+entry.getAnalyteName()+":"+entry.getDbNumber()+" | "+entry.getMolecularSpecies());
+//            System.out.println("ALEX: "+entry.getOriginalClassName()+" | "+entry.getSpecies()+" | "+entry.getOriginalMolecularSpecies());
+//          }
           Vector<TargetlistEntry> entries = new Vector<TargetlistEntry>();
           if (results_.containsKey(msLevel)) entries = results_.get(msLevel);
           entries.add(entry);
@@ -438,10 +442,13 @@ public class TargetlistParser
    * @throws AlexTargetlistParserException exception if something is wrong with the entry
    */
   private String parseChemicalFormula(ElementConfigParser parser, String formula, String columnName, int lineNumber) throws AlexTargetlistParserException{
-    if (formula.contains("-")){
+    String formulaString = new String(formula);
+    if (formulaString.indexOf("_")!=-1)
+      formulaString = formulaString.substring(0,formulaString.indexOf("_"));
+    if (formulaString.contains("-")){
       throw new AlexTargetlistParserException("The formula "+formula+" must not contain any negative values! Affected is column \""+columnName+"\" at line "+lineNumber+" in file "+fileName_+".");
     }
-    char[] formulaChars = formula.toCharArray();
+    char[] formulaChars = formulaString.toCharArray();
     String formulaToCheck = "";
     boolean isPreviousDigit = false;
     for (int i=0;i!=formulaChars.length;i++){
@@ -453,7 +460,7 @@ public class TargetlistParser
         boolean isoFound = false;
         for (String iso : isoLookup_.keySet()){
           if ((i+iso.length()-1)>=formulaChars.length) continue;
-          if (formula.substring(i,i+iso.length()).equalsIgnoreCase(iso)){
+          if (formulaString.substring(i,i+iso.length()).equalsIgnoreCase(iso)){
             isoFound = true;
             formulaToCheck += isoLookup_.get(iso);
             i += (iso.length()-1);

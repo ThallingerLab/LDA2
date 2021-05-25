@@ -63,7 +63,7 @@ public class Settings
 {
   private static Settings instance_ = null;
 
-  public final static String VERSION = "2.8.0";
+  public final static String VERSION = "2.8.0_1";
   
   public final static String SETTINGS_FILE = ".settings";
   
@@ -207,7 +207,7 @@ public class Settings
         emptyEntriesForQuantAnalNotFound_ = true;
       }
       
-      isDefaultInput_ = properties.getProperty("ISDefaultInput", "");
+      isDefaultInput_ = properties.getProperty("ISDefaultInput", "IS");
       esDefaultInput_ = properties.getProperty("ESDefaultInput", "Ex-IS");
       msn3DDisplayTolerance_ = 60f;
       String msn3DDisplayToleranceString = properties.getProperty("MSn3DDisplayTimeWindow","1");

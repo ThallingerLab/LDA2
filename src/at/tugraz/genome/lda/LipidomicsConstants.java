@@ -156,6 +156,8 @@ public class LipidomicsConstants
   public final static String ALEX_ALKENYL_PREFIX = "P_";
   /** the String for separating the chains*/
   public final static String ALEX_CHAIN_SEPARATOR = "-";
+  /** the String indicating an internal standard*/
+  public final static String ALEX_IS_PREFIX = "IS ";
 
   
   public static String LDA_PROPERTIES_FILE = "LipidDataAnalyzer.properties";

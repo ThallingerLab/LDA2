@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LDAResultReader;
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.alex123.vos.TargetlistEntry;
 import at.tugraz.genome.lda.alex123.vos.TargetlistFloatStringVO;
@@ -122,9 +123,9 @@ public class RdbOutputWriter
   
   
   /** the prefix for the internal standard*/
-  private String internalStandardPrefix_;
+//  private String internalStandardPrefix_;
   /** the prefix for the external standard*/
-  private String externalStandardPrefix_;
+//  private String externalStandardPrefix_;
   
   /**
    * constructor without setting any standard prefixes
@@ -139,8 +140,8 @@ public class RdbOutputWriter
    * @param externalStandardPrefix prefix for the external standard
    */
   public RdbOutputWriter(String internalStandardPrefix, String externalStandardPrefix){
-    internalStandardPrefix_ = internalStandardPrefix;
-    externalStandardPrefix_ = externalStandardPrefix;
+//    internalStandardPrefix_ = internalStandardPrefix;
+//    externalStandardPrefix_ = externalStandardPrefix;
   }
   
   /**
@@ -389,20 +390,20 @@ public class RdbOutputWriter
               Hashtable<String,QuantVO> quantsOfAnalyte = null;
               String molNameWoRt = molName;
               if (isRtGrouped && !analysisModule.isISorES(className, molName))
-                molNameWoRt = className+" "+molName.substring(0,molName.lastIndexOf("_"));
+                molNameWoRt = /*className+" "+*/molName.substring(0,molName.lastIndexOf("_"));
               if (quantsOfClass!=null && quantsOfClass.containsKey(molNameWoRt)) quantsOfAnalyte = quantsOfClass.get(molNameWoRt);
               String speciesId = "";
               String classNameToWrite = "";
               int cIndexSpecies = 0;
               int dbIndexSpecies = 0;
               String sumComposition = "";
-              if (internalStandardPrefix_!=null && internalStandardPrefix_.length()>0 && molName.startsWith(internalStandardPrefix_)){
-                speciesId = "IS " + className+" "+ molName.substring(internalStandardPrefix_.length());
-                classNameToWrite = "IS "+className;
-              }else if (externalStandardPrefix_!=null && externalStandardPrefix_.length()>0 && molName.startsWith(externalStandardPrefix_)){
-                speciesId = "ES " + className + " " + molName.substring(externalStandardPrefix_.length());
-                classNameToWrite = "ES "+className;
-              }else{
+//              if (internalStandardPrefix_!=null && internalStandardPrefix_.length()>0 && molName.startsWith(internalStandardPrefix_)){
+//                speciesId = "IS " + className+" "+ molName.substring(internalStandardPrefix_.length());
+//                classNameToWrite = "IS "+className;
+//              }else if (externalStandardPrefix_!=null && externalStandardPrefix_.length()>0 && molName.startsWith(externalStandardPrefix_)){
+//                speciesId = "ES " + className + " " + molName.substring(externalStandardPrefix_.length());
+//                classNameToWrite = "ES "+className;
+//              }else{
                 speciesId = className+" "+molName;
                 classNameToWrite = className;
                 int startChar = 0;
@@ -420,7 +421,7 @@ public class RdbOutputWriter
                 }catch(NumberFormatException nfx){
                   
                 }
-              }
+//              }
               
               for (LipidParameterSet set : foundSpecies.get(molName)){
                 TargetlistEntry quantObject = null;
@@ -478,6 +479,7 @@ public class RdbOutputWriter
                   if (quantObject.getDetector()!=null) detector = quantObject.getDetector();
                   if (quantObject.getPolarity()!=null) polarity = quantObject.getPolarity();
                   speciesToWrite = quantObject.getSpecies();
+                  classNameToWrite = quantObject.getOriginalClassName();
                   if (quantObject.getId()!=null) lipidId = quantObject.getId();
                   if (quantObject.getCategory()!=null) lipidCategory = quantObject.getCategory();
                   if (quantObject.getConflicts()!=null) conflicts = quantObject.getConflicts();
@@ -494,7 +496,7 @@ public class RdbOutputWriter
                     sumCompositionToWrite = "";
                   sumFormula = quantObject.getOriginalSumFormula();
                 }
-                if (isCompModulePresent && !alexRtGrouper) {
+                if (isCompModulePresent && !alexRtGrouper && quantObject==null) {
                   sumFormula = set.getChemicalFormula();
                   Hashtable<String,Integer> categorized = StaticUtils.categorizeFormula(sumFormula);
                   if (Settings.useAlex() && result.getConstants()!=null && result.getConstants().isAlexTargetlist()){
@@ -646,6 +648,13 @@ public class RdbOutputWriter
                   }
 
                   int rank = 0;
+                  Hashtable<Integer,Hashtable<String,Hashtable<String,TargetlistEntry>>> alexFragments = null;
+                  Hashtable<String,String> molLookup = null;
+                  if (quantObject!=null && containsMSnInformation && quantObject.getMsnFragments()!=null && quantObject.getMsnFragments().size()>0) {
+                    alexFragments = quantObject.getMsnFragments();
+                    molLookup = quantObject.getMolSpeciesLookup();
+                  }
+
                   for (Object msnNames : msnSet.getMSnIdentificationNames()){
                     String nameString = "";
                     double relativeShare = 1d;
@@ -666,10 +675,6 @@ public class RdbOutputWriter
                     }
                     oneCombi = msnSet.getCombiIdFromHumanReadable(oneCombi);
                       
-                    Hashtable<Integer,Hashtable<String,Hashtable<String,TargetlistEntry>>> alexFragments = null;
-                    if (quantObject!=null && containsMSnInformation && quantObject.getMsnFragments()!=null && quantObject.getMsnFragments().size()>0)
-                      alexFragments = quantObject.getMsnFragments();
-                      
                     List<TargetlistFloatStringVO> fragments = new ArrayList<TargetlistFloatStringVO>();
                     if (msnSet.getStatus()>=LipidomicsMSnSet.HEAD_GROUP_DETECTED){
                       Hashtable<String,CgProbe> headFragments = msnSet.getHeadGroupFragments();
@@ -686,6 +691,8 @@ public class RdbOutputWriter
 //                          LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
                       Vector<FattyAcidVO> fas = StaticUtils.decodeLipidNamesFromChainCombi(oneCombi);
                       molSpeciesId = StaticUtils.encodeAlexMolSpeciesName(classNameToWrite,fas);
+                      if (molLookup!=null && molLookup.containsKey(oneCombi))
+                        molSpeciesId = molLookup.get(oneCombi);
                       Hashtable<String,String> usedFAs = new Hashtable<String,String>();
                       for (int j=0; j!= fas.size(); j++){
                         FattyAcidVO fa = fas.get(j);
@@ -704,7 +711,12 @@ public class RdbOutputWriter
                           fragments.add(new TargetlistFloatStringVO(fragmentName,frags.get(key).Mz,frags.get(key).getMsLevel(),ms2Target)); 
                         }
                       }
-                    } else molSpeciesId = classNameToWrite+" "+nameString;
+                    } else {
+                      molSpeciesId = classNameToWrite+" "+nameString;
+                      if (molLookup!=null)
+                        molSpeciesId = speciesToWrite;
+                    }
+                    
                     Collections.sort(fragments,new GeneralComparator("at.tugraz.genome.lda.vos.FloatStringVO", "getValue", "java.lang.Float"));
                     Hashtable<Integer,String> fragmentNameHash = new Hashtable<Integer,String>();
                     Hashtable<Integer,String> fragmentMzHash = new Hashtable<Integer,String>();
@@ -927,7 +939,7 @@ public class RdbOutputWriter
   }
 
   
-  private TargetlistEntry getMSnTargetlistEntry(String fragmentName, String faName, String molSpecies, Hashtable<Integer,Hashtable<String,Hashtable<String,TargetlistEntry>>> alexFragments){
+  private TargetlistEntry getMSnTargetlistEntry(String fragmentName, String faName, String molSpecies, Hashtable<Integer,Hashtable<String,Hashtable<String,TargetlistEntry>>> alexFragments) throws LipidCombinameEncodingException{
     if (alexFragments==null) return null;
     String name = new String(fragmentName);
     if (molSpecies!=null && faName!=null && name.endsWith(" ("+faName+")"))
@@ -952,11 +964,21 @@ public class RdbOutputWriter
         }
         entry = sameFragType.values().iterator().next();
       }else{
+        String molSpeciesKey = molSpecies;
         if (!sameFragType.containsKey(molSpecies)){
-          System.out.println("The molecular species \""+molSpecies+"\" of the chain  fragment cannot be assinged (Alex123 target list)!");
-          return null;
+          boolean foundPermutedVersion = false;
+          for (String key : sameFragType.keySet()) {
+            if (StaticUtils.isAPermutedVersion(key,molSpecies,LipidomicsConstants.CHAIN_COMBI_SEPARATOR)) {
+              foundPermutedVersion = true;
+              molSpeciesKey = key;
+            }
+          }
+          if (!foundPermutedVersion) {
+            System.out.println("The molecular species \""+molSpecies+"\" of the chain  fragment cannot be assinged (Alex123 target list)!");
+            return null;
+          }
         }
-        entry = sameFragType.get(molSpecies);
+        entry = sameFragType.get(molSpeciesKey);
       }
     }
     return entry;

@@ -1098,7 +1098,9 @@ public class StaticUtils
           Color color = getFragemntColor(colorCount);
           for (String key : frags.keySet()){
             String fragmentName = key;
-            if (!fragmentName.contains(faStored)){              
+            String faStoredReadable = StaticUtils.getHumanReadableChainName(decodeLipidNameForCreatingCombis(faStored), faHydroxyEncoding, lcbHydroxyEncoding, ohInCombi,
+                isAlex123);
+            if (!fragmentName.contains(faStoredReadable)){              
               fragmentName = getChainFragmentDisplayName(fragmentName,
                   StaticUtils.getHumanReadableChainName(decodeLipidNameForCreatingCombis(faStored), faHydroxyEncoding, lcbHydroxyEncoding, ohInCombi));
             }
@@ -1401,7 +1403,7 @@ public class StaticUtils
         stop = stop+2;
       }
       while (isChain && stop<readableFragmentName.length()){
-        if (Character.isDigit(chars[stop]) || chars[stop]==':')
+        if (Character.isDigit(chars[stop]) || chars[stop]==':' || chars[stop]==LipidomicsConstants.ALEX_OH_SEPARATOR.toCharArray()[0])
           stop++;
         else
           isChain=false;
@@ -1422,6 +1424,11 @@ public class StaticUtils
     }
     result[0] = new FattyAcidVO(chainType, (String)prefixCAndDbs[0], (Integer)prefixCAndDbs[1], (Integer)prefixCAndDbs[2], oh, -1, null);
     result[1] = fragmentName.trim();
+    //for Alex123
+    if (readableFragmentName.startsWith("FA ")||readableFragmentName.startsWith("-FA ")||
+        readableFragmentName.startsWith("LCB ")||readableFragmentName.startsWith("-LCB ")){
+      result[1] = readableFragmentName;
+    }
     return result;
   }
 
@@ -1909,6 +1916,10 @@ public class StaticUtils
     int dbs = 0;
     String prefix = "";
     String part = new String(encoded);
+    if (part.startsWith(Settings.getInternalStandardDefaultInput())) {
+      prefix = Settings.getInternalStandardDefaultInput();
+      part = part.substring(Settings.getInternalStandardDefaultInput().length());
+    }
     //this is for structure only
     if (part.startsWith("FA ")) {
       type = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
@@ -1936,12 +1947,12 @@ public class StaticUtils
     }
 
     if (part.indexOf("+")!=-1) {
-      prefix = part.substring(part.indexOf("+"));
+      prefix += part.substring(part.indexOf("+"));
       char[] chars = prefix.toCharArray();
       int end = chars.length;
       while (end>0 && Character.isDigit(chars[end-1]))
         end--;
-      prefix = prefix.substring(0,end);
+      prefix += prefix.substring(0,end);
       part = part.substring(0,part.indexOf("+"));
     }
     if (part.indexOf(LipidomicsConstants.ALEX_OH_SEPARATOR)!=-1) {
@@ -2336,6 +2347,91 @@ public class StaticUtils
         throw new LipidCombinameEncodingException("There is still a label left: "+encodeLipidCombi(chains));
     }
     return encodeLipidCombi(chains);
+  }
+  
+  /**
+   * class that translates the Alex123 nomenclature to the one of LDA; return Object array: [0] String: LDA class name; [1] FattyAcidVO: LDA species decoded; [2] String: encoded LDA chain combi name
+   * @param alexClass Alex123 class name
+   * @param alexSpecies Alex123 species name
+   * @param alexMolSpecies Alex123 molecular species name
+   * @return object array containing LDA encodings: [0] String: LDA class name; [1] FattyAcidVO: LDA species decoded; [2] String: encoded LDA chain combi name
+   * @throws LipidCombinameEncodingException thrown if the ALEX123 names could not be decoded
+   */
+  public static Object[] translateAlexNomenclatureToLDA(String alexClass, String alexSpecies, String alexMolSpecies) throws LipidCombinameEncodingException {
+    Object[] classSpeciesMol = new Object[3];
+    String className;
+    String species = "";
+    String molSpecies = null;
+    className = alexClass;
+    if (className.startsWith(LipidomicsConstants.ALEX_IS_PREFIX)) {
+      className = className.substring(LipidomicsConstants.ALEX_IS_PREFIX.length());
+      species = Settings.getInternalStandardDefaultInput();
+    }
+    if (alexClass.endsWith(" O-")) {
+      className = "O-"+className.substring(0,alexClass.length()-" O-".length());
+      species += alexSpecies.substring(alexClass.length()-" O-".length()+1);
+      if (alexMolSpecies!=null && alexMolSpecies.length()>0)
+        molSpecies = alexMolSpecies.substring(alexClass.length()-" O-".length()+1);
+    } else if (alexClass.endsWith(" P-")) {
+      className = "P-"+className.substring(0,alexClass.length()-" P-".length());
+      species += alexSpecies.substring(alexClass.length()-" P-".length()+1);
+      if (alexMolSpecies!=null && alexMolSpecies.length()>0)
+        molSpecies = alexMolSpecies.substring(alexClass.length()-" P-".length()+1);
+    } else {
+      species += alexSpecies.substring(alexClass.length()+1);
+      if (alexMolSpecies!=null && alexMolSpecies.length()>0)
+        molSpecies = alexMolSpecies.substring(alexClass.length()+1);
+    }
+    FattyAcidVO speciesVO = StaticUtils.decodeAlex123Chain(species, species);
+    
+//    if (/*alexClass.endsWith(" O-")||alexClass.endsWith(" P-")*/ alexClass.equalsIgnoreCase("Cer"))
+//      System.out.println("Species: "+speciesVO);
+    classSpeciesMol[0] = className;
+    classSpeciesMol[1] = speciesVO;
+    if (alexMolSpecies!=null && alexMolSpecies.length()>0) {
+      Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
+      Vector<String> parts = getAlexChainParts(molSpecies);
+      for (String part : parts)
+        chains.add(StaticUtils.decodeAlex123Chain(part,species));
+      chains = StaticUtils.sortChainVOs(chains);
+      classSpeciesMol[2] = StaticUtils.encodeLipidCombi(chains);
+    }else {
+      classSpeciesMol[2] = molSpecies;
+    }
+    return classSpeciesMol;
+  }
+  
+  /**
+   * splits a an Alex123 combination to the individual chains
+   * @param combi the Alex123 combination name
+   * @return a vector of the single chain identifiers
+   */
+  private static Vector<String> getAlexChainParts(String combi){
+    Vector<String> parts = new Vector<String>();
+    String rest = combi.replaceAll("/",LipidomicsConstants.ALEX_CHAIN_SEPARATOR);
+    int cut = rest.length();
+    while (rest.substring(0,cut).indexOf(LipidomicsConstants.ALEX_CHAIN_SEPARATOR)!=-1) {
+      int last = rest.substring(0,cut).lastIndexOf(LipidomicsConstants.ALEX_CHAIN_SEPARATOR);
+      if ((last+1)>=LipidomicsConstants.ALEX_ALKYL_PREFIX.length() &&
+          LipidomicsConstants.ALEX_ALKYL_PREFIX.equalsIgnoreCase(rest.substring(last-LipidomicsConstants.ALEX_ALKYL_PREFIX.length()+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length(),last+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length()))) {
+        cut = last;
+      }else if ((last+1)>=LipidomicsConstants.ALKYL_PREFIX.length() &&
+          LipidomicsConstants.ALKYL_PREFIX.equalsIgnoreCase(rest.substring(last-LipidomicsConstants.ALKYL_PREFIX.length()+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length(),last+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length()))) {
+        cut = last;
+      }else  if ((last+1)>=LipidomicsConstants.ALEX_ALKENYL_PREFIX.length() &&
+          LipidomicsConstants.ALEX_ALKYL_PREFIX.equalsIgnoreCase(rest.substring(last-LipidomicsConstants.ALEX_ALKENYL_PREFIX.length()+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length(),last+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length()))) {
+        cut = last;
+      }else  if ((last+1)>=LipidomicsConstants.ALKENYL_PREFIX.length() &&
+          LipidomicsConstants.ALKYL_PREFIX.equalsIgnoreCase(rest.substring(last-LipidomicsConstants.ALKENYL_PREFIX.length()+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length(),last+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length()))) {
+        cut = last;
+      }else {
+        parts.add(0,rest.substring(last+1));
+        rest = rest.substring(0,last);
+        cut = rest.length();
+      }
+    }
+    parts.add(0,rest);
+    return parts;
   }
   
 }

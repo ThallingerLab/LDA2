@@ -41,6 +41,8 @@ import at.tugraz.genome.lda.vos.QuantVO;
  */
 public class TargetlistEntry extends QuantVO
 {
+  /** Alex123 class name*/
+  private String originalClassName_;
   /** name of the detector*/
   private String detector_ = null;
   /** the polarity of this ion*/
@@ -141,14 +143,30 @@ public class TargetlistEntry extends QuantVO
   {
     super(lipidClass, species, -1, ohNumber, formula, mz, charge, adduct, adductFormula, -1f, 0f, 0f,
         new Vector<Double>(), new Vector<Double>(),0);
+    this.originalClassName_ = lipidClass;
     this.detector_ = detector;
     this.polarity_ = polarity;
     this.msLevel_ = msLevel;
     this.fragment_ = fragment;
     this.structure_ = structure;
+//    if (/*lipidClass.endsWith(" O-") || lipidClass.endsWith(" P-") || lipidClass.equalsIgnoreCase("Cer")*/originalClassName_.startsWith("IS ")) 
+//      System.out.println(originalClassName_+" ; "+species+" ; "+molecularSpecies);
     this.species_ = species;
     this.originalMolecularSpecies_ = molecularSpecies;
-    this.decodeMolecularSpecies(this.originalMolecularSpecies_,lipidClass,species);
+    try {
+      Object[] ldaEncoding = StaticUtils.translateAlexNomenclatureToLDA(originalClassName_,species_,originalMolecularSpecies_);
+      this.analyteClass_ = (String)ldaEncoding[0];
+      FattyAcidVO speciesVO = (FattyAcidVO)ldaEncoding[1];
+      this.prefixOrName_ = speciesVO.getPrefix();
+      this.carbons_ = speciesVO.getcAtoms();
+      this.dbs_ = speciesVO.getDoubleBonds();
+      this.molecularSpecies_ = (String)ldaEncoding[2];
+//      if (/*lipidClass.endsWith(" O-") || lipidClass.endsWith(" P-") || lipidClass.equalsIgnoreCase("Cer")*/originalClassName_.startsWith("IS ")) 
+//        System.out.println("After: "+(String)ldaEncoding[0]+" ; "+getIdString()+" ; "+ldaEncoding[2]);
+    } catch (LipidCombinameEncodingException e) {
+      throw new AlexTargetlistParserException(e);
+    }
+
 
     this.ms2Precursor_ = ms2Precursor;
     this.ms2Activation_ = ms2Activation;
@@ -170,6 +188,14 @@ public class TargetlistEntry extends QuantVO
     this.alex123FragmentsForClass_ = false;
   }
 
+  /**
+   * @return Alex123 class name
+   */
+  public String getOriginalClassName()
+  {
+    return originalClassName_;
+  }
+  
   /**
    * @return name of the detector
    */
@@ -254,7 +280,19 @@ public class TargetlistEntry extends QuantVO
   public void setOriginalMolecularSpecies(String originalMolecularSpecies) throws AlexTargetlistParserException
   {
     this.originalMolecularSpecies_ = originalMolecularSpecies;
-    this.decodeMolecularSpecies(this.originalMolecularSpecies_, this.analyteClass_, super.getAnalyteName());
+    Object[] ldaEncoding;
+    try {
+      ldaEncoding = StaticUtils.translateAlexNomenclatureToLDA(originalClassName_,species_,originalMolecularSpecies_);
+      this.analyteClass_ = (String)ldaEncoding[0];
+      FattyAcidVO speciesVO = (FattyAcidVO)ldaEncoding[1];
+      this.prefixOrName_ = speciesVO.getPrefix();
+      this.carbons_ = speciesVO.getcAtoms();
+      this.dbs_ = speciesVO.getDoubleBonds();
+      this.molecularSpecies_ = (String)ldaEncoding[2];
+    }
+    catch (LipidCombinameEncodingException e) {
+      throw new AlexTargetlistParserException(e);
+    }
   }
   
   
@@ -493,91 +531,27 @@ public class TargetlistEntry extends QuantVO
     this.alex123FragmentsForClass_ = alex123FragmentsForClass;
   }
   
-  /**
-   * decodes an Alex123 molecular species entry to the corresponding LDA representation
-   * @param molecularSpecies the original Alex123 naming of the molecular species
-   * @param lipidClass the lipid class
-   * @param species the species name - for error handling
-   * @throws AlexTargetlistParserException thrown whenever there is something wrong with the entries
-   */
-  private void decodeMolecularSpecies(String molecularSpecies, String lipidClass, String species) throws AlexTargetlistParserException {
-    this.molecularSpecies_ = null;
-    if (originalMolecularSpecies_!=null && originalMolecularSpecies_.startsWith(lipidClass+" "))
-      originalMolecularSpecies_ = originalMolecularSpecies_.substring((lipidClass+" ").length());
-    //this was the old LDA combination encoding
-//    if (molecularSpecies_!=null && molecularSpecies_.indexOf("-")>-1){
-//      molecularSpecies_ = molecularSpecies_.replaceAll("-", "_");
-//      molecularSpecies_ = molecularSpecies_.replaceAll("O_", "O-");
-//    }
-    //this is for the new LDA combination encoding
-    if (originalMolecularSpecies_!=null && originalMolecularSpecies_.length()>0) {
-      Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
-      Vector<String> parts = getParts(originalMolecularSpecies_);
-      for (String part : parts) {
-        try {
-          chains.add(StaticUtils.decodeAlex123Chain(part,species));
-        }
-        catch (LipidCombinameEncodingException e) {
-          throw new AlexTargetlistParserException(e);
-        }
-      }
-      this.molecularSpecies_ = StaticUtils.encodeLipidCombi(chains);
-    }else {
-      this.molecularSpecies_ = originalMolecularSpecies_;
-    }
-  }
   
-  /**
-   * splits a an Alex123 combination to the individual chains
-   * @param combi the Alex123 combination name
-   * @return a vector of the single chain identifiers
-   */
-  private Vector<String> getParts(String combi){
-    Vector<String> parts = new Vector<String>();
-    String rest = combi.replaceAll("/",LipidomicsConstants.ALEX_CHAIN_SEPARATOR);
-    int cut = rest.length();
-    while (rest.substring(0,cut).indexOf(LipidomicsConstants.ALEX_CHAIN_SEPARATOR)!=-1) {
-      int last = rest.substring(0,cut).lastIndexOf(LipidomicsConstants.ALEX_CHAIN_SEPARATOR);
-      if ((last+1)>=LipidomicsConstants.ALEX_ALKYL_PREFIX.length() &&
-          LipidomicsConstants.ALEX_ALKYL_PREFIX.equalsIgnoreCase(rest.substring(last-LipidomicsConstants.ALEX_ALKYL_PREFIX.length()+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length(),last+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length()))) {
-        cut = last;
-      }else if ((last+1)>=LipidomicsConstants.ALKYL_PREFIX.length() &&
-          LipidomicsConstants.ALKYL_PREFIX.equalsIgnoreCase(rest.substring(last-LipidomicsConstants.ALKYL_PREFIX.length()+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length(),last+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length()))) {
-        cut = last;
-      }else  if ((last+1)>=LipidomicsConstants.ALEX_ALKENYL_PREFIX.length() &&
-          LipidomicsConstants.ALEX_ALKYL_PREFIX.equalsIgnoreCase(rest.substring(last-LipidomicsConstants.ALEX_ALKENYL_PREFIX.length()+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length(),last+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length()))) {
-        cut = last;
-      }else  if ((last+1)>=LipidomicsConstants.ALKENYL_PREFIX.length() &&
-          LipidomicsConstants.ALKYL_PREFIX.equalsIgnoreCase(rest.substring(last-LipidomicsConstants.ALKENYL_PREFIX.length()+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length(),last+LipidomicsConstants.ALEX_CHAIN_SEPARATOR.length()))) {
-        cut = last;
-      }else {
-        parts.add(0,rest.substring(last+1));
-        rest = rest.substring(0,last);
-        cut = rest.length();
-      }
-    }
-    parts.add(0,rest);
-    return parts;
-  }
-  
-  
+  //do nothing; this should be handled at a different location for the TargetlistEntry
   protected Object[] splitInCarbonNumberAndPrefix(String analyteClass, String analyteName) {
-    String rest = new String(analyteName);
     Object[] prefixAndC = new Object[2];
-    if (rest.startsWith(analyteClass+" "))
-      rest = rest.substring((analyteClass+" ").length());
-    if (rest.indexOf("/")==-1 && rest.indexOf("_")==-1 && rest.indexOf(":")!=-1){
-      String dbs = rest.substring(rest.lastIndexOf(":")+1);
-      try{
-        dbs_ = Integer.parseInt(dbs);
-        rest = rest.substring(0,rest.lastIndexOf(":"));
-        prefixAndC = super.splitInCarbonNumberAndPrefix(analyteClass, rest);
-      }catch(NumberFormatException nfx){}
-    } else {
-      prefixAndC[0] = rest;
-      prefixAndC[1] = LipidomicsConstants.EXCEL_NO_OH_INFO;
-    }
+    prefixAndC[0] = "";
+    prefixAndC[1] = 0;
     return prefixAndC;
+  }
+  
+  public Hashtable<String,String> getMolSpeciesLookup(){
+    Hashtable<String,String> molSpecies = new Hashtable<String,String>();
+    for (Hashtable<String,Hashtable<String,TargetlistEntry>> targetsOfLevel : this.msnFragments_.values()) {
+      for (Hashtable<String,TargetlistEntry> targetsOfFragment : targetsOfLevel.values()) {
+        for (String molName : targetsOfFragment.keySet()) {
+          if (molSpecies .containsKey(molName))
+            continue;
+          molSpecies.put(molName, targetsOfFragment.get(molName).getOriginalMolecularSpecies());
+        }
+      }
+    }
+    return molSpecies;
   }
   
 }
