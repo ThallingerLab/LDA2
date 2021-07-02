@@ -46,7 +46,7 @@ import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.maspectras.quantification.CgDefines;
 import at.tugraz.genome.maspectras.quantification.CgException;
 import at.tugraz.genome.maspectras.quantification.CgScan;
-import at.tugraz.genome.maspectras.quantification.CgScanHeader;
+//import at.tugraz.genome.maspectras.quantification.CgScanHeader;
 //import at.tugraz.genome.maspectras.quantification.MsMsScan;
 //import at.tugraz.genome.maspectras.utils.StringUtils;
 
@@ -63,26 +63,25 @@ import at.tugraz.genome.maspectras.quantification.CgScanHeader;
 public abstract class AbstractXmlSpectraReader implements XmlSpectraReader
 {
   //the reader
-  XMLStreamReader rdr_;
+  XMLStreamReader reader_;
   
   //the reader can serve several AddScan interfaces
   AddScan[] adders_;
   
   // if true MS/MS spectra are parsed too
-  protected boolean parseMsMs_;
-  
-  // the lowest available m/z value in integer format (original m/z value times the multiplication factor for int)
-  protected int lowestMz_ = 1000000 * CgDefines.mzMultiplicationFactorForInt;
-  // the highest available m/z value in integer format (original m/z value times the multiplication factor for int)
-  protected int highestMz_ = 0;
+  private boolean parseMsMs_;
   
   // the provided input stream
   private InputStream inStream_;
-  // the multiplication factor to be used, to create integer values out of the m/z float values
-  protected int multiplicationFactorForInt_;
   
-  //the call back interface for the header information
-  protected CgScanHeader myHeader_;
+  // the multiplication factor to be used, to create integer values out of the m/z float values
+  private int multiplicationFactorForInt_ = CgDefines.mzMultiplicationFactorForInt;
+  // constant to give extra digits to the m/z value in integer format
+  protected static final int ONE_BILLION = 1000000;
+  // the lowest available m/z value in integer format (original m/z value times the multiplication factor for int)
+  private int lowestMz_ = ONE_BILLION * this.multiplicationFactorForInt_;
+  // the highest available m/z value in integer format (original m/z value times the multiplication factor for int)
+  private int highestMz_ = 0;
   
   //the maximally allowed m/z range provided by all the AddScan interfaces
   protected Range maxRange_ = null;
@@ -97,9 +96,11 @@ public abstract class AbstractXmlSpectraReader implements XmlSpectraReader
   protected int currentPolarity_ = CgDefines.POLARITY_NO;
   
   /** was polarity switching used*/
-  protected boolean polaritySwitching_ = false;
+  private boolean polaritySwitching_ = false;
   
   /**
+   * Constructs an AbstractXmlSpectraReader object with given information.
+   * 
    * @param callbacks
    *          Pass an array of objects implementing this interface. The methods will be
    *          called whenever a msScan header or individual scans are generated
@@ -108,15 +109,12 @@ public abstract class AbstractXmlSpectraReader implements XmlSpectraReader
    */
   public AbstractXmlSpectraReader(AddScan[] callbacks, boolean parseMsMs)
   {
-    multiplicationFactorForInt_ = CgDefines.mzMultiplicationFactorForInt;
-    adders_ = callbacks;
+    this.adders_ = callbacks;
     this.parseMsMs_ = parseMsMs;
-    lowestMz_ = 1000000 * CgDefines.mzMultiplicationFactorForInt;
-    currentPolarity_ = CgDefines.POLARITY_NO;
-    polaritySwitching_ = false;
   }
   
   /**
+   * Constructs an AbstractXmlSpectraReader object with given information.
    * 
    * @param callbacks
    *          Pass an array of objects implementing this interface. The methods will be
@@ -128,8 +126,8 @@ public abstract class AbstractXmlSpectraReader implements XmlSpectraReader
   public AbstractXmlSpectraReader(AddScan[] callbacks, boolean parseMsMs, int multiplicationFactorForInt)
   {
     this(callbacks, parseMsMs);
-    multiplicationFactorForInt_ = multiplicationFactorForInt;
-    lowestMz_ = 1000000 * multiplicationFactorForInt_;  
+    this.multiplicationFactorForInt_ = multiplicationFactorForInt;
+    this.lowestMz_ = ONE_BILLION * this.multiplicationFactorForInt_;  
   }
   
     
@@ -185,11 +183,11 @@ public abstract class AbstractXmlSpectraReader implements XmlSpectraReader
           throw new CgException("The file "+fileName+" does not exist!");
         }
       }
-      rdr_ = factory.createXMLStreamReader(inStream_);
+      reader_ = factory.createXMLStreamReader(inStream_);
       // =========================================================
       // Read the XML Data:
       // =========================================================
-      eventType = rdr_.getEventType();
+      eventType = reader_.getEventType();
       do {
         switch (eventType) {
           case XMLStreamReader.START_DOCUMENT:
@@ -197,14 +195,11 @@ public abstract class AbstractXmlSpectraReader implements XmlSpectraReader
           case XMLStreamReader.END_DOCUMENT:
             break;
           case XMLStreamReader.START_ELEMENT:
-            /**
-             * TODO: attempt to make this if statement more general, in mzXML: "msRun", in mzML: "run", can probably be generalized to "run"
-             */
-            if (rdr_.getLocalName().equalsIgnoreCase("msRun"))
-              XmlReadMsRun(readJustMzMaxima);
+            if (reader_.getLocalName().equalsIgnoreCase(getMsRunName()))
+              readMsRun(readJustMzMaxima);
             break;
         }
-        eventType = rdr_.next();
+        eventType = reader_.next();
       } while (eventType != XMLStreamReader.END_DOCUMENT);
     }
     catch (Exception ex) {
@@ -213,12 +208,20 @@ public abstract class AbstractXmlSpectraReader implements XmlSpectraReader
     }finally{
       try{
         inStream_.close();
-        rdr_ = null;
+        reader_ = null;
       }catch(IOException iox){
         iox.printStackTrace();
       }
     }
   }
+  
+  /**
+   * Returns the XML element term, the contained information whereof in the XML file will be read. 
+   * Everything outside of it will be ignored by the reader.
+   * 
+   * @return the XML element term
+   */
+  protected abstract String getMsRunName();
   
   /**
    * This Function reads a full MsRun Structure into Memory. Basically it
@@ -230,7 +233,17 @@ public abstract class AbstractXmlSpectraReader implements XmlSpectraReader
    * 
    * @throws CgException
    */
-  protected abstract void XmlReadMsRun(boolean readJustMzMaxima) throws CgException;
+  protected abstract void readMsRun(boolean readJustMzMaxima) throws CgException;
+  
+  /**
+   * Function converts a Time Interval to a double value[s]. Do something
+   * better, this function is really very basic.
+   * 
+   * @param s
+   *          String to parse
+   * @return float representing a number of seconds
+   */
+  protected abstract float convertTimeInterval(String s);
   
   /**
    * this function reads only the m/z maxima - for getting an idea
@@ -238,7 +251,7 @@ public abstract class AbstractXmlSpectraReader implements XmlSpectraReader
    *          
    * @throws CgException
    */
-  protected abstract void xmlReadMaxima() throws CgException;
+  protected abstract void readMaxima() throws CgException;
   
   /**
    * this function reads out the m/z maxima of a <peaks> tag - for getting an idea
@@ -263,7 +276,7 @@ public abstract class AbstractXmlSpectraReader implements XmlSpectraReader
    * 
    * @throws CgException
    */
-  protected abstract void XmlReadScan(Vector<CgScan> scBase1, Vector<Range> ranges1, Range maxRange) throws CgException;
+  protected abstract void readScan(Vector<CgScan> scBase1, Vector<Range> ranges1, Range maxRange) throws CgException;
   
 
   /**
@@ -282,35 +295,7 @@ public abstract class AbstractXmlSpectraReader implements XmlSpectraReader
    * 
    * @throws CgException
    */
-  protected abstract void XmlReadPeaks(Vector<CgScan> scans, Vector<Range> ranges, Range maxRange, int peaksCount, boolean msms, boolean foundMzBorders) throws CgException;
-  
-  /**
-   * Function converts a Time Interval to a double value[s]. Do something
-   * better, this function is really very basic.
-   * 
-   * @param s
-   *          String to parse
-   * @return float representing a number of seconds
-   */
-  public static float XmlTimeIntervalToTime(String s)
-  {
-    if (s.startsWith("PT"))
-      s = s.substring(2);
-    if (s.endsWith("S"))
-      s = s.substring(0, s.length() - 1);
-    s = s.replace('e', 'E');
-    return Float.parseFloat(s);
-  }
-
-  public int getHighestMz()
-  {
-    return this.highestMz_;
-  }
-
-  public int getLowestMz()
-  {
-    return this.lowestMz_;
-  }
+  protected abstract void readPeaks(Vector<CgScan> scans, Vector<Range> ranges, Range maxRange, int peaksCount, boolean msms, boolean foundMzBorders) throws CgException;
 
   /** @deprecated*/
   //this method is obsolete; only there because of the interface
@@ -322,15 +307,6 @@ public abstract class AbstractXmlSpectraReader implements XmlSpectraReader
   //this method is obsolete; only there because of the interface
   public void setUpperThreshold(float upperThreshold)
   {
-  }
-  
-  /**
-   * sets the AddScan interfaces for this reader
-   * @param adders the AddScan interfaces to be used by this reader
-   */
-  public void setAdders(AddScan[] adders)
-  {
-    this.adders_ = adders;
   }
   
   /**
@@ -361,10 +337,97 @@ public abstract class AbstractXmlSpectraReader implements XmlSpectraReader
     }
     return bd.toString();
   }
+  
+  /**
+   * Sets the AddScan interfaces for this reader
+   * 
+   * @param adders the AddScan interfaces to be used by this reader
+   */
+  public void setAdders(AddScan[] adders)
+  {
+    this.adders_ = adders;
+  }
+  
+  /**
+   * Returns a boolean which defines whether MS/MS spectra are parsed too
+   * 
+   * @return whether MS/MS spectra should be parsed too
+   */
+  protected boolean getParseMsMs()
+  {
+    return this.parseMsMs_;
+  }
+  
+  /**
+   * Returns the multiplication factor to be used, to create integer values out of the m/z float values
+   * 
+   * @return the multiplication factor
+   */
+  protected int getMultiplicationFactorForInt()
+  {
+    return this.multiplicationFactorForInt_;
+  }
+  
+  /**
+   * Sets the highest available m/z value
+   * 
+   * @param highestMz the highest available m/z value
+   */
+  protected void setHighestMz(int highestMz)
+  {
+    this.highestMz_ = highestMz;
+  }
+  
+  /**
+   * Returns the highest available m/z value
+   * 
+   * @return the highest available m/z value
+   */
+  public int getHighestMz()
+  {
+    return this.highestMz_;
+  }
+  
+  /**
+   * Sets the lowest available m/z value
+   * 
+   * @param lowestMz the lowest available m/z value
+   */
+  protected void setLowestMz(int lowestMz)
+  {
+    this.lowestMz_ = lowestMz;
+  }
 
+  /**
+   * Returns the lowest available m/z value
+   * 
+   * @return the lowest available m/z value
+   */
+  public int getLowestMz()
+  {
+    return this.lowestMz_;
+  }
+  
+  /**
+   * Sets a boolean which defines whether polarity switching is used
+   * 
+   * @param polaritySwitching whether polarity switching is used
+   */
+  protected void setPolaritySwitching(boolean polaritySwitching)
+  {
+    this.polaritySwitching_ = polaritySwitching;
+  }
+  
+  /**
+   * Returns a boolean which defines whether polarity switching is used
+   * 
+   * @return whether polarity switching is used
+   */
   public boolean usesPolaritySwitching()
   {
     return this.polaritySwitching_;
   }
+  
+
 
 }
