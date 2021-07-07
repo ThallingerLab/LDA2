@@ -130,7 +130,7 @@ public class LipidParameterSet extends CgParameterSet
     this.modificationName_ = modificationName;
     this.analyteFormula_ = analyteFormula;
     this.modificationFormula_ = modificationFormula;
-    if (modificationFormula_!=null && modificationFormula_.length()>1){
+    if (modificationFormula_!=null && modificationFormula_.length()>0){
       try {
         Hashtable<String,Integer> formAnal = StaticUtils.categorizeFormula(this.analyteFormula_);
         Hashtable<String,Integer> formAnalWODeducts = new Hashtable<String,Integer>(formAnal);
