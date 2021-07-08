@@ -1180,7 +1180,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     text.setFont(new Font("Arial",Font.PLAIN, 12));
     logoPanel.add(text,new GridBagConstraints(0, 4, 3, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
-    text = new JLabel("Copyright \u00A9 2020 J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger");
+    text = new JLabel("Copyright \u00A9 2021 J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger");
     text.setFont(new Font("Arial",Font.PLAIN, 12));
     logoPanel.add(text,new GridBagConstraints(0, 5, 3, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
@@ -3818,7 +3818,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     String titleString = "Lipid Data Analyzer "+Settings.VERSION+"   "+LipidomicsConstants.getCurrentMSMachine()+" settings ";
     String fragSelected = Settings.getFragmentSettingsString();
     if (fragSelected!=null) titleString += " "+fragSelected;    
-    titleString += "         \u00A9 2020 - J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger - GNU GPL v3 license";
+    titleString += "         \u00A9 2021 - J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger - GNU GPL v3 license";
     return titleString;
   }
 

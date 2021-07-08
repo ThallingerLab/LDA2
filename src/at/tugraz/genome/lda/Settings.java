@@ -134,20 +134,27 @@ public class Settings
 
   
   private static Settings getInstance() {
+    return Settings.getInstance(false);
+  }
+  
+  private static Settings getInstance(boolean ignoreMissingSettingsFile) {
     if (instance_ == null) {
       instance_ = new Settings();
       operatingSystem_ = System.getProperty("os.name");
       ldaUserHomePath_=System.getProperty("user.home")+File.separator+".lda";
-      readSettingsFile();
+      readSettingsFile(ignoreMissingSettingsFile);
       readFragSelectedFile();
-      instance_.propertiesFiles_ = instance_.getPropertiesFiles();
+      instance_.propertiesFiles_ = instance_.getPropertiesFiles(ignoreMissingSettingsFile);
     }
     return instance_;
   }
   
-  private static void readSettingsFile(){
+  private static void readSettingsFile(boolean ignoreMissingSettingsFile){
     try{
       File file = new File(SETTINGS_FILE);
+      useAlex_ = false;
+      if (!file.exists() && ignoreMissingSettingsFile)
+        return;
       FileInputStream inNew = new FileInputStream(file);
       Properties properties = new Properties();
       properties.load(inNew);
@@ -293,7 +300,7 @@ public class Settings
   
   public static void rereadSettings(){
     Settings.getInstance();
-    readSettingsFile();
+    readSettingsFile(false);
     readFragSelectedFile();
   }
   
@@ -399,7 +406,7 @@ public class Settings
   
   /** use Alex123 target lists*/
   public static boolean useAlex(){
-    Settings.getInstance();
+    Settings.getInstance(true);
     return Settings.useAlex_;
   }
   
@@ -587,8 +594,10 @@ public class Settings
     return fragOptions;
   }
   
-  private LinkedHashMap<String,File> getPropertiesFiles(){
+  private LinkedHashMap<String,File> getPropertiesFiles(boolean ignoreMissingSettingsFile){
     File propDir = new File(Settings.PROPERTIES_DIRECTORY);
+    if (!propDir.exists() && ignoreMissingSettingsFile)
+      return null;
     File[] files = propDir.listFiles();
     LinkedHashMap<String,File> propFiles = new  LinkedHashMap<String,File>();
     for (int i=0; i!=files.length;i++){
