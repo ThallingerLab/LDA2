@@ -40,6 +40,7 @@ import at.tugraz.genome.lda.LDAResultReader;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
+import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.utils.StaticUtils;
@@ -109,6 +110,8 @@ public class LDAToFaConverter extends ConverterBase
         this.createCell(row, headerStyle, COLUMN_CHAIN_INTENSITY, TEXT_CHAIN_INTENSITY);
         this.createCell(row, headerStyle, COLUMN_MOLECULAR_SPECIES, TEXT_MOLECULAR_SPECIES);
 
+        String fa;
+        Vector<FattyAcidVO> chains;
         for (LipidParameterSet set : results.get(className)){
           if (set.getIsotopicProbes().size()==0) continue;
           String displayName = set.getNameStringWithoutRt();
@@ -119,8 +122,10 @@ public class LDAToFaConverter extends ConverterBase
           if (StaticUtils.isThereChainInformationAvailable(displayName, set)){
             LipidomicsMSnSet msn = (LipidomicsMSnSet) set;
             LinkedHashMap<String,String[]> faDetails = extractFaIntensityDetails(msn, ms1AreaString, ms1Area);
-            for (String fa : faDetails.keySet()){
-              String[] areaResults = faDetails.get(fa);
+            for (String faEncoded : faDetails.keySet()){
+              String[] areaResults = faDetails.get(faEncoded);
+              chains = StaticUtils.decodeLipidNamesFromChainCombi(faEncoded);
+              fa = StaticUtils.getHumanReadableChainName(chains.get(0), returnParam.getFaHydroxyEncoding(), returnParam.getLcbHydroxyEncoding(), StaticUtils.areThereOhInCombi(chains));
               String percent = areaResults[1];
               String faAreaString = areaResults[2];
               String combiName = areaResults[3];

@@ -23,12 +23,9 @@
 
 package at.tugraz.genome;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Vector;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -41,6 +38,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
+import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.StaticUtils;
@@ -110,42 +108,14 @@ public abstract class ConverterBase
     return cell;
   }
 
-  protected Vector<String> sortFAsInAscendingOrder(Collection<String> unsorted){
+  protected Vector<String> sortFAsInAscendingOrder(Collection<String> unsorted) throws LipidCombinameEncodingException{
+    Vector<FattyAcidVO> fas = new Vector<FattyAcidVO>();
+    for (String name : unsorted)
+      fas.add(StaticUtils.decodeLipidNamesFromChainCombi(name).get(0));
+    fas = StaticUtils.sortChainVOs(fas);
     Vector<String> sorted = new Vector<String>();
-    List<Integer> carbonNumbers = new ArrayList<Integer>();
-    Hashtable<Integer,Hashtable<Integer,List<String>>> carbonHash = new Hashtable<Integer,Hashtable<Integer,List<String>>>();
-    for (String fa : unsorted){
-      int prefix = 0;
-      char[] chars = fa.toCharArray();
-      while (!Character.isDigit(chars[prefix]))
-        prefix++;
-      int carbons = Integer.parseInt(fa.substring(prefix,fa.indexOf(":")));
-      int doubleBonds = Integer.parseInt(fa.substring(fa.indexOf(":")+1));
-      Hashtable<Integer,List<String>> sameCarbons = new Hashtable<Integer,List<String>>();
-      if (carbonHash.containsKey(carbons)){
-        sameCarbons = carbonHash.get(carbons);
-      } else {
-        carbonNumbers.add(carbons);        
-      }
-      List<String> sameCandDb = new ArrayList<String>();
-      if (sameCarbons.containsKey(doubleBonds)) sameCandDb = sameCarbons.get(doubleBonds);
-      sameCandDb.add(fa);
-      sameCarbons.put(doubleBonds, sameCandDb);
-      carbonHash.put(carbons, sameCarbons);
-    }
-    Collections.sort(carbonNumbers);
-    for (Integer carbon : carbonNumbers){
-      Hashtable<Integer,List<String>> sameCarbons = carbonHash.get(carbon);
-      List<Integer> doubleBonds = new ArrayList<Integer>(sameCarbons.keySet());
-      Collections.sort(doubleBonds);
-      for (Integer db : doubleBonds){
-        List<String> sameCandDb = sameCarbons.get(db);
-        Collections.sort(sameCandDb);
-        for (String fa : sameCandDb){
-          sorted.add(fa);
-        }
-      }
-    }
+    for (FattyAcidVO fa : fas) 
+      sorted.add(fa.getChainId());
     return sorted;
   }
   

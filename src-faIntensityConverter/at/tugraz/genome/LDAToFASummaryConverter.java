@@ -48,6 +48,8 @@ import at.tugraz.genome.lda.LDAResultReader;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
+import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
+import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.utils.StaticUtils;
@@ -117,6 +119,7 @@ public class LDAToFASummaryConverter extends ConverterBase
       throws FileNotFoundException, LipidCombinameEncodingException{
     String outFilename = dirName_+File.separator+"Summary.xlsx";
     BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outFilename));
+    Vector<HydroxyEncoding> ohEncodings = unifyHydroxyEncoding(rawResults);
     try{
       Workbook resultWorkbook = new XSSFWorkbook();
       CellStyle headerStyle = getHeaderStyle(resultWorkbook);
@@ -139,13 +142,20 @@ public class LDAToFASummaryConverter extends ConverterBase
         Vector<Vector<String>> bothInfo = getSortedSpeciesListAndAdducts(lClass, rawResults);
         Vector<String> sortedSpecies = bothInfo.get(0);
         Vector<String> mods = bothInfo.get(1);
-        for (String species : sortedSpecies){
+        String species;
+        String faReadable;
+        Vector<FattyAcidVO> chains;
+        for (String speciesEncoded : sortedSpecies){
+          chains = StaticUtils.decodeLipidNamesFromChainCombi(speciesEncoded);
+          species = StaticUtils.getHumanReadableChainName(chains.get(0), ohEncodings.get(0), ohEncodings.get(1), StaticUtils.areThereOhInCombi(chains));
           //first add species without fatty acids;
           writeExcelRowsOfOneSpecies(lCount,sheet,species,null,rawResults.keySet(),mods,getAreasWithoutChainInfo(lClass,species,rawResults));
           //second add species with fatty acids;
-          LinkedHashMap<String,Hashtable<String,Hashtable<String,LinkedHashMap<String,String[]>>>> sortedFAs = getSortedFattyAcids(lClass,species,rawResults);
-          for (String fa: sortedFAs.keySet()){
-            writeExcelRowsOfOneSpecies(lCount,sheet,species,fa,rawResults.keySet(),mods,sortedFAs.get(fa));
+          LinkedHashMap<String,Hashtable<String,Hashtable<String,LinkedHashMap<String,String[]>>>> sortedFAs = getSortedFattyAcids(lClass,species,speciesEncoded,rawResults);
+          for (String fa: sortedFAs.keySet()) {
+            chains = StaticUtils.decodeLipidNamesFromChainCombi(fa);
+            faReadable = StaticUtils.getHumanReadableChainName(chains.get(0), ohEncodings.get(0), ohEncodings.get(1), StaticUtils.areThereOhInCombi(chains));
+            writeExcelRowsOfOneSpecies(lCount,sheet,species,faReadable,rawResults.keySet(),mods,sortedFAs.get(fa));
           }
         }
         setColumnWidth(sheet, COLUMN_FILENAME, TEXT_FILENAME, lCount.longestFilename_);
@@ -179,7 +189,7 @@ public class LDAToFASummaryConverter extends ConverterBase
   }
   
   @SuppressWarnings("unchecked")
-  private Vector<Vector<String>> getSortedSpeciesListAndAdducts(String lClass, LinkedHashMap<String,QuantificationResult> rawResults){
+  private Vector<Vector<String>> getSortedSpeciesListAndAdducts(String lClass, LinkedHashMap<String,QuantificationResult> rawResults) throws LipidCombinameEncodingException{
     Vector<Vector<String>> bothInfo = new Vector<Vector<String>>();
     Set<String> species = new HashSet<String>();
     Hashtable<String,FloatStringVO> modAreas = new Hashtable<String,FloatStringVO>();
@@ -187,7 +197,7 @@ public class LDAToFASummaryConverter extends ConverterBase
       if (!res.getIdentifications().containsKey(lClass))
         continue;
       for (LipidParameterSet set : res.getIdentifications().get(lClass)){
-        species.add(set.getNameStringWithoutRt());
+        species.add(StaticUtils.decodeHumanReadableChain(set.getNameStringWithoutRt(), res.getFaHydroxyEncoding(), res.getLcbHydroxyEncoding(), res.getConstants().isAlexTargetlist()).getChainId());
         if (!modAreas.containsKey(set.getModificationName()))
           modAreas.put(set.getModificationName(), new FloatStringVO(set.getModificationName(),0f));
         modAreas.get(set.getModificationName()).addValue(set.getArea());
@@ -205,7 +215,7 @@ public class LDAToFASummaryConverter extends ConverterBase
   }
   
   
-  private LinkedHashMap<String,Hashtable<String,Hashtable<String,LinkedHashMap<String,String[]>>>> getSortedFattyAcids(String lClass, String speciesName, LinkedHashMap<String,QuantificationResult> rawResults) throws LipidCombinameEncodingException{
+  private LinkedHashMap<String,Hashtable<String,Hashtable<String,LinkedHashMap<String,String[]>>>> getSortedFattyAcids(String lClass, String speciesName, String speciesEncoded, LinkedHashMap<String,QuantificationResult> rawResults) throws LipidCombinameEncodingException{
     //first key: chain sorted; second key: modification; third key: experiment, fourth key: retention time; value: details
     Hashtable<String,Hashtable<String,Hashtable<String,LinkedHashMap<String,String[]>>>> details = new Hashtable<String,Hashtable<String,Hashtable<String,LinkedHashMap<String,String[]>>>>();
     for (String exp : rawResults.keySet()){
@@ -233,9 +243,8 @@ public class LDAToFASummaryConverter extends ConverterBase
       }
     }
     LinkedHashMap<String,Hashtable<String,Hashtable<String,LinkedHashMap<String,String[]>>>> detailsSorted = new LinkedHashMap<String,Hashtable<String,Hashtable<String,LinkedHashMap<String,String[]>>>>();
-    for (String fa : sortFAsInAscendingOrder(details.keySet())){
+    for (String fa : sortFAsInAscendingOrder(details.keySet()))
       detailsSorted.put(fa, details.get(fa));
-    }
     return detailsSorted;
   }
   
@@ -321,6 +330,20 @@ public class LDAToFASummaryConverter extends ConverterBase
     public LongestCount(){
       
     }
+  }
+  
+  private Vector<HydroxyEncoding> unifyHydroxyEncoding(LinkedHashMap<String,QuantificationResult> rawResults){
+    Vector<HydroxyEncoding> encodings = new Vector<HydroxyEncoding>();
+    for (QuantificationResult res : rawResults.values()) {
+      if (encodings.size()==0) {
+        encodings.add(res.getFaHydroxyEncoding());
+        encodings.add(res.getLcbHydroxyEncoding());
+      } else {
+        encodings.get(0).mergeHydroxyEncodings(res.getFaHydroxyEncoding());
+        encodings.get(1).mergeHydroxyEncodings(res.getLcbHydroxyEncoding());
+      }
+    }
+    return encodings;
   }
 /*  
   results[0] = ms1AreaString;

@@ -311,13 +311,17 @@
 	          <include name="at/tugraz/genome/lda/QuantificationThread.class"/>
 		      <include name="at/tugraz/genome/lda/exception/ChemicalFormulaException.class"/>
 	          <include name="at/tugraz/genome/lda/exception/ExcelInputFileException.class"/>
+	          <include name="at/tugraz/genome/lda/exception/HydroxylationEncodingException.class"/>
+	          <include name="at/tugraz/genome/lda/exception/LipidCombinameEncodingException.class"/>
 	          <include name="at/tugraz/genome/lda/exception/NoRuleException.class"/>
 	          <include name="at/tugraz/genome/lda/exception/RulesException.class"/>
 	          <include name="at/tugraz/genome/lda/exception/SettingsException.class"/>
 	          <include name="at/tugraz/genome/lda/msn/RulesContainer.class"/>
 	          <include name="at/tugraz/genome/lda/msn/LipidomicsMSnSet.class"/>
+	          <include name="at/tugraz/genome/lda/msn/hydroxy/parser/HydroxyEncoding.class"/>
 	          <include name="at/tugraz/genome/lda/msn/parser/FragRuleParser.class"/>
 	          <include name="at/tugraz/genome/lda/msn/vos/ExpressionForComparisonVO.class"/>
+	          <include name="at/tugraz/genome/lda/msn/vos/FattyAcidVO.class"/>
 	          <include name="at/tugraz/genome/lda/msn/vos/Fragment*.*"/>
 	          <include name="at/tugraz/genome/lda/msn/vos/Intensity*.*"/>
 		      <include name="at/tugraz/genome/lda/quantification/LipidParameterSet.class"/>
@@ -325,7 +329,9 @@
 			  <include name="at/tugraz/genome/lda/utils/ExcelUtils.class"/>
 	          <include name="at/tugraz/genome/lda/utils/RangeInteger.class"/>
 	          <include name="at/tugraz/genome/lda/utils/StaticUtils.class"/>
+	          <include name="at/tugraz/genome/lda/vos/DoubleStringVO.class"/>
 	          <include name="at/tugraz/genome/lda/vos/FloatStringVO.class"/>
+	          <include name="at/tugraz/genome/lda/vos/ShortStringVO.class"/>
 	        </patternset>
 	    </unjar>
 	  	<jar jarfile="${dist.dir}/FaIntensityConverter.jar">

@@ -134,4 +134,29 @@ public class HydroxyEncoding extends Properties{
     return this.sortedOHs_;
   }
   
+  
+  /**
+   * adds all the additional hydroxylation encodings to the existing one - duplicates are avoided
+   * @param other the hydroxylation encoding to be merged
+   */
+  public void mergeHydroxyEncodings(HydroxyEncoding other) {
+    for (String encoded : other.encodingToNumber_.keySet())
+      this.addHydroxyEncoding(encoded, encodingToNumber_.get(encoded));
+  }
+  
+  
+  /**
+   * checks whether this encoding already exists; if not, add it to the existing encodings
+   * @param encoded the encoded string
+   * @param hydroxyNumber the hydroxylation number 
+   */
+  private void addHydroxyEncoding(String encoded, short hydroxyNumber) {
+    if (encodingToNumber_.containsKey(encoded) || encodingToNumber_.containsValue(hydroxyNumber))
+      return;
+    this.put(String.valueOf(hydroxyNumber), encoded);
+    this.encodingToNumber_.put(encoded, hydroxyNumber);
+    sortedOHs_.add(hydroxyNumber);
+    Collections.sort(sortedOHs_);
+  }
+  
 }
