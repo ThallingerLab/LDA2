@@ -116,8 +116,11 @@ public class AnalyteOmegaInfoVO
    * @return the expected RT of the unlabeled species
    */
   public double calculateRtIncludingTheShift(double rtOfLabeledSpecies) {
-    for (IsotopicLabelVO labelVO : this.labels_)
-      rtOfLabeledSpecies -= (double)labelVO.getRtShift();
+    for (IsotopicLabelVO labelVO : this.labels_) {
+      //the following line is for using absolute retention time shifts; however, results seem to be better using relative retention time
+      //rtOfLabeledSpecies -= (double)labelVO.getRtShift();
+      rtOfLabeledSpecies = rtOfLabeledSpecies/(1+(((double)labelVO.getRrtShift())/100d));
+    }
     return rtOfLabeledSpecies;
   }
     

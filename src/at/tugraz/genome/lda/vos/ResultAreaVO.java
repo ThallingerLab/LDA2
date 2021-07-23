@@ -245,7 +245,7 @@ public class ResultAreaVO
   
   public String getMoleculeNameWoRT()
   {
-    return StaticUtils.generateLipidNameString(name_, dbs_);
+    return StaticUtils.generateLipidNameString(name_, dbs_,-1);
   }
   
   public String getExpName()
@@ -334,7 +334,7 @@ public class ResultAreaVO
         Vector<Double> areas = areas_.get(modName);
         for (int j=0; j!=(i+1)&&j!=areas.size();j++){
           double area = areas.get(j);
-          double mass = /****mass_.get(modName)*/neutralMass_+LipidomicsConstants.getNeutronMass()*j;
+          double mass = neutralMass_+LipidomicsConstants.getNeutronMass()*j;
           totalArea += area;
           totalMassArea += area*mass;
         }

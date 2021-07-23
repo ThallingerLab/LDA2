@@ -163,7 +163,6 @@ public class FragmentCalculator
    */
   private void initCalculator() throws RulesException, NoRuleException, IOException, SpectrummillParserException, HydroxylationEncodingException, ChemicalFormulaException {
     elements_ = Settings.getElementParser();
-    ////potentialChainCombinations_ = new Hashtable<String,Vector<FattyAcidVO>>();
     int amountOfChains = Integer.parseInt(RulesContainer.getAmountOfChains(ruleName_,rulesDir_));
     int[] chainAmounts = RulesUtils.getAmountOfChainsCategorized(rulesDir_, ruleName_);
     int fattyChains = chainAmounts[0];
@@ -292,7 +291,7 @@ public class FragmentCalculator
         for (int i=0; i!=chains; i++){
           int cAtoms = cCombis.get(i);
           int dBonds = dbCombi.get(i);
-          String partName = StaticUtils.generateLipidNameString(String.valueOf(cAtoms), dBonds);
+          String partName = StaticUtils.generateLipidNameString(String.valueOf(cAtoms), dBonds, -1);
           combiName += partName+LipidomicsConstants.CHAIN_SEPARATOR_NO_POS;
           singleCombiParts.add(partName);
         }

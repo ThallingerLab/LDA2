@@ -181,7 +181,7 @@ public class LipidParameterSet extends CgParameterSet
   }
   
   public String getNameStringWithoutRt(){
-    return StaticUtils.generateLipidNameString(Peptide, doubleBonds_);
+    return StaticUtils.generateLipidNameString(Peptide, doubleBonds_,-1);
   }
  
   public String getName(){

@@ -198,7 +198,7 @@ public class OmegaExportDialog extends JDialog implements ActionListener
     text = new JLabel("Formula");
     panel.add(text, new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0,
         GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 2, 2, 2), 0, 0));
-    text = new JLabel("RT-shift");
+    text = new JLabel("rRT-shift");
     panel.add(text, new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0,
         GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 2, 2, 2), 0, 0));
     

@@ -26,7 +26,6 @@ package at.tugraz.genome.lda.alex123.vos;
 import java.util.Hashtable;
 import java.util.Vector;
 
-import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.exception.AlexTargetlistParserException;
 import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;

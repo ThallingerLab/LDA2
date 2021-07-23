@@ -63,7 +63,7 @@ public class Settings
 {
   private static Settings instance_ = null;
 
-  public final static String VERSION = "2.8.0_1";
+  public final static String VERSION = "2.8.0_2";
   
   public final static String SETTINGS_FILE = ".settings";
   
@@ -94,6 +94,9 @@ public class Settings
   private static boolean useAlex_;
   /** create empty entries when there is nothing found by "Quant. anal. at not found" or "Take exact peak for others"*/
   private static boolean emptyEntriesForQuantAnalNotFound_;
+  /** the peak selection type for the omega export"*/
+  private static short omegaExportPeakSelection_;
+
    
   /** the lookup of isotopes from the Alex format to the LDA format*/
   private static Hashtable<String,String> alexIsoLookup_ = new Hashtable<String,String>();
@@ -117,6 +120,14 @@ public class Settings
   public final static String FRAG_SELECTION_NO_INTENSITY = "noIntensity";
   
   public final static String FRAG_SETTINGS_FILE = ".selected";
+  
+  private final static String SETTING_OMEGA_PEAK_SELECTION = "OmegaExportPeakSelection";
+  
+  private final static String OMEGA_SETTING_STRONGEST = "strongest";
+  private final static String OMEGA_SETTING_RTDIFF = "rtDiff";
+  
+  public final static short OMEGA_PEAK_STRONGEST = 0;
+  public final static short OMEGA_PEAK_RTDIFF = 1;
   
   private LinkedHashMap<String,File> propertiesFiles_;
   
@@ -212,6 +223,15 @@ public class Settings
       if (emptyEntriesForQuantAnalNotFoundString!=null&&(emptyEntriesForQuantAnalNotFoundString.equalsIgnoreCase("true")||
           emptyEntriesForQuantAnalNotFoundString.equalsIgnoreCase("yes"))){
         emptyEntriesForQuantAnalNotFound_ = true;
+      }
+      //the default value for the peak selection of the omega export
+      omegaExportPeakSelection_ = OMEGA_PEAK_STRONGEST;
+      String omegaExportPeakSelectionString = properties.getProperty(SETTING_OMEGA_PEAK_SELECTION, OMEGA_SETTING_STRONGEST);
+      if (omegaExportPeakSelectionString!=null){
+        if (omegaExportPeakSelectionString.equalsIgnoreCase(OMEGA_SETTING_STRONGEST))
+          omegaExportPeakSelection_ = OMEGA_PEAK_STRONGEST;
+        else if (omegaExportPeakSelectionString.equalsIgnoreCase(OMEGA_SETTING_RTDIFF))
+          omegaExportPeakSelection_ = OMEGA_PEAK_RTDIFF;
       }
       
       isDefaultInput_ = properties.getProperty("ISDefaultInput", "IS");
@@ -419,6 +439,15 @@ public class Settings
     return Settings.emptyEntriesForQuantAnalNotFound_;
   }
 
+  /**
+   * 
+   * @return the peak selection method; possible options can be found in this class starting with 'OMEGA_PEAK_'
+   */
+  public static short getOmegaExportPeakSelection(){
+    Settings.getInstance();
+    return Settings.omegaExportPeakSelection_;
+  }
+  
   public static String getInternalStandardDefaultInput()
   {
     Settings.getInstance();

@@ -47,6 +47,8 @@ public class FattyAcidVO
   private String formula_;
   /** the number of OH groups*/
   private int ohNumber_;
+  /** omegaPosition*/
+  private int omegaPosition_;
   
   /**
    * all the information has to be provided in the constructor
@@ -65,6 +67,7 @@ public class FattyAcidVO
     this.ohNumber_ = ohNumber;
     this.mass_ = mass;
     this.formula_ = formula;
+    this.omegaPosition_ = -1;
   }
   
   
@@ -160,10 +163,31 @@ public class FattyAcidVO
 
   
   /**
+   * 
+   * @return the omega position of the last double bond
+   */
+  public int getOmegaPosition()
+  {
+    return omegaPosition_;
+  }
+
+
+  /**
+   * sets the omega position of the last double bond
+   * @param omegaPosition the omega position
+   */
+  public void setOmegaPosition(int omegaPosition)
+  {
+    this.omegaPosition_ = omegaPosition;
+  }
+
+
+
+  /**
    * @return name consisting of number of C atoms : number of double bonds
    */
   public String getCarbonDbsId(){
-    return StaticUtils.generateLipidNameString(prefix_+String.valueOf(cAtoms_),doubleBonds_);
+    return StaticUtils.generateLipidNameString(prefix_+String.valueOf(cAtoms_),doubleBonds_,omegaPosition_);
   }
   
   /**

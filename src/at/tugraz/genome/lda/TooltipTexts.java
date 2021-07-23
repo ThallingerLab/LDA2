@@ -355,8 +355,8 @@ public class TooltipTexts
 
   public final static String ISO_LABEL_LABELID = "<html>The designator for the label in the data</html>";
   public final static String ISO_LABEL_OMEGA = "<html>The omega position of the isotopically labeled chain</html>";
-  public final static String ISO_LABEL_FORMULA = "<html>The caused difference in the elemental composition by the label</html>";
-  public final static String ISO_LABEL_RTSHIFT = "<html>The caused difference in the retention time by the label</html>";
+  public final static String ISO_LABEL_FORMULA = "<html>The difference in elemental composition caused by the label</html>";
+  public final static String ISO_LABEL_RTSHIFT = "<html>The relative difference in retention time caused by the label</html>";
   public final static String ISO_DELETE = "<html>Deletes the label.</html>";
   public final static String ISO_ADD = "<html>Adds another row to enter information about a label</html>";
   

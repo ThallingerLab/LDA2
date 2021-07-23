@@ -202,7 +202,7 @@ public class QuantVO
    * @return original string for the analyte name
    */
   public String getIdString(){
-    return StaticUtils.generateLipidNameString(getAnalyteName(),dbs_);
+    return StaticUtils.generateLipidNameString(getAnalyteName(),dbs_,-1);
   }
   
   /**

@@ -28,7 +28,7 @@ import java.util.LinkedHashMap;
 import at.tugraz.genome.lda.utils.StaticUtils;
 
 /**
- * 
+ * class containing information about the isotopic label
  * @author Juergen Hartler
  *
  */
@@ -38,8 +38,8 @@ public class IsotopicLabelVO
   protected String labelId_;
   /** the label elements including its amount for each label indicator*/
   protected Hashtable<String,Integer> labelElements_;
-  /** the shift in retention time caused by the isotopic label*/
-  protected Float rtShift_;
+  /** the relative shift in retention time caused by the isotopic label*/
+  protected Float rrtShift_;
   /** the used prefixes for this label*/
   protected LinkedHashMap<String,Integer> prefixes_;
   /** the omega position this label stands for*/  
@@ -55,7 +55,7 @@ public class IsotopicLabelVO
     this.labelId_ = labelId;
     this.labelElements_ = labelElements;
     this.prefixes_ = prefixes;
-    rtShift_ = null;
+    rrtShift_ = null;
     omegaPosition_ = -1;
   }
   
@@ -64,13 +64,13 @@ public class IsotopicLabelVO
    * @param labelId prefix that is used to indicate an isotopic label
    * @param omegaPosition the omega position this label is indicative for
    * @param labelElements label elements including its amount for each label indicator
-   * @param rtShift the retention time shift the label is causing
+   * @param rrtShift the relative retention time shift the label is causing
    * @param prefixes the used prefixes (might be empty)
    */
-  public IsotopicLabelVO(String labelId, int omegaPosition, Hashtable<String,Integer> labelElements, float rtShift, LinkedHashMap<String,Integer> prefixes) {
+  public IsotopicLabelVO(String labelId, int omegaPosition, Hashtable<String,Integer> labelElements, float rrtShift, LinkedHashMap<String,Integer> prefixes) {
     this(labelId,labelElements,prefixes);
     omegaPosition_ = omegaPosition;
-    rtShift_ = rtShift;
+    rrtShift_ = rrtShift;
   }
   
 
@@ -82,7 +82,7 @@ public class IsotopicLabelVO
     this.labelId_ = vo.labelId_;
     this.labelElements_ = vo.labelElements_;
     this.prefixes_ = vo.prefixes_;
-    this.rtShift_ = vo.getRtShift();
+    this.rrtShift_ = vo.getRrtShift();
     omegaPosition_ = vo.omegaPosition_;
   }
   
@@ -127,22 +127,22 @@ public class IsotopicLabelVO
   }
 
   /**
-   * getter for the shift in retention time caused by the isotopic label
-   * @return the shift in retention time caused by the isotopic label
+   * getter for the relative shift in retention time caused by the isotopic label
+   * @return the relative shift in retention time caused by the isotopic label
    */
-  public Float getRtShift()
+  public Float getRrtShift()
   {
-    return rtShift_;
+    return rrtShift_;
   }
 
   
   /**
-   * setter for the shift in retention time caused by the isotopic label
-   * @param rtShift shift in retention time caused by the isotopic label
+   * setter for the relative shift in retention time caused by the isotopic label
+   * @param rrtShift relative shift in retention time caused by the isotopic label
    */
-  public void setRtShift(Float rtShift)
+  public void setRtShift(Float rrtShift)
   {
-    this.rtShift_ = rtShift;
+    this.rrtShift_ = rrtShift;
   }
   
   
@@ -197,7 +197,7 @@ public class IsotopicLabelVO
   
   
   public String toString() {
-    return labelId_+": n-"+String.valueOf(omegaPosition_)+"; "+StaticUtils.getFormulaInHillNotation_PlusFirst(this.labelElements_, true)+"; RT: "+rtShift_.toString()+"; "+prefixes_.keySet();
+    return labelId_+": n-"+String.valueOf(omegaPosition_)+"; "+StaticUtils.getFormulaInHillNotation_PlusFirst(this.labelElements_, true)+"; RT: "+rrtShift_.toString()+"; "+prefixes_.keySet();
   }
   
 }

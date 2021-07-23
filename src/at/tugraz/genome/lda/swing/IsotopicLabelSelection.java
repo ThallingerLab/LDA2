@@ -102,8 +102,8 @@ public class IsotopicLabelSelection extends IsotopicLabelVO
     formula_.setToolTipText(TooltipTexts.ISO_LABEL_FORMULA);
     rtShift_ = new JTextField(6);
     double rtShift = 0;
-    if (vo.getRtShift()!=null)
-      rtShift = vo.getRtShift().doubleValue();
+    if (vo.getRrtShift()!=null)
+      rtShift = vo.getRrtShift().doubleValue();
     rtShift_.setText(Calculator.FormatNumberToString(rtShift,3d));
     rtShift_.setToolTipText(TooltipTexts.ISO_LABEL_RTSHIFT);
     rtShift_.setInputVerifier(new DoubleVerifier(false,false));

@@ -29,6 +29,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -47,12 +48,16 @@ import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.analysis.ComparativeAnalysis;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExportException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.export.vos.AnalyteOmegaInfoVO;
+import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
+import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.vos.DoubleIntegerVO;
 import at.tugraz.genome.lda.vos.IsotopicLabelVO;
 import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.lda.vos.ResultAreaVO;
@@ -73,8 +78,7 @@ public class OmegaMasslistExporter extends LDAExporter
   private final static int COLUMN_COLON = 1;
   private final static int COLUMN_DBS = 2;
   private final static int COLUMN_MOL = 3;
-  private final static int COLUMN_OMEGA = 4;
-  private final static int COLUMN_FIRST_ELEMENT = 5;
+  private final static int COLUMN_FIRST_ELEMENT = 4;
   /** the file name to export the mass lists*/
   private String fileName_;
   
@@ -165,21 +169,22 @@ public class OmegaMasslistExporter extends LDAExporter
   private void writeMassListForSheet(Sheet sheet, XSSFCellStyle headerStyle, Vector<String> analytes, Hashtable<String,Hashtable<String,QuantVO>> quantObjects,
       Hashtable<String,Hashtable<String,Vector<AnalyteOmegaInfoVO>>> labeled, ComparativeAnalysis analysisModule, String className, 
       double stdev, int nrChains, Hashtable<Integer,Hashtable<String,IsotopicLabelVO>> sameOmegaLabels) throws ChemicalFormulaException, ExportException, LipidCombinameEncodingException {
-    //key: RT
-    Hashtable<Double,Integer> sumSpeciesHash;
+    //first key: encoded omega chain information; second key: RT
+    Hashtable<String,Hashtable<Double,DoubleIntegerVO>> sumSpeciesHash;
     //first key: chain idents; second key: expName; third key: RT
-    Hashtable<String,Hashtable<Double,Integer>> molSpeciesHash;
+    Hashtable<String,Hashtable<String,Hashtable<Double,DoubleIntegerVO>>> molSpeciesHash;
     ResultAreaVO areaVO;
     Hashtable<String,Integer> elementsLabeled;
     int nr;
     String chainsWithoutLabel;
+    String labeledChainsOnly;
+    String encodedOmegaChainInformation;
     Double rt;
-    int countRts;
+    DoubleIntegerVO countRts;
     double rtTolerance = stdev*3d;
-    Vector<Vector<Double>> rtGroups;
-    Hashtable<String,Vector<Double>> rtsOfOneSpecies;
-    Hashtable<String,Hashtable<Integer,Vector<Double>>> rtsSpeciesAndOmega;
-    String humanReadable;
+    double labelTol = stdev*2d;
+    Hashtable<String,Hashtable<String,List<Double>>> rtsOfOneSpecies;
+    Hashtable<String,Hashtable<String,List<Double>>> rtsSpeciesAndOmega;
     
     Vector<Object> elModCharge = getAvailableElementsAndModificationsPlusCharge(quantObjects);
     Vector<String> elements = (Vector<String>)elModCharge.get(0);
@@ -195,10 +200,6 @@ public class OmegaMasslistExporter extends LDAExporter
     label.setCellStyle(headerStyle);
     label = outRow.createCell(COLUMN_MOL,HSSFCell.CELL_TYPE_STRING);
     label.setCellValue("mol. species");
-    label.setCellStyle(headerStyle);
-    label.setCellStyle(headerStyle);
-    label = outRow.createCell(COLUMN_OMEGA,HSSFCell.CELL_TYPE_STRING);
-    label.setCellValue("omega");
     label.setCellStyle(headerStyle);
     int columnNrFirstElement = COLUMN_FIRST_ELEMENT;
     int elementColumns = 0;
@@ -264,12 +265,12 @@ public class OmegaMasslistExporter extends LDAExporter
       rowCount++;
       
       if (labeled.containsKey(analyte)) {
-        rtsSpeciesAndOmega = new Hashtable<String,Hashtable<Integer,Vector<Double>>>();
+        rtsSpeciesAndOmega = new Hashtable<String,Hashtable<String,List<Double>>>();
         for (Integer omegaPos : sameOmegaLabels.keySet()) {
           Hashtable<String,IsotopicLabelVO> labels = sameOmegaLabels.get(omegaPos);
-          sumSpeciesHash = new Hashtable<Double,Integer>();
-          molSpeciesHash = new Hashtable<String,Hashtable<Double,Integer>>();
-          rtsOfOneSpecies = new Hashtable<String,Vector<Double>>(); 
+          sumSpeciesHash = new Hashtable<String,Hashtable<Double,DoubleIntegerVO>>();
+          molSpeciesHash = new Hashtable<String,Hashtable<String,Hashtable<Double,DoubleIntegerVO>>>();
+          rtsOfOneSpecies = new Hashtable<String,Hashtable<String,List<Double>>>(); 
           for(String labelId : labels.keySet()) {
             if (!labeled.get(analyte).containsKey(labelId))
               continue;
@@ -295,31 +296,43 @@ public class OmegaMasslistExporter extends LDAExporter
                 }
                 if (!StaticUtils.isChemicalFormulaTheSame(formula,elementsLabeled))
                   continue;
-                //System.out.println("1. "+className+" "+analyte+": "+info.getLabelDetection()+"     "+info.getAppliedLabelId()+" ; "+info.getAppliedLabelId());
+                //System.out.println("1. "+className+" "+analyte+": "+info.getLabelDetection()+" "+"     "+info.getAppliedLabelId()+" ; "+info.getAppliedLabelId());
                 if (areaVO==null || !areaVO.isMsnEvidenceThere())
                   continue;
                 if (areaVO.getStrongestChainIdentification()!=null && nrChains>1) {
                   for (String molSpecies : areaVO.getChainInformationTotal().keySet()) {
                     chainsWithoutLabel = StaticUtils.removeLabelsFromChains(molSpecies,info.getLabels());
-                    //System.out.println("chainsWithoutLabel: "+chainsWithoutLabel);
+                    labeledChainsOnly = StaticUtils.getLabeledChainsOnly(molSpecies,info.getLabels());
+                    if (labeledChainsOnly==null || labeledChainsOnly.length()==0)
+                      continue;
+                    encodedOmegaChainInformation = StaticUtils.encodeOmegaPositions(molSpecies,info.getLabels(),analysisModule.getFaHydroxyEncoding(), analysisModule.getLcbHydroxyEncoding());
+//                    if (className.equalsIgnoreCase("PC") && encodedOmegaChainInformation.equalsIgnoreCase("16:1(n-7)_18:1"))
+//                      System.out.println("chainsWithLabel: "+molSpecies+" - omegaEncoded: "+encodedOmegaChainInformation);
                     if (!molSpeciesHash.containsKey(chainsWithoutLabel))
-                      molSpeciesHash.put(chainsWithoutLabel,new Hashtable<Double,Integer>());
+                      molSpeciesHash.put(chainsWithoutLabel,new Hashtable<String,Hashtable<Double,DoubleIntegerVO>>());
+                    if (!molSpeciesHash.get(chainsWithoutLabel).containsKey(encodedOmegaChainInformation))
+                      molSpeciesHash.get(chainsWithoutLabel).put(encodedOmegaChainInformation, new Hashtable<Double,DoubleIntegerVO>());
                     //System.out.println("originalRt: "+areaVO.getRtOriginal());
                     rt = Calculator.FormatNumber(info.calculateRtIncludingTheShift(Double.parseDouble(areaVO.getRtOriginal())),5d);
                     //System.out.println("rt-shifted: "+rt);
-                    countRts = 0;
-                    if (molSpeciesHash.get(chainsWithoutLabel).containsKey(rt))
-                      countRts = molSpeciesHash.get(chainsWithoutLabel).get(rt);
-                    countRts++;
-                    molSpeciesHash.get(chainsWithoutLabel).put(rt, countRts);
+                    countRts = new DoubleIntegerVO(0,0d);
+                    if (molSpeciesHash.get(chainsWithoutLabel).get(encodedOmegaChainInformation).containsKey(rt))
+                      countRts = molSpeciesHash.get(chainsWithoutLabel).get(encodedOmegaChainInformation).get(rt);
+                    countRts.setKey(countRts.getKey()+1);
+                    countRts.setValue(countRts.getValue()+areaVO.getChainInformationTotal().get(molSpecies));
+                    molSpeciesHash.get(chainsWithoutLabel).get(encodedOmegaChainInformation).put(rt, countRts);
                   }
                 } else if (nrChains==1) {
+                  encodedOmegaChainInformation = StaticUtils.encodeOmegaPositions(StaticUtils.encodeLipidCombi(StaticUtils.decodeFAsFromHumanReadableName(info.getLabelDetection().substring(0,info.getLabelDetection().lastIndexOf("_")),analysisModule.getFaHydroxyEncoding(),analysisModule.getLcbHydroxyEncoding(),false)),info.getLabels(),analysisModule.getFaHydroxyEncoding(), analysisModule.getLcbHydroxyEncoding());
+                  if (!sumSpeciesHash.containsKey(encodedOmegaChainInformation))
+                    sumSpeciesHash.put(encodedOmegaChainInformation, new Hashtable<Double,DoubleIntegerVO>());
                   rt = Calculator.FormatNumber(info.calculateRtIncludingTheShift(Double.parseDouble(areaVO.getRtOriginal())),5d);
-                  countRts = 0;
-                  if (sumSpeciesHash.containsKey(rt))
-                    countRts = sumSpeciesHash.get(rt);
-                  countRts++;
-                  sumSpeciesHash.put(rt, countRts);
+                  countRts = new DoubleIntegerVO(0,0d);
+                  if (sumSpeciesHash.get(encodedOmegaChainInformation).containsKey(rt))
+                    countRts = sumSpeciesHash.get(encodedOmegaChainInformation).get(rt);
+                  countRts.setKey(countRts.getKey()+1);
+                  countRts.setValue(countRts.getValue()+areaVO.getTotalArea(Integer.MAX_VALUE));
+                  sumSpeciesHash.get(encodedOmegaChainInformation).put(rt, countRts);
                 }
               }
             }
@@ -328,51 +341,45 @@ public class OmegaMasslistExporter extends LDAExporter
             for (String molSpecies : molSpeciesHash.keySet()) {
               if (molSpeciesHash.get(molSpecies).size()==0)
                 continue;
-              rtGroups = new Vector<Vector<Double>>();
-              List<Double> rtSorted = new ArrayList<Double>(molSpeciesHash.get(molSpecies).keySet());
-              Collections.sort(rtSorted);
-              for (Double oneRt : rtSorted) {
-                if (rtGroups.size()==0 || (oneRt-rtGroups.lastElement().lastElement())>rtTolerance)
-                  rtGroups.add(new Vector<Double>());
-                rtGroups.lastElement().add(oneRt);
+              for (String labeledPart : molSpeciesHash.get(molSpecies).keySet()) {
+//                if (className.equalsIgnoreCase("PC") && labeledPart.equalsIgnoreCase("16:1(n-7)_18:1"))
+//                  System.out.println("chainsWithLabel: "+molSpecies+" - omegaEncoded: "+labeledPart);
+                Vector<Double> meanRts = groupByRtAndCalculateMean(molSpeciesHash.get(molSpecies).get(labeledPart),rtTolerance);
+                if (meanRts.size()==0)
+                  continue;
+                if (!rtsOfOneSpecies.containsKey(molSpecies))
+                  rtsOfOneSpecies.put(molSpecies, new Hashtable<String,List<Double>>());
+                rtsOfOneSpecies.get(molSpecies).put(labeledPart, meanRts);
               }
-              if (rtGroups.size()==0)
-                continue;
-              Vector<Double> meanRts = new Vector<Double>();
-              for (Vector<Double> rts : rtGroups) {
-                double sum = 0d;
-                for (double oneRt : rts)
-                  sum += oneRt;
-                meanRts.add(sum/((double)rts.size()));
-              }
-              rtsOfOneSpecies.put(molSpecies, meanRts);
             }
           }else if (nrChains==1 && sumSpeciesHash.size()>0) {
-            rtGroups = new Vector<Vector<Double>>();
-            List<Double> rtSorted = new ArrayList<Double>(sumSpeciesHash.keySet());
-            Collections.sort(rtSorted);
-            for (Double oneRt : rtSorted) {
-              if (rtGroups.size()==0 || (oneRt-rtGroups.lastElement().lastElement())>rtTolerance)
-                rtGroups.add(new Vector<Double>());
-              rtGroups.lastElement().add(oneRt);
+            for (String omegaName : sumSpeciesHash.keySet()) {
+              Vector<Double> meanRts = groupByRtAndCalculateMean(sumSpeciesHash.get(omegaName),rtTolerance);
+              if (meanRts.size()==0)
+                continue;
+              if (!rtsOfOneSpecies.containsKey(analyte))
+                rtsOfOneSpecies.put(analyte, new Hashtable<String,List<Double>>());
+                //System.out.println("2. "+className+" ; "+analyte+";"+info.getLabelDetection());
+              rtsOfOneSpecies.get(analyte).put(omegaName, meanRts);
             }
-            if (rtGroups.size()==0)
-              continue;
-            Vector<Double> meanRts = new Vector<Double>();
-            for (Vector<Double> rts : rtGroups) {
-              double sum = 0d;
-              for (double oneRt : rts)
-                sum += oneRt;
-              meanRts.add(sum/((double)rts.size()));
-            }
-            rtsOfOneSpecies.put(analyte, meanRts);            
           }
           //now group according to the (molecular) species name irrespective of the omega position
           for (String species : rtsOfOneSpecies.keySet()) {
             if (!rtsSpeciesAndOmega.containsKey(species))
-              rtsSpeciesAndOmega.put(species, new Hashtable<Integer,Vector<Double>>());
+              rtsSpeciesAndOmega.put(species, new Hashtable<String,List<Double>>());
             //if (!rtsSpeciesAndOmega.get(species).containsKey(omegaPos))
-            rtsSpeciesAndOmega.get(species).put(omegaPos, rtsOfOneSpecies.get(species));
+            //TODO: this might be a good position to do a further grouping of the RTs, even if the things come from a different label
+            for (String labeledPart : rtsOfOneSpecies.get(species).keySet()){
+              List<Double> rtSorted = rtsOfOneSpecies.get(species).get(labeledPart);
+              if (rtsSpeciesAndOmega.get(species).containsKey(labeledPart)) {
+                rtSorted.addAll(rtsSpeciesAndOmega.get(species).get(labeledPart));
+                rtSorted = groupByRtAndCalculateMean(rtSorted,rtTolerance);                
+                Collections.sort(rtSorted);
+              }
+              rtsSpeciesAndOmega.get(species).put(labeledPart, rtSorted);
+
+            }
+//            rtsSpeciesAndOmega.get(species).put(omegaPos, rtsOfOneSpecies.get(species));
           }
           
 //          System.out.println("n-"+omegaPos);
@@ -385,21 +392,49 @@ public class OmegaMasslistExporter extends LDAExporter
           
         Vector<String> sortedSpecies =  StaticUtils.sortChainCombinations(rtsSpeciesAndOmega.keySet());
         for (String species : sortedSpecies) {
-          humanReadable = null;
-          if (nrChains>1)
-            humanReadable = StaticUtils.getHumanReadableCombiName(species, analysisModule.getFaHydroxyEncoding(), analysisModule.getLcbHydroxyEncoding());
-          else
-            humanReadable = new String(species);
-          Hashtable<Integer,Vector<Double>> rtsOfSpecies = rtsSpeciesAndOmega.get(species);
+          Hashtable<String,List<Double>> rtsOfSpecies = rtsSpeciesAndOmega.get(species);
           List<Double> sortedRts = new ArrayList<Double>();
-          for (Vector<Double> rts : rtsOfSpecies.values()) {
-            for (Double oneRt : rts)
+          Hashtable<Double,Double> used = new Hashtable<Double,Double>();
+          for (List<Double> rts : rtsOfSpecies.values()) {
+            for (Double oneRt : rts) {
+              if (used.containsKey(oneRt))
+                continue;
               sortedRts.add(oneRt);
+              used.put(oneRt, oneRt);
+            }
           }
           Collections.sort(sortedRts);
+          
+          
+          // this checks if a hit with less specified omega positions matches a hit with more
+          Double lastRt = new Double (0);
+          Hashtable<String,Hashtable<Double,Double>> leaveItOut = new Hashtable<String,Hashtable<Double,Double>>();
           for (Double oneRt : sortedRts) {
-            for (Integer omega: rtsOfSpecies.keySet()) {
-              if (!rtsOfSpecies.get(omega).contains(oneRt))
+            if ((oneRt-lastRt)<labelTol) {
+              for (String omegaEncoded1: rtsOfSpecies.keySet()) {
+                if (!rtsOfSpecies.get(omegaEncoded1).contains(lastRt))
+                  continue;
+                for (String omegaEncoded2: rtsOfSpecies.keySet()) {
+                  if (!rtsOfSpecies.get(omegaEncoded2).contains(oneRt))
+                    continue;
+                  String obsoleteOne = findAnObsoleteIdentification(omegaEncoded1,omegaEncoded2,analysisModule.getFaHydroxyEncoding(),analysisModule.getLcbHydroxyEncoding());
+                  if (obsoleteOne==null)
+                    continue;
+                  if (!leaveItOut.containsKey(obsoleteOne))
+                    leaveItOut.put(obsoleteOne, new Hashtable<Double,Double>());
+                  if (obsoleteOne.equalsIgnoreCase(omegaEncoded1))
+                    leaveItOut.get(obsoleteOne).put(lastRt, lastRt);
+                  else
+                    leaveItOut.get(obsoleteOne).put(oneRt, oneRt);
+                }
+              }
+            }
+            lastRt = oneRt;
+          }
+          
+          for (Double oneRt : sortedRts) {
+            for (String omegaEncoded: rtsOfSpecies.keySet()) {
+              if (!rtsOfSpecies.get(omegaEncoded).contains(oneRt) || (leaveItOut.containsKey(omegaEncoded) && leaveItOut.get(omegaEncoded).containsKey(oneRt)))
                 continue;
               modCount = 0;
               outRow = sheet.createRow(rowCount);
@@ -413,9 +448,7 @@ public class OmegaMasslistExporter extends LDAExporter
                   label = outRow.createCell(COLUMN_DBS,HSSFCell.CELL_TYPE_NUMERIC);
                   label.setCellValue(quant.getDbs());
                   label = outRow.createCell(COLUMN_MOL,HSSFCell.CELL_TYPE_STRING);
-                  label.setCellValue(humanReadable);
-                  label = outRow.createCell(COLUMN_OMEGA,HSSFCell.CELL_TYPE_NUMERIC);
-                  label.setCellValue(omega);
+                  label.setCellValue(omegaEncoded);
                   for (String element : formula.keySet()) {
                     label = outRow.createCell(elementColumnLookup.get(element),HSSFCell.CELL_TYPE_NUMERIC);
                     label.setCellValue(formula.get(element));
@@ -610,6 +643,111 @@ public class OmegaMasslistExporter extends LDAExporter
       }
     }
     return devs;
+  }
+  
+  /**
+   * groups hits of different retention times; the rtTolerance value dictates the maximum tolerance; when a group is defined the mean value of the retention times is calculated and used as reference value;
+   * when there are several options, according to the settings, this method returns all values (OMEGA_PEAK_RTDIFF) or the strongest identification only (OMEGA_PEAK_STRONGEST)
+   * @param rtsIn a hash table containing the retention times and information about this hit; key: retention time; value: DoubleIntegerVO where the key is the number of occurrences of exactly this RT, and the value is the total area
+   * @param rtTolerance the maximum RT tolerance for assigning a hit to a group
+   * @return the retention time(s) of the (strongest) group(s)
+   */
+  private Vector<Double> groupByRtAndCalculateMean(Hashtable<Double,DoubleIntegerVO> rtsIn, double rtTolerance){
+    Vector<Double> meanRts = groupByRtAndCalculateMean(rtsIn.keySet(), rtTolerance);
+    if (Settings.getOmegaExportPeakSelection()==Settings.OMEGA_PEAK_RTDIFF)
+      return meanRts;
+    else if (Settings.getOmegaExportPeakSelection()==Settings.OMEGA_PEAK_STRONGEST) {
+      Hashtable<Double,Double> areas = new Hashtable<Double,Double>();
+      for (Double rt : meanRts)
+        areas.put(rt, 0d);
+      for (Double other : rtsIn.keySet()) {
+        for (Double rt : areas.keySet()) {
+          if (Math.abs(rt-other)<rtTolerance)
+            areas.put(rt, (areas.get(rt)+rtsIn.get(other).getValue()));
+        }
+      }
+      double highest = 0d;
+      Double rtHighest = 0d;
+      for (Double rt : areas.keySet()) {
+        if (areas.get(rt)>highest) {
+          highest = areas.get(rt);
+          rtHighest = rt;
+        }
+      }
+      meanRts = new Vector<Double>();
+      meanRts.add(rtHighest);
+    }
+    return meanRts;
+  }
+  
+  /**
+   * groups hits of different retention times; the rtTolerance value dictates the maximum tolerance; when a group is defined the mean value of the retention times is calculated and used as reference value;
+   * @param rtsIn a list of retention times
+   * @param rtTolerance he maximum RT tolerance for assigning a hit to a group
+   * @return the retention time(s) of the (strongest) group(s)
+   */
+  private Vector<Double> groupByRtAndCalculateMean(Collection<Double> rtsIn, double rtTolerance){
+    List<Double> rtSorted = new ArrayList<Double>(rtsIn);
+    Vector<Vector<Double>> rtGroups = new Vector<Vector<Double>>();
+    Collections.sort(rtSorted);
+    for (Double oneRt : rtSorted) {
+      if (rtGroups.size()==0 || (oneRt-rtGroups.lastElement().lastElement())>rtTolerance)
+        rtGroups.add(new Vector<Double>());
+      rtGroups.lastElement().add(oneRt);
+    }
+    Vector<Double> meanRts = new Vector<Double>();
+    if (rtGroups.size()==0)
+      return meanRts;
+    for (Vector<Double> rts : rtGroups) {
+      double sum = 0d;
+      for (double oneRt : rts)
+        sum += oneRt;
+      meanRts.add(sum/((double)rts.size()));
+    }
+    return meanRts;
+  }
+  
+  /**
+   * checks whether a hit coincides with a hit where more omega positions are determined
+   * @param one the first molecular species identification
+   * @param two the second molecular species identification
+   * @param faHydroxyEncoding the OH encodings of the FA moiety
+   * @param lcbHydroxyEncoding the OH encodings of the LCB moiety
+   * @return the id if the obsolete hit, or null if none of the hits are obsolete
+   * @throws LipidCombinameEncodingException when there is something wrong with the lipid name encoding
+   */
+  private String findAnObsoleteIdentification(String one, String two, HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding) throws LipidCombinameEncodingException {
+    Vector<FattyAcidVO> first = StaticUtils.decodeFAsFromHumanReadableName(one, faHydroxyEncoding, lcbHydroxyEncoding, false);
+    Vector<FattyAcidVO> second = StaticUtils.decodeFAsFromHumanReadableName(two, faHydroxyEncoding, lcbHydroxyEncoding, false);
+    if (first.size()!=second.size())
+      return null;
+    int omegaPos = -1;
+    int nrNFirst = 0;
+    int nrNSecond = 0;
+    for (FattyAcidVO fa : first) {
+      if (fa.getOmegaPosition()>-1) {
+        nrNFirst++;
+        if (omegaPos==-1)
+          omegaPos=fa.getOmegaPosition();
+        else if (omegaPos!=fa.getOmegaPosition())
+          return null;
+      }
+    }
+    for (FattyAcidVO fa : second) {
+      if (fa.getOmegaPosition()>-1) {
+        nrNSecond++;
+        if (omegaPos==-1)
+          omegaPos=fa.getOmegaPosition();
+        else if (omegaPos!=fa.getOmegaPosition())
+          return null;
+      }
+    }
+    if (nrNFirst==nrNSecond)
+      return null;
+    else if (nrNFirst>nrNSecond)
+      return two;
+    else
+      return one;
   }
   
 }

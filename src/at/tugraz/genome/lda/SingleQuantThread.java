@@ -165,7 +165,7 @@ public class SingleQuantThread extends Thread
       } else if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_PRM){
         //TODO: the MS-level is here always set to 2, and the ohNumber is always set to 0
         isotopicProbes = analyzer.processPrmData((float)quantSet.getAnalyteMass(),quantSet.getCharge(),2,quantSet.getAnalyteClass(),
-            quantSet.getModName(), StaticUtils.generateLipidNameString(quantSet.getAnalyteName(), quantSet.getDbs()),quantSet.getAnalyteFormula(),0);
+            quantSet.getModName(), StaticUtils.generateLipidNameString(quantSet.getAnalyteName(), quantSet.getDbs(), -1),quantSet.getAnalyteFormula(),0);
 //        for (Integer hitNumber : isotopicProbes.keySet()){
 //          for (Integer isoNr: isotopicProbes.get(hitNumber).keySet()){
 //            for (CgProbe probe : isotopicProbes.get(hitNumber).get(isoNr)){

@@ -998,7 +998,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
         String recentModification = null;
         for (LipidParameterSet param: params){
           String rtDef = "";
-          String analId = StaticUtils.generateLipidNameString(param.getName(), param.getDoubleBonds());
+          String analId = StaticUtils.generateLipidNameString(param.getName(), param.getDoubleBonds(),-1);
           boolean isInternalStandard = (isSelectionPrefix_!=null && param.getName().startsWith(isSelectionPrefix_));
           boolean isExternalStandard = (esSelectionPrefix_!=null && param.getName().startsWith(esSelectionPrefix_));;
           double retentionTime = -1d;
@@ -3281,6 +3281,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
 //    int nrIsos = 0;
     DoubleStringVO isoPartner;
     double diff;
+    double unlabeledRt;
     for (String lClass : allMoleculeNames_.keySet()) {
       Hashtable<String,Vector<ResultAreaVO>> resultsOfClass = this.allResults_.get(lClass);
       Hashtable<String,String> usedAnalytes = new Hashtable<String,String>();
@@ -3386,21 +3387,12 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
               diff = isoPartner.getValue();
               if (closestInformation.get(1).getKey()!=null && closestInformation.get(1).getKey().equalsIgnoreCase(isoPartner.getKey()))
                 diff = diff*-1d;
-              diff = diff/((double)labeledSpecies.get(areaVO.getMoleculeNameWoRT()));            
+              unlabeledRt = isoRt+diff;
+              diff = diff/((double)labeledSpecies.get(areaVO.getMoleculeNameWoRT()));
+              //the next line has to be removed if absolute retention times shall be used; however, results seem to be better using relative retention time
+              diff = (diff*100d)/unlabeledRt;
               if ((Boolean)isoAnal.get(1))
-//                System.out.println("diff: "+diff);
-                labelRtDiffs.get(label.getLabelId()).add((float)diff);
-              
-              
-//              The next step is to look for the closest identifications in the one or the other direction. If there is information about molecular species -> the one is taken that matches, if both match the closer one shall be selected
-//              Then the RT difference is written into the list for each isotopic label (if the molecular species matches, it is written twice, otherwise only once)
-              
-              
-              //if (lClass.equalsIgnoreCase("PI")) {
-                //System.out.println(areaVO.getMoleculeName()+": "+(closestPartners[0]!=null ? closestPartners[0] : "")+" "+(closestPartners[1]!=null ? closestPartners[1] : ""));
-                //System.out.println(areaVO.getMoleculeName()+" "+(areaVO.getStrongestChainIdentification()!=null?areaVO.getStrongestChainIdentification():"")+": "+(chainIdentifications[0]!=null ? chainIdentifications[0] : "")+" "+(chainIdentifications[1]!=null ? chainIdentifications[1] : ""));
- //               nrIsos++;
-              //}  
+                labelRtDiffs.get(label.getLabelId()).add((float)diff);              
             }
           }
         }
@@ -3416,8 +3408,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
     //calculate the median of the retention time and add it to the label
     for (IsotopicLabelVO label : isoLabels_) {
       if (labelRtDiffs.get(label.getLabelId()).size()>0) {
-        List<Float> values = new ArrayList<Float>(labelRtDiffs.get(label.getLabelId()));
-        Collections.sort(values);
         label.setRtShift(Calculator.median(labelRtDiffs.get(label.getLabelId())));
         //System.out.println(label.getLabelId()+": "+label.getRtShift()+"     "+labelRtDiffs.get(label.getLabelId()).size());
       }
@@ -3425,52 +3415,52 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
     //some omega-positions are not that frequent in nature - thus, the prediction should rather be based on the more frequent ones
     //a prediction is done on the number of labels, where linearity is assumed (a single isotopic label causes the same shift)
     //first, group together the labels that are caused by the same isotope
-    Hashtable<String,Vector<IsotopicLabelVO>> labelsOfSameIsotope = new Hashtable<String,Vector<IsotopicLabelVO>>();
-    List<String> isotopes;
-    String isotopeId;
-    //first, group together the labels that are caused by the same isotope
-    for (IsotopicLabelVO label : isoLabels_) {
-      isotopes = new ArrayList<String>();
-      for (String element : label.getLabelElements().keySet()) {
-        if (label.getLabelElements().get(element)>0)
-          isotopes.add(element);
-      }
-      Collections.sort(isotopes);
-      isotopeId = "";
-      for (String iso : isotopes) 
-        isotopeId += iso;
-      if (!labelsOfSameIsotope.containsKey(isotopeId))
-        labelsOfSameIsotope.put(isotopeId, new Vector<IsotopicLabelVO>());
-      labelsOfSameIsotope.get(isotopeId).add(label);
-    }
-    //now calculate the retention time values weighted by the frequency of their occurrence
-    for (Vector<IsotopicLabelVO> labels : labelsOfSameIsotope.values()) {
-      isotopes = new ArrayList<String>();
-      for (String element : labels.get(0).getLabelElements().keySet()) {
-        if (labels.get(0).getLabelElements().get(element)>0)
-          isotopes.add(element);
-      }
-      float totalShift = 0f;
-      int totalDivisor = 0;
-      int nrElements;
-      for (IsotopicLabelVO label : labels) {
-        if (label.getRtShift()==null)
-          continue;
-        nrElements = 0;
-        for (String element : isotopes)
-          nrElements += label.getLabelElements().get(element);
-        totalShift += ((float)labelRtDiffs.get(label.getLabelId()).size())*(label.getRtShift()/((float)nrElements));
-        totalDivisor += labelRtDiffs.get(label.getLabelId()).size();
-      }
-      float shiftEachLabelElement = totalShift/((float)totalDivisor);
-//      System.out.println("shiftEachLabelElement: "+shiftEachLabelElement);
-      for (IsotopicLabelVO label : labels) {
-        nrElements = 0;
-        for (String element : isotopes)
-          nrElements += label.getLabelElements().get(element);
-        label.setRtShift(shiftEachLabelElement*((float)nrElements));
-      }
-    }
+//    Hashtable<String,Vector<IsotopicLabelVO>> labelsOfSameIsotope = new Hashtable<String,Vector<IsotopicLabelVO>>();
+//    List<String> isotopes;
+//    String isotopeId;
+//    //first, group together the labels that are caused by the same isotope
+//    for (IsotopicLabelVO label : isoLabels_) {
+//      isotopes = new ArrayList<String>();
+//      for (String element : label.getLabelElements().keySet()) {
+//        if (label.getLabelElements().get(element)>0)
+//          isotopes.add(element);
+//      }
+//      Collections.sort(isotopes);
+//      isotopeId = "";
+//      for (String iso : isotopes) 
+//        isotopeId += iso;
+//      if (!labelsOfSameIsotope.containsKey(isotopeId))
+//        labelsOfSameIsotope.put(isotopeId, new Vector<IsotopicLabelVO>());
+//      labelsOfSameIsotope.get(isotopeId).add(label);
+//    }
+//    //now calculate the retention time values weighted by the frequency of their occurrence
+//    for (Vector<IsotopicLabelVO> labels : labelsOfSameIsotope.values()) {
+//      isotopes = new ArrayList<String>();
+//      for (String element : labels.get(0).getLabelElements().keySet()) {
+//        if (labels.get(0).getLabelElements().get(element)>0)
+//          isotopes.add(element);
+//      }
+//      float totalShift = 0f;
+//      int totalDivisor = 0;
+//      int nrElements;
+//      for (IsotopicLabelVO label : labels) {
+//        if (label.getRtShift()==null)
+//          continue;
+//        nrElements = 0;
+//        for (String element : isotopes)
+//          nrElements += label.getLabelElements().get(element);
+//        totalShift += ((float)labelRtDiffs.get(label.getLabelId()).size())*(label.getRtShift()/((float)nrElements));
+//        totalDivisor += labelRtDiffs.get(label.getLabelId()).size();
+//      }
+//      float shiftEachLabelElement = totalShift/((float)totalDivisor);
+////      System.out.println("shiftEachLabelElement: "+shiftEachLabelElement);
+//      for (IsotopicLabelVO label : labels) {
+//        nrElements = 0;
+//        for (String element : isotopes)
+//          nrElements += label.getLabelElements().get(element);
+//        label.setRtShift(shiftEachLabelElement*((float)nrElements));
+//      }
+//    }
     // the results
 //    for (IsotopicLabelVO label : isoLabels_) {
 //      System.out.println(label.getLabelId()+": "+label.getRtShift());

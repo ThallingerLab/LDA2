@@ -479,7 +479,7 @@ public class MSnAnalyzer
             headGroupFragments_.put(fragmentName,probe);
             foundHeadFragments = true;
           }else{
-            String chainName = StaticUtils.decodeAlex123Chain(oneFragment.getStructure(),quantVO.getAnalyteName()).getChainId();////oneFragment.getFragmentSumComposition();
+            String chainName = StaticUtils.decodeAlex123Chain(oneFragment.getStructure(),quantVO.getAnalyteName()).getChainId();
             Hashtable<String,CgProbe> fragmentsOfChain = new Hashtable<String,CgProbe>();
             if (chainFragments_.containsKey(chainName)) fragmentsOfChain = chainFragments_.get(chainName);
             fragmentsOfChain.put(fragmentName, probe);
@@ -1541,7 +1541,6 @@ public class MSnAnalyzer
     Vector<FattyAcidVO> chains = StaticUtils.decodeLipidNamesFromChainCombi(combiName);
     Hashtable<Integer,Vector<IntensityPositionVO>> positionEvidence = new Hashtable<Integer,Vector<IntensityPositionVO>>();
     int[] positions = new int[chains.size()];
-    ////Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>> posRec = new Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>>(positionRecommendations);
     Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>> posRec = new Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>>();
     for (int i=0; i!= chains.size(); i++){
       FattyAcidVO chain = chains.get(i);
@@ -1576,8 +1575,6 @@ public class MSnAnalyzer
             }
           }
           posRec.remove(keyToRemove);
-////          if (posRec.get(fa).size()<2)
-////            posRec.remove(fa);
           for (String otherFA : posRec.keySet()){
             posRec.get(otherFA).remove(position);
           }
@@ -2176,20 +2173,6 @@ public class MSnAnalyzer
       for (QuantVO quant : mzsForChroms.keySet()){
         Hashtable<String,CgProbe> allOfQuant = mzsForChroms.get(quant);
         Hashtable<String,Vector<LipidomicsChromatogram>> chromsOfPartner = new Hashtable<String,Vector<LipidomicsChromatogram>>();
-        
-        //ATTENTION START: the original version of this line was the following:
-        //if (chromsForMzs.containsKey(chromsOfPartner)) chromsOfPartner = chromsForMzs.get(chromsOfPartner);
-        //however, this if statement will never be true, since the value types are totally different!
-        //when I would really do the following: if (chromsForMzs.containsKey(key)) chromsOfPartner = chromsForMzs.get(key);
-        //chroms for the same m/z value would be added, since all of the possible distinct fragments are limited anyway in the building of the relevantMzHash by the lines:
-        //Hashtable<String,CgProbe> allOfQuant = new Hashtable<String,CgProbe>();
-        //if (allOfMsLevel.containsKey(quant)) allOfQuant = allOfMsLevel.get(quant);
-        //allOfQuant.put(key, probe);
-        //allOfMsLevel.put(quant, allOfQuant);
-        //And the key is the name of the distinct fragment, and as such unique
-        //So if anything makes sense at all, then it is the following line (or maybe it can be removed, since two same QuantVOs cannot happen anyway):
-        ////if (chromsForMzs.containsKey(quant)) continue;
-        //ATTENTION END: this attention message was generated on 20.11.2018; when there no problems occur until 19.11.2020: delete these comments
         
         for (String key: allOfQuant.keySet()){
           LipidomicsChromatogram chrom = new LipidomicsChromatogram(new CgChromatogram(scansSorted.size()));

@@ -228,7 +228,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
                   }
                   doubleBonds = numeric.intValue();
                 }
-                name = StaticUtils.generateLipidNameString(name,doubleBonds);
+                name = StaticUtils.generateLipidNameString(name,doubleBonds,-1);
                 if (isSelectionPrefix_!=null && name.startsWith(isSelectionPrefix_)){
                   if (!isNames.containsKey(name)){
                     isNames.put(name, name);

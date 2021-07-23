@@ -594,7 +594,7 @@ public class TestClass extends JApplet implements AddScan
             Hashtable<String,Float> hash = new Hashtable<String,Float>();
             if (sameMasses.containsKey(intValue))
               hash = sameMasses.get(intValue);
-            hash.put(sheet.getSheetName() + "_" + StaticUtils.generateLipidNameString(sideChain, doubleBonds)+"_"+modName, (float)massOfInterest);
+            hash.put(sheet.getSheetName() + "_" + StaticUtils.generateLipidNameString(sideChain, doubleBonds,-1)+"_"+modName, (float)massOfInterest);
             sameMasses.put(intValue, hash);
           }
         }

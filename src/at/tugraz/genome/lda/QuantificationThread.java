@@ -1421,7 +1421,7 @@ public class QuantificationThread extends Thread
                 analEncoded = quantVO.getAnalyteName();
                 quantsOfAnalyte.put(modName, quantVO);
               }
-              String analyteName = StaticUtils.generateLipidNameString((analEncoded!=null ? analEncoded : sideChain), doubleBonds);
+              String analyteName = StaticUtils.generateLipidNameString((analEncoded!=null ? analEncoded : sideChain), doubleBonds, -1);
               analytes.add(analyteName);
               quantsOfClass.put(analyteName, quantsOfAnalyte);
             }
@@ -2402,7 +2402,7 @@ public class QuantificationThread extends Thread
           quantsOfAnalyte.put(entry.getModName(), entry);
         }
         
-        String analyteName = StaticUtils.generateLipidNameString(sideChain, doubleBonds);
+        String analyteName = StaticUtils.generateLipidNameString(sideChain, doubleBonds, -1);
         analytes.add(analyteName);
         quantsOfClass.put(analyteName, quantsOfAnalyte);
       }
