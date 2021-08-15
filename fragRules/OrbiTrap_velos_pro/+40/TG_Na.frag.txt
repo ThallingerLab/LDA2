@@ -4,7 +4,7 @@ ChainLibrary=fattyAcidChains.xlsx
 CAtomsFromName=\D*(\d+):\d+
 DoubleBondsFromName=\D*\d+:(\d+)
 BasePeakCutoff=0.1%
-ChainCutoff=50%
+ChainCutoff=20%
 SpectrumCoverage=35%
 RetentionTimePostprocessing=true
 

@@ -2160,7 +2160,7 @@ public class StaticUtils
         unsortedFAs.add(fas.get(i));
       }
       sortedFAs = sortChainVOs(unsortedFAs);
-      nrOfOptionsEachLevel.put(0, sortedFAs.size());
+      nrOfOptionsEachLevel.put(i, sortedFAs.size());
       count = 0;
       for (Vector<FattyAcidVO> fas : unsortedHash.values()) {
         fa1Encoded = encodeLipidNameForCreatingCombis(fas.get(i),true);

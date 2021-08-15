@@ -60,6 +60,7 @@ import at.tugraz.genome.lda.quantification.LipidomicsChromatogram;
 import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.lda.utils.FloatFloatVO;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.vos.DoubleStringVO;
 import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.quantification.CgAreaStatus;
@@ -68,6 +69,7 @@ import at.tugraz.genome.maspectras.quantification.CgException;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.maspectras.quantification.ChromatogramReader;
 import at.tugraz.genome.maspectras.utils.Calculator;
+import at.tugraz.genome.voutils.GeneralComparator;
 
 /**
  * Central class for the verification of MSn evidence
@@ -111,6 +113,8 @@ public class MSnAnalyzer
   private Hashtable<String,Hashtable<String,IntensityChainVO>> fulfilledChainIntensityRules_;
   /** stores potential fatty acid chain combinations */
   private Vector<String> validChainCombinations_;
+  /** the relative intensities of each chain combination*/
+  private Hashtable<String,Double> relativeIntensityOfCombination_;
   /** should absolute rules be ignored - whenever there is an overlap of isobars assumed*/
   private boolean ignoreAbsolute_;
   /** CgProbes without retention time limits - for shotgun data*/
@@ -601,6 +605,7 @@ public class MSnAnalyzer
    * @throws CgException errors from the quantitation process
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
+  @SuppressWarnings("unchecked")
   private void checkChainFragments(Hashtable<Integer,Vector<CgProbe>> probesWithMSnSpectra) throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException, LipidCombinameEncodingException {
     //the method getPossibleChainObjects() returns an aggregate of all possible chains (chain type, C atoms, double bonds, oh number)
     Vector<FattyAcidVO> fas = fragCalc_.getPossibleChainObjects();
@@ -865,114 +870,146 @@ public class MSnAnalyzer
         removeNotNecessaryFragments(allowedFAs, true);
       }
     }
-
-    //the next lines are for checking absolute chain intensity rules
-    Hashtable<String,Integer> faChainOccurrences = computeChainOccurrences(combis,new Hashtable<String,FattyAcidVO>());
-    Hashtable<String,Double> areas = computeChainAreas();
-    Hashtable<String,Double> combiAreas = computeCombiAreas(combis, faChainOccurrences, areas);
-    String strongestCombi = getStrongestCombination(combiAreas);
-    boolean discardAllCombis = false;
-    if (strongestCombi!=null) {
-      Vector<String> chainsOfStrongestCombi = StaticUtils.splitChainCombiToEncodedStrings(strongestCombi, LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
-      Vector<FattyAcidVO> chainsToCheck = new Vector<FattyAcidVO>();
-      for (String chain : chainsOfStrongestCombi) {
-        FattyAcidVO chainVO = StaticUtils.decodeLipidNameForCreatingCombis(chain);
-        chainsToCheck.add(chainVO);
-        if (!absRulesToCheck.containsKey(chain))
-          continue;
-        Vector<IntensityRuleVO> absRules = absRulesToCheck.get(chain);
-        Hashtable<String,IntensityChainVO> fulfilledChainIntensityRules = new Hashtable<String,IntensityChainVO>();
-        if (fulfilledChainIntensityRules_.containsKey(chain))
-          fulfilledChainIntensityRules = fulfilledChainIntensityRules_.get(chain);
-        Hashtable<String,CgProbe> allFragments = new Hashtable<String,CgProbe>(chainFragments_.get(chain));
-        allFragments.putAll(headGroupFragments_);
-        for (IntensityRuleVO intRule : absRules){
-          if (this.ignoreAbsolute_){
-            if (intRule.isRuleFulfilled(headGroupFragments_,getBasepeakIfRequired(intRule))) {
-              IntensityChainVO intChainVO = new IntensityChainVO(intRule,chainVO,set_.getOhNumber()>0);
-              fulfilledChainIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
-            }
-            continue;
-          }
-          if (intRule.isRuleFulfilled(allFragments,getBasepeakIfRequired(intRule))) {
-            IntensityChainVO intChainVO = new IntensityChainVO(intRule,chainVO,set_.getOhNumber()>0);
-            fulfilledChainIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
-          }else{
-            //TODO: possibly use another annotation for displaying the name in the debugVO than chain.getChainId()
-            if (debug_) debugVO_.addViolatedChainRule(chain, intRule); 
-            if (intRule.isMandatory((short)chainVO.getOhNumber())){
-              discardAllCombis = true;
-              if (intRule.isOrRule()) {
-                forbiddenChains.add(chain);
-              }
-              break;
-            }
-          }
-        }
-        fulfilledChainIntensityRules = fulfilledChainIntensityRules_.put(chain,fulfilledChainIntensityRules); 
-      }
-      if (absCombiRulesToCheck.containsKey(strongestCombi)){
-        Hashtable<String,IntensityChainVO> fulfilledChaindIntensityRules = new Hashtable<String,IntensityChainVO>();
-        if (fulfilledChainIntensityRules_.containsKey(strongestCombi))
-          fulfilledChaindIntensityRules = fulfilledChainIntensityRules_.get(strongestCombi);
-        for (IntensityRuleVO intRule : absCombiRulesToCheck.get(strongestCombi)) {
-          if (this.ignoreAbsolute_){
-            if (intRule.isRuleFulfilled(headGroupFragments_,chainFragments_,chainsToCheck,getBasepeakIfRequired(intRule))){
-              IntensityChainVO intChainVO = new IntensityChainVO(intRule,chainsToCheck,set_.getOhNumber()>0);
-              fulfilledChaindIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
-            }
-            continue;
-          }
-          if (intRule.isRuleFulfilled(headGroupFragments_,chainFragments_,chainsToCheck,getBasepeakIfRequired(intRule))){
-            IntensityChainVO intChainVO = new IntensityChainVO(intRule,chainsToCheck,set_.getOhNumber()>0);
-            fulfilledChaindIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
-          }else{
-            if (debug_) debugVO_.addViolatedChainRule(strongestCombi, intRule); 
-            if (intRule.isMandatory(chainsToCheck)){
-              discardAllCombis = true;
-              break;
-            }
-          }
-        }
-        fulfilledChainIntensityRules_.put(strongestCombi, fulfilledChaindIntensityRules);
+    
+    //for printing available chains
+//  for (String key : chainFragments_.keySet()){
+//    System.out.println("key: "+key);
+//    String toPrint = "original:\t"+key;
+//    Hashtable<String,CgProbe> frags = chainFragments_.get(key);
+//    for (String fragName: frags.keySet()){
+//      toPrint += ":\t"+String.valueOf(frags.get(fragName).Area);
+//      System.out.println("       "+fragName+":\t"+frags.get(fragName).Area);
+//    }
+//    System.out.println(toPrint);
+//  }
+//  for (Vector<String> combiFAs : combis.values()){
+//    System.out.println(combiFAs);
+//  }
+    //remove chains that are not possible
+    Hashtable<String,FattyAcidVO> allowedFAs = new Hashtable<String,FattyAcidVO>();
+    for (Vector<FattyAcidVO> combiFAs : combis.values()){
+      for (FattyAcidVO combiFA : combiFAs){
+        allowedFAs.put(combiFA.getChainId(), combiFA);
       }
     }
-    if (discardAllCombis) {
-      removeNotNecessaryFragments(new Hashtable<String,FattyAcidVO>(),false);
+    ////faChainOccurrences = computeChainOccurrences(combis,allowedFAs);
+    this.removeNotNecessaryFragments(allowedFAs,true);
+    this.removeNotNecessaryDiffIntensityRules(combis.keySet());
+    if (combis.size()==0) {
       if (fragCalc_.containAllOhCombinationsClassSpecificFragments())
         status_=LipidomicsMSnSet.DISCARD_HIT;
       return;
     }
+    if (relativeIntensitySplitNecessary(combis)) {
+      MSnRelativeShareCalculator relativeShares = new MSnRelativeShareCalculator(combis,chainFragments_,relativeChainCutoff_,debug_,debugVO_);
+      relativeShares.splitIntensities();
+      allowedFAs = relativeShares.getAllowedFAs();
+      relativeIntensityOfCombination_ = relativeShares.getRelativeIntensities();
+      removeNotNecessaryFragments(allowedFAs,false);
+      this.removeNotNecessaryDiffIntensityRules(relativeIntensityOfCombination_.keySet());
+    }else {
+      Hashtable<String,Double> areas = new Hashtable<String,Double>();
+      // calculate a total area for each chain fragment
+      for (String key : chainFragments_.keySet()){
+        double area = 0f;
+        for (CgProbe probe : chainFragments_.get(key).values()){
+          double oneArea = (double)probe.Area;
+          area += oneArea;
+        }
+        areas.put(key, area);
+      }
     
-    // remove hits that cannot occur in any combination
-    // and count if the FA occurs in more than one combination
-    int removedKeys = 1;
-    // the while is necessary for classes with more than 2 fatty acyls where on chain fragment might be shared by several combinations
-    while (removedKeys>0){
-      validChainCombinations_ = new Vector<String>();
-      removedKeys = 0;
-      Hashtable<String,FattyAcidVO> allowedFAs = new Hashtable<String,FattyAcidVO>();
-      faChainOccurrences = computeChainOccurrences(combis,allowedFAs);
-      this.removeNotNecessaryFragments(allowedFAs,true);
-      this.removeNotNecessaryDiffIntensityRules(combis.keySet());
-      if (combis.size()==0) {
+      Hashtable<String,Double> combiAreas = new Hashtable<String,Double>();
+      double highestIntensity = 0d;
+      for (String key : combis.keySet()){
+        double relative = 0d;
+        for (FattyAcidVO combiFA : combis.get(key)){
+          if (areas.containsKey(combiFA.getChainId()))
+            relative += areas.get(combiFA.getChainId());///((double)faChainOccurrences.get(combiFA));
+        }
+        if (relative>highestIntensity) highestIntensity = relative;
+        combiAreas.put(key, relative);
+      }
+      String strongestCombi = getStrongestCombination(combiAreas);
+      boolean discardAllCombis = false;
+      if (strongestCombi!=null) {
+        Vector<String> chainsOfStrongestCombi = StaticUtils.splitChainCombiToEncodedStrings(strongestCombi, LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
+        Vector<FattyAcidVO> chainsToCheck = new Vector<FattyAcidVO>();
+        for (String chain : chainsOfStrongestCombi) {
+          FattyAcidVO chainVO = StaticUtils.decodeLipidNameForCreatingCombis(chain);
+          chainsToCheck.add(chainVO);
+          if (!absRulesToCheck.containsKey(chain))
+            continue;
+          Vector<IntensityRuleVO> absRules = absRulesToCheck.get(chain);
+          Hashtable<String,IntensityChainVO> fulfilledChainIntensityRules = new Hashtable<String,IntensityChainVO>();
+          if (fulfilledChainIntensityRules_.containsKey(chain))
+            fulfilledChainIntensityRules = fulfilledChainIntensityRules_.get(chain);
+          Hashtable<String,CgProbe> allFragments = new Hashtable<String,CgProbe>(chainFragments_.get(chain));
+          allFragments.putAll(headGroupFragments_);
+          for (IntensityRuleVO intRule : absRules){
+            if (this.ignoreAbsolute_){
+              if (intRule.isRuleFulfilled(headGroupFragments_,getBasepeakIfRequired(intRule))) {
+                IntensityChainVO intChainVO = new IntensityChainVO(intRule,chainVO,set_.getOhNumber()>0);
+                fulfilledChainIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
+              }
+              continue;
+            }
+            if (intRule.isRuleFulfilled(allFragments,getBasepeakIfRequired(intRule))) {
+              IntensityChainVO intChainVO = new IntensityChainVO(intRule,chainVO,set_.getOhNumber()>0);
+              fulfilledChainIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
+            }else{
+              //TODO: possibly use another annotation for displaying the name in the debugVO than chain.getChainId()
+              if (debug_) debugVO_.addViolatedChainRule(chain, intRule); 
+              if (intRule.isMandatory((short)chainVO.getOhNumber())){
+                discardAllCombis = true;
+                if (intRule.isOrRule()) {
+                  forbiddenChains.add(chain);
+                }
+                break;
+              }
+            }
+          }
+          fulfilledChainIntensityRules = fulfilledChainIntensityRules_.put(chain,fulfilledChainIntensityRules); 
+        }
+        if (absCombiRulesToCheck.containsKey(strongestCombi)){
+          Hashtable<String,IntensityChainVO> fulfilledChaindIntensityRules = new Hashtable<String,IntensityChainVO>();
+          if (fulfilledChainIntensityRules_.containsKey(strongestCombi))
+            fulfilledChaindIntensityRules = fulfilledChainIntensityRules_.get(strongestCombi);
+          for (IntensityRuleVO intRule : absCombiRulesToCheck.get(strongestCombi)) {
+            if (this.ignoreAbsolute_){
+              if (intRule.isRuleFulfilled(headGroupFragments_,chainFragments_,chainsToCheck,getBasepeakIfRequired(intRule))){
+                IntensityChainVO intChainVO = new IntensityChainVO(intRule,chainsToCheck,set_.getOhNumber()>0);
+                fulfilledChaindIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
+              }
+              continue;
+            }
+            if (intRule.isRuleFulfilled(headGroupFragments_,chainFragments_,chainsToCheck,getBasepeakIfRequired(intRule))){
+              IntensityChainVO intChainVO = new IntensityChainVO(intRule,chainsToCheck,set_.getOhNumber()>0);
+              fulfilledChaindIntensityRules.put(intChainVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding()), intChainVO);
+            }else{
+              if (debug_) debugVO_.addViolatedChainRule(strongestCombi, intRule); 
+              if (intRule.isMandatory(chainsToCheck)){
+                discardAllCombis = true;
+                break;
+              }
+            }
+          }
+          fulfilledChainIntensityRules_.put(strongestCombi, fulfilledChaindIntensityRules);
+        }
+      }
+      if (discardAllCombis) {
+        removeNotNecessaryFragments(new Hashtable<String,FattyAcidVO>(),false);
         if (fragCalc_.containAllOhCombinationsClassSpecificFragments())
           status_=LipidomicsMSnSet.DISCARD_HIT;
         return;
       }
-      // area values for each fragment
-      areas = computeChainAreas();
-      computeCombiAreas(combis, faChainOccurrences, areas);
-      double highestIntensity = combiAreas.get(getStrongestCombination(combiAreas));
-      
-//    double totalArea = 0d;
+      double totalArea = 0d;
       for (String key: new Vector<String>(combiAreas.keySet())){
         double intensity = combiAreas.get(key);
         if (intensity>=(relativeChainCutoff_*highestIntensity)){
-//        totalArea+=intensity;
+          totalArea+=intensity;
         }else{
           if (debug_) debugVO_.addViolatedCombinations(key, MSnDebugVO.COMBINATION_LOWER_CHAIN_CUTOFF);
-          removedKeys++;
           combiAreas.remove(key);
           combis.remove(key);
           fulfilledChainIntensityRules_.remove(key);
@@ -980,15 +1017,23 @@ public class MSnAnalyzer
       }
       allowedFAs = new Hashtable<String,FattyAcidVO>();
       for (String key: new Vector<String>(combiAreas.keySet())){
-        validChainCombinations_.add(key);
-//      relativeIntensityOfCombination_.put(key, combiAreas.get(key)/totalArea);
         for (FattyAcidVO combiFA : combis.get(key)){
           allowedFAs.put(combiFA.getChainId(), combiFA);
         }      
       }
       removeNotNecessaryFragments(allowedFAs,false);
       this.removeNotNecessaryDiffIntensityRules(combiAreas.keySet());
+      relativeIntensityOfCombination_ = new Hashtable<String,Double>();
+      for (String combi : combiAreas.keySet())
+        relativeIntensityOfCombination_.put(StaticUtils.encodeLipidCombi(StaticUtils.sortChainVOs(StaticUtils.decodeLipidNamesFromChainCombi(combi))), combiAreas.get(combi)/totalArea);
     }
+    Vector<DoubleStringVO> toSort = new Vector<DoubleStringVO>();
+    for (String key: new Vector<String>(relativeIntensityOfCombination_.keySet()))
+      toSort.add(new DoubleStringVO(key,relativeIntensityOfCombination_.get(key)));
+    Collections.sort(toSort,new GeneralComparator("at.tugraz.genome.lda.vos.DoubleStringVO", "getValue", "java.lang.Double"));
+    for (int i=toSort.size()-1; i!=-1; i--)
+      validChainCombinations_.add(toSort.get(i).getKey());
+
     if (status_!=LipidomicsMSnSet.DISCARD_HIT) this.status_ = LipidomicsMSnSet.FRAGMENTS_DETECTED;
   }
   
@@ -1895,7 +1940,7 @@ public class MSnAnalyzer
         msnRetentionTimes.put(msLevel, analyzer_.getMSnSpectraRetentionTimes(msLevel,probesWithMSnSpectra_.get(msLevel)));
       }
       set_ = new LipidomicsMSnSet(set_,status_,LipidomicsConstants.getMs2MzTolerance(),headGroupFragments_,fulfilledHeadIntensityRules_,
-          chainFragments_, fulfilledChainIntensityRules_, validChainCombinations_,positionDefinition_, posEvidenceAccordToProposedDefinition_,
+          chainFragments_, fulfilledChainIntensityRules_, validChainCombinations_,relativeIntensityOfCombination_,positionDefinition_, posEvidenceAccordToProposedDefinition_,
           fragCalc_!=null ? fragCalc_.getAllowedChainPositions() : 1, basePeakValues_, msnRetentionTimes, Settings.getFaHydroxyEncoding(),
               Settings.getLcbHydroxyEncoding());
     }
@@ -2568,6 +2613,42 @@ public class MSnAnalyzer
   }
   
   /**
+   * are there chain combinations sharing the same fragments? If yes, split the intensities by a prediction
+   * @param combiFAs hash table containing the individual chain names; key: name of the chain combination; value: vector containing the individual chains
+   * @return true when there chain combinations sharing the same fragments
+   */
+  private boolean relativeIntensitySplitNecessary(Hashtable<String,Vector<FattyAcidVO>> combiFAs){
+    // when there is only one chain combination possible, there is no split prediction necessary
+    if (combiFAs.size()<2)
+      return false;
+    // when there are less than 3 chains -> no predition necessary
+    if (combiFAs.get(combiFAs.keySet().iterator().next()).size()<3)
+      return false;
+    // check if some are sharing the same fatty acids; if yes -> predict intensities
+    boolean split = false;
+    Vector<String> combis = new Vector<String>(combiFAs.keySet());
+    for (int i=0; i<combis.size(); i++) {
+      Vector<FattyAcidVO> firstFAs = combiFAs.get(combis.get(i));
+      for (int j=i+1; j<combis.size(); j++) {
+        Vector<FattyAcidVO> secondFAs = combiFAs.get(combis.get(j));
+        for (FattyAcidVO firstFA: firstFAs) {
+          for (FattyAcidVO secondFA: secondFAs) {
+            if (firstFA.getChainId().equalsIgnoreCase(secondFA.getChainId())) {
+              split=true;
+              break;
+            }
+          }
+          if (split) break;
+        }
+        if (split) break;
+      }
+      if (split) break;
+    }
+    return split;
+  }
+
+  
+  /**
    * selects CgProbes accordingly depending on whether it is shotgun data or not
    * @return appropriate CgProbes
    */
@@ -2600,65 +2681,6 @@ public class MSnAnalyzer
     return probes;
   }
   
-  /**
-   * 
-   * @return the sum of fragment areas for one chain
-   */
-  private Hashtable<String,Double> computeChainAreas() {
-    Hashtable<String,Double> areas = new Hashtable<String,Double>();
-    // calculate a total area for each chain fragment
-    for (String key : chainFragments_.keySet()){
-      double area = 0f;
-      for (CgProbe probe : chainFragments_.get(key).values()){
-        double oneArea = (double)probe.Area;
-        area += oneArea;
-      }
-      areas.put(key, area);
-    }
-    return areas;
-  }
-  
-  /**
-   * how often the same chain occurs in the different possible chain combinations
-   * @param combis the chain combinations
-   * @param allowedFAs the allowed chains
-   * @return how often the same chain occurs in the different possible chain combinations
-   */
-  private Hashtable<String,Integer> computeChainOccurrences(Hashtable<String,Vector<FattyAcidVO>> combis, Hashtable<String,FattyAcidVO> allowedFAs) {
-    Hashtable<String,Integer> faChainOccurrences = new Hashtable<String,Integer>();
-    for (Vector<FattyAcidVO> combiFAs : combis.values()){
-      for (FattyAcidVO combiFA : combiFAs){
-        allowedFAs.put(combiFA.getChainId(), combiFA);
-        int count = 0;
-        if (faChainOccurrences.containsKey(combiFA.getChainId())) count = faChainOccurrences.get(combiFA.getChainId());
-        count++;
-        faChainOccurrences.put(combiFA.getChainId(),count);
-      }
-    }
-    return faChainOccurrences;
-  }
-  
-  /**
-   * computes the sum of areas assigned to the chain combinations
-   * @param combis the possible chain combinations
-   * @param faChainOccurrences how often the same chain occurs in the different possible chain combinations
-   * @param areas the total areas for each individual chain
-   * @return sum of areas assigned to the chain combinations
-   */
-  private Hashtable<String,Double> computeCombiAreas(Hashtable<String,Vector<FattyAcidVO>> combis, Hashtable<String,Integer> faChainOccurrences, Hashtable<String,Double> areas) {
-    Hashtable<String,Double> combiAreas = new Hashtable<String,Double>();
-    double highestIntensity = 0d;
-    for (String key : combis.keySet()){
-      double relative = 0d;
-      for (FattyAcidVO combiFA : combis.get(key)){
-        if (areas.containsKey(combiFA.getChainId()))
-          relative += areas.get(combiFA.getChainId())/((double)faChainOccurrences.get(combiFA.getChainId()));
-      }
-      if (relative>highestIntensity) highestIntensity = relative;
-      combiAreas.put(key, relative);
-    }
-    return combiAreas;
-  }
   
   /**
    * returns the name of the strongest chain combination

@@ -6,7 +6,7 @@ DoubleBondsFromName=\D*\d+:(\d+)
 BasePeakCutoff=1%
 RetentionTimePostprocessing=true
 SpectrumCoverage=10%
-ChainCutoff=50%
+ChainCutoff=20%
 
 [HEAD]
 !FRAGMENTS

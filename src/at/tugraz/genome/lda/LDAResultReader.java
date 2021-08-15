@@ -629,7 +629,7 @@ public class LDAResultReader
         positionEvidence = new Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>>();
         basePeakValues = new Hashtable<Integer,Float>();
         
-        columnToIdentification = new Hashtable<Integer,String>();        
+        columnToIdentification = new Hashtable<Integer,String>();
         String speciesName = (String)cellEntries.get(MSN_ROW_FRAGMENT_NAME);
         addingMSnEvidence = msHash.get(speciesName);
         int count = MSN_ROW_FRAGMENT_NAME+1;
@@ -803,7 +803,7 @@ public class LDAResultReader
         combiKey = ((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)).trim().substring(LipidomicsConstants.EXCEL_MSN_SECTION_POSITION_INTENSITIES.length());
         combiKey = combiKey.substring(combiKey.indexOf("(")+1,combiKey.indexOf(")"));
         if (combiKey.indexOf(";")!=-1) combiKey = combiKey.substring(0,combiKey.indexOf(";"));
-        validChainCombinations = correctUndefinedChainCombinations(combiKey,validChainCombinations,LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
+        validChainCombinations = correctUndefinedChainCombinations(combiKey,validChainCombinations,relativeAreas,LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
         Hashtable<String,Integer> chainOccurenceInCombi = new Hashtable<String,Integer>();
         combiKey = (String)StaticUtils.cleanEmptyFAPositionsAndEncodeToLDACombiName(combiKey,faHydroxyEncoding,
             lcbHydroxyEncoding,  (usedAlexMsnTargets && combiKey.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS)!=-1))[0];
@@ -835,7 +835,7 @@ public class LDAResultReader
         positionDefinition = cleanPositionDefinition(positionDefinition);
         if (isDefinitionPresent(positionDefinition)) status = LipidomicsMSnSet.POSITION_DETECTED;
         addingMSnEvidence = new LipidomicsMSnSet(addingMSnEvidence, status, mzTolerance,headGroupFragments, headIntensityRules,
-        chainFragments, chainIntensityRules, validChainCombinations, positionDefinition,positionEvidence, numberOfPositions, basePeakValues,
+        chainFragments, chainIntensityRules, validChainCombinations, relativeAreas,  positionDefinition,positionEvidence, numberOfPositions, basePeakValues,
         msnRetentionTimes, faHydroxyEncoding, lcbHydroxyEncoding);
         msHash.put(speciesName,addingMSnEvidence);
         addingMSnEvidence=null;
@@ -1159,7 +1159,7 @@ public class LDAResultReader
       positionDefinition = cleanPositionDefinition(positionDefinition);
       if (isDefinitionPresent(positionDefinition)) status = LipidomicsMSnSet.POSITION_DETECTED;
       addingMSnEvidence = new LipidomicsMSnSet(addingMSnEvidence, status, mzTolerance,headGroupFragments, headIntensityRules,
-      chainFragments, chainIntensityRules, validChainCombinations, positionDefinition,positionEvidence, numberOfPositions, basePeakValues,
+      chainFragments, chainIntensityRules, validChainCombinations, relativeAreas, positionDefinition,positionEvidence, numberOfPositions, basePeakValues,
       msnRetentionTimes, faHydroxyEncoding, lcbHydroxyEncoding);
       msHash.put(speciesName,addingMSnEvidence);
     }
@@ -1206,14 +1206,21 @@ public class LDAResultReader
    * be different than in the stored values - this method corrects the sequence to be exactly as in the stored Excel
    * @param combiKey fa combination String as it should be
    * @param validChainCombinations the currently available chain combinations
+   * @param relAreas the relative share of each chain combination; first key: chain combination; second key: relative share on MS1 area
    * @param sep the separator for the combination
    * @return the corrected available chain combinations
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  private static Vector<String> correctUndefinedChainCombinations(String combiKey, Vector<String> validChainCombinations, String sep) throws LipidCombinameEncodingException{
+  private static Vector<String> correctUndefinedChainCombinations(String combiKey, Vector<String> validChainCombinations, Hashtable<String,Double> relAreas, String sep) throws LipidCombinameEncodingException{
     Vector<String> corrected = new Vector<String>();
     for (String combi : validChainCombinations){
-      if (StaticUtils.isAPermutedVersion(combiKey,combi,sep)) corrected.add(combiKey);
+      if (StaticUtils.isAPermutedVersion(combiKey,combi,sep)) {
+        corrected.add(combiKey);
+        if (!combiKey.equalsIgnoreCase(combi)) {
+          relAreas.put(combiKey, relAreas.get(combi));
+          relAreas.remove(combi);
+        }
+      }
       else corrected.add(combi);
     }
     return corrected;

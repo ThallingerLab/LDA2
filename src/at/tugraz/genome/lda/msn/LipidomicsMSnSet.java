@@ -122,6 +122,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
    * @param chainFragments the identified chain fragments
    * @param chainIntensityRules the chain intensity rules that where fulfilled
    * @param validChainCombinations list of valid chain combinations
+   * @param relativeIntensityOfCombination the relative share on the MS1 intensity of each chain combination - kind of percentual value
    * @param positionDefinition position definitions for fatty acid combinations - first key: id of the chain combination; second hash: lookup from the position of the fatty acid in the combination key to the assigned position
    * @param positionEvidence hash containing the fulfilled MSn evidence for a position assignment - first key: id of the chain combination; second key: position where evidence is provided; values: rules that are fulfilled by MSn evidence
    * @param numberOfPositions at how many positions the fatty acids may be assigned
@@ -131,7 +132,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
    */
   private LipidomicsMSnSet(LipidParameterSet set, int status, float mzTolerance, Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,IntensityRuleVO> headIntensityRules,
       Hashtable<String,Hashtable<String,CgProbe>> chainFragments, Hashtable<String,Hashtable<String,IntensityChainVO>> chainIntensityRules,
-      Vector<String> validChainCombinations, Hashtable<String,Hashtable<Integer,Integer>> positionDefinition,
+      Vector<String> validChainCombinations, Hashtable<String,Double> relativeIntensityOfCombination, Hashtable<String,Hashtable<Integer,Integer>> positionDefinition,
       Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>> positionEvidence, int numberOfPositions, 
       Hashtable<Integer,Float> basePeakValues, Hashtable<Integer,LinkedHashMap<Integer,Float>> msnRetentionTimes) throws LipidCombinameEncodingException{
     super(set);
@@ -171,6 +172,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
       msLevels_.put(combi, combiLevel);
     }
     msLevels_.put(MSLEVEL_ALL_IDENTIFIER, allLevel);
+    relativeIntensityOfCombination_ = relativeIntensityOfCombination;
     
     positionDefinition_ = new Hashtable<String,Hashtable<Integer,Integer>>();
     for (String key : positionDefinition.keySet()){
@@ -200,6 +202,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
    * @param chainFragments the identified chain fragments
    * @param chainIntensityRules the chain intensity rules that where fulfilled
    * @param validChainCombinations list of valid chain combinations
+   * @param relativeIntensityOfCombination the relative share on the MS1 intensity of each chain combination - kind of percentual value
    * @param positionDefinition position definitions for fatty acid combinations - first key: id of the chain combination; second hash: lookup from the position of the fatty acid in the combination key to the assigned position
    * @param positionEvidence hash containing the fulfilled MSn evidence for a position assignment - first key: id of the chain combination; second key: position where evidence is provided; values: rules that are fulfilled by MSn evidence
    * @param numberOfPositions at how many positions the fatty acids may be assigned
@@ -212,24 +215,22 @@ public class LipidomicsMSnSet extends LipidParameterSet
   @SuppressWarnings("unchecked")
   public LipidomicsMSnSet(LipidParameterSet set, int status, float mzTolerance, Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,IntensityRuleVO> headIntensityRules,
       Hashtable<String,Hashtable<String,CgProbe>> chainFragments, Hashtable<String,Hashtable<String,IntensityChainVO>> chainIntensityRules,
-      Vector<String> validChainCombinations, Hashtable<String,Hashtable<Integer,Integer>> positionDefinition,
+      Vector<String> validChainCombinations, Hashtable<String,Double> relativeIntensityOfCombination, Hashtable<String,Hashtable<Integer,Integer>> positionDefinition,
       Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>> positionEvidence, int numberOfPositions, 
       Hashtable<Integer,Float> basePeakValues, Hashtable<Integer,LinkedHashMap<Integer,Float>> msnRetentionTimes,
       HydroxyEncoding faEncoding, HydroxyEncoding lcbEncoding) throws LipidCombinameEncodingException{
-    this(set, status, mzTolerance, headGroupFragments, headIntensityRules, chainFragments, chainIntensityRules, validChainCombinations, positionDefinition,
+    this(set, status, mzTolerance, headGroupFragments, headIntensityRules, chainFragments, chainIntensityRules, validChainCombinations, relativeIntensityOfCombination, positionDefinition,
         positionEvidence, numberOfPositions, basePeakValues, msnRetentionTimes);
     //generate the human readable lookup and the combination relative areas;
     nameLookupHumReadableToPositionInsensitve_ = new LinkedHashMap<String,String>();
     nameLookupPositionInsensitve_ = new LinkedHashMap<String,String>();
     ambiguousPositionIdentifications_ = new Hashtable<String,Vector<String>>();
-    relativeIntensityOfCombination_ = new Hashtable<String,Double>();
     chainNameLookupHumanReadable_ = new Hashtable<String,String>();
     
     
     Hashtable<String,Integer> faChainOccurrences = new Hashtable<String,Integer>();
     if (status_==NO_MSN_PRESENT || status_==HEAD_GROUP_DETECTED){
       nameLookupHumReadableToPositionInsensitve_.put(getNameStringWithoutRt(),getNameStringWithoutRt());
-      relativeIntensityOfCombination_.put(getNameStringWithoutRt(), 1d);
     } else if (status_==FRAGMENTS_DETECTED || status_==POSITION_DETECTED){
       for (String combiName : validChainCombinations_){
         //this part is for calculating the relative intensities
@@ -244,31 +245,9 @@ public class LipidomicsMSnSet extends LipidParameterSet
           faChainOccurrences.put(combiChain.getChainId(),count);
         }
       }
-      Hashtable<String,Double> areas = new Hashtable<String,Double>();
-      for (String faName : chainFragments_.keySet()){
-        areas.put(faName, getAreaOfOneChain(faName));
-      }
-      Hashtable<String,Double> combiAreas = new Hashtable<String,Double>();
-      double totalArea = 0d;
-      for (String combi : validChainCombinations_){
-        double area = 0d;
-        Vector<FattyAcidVO> combiChains = StaticUtils.decodeLipidNamesFromChainCombi(combi);
-        for (FattyAcidVO combiChain : combiChains){
-          if (areas.containsKey(combiChain.getChainId()) || areas.containsKey("FA "+combiChain.getCarbonDbsId()) || areas.containsKey("LCB "+combiChain.getCarbonDbsId())){
-            double fragmentArea = 0d;
-            if (areas.containsKey(combiChain.getChainId())) fragmentArea = areas.get(combiChain.getChainId());
-            else if (areas.containsKey("FA "+combiChain.getCarbonDbsId())) fragmentArea = areas.get("FA "+combiChain.getCarbonDbsId());
-            else if (areas.containsKey("LCB "+combiChain.getCarbonDbsId())) fragmentArea = areas.get("LCB "+combiChain.getCarbonDbsId());
-            area += fragmentArea/((double)faChainOccurrences.get(combiChain.getChainId()));
-          }
-        }
-        combiAreas.put(combi, area);
-        totalArea += area;
-      }
       List<DoubleStringVO> toSort = new ArrayList<DoubleStringVO>(); 
-      for (String combi : combiAreas.keySet()) {
-        relativeIntensityOfCombination_.put(combi, combiAreas.get(combi)/totalArea);
-        toSort.add(new DoubleStringVO(combi,combiAreas.get(combi)));
+      for (String combi : relativeIntensityOfCombination_.keySet()) {
+        toSort.add(new DoubleStringVO(combi,relativeIntensityOfCombination_.get(combi)));
       }
       Collections.sort(toSort,new GeneralComparator("at.tugraz.genome.lda.vos.DoubleStringVO", "getValue", "java.lang.Double"));
       //resort valid chain combinations from highest to lowest area
@@ -311,11 +290,10 @@ public class LipidomicsMSnSet extends LipidParameterSet
     
   public LipidomicsMSnSet(LipidomicsMSnSet set) throws LipidCombinameEncodingException{
     this(set,set.status_,set.mzTolerance_,set.headGroupFragments_,set.headIntensityRules_,set.chainFragments_,set.chainIntensityRules_,
-        set.validChainCombinations_,set.positionDefinition_,set.positionEvidence_,set.numberOfPositions_,set.basePeakValues_,
+        set.validChainCombinations_,set.relativeIntensityOfCombination_,set.positionDefinition_,set.positionEvidence_,set.numberOfPositions_,set.basePeakValues_,
         set.msnRetentionTimes_);
     this.nameLookupHumReadableToPositionInsensitve_ = set.nameLookupHumReadableToPositionInsensitve_;
     this.ambiguousPositionIdentifications_ = set.ambiguousPositionIdentifications_;
-    this.relativeIntensityOfCombination_ = set.relativeIntensityOfCombination_;
     this.nameLookupPositionInsensitve_ = set.nameLookupPositionInsensitve_;
     this.chainNameLookupHumanReadable_ = set.chainNameLookupHumanReadable_;
     this.involvedFAs_ = set.involvedFAs_;
@@ -554,15 +532,6 @@ public class LipidomicsMSnSet extends LipidParameterSet
     return msLevels;
   }
   
-
-  private double getAreaOfOneChain(String faName){
-    double area = 0f;
-    for (CgProbe probe : chainFragments_.get(faName).values()){
-      double oneArea = (double)probe.Area;
-      area += oneArea;
-    }
-    return area;
-  }
 
   /**
    * 

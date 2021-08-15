@@ -14,7 +14,6 @@ IsobarSCExclusionRatio=0.05
 IsobarSCFarExclusionRatio=0.2
 
 
-
 [HEAD]
 !FRAGMENTS
 Name=NL_Ethanolamine_43		Formula=$PRECURSOR-C2H5N	Charge=1	MSLevel=2	mandatory=true
