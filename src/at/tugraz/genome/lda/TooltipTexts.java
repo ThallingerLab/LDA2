@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2021 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp  
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@ package at.tugraz.genome.lda;
 /**
  * 
  * @author Juergen Hartler
+ * @author Leonida M. Lamp
  *
  */
 public class TooltipTexts
@@ -62,6 +63,7 @@ public class TooltipTexts
   		  "RAW-file:   XCalibur RAW files (XCalibur must be installed)<br>" +
   		  "RAW-dir:    MassLynx RAW directory (MassLynx must be installed)<br>" +
   		  "mzXML:      mzXML format<br>" +
+  		  "mzML:       mzML format<br>" +
   		  "chrom:      LDA quant file format</html>"; 
   
   public final static String QUANTITATION_SINGLE_MASS_LIST ="<html>Enter the mass list file containing the analytes of interest!<br>" +
@@ -114,6 +116,7 @@ public class TooltipTexts
   "RAW-file:   XCalibur RAW files (XCalibur must be installed)<<br>" +
   "RAW-dir:    MassLynx RAW directory (MassLynx must be installed)<br>" +
   "mzXML:      mzXML format<br>" +
+  "mzML:       mzML format<br>" +
   "chrom:      LDA quant file format</html>";
   
   public final static String QUANTITATION_BATCH_MASS_LIST = "<html>Enter a folder containing the mass list file with the analytes of interest!<br>" +
@@ -355,8 +358,8 @@ public class TooltipTexts
 
   public final static String ISO_LABEL_LABELID = "<html>The designator for the label in the data</html>";
   public final static String ISO_LABEL_OMEGA = "<html>The omega position of the isotopically labeled chain</html>";
-  public final static String ISO_LABEL_FORMULA = "<html>The caused difference in the elemental composition by the label</html>";
-  public final static String ISO_LABEL_RTSHIFT = "<html>The caused difference in the retention time by the label</html>";
+  public final static String ISO_LABEL_FORMULA = "<html>The difference in elemental composition caused by the label</html>";
+  public final static String ISO_LABEL_RTSHIFT = "<html>The relative difference in retention time caused by the label</html>";
   public final static String ISO_DELETE = "<html>Deletes the label.</html>";
   public final static String ISO_ADD = "<html>Adds another row to enter information about a label</html>";
   

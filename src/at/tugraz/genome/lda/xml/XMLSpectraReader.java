@@ -31,7 +31,7 @@ import at.tugraz.genome.maspectras.quantification.CgReader;
  * @author Juergen Hartler
  *
  */
-public interface XmlSpectraReader extends CgReader
+public interface XMLSpectraReader extends CgReader
 {
   /**
    * 

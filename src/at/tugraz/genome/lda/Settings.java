@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2021 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -57,6 +57,7 @@ import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
 /**
  * 
  * @author Juergen Hartler
+ * @author Leonida M. Lamp
  *
  */
 public class Settings
@@ -98,6 +99,7 @@ public class Settings
   /** the lookup of isotopes from the Alex format to the LDA format*/
   private static Hashtable<String,String> alexIsoLookup_ = new Hashtable<String,String>();
 
+  /** pre-selected prefix for the internalStandardSelection */
   private static String isDefaultInput_;
   private static String esDefaultInput_;
   
@@ -131,6 +133,9 @@ public class Settings
 
   /** the character encoding of the number of hydroxylation sites for the LCB*/
   private static HydroxyEncoding lcbHydroxyEncoding_;
+  
+  /** the intermediate file format for the translation of RAW to chrom */
+  private static String intermediateFileFormat_;
 
   
   private static Settings getInstance() {
@@ -152,7 +157,8 @@ public class Settings
       Properties properties = new Properties();
       properties.load(inNew);
       inNew.close();
-
+      
+      intermediateFileFormat_ = properties.getProperty("IntermediateFileFormat", null);
       readWPath_ = properties.getProperty("ReadWPath", null);
       msConvertPath_ = properties.getProperty("MsconvertPath", null);
       massWolfPath_ = properties.getProperty("MassWolfPath", null);
@@ -351,7 +357,11 @@ public class Settings
     Settings.getInstance();
     return Settings.overviewExcelIsotope_;
   }
-
+  
+  public static String getIntermediateFileFormat(){
+    Settings.getInstance();
+    return intermediateFileFormat_;
+  }
 
   /**
    * 

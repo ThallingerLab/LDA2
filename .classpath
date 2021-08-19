@@ -4,7 +4,11 @@
 	<classpathentry kind="src" path="src-mgf"/>
 	<classpathentry kind="src" path="src-utils"/>
 	<classpathentry kind="src" path="src-ttest"/>
-	<classpathentry kind="src" path="test"/>
+	<classpathentry kind="src" output="test-output" path="test">
+		<attributes>
+			<attribute name="test" value="true"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="src" path="src-merger"/>
 	<classpathentry kind="src" path="src-faIntensityConverter"/>
 	<classpathentry kind="src" path="src-alexRtGrouper"/>
@@ -17,7 +21,7 @@
 	<classpathentry kind="lib" path="lib/svg/batik-ext.jar"/>
 	<classpathentry kind="lib" path="lib/ttest/JSci.jar"/>
 	<classpathentry kind="lib" path="lib/xml/xmlbeans-2.3.0.jar"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk1.8.0_202"/>
 	<classpathentry kind="lib" path="lib/svg/batik-awt-util.jar"/>
 	<classpathentry kind="lib" path="lib/excel/poi-3.12-20150511.jar"/>
 	<classpathentry kind="lib" path="lib/excel/poi-ooxml-3.12-20150511.jar"/>
@@ -47,5 +51,9 @@
 	<classpathentry kind="lib" path="lib/mztab-java/jackson-module-jaxb-annotations-2.9.5.jar"/>
 	<classpathentry kind="lib" path="lib/cli/commons-cli-1.4.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/5"/>
+	<classpathentry kind="lib" path="natives/windows64/gluegen-rt-natives-windows-amd64.jar"/>
+	<classpathentry kind="lib" path="natives/windows64/joal-natives-windows-amd64.jar"/>
+	<classpathentry kind="lib" path="natives/windows64/jogl-all-natives-windows-amd64.jar"/>
+	<classpathentry kind="lib" path="lib/maspectras/maspectras-lipidomics.jar"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

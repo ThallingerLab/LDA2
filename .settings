@@ -1,11 +1,15 @@
 ###################
 ## General settings
+## the intermediate file format for the translation of RAW to chrom (supported formats are mzXML and mzML)
+IntermediateFileFormat=mzXML
 ## path to the msConvert executable for the translation of RAW to chrom
 MsconvertPath=installer/windows/x64/msconvert/msconvert.exe
 ## path to the Mass++ executable for the translation of RAW to chrom
 MassPPPath=C:/Program Files (x86)/Mass++/bin/msppcmd.exe
 ## path to the element config file (comes with the application)
 ElementConfig=elementconfig.xml
+## path to the (ox)modification config file (comes with the application)
+ModConfig=modconfig.xml
 ## should an overview excel be generated
 OverviewExcelWorkbook=true
 ## should the mass values be displays in the overview excel
@@ -27,5 +31,9 @@ MergeMultipleMSMSFiles=true
 SkipLastMzXML=true
 ## quantitation on the graphics card
 useCuda=false
+## use Alex123 as target lists
+Alex123=true
 ## make empty entries when an analyte cannot by found by "Quant. anal. at not found" and "Take exact peak for others"
 EmptyEntriesForQuantAnalNotFound=false
+## omega export peak selection method; there are two options: 'strongest' and 'rtDiff'
+OmegaExportPeakSelection=strongest
