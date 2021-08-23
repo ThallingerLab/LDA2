@@ -40,7 +40,7 @@ public interface AddScan extends CgIAddScan
   public float getLowerThreshold();
 
   /**
-   * @return the uppererer m/z threshold that was used for reading
+   * @return the upperer m/z threshold that was used for reading
    */
   public float getUpperThreshold();
   
