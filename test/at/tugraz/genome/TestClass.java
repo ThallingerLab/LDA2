@@ -175,7 +175,7 @@ import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.lda.vos.RawQuantificationPairVO;
 import at.tugraz.genome.lda.xml.AbsoluteQuantSettingsWholeReader;
 import at.tugraz.genome.lda.xml.AddScan;
-import at.tugraz.genome.lda.xml.MzXmlReader;
+import at.tugraz.genome.lda.xml.MzXMLReader;
 import at.tugraz.genome.lda.xml.RawToChromTranslator;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;

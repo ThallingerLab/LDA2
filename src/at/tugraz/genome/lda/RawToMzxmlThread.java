@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2021 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -32,6 +32,7 @@ import at.tugraz.genome.lda.utils.StaticUtils;
 /**
  * 
  * @author Juergen Hartler
+ * @author Leonida M. Lamp
  *
  */
 public class RawToMzxmlThread extends Thread
@@ -83,20 +84,20 @@ public class RawToMzxmlThread extends Thread
         if (isMassPlusPlus_) {
           outputBaseFile = new String(params_[5]);
           for (int i=2;i<=msLevels;i++){
-            System.out.println("MS-Level: "+i);
+//            System.out.println("MS-Level: "+i);
             params_[5] = outputBaseFile+String.valueOf(i);
             params_[7] = String.valueOf((i-1));
             RawToMzxmlThread.startRawToMzxmlTranslation(params_);
           }
         }
         if (watersMsConvert_) {
-          outputBaseFile = params_[2].substring(0,params_[2].lastIndexOf("."))+".mzXML";
+          outputBaseFile = params_[2].substring(0,params_[2].lastIndexOf("."))+"."+Settings.getIntermediateFileFormat();
           for (int i=2;i<=msLevels;i++){
             params_[params_.length-1] = "msLevel "+i;              
             params_[4] = StaticUtils.extractDirName(params_[2])+"/"+i;
             RawToMzxmlThread.startRawToMzxmlTranslation(params_);
             String fileName = StaticUtils.extractFileName(params_[2]);
-            fileName = fileName.substring(0,fileName.lastIndexOf("."))+".mzXML";
+            fileName = fileName.substring(0,fileName.lastIndexOf("."))+"."+Settings.getIntermediateFileFormat();
             File outputFile = new File(params_[4]+"/"+fileName);
             outputFile.renameTo(new File(outputBaseFile+String.valueOf(i)));
             File oldDir = new File(params_[4]);

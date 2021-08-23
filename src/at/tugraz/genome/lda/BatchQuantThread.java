@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2021 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -43,6 +43,7 @@ import at.tugraz.genome.maspectras.utils.StringUtils;
 /**
  * 
  * @author Juergen Hartler
+ * @author Leonida M. Lamp
  *
  */
 public class BatchQuantThread extends Thread
@@ -155,8 +156,9 @@ public class BatchQuantThread extends Thread
             this.quantifyingLabel_.setText("Translating "+filePair.getRawFileName()+" to chrom");
             this.progressBar_.setValue((this.currentLine_*100)/this.quantTableModel_.getRowCount()+oneThird_);
             this.readFromRaw_ = true;
-            String mzXMLFilePath = filePair.getRawFile().getAbsolutePath().substring(0,filePair.getRawFile().getAbsolutePath().lastIndexOf("."))+".mzXML";
-            mzThread_ = new MzxmlToChromThread(mzXMLFilePath,numberOfProcessors_);
+            String XMLFilePath = filePair.getRawFile().getAbsolutePath().substring(0,filePair.getRawFile().getAbsolutePath().lastIndexOf("."))
+                +"."+Settings.getIntermediateFileFormat();
+            mzThread_ = new MzxmlToChromThread(XMLFilePath,numberOfProcessors_);
             mzThread_.start();
           }
         }
@@ -171,7 +173,8 @@ public class BatchQuantThread extends Thread
           //delete the mzXML file when raw data was used
           if (readFromRaw_ || filePair.isFromWiff()){
             this.readFromRaw_ = false;
-            RawToMzxmlThread.deleteMzXMLFiles(filePair.getRawFile().getAbsolutePath().substring(0,filePair.getRawFile().getAbsolutePath().lastIndexOf("."))+".mzXML");
+            RawToMzxmlThread.deleteMzXMLFiles(filePair.getRawFile().getAbsolutePath().substring(0,filePair.getRawFile().getAbsolutePath().lastIndexOf("."))
+                +"."+Settings.getIntermediateFileFormat());
           }
           //when there is polarity switched data, the file name changes
           boolean quantPossible = true;
@@ -237,15 +240,15 @@ public class BatchQuantThread extends Thread
               (rawFile.isDirectory() && ((suffix.equalsIgnoreCase(".RAW")&&((Settings.getMassWolfPath()!=null&&Settings.getMassWolfPath().length()>0)||((Settings.getMassPlusPlusPath()!=null&&Settings.getMassPlusPlusPath().length()>0))))
                                      ||   (suffix.equalsIgnoreCase(".d") &&Settings.getMsConvertPath()!=null&&Settings.getMsConvertPath().length()>0)))){
             File headerFile = new File(StringUtils.getChromFilePaths(filePair.getRawFile().getAbsolutePath())[1]);
-            File mzXMLFile = new File(filePair.getRawFile().getAbsolutePath().substring(0,filePair.getRawFile().getAbsolutePath().length()-suffix.length())+".mzXML");
+            File mzXMLFile = new File(filePair.getRawFile().getAbsolutePath().substring(0,filePair.getRawFile().getAbsolutePath().length()-suffix.length())+"."+Settings.getIntermediateFileFormat());
             if (!headerFile.exists()&&!mzXMLFile.exists()){
               boolean isMassPlusPlus = false;
               boolean watersMsConvert = false;
-              filePair.setStatus("Trans to mzXML");
+              filePair.setStatus("Trans to "+Settings.getIntermediateFileFormat());
               this.quantTable_.scrollToCenter(this.currentLine_, 0);
               this.quantTable_.getSelectionModel().setSelectionInterval(this.currentLine_, this.currentLine_);
               this.quantTable_.repaint();
-              this.quantifyingLabel_.setText("Translating "+filePair.getRawFileName()+" to mzXML");
+              this.quantifyingLabel_.setText("Translating "+filePair.getRawFileName()+" to "+Settings.getIntermediateFileFormat());
               this.progressBar_.setValue((this.currentLine_*100)/this.quantTableModel_.getRowCount());
 //              String execCommand = "";
 //              if (rawFile.isFile())
@@ -273,7 +276,7 @@ public class BatchQuantThread extends Thread
                     params[1] = "-in";
                     params[2] = filePair.getRawFile().getAbsolutePath();
                     params[3] = "-out";
-                    params[4] = "mzxml";
+                    params[4] = Settings.getIntermediateFileFormat().toLowerCase(); //Not tested yet for mzML, also unsure whether it has to be lower case..
                     params[5] = mzXMLFile.getAbsolutePath();
                     params[6] = "-sample";
                     params[7] = "0";
@@ -281,7 +284,7 @@ public class BatchQuantThread extends Thread
                   }else if (Settings.getMassWolfPath()!=null&&Settings.getMassWolfPath().length()>0){
                     params = new String[4];
                     params[0] = Settings.getMassWolfPath();
-                    params[1] = "--mzXML";
+                    params[1] = "--"+Settings.getIntermediateFileFormat();
                     params[2] = filePair.getRawFile().getAbsolutePath();
                     params[3] = mzXMLFile.getAbsolutePath();  
                   }
@@ -310,7 +313,7 @@ public class BatchQuantThread extends Thread
 //          threadStarted=true;
 //          return;
 //        }
-        if (suffix.equalsIgnoreCase(".mzXML")){
+        if (suffix.equalsIgnoreCase(".mzXML") || suffix.equalsIgnoreCase(".mzML")){
           File headerFile = new File(StringUtils.getChromFilePaths(filePair.getRawFile().getAbsolutePath())[1]);
           if (!headerFile.exists()){
             filePair.setStatus("Trans to chrom");
@@ -362,7 +365,7 @@ public class BatchQuantThread extends Thread
   public static String[] getMsConvertParams(String fileToTranslate){
     String[] params = new String[5];
     params[0] = Settings.getMsConvertPath();
-    params[1] = "--mzXML";
+    params[1] = "--"+Settings.getIntermediateFileFormat();
     params[2] = fileToTranslate;
     params[3] = "-o";
     params[4] = StaticUtils.extractDirName(fileToTranslate);                  
@@ -390,7 +393,8 @@ public class BatchQuantThread extends Thread
     String fileStart = filePath.substring(0,filePath.lastIndexOf("."));
     File[] filesOfDir = new File(StringUtils.extractDirName(fileStart)).listFiles();
     for (int i=0; i!=filesOfDir.length; i++){          
-      if (filesOfDir[i].getAbsolutePath().startsWith(fileStart)&&filesOfDir[i].getAbsolutePath().endsWith(".mzXML")){
+      if (filesOfDir[i].getAbsolutePath().startsWith(fileStart)&&
+          (filesOfDir[i].getAbsolutePath().endsWith(".mzXML")||filesOfDir[i].getAbsolutePath().endsWith(".mzML"))){
         filesToTranslate.add(filesOfDir[i]);
       }
     }

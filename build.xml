@@ -115,7 +115,14 @@
 			<fileset dir="${classes.utils.dir}" />
 		</delete>
 	</target>
-
+	
+	<!-- TODO add something like: <target name="unitTests" depends="compile">... -->
+	<path id="junit.class.path">
+		<fileset dir="${junit.lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+	</path>	
+	
 	<path id="ttest.class.path">
 		<fileset dir="${ttest.lib.dir}">
 			<include name="*.jar" />

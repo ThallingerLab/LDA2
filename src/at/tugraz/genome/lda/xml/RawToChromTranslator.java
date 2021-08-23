@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2021 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -55,6 +55,7 @@ import at.tugraz.genome.util.BioUtilsConstants;
 /**
  * 
  * @author Juergen Hartler
+ * @author Leonida M. Lamp
  *
  */
 public class RawToChromTranslator implements AddScan
@@ -83,7 +84,7 @@ public class RawToChromTranslator implements AddScan
   private Hashtable<Integer,Hashtable<Integer,RangeInteger>> threadBoundaries_;
   
   /** the reader*/
-  protected XmlSpectraReader m_reader;
+  protected XMLSpectraReader m_reader;
   /** the available threads for chrom writing*/
   private Hashtable<Integer,RawToChromThread> translators_;
   
@@ -163,6 +164,7 @@ public class RawToChromTranslator implements AddScan
   /** was polarity switching used*/
   private boolean polaritySwitching_ = false;
   
+  
   /**
    * constructor for the translation
    * @param mzXmlPath the original file
@@ -182,16 +184,16 @@ public class RawToChromTranslator implements AddScan
   
   /**
    * constructor for the translation
-   * @param mzXmlPath the original file
+   * @param XMLPath the original file
    * @param fileType the type of the file
    * @param maxMBForChromTranslation the highest number of MBytes that can be translated in one chrom translation iteration
    */
-  public RawToChromTranslator(String mzXmlPath,String fileType, int maxMBForChromTranslation)
+  public RawToChromTranslator(String XMLPath,String fileType, int maxMBForChromTranslation)
   {
     multiplicationFactorForInt_ = CgDefines.mzMultiplicationFactorForInt;
     lowestResolution_ = CgDefines.lowestResolution;
     elementsForBatchCalculation_ = CgDefines.elementsForBatchCalculation;
-    m_fileName = mzXmlPath;
+    m_fileName = XMLPath;
     fileType_ = fileType;
     maxMBForChromTranslation_ = maxMBForChromTranslation;
     msms_ = false;
@@ -233,7 +235,7 @@ public class RawToChromTranslator implements AddScan
     polarityScans.put(CgDefines.POLARITY_NEGATIVE, 0);
     polarity_scanCount_.put(currentFileName_, polarityScans);    
   }
-
+  
   public void AddScan(CgScan sx) throws CgException
   {
     if (!scanHash_.containsKey(currentFileName_)) throw new CgException("m_scans Array not allocated");
@@ -326,7 +328,7 @@ public class RawToChromTranslator implements AddScan
    * @throws CgException the exception if anything is wrong
    */
   private void translateToChromatograms(int msLevel) throws CgException{
-    long time = System.currentTimeMillis();
+//    long time = System.currentTimeMillis();
     this.readHeaderInformation(msLevel);
         
     if (this.numberOfIterations_>1 || this.numberOfThreads_>1){
@@ -336,7 +338,7 @@ public class RawToChromTranslator implements AddScan
     if (msLevel>1) suffix  = String.valueOf(msLevel);
     this.initTranslatorObjects();
     for (int i=0; i!=this.numberOfIterations_; i++){
-      System.out.println("Starting iteration: "+(i+1));
+      //System.out.println("Starting iteration: "+(i+1));
       this.quantStatus_ = new Hashtable<Integer,Integer>();
       for (int j=0; j!=this.numberOfThreads_; j++){
         RangeInteger threshold = this.getLowerUpperThreshold(i, j);
@@ -426,7 +428,7 @@ public class RawToChromTranslator implements AddScan
     catch (IOException e) {
       e.printStackTrace();
     }
-    System.out.println("Total time: "+((System.currentTimeMillis()-time)/1000)+" secs");
+//    System.out.println("Total time: "+((System.currentTimeMillis()-time)/1000)+" secs");
   }
 
   /**
@@ -576,7 +578,7 @@ public class RawToChromTranslator implements AddScan
     long fileSize = fileInfo.length();
     numberOfIterations_ = Integer.parseInt(Long.toString(fileSize/(((long)this.maxMBForChromTranslation_)*1024l*1024l)))+1;
     
-    System.out.println("Number of iterations: "+numberOfIterations_);
+    //System.out.println("Number of iterations: "+numberOfIterations_);
      
     try
     {
@@ -586,8 +588,15 @@ public class RawToChromTranslator implements AddScan
       if (fileType_.equalsIgnoreCase("mzXML")){
         AddScan[] adders = new AddScan[1];
         adders[0] = this;
-        m_reader = new MzXmlReader(adders, msms_&&!msmsInSeveralFiles_,multiplicationFactorForInt_);
+        m_reader = new MzXMLReader(adders, msms_&&!msmsInSeveralFiles_,multiplicationFactorForInt_);
         if (m_fileName.endsWith(".mzXML")) justFileName = m_fileName.substring(0, m_fileName.length()-(".mzXML").length());
+        else justFileName = m_fileName; 
+      }
+      if (fileType_.equalsIgnoreCase("mzML")){
+        AddScan[] adders = new AddScan[1];
+        adders[0] = this;
+        m_reader = new MzMLReader(adders, msms_&&!msmsInSeveralFiles_,multiplicationFactorForInt_);
+        if (m_fileName.endsWith(".mzML")) justFileName = m_fileName.substring(0, m_fileName.length()-(".mzML").length());
         else justFileName = m_fileName; 
       }
 /*    these are not updated to the parallelized reading
