@@ -1,4 +1,4 @@
 /classes/
 /toInstall/
 *.bak
-/installer/
+/test-output/

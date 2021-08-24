@@ -328,7 +328,7 @@ public class RawToChromTranslator implements AddScan
    * @throws CgException the exception if anything is wrong
    */
   private void translateToChromatograms(int msLevel) throws CgException{
-//    long time = System.currentTimeMillis();
+    long time = System.currentTimeMillis();
     this.readHeaderInformation(msLevel);
         
     if (this.numberOfIterations_>1 || this.numberOfThreads_>1){
@@ -338,7 +338,7 @@ public class RawToChromTranslator implements AddScan
     if (msLevel>1) suffix  = String.valueOf(msLevel);
     this.initTranslatorObjects();
     for (int i=0; i!=this.numberOfIterations_; i++){
-      //System.out.println("Starting iteration: "+(i+1));
+      System.out.println("Starting iteration: "+(i+1));
       this.quantStatus_ = new Hashtable<Integer,Integer>();
       for (int j=0; j!=this.numberOfThreads_; j++){
         RangeInteger threshold = this.getLowerUpperThreshold(i, j);
@@ -428,7 +428,7 @@ public class RawToChromTranslator implements AddScan
     catch (IOException e) {
       e.printStackTrace();
     }
-//    System.out.println("Total time: "+((System.currentTimeMillis()-time)/1000)+" secs");
+    System.out.println("Total time: "+((System.currentTimeMillis()-time)/1000)+" secs");
   }
 
   /**
@@ -578,7 +578,7 @@ public class RawToChromTranslator implements AddScan
     long fileSize = fileInfo.length();
     numberOfIterations_ = Integer.parseInt(Long.toString(fileSize/(((long)this.maxMBForChromTranslation_)*1024l*1024l)))+1;
     
-    //System.out.println("Number of iterations: "+numberOfIterations_);
+    System.out.println("Number of iterations: "+numberOfIterations_);
      
     try
     {

@@ -1,7 +1,5 @@
 ###################
 ## General settings
-## the intermediate file format for the translation of RAW to chrom (supported formats are mzXML and mzML)
-IntermediateFileFormat=mzXML
 ## path to the msConvert executable for the translation of RAW to chrom
 MsconvertPath=installer/windows/x64/msconvert/msconvert.exe
 ## path to the Mass++ executable for the translation of RAW to chrom
