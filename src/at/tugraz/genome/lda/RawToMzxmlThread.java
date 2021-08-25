@@ -91,13 +91,13 @@ public class RawToMzxmlThread extends Thread
           }
         }
         if (watersMsConvert_) {
-          outputBaseFile = params_[2].substring(0,params_[2].lastIndexOf("."))+"."+Settings.getIntermediateFileFormat();
+          outputBaseFile = params_[2].substring(0,params_[2].lastIndexOf("."))+"."+LipidomicsConstants.getIntermediateFileFormat();
           for (int i=2;i<=msLevels;i++){
             params_[params_.length-1] = "msLevel "+i;              
             params_[4] = StaticUtils.extractDirName(params_[2])+"/"+i;
             RawToMzxmlThread.startRawToMzxmlTranslation(params_);
             String fileName = StaticUtils.extractFileName(params_[2]);
-            fileName = fileName.substring(0,fileName.lastIndexOf("."))+"."+Settings.getIntermediateFileFormat();
+            fileName = fileName.substring(0,fileName.lastIndexOf("."))+"."+LipidomicsConstants.getIntermediateFileFormat();
             File outputFile = new File(params_[4]+"/"+fileName);
             outputFile.renameTo(new File(outputBaseFile+String.valueOf(i)));
             File oldDir = new File(params_[4]);

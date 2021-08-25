@@ -65,7 +65,7 @@ public class MzxmlToChromThread extends Thread
   }
   
   private void translateToChrom(String filePath, int numberOfThreads) throws Exception{
-    RawToChromTranslator translator = new RawToChromTranslator(filePath,Settings.getIntermediateFileFormat(), LipidomicsConstants.getmMaxFileSizeForChromTranslationAtOnceInMB(),
+    RawToChromTranslator translator = new RawToChromTranslator(filePath,LipidomicsConstants.getIntermediateFileFormat(), LipidomicsConstants.getmMaxFileSizeForChromTranslationAtOnceInMB(),
         numberOfThreads,LipidomicsConstants.getChromMultiplicationFactorForInt(),LipidomicsConstants.getChromLowestResolution(),LipidomicsConstants.isMS2());
       translator.translateToChromatograms();
       polaritySwitched_ = translator.isPolaritySwitched();

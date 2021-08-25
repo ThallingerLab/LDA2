@@ -144,9 +144,6 @@ public class Settings
 
   /** the character encoding of the number of hydroxylation sites for the LCB*/
   private static HydroxyEncoding lcbHydroxyEncoding_;
-  
-  /** the intermediate file format for the translation of RAW to chrom */
-  private static String intermediateFileFormat_;
 
   
   private static Settings getInstance() {
@@ -176,7 +173,6 @@ public class Settings
       properties.load(inNew);
       inNew.close();
       
-      intermediateFileFormat_ = properties.getProperty("IntermediateFileFormat", null);
       readWPath_ = properties.getProperty("ReadWPath", null);
       msConvertPath_ = properties.getProperty("MsconvertPath", null);
       massWolfPath_ = properties.getProperty("MassWolfPath", null);
@@ -383,11 +379,6 @@ public class Settings
   public static boolean isIsotopeInOverviewExcelDesired(){
     Settings.getInstance();
     return Settings.overviewExcelIsotope_;
-  }
-  
-  public static String getIntermediateFileFormat(){
-    Settings.getInstance();
-    return intermediateFileFormat_;
   }
 
   /**

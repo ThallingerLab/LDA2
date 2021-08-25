@@ -319,6 +319,8 @@ public class LipidomicsConstants
   private boolean shotgunIntensityRemoval_;
   /** the relative intensity cutoff for the removal*/
   private float shotgunRelIntCutoff_;
+  /** the intermediate file format for the translation of RAW to chrom */
+  private String intermediateFileFormat_;
   
   
   /** this is the conventional chromatography mode*/
@@ -532,6 +534,10 @@ public class LipidomicsConstants
   private final static String SHOTGUN_PROCESSING_MEDIAN = "median";
   /** possible input parameter for SHOTGUN_PROCESSING*/
   private final static String SHOTGUN_PROCESSING_SUM = "sum";
+  /** the intermediate file format for the translation of RAW to chrom */
+  private final static String INTERMEDIATE_FILE_FORMAT = "intermediateFileFormat";
+  /** the default intermediate file format for the translation of RAW to chrom */
+  private final static String INTERMEDIATE_FILE_FORMAT_DEFAULT = "mzXML";
   
   public static LipidomicsConstants getInstance() {
     if (instance_ == null) {
@@ -587,6 +593,7 @@ public class LipidomicsConstants
     currentMSMachine_ = properties.getProperty(MACHINE_NAME, MACHINE_NAME_DEFAULT);
     neutronMass_ = Float.parseFloat(properties.getProperty(NEUTRON_MASS,NEUTRON_MASS_DEFAULT));
     basePeakDefaultCutoff_ = cutoff;
+    intermediateFileFormat_ = properties.getProperty(INTERMEDIATE_FILE_FORMAT,INTERMEDIATE_FILE_FORMAT_DEFAULT);
     maxFileSizeForChromTranslationAtOnceInMB_ = Integer.parseInt(properties.getProperty(MAX_CHROM_AT_ONCE_MB, MAX_CHROM_AT_ONCE_MB_DEFAULT));
     coarseChromMzTolerance_ = Float.parseFloat(properties.getProperty(COARSE_CHROM_MZ_TOL,COARSE_CHROM_MZ_TOL_DEFAULT));
     chromSmoothRange_ = Float.parseFloat(properties.getProperty(CHROM_SMOOTH_RANGE,CHROM_SMOOTH_RANGE_DEFAULT));
@@ -803,6 +810,15 @@ public class LipidomicsConstants
       }
     }
       
+  }
+  
+  /**
+   * @return the intermediate file format for the translation of RAW to chrom
+   */
+  public static String getIntermediateFileFormat()
+  {
+    if (instance_ == null) LipidomicsConstants.getInstance();
+    return instance_.intermediateFileFormat_;
   }
   
   /**

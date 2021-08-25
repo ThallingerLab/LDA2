@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2021 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -2365,14 +2365,14 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         if (rawDir.exists()&&rawDir.isDirectory()&&quantDir.exists()&&quantDir.isDirectory()){
           File[] rawFileCandidates = rawDir.listFiles();
           Hashtable<String,Vector<File>> avoidDuplication = new Hashtable<String,Vector<File>>();
-          boolean XMLOrChromPresent = false;
+          boolean mzXMLOrChromPresent = false;
           for (int i=0; i!=rawFileCandidates.length;i++){
             if (rawFileCandidates[i].isFile()){
               String[] fileNameAndSuffix = StaticUtils.extractFileNameAndSuffix(rawFileCandidates[i].getAbsolutePath()); 
               String suffix = fileNameAndSuffix[1];
               String fileName = fileNameAndSuffix[0];
               if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("mzml")||suffix.equalsIgnoreCase("raw")||suffix.equalsIgnoreCase("chrom")||suffix.equalsIgnoreCase("wiff")){
-                if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("mzml")||suffix.equalsIgnoreCase("chrom")) XMLOrChromPresent = true;
+                if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("mzml")||suffix.equalsIgnoreCase("chrom")) mzXMLOrChromPresent = true;
                 Vector<File> theFiles = new Vector<File>();
                 if (avoidDuplication.containsKey(fileName)){
                   theFiles = avoidDuplication.get(fileName);
@@ -2386,7 +2386,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
               String suffix = fileNameAndSuffix[1];
               String fileName = fileNameAndSuffix[0];
               if (suffix.equalsIgnoreCase("raw")|| suffix.equalsIgnoreCase("d") ||suffix.equalsIgnoreCase("chrom")){
-                if (suffix.equalsIgnoreCase("chrom")) XMLOrChromPresent = true;
+                if (suffix.equalsIgnoreCase("chrom")) mzXMLOrChromPresent = true;
                 Vector<File> theFiles = new Vector<File>();
                 if (avoidDuplication.containsKey(fileName)){
                   theFiles = avoidDuplication.get(fileName);
@@ -2400,14 +2400,14 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
             Vector<File> theFiles = avoidDuplication.get(key);
             if (theFiles.size()==1){
               String suffix = StaticUtils.extractFileNameAndSuffix(theFiles.get(0).getAbsolutePath())[1];
-              if (!XMLOrChromPresent || !suffix.equalsIgnoreCase("wiff"))
+              if (!mzXMLOrChromPresent || !suffix.equalsIgnoreCase("wiff"))
                 rawFiles.add(theFiles.get(0));
             }else{
               int selectedIndex = -1;
               for (int i=0; i!=theFiles.size();i++){
                 File file = theFiles.get(i);
                 String suffix = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf(".")+1);
-                if (XMLOrChromPresent && suffix.equalsIgnoreCase("wiff")) continue;
+                if (mzXMLOrChromPresent && suffix.equalsIgnoreCase("wiff")) continue;
                 if (suffix.equalsIgnoreCase("chrom")){
                   selectedIndex = i;
                 }
@@ -2418,7 +2418,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                 for (int i=0; i!=theFiles.size();i++){
                   File file = theFiles.get(i);
                   String suffix = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf(".")+1);
-                  if (XMLOrChromPresent && suffix.equalsIgnoreCase("wiff")) continue;
+                  if (mzXMLOrChromPresent && suffix.equalsIgnoreCase("wiff")) continue;
                   if (suffix.equalsIgnoreCase("mzXML") || suffix.equalsIgnoreCase("mzML")){
                     rawFiles.add(theFiles.get(i));
                   }
@@ -2656,7 +2656,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
               if (rawFile.isDirectory()){
                 if (suffix.equalsIgnoreCase(".RAW")){
                   if (!LipidomicsConstants.isMS2()||(Settings.getMassPlusPlusPath()!=null&&Settings.getMassPlusPlusPath().length()>0)||LipidomicsConstants.useMsconvertForWaters()){
-                    String outputFile = fileToTranslate.substring(0,fileToTranslate.lastIndexOf("."))+"."+Settings.getIntermediateFileFormat();
+                    String outputFile = fileToTranslate.substring(0,fileToTranslate.lastIndexOf("."))+"."+LipidomicsConstants.getIntermediateFileFormat();
                     if (LipidomicsConstants.useMsconvertForWaters()) {
                       params =BatchQuantThread.getMsConvertParamsWaters(fileToTranslate);
                       watersMsConvert = true;
@@ -2666,7 +2666,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                       params[1] = "-in";
                       params[2] = fileToTranslate;
                       params[3] = "-out";
-                      params[4] = Settings.getIntermediateFileFormat().toLowerCase(); //Not tested yet for mzML, also unsure whether it has to be lower case..
+                      params[4] = LipidomicsConstants.getIntermediateFileFormat().toLowerCase(); //Not tested yet for mzML, also unsure whether it has to be lower case..
                       params[5] = outputFile;
                       params[6] = "-sample";
                       params[7] = "0";
@@ -2674,7 +2674,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                     }else if (Settings.getMassWolfPath()!=null&&Settings.getMassWolfPath().length()>0){
                       params = new String[4];
                       params[0] = Settings.getMassWolfPath();
-                      params[1] = "--"+Settings.getIntermediateFileFormat();
+                      params[1] = "--"+LipidomicsConstants.getIntermediateFileFormat();
                       params[2] = fileToTranslate;
                       params[3] = outputFile;  
                     }
@@ -2695,7 +2695,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
               }
               if (params[0]!=null && params[0].length()>0){
                 this.progressBar_.setValue(5);
-                this.quantifyingLabel_.setText("Translating to "+Settings.getIntermediateFileFormat());
+                this.quantifyingLabel_.setText("Translating to "+LipidomicsConstants.getIntermediateFileFormat());
                 rawmzThread_ = new RawToMzxmlThread(params,isMassPlusPlus,watersMsConvert);
                 rawmzThread_.start();
                 threadStarted = true;
@@ -3809,7 +3809,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       }      
     }
 
-    frame_ = new MainFrame(new LipidDataAnalyzer(), 1050, 950);
+    frame_ = new MainFrame(new LipidDataAnalyzer(), 1024, 950);
     frame_.setTitle(getFrameTitleString());
   }
   
@@ -3910,8 +3910,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           }
         }
       }else{
-        String XMLFilePath = selectedMzxmlFile.getText().substring(0,selectedMzxmlFile.getText().lastIndexOf("."))+"."+Settings.getIntermediateFileFormat();
-        mzToChromThread_ = new MzxmlToChromThread(XMLFilePath,Integer.parseInt(nrProcessors_.getText()));
+        String mzXMLFilePath = selectedMzxmlFile.getText().substring(0,selectedMzxmlFile.getText().lastIndexOf("."))+"."+LipidomicsConstants.getIntermediateFileFormat();
+        mzToChromThread_ = new MzxmlToChromThread(mzXMLFilePath,Integer.parseInt(nrProcessors_.getText()));
         mzToChromThread_.start();
       }
     }
@@ -3924,7 +3924,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       }
       if (readFromRaw_){
         this.readFromRaw_ = false;
-        RawToMzxmlThread.deleteMzXMLFiles(selectedMzxmlFile.getText().substring(0,selectedMzxmlFile.getText().lastIndexOf("."))+"."+Settings.getIntermediateFileFormat());
+        RawToMzxmlThread.deleteMzXMLFiles(selectedMzxmlFile.getText().substring(0,selectedMzxmlFile.getText().lastIndexOf("."))+"."+LipidomicsConstants.getIntermediateFileFormat());
       }
 
       boolean ok = true;
