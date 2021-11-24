@@ -490,7 +490,7 @@ public class MSnAnalyzer
             chainFragments_.put(chainName, fragmentsOfChain);
             for (String molSpec : molSpecies.keySet()){
               foundChainFragments = true;
-              verifiedMolecularSpecies.put(molSpec, molSpec);            
+              verifiedMolecularSpecies.put(molSpec, molSpec);
             }
           }
         }
@@ -499,9 +499,66 @@ public class MSnAnalyzer
     if (!foundAnyFragments) this.status_ = LipidomicsMSnSet.DISCARD_HIT;
     if (foundHeadFragments && status_!=LipidomicsMSnSet.DISCARD_HIT) this.status_ = LipidomicsMSnSet.HEAD_GROUP_DETECTED;
     if (foundChainFragments && status_!=LipidomicsMSnSet.DISCARD_HIT) this.status_ = LipidomicsMSnSet.FRAGMENTS_DETECTED;
-    for (String molSpecies : verifiedMolecularSpecies.keySet()){
-      validChainCombinations_.add(molSpecies);
-    }
+    
+    //for calculating the relative shares of each molecular species
+    Hashtable<String,Vector<FattyAcidVO>> combis =  new Hashtable<String,Vector<FattyAcidVO>>();
+    for (String molSpecies : verifiedMolecularSpecies.keySet())
+      combis.put(molSpecies, StaticUtils.decodeLipidNamesFromChainCombi(molSpecies));
+    Hashtable<String,FattyAcidVO> allowedFAs = new Hashtable<String,FattyAcidVO>();
+/****    if (relativeIntensitySplitNecessary(combis)) {
+      //TODO: this is not tested
+      MSnRelativeShareCalculator relativeShares = new MSnRelativeShareCalculator(combis,chainFragments_,relativeChainCutoff_,debug_,debugVO_);
+      relativeShares.splitIntensities();
+      allowedFAs = relativeShares.getAllowedFAs();
+      relativeIntensityOfCombination_ = relativeShares.getRelativeIntensities();
+      removeNotNecessaryFragments(allowedFAs,false);
+    }else {*/
+      Hashtable<String,Double> areas = new Hashtable<String,Double>();
+      // calculate a total area for each chain fragment
+      for (String key : chainFragments_.keySet()){
+        double area = 0f;
+        for (CgProbe probe : chainFragments_.get(key).values()){
+          double oneArea = (double)probe.Area;
+          area += oneArea;
+        }
+        areas.put(key, area);
+      }    
+      Hashtable<String,Double> combiAreas = new Hashtable<String,Double>();
+      double highestIntensity = 0d;
+      for (String key : combis.keySet()){
+        double relative = 0d;
+        for (FattyAcidVO combiFA : combis.get(key)){
+          if (areas.containsKey(combiFA.getChainId()))
+            relative += areas.get(combiFA.getChainId());///((double)faChainOccurrences.get(combiFA));
+        }
+        if (relative>highestIntensity) highestIntensity = relative;
+        combiAreas.put(key, relative);
+      }
+      double totalArea = 0d;
+      for (String key: new Vector<String>(combiAreas.keySet())){
+        double intensity = combiAreas.get(key);
+        //TODO: I do not know whether I should activate the chain cutoff; in the previous ALEX version, the chain cutoff was not active
+        if (intensity>=0/*(relativeChainCutoff_*highestIntensity)*/){
+          totalArea+=intensity;
+        }else{
+          if (debug_) debugVO_.addViolatedCombinations(key, MSnDebugVO.COMBINATION_LOWER_CHAIN_CUTOFF);
+          combiAreas.remove(key);
+          combis.remove(key);
+        }
+      }
+      allowedFAs = new Hashtable<String,FattyAcidVO>();
+      for (String key: new Vector<String>(combiAreas.keySet())){
+        for (FattyAcidVO combiFA : combis.get(key)){
+          allowedFAs.put(combiFA.getChainId(), combiFA);
+        }      
+      }
+      removeNotNecessaryFragments(allowedFAs,false);
+      this.removeNotNecessaryDiffIntensityRules(combiAreas.keySet());
+      relativeIntensityOfCombination_ = new Hashtable<String,Double>();
+      for (String combi : combiAreas.keySet())
+        relativeIntensityOfCombination_.put(StaticUtils.encodeLipidCombi(StaticUtils.sortChainVOs(StaticUtils.decodeLipidNamesFromChainCombi(combi))), combiAreas.get(combi)/totalArea);
+
+/****    }*/
   }
   
   /**
