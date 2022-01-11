@@ -2241,6 +2241,11 @@ public class MSnAnalyzer
         }
       }
       Collections.sort(scansSorted);
+      /**
+       * Return empty vector if no scans are stored for a msLevel
+       * TODO: this is a quick bug fix, possibly a better solution exists (DATE 23.11.2021)
+       */
+      if (scansSorted.size() == 0) {return splitted;}
       
       retTimeLookup.put(msLevel, relRetTimes);
       relevantSpectra.put(msLevel, relSpectra);
@@ -2336,8 +2341,9 @@ public class MSnAnalyzer
           Hashtable<String,Vector<LipidomicsChromatogram>> chromsForQuant = chromsForMzs.get(quant);
           for (String key : chromsForQuant.keySet()){
             Vector<LipidomicsChromatogram> chroms = chromsForQuant.get(key);
-            if (startRelative<=chroms.get(1).Value[i][0] && chroms.get(1).Value[i][0]<=stopRelative)
+            if (startRelative<=chroms.get(1).Value[i][0] && chroms.get(1).Value[i][0]<=stopRelative) {
               chroms.get(1).Value[i][1] = chroms.get(0).Value[i][1]/highestInt;
+            } 
           }
         }
       }

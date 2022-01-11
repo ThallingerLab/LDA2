@@ -150,10 +150,9 @@ public class RulesContainer
     String rDir = rulesDir;
     if (rDir==null || rDir.length()==0) rDir = currentRulesDir_;
     RulesContainer instance = getInstance(rDir);
-    if (instance.hasRule(rule)) return instance;
-    instance = new RulesContainer(rDir);
-    if (!instance.hasRule(rule)) throw new NoRuleException("There is no MS2 rule for the analyte class \""+rule+"\"!");
-    instances_.put(rDir, instance);
+    if (!instance.hasRule(rule)) {
+      throw new NoRuleException(String.format("There is no MS2 rule for the analyte class \"%s\"!", rule));
+    }
     return instance;
   }
 
