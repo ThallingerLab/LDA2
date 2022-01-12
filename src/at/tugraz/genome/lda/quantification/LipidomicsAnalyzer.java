@@ -4874,6 +4874,8 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
           if (newProbe.Peak<loVal) newProbe.Peak = loVal;
           if (newProbe.Peak>upVal) newProbe.Peak = upVal;
           newProbesOfIso.add(newProbe);
+        }else {
+          newProbesOfIso.add(newProbe);
         }
       }
       if (newProbesOfIso.size()>0){
@@ -4883,6 +4885,8 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
         break;
       }
     }
+    if (newProbes.size()==0)
+      throw new CgException("A peak split cannot be performed because one of the partners does not deliver MS1 peak areas!");
     set.setIsotopicProbes(newProbes);
     set.Area = totalArea;
   }

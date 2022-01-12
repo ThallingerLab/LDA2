@@ -2241,6 +2241,11 @@ public class MSnAnalyzer
         }
       }
       Collections.sort(scansSorted);
+      /**
+       * Return empty vector if no scans are stored for a msLevel
+       * TODO: this is a quick bug fix, possibly a better solution exists (DATE 23.11.2021)
+       */
+      if (scansSorted.size() == 0) {return splitted;}
       
       retTimeLookup.put(msLevel, relRetTimes);
       relevantSpectra.put(msLevel, relSpectra);
@@ -2336,8 +2341,9 @@ public class MSnAnalyzer
           Hashtable<String,Vector<LipidomicsChromatogram>> chromsForQuant = chromsForMzs.get(quant);
           for (String key : chromsForQuant.keySet()){
             Vector<LipidomicsChromatogram> chroms = chromsForQuant.get(key);
-            if (startRelative<=chroms.get(1).Value[i][0] && chroms.get(1).Value[i][0]<=stopRelative)
+            if (startRelative<=chroms.get(1).Value[i][0] && chroms.get(1).Value[i][0]<=stopRelative) {
               chroms.get(1).Value[i][1] = chroms.get(0).Value[i][1]/highestInt;
+            } 
           }
         }
       }
@@ -2444,7 +2450,12 @@ public class MSnAnalyzer
       SharedPeakContributionVO upperContr = lowerHigher[1];
       upperContr.makeCopyOfOldIdentification();
       lowerContr.getSet().setUpperRtHardLimit(threshold);
-      analyzer.recalculatePeaksAccordingToHardLimits(lowerContr.getSet(),upperMsLevel,proposedRts.get(lowerContr.getQuantVO()));
+      try {
+        analyzer.recalculatePeaksAccordingToHardLimits(lowerContr.getSet(),upperMsLevel,proposedRts.get(lowerContr.getQuantVO()));
+      }catch(CgException cgx) {
+        undoSplit(lowerContr,upperContr);
+        return null;
+      }
       try {
         recalculateMS2Identification(lowerContr,analyzer);
       }
@@ -2452,7 +2463,12 @@ public class MSnAnalyzer
         e.printStackTrace();
       }
       upperContr.getSet().setLowerRtHardLimit(threshold);
-      analyzer.recalculatePeaksAccordingToHardLimits(upperContr.getSet(),upperMsLevel,proposedRts.get(upperContr.getQuantVO()));
+      try {
+        analyzer.recalculatePeaksAccordingToHardLimits(upperContr.getSet(),upperMsLevel,proposedRts.get(upperContr.getQuantVO()));
+      }catch(CgException cgx) {
+        undoSplit(lowerContr,upperContr);
+        return null;
+      }
       try {
         recalculateMS2Identification(upperContr,analyzer);
       }
@@ -2469,6 +2485,17 @@ public class MSnAnalyzer
 //      System.out.println(retTimeLookup.get(2).get(consScanNumber)/60f);
 //    }
     return splitted;
+  }
+  
+  private static void undoSplit(SharedPeakContributionVO lowerContr, SharedPeakContributionVO upperContr) {
+    undoSplit(lowerContr);
+    undoSplit(upperContr);
+  }
+  
+  private static void undoSplit(SharedPeakContributionVO contr) {
+    contr.setSet(contr.getOldSet());
+    contr.getSet().setUpperRtHardLimit(-1f);
+    contr.getSet().setLowerRtHardLimit(-1f);
   }
   
   
