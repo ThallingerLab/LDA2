@@ -2241,12 +2241,6 @@ public class MSnAnalyzer
         }
       }
       Collections.sort(scansSorted);
-      /**
-       * Return empty vector if no scans are stored for a msLevel
-       * TODO: this is a quick bug fix, possibly a better solution exists (DATE 23.11.2021)
-       */
-      if (scansSorted.size() == 0) {return splitted;}
-      
       retTimeLookup.put(msLevel, relRetTimes);
       relevantSpectra.put(msLevel, relSpectra);
       scanNumbersSorted.put(msLevel, scansSorted);      
@@ -2259,13 +2253,15 @@ public class MSnAnalyzer
       QuantVO quant = partner.getQuantVO();
       for (String key : partner.getDistinctFragments().keySet()){
         CgProbe probe = partner.getDistinctFragments().get(key);
-        Hashtable<QuantVO,Hashtable<String,CgProbe>> allOfMsLevel = new Hashtable<QuantVO,Hashtable<String,CgProbe>>();
-        if (relevantMzHash.containsKey(probe.getMsLevel())) allOfMsLevel = relevantMzHash.get(probe.getMsLevel());
-        Hashtable<String,CgProbe> allOfQuant = new Hashtable<String,CgProbe>();
-        if (allOfMsLevel.containsKey(quant)) allOfQuant = allOfMsLevel.get(quant);
-        allOfQuant.put(key, probe);
-        allOfMsLevel.put(quant, allOfQuant);
-        relevantMzHash.put(probe.getMsLevel(),allOfMsLevel);
+        if (!scanNumbersSorted.get(probe.getMsLevel()).isEmpty()) {
+          Hashtable<QuantVO,Hashtable<String,CgProbe>> allOfMsLevel = new Hashtable<QuantVO,Hashtable<String,CgProbe>>();
+          if (relevantMzHash.containsKey(probe.getMsLevel())) allOfMsLevel = relevantMzHash.get(probe.getMsLevel());
+          Hashtable<String,CgProbe> allOfQuant = new Hashtable<String,CgProbe>();
+          if (allOfMsLevel.containsKey(quant)) allOfQuant = allOfMsLevel.get(quant);
+          allOfQuant.put(key, probe);
+          allOfMsLevel.put(quant, allOfQuant);
+          relevantMzHash.put(probe.getMsLevel(),allOfMsLevel);
+        }
       }
     }
     // now extract the chromatograms for each distinct mz Value
@@ -2347,6 +2343,10 @@ public class MSnAnalyzer
           }
         }
       }
+    }
+    // we need two chromatograms, otherwise no MS1 separation is possible
+    if (chromsForMzs.keySet().size() < 2) {
+      return splitted;
     }
     
     //now calculate for each QuantVO where are the highest intensities reached for each fragment (absoluteValues)
