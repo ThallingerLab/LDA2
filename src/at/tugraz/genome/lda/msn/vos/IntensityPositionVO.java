@@ -49,18 +49,24 @@ public class IntensityPositionVO extends IntensityRuleVO
   /** does this object hold hydroxylation information*/
   private boolean hasOhInfo_;
 
-  
   private boolean negated_;
   private int derivedPosition_;
   
+  /** consists the bigger expression of the equation of missed fragments only*/
+  private boolean biggerOnlyMissed_;
+  /** consists the smaller expression of the equation of missed fragments only*/
+  private boolean smallerOnlyMissed_;
+  
   /**
-   * constructor containing the original rule plus the two fatty acids
-   * @param rule rule that was applied
-   * @param biggerFA fatty acid that was verified at at the greater part of the comparator
-   * @param smallerFA fatty acid that was verified at at the lesser part of the comparator
-   * @param hasOhInfo has this intensity rule chain information - this is important for generating the human readable name
+   * 
+   * @param rule the corresponding intensity rule VO
+   * @param biggerFA the FA on the 'greater than' side of this rule
+   * @param smallerFA the FA on the 'smaller than' side of this rule
+   * @param hasOhInfo does this object hold hydroxylation information
+   * @param biggerOnlyMissed  consists the bigger expression of the equation of missed fragments only
+   * @param smallerOnlyMissed consists the smaller expression of the equation of missed fragments only
    */
-  public IntensityPositionVO(IntensityRuleVO rule, FattyAcidVO biggerFA, FattyAcidVO smallerFA, boolean hasOhInfo){
+  public IntensityPositionVO(IntensityRuleVO rule, FattyAcidVO biggerFA, FattyAcidVO smallerFA, boolean hasOhInfo, boolean biggerOnlyMissed, boolean smallerOnlyMissed){
     super(rule);
     this.hasOhInfo_ = hasOhInfo;
     biggerChains_ = new Hashtable<String,FattyAcidVO>();
@@ -75,7 +81,12 @@ public class IntensityPositionVO extends IntensityRuleVO
     }
     negated_ = false;
     derivedPosition_ = -1;
+    biggerOnlyMissed_ = false;
+    smallerOnlyMissed_ = false;
+    biggerOnlyMissed_ = biggerOnlyMissed;
+    smallerOnlyMissed_ = smallerOnlyMissed;
   }
+
 
   /**
    * @return fatty acid that was verified at at the greater part of the comparator
@@ -165,8 +176,8 @@ public class IntensityPositionVO extends IntensityRuleVO
     if (negated_) return derivedPosition_;
     int position=-1;
     FattyAcidVO faVO;
-    if ((faVO = getBiggerFA())!=null && faVO.getChainId().equalsIgnoreCase(fa)) position = getBiggerPosition();
-    else if ((faVO = getSmallerFA())!=null && faVO.getChainId().equalsIgnoreCase(fa)) position = getSmallerPosition();
+    if ((faVO = getBiggerFA())!=null && !this.biggerOnlyMissed_ && faVO.getChainId().equalsIgnoreCase(fa)) position = getBiggerPosition();
+    else if ((faVO = getSmallerFA())!=null && !this.smallerOnlyMissed_ && faVO.getChainId().equalsIgnoreCase(fa)) position = getSmallerPosition();
     return position;
   }
 
@@ -186,6 +197,8 @@ public class IntensityPositionVO extends IntensityRuleVO
       Hashtable<String,Hashtable<String,CgProbe>> chainFragments, Hashtable<String,Short> missed, HydroxyEncoding faHydroxyEncoding,
       HydroxyEncoding lcbHydroxyEncoding, boolean hasOhInfo) throws LipidCombinameEncodingException{
     String rule = new String(storedRule);
+    boolean biggerOnlyMissed = false;
+    boolean smallerOnlyMissed = false;
     int derivedPosition = -1;
     if (rule.indexOf("BECAUSE NOT FULFILLED: ")!=-1){
       String derivedString = rule.substring(0,rule.indexOf("BECAUSE NOT FULFILLED: "));
@@ -203,7 +216,13 @@ public class IntensityPositionVO extends IntensityRuleVO
       ruleBigger = rule.substring(rule.indexOf("<")+1);
     }
     Vector<ShortStringVO> biggerNbpNames =  FragmentRuleVO.getLengthSortedFragmentNames(new Hashtable<String,Short>(),ruleVO.getBiggerNonHeadAndBasePeakNames(),new Hashtable<String,Short>());
+    //the checkIfOnlyMissedValuesArePresent had been introduced because it was not possible to differentiate alkenylated species with same carbon dbs numbers; e.g. P-PE P-16:0/16:0
+    if (checkIfOnlyMissedValuesArePresent(biggerNbpNames,missed))
+      biggerOnlyMissed = true;
     Vector<ShortStringVO> smallerNbpNames = FragmentRuleVO.getLengthSortedFragmentNames(new Hashtable<String,Short>(),ruleVO.getSmallerNonHeadAndBasePeakNames(),new Hashtable<String,Short>());
+    //the checkIfOnlyMissedValuesArePresent had been introduced because it was not possible to differentiate alkenylated species with same carbon dbs numbers; e.g. P-PE P-16:0/16:0
+    if (checkIfOnlyMissedValuesArePresent(smallerNbpNames,missed))
+      smallerOnlyMissed = true;
     Hashtable<String,FattyAcidVO> biggerChains = IntensityChainVO.extractFANames(ruleBigger, biggerNbpNames, faHydroxyEncoding, lcbHydroxyEncoding);
     Hashtable<String,FattyAcidVO> smallerChains = IntensityChainVO.extractFANames(ruleSmaller, smallerNbpNames, faHydroxyEncoding, lcbHydroxyEncoding);
 
@@ -217,9 +236,26 @@ public class IntensityPositionVO extends IntensityRuleVO
       smallerVO = smallerChains.values().iterator().next();
     else
       smallerVO = biggerChains.values().iterator().next();
-    IntensityPositionVO posVO = new IntensityPositionVO(ruleVO,biggerVO,smallerVO,hasOhInfo);
+    IntensityPositionVO posVO = new IntensityPositionVO(ruleVO,biggerVO,smallerVO,hasOhInfo,biggerOnlyMissed,smallerOnlyMissed);
     if (derivedPosition>-1) posVO = createNegatedVO(posVO, derivedPosition);
     return posVO;
+  }
+  
+  /**
+   * this method checks whether one side of an equation consists of missed fragments only
+   * @param names the names of the fragments in form of ShortStringVO
+   * @param missed hash containing the names of missed fragments
+   * @return true of this side of the equation consists of missed fragments only
+   */
+  private static boolean checkIfOnlyMissedValuesArePresent(Vector<ShortStringVO> names, Hashtable<String,Short> missed) {
+    boolean onlyMissed = false;
+    if (names.size()>0) 
+      onlyMissed = true;
+    for (ShortStringVO vo : names) {
+      if (!missed.containsKey(vo.getKey()))
+        onlyMissed = false;
+    }
+    return onlyMissed;
   }
   
   public String getRuleValueInterpretation(Hashtable<String,Float> values, Float basePeak) throws RulesException{
@@ -229,7 +265,7 @@ public class IntensityPositionVO extends IntensityRuleVO
   }
   
   public static IntensityPositionVO createNegatedVO(IntensityPositionVO posVO, int derivedPosition){
-    IntensityPositionVO vo = new IntensityPositionVO(posVO,posVO.getBiggerFA(),posVO.getSmallerFA(),posVO.hasOhInfo_);
+    IntensityPositionVO vo = new IntensityPositionVO(posVO,posVO.getBiggerFA(),posVO.getSmallerFA(),posVO.hasOhInfo_,posVO.biggerOnlyMissed_,posVO.smallerOnlyMissed_);
     vo.negated_ = true;
     vo.derivedPosition_  = derivedPosition;
     return vo;

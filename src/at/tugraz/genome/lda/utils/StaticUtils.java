@@ -2234,7 +2234,7 @@ public class StaticUtils
    * @return sorted list of chains
    */
   public static Vector<FattyAcidVO> sortChainVOs(Vector<FattyAcidVO> unsorted){
-    Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>> hash = new Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>>();
+    Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<Short,Hashtable<String,FattyAcidVO>>>>>> hash = new Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<Short,Hashtable<String,FattyAcidVO>>>>>>();
     Hashtable<String,Integer> frequencyOfFA = new Hashtable<String,Integer>();
     //for building the hash
     String encoded;
@@ -2243,15 +2243,18 @@ public class StaticUtils
       if (!frequencyOfFA.containsKey(encoded))
         frequencyOfFA.put(encoded, 0);
       frequencyOfFA.put(encoded, (frequencyOfFA.get(encoded)+1));
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> sameCarbons = new Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>();
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<Short,Hashtable<String,FattyAcidVO>>>>> sameCarbons = new Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<Short,Hashtable<String,FattyAcidVO>>>>>();
       if (hash.containsKey(fa.getcAtoms())) sameCarbons = hash.get(fa.getcAtoms());
-      Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> sameDbs = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>();
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Short,Hashtable<String,FattyAcidVO>>>> sameDbs = new Hashtable<Integer,Hashtable<Integer,Hashtable<Short,Hashtable<String,FattyAcidVO>>>>();
       if (sameCarbons.containsKey(fa.getDoubleBonds())) sameDbs = sameCarbons.get(fa.getDoubleBonds());
-      Hashtable<Integer,Hashtable<String,FattyAcidVO>> sameOh = new Hashtable<Integer,Hashtable<String,FattyAcidVO>>();
+      Hashtable<Integer,Hashtable<Short,Hashtable<String,FattyAcidVO>>> sameOh = new Hashtable<Integer,Hashtable<Short,Hashtable<String,FattyAcidVO>>>();
       if (sameDbs.containsKey(fa.getOhNumber())) sameOh = sameDbs.get(fa.getOhNumber());
-      Hashtable<String,FattyAcidVO> sameOmega = new Hashtable<String,FattyAcidVO>();
+      Hashtable<Short,Hashtable<String,FattyAcidVO>> sameOmega = new Hashtable<Short,Hashtable<String,FattyAcidVO>>();
       if (sameOh.containsKey(fa.getOmegaPosition())) sameOmega = sameOh.get(fa.getOmegaPosition());
-      sameOmega.put(fa.getPrefix(),fa);
+      Hashtable<String,FattyAcidVO> sameType = new Hashtable<String,FattyAcidVO>();
+      if (sameOmega.containsKey(fa.getChainType())) sameType = sameOmega.get(fa.getChainType());
+      sameType.put(fa.getPrefix(),fa);
+      sameOmega.put(fa.getChainType(),sameType);
       sameOh.put(fa.getOmegaPosition(), sameOmega);
       sameDbs.put(fa.getOhNumber(), sameOh);
       sameCarbons.put(fa.getDoubleBonds(), sameDbs);
@@ -2272,20 +2275,24 @@ public class StaticUtils
           List<Integer> sameOmega = new ArrayList<Integer>(hash.get(carbon).get(db).get(oh).keySet());
           Collections.sort(sameOmega);
           for (Integer omega : sameOmega) {
-            List<String> prefixes = new ArrayList<String>(hash.get(carbon).get(db).get(oh).get(omega).keySet());
-            if (prefixes.contains("")) {
-              fac = hash.get(carbon).get(db).get(oh).get(omega).get("");
-              encoded = encodeLipidNameForCreatingCombis(fac, true);
-              for (int i=0; i!=frequencyOfFA.get(encoded); i++)
-                sorted.add(fac);
-              prefixes.remove("");
-            }
-            Collections.sort(prefixes);
-            for (String prefix : prefixes) {
-              fac = hash.get(carbon).get(db).get(oh).get(omega).get(prefix);
-              encoded = encodeLipidNameForCreatingCombis(fac, true);
-              for (int i=0; i!=frequencyOfFA.get(encoded); i++)
-                sorted.add(fac);
+            List<Short> sameType = new ArrayList<Short>(hash.get(carbon).get(db).get(oh).get(omega).keySet());
+            Collections.sort(sameType);
+            for (int i=(sameType.size()-1); i!=-1; i--) {
+              List<String> prefixes = new ArrayList<String>(hash.get(carbon).get(db).get(oh).get(omega).get(sameType.get(i)).keySet());
+              if (prefixes.contains("")) {
+                fac = hash.get(carbon).get(db).get(oh).get(omega).get(sameType.get(i)).get("");
+                encoded = encodeLipidNameForCreatingCombis(fac, true);
+                for (int j=0; j!=frequencyOfFA.get(encoded); j++)
+                  sorted.add(fac);
+                prefixes.remove("");
+              }
+              Collections.sort(prefixes);
+              for (String prefix : prefixes) {
+                fac = hash.get(carbon).get(db).get(oh).get(omega).get(sameType.get(i)).get(prefix);
+                encoded = encodeLipidNameForCreatingCombis(fac, true);
+                for (int j=0; j!=frequencyOfFA.get(encoded); j++)
+                  sorted.add(fac);
+              }
             }
           }
         }

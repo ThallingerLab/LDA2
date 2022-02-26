@@ -1395,7 +1395,7 @@ public class MSnAnalyzer
               }
             }else { 
               contradicting++;
-              if (debug_) debugVO_.addUnfulfilledPositionRule(combiName, new IntensityPositionVO(rule,chain,chain,set_.getOhNumber()>0));
+              if (debug_) debugVO_.addUnfulfilledPositionRule(combiName, new IntensityPositionVO(rule,chain,chain,set_.getOhNumber()>0,false,false));
             }
           }
         }
@@ -1527,7 +1527,7 @@ public class MSnAnalyzer
                     impossiblePositions.containsKey(secondFA.getChainId()) && impossiblePositions.get(secondFA.getChainId()).containsKey(poss[1]))
                   discard = true;
                 if (discard){
-                  if (debug_) debugVO_.addUnfulfilledPositionRule(combiName, new IntensityPositionVO(rule,firstFA,secondFA,set_.getOhNumber()>0));
+                  if (debug_) debugVO_.addUnfulfilledPositionRule(combiName, new IntensityPositionVO(rule,firstFA,secondFA,set_.getOhNumber()>0,false,false));
                   continue;
                 }
                 // if there is a mandatory rule, the recommendation of the additional rule must fulfil it - otherwise the add rule is wrong
@@ -1550,7 +1550,7 @@ public class MSnAnalyzer
                   addRulesHash.put(id, rules);
                 }
               }else if (debug_){
-                debugVO_.addUnfulfilledPositionRule(combiName, new IntensityPositionVO(rule,firstFA,secondFA,set_.getOhNumber()>0));
+                debugVO_.addUnfulfilledPositionRule(combiName, new IntensityPositionVO(rule,firstFA,secondFA,set_.getOhNumber()>0,false,false));
               }
             }
           }
@@ -2026,7 +2026,7 @@ public class MSnAnalyzer
       biggerFA = secondFA;
       smallerFA = firstFA;
     }
-    return new IntensityPositionVO(rule,biggerFA,smallerFA,set_.getOhNumber()>0);
+    return new IntensityPositionVO(rule,biggerFA,smallerFA,set_.getOhNumber()>0,false,false);
   }
     
   /**
@@ -2241,6 +2241,7 @@ public class MSnAnalyzer
         }
       }
       Collections.sort(scansSorted);
+      
       retTimeLookup.put(msLevel, relRetTimes);
       relevantSpectra.put(msLevel, relSpectra);
       scanNumbersSorted.put(msLevel, scansSorted);      
@@ -2339,7 +2340,7 @@ public class MSnAnalyzer
             Vector<LipidomicsChromatogram> chroms = chromsForQuant.get(key);
             if (startRelative<=chroms.get(1).Value[i][0] && chroms.get(1).Value[i][0]<=stopRelative) {
               chroms.get(1).Value[i][1] = chroms.get(0).Value[i][1]/highestInt;
-            } 
+            }
           }
         }
       }
