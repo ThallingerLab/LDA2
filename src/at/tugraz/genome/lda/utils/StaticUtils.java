@@ -1803,6 +1803,16 @@ public class StaticUtils
     return chains;
   }
   
+  /**
+   * Removes all double bond position annotations from a human readable String denoting a lipid species
+   * Double bond positions need to be in brackets! '(' and ')'
+   * @param doubleBondPositionsHumanReadable Human readable String
+   * @return Human readable String without double bond position annotations
+   */
+  public static String getHumanReadableWODoubleBondPositions(String doubleBondPositionsHumanReadable) {
+    String regex = "\\(.*?\\)";
+    return doubleBondPositionsHumanReadable.replaceAll(regex, "");
+  }  
   
   /**
    * decodes a human readable chain

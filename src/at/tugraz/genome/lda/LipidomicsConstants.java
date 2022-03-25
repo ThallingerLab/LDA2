@@ -34,13 +34,9 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Vector;
-
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
 
 import de.isas.mztab2.model.Contact;
 import de.isas.mztab2.model.Instrument;
@@ -50,6 +46,7 @@ import de.isas.mztab2.model.PublicationItem;
 import de.isas.mztab2.model.PublicationItem.TypeEnum;
 import de.isas.mztab2.model.Sample;
 import de.isas.mztab2.model.SampleProcessing;
+import javafx.util.Pair;
 import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.SettingsException;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
@@ -66,6 +63,9 @@ public class LipidomicsConstants
 {
   public final static String EXCEL_MS_OH = "OH";
   public final static int EXCEL_NO_OH_INFO = -1;
+  
+  public final static String EXCEL_KEY = "Key";
+  public final static String EXCEL_VALUE = "Value";
   
   public final static String EXCEL_MSN_SECTION_HEAD_FRAGMENTS = "Head group fragments";
   public final static String EXCEL_MSN_SECTION_HEAD_INTENSITIES = "Head group rules";
@@ -97,8 +97,8 @@ public class LipidomicsConstants
   public final static String EXCEL_MSN_INTENSITY_VALUES = "Values";
   public final static String EXCEL_MSN_INTENSITY_MISSED = "Missed";
   
-  private final static String EXCEL_HYDROXY_FA_PREFIX = "faOHEncoding_";
-  private final static String EXCEL_HYDROXY_LCB_PREFIX = "lcbOHEncoding_";
+  public final static String EXCEL_HYDROXY_FA_PREFIX = "faOHEncoding_";
+  public final static String EXCEL_HYDROXY_LCB_PREFIX = "lcbOHEncoding_";
   
   /** results shall be exported at the species level*/
   public final static short EXPORT_ANALYTE_TYPE_SPECIES = 0;
@@ -331,14 +331,14 @@ public class LipidomicsConstants
   public final static short SHOTGUN_PRM = 2;
   
   
-  private final static String LDA_VERSION = "LDA-version";
-  private final static String RAW_FILE = "rawFile";
-  private final static String BASE_PEAK_CUTOFF = "basePeakCutoff";
+  public final static String LDA_VERSION = "LDA-version";
+  public final static String RAW_FILE = "rawFile";
+  public final static String BASE_PEAK_CUTOFF = "basePeakCutoff";
   private final static String BASE_PEAK_CUTOFF_DEFAULT = "0.1";
-  private final static String MASS_SHIFT = "massShift";
+  public final static String MASS_SHIFT = "massShift";
   private final static String MASS_SHIFT_DEFAULT = "0";
   private final static String MACHINE_NAME = "machineName";
-  private final static String MACHINE_NAME_DEFAULT = null;
+  private final static String MACHINE_NAME_DEFAULT = "";
   private final static String NEUTRON_MASS = "neutronMass";
   private final static String NEUTRON_MASS_DEFAULT = "1.005";
   private final static String MAX_CHROM_AT_ONCE_MB = "maxFileSizeForChromTranslationAtOnce";
@@ -501,11 +501,6 @@ public class LipidomicsConstants
   
   private final static String CHROM_EXPORT_LEGEND_IN_CHROM = "chromexportPaintLegendInChrom";
   
-  private final static String EXCEL_KEY = "Key";
-  private final static int EXCEL_KEY_COLUMN = 0;
-  private final static String EXCEL_VALUE = "Value";
-  private final static int EXCEL_VALUE_COLUMN = 1;
-  
   /** the shotgun parameter - true/false/prm are allowed*/
   private final static String SHOTGUN = "shotgun";
   /** the input unit (for shotgan data only) - allowed are ppm, Da, Dalton, Th, Thompson, m/z*/
@@ -546,7 +541,7 @@ public class LipidomicsConstants
     return instance_;
   }
   
-  private LipidomicsConstants(boolean dummy){
+  public LipidomicsConstants(boolean dummy){
     cvSepRequired_ = false;
     cvNcbiTaxonRequired_ = false;
     cvClRequired_ = false;
@@ -576,7 +571,7 @@ public class LipidomicsConstants
     }    
   }
   
-  private void setVariables(Properties properties) throws SettingsException{
+  public void setVariables(Properties properties) throws SettingsException{
     
     String cutoff = properties.getProperty(BASE_PEAK_CUTOFF, BASE_PEAK_CUTOFF_DEFAULT);
     try{
@@ -817,7 +812,7 @@ public class LipidomicsConstants
    */
   public static String getIntermediateFileFormat()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.intermediateFileFormat_;
   }
   
@@ -826,7 +821,7 @@ public class LipidomicsConstants
    */
   public static int getmMaxFileSizeForChromTranslationAtOnceInMB()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.maxFileSizeForChromTranslationAtOnceInMB_;
   }
   
@@ -835,49 +830,49 @@ public class LipidomicsConstants
    */
   public static float getCoarseChromMzTolerance(float mz)
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return getCorrectMzTolerance(instance_.coarseChromMzTolerance_,instance_.mzUnit_,mz);
   }
   
   public static double getMassShift()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.massShift_;
   }
   
   public static float getChromSmoothRange()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.chromSmoothRange_;
   }
 
   public static int getChromSmoothRepeats()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.chromSmoothRepeats_;
   }
 
   public static boolean isotopicCorrection()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.isotopeCorrection_;
   }
   
   public static boolean removeIfOtherIsotopePresent()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.removeFromOtherIsotopes_;
   }
 
   public static boolean removeIfDistriDoesNotFit()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.respectIsotopicDistribution_;
   }
   
   public static boolean useNoiseCutoff()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.useNoiseCutoff_;
   }
   
@@ -887,26 +882,26 @@ public class LipidomicsConstants
    */
   public static boolean checkChainLabelCombination()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.checkChainLabelCombination_;
   }
   
   public static float getNoiseCutoffDeviationValue()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.noiseCutoffDeviationValue_;
   }
   
   public static Float getMinimumRelativeIntensity()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.minimumRelativeIntensity_;
   }
   
 
   public static int getScanStep()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.scanStep_;
   }
   
@@ -915,7 +910,7 @@ public class LipidomicsConstants
    */
   public static boolean use3D()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.use3D_;
   }
   
@@ -924,7 +919,7 @@ public class LipidomicsConstants
    */
   public static float getProfileMzRange()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.profileMzRange_;
   }
   
@@ -933,7 +928,7 @@ public class LipidomicsConstants
    */
   public static float getProfileTimeTolerance_()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.profileTimeTolerance_;
   }
   
@@ -942,7 +937,7 @@ public class LipidomicsConstants
    */
   public static float getProfileIntThreshold_()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.profileIntThreshold_;
   }
   
@@ -951,7 +946,7 @@ public class LipidomicsConstants
    */
   public static float getBroaderProfileTimeTolerance_()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.broaderProfileTimeTolerance_;
   }
   
@@ -960,7 +955,7 @@ public class LipidomicsConstants
    */
   public static float getProfileSmoothRange()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.profileSmoothRange_;
   }
   
@@ -969,7 +964,7 @@ public class LipidomicsConstants
    */
   public static int getProfileSmoothRepeats()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.profileSmoothRepeats_;
   }
   /**
@@ -977,7 +972,7 @@ public class LipidomicsConstants
    */
   public static int getProfileMeanSmoothRepeats()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.profileMeanSmoothRepeats_;
   }  
   /**
@@ -985,7 +980,7 @@ public class LipidomicsConstants
    */
   public static float getProfileMzMinRange()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.profileMzMinRange_;
   }
   /**
@@ -993,7 +988,7 @@ public class LipidomicsConstants
    */
   public static float getProfileSteepnessChange1()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.profileSteepnessChange1_;
   }
   
@@ -1002,7 +997,7 @@ public class LipidomicsConstants
    */
   public static float getProfileSteepnessChange2()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.profileSteepnessChange2_;
   }  
   
@@ -1011,7 +1006,7 @@ public class LipidomicsConstants
    */
   public static float getProfileIntensityCutoff1()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.profileIntensityCutoff1_;
   }  
 
@@ -1020,7 +1015,7 @@ public class LipidomicsConstants
    */
   public static float getProfileIntensityCutoff2()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.profileIntensityCutoff2_;
   }  
 
@@ -1029,7 +1024,7 @@ public class LipidomicsConstants
    */
   public static float getProfileGeneralIntCutoff()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.profileGeneralIntCutoff_;
   }
   
@@ -1038,7 +1033,7 @@ public class LipidomicsConstants
    */
   public static float getProfilePeakAcceptanceRange()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.profilePeakAcceptanceRange_;
   }
   
@@ -1047,7 +1042,7 @@ public class LipidomicsConstants
    */
   public static float getProfileSmoothingCorrection()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.profileSmoothingCorrection_;
   }
   
@@ -1057,7 +1052,7 @@ public class LipidomicsConstants
    */
   public static float getProfileMaxRange()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.profileMaxRange_;
   }
   
@@ -1066,7 +1061,7 @@ public class LipidomicsConstants
    */
   public static float getSmallChromMzRange()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.smallChromMzRange_;
   } 
   
@@ -1075,7 +1070,7 @@ public class LipidomicsConstants
    */
   public static int getSmallChromSmoothRepeats()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.smallChromSmoothRepeats_;
   }
   
@@ -1084,7 +1079,7 @@ public class LipidomicsConstants
    */
   public static int getSmallChromMeanSmoothRepeats()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.smallChromMeanSmoothRepeats_;
   }
   
@@ -1093,7 +1088,7 @@ public class LipidomicsConstants
    */
   public static float getSmallChromSmoothRange()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.smallChromSmoothRange_;
   } 
   
@@ -1102,7 +1097,7 @@ public class LipidomicsConstants
    */
   public static float getSmallChromIntensityCutoff()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.smallChromIntensityCutoff_;
   }
   
@@ -1111,7 +1106,7 @@ public class LipidomicsConstants
    */
   public static int getBroadChromSmoothRepeats()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.broadChromSmoothRepeats_;
   }
   
@@ -1120,7 +1115,7 @@ public class LipidomicsConstants
    */
   public static int getBroadChromMeanSmoothRepeats()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.broadChromMeanSmoothRepeats_;
   }
   
@@ -1129,7 +1124,7 @@ public class LipidomicsConstants
    */
   public static float getBroadChromSmoothRange()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.broadChromSmoothRange_;
   } 
   
@@ -1138,7 +1133,7 @@ public class LipidomicsConstants
    */
   public static float getBroadChromIntensityCutoff()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.broadChromIntensityCutoff_;
   }  
   
@@ -1148,7 +1143,7 @@ public class LipidomicsConstants
    */
   public static float getBroadChromSteepnessChangeNoSmall()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.broadChromSteepnessChangeNoSmall_;
   }
   
@@ -1158,7 +1153,7 @@ public class LipidomicsConstants
    */
   public static float getBroadIntensityCutoffNoSmall()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.broadChromIntensityCutoffNoSmall_;
   }
   
@@ -1167,7 +1162,7 @@ public class LipidomicsConstants
    */
   public static float getFinalProbeTimeCompTolerance()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.finalProbeTimeCompTolerance_;
   }
   
@@ -1176,7 +1171,7 @@ public class LipidomicsConstants
    */
   public static float getFinalProbeMzCompTolerance()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.finalProbeMzCompTolerance_;
   }
 
@@ -1187,7 +1182,7 @@ public class LipidomicsConstants
    */
   public static float getOverlapDistanceDeviationFactor()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.overlapDistanceDeviationFactor_;
   }
   
@@ -1197,7 +1192,7 @@ public class LipidomicsConstants
    */
   public static float getOverlapPossibleIntensityThreshold()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.overlapPossibleIntensityThreshold_;
   }
 
@@ -1207,7 +1202,7 @@ public class LipidomicsConstants
    */
   public static float getOverlapSureIntensityThreshold()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.overlapSureIntensityThreshold_;
   }
   /**
@@ -1217,7 +1212,7 @@ public class LipidomicsConstants
    */
   public static float getOverlapPeakDistanceDivisor()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.overlapPeakDistanceDivisor_;
   }
   /**
@@ -1227,7 +1222,7 @@ public class LipidomicsConstants
    */
   public static float getOverlapFullDistanceDivisor()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.overlapFullDistanceDivisor_;
   }
   
@@ -1236,7 +1231,7 @@ public class LipidomicsConstants
    */
   public static int getPeakDiscardingAreaFactor()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.peakDiscardingAreaFactor_;
   }
   /**
@@ -1244,7 +1239,7 @@ public class LipidomicsConstants
    */
   public static int getIsotopeInBetweenTime()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.isotopeInBetweenTime_;
   }
   /**
@@ -1254,13 +1249,13 @@ public class LipidomicsConstants
    */
   public static float getIsoInBetweenAreaFactor()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.isoInBetweenAreaFactor_;
   }
   
   public static int getIsoInBetweenMaxTimeDistance()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.isoInBetweenMaxTimeDistance_;
   }
   
@@ -1269,7 +1264,7 @@ public class LipidomicsConstants
    */
   public static int getIsoNearNormalProbeTime()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.isoNearNormalProbeTime_;
   }
   /**
@@ -1278,7 +1273,7 @@ public class LipidomicsConstants
    */
   public static float getRelativeAreaCutoff()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.relativeAreaCutoff_;
   }
   /**
@@ -1288,7 +1283,7 @@ public class LipidomicsConstants
    */
   public static float getRelativeFarAreaCutoff()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.relativeFarAreaCutoff_;
   }
   /**
@@ -1298,17 +1293,17 @@ public class LipidomicsConstants
    */
   public static int getRelativeFarAreaTimeSpace()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.relativeFarAreaTimeSpace_;
   }
   public static float getTwinInBetweenCutoff()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.twinInBetweenCutoff_;
   }
   public static float getUnionInBetweenCutoff()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.unionInBetweenCutoff_;
   }
   /**
@@ -1318,7 +1313,7 @@ public class LipidomicsConstants
    */
   public static float getRelativeIsoInBetweenCutoff()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.relativeIsoInBetweenCutoff_;
   }
 
@@ -1327,7 +1322,7 @@ public class LipidomicsConstants
    */
   public static float getTwinPeakMzTolerance()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.twinPeakMzTolerance_;
   }
   /**
@@ -1335,32 +1330,32 @@ public class LipidomicsConstants
    */
   public static int getClosePeakTimeTolerance()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.closePeakTimeTolerance_;
   }
   
   public static String getBasePeakDefaultCutoff()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.basePeakDefaultCutoff_;
   }
   public static int getChromMultiplicationFactorForInt(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.chromMultiplicationFactorForInt_;
   }
 
   public static int getChromLowestResolution(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.chromLowestResolution_;
   }
 
   public static String getThreeDViewerDefaultTimeResolution(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.threeDViewerDefaultTimeResolution_;
   }
   
   public static String getThreeDViewerDefaultMZResolution(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.threeDViewerDefaultMZResolution_;
   }
   
@@ -1369,33 +1364,33 @@ public class LipidomicsConstants
    */
   public static boolean isMS2()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.ms2_;
   }
   
   public static float getMs2PrecursorTolerance(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.ms2PrecursorTolerance_;
   }
   
   public static int getMs2ChromMultiplicationFactorForInt(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.ms2ChromMultiplicationFactorForInt_;
   }
   
   public static String getThreeDViewerMs2DefaultTimeResolution_(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.threeDViewerMs2DefaultTimeResolution_;
   }
 
   public static String getThreeDViewerMs2DefaultMZResolution(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.threeDViewerMs2DefaultMZResolution_;
   }
   
   public static boolean isChromExportShowLegend()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.chromExportShowLegend_;
   }
   
@@ -1404,7 +1399,7 @@ public class LipidomicsConstants
    * @return the +/- m/z tolerance for peak detection
    */
   public static float getMs2MzTolerance(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.ms2MzTolerance_;
   }
   
@@ -1413,7 +1408,7 @@ public class LipidomicsConstants
    * @return minimum number of detected signals to start a noise removal
    */
   public static int getMs2MinIntsForNoiseRemoval(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.ms2MinIntsForNoiseRemoval_;
   }
   
@@ -1422,7 +1417,7 @@ public class LipidomicsConstants
    * @return relative intensity cutoff for exclusion of isobars regarding spectrum coverage
    */
   public static float getMs2IsobarSCExclusionRatio(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.ms2IsobarSCExclusionRatio_;
   }
 
@@ -1432,7 +1427,7 @@ public class LipidomicsConstants
    * @return relative intensity cutoff for exclusion of isobars regarding spectrum coverage, for areas that are farer away from a unique peak identification
    */
   public static float getMs2IsobarSCFarExclusionRatio(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.ms2IsobarSCFarExclusionRatio_;
   }
 
@@ -1441,7 +1436,7 @@ public class LipidomicsConstants
    * @return retention time in minutes that define a peak to be farer away, so that the ms2IsobarSCFarExclusionRatio can be used
    */
   public static float getMs2IsobaricOtherRtDifference(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.ms2IsobaricOtherRtDifference_;
   }
   
@@ -1450,7 +1445,7 @@ public class LipidomicsConstants
    * @return 0 when LC, 1 when shotgun, 2 when PRM
    */
   public static short isShotgun(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.shotgun_;
   }
   
@@ -1459,7 +1454,7 @@ public class LipidomicsConstants
    * @return the unit type of the m/z value
    */
   public static String getMzUnit(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.mzUnit_;    
   }
   
@@ -1468,7 +1463,7 @@ public class LipidomicsConstants
    * @return the shotgun processing type according to the definitions in LipidomicsAnalyzer
    */
   public static int getShogunProcessing(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.shotgunProcessing_;    
   }
   
@@ -1477,7 +1472,7 @@ public class LipidomicsConstants
    * @return should shotgun intensities be removed below a certain threshold
    */
   public static boolean isShotgunIntensityRemoval(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.shotgunIntensityRemoval_;    
   }
 
@@ -1486,7 +1481,7 @@ public class LipidomicsConstants
    * @return the relative intensity cutoff for the removal
    */
   public static float getShotgunRelIntCutoff(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.shotgunRelIntCutoff_;    
   }
 
@@ -1495,22 +1490,22 @@ public class LipidomicsConstants
    * @return relative cutoff threshold for fatty acid chain detection - it is in relation to the most intense chain
    */
   public static double getChainCutoffValue(){
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.chainCutoffValue_;
   }
   
   public static String getCurrentMSMachine(){
-    LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.currentMSMachine_;
   }
   
   public static float getNeutronMass(){
-    LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.neutronMass_;
   }
   
   public static boolean useMostOverlappingIsotopeOnly(){
-    LipidomicsConstants.getInstance();    
+    getInstance();    
     return instance_.useMostOverlappingIsotopeOnly_;
   }
   
@@ -1519,12 +1514,12 @@ public class LipidomicsConstants
    * @return contains the acquired data only sparse MS1 data points
    */
   public static boolean isSparseData(){
-    LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.sparseData_;
   }
   
   public static Instrument getMzTabInstrument(){
-    LipidomicsConstants.getInstance();
+    getInstance();
     if (instance_.mzTabInstrumentName_!=null || instance_.mzTabInstrumentSource_!=null || instance_.mzTabInstrumentAnalyzer_!=null || instance_.mzTabInstrumentDetector_!=null){
       Instrument instrument = new Instrument().id(1);
       instrument.addAnalyzerItem(instance_.mzTabInstrumentAnalyzer_);
@@ -1537,7 +1532,7 @@ public class LipidomicsConstants
   }
   
   public static List<Contact> getMzTabContacts(){
-    LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.mzTabContacts_;
   }
 
@@ -1546,7 +1541,7 @@ public class LipidomicsConstants
    * @return for mzTab-export: list of sample processing steps defined in the MZTAB_PROPERTIES_FILE
    */
   public static List<SampleProcessing> getMzTabSampleprocessings(){
-    LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.mzTabSampleProcessings_;
   }
 
@@ -1555,7 +1550,7 @@ public class LipidomicsConstants
    * @return for mzTab-export: list of publications this data refers to
    */
   public static List<Publication> getMzTabPublications(){
-    LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.mzTabPubs_;
   }
   
@@ -1564,7 +1559,7 @@ public class LipidomicsConstants
    * @return for mzTab-export: list of fragmentation methods used for the data
    */
   public static List<Parameter> getFragmentationMethods(){
-    LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.fragmethods_;
   }
 
@@ -1573,7 +1568,7 @@ public class LipidomicsConstants
    * @return for mzTab-export: the sample this data originates of
    */
   public static Sample getMzTabSample(){
-    LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.mzTabSample_;    
   }
   
@@ -1582,7 +1577,7 @@ public class LipidomicsConstants
    * @return true when this is a shotgun instance
    */
   public short getShotgun(){
-    LipidomicsConstants.getInstance();
+    getInstance();
     return this.shotgun_;
   }
   
@@ -1592,7 +1587,7 @@ public class LipidomicsConstants
    * @return the mzTab notation
    */
   public static String getMzTabAdduct(String ldaAdduct){
-    LipidomicsConstants.getInstance();
+    getInstance();
     String mzTabAdduct = null;
     if (instance_.mzTabAdductLookup_.containsKey(ldaAdduct))
       mzTabAdduct = instance_.mzTabAdductLookup_.get(ldaAdduct);
@@ -1604,7 +1599,7 @@ public class LipidomicsConstants
    * @return contains CV for SEP ontology
    */
   public static boolean isCvSepRequired(){
-    LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.cvSepRequired_;    
   }
 
@@ -1613,7 +1608,7 @@ public class LipidomicsConstants
    * @return contains CV for NCBITaxon ontology
    */
   public static boolean isCvNcbiTaxonRequired(){
-    LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.cvNcbiTaxonRequired_;
   }
 
@@ -1622,7 +1617,7 @@ public class LipidomicsConstants
    * @return contains CV for CL ontology
    */
   public static boolean isClRequired(){
-    LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.cvClRequired_;
   }
   
@@ -1631,7 +1626,7 @@ public class LipidomicsConstants
    * @return contains CV for BTO ontology
    */
   public static boolean isCvBtoRequired(){
-    LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.cvBtoRequired_;
   }
 
@@ -1640,7 +1635,7 @@ public class LipidomicsConstants
    * @return contains CV for DOID ontology
    */
   public static boolean isCvDoidRequired(){
-    LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.cvDoidRequired_;
   }
   
@@ -1649,15 +1644,17 @@ public class LipidomicsConstants
    * @return contains CV for CHMO ontology
    */
   public static boolean isCvChmoRequired(){
-    LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.cvChmoRequired_;    
   }
   
   public static void switchToOtherConfFile(File newConfFile){
+    getInstance();
     instance_.readConstantsFile(newConfFile.getAbsolutePath());
   }
     
   public static void switchToOtherDefaultConfFile(File newConfFile) throws IOException{
+    getInstance();
     int chunkSize = 1024;
     InputStream in = new BufferedInputStream(new FileInputStream(newConfFile));
     OutputStream out = new BufferedOutputStream(new FileOutputStream(LDA_PROPERTIES_FILE));
@@ -1867,354 +1864,149 @@ public class LipidomicsConstants
     return parameters;
   }
   
-  /**
-   * writes the current settings into an Excel sheet - this cannot be done in a separate
-   * class, since the parameters to write are private
-   * @param sheet the Excel sheet to be written
-   * @param headerStyle style for the header column
-   * @param faHydroxyEncoding the character encoding of the number of hydroxylation sites for the
-   * @param lcbHydroxyEncoding the character encoding of the number of hydroxylation sites for the LCB
-   */
-  public void writeSettingsToExcel(Sheet sheet, CellStyle headerStyle, HydroxyEncoding faHydroxyEncoding,
-      HydroxyEncoding lcbHydroxyEncoding){
-    int rowCount = 0;
-    Row row = sheet.createRow(rowCount);
-    rowCount++;
-    Cell cell = row.createCell(EXCEL_KEY_COLUMN);
-    cell.setCellValue(EXCEL_KEY);
-    cell.setCellStyle(headerStyle);
-    cell = row.createCell(EXCEL_VALUE_COLUMN);
-    cell.setCellValue(EXCEL_VALUE);
-    cell.setCellStyle(headerStyle);
-    int longestKey = 0;
-    int longestValue = 0;
-    
-    rowCount = createPropertyRow(sheet,rowCount,LDA_VERSION,ldaVersion_);
-    if (LDA_VERSION.length()>longestKey) longestKey = LDA_VERSION.length();
-    if (ldaVersion_.length()>longestValue) longestValue = ldaVersion_.length();
+  
+  public List<Pair<String,String>> getPropertyRowList(HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding) {
+    List<Pair<String,String>> propertyRows = new ArrayList<Pair<String,String>>();
+    propertyRows.add(new Pair<String,String>(EXCEL_KEY,EXCEL_VALUE));
+    propertyRows.add(new Pair<String,String>(LDA_VERSION,ldaVersion_));
     if (rawFileName_!=null){
-      rowCount = createPropertyRow(sheet,rowCount,RAW_FILE,rawFileName_);
-      if (RAW_FILE.length()>longestKey) longestKey = RAW_FILE.length();
-      if (rawFileName_.length()>longestValue) longestValue = rawFileName_.length();
+      propertyRows.add(new Pair<String,String>(RAW_FILE,rawFileName_));
     }
-    rowCount = createPropertyRow(sheet,rowCount,MACHINE_NAME,currentMSMachine_);
-    if (MACHINE_NAME.length()>longestKey) longestKey = MACHINE_NAME.length();
-    if (currentMSMachine_.length()>longestValue) longestValue = currentMSMachine_.length();
-    rowCount = createPropertyRow(sheet,rowCount,NEUTRON_MASS,String.valueOf(neutronMass_));
-    if (NEUTRON_MASS.length()>longestKey) longestKey = NEUTRON_MASS.length();
-    if (String.valueOf(neutronMass_).length()>longestValue) longestValue = String.valueOf(neutronMass_).length();
-    rowCount = createPropertyRow(sheet,rowCount,COARSE_CHROM_MZ_TOL,String.valueOf(coarseChromMzTolerance_));
-    if (COARSE_CHROM_MZ_TOL.length()>longestKey) longestKey = COARSE_CHROM_MZ_TOL.length();
-    if (String.valueOf(coarseChromMzTolerance_).length()>longestValue) longestValue = String.valueOf(coarseChromMzTolerance_).length();
-    rowCount = createPropertyRow(sheet,rowCount,MS2,String.valueOf(ms2_));
-    if (MS2.length()>longestKey) longestKey = MS2.length();
-    if (String.valueOf(ms2_).length()>longestValue) longestValue = String.valueOf(ms2_).length();
+    propertyRows.add(new Pair<String,String>(MACHINE_NAME,currentMSMachine_));
+    propertyRows.add(new Pair<String,String>(NEUTRON_MASS,String.valueOf(neutronMass_)));
+    propertyRows.add(new Pair<String,String>(COARSE_CHROM_MZ_TOL,String.valueOf(coarseChromMzTolerance_)));
+    propertyRows.add(new Pair<String,String>(MS2,String.valueOf(ms2_)));
     if (relativeMS1BasePeakCutoff_!=null){
-      rowCount = createPropertyRow(sheet,rowCount,BASE_PEAK_CUTOFF,String.valueOf(relativeMS1BasePeakCutoff_));
-      if (BASE_PEAK_CUTOFF.length()>longestKey) longestKey = BASE_PEAK_CUTOFF.length();
+      propertyRows.add(new Pair<String,String>(BASE_PEAK_CUTOFF,String.valueOf(relativeMS1BasePeakCutoff_)));
     }
-    if (String.valueOf(basePeakDefaultCutoff_).length()>longestValue) longestValue = String.valueOf(basePeakDefaultCutoff_).length();
-    rowCount = createPropertyRow(sheet,rowCount,MASS_SHIFT,String.valueOf(massShift_));
-    if (MASS_SHIFT.length()>longestKey) longestKey = MASS_SHIFT.length();
-    if (String.valueOf(massShift_).length()>longestValue) longestValue = String.valueOf(massShift_).length();
-    rowCount = createPropertyRow(sheet,rowCount,VIEWER_TIME_RESOLUTION,String.valueOf(threeDViewerDefaultTimeResolution_));
-    if (VIEWER_TIME_RESOLUTION.length()>longestKey) longestKey = VIEWER_TIME_RESOLUTION.length();
-    if (String.valueOf(threeDViewerDefaultTimeResolution_).length()>longestValue) longestValue = String.valueOf(threeDViewerDefaultTimeResolution_).length();
-    rowCount = createPropertyRow(sheet,rowCount,VIEWER_MZ_RESOLUTION,String.valueOf(threeDViewerDefaultMZResolution_));
-    if (VIEWER_MZ_RESOLUTION.length()>longestKey) longestKey = VIEWER_MZ_RESOLUTION.length();
-    if (String.valueOf(threeDViewerDefaultMZResolution_).length()>longestValue) longestValue = String.valueOf(threeDViewerDefaultMZResolution_).length();    
-    rowCount = createPropertyRow(sheet,rowCount,MS2_PRECURSOR_TOL,String.valueOf(ms2PrecursorTolerance_));
-    if (MS2_PRECURSOR_TOL.length()>longestKey) longestKey = MS2_PRECURSOR_TOL.length();
-    if (String.valueOf(ms2PrecursorTolerance_).length()>longestValue) longestValue = String.valueOf(ms2PrecursorTolerance_).length();    
-    rowCount = createPropertyRow(sheet,rowCount,MS2_MZ_TOL,String.valueOf(ms2MzTolerance_));
-    if (MS2_MZ_TOL.length()>longestKey) longestKey = MS2_MZ_TOL.length();
-    if (String.valueOf(ms2MzTolerance_).length()>longestValue) longestValue = String.valueOf(ms2MzTolerance_).length();
-    rowCount = createPropertyRow(sheet,rowCount,MS2_MIN_NOISE_REMOVAL,String.valueOf(ms2MinIntsForNoiseRemoval_));
-    if (MS2_MIN_NOISE_REMOVAL.length()>longestKey) longestKey = MS2_MIN_NOISE_REMOVAL.length();
-    if (String.valueOf(ms2MinIntsForNoiseRemoval_).length()>longestValue) longestValue = String.valueOf(ms2MinIntsForNoiseRemoval_).length();   
-    rowCount = createPropertyRow(sheet,rowCount,MS2_ISOBAR_RATIO,String.valueOf(ms2IsobarSCExclusionRatio_));
-    if (MS2_ISOBAR_RATIO.length()>longestKey) longestKey = MS2_ISOBAR_RATIO.length();
-    if (String.valueOf(ms2IsobarSCExclusionRatio_).length()>longestValue) longestValue = String.valueOf(ms2IsobarSCExclusionRatio_).length();
-    rowCount = createPropertyRow(sheet,rowCount,MS2_ISOBAR_FAR_RATIO,String.valueOf(ms2IsobarSCFarExclusionRatio_));
-    if (MS2_ISOBAR_FAR_RATIO.length()>longestKey) longestKey = MS2_ISOBAR_FAR_RATIO.length();
-    if (String.valueOf(ms2IsobarSCFarExclusionRatio_).length()>longestValue) longestValue = String.valueOf(ms2IsobarSCFarExclusionRatio_).length();
-    rowCount = createPropertyRow(sheet,rowCount,MS2_ISOBAR_FAR_RT,String.valueOf(ms2IsobaricOtherRtDifference_));
-    if (MS2_ISOBAR_FAR_RT.length()>longestKey) longestKey = MS2_ISOBAR_FAR_RT.length();
-    if (String.valueOf(ms2IsobaricOtherRtDifference_).length()>longestValue) longestValue = String.valueOf(ms2IsobaricOtherRtDifference_).length();   
-    rowCount = createPropertyRow(sheet,rowCount,CHAIN_CUTOFF,String.valueOf(chainCutoffValue_));
-    if (CHAIN_CUTOFF.length()>longestKey) longestKey = CHAIN_CUTOFF.length();
-    if (String.valueOf(chainCutoffValue_).length()>longestValue) longestValue = String.valueOf(chainCutoffValue_).length();        
-    rowCount = createPropertyRow(sheet,rowCount,MS2_CHROM_MULT_FOR_INT,String.valueOf(ms2ChromMultiplicationFactorForInt_));
-    if (MS2_CHROM_MULT_FOR_INT.length()>longestKey) longestKey = MS2_CHROM_MULT_FOR_INT.length();
-    if (String.valueOf(ms2ChromMultiplicationFactorForInt_).length()>longestValue) longestValue = String.valueOf(ms2ChromMultiplicationFactorForInt_).length();
-    rowCount = createPropertyRow(sheet,rowCount,MS2_VIEWER_TIME_RESOLUTION,threeDViewerMs2DefaultTimeResolution_);
-    if (MS2_VIEWER_TIME_RESOLUTION.length()>longestKey) longestKey = MS2_VIEWER_TIME_RESOLUTION.length();
-    if (threeDViewerMs2DefaultTimeResolution_.length()>longestValue) longestValue = threeDViewerMs2DefaultTimeResolution_.length(); 
-    rowCount = createPropertyRow(sheet,rowCount,MS2_VIEWER_MZ_RESOLUTION,threeDViewerMs2DefaultMZResolution_);
-    if (MS2_VIEWER_MZ_RESOLUTION.length()>longestKey) longestKey = MS2_VIEWER_MZ_RESOLUTION.length();
-    if (threeDViewerMs2DefaultMZResolution_.length()>longestValue) longestValue = threeDViewerMs2DefaultMZResolution_.length();
-    rowCount = createPropertyRow(sheet,rowCount,MAX_CHROM_AT_ONCE_MB,String.valueOf(maxFileSizeForChromTranslationAtOnceInMB_));
-    if (MAX_CHROM_AT_ONCE_MB.length()>longestKey) longestKey = MAX_CHROM_AT_ONCE_MB.length();
-    if (String.valueOf(maxFileSizeForChromTranslationAtOnceInMB_).length()>longestValue) longestValue = String.valueOf(maxFileSizeForChromTranslationAtOnceInMB_).length();   
-    rowCount = createPropertyRow(sheet,rowCount,CHROM_MULT_FOR_INT,String.valueOf(chromMultiplicationFactorForInt_));
-    if (CHROM_MULT_FOR_INT.length()>longestKey) longestKey = CHROM_MULT_FOR_INT.length();
-    if (String.valueOf(chromMultiplicationFactorForInt_).length()>longestValue) longestValue = String.valueOf(chromMultiplicationFactorForInt_).length();   
-    rowCount = createPropertyRow(sheet,rowCount,CHROM_RESOLUTION_LOWEST,String.valueOf(chromLowestResolution_));
-    if (CHROM_RESOLUTION_LOWEST.length()>longestKey) longestKey = CHROM_RESOLUTION_LOWEST.length();
-    if (String.valueOf(chromLowestResolution_).length()>longestValue) longestValue = String.valueOf(chromLowestResolution_).length();
-
-      
+    propertyRows.add(new Pair<String,String>(MASS_SHIFT,String.valueOf(massShift_)));
+    propertyRows.add(new Pair<String,String>(VIEWER_TIME_RESOLUTION,String.valueOf(threeDViewerDefaultTimeResolution_)));
+    propertyRows.add(new Pair<String,String>(VIEWER_MZ_RESOLUTION,String.valueOf(threeDViewerDefaultMZResolution_)));
+    propertyRows.add(new Pair<String,String>(MS2_PRECURSOR_TOL,String.valueOf(ms2PrecursorTolerance_)));
+    propertyRows.add(new Pair<String,String>(MS2_MZ_TOL,String.valueOf(ms2MzTolerance_)));
+    propertyRows.add(new Pair<String,String>(MS2_MIN_NOISE_REMOVAL,String.valueOf(ms2MinIntsForNoiseRemoval_)));
+    propertyRows.add(new Pair<String,String>(MS2_ISOBAR_RATIO,String.valueOf(ms2IsobarSCExclusionRatio_)));
+    propertyRows.add(new Pair<String,String>(MS2_ISOBAR_FAR_RATIO,String.valueOf(ms2IsobarSCFarExclusionRatio_)));
+    propertyRows.add(new Pair<String,String>(MS2_ISOBAR_FAR_RT,String.valueOf(ms2IsobaricOtherRtDifference_)));
+    propertyRows.add(new Pair<String,String>(CHAIN_CUTOFF,String.valueOf(chainCutoffValue_)));
+    propertyRows.add(new Pair<String,String>(MS2_CHROM_MULT_FOR_INT,String.valueOf(ms2ChromMultiplicationFactorForInt_)));
+    propertyRows.add(new Pair<String,String>(MS2_VIEWER_TIME_RESOLUTION,threeDViewerMs2DefaultTimeResolution_));
+    propertyRows.add(new Pair<String,String>(MS2_VIEWER_MZ_RESOLUTION,threeDViewerMs2DefaultMZResolution_));
+    propertyRows.add(new Pair<String,String>(MAX_CHROM_AT_ONCE_MB,String.valueOf(maxFileSizeForChromTranslationAtOnceInMB_)));
+    propertyRows.add(new Pair<String,String>(CHROM_MULT_FOR_INT,String.valueOf(chromMultiplicationFactorForInt_)));
+    propertyRows.add(new Pair<String,String>(CHROM_RESOLUTION_LOWEST,String.valueOf(chromLowestResolution_)));
     if (shotgun_>SHOTGUN_FALSE){
-      rowCount = createPropertyRow(sheet,rowCount,SHOTGUN,String.valueOf(shotgun_));
-      if (SHOTGUN.length()>longestKey) longestKey = SHOTGUN.length();
-      if (String.valueOf(shotgun_).length()>longestValue) longestValue = String.valueOf(shotgun_).length();
-      rowCount = createPropertyRow(sheet,rowCount,MZUNIT,mzUnit_);
-      if (MZUNIT.length()>longestKey) longestKey = MZUNIT.length();
-      if (mzUnit_.length()>longestValue) longestValue = mzUnit_.length();
+      propertyRows.add(new Pair<String,String>(SHOTGUN,String.valueOf(shotgun_)));
+      propertyRows.add(new Pair<String,String>(MZUNIT,mzUnit_));
     }
     if (shotgun_==SHOTGUN_TRUE){
       String shotgunProcessingString = null;
-      if (shotgunProcessing_ == LipidomicsAnalyzer.SHOTGUN_TYPE_MEAN)
-        shotgunProcessingString = SHOTGUN_PROCESSING_MEAN;
-      else if (shotgunProcessing_ == LipidomicsAnalyzer.SHOTGUN_TYPE_MEDIAN)
-        shotgunProcessingString = SHOTGUN_PROCESSING_MEDIAN;
-      else if (shotgunProcessing_ == LipidomicsAnalyzer.SHOTGUN_TYPE_SUM)
-        shotgunProcessingString = SHOTGUN_PROCESSING_SUM;
-      rowCount = createPropertyRow(sheet,rowCount,SHOTGUN_PROCESSING,shotgunProcessingString);
-      if (SHOTGUN_PROCESSING.length()>longestKey) longestKey = SHOTGUN_PROCESSING.length();
-      if (shotgunProcessingString.length()>longestValue) longestValue = shotgunProcessingString.length();
+      switch(shotgunProcessing_) {
+        case LipidomicsAnalyzer.SHOTGUN_TYPE_MEAN:
+          shotgunProcessingString = SHOTGUN_PROCESSING_MEAN; break;
+        case LipidomicsAnalyzer.SHOTGUN_TYPE_MEDIAN:
+          shotgunProcessingString = SHOTGUN_PROCESSING_MEDIAN; break;
+        case LipidomicsAnalyzer.SHOTGUN_TYPE_SUM:
+          shotgunProcessingString = SHOTGUN_PROCESSING_SUM; break;
+      }
+      propertyRows.add(new Pair<String,String>(SHOTGUN_PROCESSING,shotgunProcessingString));
       
       String shotgunZeroHandlingString = "false";
       if (shotgunRelIntCutoff_>0)
         shotgunZeroHandlingString = String.valueOf(shotgunRelIntCutoff_);
       else if (shotgunRelIntCutoff_==0)
         shotgunZeroHandlingString = "true";
-      rowCount = createPropertyRow(sheet,rowCount,SHOTGUN_ZERO_HANDLING,shotgunZeroHandlingString);
-      if (SHOTGUN_ZERO_HANDLING.length()>longestKey) longestKey = SHOTGUN_ZERO_HANDLING.length();
-      if (shotgunZeroHandlingString.length()>longestValue) longestValue = shotgunZeroHandlingString.length();
-
-    }else{
-      rowCount = createPropertyRow(sheet,rowCount,CHROM_SMOOTH_RANGE,String.valueOf(chromSmoothRange_));
-      if (CHROM_SMOOTH_RANGE.length()>longestKey) longestKey = CHROM_SMOOTH_RANGE.length();
-      if (String.valueOf(chromSmoothRange_).length()>longestValue) longestValue = String.valueOf(chromSmoothRange_).length();
-      rowCount = createPropertyRow(sheet,rowCount,CHROM_SMOOTH_REPEATS,String.valueOf(chromSmoothRepeats_));
-      if (CHROM_SMOOTH_REPEATS.length()>longestKey) longestKey = CHROM_SMOOTH_REPEATS.length();
-      if (String.valueOf(chromSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(chromSmoothRepeats_).length();
+      propertyRows.add(new Pair<String,String>(SHOTGUN_ZERO_HANDLING,shotgunZeroHandlingString));
+    } else {
+      propertyRows.add(new Pair<String,String>(CHROM_SMOOTH_RANGE,String.valueOf(chromSmoothRange_)));
+      propertyRows.add(new Pair<String,String>(CHROM_SMOOTH_REPEATS,String.valueOf(chromSmoothRepeats_)));
     }
     if (shotgun_==SHOTGUN_FALSE){
-      rowCount = createPropertyRow(sheet,rowCount,USE_3D,String.valueOf(use3D_));
-      if (USE_3D.length()>longestKey) longestKey = USE_3D.length();
-      if (String.valueOf(use3D_).length()>longestValue) longestValue = String.valueOf(use3D_).length();
-      rowCount = createPropertyRow(sheet,rowCount,ISOTOPE_CORRECTION,String.valueOf(isotopeCorrection_));
-      if (ISOTOPE_CORRECTION.length()>longestKey) longestKey = ISOTOPE_CORRECTION.length();    
-      if (String.valueOf(isotopeCorrection_).length()>longestValue) longestValue = String.valueOf(isotopeCorrection_).length();
-      rowCount = createPropertyRow(sheet,rowCount,REMOVE_FROM_OTHER_ISOTOPE,String.valueOf(removeFromOtherIsotopes_));
-      if (REMOVE_FROM_OTHER_ISOTOPE.length()>longestKey) longestKey = REMOVE_FROM_OTHER_ISOTOPE.length();
-      if (String.valueOf(removeFromOtherIsotopes_).length()>longestValue) longestValue = String.valueOf(removeFromOtherIsotopes_).length();
-      rowCount = createPropertyRow(sheet,rowCount,RESPECT_ISO_DISTRI,String.valueOf(respectIsotopicDistribution_));
-      if (RESPECT_ISO_DISTRI.length()>longestKey) longestKey = RESPECT_ISO_DISTRI.length();
-      if (String.valueOf(respectIsotopicDistribution_).length()>longestValue) longestValue = String.valueOf(respectIsotopicDistribution_).length();
-      rowCount = createPropertyRow(sheet,rowCount,CHECK_CHAIN_LABEL_COMBINATION,String.valueOf(checkChainLabelCombination_));
-      if (CHECK_CHAIN_LABEL_COMBINATION.length()>longestKey) longestKey = CHECK_CHAIN_LABEL_COMBINATION.length();
-      if (String.valueOf(checkChainLabelCombination_).length()>longestValue) longestValue = String.valueOf(checkChainLabelCombination_).length();
-      rowCount = createPropertyRow(sheet,rowCount,NOISE_CUTOFF,String.valueOf(useNoiseCutoff_));
-      if (NOISE_CUTOFF.length()>longestKey) longestKey = NOISE_CUTOFF.length();
-      if (String.valueOf(useNoiseCutoff_).length()>longestValue) longestValue = String.valueOf(useNoiseCutoff_).length();
-      rowCount = createPropertyRow(sheet,rowCount,NOISE_DEVIATION,String.valueOf(noiseCutoffDeviationValue_));
-      if (NOISE_DEVIATION.length()>longestKey) longestKey = NOISE_DEVIATION.length();
-      if (String.valueOf(noiseCutoffDeviationValue_).length()>longestValue) longestValue = String.valueOf(noiseCutoffDeviationValue_).length();
-      if (minimumRelativeIntensity_!=null) rowCount = createPropertyRow(sheet,rowCount,NOISE_MIN_INTENSITY,minimumRelativeIntensity_.toString());
-      rowCount = createPropertyRow(sheet,rowCount,SCAN_STEP,String.valueOf(scanStep_));
-      if (SCAN_STEP.length()>longestKey) longestKey = SCAN_STEP.length();
-      if (String.valueOf(scanStep_).length()>longestValue) longestValue = String.valueOf(scanStep_).length();  
-      rowCount = createPropertyRow(sheet,rowCount,PROFILE_MZ_RANGE,String.valueOf(profileMzRange_*2));
-      if (PROFILE_MZ_RANGE.length()>longestKey) longestKey = PROFILE_MZ_RANGE.length();
-      if (String.valueOf(profileMzRange_*2).length()>longestValue) longestValue = String.valueOf(profileMzRange_*2).length();
-      rowCount = createPropertyRow(sheet,rowCount,PROFILE_TIME_TOL,String.valueOf(profileTimeTolerance_));
-      if (PROFILE_TIME_TOL.length()>longestKey) longestKey = PROFILE_TIME_TOL.length();
-      if (String.valueOf(profileTimeTolerance_).length()>longestValue) longestValue = String.valueOf(profileTimeTolerance_).length();
-      rowCount = createPropertyRow(sheet,rowCount,PROFILE_INT_THRESHOLD,String.valueOf(profileIntThreshold_));
-      if (PROFILE_INT_THRESHOLD.length()>longestKey) longestKey = PROFILE_INT_THRESHOLD.length();
-      if (String.valueOf(profileIntThreshold_).length()>longestValue) longestValue = String.valueOf(profileIntThreshold_).length();   
-      rowCount = createPropertyRow(sheet,rowCount,PROFILE_BROADER_TIME_TOL,String.valueOf(broaderProfileTimeTolerance_));
-      if (PROFILE_BROADER_TIME_TOL.length()>longestKey) longestKey = PROFILE_BROADER_TIME_TOL.length();
-      if (String.valueOf(broaderProfileTimeTolerance_).length()>longestValue) longestValue = String.valueOf(broaderProfileTimeTolerance_).length();   
-      rowCount = createPropertyRow(sheet,rowCount,PROFILE_SMOOTH_RANGE,String.valueOf(profileSmoothRange_));
-      if (PROFILE_SMOOTH_RANGE.length()>longestKey) longestKey = PROFILE_SMOOTH_RANGE.length();
-      if (String.valueOf(profileSmoothRange_).length()>longestValue) longestValue = String.valueOf(profileSmoothRange_).length();
-      rowCount = createPropertyRow(sheet,rowCount,PROFILE_SMOOTH_REPEATS,String.valueOf(profileSmoothRepeats_));
-      if (PROFILE_SMOOTH_REPEATS.length()>longestKey) longestKey = PROFILE_SMOOTH_REPEATS.length();
-      if (String.valueOf(profileSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(profileSmoothRepeats_).length();
-      rowCount = createPropertyRow(sheet,rowCount,PROFILE_MEAN_SMOOTH_REPEATS,String.valueOf(profileMeanSmoothRepeats_));
-      if (PROFILE_MEAN_SMOOTH_REPEATS.length()>longestKey) longestKey = PROFILE_MEAN_SMOOTH_REPEATS.length();
-      if (String.valueOf(profileMeanSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(profileMeanSmoothRepeats_).length();
-      rowCount = createPropertyRow(sheet,rowCount,PROFILE_MZ_MIN_RANGE,String.valueOf(profileMzMinRange_));
-      if (PROFILE_MZ_MIN_RANGE.length()>longestKey) longestKey = PROFILE_MZ_MIN_RANGE.length();
-      if (String.valueOf(profileMzMinRange_).length()>longestValue) longestValue = String.valueOf(profileMzMinRange_).length();
-      rowCount = createPropertyRow(sheet,rowCount,PROFILE_STEEPNESS_CHANGE_1,String.valueOf(profileSteepnessChange1_));
-      if (PROFILE_STEEPNESS_CHANGE_1.length()>longestKey) longestKey = PROFILE_STEEPNESS_CHANGE_1.length();
-      if (String.valueOf(profileSteepnessChange1_).length()>longestValue) longestValue = String.valueOf(profileSteepnessChange1_).length();
-      rowCount = createPropertyRow(sheet,rowCount,PROFILE_STEEPNESS_CHANGE_2,String.valueOf(profileSteepnessChange2_));
-      if (PROFILE_STEEPNESS_CHANGE_2.length()>longestKey) longestKey = PROFILE_STEEPNESS_CHANGE_2.length();
-      if (String.valueOf(profileSteepnessChange2_).length()>longestValue) longestValue = String.valueOf(profileSteepnessChange2_).length();   
-      rowCount = createPropertyRow(sheet,rowCount,PROFILE_INT_CUTOFF_1,String.valueOf(profileIntensityCutoff1_));
-      if (PROFILE_INT_CUTOFF_1.length()>longestKey) longestKey = PROFILE_INT_CUTOFF_1.length();
-      if (String.valueOf(profileIntensityCutoff1_).length()>longestValue) longestValue = String.valueOf(profileIntensityCutoff1_).length();   
-      rowCount = createPropertyRow(sheet,rowCount,PROFILE_INT_CUTOFF_2,String.valueOf(profileIntensityCutoff2_));
-      if (PROFILE_INT_CUTOFF_2.length()>longestKey) longestKey = PROFILE_INT_CUTOFF_2.length();
-      if (String.valueOf(profileIntensityCutoff2_).length()>longestValue) longestValue = String.valueOf(profileIntensityCutoff2_).length();      
-      rowCount = createPropertyRow(sheet,rowCount,PROFILE_GENERAL_INT_CUTOFF,String.valueOf(profileGeneralIntCutoff_));
-      if (PROFILE_GENERAL_INT_CUTOFF.length()>longestKey) longestKey = PROFILE_GENERAL_INT_CUTOFF.length();
-      if (String.valueOf(profileGeneralIntCutoff_).length()>longestValue) longestValue = String.valueOf(profileGeneralIntCutoff_).length();      
-      rowCount = createPropertyRow(sheet,rowCount,PROFILE_PEAK_ACCEPTANCE_RANGE,String.valueOf(profilePeakAcceptanceRange_));
-      if (PROFILE_PEAK_ACCEPTANCE_RANGE.length()>longestKey) longestKey = PROFILE_PEAK_ACCEPTANCE_RANGE.length();
-      if (String.valueOf(profilePeakAcceptanceRange_).length()>longestValue) longestValue = String.valueOf(profilePeakAcceptanceRange_).length();
-      rowCount = createPropertyRow(sheet,rowCount,PROFILE_SMOOTHING_CORRECTION,String.valueOf(profileSmoothingCorrection_));
-      if (PROFILE_SMOOTHING_CORRECTION.length()>longestKey) longestKey = PROFILE_SMOOTHING_CORRECTION.length();
-      if (String.valueOf(profileSmoothingCorrection_).length()>longestValue) longestValue = String.valueOf(profileSmoothingCorrection_).length();
-      rowCount = createPropertyRow(sheet,rowCount,PROFILE_MZ_MAX_RANGE,String.valueOf(profileMaxRange_));
-      if (PROFILE_MZ_MAX_RANGE.length()>longestKey) longestKey = PROFILE_MZ_MAX_RANGE.length();
-      if (String.valueOf(profileMaxRange_).length()>longestValue) longestValue = String.valueOf(profileMaxRange_).length();  
-      rowCount = createPropertyRow(sheet,rowCount,SMALL_CHROM_MZ_RANGE,String.valueOf(smallChromMzRange_));
-      if (SMALL_CHROM_MZ_RANGE.length()>longestKey) longestKey = SMALL_CHROM_MZ_RANGE.length();
-      if (String.valueOf(smallChromMzRange_).length()>longestValue) longestValue = String.valueOf(smallChromMzRange_).length();  
-      rowCount = createPropertyRow(sheet,rowCount,SMALL_CHROM_SMOOTH_REPEATS,String.valueOf(smallChromSmoothRepeats_));
-      if (SMALL_CHROM_SMOOTH_REPEATS.length()>longestKey) longestKey = SMALL_CHROM_SMOOTH_REPEATS.length();
-      if (String.valueOf(smallChromSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(smallChromSmoothRepeats_).length();      
-      rowCount = createPropertyRow(sheet,rowCount,SMALL_CHROM_MEAN_SMOOTH_REPEATS,String.valueOf(smallChromMeanSmoothRepeats_));
-      if (SMALL_CHROM_MEAN_SMOOTH_REPEATS.length()>longestKey) longestKey = SMALL_CHROM_MEAN_SMOOTH_REPEATS.length();
-      if (String.valueOf(smallChromMeanSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(smallChromMeanSmoothRepeats_).length();
-      rowCount = createPropertyRow(sheet,rowCount,SMALL_CHROM_SMOOTH_RANGE,String.valueOf(smallChromSmoothRange_));
-      if (SMALL_CHROM_SMOOTH_RANGE.length()>longestKey) longestKey = SMALL_CHROM_SMOOTH_RANGE.length();
-      if (String.valueOf(smallChromSmoothRange_).length()>longestValue) longestValue = String.valueOf(smallChromSmoothRange_).length();
-      rowCount = createPropertyRow(sheet,rowCount,SMALL_CHROM_INT_CUTOFF,String.valueOf(smallChromIntensityCutoff_));
-      if (SMALL_CHROM_INT_CUTOFF.length()>longestKey) longestKey = SMALL_CHROM_INT_CUTOFF.length();
-      if (String.valueOf(smallChromIntensityCutoff_).length()>longestValue) longestValue = String.valueOf(smallChromIntensityCutoff_).length();
-      rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_SMOOTH_REPEATS,String.valueOf(broadChromSmoothRepeats_));
-      if (BROAD_CHROM_SMOOTH_REPEATS.length()>longestKey) longestKey = BROAD_CHROM_SMOOTH_REPEATS.length();
-      if (String.valueOf(broadChromSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(broadChromSmoothRepeats_).length();
-      rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_MEAN_SMOOTH_REPEATS,String.valueOf(broadChromMeanSmoothRepeats_));
-      if (BROAD_CHROM_MEAN_SMOOTH_REPEATS.length()>longestKey) longestKey = BROAD_CHROM_MEAN_SMOOTH_REPEATS.length();
-      if (String.valueOf(broadChromMeanSmoothRepeats_).length()>longestValue) longestValue = String.valueOf(broadChromMeanSmoothRepeats_).length();
-      rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_SMOOTH_RANGE,String.valueOf(broadChromSmoothRange_));
-      if (BROAD_CHROM_SMOOTH_RANGE.length()>longestKey) longestKey = BROAD_CHROM_SMOOTH_RANGE.length();
-      if (String.valueOf(broadChromSmoothRange_).length()>longestValue) longestValue = String.valueOf(broadChromSmoothRange_).length();
-      rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_INT_CUTOFF,String.valueOf(broadChromIntensityCutoff_));
-      if (BROAD_CHROM_INT_CUTOFF.length()>longestKey) longestKey = BROAD_CHROM_INT_CUTOFF.length();
-      if (String.valueOf(broadChromIntensityCutoff_).length()>longestValue) longestValue = String.valueOf(broadChromIntensityCutoff_).length();
-      rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_STEEPNESS_CHANGE_NO_SMALL,String.valueOf(broadChromSteepnessChangeNoSmall_));
-      if (BROAD_CHROM_STEEPNESS_CHANGE_NO_SMALL.length()>longestKey) longestKey = BROAD_CHROM_STEEPNESS_CHANGE_NO_SMALL.length();
-      if (String.valueOf(broadChromSteepnessChangeNoSmall_).length()>longestValue) longestValue = String.valueOf(broadChromSteepnessChangeNoSmall_).length();  
-      rowCount = createPropertyRow(sheet,rowCount,BROAD_CHROM_INT_CUTOFF_NO_SMALL,String.valueOf(broadChromIntensityCutoffNoSmall_));
-      if (BROAD_CHROM_INT_CUTOFF_NO_SMALL.length()>longestKey) longestKey = BROAD_CHROM_INT_CUTOFF_NO_SMALL.length();
-      if (String.valueOf(broadChromIntensityCutoffNoSmall_).length()>longestValue) longestValue = String.valueOf(broadChromIntensityCutoffNoSmall_).length();  
-      rowCount = createPropertyRow(sheet,rowCount,FINAL_PROBE_TIME_COMP_TOL,String.valueOf(finalProbeTimeCompTolerance_));
-      if (FINAL_PROBE_TIME_COMP_TOL.length()>longestKey) longestKey = FINAL_PROBE_TIME_COMP_TOL.length();
-      if (String.valueOf(finalProbeTimeCompTolerance_).length()>longestValue) longestValue = String.valueOf(finalProbeTimeCompTolerance_).length();   
-      rowCount = createPropertyRow(sheet,rowCount,FINAL_PROBE_MZ_COMP_TOL,String.valueOf(finalProbeMzCompTolerance_));
-      if (FINAL_PROBE_MZ_COMP_TOL.length()>longestKey) longestKey = FINAL_PROBE_MZ_COMP_TOL.length();
-      if (String.valueOf(finalProbeMzCompTolerance_).length()>longestValue) longestValue = String.valueOf(finalProbeMzCompTolerance_).length();    
-      rowCount = createPropertyRow(sheet,rowCount,OVERLAP_DIST_DEV_FACTOR,String.valueOf(overlapDistanceDeviationFactor_));
-      if (OVERLAP_DIST_DEV_FACTOR.length()>longestKey) longestKey = OVERLAP_DIST_DEV_FACTOR.length();
-      if (String.valueOf(overlapDistanceDeviationFactor_).length()>longestValue) longestValue = String.valueOf(overlapDistanceDeviationFactor_).length();
-      rowCount = createPropertyRow(sheet,rowCount,OVERLAP_INT_THRESHOLD,String.valueOf(overlapPossibleIntensityThreshold_));
-      if (OVERLAP_INT_THRESHOLD.length()>longestKey) longestKey = OVERLAP_INT_THRESHOLD.length();
-      if (String.valueOf(overlapPossibleIntensityThreshold_).length()>longestValue) longestValue = String.valueOf(overlapPossibleIntensityThreshold_).length();
-      rowCount = createPropertyRow(sheet,rowCount,OVERLAP_INT_SURE_THRESHOLD,String.valueOf(overlapSureIntensityThreshold_));
-      if (OVERLAP_INT_SURE_THRESHOLD.length()>longestKey) longestKey = OVERLAP_INT_SURE_THRESHOLD.length();
-      if (String.valueOf(overlapSureIntensityThreshold_).length()>longestValue) longestValue = String.valueOf(overlapSureIntensityThreshold_).length();
-      rowCount = createPropertyRow(sheet,rowCount,OVERLAP_PEAK_DIST_DIVISOR,String.valueOf(overlapPeakDistanceDivisor_));
-      if (OVERLAP_PEAK_DIST_DIVISOR.length()>longestKey) longestKey = OVERLAP_PEAK_DIST_DIVISOR.length();
-      if (String.valueOf(overlapPeakDistanceDivisor_).length()>longestValue) longestValue = String.valueOf(overlapPeakDistanceDivisor_).length();
-      rowCount = createPropertyRow(sheet,rowCount,OVERLAP_FULL_DIST_DIVISOR,String.valueOf(overlapFullDistanceDivisor_));
-      if (OVERLAP_FULL_DIST_DIVISOR.length()>longestKey) longestKey = OVERLAP_FULL_DIST_DIVISOR.length();
-      if (String.valueOf(overlapFullDistanceDivisor_).length()>longestValue) longestValue = String.valueOf(overlapFullDistanceDivisor_).length();
+      propertyRows.add(new Pair<String,String>(USE_3D,String.valueOf(use3D_)));
+      propertyRows.add(new Pair<String,String>(ISOTOPE_CORRECTION,String.valueOf(isotopeCorrection_)));
+      propertyRows.add(new Pair<String,String>(REMOVE_FROM_OTHER_ISOTOPE,String.valueOf(removeFromOtherIsotopes_)));
+      propertyRows.add(new Pair<String,String>(RESPECT_ISO_DISTRI,String.valueOf(respectIsotopicDistribution_)));
+      propertyRows.add(new Pair<String,String>(CHECK_CHAIN_LABEL_COMBINATION,String.valueOf(checkChainLabelCombination_)));
+      propertyRows.add(new Pair<String,String>(NOISE_CUTOFF,String.valueOf(useNoiseCutoff_)));
+      propertyRows.add(new Pair<String,String>(NOISE_DEVIATION,String.valueOf(noiseCutoffDeviationValue_)));
+      if (minimumRelativeIntensity_!=null) {
+        propertyRows.add(new Pair<String,String>(NOISE_MIN_INTENSITY,minimumRelativeIntensity_.toString()));
+      }
+      propertyRows.add(new Pair<String,String>(SCAN_STEP,String.valueOf(scanStep_)));
+      propertyRows.add(new Pair<String,String>(PROFILE_MZ_RANGE,String.valueOf(profileMzRange_*2)));
+      propertyRows.add(new Pair<String,String>(PROFILE_TIME_TOL,String.valueOf(profileTimeTolerance_)));
+      propertyRows.add(new Pair<String,String>(PROFILE_INT_THRESHOLD,String.valueOf(profileIntThreshold_)));
+      propertyRows.add(new Pair<String,String>(PROFILE_BROADER_TIME_TOL,String.valueOf(broaderProfileTimeTolerance_)));
+      propertyRows.add(new Pair<String,String>(PROFILE_SMOOTH_RANGE,String.valueOf(profileSmoothRange_)));
+      propertyRows.add(new Pair<String,String>(PROFILE_SMOOTH_REPEATS,String.valueOf(profileSmoothRepeats_)));
+      propertyRows.add(new Pair<String,String>(PROFILE_MEAN_SMOOTH_REPEATS,String.valueOf(profileMeanSmoothRepeats_)));
+      propertyRows.add(new Pair<String,String>(PROFILE_MZ_MIN_RANGE,String.valueOf(profileMzMinRange_)));
+      propertyRows.add(new Pair<String,String>(PROFILE_STEEPNESS_CHANGE_1,String.valueOf(profileSteepnessChange1_)));
+      propertyRows.add(new Pair<String,String>(PROFILE_STEEPNESS_CHANGE_2,String.valueOf(profileSteepnessChange2_)));
+      propertyRows.add(new Pair<String,String>(PROFILE_INT_CUTOFF_1,String.valueOf(profileIntensityCutoff1_)));
+      propertyRows.add(new Pair<String,String>(PROFILE_INT_CUTOFF_2,String.valueOf(profileIntensityCutoff2_)));
+      propertyRows.add(new Pair<String,String>(PROFILE_GENERAL_INT_CUTOFF,String.valueOf(profileGeneralIntCutoff_)));
+      propertyRows.add(new Pair<String,String>(PROFILE_PEAK_ACCEPTANCE_RANGE,String.valueOf(profilePeakAcceptanceRange_)));
+      propertyRows.add(new Pair<String,String>(PROFILE_SMOOTHING_CORRECTION,String.valueOf(profileSmoothingCorrection_)));
+      propertyRows.add(new Pair<String,String>(PROFILE_MZ_MAX_RANGE,String.valueOf(profileMaxRange_)));
+      propertyRows.add(new Pair<String,String>(SMALL_CHROM_MZ_RANGE,String.valueOf(smallChromMzRange_)));
+      propertyRows.add(new Pair<String,String>(SMALL_CHROM_SMOOTH_REPEATS,String.valueOf(smallChromSmoothRepeats_)));
+      propertyRows.add(new Pair<String,String>(SMALL_CHROM_MEAN_SMOOTH_REPEATS,String.valueOf(smallChromMeanSmoothRepeats_)));
+      propertyRows.add(new Pair<String,String>(SMALL_CHROM_SMOOTH_RANGE,String.valueOf(smallChromSmoothRange_)));
+      propertyRows.add(new Pair<String,String>(SMALL_CHROM_INT_CUTOFF,String.valueOf(smallChromIntensityCutoff_)));
+      propertyRows.add(new Pair<String,String>(BROAD_CHROM_SMOOTH_REPEATS,String.valueOf(broadChromSmoothRepeats_)));
+      propertyRows.add(new Pair<String,String>(BROAD_CHROM_MEAN_SMOOTH_REPEATS,String.valueOf(broadChromMeanSmoothRepeats_)));
+      propertyRows.add(new Pair<String,String>(BROAD_CHROM_SMOOTH_RANGE,String.valueOf(broadChromSmoothRange_)));
+      propertyRows.add(new Pair<String,String>(BROAD_CHROM_INT_CUTOFF,String.valueOf(broadChromIntensityCutoff_)));
+      propertyRows.add(new Pair<String,String>(BROAD_CHROM_STEEPNESS_CHANGE_NO_SMALL,String.valueOf(broadChromSteepnessChangeNoSmall_)));
+      propertyRows.add(new Pair<String,String>(FINAL_PROBE_TIME_COMP_TOL,String.valueOf(finalProbeTimeCompTolerance_)));
+      propertyRows.add(new Pair<String,String>(FINAL_PROBE_MZ_COMP_TOL,String.valueOf(finalProbeMzCompTolerance_)));
+      propertyRows.add(new Pair<String,String>(OVERLAP_DIST_DEV_FACTOR,String.valueOf(overlapDistanceDeviationFactor_)));
+      propertyRows.add(new Pair<String,String>(OVERLAP_INT_THRESHOLD,String.valueOf(overlapPossibleIntensityThreshold_)));
+      propertyRows.add(new Pair<String,String>(OVERLAP_INT_SURE_THRESHOLD,String.valueOf(overlapSureIntensityThreshold_)));
+      propertyRows.add(new Pair<String,String>(OVERLAP_PEAK_DIST_DIVISOR,String.valueOf(overlapPeakDistanceDivisor_)));
+      propertyRows.add(new Pair<String,String>(OVERLAP_FULL_DIST_DIVISOR,String.valueOf(overlapFullDistanceDivisor_)));
     }
     if (shotgun_!=SHOTGUN_TRUE){
-      rowCount = createPropertyRow(sheet,rowCount,PEAK_DISCARD_AREA_FACTOR,String.valueOf(peakDiscardingAreaFactor_));
-      if (PEAK_DISCARD_AREA_FACTOR.length()>longestKey) longestKey = PEAK_DISCARD_AREA_FACTOR.length();
-      if (String.valueOf(peakDiscardingAreaFactor_).length()>longestValue) longestValue = String.valueOf(peakDiscardingAreaFactor_).length();
+      propertyRows.add(new Pair<String,String>(PEAK_DISCARD_AREA_FACTOR,String.valueOf(peakDiscardingAreaFactor_)));
     }
     if (shotgun_==SHOTGUN_FALSE){
-      rowCount = createPropertyRow(sheet,rowCount,ISO_IN_BETWEEN_TIME,String.valueOf(isotopeInBetweenTime_));
-      if (ISO_IN_BETWEEN_TIME.length()>longestKey) longestKey = ISO_IN_BETWEEN_TIME.length();
-      if (String.valueOf(isotopeInBetweenTime_).length()>longestValue) longestValue = String.valueOf(isotopeInBetweenTime_).length();
-      rowCount = createPropertyRow(sheet,rowCount,ISO_IN_BETWEEN_AREA_FACTOR,String.valueOf(isoInBetweenAreaFactor_));
-      if (ISO_IN_BETWEEN_AREA_FACTOR.length()>longestKey) longestKey = ISO_IN_BETWEEN_AREA_FACTOR.length();
-      if (String.valueOf(isoInBetweenAreaFactor_).length()>longestValue) longestValue = String.valueOf(isoInBetweenAreaFactor_).length();
-      rowCount = createPropertyRow(sheet,rowCount,ISO_NEAR_NORMAL_PROBE_TIME,String.valueOf(isoNearNormalProbeTime_));
-      if (ISO_NEAR_NORMAL_PROBE_TIME.length()>longestKey) longestKey = ISO_NEAR_NORMAL_PROBE_TIME.length();
-      if (String.valueOf(isoNearNormalProbeTime_).length()>longestValue) longestValue = String.valueOf(isoNearNormalProbeTime_).length();
+      propertyRows.add(new Pair<String,String>(ISO_IN_BETWEEN_TIME,String.valueOf(isotopeInBetweenTime_)));
+      propertyRows.add(new Pair<String,String>(ISO_IN_BETWEEN_AREA_FACTOR,String.valueOf(isoInBetweenAreaFactor_)));
+      propertyRows.add(new Pair<String,String>(ISO_NEAR_NORMAL_PROBE_TIME,String.valueOf(isoNearNormalProbeTime_)));
     }
     if (shotgun_!=SHOTGUN_TRUE){
-      rowCount = createPropertyRow(sheet,rowCount,RELATIVE_AREA_CUTOFF,String.valueOf(relativeAreaCutoff_));
-      if (RELATIVE_AREA_CUTOFF.length()>longestKey) longestKey = RELATIVE_AREA_CUTOFF.length();
-      if (String.valueOf(relativeAreaCutoff_).length()>longestValue) longestValue = String.valueOf(relativeAreaCutoff_).length();   
-      rowCount = createPropertyRow(sheet,rowCount,RELATIVE_AREA_FAR_CUTOFF,String.valueOf(relativeFarAreaCutoff_));
-      if (RELATIVE_AREA_FAR_CUTOFF.length()>longestKey) longestKey = RELATIVE_AREA_FAR_CUTOFF.length();
-      if (String.valueOf(relativeFarAreaCutoff_).length()>longestValue) longestValue = String.valueOf(relativeFarAreaCutoff_).length();  
-      rowCount = createPropertyRow(sheet,rowCount,RELATIVE_AREA_FAR_TIME_SPACE,String.valueOf(relativeFarAreaTimeSpace_));
-      if (RELATIVE_AREA_FAR_TIME_SPACE.length()>longestKey) longestKey = RELATIVE_AREA_FAR_TIME_SPACE.length();
-      if (String.valueOf(relativeFarAreaTimeSpace_).length()>longestValue) longestValue = String.valueOf(relativeFarAreaTimeSpace_).length();
+      propertyRows.add(new Pair<String,String>(RELATIVE_AREA_CUTOFF,String.valueOf(relativeAreaCutoff_)));
+      propertyRows.add(new Pair<String,String>(RELATIVE_AREA_FAR_CUTOFF,String.valueOf(relativeFarAreaCutoff_)));
+      propertyRows.add(new Pair<String,String>(RELATIVE_AREA_FAR_TIME_SPACE,String.valueOf(relativeFarAreaTimeSpace_)));
     }
     if (shotgun_==SHOTGUN_FALSE){
-      rowCount = createPropertyRow(sheet,rowCount,RELATIVE_ISO_INBETWEEN_CUTOFF,String.valueOf(relativeIsoInBetweenCutoff_));
-      if (RELATIVE_ISO_INBETWEEN_CUTOFF.length()>longestKey) longestKey = RELATIVE_ISO_INBETWEEN_CUTOFF.length();
-      if (String.valueOf(relativeIsoInBetweenCutoff_).length()>longestValue) longestValue = String.valueOf(relativeIsoInBetweenCutoff_).length();
-      rowCount = createPropertyRow(sheet,rowCount,ISO_IN_BETWEEN_TIME_MAX,String.valueOf(isoInBetweenMaxTimeDistance_));
-      if (ISO_IN_BETWEEN_TIME_MAX.length()>longestKey) longestKey = ISO_IN_BETWEEN_TIME_MAX.length();
-      if (String.valueOf(isoInBetweenMaxTimeDistance_).length()>longestValue) longestValue = String.valueOf(isoInBetweenMaxTimeDistance_).length();
-      rowCount = createPropertyRow(sheet,rowCount,TWIN_PEAK_MZ_TOL,String.valueOf(twinPeakMzTolerance_));
-      if (TWIN_PEAK_MZ_TOL.length()>longestKey) longestKey = TWIN_PEAK_MZ_TOL.length();
-      if (String.valueOf(twinPeakMzTolerance_).length()>longestValue) longestValue = String.valueOf(twinPeakMzTolerance_).length(); 
-      rowCount = createPropertyRow(sheet,rowCount,PEAK_CLOSE_TIME_TOL,String.valueOf(closePeakTimeTolerance_));
-      if (PEAK_CLOSE_TIME_TOL.length()>longestKey) longestKey = PEAK_CLOSE_TIME_TOL.length();
-      if (String.valueOf(closePeakTimeTolerance_).length()>longestValue) longestValue = String.valueOf(closePeakTimeTolerance_).length(); 
-      rowCount = createPropertyRow(sheet,rowCount,TWIN_INBETWEEN_CUTOFF,String.valueOf(twinInBetweenCutoff_));
-      if (TWIN_INBETWEEN_CUTOFF.length()>longestKey) longestKey = TWIN_INBETWEEN_CUTOFF.length();
-      if (String.valueOf(twinInBetweenCutoff_).length()>longestValue) longestValue = String.valueOf(twinInBetweenCutoff_).length();
-      rowCount = createPropertyRow(sheet,rowCount,UNION_INBETWEEN_CUTOFF,String.valueOf(unionInBetweenCutoff_));
-      if (UNION_INBETWEEN_CUTOFF.length()>longestKey) longestKey = UNION_INBETWEEN_CUTOFF.length();
-      if (String.valueOf(unionInBetweenCutoff_).length()>longestValue) longestValue = String.valueOf(unionInBetweenCutoff_).length();
-      rowCount = createPropertyRow(sheet,rowCount,SPARSE_DATA,String.valueOf(sparseData_));
-      if (SPARSE_DATA.length()>longestKey) longestKey = SPARSE_DATA.length();
-      if (String.valueOf(sparseData_).length()>longestValue) longestValue = String.valueOf(sparseData_).length();
+      propertyRows.add(new Pair<String,String>(RELATIVE_ISO_INBETWEEN_CUTOFF,String.valueOf(relativeIsoInBetweenCutoff_)));
+      propertyRows.add(new Pair<String,String>(ISO_IN_BETWEEN_TIME_MAX,String.valueOf(isoInBetweenMaxTimeDistance_)));
+      propertyRows.add(new Pair<String,String>(TWIN_PEAK_MZ_TOL,String.valueOf(twinPeakMzTolerance_)));
+      propertyRows.add(new Pair<String,String>(PEAK_CLOSE_TIME_TOL,String.valueOf(closePeakTimeTolerance_)));
+      propertyRows.add(new Pair<String,String>(TWIN_INBETWEEN_CUTOFF,String.valueOf(twinInBetweenCutoff_)));
+      propertyRows.add(new Pair<String,String>(UNION_INBETWEEN_CUTOFF,String.valueOf(unionInBetweenCutoff_)));
+      propertyRows.add(new Pair<String,String>(SPARSE_DATA,String.valueOf(sparseData_)));
     }
     if (mzTabInstrumentName_!=null){
-      String value = getStringFromMzTabParameter(mzTabInstrumentName_);
-      if (MZTAB_INSTRUMENT.length()>longestKey) longestKey = MZTAB_INSTRUMENT.length();
-      if (value.length()>longestValue) longestValue = value.length();
-      rowCount = createPropertyRow(sheet,rowCount,MZTAB_INSTRUMENT,value);
+      propertyRows.add(new Pair<String,String>(MZTAB_INSTRUMENT,getStringFromMzTabParameter(mzTabInstrumentName_)));
     }
     if (mzTabInstrumentSource_!=null){
-      String value = getStringFromMzTabParameter(mzTabInstrumentSource_);
-      if (MZTAB_IONSOURCE.length()>longestKey) longestKey = MZTAB_IONSOURCE.length();
-      if (value.length()>longestValue) longestValue = value.length();
-      rowCount = createPropertyRow(sheet,rowCount,MZTAB_IONSOURCE,value);
+      propertyRows.add(new Pair<String,String>(MZTAB_IONSOURCE,getStringFromMzTabParameter(mzTabInstrumentSource_)));
     }
     if (mzTabInstrumentAnalyzer_!=null){
-      String value = getStringFromMzTabParameter(mzTabInstrumentAnalyzer_);
-      if (MZTAB_MSANALYZER.length()>longestKey) longestKey = MZTAB_MSANALYZER.length();
-      if (value.length()>longestValue) longestValue = value.length();
-      rowCount = createPropertyRow(sheet,rowCount,MZTAB_MSANALYZER,value);
+      propertyRows.add(new Pair<String,String>(MZTAB_MSANALYZER,getStringFromMzTabParameter(mzTabInstrumentAnalyzer_)));
     }
     if (mzTabInstrumentDetector_!=null){
-      String value = getStringFromMzTabParameter(mzTabInstrumentDetector_);
-      if (MZTAB_DETECTOR.length()>longestKey) longestKey = MZTAB_DETECTOR.length();
-      if (value.length()>longestValue) longestValue = value.length();
-      rowCount = createPropertyRow(sheet,rowCount,MZTAB_DETECTOR,value);
+      propertyRows.add(new Pair<String,String>(MZTAB_DETECTOR,getStringFromMzTabParameter(mzTabInstrumentDetector_)));
     }
     if (alexTargetlist_==true){
-      rowCount = createPropertyRow(sheet,rowCount,ALEX_TARGETLIST,String.valueOf(alexTargetlist_));
-      if (ALEX_TARGETLIST.length()>longestKey) longestKey = ALEX_TARGETLIST.length();
-      if (String.valueOf(alexTargetlist_).length()>longestValue) longestValue = String.valueOf(alexTargetlist_).length();
+      propertyRows.add(new Pair<String,String>(ALEX_TARGETLIST,String.valueOf(alexTargetlist_)));
     }
     if (useMsconvertForWaters_==true) {
-      rowCount = createPropertyRow(sheet,rowCount,USE_MSCONVERT_FOR_WATERS,String.valueOf(useMsconvertForWaters_));
-      if (USE_MSCONVERT_FOR_WATERS.length()>longestKey) longestKey = USE_MSCONVERT_FOR_WATERS.length();
-      if (String.valueOf(useMsconvertForWaters_).length()>longestValue) longestValue = String.valueOf(useMsconvertForWaters_).length();
+      propertyRows.add(new Pair<String,String>(USE_MSCONVERT_FOR_WATERS,String.valueOf(useMsconvertForWaters_)));
     }
-    
     
     String key;
     String value;
@@ -2223,7 +2015,7 @@ public class LipidomicsConstants
         try {
           key = EXCEL_HYDROXY_FA_PREFIX+String.valueOf(oh);
           value = faHydroxyEncoding.getEncodedPrefix(oh);
-          rowCount = createPropertyRow(sheet,rowCount,key,value);
+          propertyRows.add(new Pair<String,String>(key,value));
         //this catch can never happen
         }catch (HydroxylationEncodingException e) {}
       }
@@ -2233,83 +2025,14 @@ public class LipidomicsConstants
         try {
           key = EXCEL_HYDROXY_LCB_PREFIX+String.valueOf(oh);
           value = lcbHydroxyEncoding.getEncodedPrefix(oh);
-          rowCount = createPropertyRow(sheet,rowCount,key,value);
+          propertyRows.add(new Pair<String,String>(key,value));
         //this catch can never happen
         }catch (HydroxylationEncodingException e) {}
       }
     }
-
-    
-    int keyColumnWidth = (int)((LipidomicsConstants.EXCEL_KEY.length()*ExcelUtils.CHAR_MULT)*ExcelUtils.BOLD_MULT);
-    if ((longestKey+1)*ExcelUtils.CHAR_MULT>keyColumnWidth) keyColumnWidth =  (longestKey+1)*ExcelUtils.CHAR_MULT;
-    sheet.setColumnWidth(EXCEL_KEY_COLUMN,keyColumnWidth); 
-    int valueColumnWidth = (int)((LipidomicsConstants.EXCEL_VALUE.length()*ExcelUtils.CHAR_MULT)*ExcelUtils.BOLD_MULT);
-    if ((longestValue+1)*ExcelUtils.CHAR_MULT>valueColumnWidth) valueColumnWidth =  (longestValue+1)*ExcelUtils.CHAR_MULT;
-    sheet.setColumnWidth(EXCEL_VALUE_COLUMN,valueColumnWidth);
-
+    return propertyRows;
   }
   
-  
-  /**
-   * returns the String representation of the Param VO
-   * @param param the Param VO
-   * @return the String representation of the VO
-   */
-  private String getStringFromMzTabParameter(Parameter param){
-    String returnString = param.getCvLabel()+",";
-    if (param.getCvAccession()!=null && param.getCvAccession().length()>0)
-      returnString += param.getCvAccession()+",";
-    if (param.getName()!=null && param.getName().length()>0)
-      returnString += param.getName()+",";
-    if (param.getValue()!=null && param.getValue().length()>0)
-      returnString += param.getValue()+",";
-    return returnString;
-  }
-
-  /**
-   * creates one Excel Row containing key and value pair
-   * @param sheet the Excel sheet to write the row
-   * @param rowCount index for the next available row
-   * @param key key to be written (of the key/value pair)
-   * @param value value to be written (of the key/value pair)
-   * @return next available Excel row index
-   */
-  private int createPropertyRow(Sheet sheet,int rowCount,String key,String value){
-    Row row = sheet.createRow(rowCount);
-    rowCount++;
-    setKeyCellValue(row,key);
-    setValueCellValue(row,value);
-    return rowCount;
-  }
-  
-  /**
-   * writes the key cell of the key/value pair
-   * @param row row where the key has to be written
-   * @param value the key to be written
-   */
-  private void setKeyCellValue(Row row, String value){
-    setCellValue(row, EXCEL_KEY_COLUMN, value);
-  }
-
-  /**
-   * writes the value cell of the key/value pair
-   * @param row row where the key has to be written
-   * @param value the value to be written
-   */
-  private void setValueCellValue(Row row, String value){
-    setCellValue(row, EXCEL_VALUE_COLUMN, value);
-  }
-  
-  /**
-   * writes the value in a certain column of the defined row
-   * @param row row where the cell has to be written
-   * @param column column where the cell has to be written
-   * @param value value to be written in the cell
-   */
-  private void setCellValue(Row row, int column, String value){
-    Cell cell = row.createCell(column);
-    cell.setCellValue(value);
-  }
   
   /**
    * creates a LipidomicsConstants object from an Excel sheet - this cannot be done in a separate
@@ -2318,7 +2041,8 @@ public class LipidomicsConstants
    * @throws SettingsException thrown when a settings combination is not possible
    * @return settings: [0] LipidomicsConstants object containing the parameters that were read; [1] FA hydroxylation encoding; [2] LCB hydroxylation encoding
    */
-  public static Object[] readSettingsFromExcel(Sheet sheet) throws SettingsException{
+  @Deprecated
+  public static Object[] readSettingsFromExcelApachePOI(org.apache.poi.ss.usermodel.Sheet sheet) throws SettingsException{
     Properties properties = new Properties();
     int keyColumn = -1;
     int valueColumn = -1;
@@ -2353,8 +2077,8 @@ public class LipidomicsConstants
         for (Integer columnId : entries.keySet()){
           if (entries.get(columnId)==null || (!(entries.get(columnId) instanceof String)) || ((String)entries.get(columnId)).length()==0) continue;
           String entry = (String)entries.get(columnId);
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_KEY)) keyColumn = columnId;
-          if (entry.equalsIgnoreCase(LipidomicsConstants.EXCEL_VALUE)) valueColumn = columnId;
+          if (entry.equalsIgnoreCase(EXCEL_KEY)) keyColumn = columnId;
+          if (entry.equalsIgnoreCase(EXCEL_VALUE)) valueColumn = columnId;
         }
       }
     }
@@ -2380,6 +2104,201 @@ public class LipidomicsConstants
     return returnValues;
   }
 
+  
+  /**
+   * Automatically generated by Eclipse. 
+   * Compares all dynamic fields (except those generated by reading the mzTabConfFile) of this class with another Object.
+   * The fields generated by reading the mzTabConfFile are excluded, because this method aims at comparing Quantification Result files. The mzTabConfFile is a separate file.
+   */
+  @Override
+  public boolean equals(Object obj)
+  {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    LipidomicsConstants other = (LipidomicsConstants) obj;
+    return Objects.equals(alexTargetlistUsed_, other.alexTargetlistUsed_)
+        && alexTargetlist_ == other.alexTargetlist_
+        && Objects.equals(basePeakDefaultCutoff_, other.basePeakDefaultCutoff_)
+        && Float.floatToIntBits(broadChromIntensityCutoffNoSmall_) == Float
+            .floatToIntBits(other.broadChromIntensityCutoffNoSmall_)
+        && Float.floatToIntBits(broadChromIntensityCutoff_) == Float
+            .floatToIntBits(other.broadChromIntensityCutoff_)
+        && broadChromMeanSmoothRepeats_ == other.broadChromMeanSmoothRepeats_
+        && broadChromSmoothRange_ == other.broadChromSmoothRange_
+        && broadChromSmoothRepeats_ == other.broadChromSmoothRepeats_
+        && Float.floatToIntBits(broadChromSteepnessChangeNoSmall_) == Float
+            .floatToIntBits(other.broadChromSteepnessChangeNoSmall_)
+        && Float.floatToIntBits(broaderProfileTimeTolerance_) == Float
+            .floatToIntBits(other.broaderProfileTimeTolerance_)
+        && Double.doubleToLongBits(chainCutoffValue_) == Double
+            .doubleToLongBits(other.chainCutoffValue_)
+        && checkChainLabelCombination_ == other.checkChainLabelCombination_
+        && chromExportShowLegend_ == other.chromExportShowLegend_
+        && chromLowestResolution_ == other.chromLowestResolution_
+        && chromMultiplicationFactorForInt_ == other.chromMultiplicationFactorForInt_
+        && Float.floatToIntBits(chromSmoothRange_) == Float
+            .floatToIntBits(other.chromSmoothRange_)
+        && chromSmoothRepeats_ == other.chromSmoothRepeats_
+        && closePeakTimeTolerance_ == other.closePeakTimeTolerance_
+        && Float.floatToIntBits(coarseChromMzTolerance_) == Float
+            .floatToIntBits(other.coarseChromMzTolerance_)
+        && Objects.equals(currentMSMachine_, other.currentMSMachine_)
+        && cvBtoRequired_ == other.cvBtoRequired_
+        && cvChmoRequired_ == other.cvChmoRequired_
+        && cvClRequired_ == other.cvClRequired_
+        && cvDoidRequired_ == other.cvDoidRequired_
+        && cvNcbiTaxonRequired_ == other.cvNcbiTaxonRequired_
+        && cvSepRequired_ == other.cvSepRequired_
+        && Float.floatToIntBits(finalProbeMzCompTolerance_) == Float
+            .floatToIntBits(other.finalProbeMzCompTolerance_)
+        && Float.floatToIntBits(finalProbeTimeCompTolerance_) == Float
+            .floatToIntBits(other.finalProbeTimeCompTolerance_)
+        && Objects.equals(intermediateFileFormat_,
+            other.intermediateFileFormat_)
+        && Float.floatToIntBits(isoInBetweenAreaFactor_) == Float
+            .floatToIntBits(other.isoInBetweenAreaFactor_)
+        && isoInBetweenMaxTimeDistance_ == other.isoInBetweenMaxTimeDistance_
+        && isoNearNormalProbeTime_ == other.isoNearNormalProbeTime_
+        && isotopeCorrection_ == other.isotopeCorrection_
+        && isotopeInBetweenTime_ == other.isotopeInBetweenTime_
+        && Objects.equals(ldaVersion_, other.ldaVersion_)
+        && Double.doubleToLongBits(massShift_) == Double
+            .doubleToLongBits(other.massShift_)
+        && maxFileSizeForChromTranslationAtOnceInMB_ == other.maxFileSizeForChromTranslationAtOnceInMB_
+        && Objects.equals(minimumRelativeIntensity_,
+            other.minimumRelativeIntensity_)
+//        && minimumThresholdForHighConfidenceRTMatch_ == other.minimumThresholdForHighConfidenceRTMatch_
+        && ms2ChromMultiplicationFactorForInt_ == other.ms2ChromMultiplicationFactorForInt_
+        && Float.floatToIntBits(ms2IsobarSCExclusionRatio_) == Float
+            .floatToIntBits(other.ms2IsobarSCExclusionRatio_)
+        && Float.floatToIntBits(ms2IsobarSCFarExclusionRatio_) == Float
+            .floatToIntBits(other.ms2IsobarSCFarExclusionRatio_)
+        && Float.floatToIntBits(ms2IsobaricOtherRtDifference_) == Float
+            .floatToIntBits(other.ms2IsobaricOtherRtDifference_)
+        && ms2MinIntsForNoiseRemoval_ == other.ms2MinIntsForNoiseRemoval_
+        && Float.floatToIntBits(ms2MzTolerance_) == Float
+            .floatToIntBits(other.ms2MzTolerance_)
+        && Float.floatToIntBits(ms2PrecursorTolerance_) == Float
+            .floatToIntBits(other.ms2PrecursorTolerance_)
+        && ms2_ == other.ms2_
+        && Objects.equals(mzTabInstrumentAnalyzer_,
+            other.mzTabInstrumentAnalyzer_)
+        && Objects.equals(mzTabInstrumentDetector_,
+            other.mzTabInstrumentDetector_)
+        && Objects.equals(mzTabInstrumentName_, other.mzTabInstrumentName_)
+        && Objects.equals(mzTabInstrumentSource_, other.mzTabInstrumentSource_)
+        && Objects.equals(mzTabSample_, other.mzTabSample_)
+        && Objects.equals(mzUnit_, other.mzUnit_)
+        && Float.floatToIntBits(neutronMass_) == Float
+            .floatToIntBits(other.neutronMass_)
+        && Float.floatToIntBits(noiseCutoffDeviationValue_) == Float
+            .floatToIntBits(other.noiseCutoffDeviationValue_)
+        && Float.floatToIntBits(overlapDistanceDeviationFactor_) == Float
+            .floatToIntBits(other.overlapDistanceDeviationFactor_)
+        && Float.floatToIntBits(overlapFullDistanceDivisor_) == Float
+            .floatToIntBits(other.overlapFullDistanceDivisor_)
+        && Float.floatToIntBits(overlapPeakDistanceDivisor_) == Float
+            .floatToIntBits(other.overlapPeakDistanceDivisor_)
+        && Float.floatToIntBits(overlapPossibleIntensityThreshold_) == Float
+            .floatToIntBits(other.overlapPossibleIntensityThreshold_)
+        && Float.floatToIntBits(overlapSureIntensityThreshold_) == Float
+            .floatToIntBits(other.overlapSureIntensityThreshold_)
+        && peakDiscardingAreaFactor_ == other.peakDiscardingAreaFactor_
+        && Float.floatToIntBits(profileGeneralIntCutoff_) == Float
+            .floatToIntBits(other.profileGeneralIntCutoff_)
+        && Float.floatToIntBits(profileIntThreshold_) == Float
+            .floatToIntBits(other.profileIntThreshold_)
+        && Float.floatToIntBits(profileIntensityCutoff1_) == Float
+            .floatToIntBits(other.profileIntensityCutoff1_)
+        && Float.floatToIntBits(profileIntensityCutoff2_) == Float
+            .floatToIntBits(other.profileIntensityCutoff2_)
+        && Float.floatToIntBits(profileMaxRange_) == Float
+            .floatToIntBits(other.profileMaxRange_)
+        && profileMeanSmoothRepeats_ == other.profileMeanSmoothRepeats_
+        && Float.floatToIntBits(profileMzMinRange_) == Float
+            .floatToIntBits(other.profileMzMinRange_)
+        && Float.floatToIntBits(profileMzRange_) == Float
+            .floatToIntBits(other.profileMzRange_)
+        && Float.floatToIntBits(profilePeakAcceptanceRange_) == Float
+            .floatToIntBits(other.profilePeakAcceptanceRange_)
+        && Float.floatToIntBits(profileSmoothRange_) == Float
+            .floatToIntBits(other.profileSmoothRange_)
+        && profileSmoothRepeats_ == other.profileSmoothRepeats_
+        && Float.floatToIntBits(profileSmoothingCorrection_) == Float
+            .floatToIntBits(other.profileSmoothingCorrection_)
+        && Float.floatToIntBits(profileSteepnessChange1_) == Float
+            .floatToIntBits(other.profileSteepnessChange1_)
+        && Float.floatToIntBits(profileSteepnessChange2_) == Float
+            .floatToIntBits(other.profileSteepnessChange2_)
+        && Float.floatToIntBits(profileTimeTolerance_) == Float
+            .floatToIntBits(other.profileTimeTolerance_)
+        && Objects.equals(rawFileName_, other.rawFileName_)
+        && Float.floatToIntBits(relativeAreaCutoff_) == Float
+            .floatToIntBits(other.relativeAreaCutoff_)
+        && Float.floatToIntBits(relativeFarAreaCutoff_) == Float
+            .floatToIntBits(other.relativeFarAreaCutoff_)
+        && relativeFarAreaTimeSpace_ == other.relativeFarAreaTimeSpace_
+        && Float.floatToIntBits(relativeIsoInBetweenCutoff_) == Float
+            .floatToIntBits(other.relativeIsoInBetweenCutoff_)
+        && Objects.equals(relativeMS1BasePeakCutoff_,
+            other.relativeMS1BasePeakCutoff_)
+        && removeFromOtherIsotopes_ == other.removeFromOtherIsotopes_
+        && respectIsotopicDistribution_ == other.respectIsotopicDistribution_
+        && scanStep_ == other.scanStep_
+        && shotgunIntensityRemoval_ == other.shotgunIntensityRemoval_
+        && shotgunProcessing_ == other.shotgunProcessing_
+        && Float.floatToIntBits(shotgunRelIntCutoff_) == Float
+            .floatToIntBits(other.shotgunRelIntCutoff_)
+        && shotgun_ == other.shotgun_
+        && Float.floatToIntBits(smallChromIntensityCutoff_) == Float
+            .floatToIntBits(other.smallChromIntensityCutoff_)
+        && smallChromMeanSmoothRepeats_ == other.smallChromMeanSmoothRepeats_
+        && Float.floatToIntBits(smallChromMzRange_) == Float
+            .floatToIntBits(other.smallChromMzRange_)
+        && Float.floatToIntBits(smallChromSmoothRange_) == Float
+            .floatToIntBits(other.smallChromSmoothRange_)
+        && smallChromSmoothRepeats_ == other.smallChromSmoothRepeats_
+        && sparseData_ == other.sparseData_
+        && Objects.equals(threeDViewerDefaultMZResolution_,
+            other.threeDViewerDefaultMZResolution_)
+        && Objects.equals(threeDViewerDefaultTimeResolution_,
+            other.threeDViewerDefaultTimeResolution_)
+        && Objects.equals(threeDViewerMs2DefaultMZResolution_,
+            other.threeDViewerMs2DefaultMZResolution_)
+        && Objects.equals(threeDViewerMs2DefaultTimeResolution_,
+            other.threeDViewerMs2DefaultTimeResolution_)
+        && Float.floatToIntBits(twinInBetweenCutoff_) == Float
+            .floatToIntBits(other.twinInBetweenCutoff_)
+        && Float.floatToIntBits(twinPeakMzTolerance_) == Float
+            .floatToIntBits(other.twinPeakMzTolerance_)
+        && Float.floatToIntBits(unionInBetweenCutoff_) == Float
+            .floatToIntBits(other.unionInBetweenCutoff_)
+        && use3D_ == other.use3D_
+        && useMostOverlappingIsotopeOnly_ == other.useMostOverlappingIsotopeOnly_
+        && useMsconvertForWaters_ == other.useMsconvertForWaters_
+        && useNoiseCutoff_ == other.useNoiseCutoff_;
+  }
+
+  /**
+   * returns the String representation of the Param VO
+   * @param param the Param VO
+   * @return the String representation of the VO
+   */
+  private String getStringFromMzTabParameter(Parameter param){
+    String returnString = param.getCvLabel()+",";
+    if (param.getCvAccession()!=null && param.getCvAccession().length()>0)
+      returnString += param.getCvAccession()+",";
+    if (param.getName()!=null && param.getName().length()>0)
+      returnString += param.getName()+",";
+    if (param.getValue()!=null && param.getValue().length()>0)
+      returnString += param.getValue()+",";
+    return returnString;
+  }
+
   public String getRelativeMS1BasePeakCutoff()
   {
     return relativeMS1BasePeakCutoff_;
@@ -2388,6 +2307,10 @@ public class LipidomicsConstants
   public void setRelativeMS1BasePeakCutoff(String relativeMS1BasePeakCutoff)
   {
     this.relativeMS1BasePeakCutoff_ = relativeMS1BasePeakCutoff;
+  }
+  
+  public void setLDAVersion(String ldaVersion) {
+    this.ldaVersion_ = ldaVersion;
   }
   
   public String getRawFileName(){
@@ -2423,7 +2346,7 @@ public class LipidomicsConstants
   /** typically, for Waters files Mass++ is used; however, when msconvert shall be used, this returns true*/
   public static boolean useMsconvertForWaters()
   {
-    if (instance_ == null) LipidomicsConstants.getInstance();
+    getInstance();
     return instance_.useMsconvertForWaters_;
   }
 

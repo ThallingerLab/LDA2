@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -23,18 +23,18 @@
 
 package at.tugraz.genome.lda;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
@@ -43,8 +43,6 @@ import javax.swing.JFrame;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -56,11 +54,14 @@ import at.tugraz.genome.lda.alex123.TargetlistParser;
 import at.tugraz.genome.lda.alex123.vos.TargetlistEntry;
 import at.tugraz.genome.lda.exception.AlexTargetlistParserException;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
+import at.tugraz.genome.lda.exception.ExportException;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
+import at.tugraz.genome.lda.export.OmegaMasslistExporter;
+import at.tugraz.genome.lda.export.QuantificationResultExporter;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.MSnAnalyzer;
 import at.tugraz.genome.lda.msn.OtherAdductChecker;
@@ -68,24 +69,19 @@ import at.tugraz.genome.lda.msn.PostQuantificationProcessor;
 import at.tugraz.genome.lda.msn.RulesContainer;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
-import at.tugraz.genome.lda.msn.vos.IntensityChainVO;
-import at.tugraz.genome.lda.msn.vos.IntensityPositionVO;
-import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
 import at.tugraz.genome.lda.msn.vos.RtPredictVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
-import at.tugraz.genome.lda.utils.ExcelUtils;
+import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.lda.utils.RangeInteger;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleStringVO;
 import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
-import at.tugraz.genome.maspectras.quantification.CgAreaStatus;
 import at.tugraz.genome.maspectras.quantification.CgException;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
-import at.tugraz.genome.maspectras.quantification.Probe3D;
 import at.tugraz.genome.maspectras.utils.Calculator;
 import at.tugraz.genome.maspectras.utils.StringUtils;
 import at.tugraz.genome.voutils.GeneralComparator;
@@ -93,8 +89,10 @@ import at.tugraz.genome.voutils.GeneralComparator;
 /**
  * 
  * @author Juergen Hartler
+ * @author Leonida M. Lamp
  *
  */
+//TODO: features for omega assingment have been commented out / not added
 public class QuantificationThread extends Thread
 {
   private String chromFile_;
@@ -138,12 +136,7 @@ public class QuantificationThread extends Thread
   private Hashtable<Integer,String> threadToAnalyte_;
   private Hashtable<Integer,String> threadToMod_;
   
-  public final static String OVERVIEW_SHEET_ADDUCT = " - Overview";
-  public final static String MSN_SHEET_ADDUCT = " - MSn";
-  public final static String CONSTANTS_SHEET = "About";
   private long startCalcTime_;
-  
-  private final static String OVERVIEW_SHEET_HEADER_SPECIES = "Species";
   
   private Timer timer_;
   
@@ -153,29 +146,6 @@ public class QuantificationThread extends Thread
   private final static int STATUS_WAITING = 0;
   private final static int STATUS_CALCULATING = 1;
   private final static int STATUS_FINISHED = 2;
-
-  private final static int MSN_ROW_FRAGMENT_OH = 1;
-  private final static int MSN_ROW_FRAGMENT_CHAIN_TYPE = 2;
-  
-  private final static int MSN_ROW_FRAGMENT_MSLEVEL = 2;
-  private final static int MSN_ROW_FRAGMENT_CHARGE = 3;
-  private final static int MSN_ROW_FRAGMENT_MZ = 4;
-  private final static int MSN_ROW_FRAGMENT_MZ_TOLERANCE = 5;
-  private final static int MSN_ROW_FRAGMENT_AREA = 6;
-  private final static int MSN_ROW_FRAGMENT_PEAK = 7;
-  private final static int MSN_ROW_FRAGMENT_TIME_LOWER = 8;
-  private final static int MSN_ROW_FRAGMENT_TIME_UPPER = 9;
-  private final static int MSN_ROW_FRAGMENT_MZ_LOWER = 10;
-  private final static int MSN_ROW_FRAGMENT_MZ_UPPER = 11;
-  private final static int MSN_ROW_FRAGMENT_ELLIPSE_TIME = 12;
-  private final static int MSN_ROW_FRAGMENT_ELLIPSE_MZ = 13;
-  private final static int MSN_ROW_FRAGMENT_ELLIPSE_TIME_RANGE = 14;
-  private final static int MSN_ROW_FRAGMENT_ELLIPSE_MZ_RANGE = 15;
-
-  private final static int MSN_ROW_INTENSITY_RULE = 0;
-  private final static int MSN_ROW_INTENSITY_ORIGINAL = 1;
-  private final static int MSN_ROW_INTENSITY_VALUES = 2;
-  private final static int MSN_ROW_INTENSITY_MISSED = 3;
   
     
   public QuantificationThread(String chromFile,String quantFile,String resultFile,//float mzTolerance, 
@@ -198,6 +168,7 @@ public class QuantificationThread extends Thread
     numberOfProcessors_ = numberOfProcessors;
     this.ionMode_ = ionMode;
     this.cli_ = cli;
+    
   }
   
   public void run(){
@@ -211,6 +182,13 @@ public class QuantificationThread extends Thread
       this.finished_ = true;
       
     }
+  }
+  
+  public String getChromFile() {
+    return this.chromFile_;
+  }
+  public String getResultFile() {
+    return this.resultFile_;
   }
   
   public boolean finished(){
@@ -287,767 +265,6 @@ public class QuantificationThread extends Thread
         isWithinBoundaries = true;
     }
     return isWithinBoundaries;
-  }
-  
-  @SuppressWarnings("resource")
-  public static void writeResultsToExcel(String resultFile,QuantificationResult quantRes) throws Exception{
-    BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(resultFile));
-    Workbook resultWorkbook = new XSSFWorkbook();
-    //this line is for backward compatibility to the old Excel 2003 saved files
-    if (resultFile.endsWith(".xls")) resultWorkbook = new HSSFWorkbook();
-    CellStyle headerStyle = getHeaderStyle(resultWorkbook);
-    boolean hasRtInfo = hasRtInfo(quantRes.getIdentifications());
-    int rtPlus = 0;
-    if (hasRtInfo) rtPlus=1;
-    LipidomicsConstants constants = quantRes.getConstants();
-    if (constants!=null){
-      Sheet constantsSheet = resultWorkbook.createSheet(CONSTANTS_SHEET );
-      constants.writeSettingsToExcel(constantsSheet,headerStyle,quantRes.getFaHydroxyEncoding(),quantRes.getLcbHydroxyEncoding());
-    }
-    for (String sheetName: quantRes.getIdentifications().keySet()){
-      Vector<LipidParameterSet> params = quantRes.getIdentifications().get(sheetName);
-      boolean hasMSnInformation = false;
-//      boolean hasChainInfo = false;
-      Sheet resultSheet = resultWorkbook.createSheet(sheetName);
-      Sheet resultMSnSheet  = null;
-      boolean hasOhInfo = false;
-      for (LipidParameterSet param : params){
-        if (param instanceof LipidomicsMSnSet) {
-          hasMSnInformation = true;
-//          if (((LipidomicsMSnSet)param).getStatus()>=LipidomicsMSnSet.FRAGMENTS_DETECTED)
-//            hasChainInfo = true;
-        }
-        if (param.getOhNumber()>LipidomicsConstants.EXCEL_NO_OH_INFO)
-          hasOhInfo = true;
-        if (hasMSnInformation && hasOhInfo)
-          break;
-      }
-      int ohPlus = 0;
-      if (hasOhInfo) ohPlus = 1;
-      Hashtable<Integer,String> msnLongestHeaders = null;
-      Hashtable<Integer,Integer> msnLongestEntries = null;
-      if (hasMSnInformation){
-        resultMSnSheet = resultWorkbook.createSheet(sheetName+MSN_SHEET_ADDUCT);
-        msnLongestHeaders = new Hashtable<Integer,String>();
-        msnLongestEntries = new Hashtable<Integer,Integer>();
-      }
-      Sheet resultSheetOV = null;
-//      HSSFRow headerRowOV = null;
-//      HSSFRow valuesRowOV = null;
-      Cell label = null;
-      
-      int amountOfIsotopes = 0;
-      int massAdd = 0;
-      if (Settings.isOverviewInExcelDesired()/* && params.size()<256*/){
-        resultSheetOV = resultWorkbook.createSheet(sheetName+OVERVIEW_SHEET_ADDUCT);
-        Row headerRowOV = resultSheetOV.createRow(0);
-        int beginIndex = 0;
-        int lastIndexSlash = resultFile.lastIndexOf("/");
-        int lastIndexBackSlash = resultFile.lastIndexOf("\\");
-        if (lastIndexSlash>lastIndexBackSlash)
-          beginIndex = lastIndexSlash;
-        else
-          beginIndex = lastIndexBackSlash;
-        beginIndex++;
-        label = headerRowOV.createCell(0,Cell.CELL_TYPE_STRING);
-        label.setCellValue(OVERVIEW_SHEET_HEADER_SPECIES);
-        label.setCellStyle(headerStyle);
-        label = headerRowOV.createCell(1,Cell.CELL_TYPE_STRING);
-        label.setCellValue(resultFile.substring(beginIndex,resultFile.lastIndexOf(".")));
-        label.setCellStyle(headerStyle);
-        if (Settings.isMassInOverviewExcelDesired()){
-          label = headerRowOV.createCell(2,Cell.CELL_TYPE_STRING);
-          label.setCellValue("m/z");
-          label.setCellStyle(headerStyle);
-          massAdd++;
-        }
-        if (Settings.isIsotopeInOverviewExcelDesired()){
-          for (LipidParameterSet param : params){
-            int maxIso = param.getIsotopicProbes().size();
-            if (maxIso>amountOfIsotopes) amountOfIsotopes = maxIso;
-          }
-          for (int i=0;i!=amountOfIsotopes;i++){
-            label = headerRowOV.createCell(2+massAdd+i,Cell.CELL_TYPE_STRING);
-            label.setCellValue("Isotope "+i);
-            label.setCellStyle(headerStyle);            
-          }
-        }
-//        headerRowOV = resultSheetOV.createRow(0);
-//        valuesRowOV = resultSheetOV.createRow(1);
-      }
-      Row row = resultSheet.createRow(0);
-      int msLevel = 1;
-      if (quantRes.getMsLevels()!=null&&quantRes.getMsLevels().containsKey(sheetName)) msLevel = quantRes.getMsLevels().get(sheetName);
-      
-      // Create the label, specifying content and format 
-      label = row.createCell(1,Cell.CELL_TYPE_STRING);
-      label.setCellValue("Name");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(2,Cell.CELL_TYPE_STRING);
-      label.setCellValue("Dbs");
-      label.setCellStyle(headerStyle);
-      if (hasOhInfo) {
-        label = row.createCell(3,Cell.CELL_TYPE_STRING);
-        label.setCellValue(LipidomicsConstants.EXCEL_MS_OH);
-        label.setCellStyle(headerStyle);
-      }
-      label = row.createCell(3+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("Modification");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(4+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("Formula");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(5+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("Mod-Formula");
-      label.setCellStyle(headerStyle);
-      if (hasRtInfo){
-        label = row.createCell(6+ohPlus,Cell.CELL_TYPE_STRING);
-        label.setCellValue("RT");
-        label.setCellStyle(headerStyle);
-      }
-      label = row.createCell(6+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("Isotope");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(7+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("Area");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(8+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("AreaError");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(9+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("Background");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(10+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("Charge");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(11+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("Mz");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(12+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("MzTolerance");
-      label.setCellStyle(headerStyle);
-
-      label = row.createCell(13+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("Peak");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(14+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("LowerValley");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(15+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("UpperValley");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(16+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("LowMz");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(17+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("UpMz");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(18+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("EllCentTime");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(19+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("EllCentMz");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(20+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("EllStretchTime");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(21+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("EllStretchMz");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(22+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("LowerRtHardLimit");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(23+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("UpperRtHardLimit");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(24+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("PercentalSplit");
-      label.setCellStyle(headerStyle);
-      label = row.createCell(25+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue("level="+String.valueOf(msLevel));
-      label.setCellStyle(headerStyle);
-      label = row.createCell(26+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(LDAResultReader.COLUMN_APEX_INTENSITY);
-      label.setCellStyle(headerStyle);
-      label = row.createCell(27+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(LDAResultReader.COLUMN_LOWER_VALLEY10PC);
-      label.setCellStyle(headerStyle);
-      label = row.createCell(28+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(LDAResultReader.COLUMN_LOWER_VALLEY50PC);
-      label.setCellStyle(headerStyle);
-      label = row.createCell(29+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(LDAResultReader.COLUMN_UPPER_VALLEY50PC);
-      label.setCellStyle(headerStyle);
-      label = row.createCell(30+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(LDAResultReader.COLUMN_UPPER_VALLEY10PC);
-      label.setCellStyle(headerStyle);
-      label = row.createCell(31+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(LDAResultReader.COLUMN_LOWER_MZ10PC);
-      label.setCellStyle(headerStyle);
-      label = row.createCell(32+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(LDAResultReader.COLUMN_LOWER_MZ50PC);
-      label.setCellStyle(headerStyle);
-      label = row.createCell(33+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(LDAResultReader.COLUMN_UPPER_MZ50PC);
-      label.setCellStyle(headerStyle);
-      label = row.createCell(34+rtPlus+ohPlus,Cell.CELL_TYPE_STRING);
-      label.setCellValue(LDAResultReader.COLUMN_UPPER_MZ10PC);
-      label.setCellStyle(headerStyle);
-
-
-//      if (Settings.isOverviewInExcelDesired() /*&& params.size()<256*/){
-//        int beginIndex = 0;
-//        int lastIndexSlash = resultFile.lastIndexOf("/");
-//        int lastIndexBackSlash = resultFile.lastIndexOf("\\");
-//        if (lastIndexSlash>lastIndexBackSlash)
-//          beginIndex = lastIndexSlash;
-//        else
-//          beginIndex = lastIndexBackSlash;
-//        beginIndex++;
-//        label = valuesRowOV.createCell(0,HSSFCell.CELL_TYPE_STRING);
-//        label.setCellValue(resultFile.substring(beginIndex,resultFile.lastIndexOf(".")));
-//        label.setCellStyle(headerStyle);
-//      }
-      int resultCount = 0;
-      int resultRowCount = 0;
-      int msnRowCount = 0;
-      if (hasMSnInformation && constants.getAlexTargetlistUsed().containsKey(sheetName) && constants.getAlexTargetlistUsed().get(sheetName)){
-        Row msnRow = resultMSnSheet.createRow(msnRowCount);
-        msnRowCount++;
-        Cell cell = msnRow.createCell(0);
-        cell.setCellStyle(headerStyle);
-        cell.setCellValue(LDAResultReader.ALEX123_MSN_TARGETS_USED+"=true");
-      }
-      for (LipidParameterSet param : params){
-        if (param instanceof LipidomicsMSnSet){
-          try {
-            msnRowCount = writeMSnEvidence(msnRowCount,resultMSnSheet,(LipidomicsMSnSet)param, headerStyle, msnLongestHeaders, msnLongestEntries,
-                quantRes.getFaHydroxyEncoding(),quantRes.getLcbHydroxyEncoding());
-          }catch(Exception ex){
-            ex.printStackTrace();
-            throw ex;
-          }
-        }
-        resultCount++;
-        double totalArea = 0;
-        Cell number;
-        resultRowCount++;
-        row = resultSheet.createRow(resultRowCount);
-        number = row.createCell(0,Cell.CELL_TYPE_NUMERIC);
-        number.setCellValue(new Double(resultCount));
-        label = row.createCell(1,Cell.CELL_TYPE_STRING);
-        label.setCellValue(param.Peptide);
-        label = row.createCell(2,Cell.CELL_TYPE_STRING);
-        label.setCellValue(String.valueOf(param.getDoubleBonds()));
-        if (hasOhInfo) {
-          label = row.createCell(3,Cell.CELL_TYPE_STRING);
-          label.setCellValue(String.valueOf(param.getOhNumber()));
-        }
-        label = row.createCell(3+ohPlus,Cell.CELL_TYPE_STRING);
-        label.setCellValue(param.getModificationName());
-        label = row.createCell(4+ohPlus,Cell.CELL_TYPE_STRING);
-        label.setCellValue(param.getAnalyteFormula());
-        label = row.createCell(5+ohPlus,Cell.CELL_TYPE_STRING);
-        label.setCellValue(param.getModificationFormula());
-        if (hasRtInfo){
-          label = row.createCell(6+ohPlus,Cell.CELL_TYPE_STRING);
-          label.setCellValue(param.getRt());
-        }  
-        
-        Cell totalAreaCell = row.createCell(7+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-        number = row.createCell(10+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-        number.setCellValue(param.getCharge());        
-        number = row.createCell(11+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-        number.setCellValue(param.Mz[0]);
-        number = row.createCell(12+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-        number.setCellValue(param.LowerMzBand);
-        if (param.getLowerRtHardLimit()>=0){
-          number = row.createCell(22+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-          number.setCellValue(param.getLowerRtHardLimit());
-        }
-        if (param.getUpperRtHardLimit()>=0){
-          number = row.createCell(23+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-          number.setCellValue(param.getUpperRtHardLimit());
-        }
-        if (param.getPercentalSplit()>=0){
-          number = row.createCell(24+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-          number.setCellValue(param.getPercentalSplit());
-        }
-        Row valuesRowOV = null;
-        if (Settings.isOverviewInExcelDesired() /*&& params.size()<256*/){
-//          label = headerRowOV.createCell(resultCount,HSSFCell.CELL_TYPE_STRING);
-          valuesRowOV = resultSheetOV.createRow(resultCount);
-          label = valuesRowOV.createCell(0,Cell.CELL_TYPE_STRING);
-          label.setCellValue(param.getNamePlusModHumanReadable());
-          label.setCellStyle(headerStyle);
-        }
-        Vector<Vector<CgProbe>> isotopicProbes = param.getIsotopicProbes();
-        for (int j=0;j!=isotopicProbes.size();j++){
-          resultRowCount++;
-          row = resultSheet.createRow(resultRowCount);
-          number = row.createCell(6+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-          int chargeState = j;
-          if (param.getMinIsotope()<0) chargeState*=-1;
-          number.setCellValue(chargeState);          
-          Vector<CgProbe> probes = isotopicProbes.get(j);
-          float totalIsoArea = 0f;
-          for (int i=0; i!=probes.size(); i++){
-            totalIsoArea+=probes.get(i).Area;
-          }
-          number = row.createCell(7+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-          number.setCellValue(totalIsoArea);
-          totalArea+=totalIsoArea;
-          for (int i=0; i!=probes.size(); i++){
-            CgProbe probe = probes.get(i);
-            resultRowCount++;
-            row = resultSheet.createRow(resultRowCount);
-            if (probe!=null&&probe.AreaStatus==CgAreaStatus.OK){
-              number = row.createCell(6+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-              number.setCellValue(chargeState);
-              number = row.createCell(7+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-              number.setCellValue(new Double(probe.Area));
-              number = row.createCell(8+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-              number.setCellValue(new Double(probe.AreaError));
-              number = row.createCell(9+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-              number.setCellValue(new Double(probe.Background));
-              number = row.createCell(10+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-              number.setCellValue(probe.Charge);
-              number = row.createCell(13+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-              number.setCellValue(new Double(probe.Peak));
-              number = row.createCell(14+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-              number.setCellValue(new Double(probe.LowerValley));
-              number = row.createCell(15+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-              number.setCellValue(new Double(probe.UpperValley));
-              if (probe.getLowerValley10()!=null){
-                number = row.createCell(26+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-                number.setCellValue(new Double(probe.getApexIntensity()));
-                number = row.createCell(27+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-                number.setCellValue(new Double(probe.getLowerValley10()));
-                number = row.createCell(28+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-                number.setCellValue(new Double(probe.getLowerValley50()));
-                number = row.createCell(29+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-                number.setCellValue(new Double(probe.getUpperValley50()));
-                number = row.createCell(30+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-                number.setCellValue(new Double(probe.getUpperValley10()));
-              }
-              if (probe instanceof Probe3D){
-                Probe3D probe3D = (Probe3D)probe;
-                number = row.createCell(16+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-                number.setCellValue(new Double(probe3D.LowerMzBand));
-                number = row.createCell(17+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-                number.setCellValue(new Double(probe3D.UpperMzBand));
-                number = row.createCell(18+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-                number.setCellValue(new Double(probe3D.getEllipseTimePosition()));
-                number = row.createCell(19+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-                number.setCellValue(new Double(probe3D.getEllipseMzPosition()));
-                number = row.createCell(20+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-                number.setCellValue(new Double(probe3D.getEllipseTimeStretch()));
-                number = row.createCell(21+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-                number.setCellValue(new Double(probe3D.getEllipseMzStretch()));
-                if (((Probe3D) probe).getLowMz10()>-1){
-                  number = row.createCell(31+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-                  number.setCellValue(new Double(probe3D.getLowMz10()));
-                  number = row.createCell(32+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-                  number.setCellValue(new Double(probe3D.getLowMz50()));
-                  number = row.createCell(33+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-                  number.setCellValue(new Double(probe3D.getUpMz50()));
-                  number = row.createCell(34+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-                  number.setCellValue(new Double(((Probe3D) probe).getUpMz10()));
-                }
-              }
-            } else{
-              number = row.createCell(7+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-              number.setCellValue(new Double(0));
-            }
-            number = row.createCell(11+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-            number.setCellValue(probe.Mz);
-            number = row.createCell(12+rtPlus+ohPlus,Cell.CELL_TYPE_NUMERIC);
-            number.setCellValue(param.LowerMzBand);
-          }
-        }
-        totalAreaCell.setCellValue(totalArea);
-        if (Settings.isOverviewInExcelDesired()  /*&& params.size()<256*/){
-//          label = valuesRowOV.createCell(resultCount,HSSFCell.CELL_TYPE_NUMERIC);
-          label = valuesRowOV.createCell(1,Cell.CELL_TYPE_NUMERIC);
-          label.setCellValue(totalArea);
-          if (Settings.isMassInOverviewExcelDesired()){
-            label = valuesRowOV.createCell(2,Cell.CELL_TYPE_STRING);
-            label.setCellValue(param.Mz[0]);
-          }
-          if (Settings.isIsotopeInOverviewExcelDesired()){
-            for (int i=0;i!=amountOfIsotopes;i++){
-              if (param.getIsotopicProbes().size()>i){
-                Vector<CgProbe> probes = isotopicProbes.get(i);
-                float totalIsoArea = 0f;
-                for (int j=0; j!=probes.size(); j++){
-                  totalIsoArea+=probes.get(j).Area;
-                }
-                label = valuesRowOV.createCell(2+massAdd+i,Cell.CELL_TYPE_STRING);
-                label.setCellValue(totalIsoArea);
-              }
-            }  
-          }
-        }
-      }
-      if (hasMSnInformation){
-        for (Integer column : msnLongestHeaders.keySet()) {
-          setColumnWidth(resultMSnSheet, column, msnLongestHeaders.get(column), (msnLongestEntries.containsKey(column) ? msnLongestEntries.get(column) : 0));
-        }
-      }
-    }
-    resultWorkbook.write(out);
-    out.close();
-  }
-
-  /**
-   * writes the MSn evidence for one identified MSn species
-   * @param msnRowCount the current Excel row where subsequent information can be written
-   * @param sheet Excel sheet for MSn evidence for this class
-   * @param param the lipid identification containing MSn evidence
-   * @param headerStyle style for the header row
-   * @param longestHeaders the names of the longest header entries for each column - for setting the column width
-   * @param longestEntries the length of the longest entries for each column - for setting the column width
-   * @param faHydroxyEncoding the character encoding of the number of hydroxylation sites for the
-   * @param lcbHydroxyEncoding the character encoding of the number of hydroxylation sites for the LCB
-   * @return the next row where subsequent information can be written
-   * @throws RulesException
-   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded 
-   * @throws ChemicalFormulaException thrown when something is wrong with the chemical formula
-   */
-  @SuppressWarnings("unchecked")
-  private static int writeMSnEvidence(int msnRowCount, Sheet sheet, LipidomicsMSnSet param, CellStyle headerStyle,
-      Hashtable<Integer,String> longestHeaders, Hashtable<Integer,Integer> longestEntries, HydroxyEncoding faHydroxyEncoding,
-      HydroxyEncoding lcbHydroxyEncoding) throws RulesException, LipidCombinameEncodingException, ChemicalFormulaException {
-    int count = msnRowCount;
-    Row row = sheet.createRow(count);
-    count++;
-    Row areaRow = sheet.createRow(count);
-    count++;
-    createHeaderCell(row, 0, headerStyle, param.getNamePlusModHumanReadable(), longestHeaders);
-    createValueCell(areaRow, Cell.CELL_TYPE_NUMERIC, 0, String.valueOf(param.Area), null, (double)param.Area, longestEntries);
-    
-    // writing of fragments and rules concerning the head group
-    Hashtable<String,CgProbe> headGroupFragments = param.getHeadGroupFragments();
-    if (headGroupFragments.size()>0){
-     Row headGroupRow =  sheet.createRow(count);
-     count++;
-     createHeaderCell(headGroupRow, 0, headerStyle, LipidomicsConstants.EXCEL_MSN_SECTION_HEAD_FRAGMENTS, longestHeaders);
-     headGroupRow = sheet.createRow(count);
-     count++;
-     writeMSnFragmentHeader(headGroupRow,headerStyle,LipidomicsConstants.CHAIN_TYPE_NO_CHAIN,longestHeaders);
-     for (String name : headGroupFragments.keySet()){
-       headGroupRow = sheet.createRow(count);
-       count++;
-       writeMSnFragment(headGroupRow,name,param.getMSnMzTolerance(),headGroupFragments.get(name),LipidomicsConstants.CHAIN_TYPE_NO_CHAIN,-1,
-           longestEntries);
-     }
-     Hashtable<String,IntensityRuleVO> headIntRules = param.getHeadIntensityRules();
-     if (headIntRules.size()>0){
-       headGroupRow =  sheet.createRow(count);
-       count++;
-       createHeaderCell(headGroupRow, 0, headerStyle, LipidomicsConstants.EXCEL_MSN_SECTION_HEAD_INTENSITIES, longestHeaders);
-       headGroupRow = sheet.createRow(count);
-       count++;
-       writeMSnIntensityHeader(headGroupRow,headerStyle,  longestHeaders);
-       Hashtable<String,String> uniqueRules = new Hashtable<String,String>();
-       for (IntensityRuleVO ruleVO : headIntRules.values()){
-         if (writeMSnIntensity(sheet,count,ruleVO,param,uniqueRules,longestEntries,faHydroxyEncoding,lcbHydroxyEncoding)){
-           count++;
-         }
-       }
-     }
-    }
-    
-    // writing of fragments and rules concerning the fragments
-    Hashtable<String,Hashtable<String,CgProbe>> chainFragments = param.getChainFragments();
-    if (chainFragments.size()>0){
-      Row chainRow =  sheet.createRow(count);
-      count++;
-      createHeaderCell(chainRow, 0, headerStyle, LipidomicsConstants.EXCEL_MSN_SECTION_CHAIN_FRAGMENTS, longestHeaders);
-      chainRow = sheet.createRow(count);
-      count++;
-      writeMSnFragmentHeader(chainRow,headerStyle,LipidomicsConstants.CHAIN_TYPE_FA_ACYL,longestHeaders);
-      for (String faName : chainFragments.keySet()){
-        Hashtable<String,CgProbe> fragments = chainFragments.get(faName);
-        for (String name : fragments.keySet()){
-          chainRow = sheet.createRow(count);
-          count++;
-          FattyAcidVO fa = StaticUtils.decodeLipidNameForCreatingCombis(faName);
-          String displayName = StaticUtils.getChainFragmentDisplayName(name,fa.getCarbonDbsId());
-          writeMSnFragment(chainRow,displayName,param.getMSnMzTolerance(),fragments.get(name),fa.getChainType(),fa.getOhNumber(),longestEntries);
-        }
-      }
-      Hashtable<String,Hashtable<String,IntensityChainVO>> chainRules = param.getChainIntensityRules();
-      if (chainRules.size()>0){
-        chainRow =  sheet.createRow(count);
-        count++;
-        createHeaderCell(chainRow, 0, headerStyle, LipidomicsConstants.EXCEL_MSN_SECTION_CHAIN_INTENSITIES, longestHeaders);
-        chainRow = sheet.createRow(count);
-        count++;
-        writeMSnIntensityHeader(chainRow,headerStyle,longestHeaders);
-        Hashtable<String,String> uniqueRules = new Hashtable<String,String>();
-        for (String faName : chainRules.keySet()){
-          Hashtable<String,IntensityChainVO> rules = chainRules.get(faName);
-          for (IntensityRuleVO rule : rules.values()){
-            if (writeMSnIntensity(sheet,count,rule,param,uniqueRules,longestEntries,faHydroxyEncoding,lcbHydroxyEncoding)){
-              count++;
-            }
-          }
-        }
-      }
-    }
-    
-    // writing of position rules
-    Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>> posRules = param.getPositionEvidence();
-    if (posRules.size()>0){
-      for (String combiName : posRules.keySet()){
-        Row positionRow =  sheet.createRow(count);
-        count++;
-        createHeaderCell(positionRow, 0, headerStyle, LipidomicsConstants.EXCEL_MSN_SECTION_POSITION_INTENSITIES+" ("+param.getPositionInsensitiveHumanReadableCombiName(combiName)+")", longestHeaders);
-        positionRow = sheet.createRow(count);
-        count++;
-        writeMSnIntensityHeader(positionRow,headerStyle,longestHeaders);
-        Hashtable<String,String> uniqueRules = new Hashtable<String,String>();
-        Vector<IntensityRuleVO> rules = param.getFAsInSequenceAsInRule(combiName); 
-        for (IntensityRuleVO rule : rules){
-          if (writeMSnIntensity(sheet,count,rule,param,uniqueRules,longestEntries,faHydroxyEncoding,lcbHydroxyEncoding)){
-            count++;
-          }  
-        }
-      }
-    }
-    Hashtable<String,String> identifiedLipids = new Hashtable<String,String>();
-    String identificationString;
-    int cellCount = 1;
-    Vector<Object> detected = null;
-    try {detected = param.getMSnIdentificationNames();
-    }catch (LipidCombinameEncodingException lcx) {
-      detected = new Vector<Object>();
-      lcx.printStackTrace();
-    }
-    for (Object nameObject : detected){
-      identificationString = "";
-      double area = 0d;
-      if (nameObject instanceof Vector){
-        area = param.getRelativeIntensity(((Vector<String>)nameObject).get(0))*((double)param.Area);
-        for (String name : (Vector<String>)nameObject){
-          identificationString+=name+LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS;
-        }
-        identificationString = identificationString.substring(0,identificationString.length()-1);
-      }else{
-        String name = (String) nameObject;
-        identificationString = name;
-        if (param.getStatus()==LipidomicsMSnSet.HEAD_GROUP_DETECTED)area = param.Area;
-        else area = param.getRelativeIntensity(name)*((double)param.Area);
-      }
-      identifiedLipids.put(identificationString, identificationString);
-      createHeaderCell(row, cellCount, headerStyle, identificationString, longestHeaders);
-      createValueCell(areaRow, Cell.CELL_TYPE_NUMERIC, cellCount, String.valueOf(area), null, area, longestEntries);
-      cellCount++;
-    }
-    
-    //writing the retention times of the used spectra
-    List<Integer> msLevels = new ArrayList<Integer>(param.getMsnRetentionTimes().keySet());
-    Collections.sort(msLevels);
-    for (int msLevel : msLevels){
-      LinkedHashMap<Integer,Float> rts = param.getMsnRetentionTimes().get(msLevel);
-      String rtString = "";
-      for (Integer scanNr : rts.keySet()) rtString += scanNr+"="+rts.get(scanNr)+";";
-      if (rtString.length()>0) rtString = rtString.substring(0,rtString.length()-1);
-      createHeaderCell(row, cellCount, headerStyle, "MS"+msLevel+" scan RTs", longestHeaders);
-      createValueCell(areaRow, Cell.CELL_TYPE_STRING, cellCount, rtString, null, null, longestEntries);
-      cellCount++;
-    }
-    count++;
-    return count;
-  }
-    
-  /**
-   * writes the header row for subsequent fragment evidence
-   * @param row Excel row that shall be used for writing
-   * @param headerStyle style for the header row
-   * @param chainType the chain type - allowed: LipidomicsConstants.CHAIN_TYPE_NO_CHAIN|CHAIN_TYPE_FA_ACYL|CHAIN_TYPE_FA_ALKYL|CHAIN_TYPE_FA_ALKENYL|CHAIN_TYPE_LCB
-   * @param longestHeaders the names of the longest header entries for each column - for setting the column width
-   */
-  private static void writeMSnFragmentHeader(Row row, CellStyle headerStyle, short chainType, Hashtable<Integer,String> longestHeaders){
-    createHeaderCell(row, LDAResultReader.MSN_ROW_FRAGMENT_NAME, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_NAME, longestHeaders);
-    int add = 0;
-    if (chainType!=LipidomicsConstants.CHAIN_TYPE_NO_CHAIN) {
-      createHeaderCell(row, MSN_ROW_FRAGMENT_OH, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_OH, longestHeaders);
-      createHeaderCell(row, MSN_ROW_FRAGMENT_CHAIN_TYPE, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_CHAIN_TYPE, longestHeaders);      
-      add = 2;
-    }
-    createHeaderCell(row, LDAResultReader.MSN_ROW_FRAGMENT_FORMULA+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_FORMULA, longestHeaders);      
-    createHeaderCell(row, MSN_ROW_FRAGMENT_MSLEVEL+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_MSLEVEL, longestHeaders);
-    createHeaderCell(row, MSN_ROW_FRAGMENT_CHARGE+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_CHARGE, longestHeaders);
-    createHeaderCell(row, MSN_ROW_FRAGMENT_MZ+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ, longestHeaders);
-    createHeaderCell(row, MSN_ROW_FRAGMENT_MZ_TOLERANCE+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ_TOLERANCE, longestHeaders);
-    createHeaderCell(row, MSN_ROW_FRAGMENT_AREA+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_AREA, longestHeaders);
-    createHeaderCell(row, MSN_ROW_FRAGMENT_PEAK+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_PEAK, longestHeaders);
-    createHeaderCell(row, MSN_ROW_FRAGMENT_TIME_LOWER+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_TIME_LOWER, longestHeaders);
-    createHeaderCell(row, MSN_ROW_FRAGMENT_TIME_UPPER+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_TIME_UPPER, longestHeaders);
-    createHeaderCell(row, MSN_ROW_FRAGMENT_MZ_LOWER+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ_LOWER, longestHeaders);
-    createHeaderCell(row, MSN_ROW_FRAGMENT_MZ_UPPER+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_MZ_UPPER, longestHeaders);
-    createHeaderCell(row, MSN_ROW_FRAGMENT_ELLIPSE_TIME+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_TIME, longestHeaders);
-    createHeaderCell(row, MSN_ROW_FRAGMENT_ELLIPSE_MZ+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_MZ, longestHeaders);
-    createHeaderCell(row, MSN_ROW_FRAGMENT_ELLIPSE_TIME_RANGE+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_TIME_RANGE, longestHeaders);
-    createHeaderCell(row, MSN_ROW_FRAGMENT_ELLIPSE_MZ_RANGE+add, headerStyle, LipidomicsConstants.EXCEL_MSN_FRAGMENT_ELLIPSE_MZ_RANGE, longestHeaders);
-  }
-  
-  
-  /**
-   * creates a header cell
-   * @param row the row where it has to be created
-   * @param column the column number
-   * @param headerStyle the header style
-   * @param value the value to be written in the header cell
-   * @param msnLongestHeaders the names of the longest header entries for each column - for setting the column width
-   * @return created cell
-   */
-  private static Cell createHeaderCell(Row row, int column, CellStyle headerStyle, String value, Hashtable<Integer,String> longestHeaders) {
-    Cell cell = row.createCell(column,Cell.CELL_TYPE_STRING);
-    cell.setCellStyle(headerStyle);
-    cell.setCellValue(value);
-    if (!longestHeaders.containsKey(column) || value.length()>longestHeaders.get(column).length())
-      longestHeaders.put(column, value);
-    return cell;
-  }
-
-  /**
-   * writes a line containing found fragments
-   * @param row Excel row that shall be used for writing
-   * @param name display name of the fragment
-   * @param mzTolerance m/z tolerance for the identification
-   * @param probe VO containing information about the identified fragment
-   * @param chainType the chain type - allowed: LipidomicsConstants.CHAIN_TYPE_NO_CHAIN|CHAIN_TYPE_FA_ACYL|CHAIN_TYPE_FA_ALKYL|CHAIN_TYPE_FA_ALKENYL|CHAIN_TYPE_LCB
-   * @param oh the number of hydroxylations on a chain
-   * @throws ChemicalFormulaException thrown when something is wrong with the chemical formula
-   */
-  private static void writeMSnFragment(Row row, String name, float mzTolerance, CgProbe probe,short chainType, int oh, Hashtable<Integer,Integer> longestEntries) throws ChemicalFormulaException{
-    createValueCell(row, Cell.CELL_TYPE_STRING, LDAResultReader.MSN_ROW_FRAGMENT_NAME, name, null, null, longestEntries);
-    int add = 0;
-    if (chainType!=LipidomicsConstants.CHAIN_TYPE_NO_CHAIN) {
-      createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_OH, String.valueOf(oh), oh, null, longestEntries);
-      createValueCell(row, Cell.CELL_TYPE_STRING, MSN_ROW_FRAGMENT_CHAIN_TYPE, StaticUtils.getHumanReadableChainType(chainType), null, null, longestEntries);
-      add = 2;
-    }    
-    //TODO: this is only here because of a damaged Alex123 file - delete in future version!
-    String formula = "";
-    if (probe.getFormula()!=null) formula = StaticUtils.getFormulaInHillNotation(StaticUtils.categorizeFormula(probe.getFormula().trim()),true);
-    createValueCell(row, Cell.CELL_TYPE_STRING, LDAResultReader.MSN_ROW_FRAGMENT_FORMULA+add, formula, null, null, longestEntries);
-    createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_MSLEVEL+add, String.valueOf(probe.getMsLevel()), probe.getMsLevel(), null, longestEntries);
-    createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_CHARGE+add, String.valueOf(probe.Charge), probe.Charge, null, longestEntries);
-    createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_MZ+add, String.valueOf(probe.Mz), null, (double)probe.Mz, longestEntries);
-    createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_MZ_TOLERANCE+add, String.valueOf(mzTolerance), null, (double)mzTolerance, longestEntries);
-    createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_AREA+add, String.valueOf(probe.Area), null, (double)probe.Area, longestEntries);
-    createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_PEAK+add, String.valueOf(probe.Peak), null, (double)probe.Peak, longestEntries);
-    createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_TIME_LOWER+add, String.valueOf(probe.LowerValley), null, (double)probe.LowerValley, longestEntries);
-    createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_TIME_UPPER+add, String.valueOf(probe.UpperValley), null, (double)probe.UpperValley, longestEntries);
-    if (probe instanceof Probe3D){
-      Probe3D probe3D = (Probe3D)probe;
-      createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_MZ_LOWER+add, String.valueOf(probe3D.LowerMzBand), null, (double)probe3D.LowerMzBand, longestEntries);
-      createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_MZ_UPPER+add, String.valueOf(probe3D.UpperMzBand), null, (double)probe3D.UpperMzBand, longestEntries);
-      createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_ELLIPSE_TIME+add, String.valueOf(probe3D.getEllipseTimePosition()), null, (double)probe3D.getEllipseTimePosition(), longestEntries);
-      createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_ELLIPSE_MZ+add, String.valueOf(probe3D.getEllipseMzPosition()), null, (double)probe3D.getEllipseMzPosition(), longestEntries);
-      createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_ELLIPSE_TIME_RANGE+add, String.valueOf(probe3D.getEllipseTimeStretch()), null, (double)probe3D.getEllipseTimeStretch(), longestEntries);
-      createValueCell(row, Cell.CELL_TYPE_NUMERIC, MSN_ROW_FRAGMENT_ELLIPSE_MZ_RANGE+add, String.valueOf(probe3D.getEllipseMzStretch()), null, (double)probe3D.getEllipseMzStretch(), longestEntries);
-    }
-  }
-  
-  
-  /**
-   * creates a value cell
-   * @param row the row where it has to be created
-   * @param cellType the cell type according to the types stored in the class org.apache.poi.ss.usermodel.Cell
-   * @param column the column number
-   * @param strValue the string value representation
-   * @param intValue the int value representation (can be null)
-   * @param doubleValue the double value representation (can be null)
-   * @param longestEntries the length of the longest entries for each column - for setting the column width
-   * @return created cell
-   */
-  private static Cell createValueCell(Row row, int cellType, int column, String strValue, Integer intValue, Double doubleValue, Hashtable<Integer,Integer> longestEntries) {
-    Cell cell = row.createCell(column,cellType);
-    int length = strValue.length();
-    if (cellType==Cell.CELL_TYPE_NUMERIC) {
-      if (intValue!=null)
-        cell.setCellValue(intValue);
-      else if (doubleValue!=null)
-        cell.setCellValue(doubleValue);
-    }else {
-      cell.setCellValue(strValue);
-    }
-    if (!longestEntries.containsKey(column) || length>longestEntries.get(column))
-      longestEntries.put(column, length);
-    return cell;
-  }
-  
-  
-  /**
-   * writes the header row for subsequent intensity evidence
-   * @param row Excel row that shall be used for writing
-   * @param headerStyle style for the header row
-   * @param longestHeaders the names of the longest header entries for each column - for setting the column width
-   */
-  private static void writeMSnIntensityHeader(Row row, CellStyle headerStyle, Hashtable<Integer,String> longestHeaders){
-    createHeaderCell(row, MSN_ROW_INTENSITY_RULE, headerStyle, LipidomicsConstants.EXCEL_MSN_INTENSITY_RULE, longestHeaders);
-    createHeaderCell(row, MSN_ROW_INTENSITY_ORIGINAL, headerStyle, LipidomicsConstants.EXCEL_MSN_INTENSITY_ORIGINAL, longestHeaders);
-    createHeaderCell(row, MSN_ROW_INTENSITY_VALUES, headerStyle, LipidomicsConstants.EXCEL_MSN_INTENSITY_VALUES, longestHeaders);
-    createHeaderCell(row, MSN_ROW_INTENSITY_MISSED, headerStyle, LipidomicsConstants.EXCEL_MSN_INTENSITY_MISSED, longestHeaders);    
-  }
-  
-  /**
-   * writes a line containing the intensity evidence
-   * @param row Excel row that shall be used for writing
-   * @param ruleVO IntensityRuleVO to be written
-   * @param param the lipid identification containing MSn evidence
-   * @param faHydroxyEncoding the character encoding of the number of hydroxylation sites for the
-   * @param lcbHydroxyEncoding the character encoding of the number of hydroxylation sites for the LCB
-   * @return lengths for adaption of cell width: int[0] longest amount of characters for MSN_ROW_INTENSITY_RULE cell; int[1] longest amount of characters for MSN_ROW_INTENSITY_ORIGINAL cell; int[2] longest amount of characters for MSN_ROW_INTENSITY_VALUES cell
-   * @throws RulesException if something is not possible
-   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
-   */
-  private static boolean writeMSnIntensity(Sheet sheet, int count, IntensityRuleVO ruleVO, LipidomicsMSnSet param, Hashtable<String,String> uniqueRules,
-     Hashtable<Integer,Integer> longestEntries, HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding) throws RulesException, LipidCombinameEncodingException{
-    String ruleInterpretation = ruleVO.getReadableRuleInterpretation(faHydroxyEncoding, lcbHydroxyEncoding);
-    String rule = ruleVO.getRuleIdentifier();
-    Hashtable<String,Float> fragmentAreas = param.getFragmentAreas(ruleVO);
-    Hashtable<String,String> missedFragments = new Hashtable<String,String>();
-    for (String frag : fragmentAreas.keySet()){
-      if (fragmentAreas.get(frag)<0f){
-        missedFragments.put(frag, frag);
-        fragmentAreas.put(frag,0f);
-      }
-    }
-    String missed = "";
-    for (String name : missedFragments.keySet()) missed += name+";";
-    if (missed.length()>0) missed = missed.substring(0,missed.length()-1);
-    String valueInterpretation = ruleVO.getRuleValueInterpretation(fragmentAreas, param.getBasePeak(ruleVO));
-    String uniqueId = ruleInterpretation+";"+rule+";"+valueInterpretation;
-    if (uniqueRules.containsKey(uniqueId)) return false;
-    uniqueRules.put(uniqueId, uniqueId);
-    Row row = sheet.createRow(count);
-    createValueCell(row, Cell.CELL_TYPE_STRING, MSN_ROW_INTENSITY_RULE, ruleInterpretation, null, null, longestEntries);
-    createValueCell(row, Cell.CELL_TYPE_STRING, MSN_ROW_INTENSITY_ORIGINAL, rule, null, null, longestEntries);
-    createValueCell(row, Cell.CELL_TYPE_STRING, MSN_ROW_INTENSITY_VALUES, valueInterpretation, null, null, longestEntries);
-    createValueCell(row, Cell.CELL_TYPE_STRING, MSN_ROW_INTENSITY_MISSED, missed, null, null, longestEntries);
-    return true;
-  }
-  
-  
-  public static boolean hasRtInfo(Hashtable<String,Vector<LipidParameterSet>> sheetParams){
-    boolean hasRt = true;
-    for (Vector<LipidParameterSet> params : sheetParams.values()){
-      boolean hasEntry = false;
-      for (LipidParameterSet param : params){
-        if (param.getRt()!=null && param.getRt().length()>0) hasRt = true;
-        else hasRt = false;
-        hasEntry = true;
-        break;
-      }
-      if (hasEntry) break;
-    }
-    return hasRt;
   }
   
   public static void setAnalyzerProperties(LipidomicsAnalyzer analyzer){
@@ -1153,8 +370,27 @@ public class QuantificationThread extends Thread
         rtShift, lowestRetTime, highestRetTime, true);
   }
   
-  
-  @SuppressWarnings({ "unchecked", "rawtypes", "resource" })
+  /**
+   * @param quantFile File path of the Quant File
+   * @param minusTime Retention time before tolerance
+   * @param plusTime Retention time after tolerance
+   * @param amountOfIsotopes Number of isotopes that shall be quantified
+   * @param isotopesMustMatch Number of isotopes that must match the theoretical distribution
+   * @param searchUnknownTime Search unknown retention time
+   * @param basePeakCutoff The relative cutoff value in per mille
+   * @param rtShift Retention time shift
+   * @param lowestRetTime Lowest retention time in the chrom files
+   * @param highestRetTime Highest retention time in the chrom files
+   * @param respectMassShift Take a mass shift range into account
+   * @return a vector containing class sequence, analyte sequence, adduct insensitive retention time filter and quantVO objects
+   * @throws IOException
+   * @throws SpectrummillParserException
+   * @throws ExcelInputFileException
+   * @throws ChemicalFormulaException
+   * @throws RulesException
+   * @throws HydroxylationEncodingException
+   */
+  @SuppressWarnings({ "unchecked", "rawtypes" })
   public static Vector parseQuantExcelFile(String quantFile, float minusTime, float plusTime, int amountOfIsotopes, int isotopesMustMatch, boolean searchUnknownTime, float basePeakCutoff,
       float rtShift, float lowestRetTime, float highestRetTime, boolean respectMassShift) throws IOException,SpectrummillParserException,ExcelInputFileException, ChemicalFormulaException, RulesException, HydroxylationEncodingException{
     InputStream myxls = new FileInputStream(quantFile);
@@ -1217,7 +453,9 @@ public class QuantificationThread extends Thread
           if (!foundColumns){
             if (contents.equalsIgnoreCase("Seitenkette")||contents.equalsIgnoreCase("Name")){
               sideChainColumn = i;
-            } else if (contents.equalsIgnoreCase("dbs")||contents.equalsIgnoreCase("dbs_TAG")){
+            } 
+            
+            else if (contents.equalsIgnoreCase("dbs")||contents.equalsIgnoreCase("dbs_TAG")){
               doubleBondColumn = i;
             } 
 
@@ -1228,24 +466,29 @@ public class QuantificationThread extends Thread
               charges.put(formulaAndName[1], Integer.parseInt(formulaAndName[2]));
               multi.put(formulaAndName[1], Integer.parseInt(formulaAndName[3]));
             }
+            
             else if (contents.equalsIgnoreCase("tR (min)")){
               retTimeColumn = i;
             }
+            
             else if (contents.startsWith("Start-RT:")){
               try{
                 fixedStartTime = Float.parseFloat(contents.substring("Start-RT:".length()).trim().replaceAll(",", "."));
               }catch(NumberFormatException nfx){nfx.printStackTrace();};
             }
+            
             else if (contents.startsWith("Stop-RT:")){
               try{
                 fixedEndTime = Float.parseFloat(contents.substring("Stop-RT:".length()).trim().replaceAll(",", "."));
               }catch(NumberFormatException nfx){};
             }
+            
             else if (contents.startsWith("Mass-Trace:")){
               try{
                 msLevel = Integer.parseInt(contents.substring("Mass-Trace:".length()).trim().replaceAll(",", "."));
               }catch(NumberFormatException nfx){};  
             }
+            
             else if (contents.trim().length()==1||contents.trim().length()==2){
               boolean ok = false;
               if (Character.isUpperCase(contents.trim().toCharArray()[0])){
@@ -1264,8 +507,12 @@ public class QuantificationThread extends Thread
                   }
                 }
               }
-            } else if (contents.trim().equalsIgnoreCase("adductInsensitiveRtFilter"))
+            } 
+            
+            else if (contents.trim().equalsIgnoreCase("adductInsensitiveRtFilter")) {
               rtFilterInsensitive = true;
+            }
+            
             else if (contents.startsWith("OH-Number:")){
               String ohString = contents.substring("OH-Number:".length()).trim().replaceAll(",", ".");
               try{
@@ -1274,7 +521,9 @@ public class QuantificationThread extends Thread
               }catch(NumberFormatException nfx){
                 ohNumber = Settings.getLcbHydroxyEncoding().getHydroxyNumber(ohString);
               }
-            } else if (contents.startsWith("OH-Range:")){
+            } 
+            
+            else if (contents.startsWith("OH-Range:")){
               String ohRangeString = contents.substring("OH-Range:".length()).trim().replaceAll(",", ".");
               String[] ohRangeParts = ohRangeString.split("-");
               boolean error = false;
@@ -1289,7 +538,9 @@ public class QuantificationThread extends Thread
               if (error)
                 throw new HydroxylationEncodingException("The value \"OH-Range\" must be a single integer, or a range in the format $lower$-$higher$; the value \""+ohRangeString+"\" in sheet "+sheet.getSheetName()+" does not comply!");
             }
-          }else{            
+            
+          }else{  
+            
             if (i==sideChainColumn&&contents!=null&contents.length()>0){
 //          for Marlene metabolomics implementation - exclude the if - only "sideChain = contents;" must remain 
               if (numeric!=null){
@@ -1297,9 +548,11 @@ public class QuantificationThread extends Thread
               }else
                 sideChain = contents;
             }
+            
             if (i==doubleBondColumn&&contents!=null&&contents.length()>0){
               doubleBonds = numeric.intValue();
             }
+            
             if (elementColumns.containsKey(i)&&contents.length()>0){
               int value = 0;
               // this is for columns such as "M" for mass, there the values are float and have
@@ -1324,6 +577,7 @@ public class QuantificationThread extends Thread
               if (respectMassShift) massOfInterest += LipidomicsConstants.getMassShift();
               massesOfInterest.put(massOfInterestColumns.get(i), massOfInterest);
             }
+            
             if (i==retTimeColumn&&contents!=null&contents.length()>0){
               retTime = numeric.floatValue();
               retTime += rtShift;
@@ -1413,11 +667,12 @@ public class QuantificationThread extends Thread
                 Vector<Double> mustMatchProbabs = (Vector<Double>)distris[0];
                 Vector<Double> probabs = (Vector<Double>)distris[1];
                 int negativeStartValue = (Integer)distris[2];
-              
+
                 QuantVO quantVO = new QuantVO(sheet.getSheetName(), sideChain, doubleBonds,
                     ohToUse,analyteFormula, massOfInterest, charge, modName,
                     modificationFormula, retTime, usedMinusTime, usedPlusTime,
                     mustMatchProbabs, probabs,negativeStartValue);
+                
                 analEncoded = quantVO.getAnalyteName();
                 quantsOfAnalyte.put(modName, quantVO);
               }
@@ -1462,17 +717,6 @@ public class QuantificationThread extends Thread
       return null;
   }
   
-  private static CellStyle getHeaderStyle(Workbook wb){
-    CellStyle arial12style = wb.createCellStyle();
-    Font arial12font = wb.createFont();
-    arial12font.setBoldweight(Font.BOLDWEIGHT_BOLD);
-    arial12font.setFontName("Arial");
-    arial12font.setFontHeightInPoints((short)12);
-    arial12style.setFont(arial12font);
-    arial12style.setAlignment(CellStyle.ALIGN_CENTER);
-    return arial12style;
-  }
-  
   private float[] initThreadMonitors(String[] chromPaths, int numberOfProcessors, float basePeakCutoff) throws CgException{
     availableThreads_ = new Hashtable<Integer,Boolean>();
     analyzers_ = new Hashtable<Integer,LipidomicsAnalyzer>();
@@ -1512,7 +756,7 @@ public class QuantificationThread extends Thread
 
     
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public ThreadSupervisor(Vector excelContent, float  basePeakCutoff, String resultFile){
+    protected ThreadSupervisor(Vector excelContent, float  basePeakCutoff, String resultFile){
       currentLipidCount_ = 0;
       classSequence_ = (LinkedHashMap<String,Integer>)excelContent.get(0);
       analyteSequence_ = (Hashtable<String,Vector<String>>)excelContent.get(1);
@@ -1555,7 +799,7 @@ public class QuantificationThread extends Thread
         Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>> unsplitted = new Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>();
         for (String analyteName : analyteSequence_.get(className)){
           Hashtable<String,QuantVO> analyteQuant = classQuant.get(analyteName);
-          Hashtable<String,Integer> status = new Hashtable<String,Integer>(); 
+          Hashtable<String,Integer> status = new Hashtable<String,Integer>();
           for (String mod : analyteQuant.keySet()){
             if (analyteQuant.get(mod).isQuantifiedByOtherIsobar()) status.put(mod, STATUS_FINISHED);
             else status.put(mod, STATUS_WAITING);
@@ -2099,7 +1343,9 @@ public class QuantificationThread extends Thread
               for (String key:hitsOfOneMod.keySet()) params.add(hitsOfOneMod.get(key));
             }else{
               List<DoubleStringVO> keys = new ArrayList<DoubleStringVO>();
-              for (String key:hitsOfOneMod.keySet())keys.add(new DoubleStringVO(key,Double.valueOf(key)));
+              for (String key:hitsOfOneMod.keySet()) {
+                keys.add(new DoubleStringVO(key,Double.valueOf(key)));
+              }
               Collections.sort(keys,new GeneralComparator("at.tugraz.genome.lda.vos.DoubleStringVO", "getValue", "java.lang.Double"));
               for (DoubleStringVO key : keys){
                 params.add(hitsOfOneMod.get(key.getKey()));
@@ -2188,8 +1434,21 @@ public class QuantificationThread extends Thread
       constants.setAlexTargetlistUsed(alexTargetlistUsed);
       HydroxyEncoding[] encodings = getOnlyUsedHydroxyEncodings(correctedParams,Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding());
       QuantificationResult quantRes = new QuantificationResult(correctedParams,constants,classSequence,encodings[0],encodings[1]);
-     
-      QuantificationThread.writeResultsToExcel(resultFile,quantRes);
+      
+//      long timeMillis_0 = System.currentTimeMillis();
+//      String resultFilePOI = resultFile.substring(0,resultFile.indexOf("."))+"_POI.xlsx";
+//      QuantificationResultExporterApachePOI.writeResultsToExcel(resultFilePOI,quantRes);
+//      long timeMillis_1 = System.currentTimeMillis();
+      
+      QuantificationResultExporter.writeResultsToExcel(resultFile,quantRes);
+      
+      
+//      long timeMillis_2 = System.currentTimeMillis();
+//      
+//      System.out.println(String.format("Time required by Apache POI: %s \n"
+//          + "Time required by fastExcel: %s", 
+//          (timeMillis_1-timeMillis_0)/1000.0, (timeMillis_2-timeMillis_1)/1000.0));
+      
       
       if (isAlexTargetList || cli_){
         String alexResultFile = new String(resultFile);
@@ -2201,6 +1460,8 @@ public class QuantificationThread extends Thread
         RdbOutputWriter rdbWriter = new RdbOutputWriter();
         rdbWriter.write(alexResultFile, results, classSequence, analyteSequence, quantObjects);
       }
+    } catch (ExportException ex) {
+      new WarningMessage(new JFrame(), "Error", ex.getMessage());
     }
     catch (Exception e) {
       e.printStackTrace();
@@ -2261,13 +1522,17 @@ public class QuantificationThread extends Thread
         Hashtable<String,QuantVO> quantAnal = quantClass.get(anal);
         for (String mod : quantAnal.keySet()){
           QuantVO quant1 = quantAnal.get(mod);
+          if (quant1.isQuantifiedByOtherIsobar()) continue;
+          
           float tol = LipidomicsConstants.getCoarseChromMzTolerance((float)quant1.getAnalyteMass());
           float sameTol = tol/5f;
-          boolean noMS21 = false;
-          try{ RulesContainer.getAmountOfChains(StaticUtils.getRuleName(quant1.getAnalyteClass(), quant1.getModName())); } catch (NoRuleException nrx){
-            noMS21 = true;
+          try{
+            RulesContainer.getAmountOfChains(StaticUtils.getRuleName(quant1.getAnalyteClass(), quant1.getModName()));
+          } catch (NoRuleException nrx) {
+            if(j==0) { System.out.println(nrx.getMessage()); }
+            continue;
           }
-          if (noMS21 || quant1.isQuantifiedByOtherIsobar()) continue;
+          
           float lowerMz = (float)quant1.getAnalyteMass()-tol;
           float upperMz = (float)quant1.getAnalyteMass()+tol;
           float lowerSame = (float)quant1.getAnalyteMass()-sameTol;
@@ -2281,11 +1546,14 @@ public class QuantificationThread extends Thread
           }
           for (QuantVO quant2 : toCompare){
             if (quant1.equals(quant2) || alreadyUsed.containsKey(getUniqueQuantVOString(quant2))) continue;
-            boolean noMS22 = false;
-            try{ RulesContainer.getAmountOfChains(StaticUtils.getRuleName(quant2.getAnalyteClass(), quant2.getModName()));}catch (NoRuleException nrx){
-              noMS22 = true;
+            
+            try{
+              RulesContainer.getAmountOfChains(StaticUtils.getRuleName(quant2.getAnalyteClass(), quant2.getModName()));
+            } catch (NoRuleException nrx) {
+              if(j==0) { System.out.println(nrx.getMessage()); }
+              continue;
             }
-            if (noMS22) continue;
+            
             float mz2 = (float)quant2.getAnalyteMass();
             boolean similarMass = lowerMz<mz2 && mz2<upperMz;
             boolean sameMass = lowerSame<mz2 && mz2<upperSame;
@@ -2512,22 +1780,6 @@ public class QuantificationThread extends Thread
     distris[2] = negativeStartValue;
     return distris;
   }
-
-  /**
-   * sets the column width of an Excel cell according to the entries
-   * @param sheet the Excel tab where the width should be set
-   * @param column the column number
-   * @param headerValue the longest header value entry
-   * @param longestValue length of the longest cell entry in this column
-   */
-  private static void setColumnWidth(Sheet sheet, int column, String headerValue, int longestValue){
-    int columnWidth = (int)((headerValue.length()*256)*ExcelUtils.BOLD_MULT);
-    if ((longestValue+1)*256>columnWidth) columnWidth =  (longestValue+1)*256;
-    if (columnWidth>255*256)
-      columnWidth=255*256;
-    sheet.setColumnWidth(column,columnWidth); 
-  }
-  
   
   /**
    * method that reduced the defined OH encodings to the actually used ones
@@ -2580,7 +1832,7 @@ public class QuantificationThread extends Thread
   
   /**
    * this reorganizes the hash table returned from the SingleQuantTrhead, so that the retention time is the highest grouping parameter
-   * @param hitsAccordingToQuant hash table returned from the SingleQuantTrhead
+   * @param hitsAccordingToQuant hash table returned from the SingleQuantThread
    * @return the reorganized hash table
    */
   private Hashtable<String,Hashtable<QuantVO,LipidParameterSet>> groupHitsWithSameRt(Hashtable<QuantVO,Hashtable<String,LipidParameterSet>> hitsAccordingToQuant) {
@@ -2594,6 +1846,21 @@ public class QuantificationThread extends Thread
       }
     }
     return sameRt;
+  }
+  
+  public static boolean hasRtInfo(Hashtable<String,Vector<LipidParameterSet>> sheetParams){
+    boolean hasRt = true;
+    for (Vector<LipidParameterSet> params : sheetParams.values()){
+      boolean hasEntry = false;
+      for (LipidParameterSet param : params){
+        if (param.getRt()!=null && param.getRt().length()>0) hasRt = true;
+        else hasRt = false;
+        hasEntry = true;
+        break;
+      }
+      if (hasEntry) break;
+    }
+    return hasRt;
   }
 
 }

@@ -35,9 +35,9 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import at.tugraz.genome.lda.QuantificationThread;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
+import at.tugraz.genome.lda.export.QuantificationResultExporter;
 
 /**
  * 
@@ -78,7 +78,10 @@ public class ClassNamesExtractor
       for (int sheetNumber=0;sheetNumber!=workbook.getNumberOfSheets();sheetNumber++){
         Sheet sheet = workbook.getSheetAt(sheetNumber);
         String className = sheet.getSheetName();
-        if (!className.contains("Overview")&&!className.endsWith(QuantificationThread.OVERVIEW_SHEET_ADDUCT)&&!className.equalsIgnoreCase(QuantificationThread.CONSTANTS_SHEET)&&!className.endsWith(QuantificationThread.MSN_SHEET_ADDUCT)){
+        if (!className.equals(QuantificationResultExporter.SHEET_CONSTANTS)&&
+            !className.endsWith(QuantificationResultExporter.ADDUCT_OMEGA_SHEET)&&
+            !className.endsWith(QuantificationResultExporter.ADDUCT_OVERVIEW_SHEET)&&
+            !className.endsWith(QuantificationResultExporter.ADDUCT_MSN_SHEET)){
           if (!classesHash_.containsKey(className)){
             lipidClasses_.add(className);
             classesHash_.put(className, className);

@@ -41,11 +41,9 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import at.tugraz.genome.lda.LipidomicsConstants;
-import at.tugraz.genome.lda.QuantificationThread;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
-import at.tugraz.genome.lda.exception.SettingsException;
+import at.tugraz.genome.lda.export.QuantificationResultExporter;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleStringVO;
 import at.tugraz.genome.voutils.GeneralComparator;
@@ -121,16 +119,6 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
     sortedESNames_ = new Hashtable<String,Vector<String>>();
     lipidClassesHash_ = new Hashtable<String,String>();
     lipidClasses_ = new Vector<String>();
-    //check whether there is shotgun data present -> no grouping by retention time possible
-    boolean isShotgun = false;
-    for (int i=0; i!=resultFiles_.size();i++){
-      if (isShotgunData(resultFiles_.get(i))){
-        isShotgun = true;
-        break;
-      }
-    }
-    if (isShotgun)
-      disableRtGrouping();
     for (int i=0; i!=resultFiles_.size();i++){
       File resultFile = resultFiles_.get(i);
       String fileName = StaticUtils.extractFileName(resultFile.getAbsolutePath());
@@ -156,6 +144,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
     
   }
   
+  
   protected void parseResultFile(File resultFile, String fileName) throws ExcelInputFileException, LipidCombinameEncodingException{
     try {
       InputStream myxls = new FileInputStream(resultFile);
@@ -164,7 +153,10 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
       else if (resultFile.getAbsolutePath().endsWith(".xls")) workbook     = new HSSFWorkbook(myxls);
       for (int sheetNumber=0;sheetNumber!=workbook.getNumberOfSheets();sheetNumber++){
         Sheet sheet = workbook.getSheetAt(sheetNumber);
-        if (!sheet.getSheetName().contains("Overview")&&!sheet.getSheetName().endsWith(QuantificationThread.OVERVIEW_SHEET_ADDUCT)&&!sheet.getSheetName().equalsIgnoreCase(QuantificationThread.CONSTANTS_SHEET)&&!sheet.getSheetName().endsWith(QuantificationThread.MSN_SHEET_ADDUCT)){
+        if (!sheet.getSheetName().equals(QuantificationResultExporter.SHEET_CONSTANTS)&&
+            !sheet.getSheetName().endsWith(QuantificationResultExporter.ADDUCT_OMEGA_SHEET)&&
+            !sheet.getSheetName().endsWith(QuantificationResultExporter.ADDUCT_OVERVIEW_SHEET)&&
+            !sheet.getSheetName().endsWith(QuantificationResultExporter.ADDUCT_MSN_SHEET)){
           Hashtable<String,String> isNames = new Hashtable<String,String>();
           Hashtable<String,String> esNames = new Hashtable<String,String>();
           Vector<String> sortedIS = new Vector<String>();
@@ -194,11 +186,11 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
                 if (cellType==Cell.CELL_TYPE_STRING){
                   contents = cell.getStringCellValue();
                 }
-                if (contents.equalsIgnoreCase("Name"))
+                if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_NAME))
                   nameColumn = i;
-                if (contents.equalsIgnoreCase("Dbs"))
+                if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_DBS))
                   dbsColumn = i;
-                if (contents.equalsIgnoreCase("Modification"))
+                if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_MODIFICATION))
                   modificationColumn = i;
               }
             }else if (nameColumn >-1){
@@ -260,41 +252,6 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
-  }
-  
-  /**
-   * checks whether the result file contains shotgun data
-   * @param resultFile the Excel reslut file
-   * @return true when shotgun data is present
-   */
-  protected boolean isShotgunData(File resultFile){
-    boolean isShotgun =false;
-    try {
-      InputStream myxls = new FileInputStream(resultFile);
-      Workbook workbook = null;
-      if (resultFile.getAbsolutePath().endsWith(".xlsx")) workbook = new XSSFWorkbook(myxls);
-      else if (resultFile.getAbsolutePath().endsWith(".xls")) workbook     = new HSSFWorkbook(myxls);
-      for (int sheetNumber=0;sheetNumber!=workbook.getNumberOfSheets();sheetNumber++){
-        Sheet sheet = workbook.getSheetAt(sheetNumber);
-        if (!sheet.getSheetName().equalsIgnoreCase(QuantificationThread.CONSTANTS_SHEET))
-          continue;
-        try {
-          LipidomicsConstants readConstants = (LipidomicsConstants)LipidomicsConstants.readSettingsFromExcel(sheet)[0];
-          if (readConstants.getShotgun()==LipidomicsConstants.SHOTGUN_TRUE)
-            isShotgun = true;
-        } catch (SettingsException e) {
-          e.printStackTrace();
-        }
-        break;
-      }
-      myxls.close();
-    }
-    catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
-    return isShotgun;
   }
   
 //  private void addItemAtSortedPosition(String name, String previousName, Vector<String> sorted){

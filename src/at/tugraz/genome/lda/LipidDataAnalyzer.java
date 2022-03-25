@@ -25,6 +25,7 @@ package at.tugraz.genome.lda;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Frame;
@@ -49,6 +50,7 @@ import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
@@ -112,14 +114,18 @@ import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.exception.SettingsException;
 import at.tugraz.genome.lda.export.LDAExporter;
 import at.tugraz.genome.lda.export.OmegaMasslistExporter;
+import at.tugraz.genome.lda.export.QuantificationResultExporter;
 import at.tugraz.genome.lda.export.vos.AnalyteOmegaInfoVO;
 import at.tugraz.genome.lda.interfaces.ColorChangeListener;
 import at.tugraz.genome.lda.listeners.AnnotationThresholdListener;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.MSnAnalyzer;
+import at.tugraz.genome.lda.msn.RulesContainer;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
+import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.mztab.MztabUtils;
 import at.tugraz.genome.lda.mztab.SmallMztabMolecule;
+import at.tugraz.genome.lda.parser.LDAResultReader;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
@@ -3285,7 +3291,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
    */
   private void storeResultsToExcel(){
     try {
-      QuantificationThread.writeResultsToExcel(selectedResultFile.getText(), result_);
+      QuantificationResultExporter.writeResultsToExcel(selectedResultFile.getText(), result_);
       this.readResultFile(selectedResultFile.getText(),true);
       this.updateResultListSelectionTable();
       this.displayTable.changeSelection(this.currentSelected_, 1, false, false);
@@ -4410,7 +4416,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       this.params_ = this.result_.getIdentifications().get(this.currentSelectedSheet_).get(resultPositionToOriginalLoopkup_.get(this.currentSelected_));
       
       try{
-        QuantificationThread.writeResultsToExcel(selectedResultFile.getText(), result_);
+        QuantificationResultExporter.writeResultsToExcel(selectedResultFile.getText(), result_);
         this.readResultFile(selectedResultFile.getText(),true);
         this.updateResultListSelectionTable();
         this.displayTable.changeSelection(this.currentSelected_, 1, false, false);
@@ -4889,7 +4895,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
               removalReduction = removalReduction+paramsToSelectOne.get(position.getKey()).size()-1;
             }
             try {
-              QuantificationThread.writeResultsToExcel(updateablePath, result2);
+              QuantificationResultExporter.writeResultsToExcel(updateablePath, result2);
             }catch (Exception e) {e.printStackTrace();
             }
           } catch (ExcelInputFileException eif){
@@ -5069,7 +5075,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
             }
           }
           if (updateNecessary)
-            QuantificationThread.writeResultsToExcel(updateAbsPath, result2);
+            QuantificationResultExporter.writeResultsToExcel(updateAbsPath, result2);
         } catch (Exception e) {
           // TODO Auto-generated catch block
           e.printStackTrace();
@@ -5121,7 +5127,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         }
         result.getIdentifications().put(groupName, newParams);
         try {
-          QuantificationThread.writeResultsToExcel(updateablePath, result);
+          QuantificationResultExporter.writeResultsToExcel(updateablePath, result);
         }
         catch (Exception e) {
           e.printStackTrace();
@@ -5148,7 +5154,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       set.Area = 0;
       result_.getIdentifications().get(this.currentSelectedSheet_).add(position, set);
       try {
-       QuantificationThread.writeResultsToExcel(selectedResultFile.getText(), result_);
+       QuantificationResultExporter.writeResultsToExcel(selectedResultFile.getText(), result_);
        readResultFile(selectedResultFile.getText(),true);
        updateResultListSelectionTable();
        // this is that the selection gets updated in any case
@@ -5169,7 +5175,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     for (int i=(inds.size()-1); i>-1; i--){
       result_.getIdentifications().get(this.currentSelectedSheet_).remove(inds.get(i).intValue());
       try {
-        QuantificationThread.writeResultsToExcel(selectedResultFile.getText(), result_);
+        QuantificationResultExporter.writeResultsToExcel(selectedResultFile.getText(), result_);
         readResultFile(selectedResultFile.getText(),true);
         updateResultListSelectionTable();
       } catch (Exception e) {
@@ -5770,8 +5776,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         for (String molName: heatmap.getSelectedMoleculeNames()){
           AnalyteOmegaInfoVO omegaInfo = ifOmegaLabelExtractInfo(molGroup,molName,labelInfo);
           if (omegaInfo!=null) {
-            if (!molsOfClass.containsKey(omegaInfo.getAnalyteName()))
+            if (!molsOfClass.containsKey(omegaInfo.getAnalyteName())) {
               molsOfClass.put(omegaInfo.getAnalyteName(), new Hashtable<String,Vector<AnalyteOmegaInfoVO>>());
+            }
             usedLabels = new Hashtable<String,String>();
             for (IsotopicLabelVO label : omegaInfo.getLabels()) {
               if (usedLabels.containsKey(label.getLabelId()))
@@ -5781,7 +5788,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
               molsOfClass.get(omegaInfo.getAnalyteName()).get(label.getLabelId()).add(omegaInfo);
               usedLabels.put(label.getLabelId(), label.getLabelId());
             }
-
           }
         }
         acceptedMolecules.put(molGroup, molsOfClass);
@@ -5800,8 +5806,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     }
     catch (ExportException | LipidCombinameEncodingException e) {
       e.printStackTrace();
-      @SuppressWarnings("unused")
-      WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "The \\u03C9-RT mass list cannot be written: "+e.getMessage());
+      new WarningMessage(new JFrame(), "Error", "The \u03C9-RT mass list cannot be written: "+e.getMessage());
     }
     long usedTime = (System.currentTimeMillis()-time)/1000l;
     System.out.println("Used time: "+(usedTime/60l)+" minutes "+usedTime%60l+" seconds");

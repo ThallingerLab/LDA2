@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Vector;
 
@@ -814,6 +815,27 @@ public class IntensityRuleVO
   public boolean isOrRule()
   {
     return orRule_;
+  }
+  
+  @Override
+  public boolean equals(Object obj)
+  {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    IntensityRuleVO other = (IntensityRuleVO) obj;
+    return Objects.equals(allowedOHs_, other.allowedOHs_)
+        && Objects.equals(availableFragmentTypes_,
+            other.availableFragmentTypes_)
+        && Objects.equals(biggerExpression_, other.biggerExpression_)
+        && chainType_ == other.chainType_
+        && Objects.equals(equation_, other.equation_)
+        && mandatory_ == other.mandatory_ && orRule_ == other.orRule_
+        && Objects.equals(smallerExpression_, other.smallerExpression_)
+        && type_ == other.type_;
   }
 
 }

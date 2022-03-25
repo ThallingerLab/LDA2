@@ -23,6 +23,8 @@
 
 package at.tugraz.genome.lda.msn.vos;
 
+import java.util.Objects;
+
 import at.tugraz.genome.lda.utils.StaticUtils;
 
 /**
@@ -211,6 +213,27 @@ public class FattyAcidVO
    */
   public String toString(){
     return ("Name: "+getChainId()+" Mass: "+mass_+" Formula: "+formula_);
+  }
+  
+  
+  @Override
+  public boolean equals(Object obj)
+  {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    FattyAcidVO other = (FattyAcidVO) obj;
+    return cAtoms_ == other.cAtoms_ && chainType_ == other.chainType_
+        && doubleBonds_ == other.doubleBonds_
+        && Objects.equals(formula_, other.formula_)
+        && Double.doubleToLongBits(mass_) == Double
+            .doubleToLongBits(other.mass_)
+        && ohNumber_ == other.ohNumber_
+        && omegaPosition_ == other.omegaPosition_
+        && Objects.equals(prefix_, other.prefix_);
   }
   
 }

@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 
 import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
@@ -157,6 +158,23 @@ public class HydroxyEncoding extends Properties{
     this.encodingToNumber_.put(encoded, hydroxyNumber);
     sortedOHs_.add(hydroxyNumber);
     Collections.sort(sortedOHs_);
+  }
+  
+  /**
+   * Compares all dynamic fields of this class with another Object.
+   */
+  @Override
+  public boolean equals(Object obj)
+  {
+    if (this == obj)
+      return true;
+    if (!super.equals(obj))
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    HydroxyEncoding other = (HydroxyEncoding) obj;
+    return Objects.equals(encodingToNumber_, other.encodingToNumber_)
+        && Objects.equals(sortedOHs_, other.sortedOHs_);
   }
   
 }

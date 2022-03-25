@@ -82,12 +82,18 @@ public class OmegaMasslistExporter extends LDAExporter
   /** the file name to export the mass lists*/
   private String fileName_;
   
+  private final static String HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS = "mol. species";
+  
   /**
    * constructor setting the mass list file
    * @param fileName the file name of the exported omega mass list
    */
   public OmegaMasslistExporter(String fileName) {
     this.fileName_ = fileName;
+  }
+  
+  public static String getMolecularSpeciesWithDoubleBondPositionsHeader() {
+    return HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS;
   }
   
   /**
@@ -199,7 +205,7 @@ public class OmegaMasslistExporter extends LDAExporter
     label.setCellValue("dbs");
     label.setCellStyle(headerStyle);
     label = outRow.createCell(COLUMN_MOL,HSSFCell.CELL_TYPE_STRING);
-    label.setCellValue("mol. species");
+    label.setCellValue(HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS);
     label.setCellStyle(headerStyle);
     int columnNrFirstElement = COLUMN_FIRST_ELEMENT;
     int elementColumns = 0;

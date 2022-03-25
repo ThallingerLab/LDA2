@@ -47,6 +47,7 @@ import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
+import at.tugraz.genome.lda.parser.LDAResultReader;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.swing.ExportPanel;

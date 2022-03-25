@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Vector;
 
@@ -671,6 +672,50 @@ public class LipidomicsMSnSet extends LipidParameterSet
   
   public String getCombiIdFromHumanReadable(String humanReadable) {
     return this.nameLookupHumReadableToPositionInsensitve_.get(humanReadable);
+  }
+  
+  
+  /**
+   * Compares all dynamic fields of this class with another Object. 
+   * Any Object including a position insensitive annotation cannot be directly compared, as the ordering of chains is random each time this annotation is created.
+   * CgProbe Objects are as of now also not taken into account as they lack the 'equals' method.
+   */
+  @Override
+  public boolean equals(Object obj)
+  {
+    if (this == obj)
+      return true;
+    if (!super.equals(obj))
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    LipidomicsMSnSet other = (LipidomicsMSnSet) obj;
+
+    return Objects.equals(ambiguousPositionIdentifications_,
+        other.ambiguousPositionIdentifications_)
+        && Objects.equals(basePeakValues_, other.basePeakValues_)
+//        && Objects.equals(chainFragments_, other.chainFragments_)
+        && Objects.equals(chainIntensityRules_, other.chainIntensityRules_)
+        && Objects.equals(chainNameLookupHumanReadable_,
+            other.chainNameLookupHumanReadable_)
+//        && Objects.equals(headGroupFragments_, other.headGroupFragments_)
+        && Objects.equals(headIntensityRules_, other.headIntensityRules_)
+        && Objects.equals(involvedFAs_, other.involvedFAs_)
+        && Objects.equals(msLevels_, other.msLevels_)
+        && Objects.equals(msnRetentionTimes_, other.msnRetentionTimes_)
+        && Float.floatToIntBits(mzTolerance_) == Float
+            .floatToIntBits(other.mzTolerance_)
+//        && Objects.equals(nameLookupHumReadableToPositionInsensitve_,
+//            other.nameLookupHumReadableToPositionInsensitve_)
+//        && Objects.equals(nameLookupPositionInsensitve_,
+//            other.nameLookupPositionInsensitve_)
+        && numberOfPositions_ == other.numberOfPositions_
+        && Objects.equals(positionDefinition_, other.positionDefinition_)
+//        && Objects.equals(positionEvidence_, other.positionEvidence_)
+//        && Objects.equals(relativeIntensityOfCombination_,
+//            other.relativeIntensityOfCombination_)
+        && status_ == other.status_ && Objects.equals(validChainCombinations_,
+            other.validChainCombinations_);
   }
   
   

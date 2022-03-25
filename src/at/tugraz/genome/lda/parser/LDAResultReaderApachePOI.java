@@ -20,13 +20,15 @@
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
  */ 
-package at.tugraz.genome.lda;
+package at.tugraz.genome.lda.parser;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.Vector;
 import java.util.regex.Matcher;
@@ -41,10 +43,14 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.Settings;
+import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.analysis.ComparativeNameExtractor;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.RulesException;
+import at.tugraz.genome.lda.export.QuantificationResultExporter;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.msn.parser.FragRuleParser;
@@ -57,6 +63,7 @@ import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.StaticUtils;
+//import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.maspectras.quantification.CgAreaStatus;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.maspectras.quantification.Probe3D;
@@ -66,25 +73,9 @@ import at.tugraz.genome.maspectras.quantification.Probe3D;
  * @author Juergen Hartler
  *
  */
-public class LDAResultReader
+//TODO: features supporting omega identifications are commented out
+public class LDAResultReaderApachePOI
 {
-  
-  public final static int MSN_ROW_FRAGMENT_NAME = 0;
-  public final static int MSN_ROW_FRAGMENT_FORMULA = 1;
-  
-  public final static String COLUMN_APEX_INTENSITY = "Raw Apex";
-  public final static String COLUMN_LOWER_VALLEY10PC = "LValley10%";
-  public final static String COLUMN_LOWER_VALLEY50PC = "LValley50%";
-  public final static String COLUMN_UPPER_VALLEY10PC = "UValley10%";
-  public final static String COLUMN_UPPER_VALLEY50PC = "UValley50%";
-  
-  public final static String COLUMN_LOWER_MZ10PC = "LMz10%";
-  public final static String COLUMN_LOWER_MZ50PC = "LMz50%";
-  public final static String COLUMN_UPPER_MZ10PC = "UMz10%";
-  public final static String COLUMN_UPPER_MZ50PC = "UMz50%";
-  
-  public final static String ALEX123_MSN_TARGETS_USED = "AlexMSnTargetsUsed";
-  
 
   /**
    * reads an LDA results file in Excel format
@@ -95,7 +86,7 @@ public class LDAResultReader
    */
   public static QuantificationResult readResultFile(String filePath, Hashtable<String,Boolean> showModifications)
       throws ExcelInputFileException{
-    return LDAResultReader.readResultFile(filePath, showModifications, null);
+    return LDAResultReaderApachePOI.readResultFile(filePath, showModifications, null);
   }
   
   /**
@@ -129,8 +120,8 @@ public class LDAResultReader
       
       for (int sheetNumber=0;sheetNumber!=workbook.getNumberOfSheets();sheetNumber++){       
         Sheet sheet = workbook.getSheetAt(sheetNumber);
-        if (!sheet.getSheetName().contains("Overview")&&!sheet.getSheetName().endsWith(QuantificationThread.OVERVIEW_SHEET_ADDUCT)&&
-            !sheet.getSheetName().endsWith(QuantificationThread.MSN_SHEET_ADDUCT) && !sheet.getSheetName().equalsIgnoreCase(QuantificationThread.CONSTANTS_SHEET)){
+        if (!sheet.getSheetName().endsWith(QuantificationResultExporter.ADDUCT_OMEGA_SHEET)&&!sheet.getSheetName().endsWith(QuantificationResultExporter.ADDUCT_OVERVIEW_SHEET)&&
+            !sheet.getSheetName().endsWith(QuantificationResultExporter.ADDUCT_MSN_SHEET) && !sheet.getSheetName().equalsIgnoreCase(QuantificationResultExporter.SHEET_CONSTANTS)){
           if (specificClass!=null && !sheet.getSheetName().equalsIgnoreCase(specificClass))
             continue;
          
@@ -170,8 +161,7 @@ public class LDAResultReader
           int lowerMz50PcColumn = -1;
           int upperMz10PcColumn = -1;
           int upperMz50PcColumn = -1;
-
-
+          
           
           int msLevel=1;
           LipidParameterSet params = null;
@@ -236,82 +226,83 @@ public class LDAResultReader
                 double cellValue = -1;
                 cellValue = cell.getNumericCellValue();
                 contents = String.valueOf(cellValue);
-              }  
+              }
               if (rowCount==0){
-                if (contents.equalsIgnoreCase("Name"))
+                if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_NAME))
                   nameColumn = i;
-                else if (contents.equalsIgnoreCase("Dbs"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_DBS))
                   dbsColumn = i;
                 else if (contents.equalsIgnoreCase(LipidomicsConstants.EXCEL_MS_OH))
                   ohColumn = i;
-                else if (contents.equalsIgnoreCase("Modification"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_MODIFICATION))
                   modificationColumn = i;
-                else if (contents.equalsIgnoreCase("Formula"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_FORMULA))
                   formulaColumn = i;
-                else if (contents.equalsIgnoreCase("Mod-Formula"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_MOD_FORMULA))
                   modFormulaColumn = i;
-                else if (contents.equalsIgnoreCase("RT"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_RT))
                   rtColumn = i;
-                else if (contents.equalsIgnoreCase("Isotope"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_ISOTOPE))
                   isotopeColumn = i;            
-                else if (contents.equalsIgnoreCase("Area"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_AREA))
                   areaColumn = i;            
-                else if (contents.equalsIgnoreCase("AreaError"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_AREA_ERROR))
                   areaErrorColumn = i;
-                else if (contents.equalsIgnoreCase("Background"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_BACKGROUND))
                   backgroundColumn = i;
-                else if (contents.equalsIgnoreCase("Charge"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_CHARGE))
                   chargeColumn = i;
-                else if (contents.equalsIgnoreCase("Mz"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_MZ_MS1))
                   mzColumn = i;
-                else if (contents.equalsIgnoreCase("MzTolerance"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_MZ_TOLERANCE))
                   mzToleranceColumn = i;
-                else if (contents.equalsIgnoreCase("Peak"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_PEAK))
                   peakColumn = i;
-                else if (contents.equalsIgnoreCase("LowerValley"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_LOWER_VALLEY))
                   lowerValleyColumn = i;
-                else if (contents.equalsIgnoreCase("UpperValley"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_UPPER_VALLEY))
                   upperValleyColumn = i;
-                else if (contents.equalsIgnoreCase("LowMz"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_LOWER_MZ))
                   lowMzColumn = i;
-                else if (contents.equalsIgnoreCase("UpMz"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_UPPER_MZ))
                   upMzColumn = i;
-                else if (contents.equalsIgnoreCase("EllCentTime"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_ELL_CENT_TIME))
                   ellipseTimePosColumn = i;
-                else if (contents.equalsIgnoreCase("EllCentMz"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_ELL_CENT_MZ))
                   ellipseMzPosColumn = i;
-                else if (contents.equalsIgnoreCase("EllStretchTime"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_ELL_STRETCH_TIME))
                   ellipseTimeStretchColumn = i;
-                else if (contents.equalsIgnoreCase("EllStretchMz"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_ELL_STRETCH_MZ))
                   ellipseMzStretchColumn = i;
-                else if (contents.equalsIgnoreCase("LowerRtHardLimit"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_LOWER_RT_HARD_LIMIT))
                   lowerHardLimitColumn = i;
-                else if (contents.equalsIgnoreCase("UpperRtHardLimit"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_UPPER_RT_HARD_LIMIT))
                   upperHardLimitColumn = i;
-                else if (contents.equalsIgnoreCase("PercentalSplit"))
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_PERCENTAL_SPLIT))
                   percentalSplitColumn = i;
-                else if (contents.startsWith("level=")){
-                  String levelString = contents.substring("level=".length()).trim();
-                  msLevel = Integer.valueOf(levelString);
-                }else if (contents.equalsIgnoreCase(LDAResultReader.COLUMN_APEX_INTENSITY)){
+                else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_RAW_APEX)){
                   apexIntensityColumn = i;
-                }else if (contents.equalsIgnoreCase(LDAResultReader.COLUMN_LOWER_VALLEY10PC)){
+                }else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_LOWER_VALLEY10PC)){
                   lowerValley10PcColumn = i;
-                }else if (contents.equalsIgnoreCase(LDAResultReader.COLUMN_LOWER_VALLEY50PC)){
+                }else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_LOWER_VALLEY50PC)){
                   lowerValley50PcColumn = i;
-                }else if (contents.equalsIgnoreCase(LDAResultReader.COLUMN_UPPER_VALLEY10PC)){
+                }else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_UPPER_VALLEY10PC)){
                   upperValley10PcColumn = i;
-                }else if (contents.equalsIgnoreCase(LDAResultReader.COLUMN_UPPER_VALLEY50PC)){
+                }else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_UPPER_VALLEY50PC)){
                   upperValley50PcColumn = i;
-                }else if (contents.equalsIgnoreCase(LDAResultReader.COLUMN_LOWER_MZ10PC)){
+                }else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_LOWER_MZ10PC)){
                   lowerMz10PcColumn = i;
-                }else if (contents.equalsIgnoreCase(LDAResultReader.COLUMN_LOWER_MZ50PC)){
+                }else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_LOWER_MZ50PC)){
                   lowerMz50PcColumn = i;
-                }else if (contents.equalsIgnoreCase(LDAResultReader.COLUMN_UPPER_MZ10PC)){
+                }else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_UPPER_MZ10PC)){
                   upperMz10PcColumn = i;
-                }else if (contents.equalsIgnoreCase(LDAResultReader.COLUMN_UPPER_MZ50PC)){
+                }else if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_UPPER_MZ50PC)){
                   upperMz50PcColumn = i;
+                }else if (contents.startsWith(QuantificationResultExporter.HEADER_MS_LEVEL)){
+                  String levelString = contents.substring(QuantificationResultExporter.HEADER_MS_LEVEL.length()).trim();
+                  msLevel = Integer.valueOf(levelString);
                 }
+                
               }else{
                 if (i==nameColumn)
                   name = contents;
@@ -346,7 +337,7 @@ public class LDAResultReader
                 if (i==mzToleranceColumn && contents!=null && contents.length()>0)
                   mzTolerance = numeric.floatValue();
                 if (i==peakColumn && contents!=null && contents.length()>0)
-                  peak = numeric.floatValue();;
+                  peak = numeric.floatValue();
                 if (i==lowerValleyColumn && contents!=null && contents.length()>0)
                   lowerValley = numeric.floatValue();
                 if (i==apexIntensityColumn && contents!=null && contents.length()>0)
@@ -371,7 +362,7 @@ public class LDAResultReader
                 if (i==upperValleyColumn && contents!=null && contents.length()>0)
                   upperValley = numeric.floatValue();
                 if (i==lowMzColumn && contents!=null && contents.length()>0)
-                  lowMz = numeric.floatValue();;
+                  lowMz = numeric.floatValue();
                 if (i==upMzColumn && contents!=null && contents.length()>0)
                   upMz = numeric.floatValue();
                 if (i==ellipseTimePosColumn && contents!=null && contents.length()>0)
@@ -480,27 +471,34 @@ public class LDAResultReader
           resultParams.put(sheet.getSheetName(), resultPrms);
           showModifications.put(sheet.getSheetName(), showModification);
           msLevels.put(sheet.getSheetName(), msLevel);
-        } else if (sheet.getSheetName().equalsIgnoreCase(QuantificationThread.CONSTANTS_SHEET)){
-          Object[] settings = LipidomicsConstants.readSettingsFromExcel(sheet);
+        } else if (sheet.getSheetName().equalsIgnoreCase(QuantificationResultExporter.SHEET_CONSTANTS)){
+          Object[] settings = LipidomicsConstants.readSettingsFromExcelApachePOI(sheet);
           readConstants = (LipidomicsConstants)settings[0];
           faOhEncodings = (HydroxyEncoding)settings[1];
           lcbOhEncodings = (HydroxyEncoding)settings[2];
         }
       }
-      for (int sheetNumber=0;sheetNumber!=workbook.getNumberOfSheets();sheetNumber++){       
+      for (int sheetNumber=0;sheetNumber!=workbook.getNumberOfSheets();sheetNumber++){  
         Sheet sheet = workbook.getSheetAt(sheetNumber);
-        if (sheet.getSheetName().endsWith(QuantificationThread.MSN_SHEET_ADDUCT)){
-          if (specificClass!=null && !sheet.getSheetName().equalsIgnoreCase((specificClass+QuantificationThread.MSN_SHEET_ADDUCT)))
+        if (sheet.getSheetName().endsWith(QuantificationResultExporter.ADDUCT_MSN_SHEET)){
+          if (specificClass!=null && !sheet.getSheetName().equalsIgnoreCase((specificClass+QuantificationResultExporter.ADDUCT_MSN_SHEET)))
             continue;
-          String lipidClass = sheet.getSheetName().substring(0,sheet.getSheetName().lastIndexOf(QuantificationThread.MSN_SHEET_ADDUCT));
+          String lipidClass = sheet.getSheetName().substring(0,sheet.getSheetName().lastIndexOf(QuantificationResultExporter.ADDUCT_MSN_SHEET));
           Vector<LipidParameterSet> resultPrms = resultParams.get(lipidClass);
           resultPrms = readMSnEvidence(sheet,resultPrms,readConstants,faOhEncodings,lcbOhEncodings);
           resultParams.put(lipidClass,resultPrms);
-        }
-      }  
+        } 
+//        else if (sheet.getSheetName().endsWith(QuantificationResultExporter.ADDUCT_OMEGA_SHEET)) {
+//          if (specificClass!=null && !sheet.getSheetName().equalsIgnoreCase((specificClass+QuantificationResultExporter.ADDUCT_OMEGA_SHEET)))
+//            continue;
+//          String lipidClass = sheet.getSheetName().replace(QuantificationResultExporter.ADDUCT_OMEGA_SHEET, "");
+//          Vector<LipidParameterSet> resultPrms = resultParams.get(lipidClass);
+//          readOmegaAssignments(sheet,resultPrms,faOhEncodings,lcbOhEncodings);
+//          LipidParameterSet.setOmegaInformationAvailable(true);
+//        }
+      }
       myxls.close();
-    }
-    catch (IOException e) {
+    } catch (IOException e) {
       e.printStackTrace();
       new WarningMessage(new JFrame(), "ERROR", e.getMessage()+"; it does not seem to be Microsoft Excel");
       throw new ExcelInputFileException(e);
@@ -509,9 +507,95 @@ public class LDAResultReader
       new WarningMessage(new JFrame(), "ERROR", e.getMessage());
       throw new ExcelInputFileException(e);
     }
-    QuantificationResult result = new QuantificationResult(resultParams,readConstants,msLevels,faOhEncodings,lcbOhEncodings);
-    return result;
+    
+    return new QuantificationResult(resultParams,readConstants,msLevels,faOhEncodings,lcbOhEncodings);
   }
+  
+  
+  /**
+   * Reads double bond position evidence from an Excel sheet. The results are stored in a Vector of DoubleBondPositionVOs for each LipidParameterSet.
+   * @param sheet Omega Excel sheet
+   * @param params the LipidParameterSets for this analyte class
+   * @param faHydroxyEncoding the character encoding of the number of hydroxylation sites for the
+   * @param lcbHydroxyEncoding the character encoding of the number of hydroxylation sites for the LCB
+   */
+//  public static void readOmegaAssignments(
+//      Sheet sheet, Vector<LipidParameterSet> params, HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding) {
+//    
+//    Hashtable<String,LipidParameterSet> msHash = new Hashtable<String,LipidParameterSet>();
+//    for (LipidParameterSet param : params){
+//      msHash.put(param.getNamePlusModHumanReadable(), param);
+//    }
+//    
+//    Map<String, Integer> headerMap = new HashMap<String,Integer>();
+//    Row headerRow = sheet.getRow(0);
+//    for (Cell cell : headerRow) {
+//      headerMap.put(cell.getStringCellValue(),cell.getColumnIndex());
+//    }
+//    
+//    String identifier = null;
+//    
+//    for (Row row : sheet) {
+//      if (row.getRowNum() == 0) continue;
+//      
+//      int lastCellNum = row.getLastCellNum();
+//      String molecularSpecies = null;
+//      String doubleBondPosition = null;
+//      int accuracy = 0;
+//      boolean isAssigned = false;
+//      float expectedRetentionTime = 0f;
+//      
+//      for (int i=0;  row!=null && i<lastCellNum; i++){
+//        Cell cell = row.getCell(i);
+//        String contentsString = "";
+//        Double contentsNumeric = null;
+//        boolean contentsBoolean = false;
+//        if (cell!=null) {
+//          switch (cell.getCellType()) {
+//            case Cell.CELL_TYPE_STRING:
+//              contentsString = cell.getStringCellValue();
+//              break;
+//            case Cell.CELL_TYPE_NUMERIC:
+//              contentsNumeric = cell.getNumericCellValue();
+//              break;
+//            case Cell.CELL_TYPE_BOOLEAN:
+//              contentsBoolean = cell.getBooleanCellValue();
+//              break;
+//          }
+//        }
+//        
+//        if (i == headerMap.get(QuantificationResultExporter.HEADER_IDENTIFIER)) {
+//          if (!contentsString.equals("")) {
+//            identifier = contentsString;
+//          }
+//        } else if (i == headerMap.get(QuantificationResultExporter.HEADER_MOLECULAR_SPECIES)) {
+//          molecularSpecies = contentsString;
+//        } else if (i == headerMap.get(QuantificationResultExporter.HEADER_DOUBLE_BOND_POSITION_LEVEL)) {
+//          doubleBondPosition = contentsString;
+//        } else if (i == headerMap.get(QuantificationResultExporter.HEADER_EXPECTED_RT)) {
+//          expectedRetentionTime = contentsNumeric.floatValue();
+//        } else if (i == headerMap.get(QuantificationResultExporter.HEADER_ACCURACY)) {
+//          accuracy = contentsNumeric.intValue();
+//        } else if (i == headerMap.get(QuantificationResultExporter.HEADER_ASSIGNED)) {
+//          isAssigned = contentsBoolean;
+//        }
+//
+//      }
+//      
+//      try {
+//        Vector<FattyAcidVO> chainCombination = StaticUtils.decodeFAsFromHumanReadableName(
+//            doubleBondPosition, Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), false);
+//        
+//        DoubleBondPositionVO doubleBondPositionVO = new DoubleBondPositionVO(
+//            chainCombination, expectedRetentionTime, accuracy, molecularSpecies, isAssigned);
+//        
+//        msHash.get(identifier).addOmegaInformation(doubleBondPositionVO);
+//      } catch (LipidCombinameEncodingException ex) {
+//        System.out.println(ex.getMessage());
+//      }
+//      
+//    }
+//  }
   
   /**
    * reads MSn evidence from Excel sheet - where applicable, the results are stored in an LipidomicsMSnSet - LipidParameterSets and LipidomicsMSnSets are returned in the vector
@@ -607,16 +691,16 @@ public class LDAResultReader
     for (int rowCount=0;rowCount!=(sheet.getLastRowNum()+1);rowCount++){
       Hashtable<Integer,Object> cellEntries =  ExcelUtils.getEntriesOfOneRow(sheet.getRow(rowCount),false);
       // check if an Alex123 target list was used for the MSn fragments of this class
-      if (addingMSnEvidence==null && cellEntries.containsKey(MSN_ROW_FRAGMENT_NAME) && (cellEntries.get(MSN_ROW_FRAGMENT_NAME) instanceof String) &&
-          ((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)).trim().startsWith(ALEX123_MSN_TARGETS_USED)){
-        StringTokenizer tokenizer = new StringTokenizer(((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)),"=");
+      if (addingMSnEvidence==null && cellEntries.containsKey(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME) && (cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME) instanceof String) &&
+          ((String)cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME)).trim().startsWith(QuantificationResultExporter.HEADER_ALEX123_MSN_TARGETS_USED)){
+        StringTokenizer tokenizer = new StringTokenizer(((String)cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME)),"=");
         if (tokenizer.countTokens()!=2) continue;
         tokenizer.nextToken();
         String value = tokenizer.nextToken().trim();
         if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("yes"))
           usedAlexMsnTargets = true;
       // reading the first row, containing the sum formula, and the individual identifications
-      } else if (addingMSnEvidence==null && cellEntries.containsKey(MSN_ROW_FRAGMENT_NAME) && cellEntries.containsKey(MSN_ROW_FRAGMENT_FORMULA)){
+      } else if (addingMSnEvidence==null && cellEntries.containsKey(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME) && cellEntries.containsKey(QuantificationResultExporter.MSN_ROW_FRAGMENT_FORMULA)){
         // for every new lipid MS1 species, the parameters holding the information have to be initialized
         status = LipidomicsMSnSet.NO_MSN_PRESENT;
         mzTolerance = -1f;
@@ -630,9 +714,9 @@ public class LDAResultReader
         basePeakValues = new Hashtable<Integer,Float>();
         
         columnToIdentification = new Hashtable<Integer,String>();
-        String speciesName = (String)cellEntries.get(MSN_ROW_FRAGMENT_NAME);
+        String speciesName = (String)cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME);
         addingMSnEvidence = msHash.get(speciesName);
-        int count = MSN_ROW_FRAGMENT_NAME+1;
+        int count = QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME+1;
         numberOfPositions = -1;
         containsAlkyl = false;
         containsAlkenyl = false;
@@ -668,6 +752,8 @@ public class LDAResultReader
               }else{
                 if (lipidIdentification.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS)!=-1)lipidIdentification = lipidIdentification.substring(0,lipidIdentification.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS));
               }
+              /** remove omega-DB position annotations if present */
+              lipidIdentification = StaticUtils.getHumanReadableWODoubleBondPositions(lipidIdentification);
               Object[] nameAndNumberOfPos = StaticUtils.cleanEmptyFAPositionsAndEncodeToLDACombiName(lipidIdentification,faHydroxyEncoding,
                   lcbHydroxyEncoding, isAlexOhEncoding);
               lipidIdentification = (String)nameAndNumberOfPos[0];
@@ -695,7 +781,7 @@ public class LDAResultReader
       else if (checkMSnAreas && addingMSnEvidence!=null){
         relativeAreas = new Hashtable<String,Double>();
         msnRetentionTimes = new Hashtable<Integer,LinkedHashMap<Integer,Float>>();
-        double totalArea = (Double)cellEntries.get(MSN_ROW_FRAGMENT_NAME);
+        double totalArea = (Double)cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME);
         for (Integer column : columnToIdentification.keySet()){
           String lipidIdentification = columnToIdentification.get(column);
           //this is for the retention times
@@ -734,9 +820,9 @@ public class LDAResultReader
         checkMSnAreas = false;
       }
       // the following if is for activating the head group fragments section
-      else if (!headGroupFragmentActive && addingMSnEvidence!=null && cellEntries.containsKey(MSN_ROW_FRAGMENT_NAME)
-          && cellEntries.get(MSN_ROW_FRAGMENT_NAME) instanceof String 
-          && ((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)).trim().equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_SECTION_HEAD_FRAGMENTS)){
+      else if (!headGroupFragmentActive && addingMSnEvidence!=null && cellEntries.containsKey(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME)
+          && cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME) instanceof String 
+          && ((String)cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME)).trim().equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_SECTION_HEAD_FRAGMENTS)){
         headGroupFragmentActive = true;
         headGroupRules = false;
         chainFragmentActive = false;
@@ -747,9 +833,9 @@ public class LDAResultReader
         intensityHeaderRead = false;
       } 
       // the following if is for activating the head group rules section
-      else if (!headGroupRules && addingMSnEvidence!=null && cellEntries.containsKey(MSN_ROW_FRAGMENT_NAME)
-          && cellEntries.get(MSN_ROW_FRAGMENT_NAME) instanceof String 
-          && ((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)).trim().equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_SECTION_HEAD_INTENSITIES)){
+      else if (!headGroupRules && addingMSnEvidence!=null && cellEntries.containsKey(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME)
+          && cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME) instanceof String 
+          && ((String)cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME)).trim().equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_SECTION_HEAD_INTENSITIES)){
         headGroupFragmentActive = false;
         headGroupRules = true;
         chainFragmentActive = false;
@@ -762,9 +848,9 @@ public class LDAResultReader
       }
 
       // the following if is for activating the chain fragments section
-      else if (!chainFragmentActive && addingMSnEvidence!=null && cellEntries.containsKey(MSN_ROW_FRAGMENT_NAME)
-          && cellEntries.get(MSN_ROW_FRAGMENT_NAME) instanceof String 
-          && ((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)).trim().equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_SECTION_CHAIN_FRAGMENTS)){
+      else if (!chainFragmentActive && addingMSnEvidence!=null && cellEntries.containsKey(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME)
+          && cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME) instanceof String 
+          && ((String)cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME)).trim().equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_SECTION_CHAIN_FRAGMENTS)){
         headGroupFragmentActive = false;
         headGroupRules = false;
         chainFragmentActive = true;
@@ -775,9 +861,9 @@ public class LDAResultReader
         intensityHeaderRead = false;
       }
       // the following if is for activating the chain fragments section
-      else if (!chainRules && addingMSnEvidence!=null && cellEntries.containsKey(MSN_ROW_FRAGMENT_NAME)
-          && cellEntries.get(MSN_ROW_FRAGMENT_NAME) instanceof String 
-          && ((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)).trim().equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_SECTION_CHAIN_INTENSITIES)){
+      else if (!chainRules && addingMSnEvidence!=null && cellEntries.containsKey(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME)
+          && cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME) instanceof String 
+          && ((String)cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME)).trim().equalsIgnoreCase(LipidomicsConstants.EXCEL_MSN_SECTION_CHAIN_INTENSITIES)){
         headGroupFragmentActive = false;
         headGroupRules = false;
         chainFragmentActive = false;
@@ -789,9 +875,9 @@ public class LDAResultReader
         uniqueRules = new Hashtable<String,String>();
       }
       // the following ifs are for activating the position information section
-      else if (addingMSnEvidence!=null && cellEntries.containsKey(MSN_ROW_FRAGMENT_NAME)
-          && cellEntries.get(MSN_ROW_FRAGMENT_NAME) instanceof String 
-          && ((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)).trim().startsWith(LipidomicsConstants.EXCEL_MSN_SECTION_POSITION_INTENSITIES)){
+      else if (addingMSnEvidence!=null && cellEntries.containsKey(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME)
+          && cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME) instanceof String 
+          && ((String)cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME)).trim().startsWith(LipidomicsConstants.EXCEL_MSN_SECTION_POSITION_INTENSITIES)){
         headGroupFragmentActive = false;
         headGroupRules = false;
         chainFragmentActive = false;
@@ -800,7 +886,7 @@ public class LDAResultReader
         headerRowRead = false;
         readIntensityHeaderRow = true;
         intensityHeaderRead = false;
-        combiKey = ((String)cellEntries.get(MSN_ROW_FRAGMENT_NAME)).trim().substring(LipidomicsConstants.EXCEL_MSN_SECTION_POSITION_INTENSITIES.length());
+        combiKey = ((String)cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME)).trim().substring(LipidomicsConstants.EXCEL_MSN_SECTION_POSITION_INTENSITIES.length());
         combiKey = combiKey.substring(combiKey.indexOf("(")+1,combiKey.indexOf(")"));
         if (combiKey.indexOf(";")!=-1) combiKey = combiKey.substring(0,combiKey.indexOf(";"));
         validChainCombinations = correctUndefinedChainCombinations(combiKey,validChainCombinations,relativeAreas,LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
@@ -829,7 +915,7 @@ public class LDAResultReader
         }
       }
       // the final procedure for creating a LipidomicsMSnSet after the information was read
-      else if (addingMSnEvidence!=null && !cellEntries.containsKey(MSN_ROW_FRAGMENT_NAME)){
+      else if (addingMSnEvidence!=null && !cellEntries.containsKey(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME)){
         String speciesName = addingMSnEvidence.getNamePlusModHumanReadable();
 //        for (positionDefinition)
         positionDefinition = cleanPositionDefinition(positionDefinition);
@@ -882,7 +968,6 @@ public class LDAResultReader
       } 
       // reading information about the fragment
       else if (addingMSnEvidence!=null && headerRowRead && (headGroupFragmentActive||chainFragmentActive)){
-          
         String fragmentName = null;
         if (nameColumn>-1 && cellEntries.containsKey(nameColumn)) fragmentName = (String)cellEntries.get(nameColumn);
         int oh = 0;
@@ -1154,6 +1239,7 @@ public class LDAResultReader
         ruleValuesColumn = -1;
       }
     }
+    
     if (addingMSnEvidence!=null && (addingMSnEvidence instanceof LipidParameterSet)){
       String speciesName = addingMSnEvidence.getNamePlusModHumanReadable();
       positionDefinition = cleanPositionDefinition(positionDefinition);
@@ -1164,7 +1250,7 @@ public class LDAResultReader
       msHash.put(speciesName,addingMSnEvidence);
     }
     
-    String lipidClass = sheet.getSheetName().substring(0,sheet.getSheetName().lastIndexOf(QuantificationThread.MSN_SHEET_ADDUCT));
+    String lipidClass = sheet.getSheetName().substring(0,sheet.getSheetName().lastIndexOf(QuantificationResultExporter.ADDUCT_MSN_SHEET));
     if (usedAlexMsnTargets) readConstants.getAlexTargetlistUsed().put(lipidClass,true);
     Vector<LipidParameterSet> msnResults = new Vector<LipidParameterSet>();
     for (LipidParameterSet ms1 : ms1Results){

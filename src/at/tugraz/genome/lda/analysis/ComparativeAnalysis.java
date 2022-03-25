@@ -34,17 +34,16 @@ import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
-
-
-import at.tugraz.genome.lda.LDAResultReader;
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
+import at.tugraz.genome.lda.export.QuantificationResultExporter;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
+import at.tugraz.genome.lda.parser.LDAResultReader;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.utils.DoubleCalculator;
@@ -974,6 +973,15 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
     Hashtable<String,Vector<LipidParameterSet>> results = new Hashtable<String,Vector<LipidParameterSet>>();
     Hashtable<String,Boolean> showMods = new Hashtable<String,Boolean>();
     QuantificationResult quantRes = LDAResultReader.readResultFile(resultFile.getAbsolutePath(), showMods);
+    
+    /**
+     * TODO: this could also be moved to after all files have been read in (but before ComparativeNameExtractor calls buildResultHashes())
+     * for this the parseResultFile method of ComparativeNameExtractor needs to be removed/replaced
+     */
+    if (quantRes.getConstants().getShotgun()==LipidomicsConstants.SHOTGUN_TRUE && !(expRtGroupingTime_ < 0)) {
+      disableRtGrouping();
+    }
+    
     int nrChains;
     if (quantRes.getLcbHydroxyEncoding()!=null)
       this.lcbHydroxyEncoding_ = quantRes.getLcbHydroxyEncoding();

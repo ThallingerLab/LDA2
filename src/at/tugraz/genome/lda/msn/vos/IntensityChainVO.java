@@ -24,6 +24,7 @@
 package at.tugraz.genome.lda.msn.vos;
 
 import java.util.Hashtable;
+import java.util.Objects;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
@@ -369,5 +370,21 @@ public class IntensityChainVO extends IntensityRuleVO
       }
     }
     return new Vector<FattyAcidVO>(hash.values());
+  }
+  
+  
+  @Override
+  public boolean equals(Object obj)
+  {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    IntensityChainVO other = (IntensityChainVO) obj;
+    return Objects.equals(biggerChains_, other.biggerChains_)
+        && hasOhInfo_ == other.hasOhInfo_
+        && Objects.equals(smallerChains_, other.smallerChains_);
   }
 }

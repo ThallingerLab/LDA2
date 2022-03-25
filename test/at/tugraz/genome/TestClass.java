@@ -122,7 +122,7 @@ import at.tugraz.genome.dbutilities.SimpleValueObject;
 import at.tugraz.genome.exception.LipidBLASTException;
 import at.tugraz.genome.exception.MSDialException;
 import at.tugraz.genome.lda.BatchQuantThread;
-import at.tugraz.genome.lda.LDAResultReader;
+
 import at.tugraz.genome.lda.LipidDataAnalyzer;
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.MzxmlToChromThread;
@@ -140,6 +140,7 @@ import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.LMException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.RulesException;
+import at.tugraz.genome.lda.export.QuantificationResultExporter;
 import at.tugraz.genome.lda.msn.FragmentCalculator;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.MSnAnalyzer;
@@ -153,6 +154,7 @@ import at.tugraz.genome.lda.msn.vos.IntensityChainVO;
 import at.tugraz.genome.lda.msn.vos.IntensityPositionVO;
 import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
 import at.tugraz.genome.lda.msn.vos.MSnDebugVO;
+import at.tugraz.genome.lda.parser.LDAResultReader;
 import at.tugraz.genome.lda.parser.MzXMLMergerForWaters;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
@@ -1778,7 +1780,7 @@ public class TestClass extends JApplet implements AddScan
       int directoryIndex = fileStart.lastIndexOf("/");
       if (fileStart.lastIndexOf("\\")>directoryIndex) directoryIndex = fileStart.lastIndexOf("\\");
       String resultFile = fileStart.substring(0,directoryIndex)+File.separator+"merged"+fileStart.substring(directoryIndex)+"_Clemantis_compounds.xlsx";
-      QuantificationThread.writeResultsToExcel(resultFile,mergedResults);
+      QuantificationResultExporter.writeResultsToExcel(resultFile,mergedResults);
     }
     catch (Exception e) {
       // TODO Auto-generated catch block

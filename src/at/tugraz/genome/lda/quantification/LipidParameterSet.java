@@ -26,6 +26,7 @@ package at.tugraz.genome.lda.quantification;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Objects;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
@@ -442,6 +443,40 @@ public class LipidParameterSet extends CgParameterSet
   public void setChoseMoreLikelyRtWhenEqualMSn(boolean choseMoreLikelyRtWhenEqualMSn)
   {
     this.choseMoreLikelyRtWhenEqualMSn_ = choseMoreLikelyRtWhenEqualMSn;
+  }
+  
+  
+  /**
+   * Compares all dynamic fields of this class with another Object. Fields defined by CgParameterSet are not compared.
+   */
+  @Override
+  public boolean equals(Object obj)
+  {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    LipidParameterSet other = (LipidParameterSet) obj;
+    return Objects.equals(analyteFormula_, other.analyteFormula_)
+        && Objects.equals(charge_, other.charge_)
+        && Objects.equals(chemicalFormulaWODeducts_,
+            other.chemicalFormulaWODeducts_)
+        && Objects.equals(chemicalFormula_, other.chemicalFormula_)
+        && choseMoreLikelyRtWhenEqualMSn_ == other.choseMoreLikelyRtWhenEqualMSn_
+        && Objects.equals(doubleBonds_, other.doubleBonds_)
+        && Float.floatToIntBits(lowerRtHardLimit_) == Float
+            .floatToIntBits(other.lowerRtHardLimit_)
+        && Objects.equals(modificationFormula_, other.modificationFormula_)
+        && Objects.equals(modificationName_, other.modificationName_)
+        && Objects.equals(ohNumber_, other.ohNumber_)
+//        && Objects.equals(omegaInformation_, other.omegaInformation_)
+        && Float.floatToIntBits(percentalSplit_) == Float
+            .floatToIntBits(other.percentalSplit_)
+        && Objects.equals(rt_, other.rt_)
+        && Float.floatToIntBits(upperRtHardLimit_) == Float
+            .floatToIntBits(other.upperRtHardLimit_);
   }
   
   
