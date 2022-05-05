@@ -57,11 +57,11 @@ import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.utils.Pair;
 //import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.maspectras.quantification.CgAreaStatus;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.maspectras.quantification.Probe3D;
-import javafx.util.Pair;
 
 /**
  * 
