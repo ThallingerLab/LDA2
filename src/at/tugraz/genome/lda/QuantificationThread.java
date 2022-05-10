@@ -651,9 +651,9 @@ public class QuantificationThread extends Thread
               }
               
               for (String modName : massesOfInterest.keySet()){
-                double massOfInterest = massesOfInterest.get(modName)+ohDiff;
                 Hashtable<String,Integer> modElements = adductComposition.get(modName);
                 Integer charge = charges.get(modName);
+                double massOfInterest = massesOfInterest.get(modName)+ohDiff/((double)charge);
                 Integer mult = multi.get(modName);
                 
                 String[] formulas = getFormulasAsString(correctedElementalComposition,modElements,mult);
