@@ -25,10 +25,8 @@ package at.tugraz.genome.lda.parser;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.Vector;
 import java.util.regex.Matcher;
@@ -44,7 +42,6 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
-import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.analysis.ComparativeNameExtractor;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
@@ -73,7 +70,12 @@ import at.tugraz.genome.maspectras.quantification.Probe3D;
  * @author Juergen Hartler
  *
  */
-//TODO: features supporting omega identifications are commented out
+//TODO: features supporting omega identifications are commented out - since this class is deprecated only minimal maintenance required
+
+@Deprecated
+//slower Apache POI reader is only used for old xls excel files
+//TODO: remove completely after an adequate transition period *note written: 25.05.2022*
+//(1 year should suffice as xls files are not written since a few years already and newer LDA versions do not support such old file formats anymore anyway) 
 public class LDAResultReaderApachePOI
 {
 

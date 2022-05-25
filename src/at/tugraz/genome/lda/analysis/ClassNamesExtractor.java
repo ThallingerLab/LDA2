@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -29,12 +29,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Hashtable;
 import java.util.Vector;
+import java.util.stream.Stream;
+
+import javax.swing.JFrame;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.dhatim.fastexcel.reader.ReadableWorkbook;
 
+import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.export.QuantificationResultExporter;
@@ -42,6 +46,7 @@ import at.tugraz.genome.lda.export.QuantificationResultExporter;
 /**
  * 
  * @author Juergen Hartler
+ * @author Leonida M. Lamp
  *
  */
 public class ClassNamesExtractor
@@ -70,11 +75,51 @@ public class ClassNamesExtractor
   }
   
   protected void parseResultFile(File resultFile) throws ExcelInputFileException, LipidCombinameEncodingException{
-    try {
-      InputStream myxls = new FileInputStream(resultFile);
-      Workbook workbook = null;
-      if (resultFile.getAbsolutePath().endsWith(".xlsx")) workbook = new XSSFWorkbook(myxls);
-      else if (resultFile.getAbsolutePath().endsWith(".xls")) workbook     = new HSSFWorkbook(myxls);
+  	if (resultFile.getAbsolutePath().endsWith(".xlsx")){
+    	parseResultFileFastExcel(resultFile);
+    } 
+  	//for backwards compatibility, in case there are files in the old excel format
+  	else if (resultFile.getAbsolutePath().endsWith(".xls")) {
+      parseResultFileApachePOI(resultFile);
+    } else {
+    	new WarningMessage(new JFrame(), "ERROR", "The specified file format is not supported!");
+      throw new ExcelInputFileException("The specified file format is not supported!");
+    }
+  }
+  
+  protected void parseResultFileFastExcel(File resultFile) throws ExcelInputFileException, LipidCombinameEncodingException{
+  	try (InputStream is = new FileInputStream(resultFile);
+        ReadableWorkbook wb = new ReadableWorkbook(is);
+        Stream<org.dhatim.fastexcel.reader.Sheet> sheets = wb.getSheets();) 
+  	{
+  		sheets.filter((s) -> (!s.getName().equals(QuantificationResultExporter.SHEET_CONSTANTS)&&
+									          !s.getName().endsWith(QuantificationResultExporter.ADDUCT_OMEGA_SHEET)&&
+									          !s.getName().endsWith(QuantificationResultExporter.ADDUCT_OVERVIEW_SHEET)&&
+									          !s.getName().endsWith(QuantificationResultExporter.ADDUCT_MSN_SHEET)))
+  					.forEach((s) -> {
+  						if (!classesHash_.containsKey(s.getName())) 
+  						{
+  							lipidClasses_.add(s.getName());
+  	            classesHash_.put(s.getName(), s.getName());
+  						}
+  					});  
+  	}
+  	catch (IOException ex)
+  	{
+      ex.printStackTrace();
+      new WarningMessage(new JFrame(), "ERROR", ex.getMessage());
+      throw new ExcelInputFileException(ex);
+    }
+  }
+  
+  @Deprecated
+  //slower Apache POI reader is only used for old xls excel files
+  //TODO: remove completely after an adequate transition period *note written: 25.05.2022*
+  //(1 year should suffice as xls files are not written since a few years already and newer LDA versions do not support such old file formats anymore anyway) 
+  protected void parseResultFileApachePOI(File resultFile) throws ExcelInputFileException, LipidCombinameEncodingException{
+    try (InputStream myxls = new FileInputStream(resultFile);
+        Workbook workbook = new HSSFWorkbook(myxls);)
+    {
       for (int sheetNumber=0;sheetNumber!=workbook.getNumberOfSheets();sheetNumber++){
         Sheet sheet = workbook.getSheetAt(sheetNumber);
         String className = sheet.getSheetName();
@@ -88,7 +133,6 @@ public class ClassNamesExtractor
           }
         }
       }
-      myxls.close();
     }
     catch (IOException e) {
       e.printStackTrace();

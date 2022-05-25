@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -57,6 +57,7 @@ import at.tugraz.genome.lda.utils.StaticUtils;
 /**
  * 
  * @author Juergen Hartler
+ * @author Leonida M. Lamp
  *
  */
 public class LipidomicsConstants
@@ -2042,6 +2043,9 @@ public class LipidomicsConstants
    * @return settings: [0] LipidomicsConstants object containing the parameters that were read; [1] FA hydroxylation encoding; [2] LCB hydroxylation encoding
    */
   @Deprecated
+  //slower Apache POI reader is only used for old xls excel files
+  //TODO: remove completely after an adequate transition period *note written: 25.05.2022*
+  //(1 year should suffice as xls files are not written since a few years already and newer LDA versions do not support such old file formats anymore anyway) 
   public static Object[] readSettingsFromExcelApachePOI(org.apache.poi.ss.usermodel.Sheet sheet) throws SettingsException{
     Properties properties = new Properties();
     int keyColumn = -1;

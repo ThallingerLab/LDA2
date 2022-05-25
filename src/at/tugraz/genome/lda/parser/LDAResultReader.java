@@ -103,7 +103,7 @@ public class LDAResultReader
    * @return the contents of the Excel file stored in the corresponding value object
    * @throws ExcelInputFileException when there is something wrong with the Excel file
    */
-  public static QuantificationResult readResultFile(String filePath, Hashtable<String,Boolean> showModifications, 
+	public static QuantificationResult readResultFile(String filePath, Hashtable<String,Boolean> showModifications, 
       String specificClass) throws ExcelInputFileException{
     lipidomicsConstants_ = null;
     faHydroxyEncoding_ = null;
@@ -115,6 +115,7 @@ public class LDAResultReader
       suffix = filePath.substring(filePath.lastIndexOf("."));
     //for backwards compatibility, in case there are files in the old excel format
     if (suffix.equalsIgnoreCase(".xls")) {
+    	//TODO: remove completely after an adequate transition period *note written: 25.05.2022*
       return LDAResultReaderApachePOI.readResultFile(filePath, showModifications, specificClass);
     } else if (!(suffix.equalsIgnoreCase(".xlsx"))){
       new WarningMessage(new JFrame(), "ERROR", "The specified file format is not supported!");
