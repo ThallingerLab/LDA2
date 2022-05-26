@@ -3815,7 +3815,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       }      
     }
 
-    frame_ = new MainFrame(new LipidDataAnalyzer(), 1024, 950);
+    frame_ = new MainFrame(new LipidDataAnalyzer(), 1050, 950);
     frame_.setTitle(getFrameTitleString());
   }
   
