@@ -1096,7 +1096,7 @@ public class LDAResultReader
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_ISOTOPE)) {
           isotope = (int)Float.parseFloat(rawValue);
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_AREA)) {
-          area = (int)Float.parseFloat(rawValue);
+          area = Float.parseFloat(rawValue);
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_AREA_ERROR)) {
           areaError = Float.parseFloat(rawValue);
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_BACKGROUND)) {

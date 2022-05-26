@@ -1396,6 +1396,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     startDisplay.setToolTipText(TooltipTexts.DISPLAY_START);
     displayTopMenu.add(startDisplay,new GridBagConstraints(8, 0, 1, 2, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0)); 
+    
+    jButtonResultOpen.setPreferredSize(jButtonChromOpen.getPreferredSize());
   }
   
   private void createBatchQuantMenu(){
