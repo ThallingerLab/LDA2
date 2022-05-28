@@ -479,7 +479,7 @@ public class MSnAnalyzer
         if (probe.AreaStatus == CgAreaStatus.OK && (fragCalc_==null || checkCutoffs(probe,oneFragment.getMsLevel(),0f)) ){
           foundAnyFragments = true;
           //if (oneFragment.getStructure().equalsIgnoreCase(quantVO.getAnalyteClass()) || quantVO.getAnalyteClass().equalsIgnoreCase("IS "+oneFragment.getStructure())){
-          if (!oneFragment.getStructure().startsWith("FA ") && !oneFragment.getStructure().startsWith("LCB ")){
+          if (!oneFragment.getStructure().startsWith("FA ") && !oneFragment.getStructure().startsWith("LCB ") && !oneFragment.getStructure().startsWith("O-")){
             headGroupFragments_.put(fragmentName,probe);
             foundHeadFragments = true;
           }else{

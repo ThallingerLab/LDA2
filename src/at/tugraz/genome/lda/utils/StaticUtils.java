@@ -1130,6 +1130,7 @@ public class StaticUtils
     if (chainFrags.containsKey(fa)) faStored = fa;
     else if (chainFrags.containsKey("FA "+fa)) faStored = "FA "+fa;
     else if (chainFrags.containsKey("LCB "+fa)) faStored =  "LCB "+fa;
+    else if (chainFrags.containsKey("O-"+fa)) faStored =  "O-"+fa;
     return faStored;
   }
   
@@ -1370,7 +1371,8 @@ public class StaticUtils
       useAlex = Settings.useAlex(); 
     } catch( ClassNotFoundException e ) { }
     if (useAlex  && (name.equals("FA") || name.startsWith("FA ") || name.startsWith("-FA ") ||
-        name.equals("LCB") || name.startsWith("LCB ") || name.startsWith("-LCB "))){
+        name.equals("LCB") || name.startsWith("LCB ") || name.startsWith("-LCB ") ||
+        name.equals("O-") || name.startsWith("O-") || name.startsWith("-O-"))){
       return true;
     }
     return false;
@@ -1390,18 +1392,21 @@ public class StaticUtils
     String fragmentName = "";
     //this is for Alex123 naming
     if (readableFragmentName.startsWith("FA ")||readableFragmentName.startsWith("-FA ")||
-        readableFragmentName.startsWith("LCB ")||readableFragmentName.startsWith("-LCB ")){
+        readableFragmentName.startsWith("LCB ")||readableFragmentName.startsWith("-LCB ")||
+        readableFragmentName.startsWith("O-")||readableFragmentName.startsWith("-O-")){
       int start = 0;
       String prefix = "FA";
       if (readableFragmentName.startsWith("LCB ")||readableFragmentName.startsWith("-LCB "))
         prefix = "LCB";
-      if (readableFragmentName.startsWith(prefix+" ")){
-        fragmentName = prefix+" ";
-        start = (prefix+" ").length();
-      }else{
-        fragmentName = "-"+prefix+" ";
-        start = ("-"+prefix+" ").length();        
-      }
+      if (readableFragmentName.startsWith("O-")||readableFragmentName.startsWith("-O-"))
+        prefix = "O-";
+      if (readableFragmentName.startsWith(prefix+" ") || readableFragmentName.startsWith("O-"))
+        fragmentName = prefix;
+      else
+        fragmentName = "-"+prefix;
+      if (prefix.equalsIgnoreCase("FA")||prefix.equalsIgnoreCase("LCB"))
+        fragmentName += " ";
+      start = fragmentName.length();
       boolean isChain = true;
       int stop = start;
       char[] chars = readableFragmentName.toCharArray();
@@ -1432,7 +1437,8 @@ public class StaticUtils
     result[1] = fragmentName.trim();
     //for Alex123
     if (readableFragmentName.startsWith("FA ")||readableFragmentName.startsWith("-FA ")||
-        readableFragmentName.startsWith("LCB ")||readableFragmentName.startsWith("-LCB ")){
+        readableFragmentName.startsWith("LCB ")||readableFragmentName.startsWith("-LCB ")||
+        readableFragmentName.startsWith("O-")||readableFragmentName.startsWith("-O-")){
       result[1] = readableFragmentName;
     }
     return result;

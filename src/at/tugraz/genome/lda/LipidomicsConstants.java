@@ -152,9 +152,13 @@ public class LipidomicsConstants
   /** the String for separating the OH numbers*/
   public final static String ALEX_OH_SEPARATOR = ";";
   /** prefix for alkylated chains*/
-  public final static String ALEX_ALKYL_PREFIX = "O_";
+  //this was the old way of encoding - I am not sure whether this change will cause any errors
+  ////public final static String ALEX_ALKYL_PREFIX = "O_";
+  public final static String ALEX_ALKYL_PREFIX = "O-";
   /** prefix for alkenylated chains*/
-  public final static String ALEX_ALKENYL_PREFIX = "P_";
+//this was the old way of encoding - I am not sure whether this change will cause any errors
+  //public final static String ALEX_ALKENYL_PREFIX = "P_";
+  public final static String ALEX_ALKENYL_PREFIX = "P-";
   /** the String for separating the chains*/
   public final static String ALEX_CHAIN_SEPARATOR = "-";
   /** the String indicating an internal standard*/

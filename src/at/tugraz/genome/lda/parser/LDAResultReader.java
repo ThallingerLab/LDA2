@@ -768,7 +768,7 @@ public class LDAResultReader
             if (chainRules||positionRules){
               boolean isAChain = false;
               //is it a chain fragment in Alex notation
-              if (token.startsWith("FA ") || token.startsWith("-FA ") || token.startsWith("LCB ") || token.startsWith("-LCB ") ){
+              if (token.startsWith("FA ") || token.startsWith("-FA ") || token.startsWith("LCB ") || token.startsWith("-LCB ") || token.startsWith("O-") || token.startsWith("-O-")){
                 isAChain = true;
               }else {
                 String remnant = new String(readableRuleInterpretation);

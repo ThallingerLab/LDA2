@@ -237,7 +237,8 @@ public class IntensityChainVO extends IntensityRuleVO
     char[] chars = rulePart.toCharArray();
     if ((rulePart.indexOf("FA ")!=-1 && rulePart.length()>(rulePart.indexOf("FA ")+4) && (Character.isDigit(chars[rulePart.indexOf("FA ")+3])||
         (chars[rulePart.indexOf("FA ")+4])=='-' && (chars[rulePart.indexOf("FA ")+3]=='P'||chars[rulePart.indexOf("FA ")+3]=='O'))) ||
-        (rulePart.indexOf("LCB ")!=-1 && rulePart.length()>(rulePart.indexOf("LCB ")+5) && Character.isDigit(chars[rulePart.indexOf("LCB ")+4]))){
+        (rulePart.indexOf("LCB ")!=-1 && rulePart.length()>(rulePart.indexOf("LCB ")+5) && Character.isDigit(chars[rulePart.indexOf("LCB ")+4])) || 
+        (rulePart.indexOf("O-")!=-1 && rulePart.length()>(rulePart.indexOf("O-")+3) && Character.isDigit(chars[rulePart.indexOf("O-")+2]))){
       fas = extracFANamesFromAlex123Annotation(rulePart,names,faHydroxyEncoding,lcbHydroxyEncoding);
     } else if (rulePart.indexOf("(")!=-1){
       for (ShortStringVO nameVO : names){

@@ -25,7 +25,6 @@ package at.tugraz.genome.lda;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Frame;
@@ -50,7 +49,6 @@ import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
@@ -120,9 +118,7 @@ import at.tugraz.genome.lda.interfaces.ColorChangeListener;
 import at.tugraz.genome.lda.listeners.AnnotationThresholdListener;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.MSnAnalyzer;
-import at.tugraz.genome.lda.msn.RulesContainer;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
-import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.mztab.MztabUtils;
 import at.tugraz.genome.lda.mztab.SmallMztabMolecule;
 import at.tugraz.genome.lda.parser.LDAResultReader;
@@ -1187,7 +1183,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     text.setFont(new Font("Arial",Font.PLAIN, 12));
     logoPanel.add(text,new GridBagConstraints(0, 4, 3, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
-    text = new JLabel("Copyright \u00A9 2021 J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger, Leonida M Lamp");
+    text = new JLabel("Copyright \u00A9 2022 J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger, Leonida M Lamp");
     text.setFont(new Font("Arial",Font.PLAIN, 12));
     logoPanel.add(text,new GridBagConstraints(0, 5, 3, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
@@ -3825,7 +3821,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     String titleString = "Lipid Data Analyzer "+Settings.VERSION+"   "+LipidomicsConstants.getCurrentMSMachine()+" settings ";
     String fragSelected = Settings.getFragmentSettingsString();
     if (fragSelected!=null) titleString += " "+fragSelected;    
-    titleString += "         \u00A9 2021 - J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger, Leonida M Lamp - GNU GPL v3 license";
+    titleString += "         \u00A9 2022 - J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger, Leonida M Lamp - GNU GPL v3 license";
     return titleString;
   }
 
