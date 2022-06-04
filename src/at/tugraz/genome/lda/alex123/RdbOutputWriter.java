@@ -691,8 +691,18 @@ public class RdbOutputWriter
 //                          LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
                       Vector<FattyAcidVO> fas = StaticUtils.decodeLipidNamesFromChainCombi(oneCombi);
                       molSpeciesId = StaticUtils.encodeAlexMolSpeciesName(classNameToWrite,fas);
-                      if (molLookup!=null && molLookup.containsKey(oneCombi))
-                        molSpeciesId = molLookup.get(oneCombi);
+                      if (molLookup!=null) {
+                        if (molLookup.containsKey(oneCombi))
+                          molSpeciesId = molLookup.get(oneCombi);
+                        else {
+                          for (String combiName : StaticUtils.getPermutedChainNames(StaticUtils.splitChainCombiToEncodedStrings(oneCombi,LipidomicsConstants.CHAIN_COMBI_SEPARATOR),LipidomicsConstants.CHAIN_COMBI_SEPARATOR)) {
+                            if (molLookup.containsKey(combiName)) {
+                              molSpeciesId = molLookup.get(combiName);
+                              break;
+                            }
+                          }
+                        }
+                      }
                       Hashtable<String,String> usedFAs = new Hashtable<String,String>();
                       for (int j=0; j!= fas.size(); j++){
                         FattyAcidVO fa = fas.get(j);

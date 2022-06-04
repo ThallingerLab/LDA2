@@ -444,6 +444,7 @@ public class MSnAnalyzer
    * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
+  @SuppressWarnings("unchecked")
   private void checkMSnByAlexFragments(TargetlistEntry quantVO, Hashtable<Integer,Boolean> msLevels) throws CgException,
     RulesException, NoRuleException, IOException, SpectrummillParserException, LipidCombinameEncodingException{
     if (quantVO.getMsnFragments()==null || quantVO.getMsnFragments().size()==0){
@@ -557,6 +558,12 @@ public class MSnAnalyzer
       relativeIntensityOfCombination_ = new Hashtable<String,Double>();
       for (String combi : combiAreas.keySet())
         relativeIntensityOfCombination_.put(StaticUtils.encodeLipidCombi(StaticUtils.sortChainVOs(StaticUtils.decodeLipidNamesFromChainCombi(combi))), combiAreas.get(combi)/totalArea);
+      Vector<DoubleStringVO> toSort = new Vector<DoubleStringVO>();
+      for (String key: new Vector<String>(relativeIntensityOfCombination_.keySet()))
+        toSort.add(new DoubleStringVO(key,relativeIntensityOfCombination_.get(key)));
+      Collections.sort(toSort,new GeneralComparator("at.tugraz.genome.lda.vos.DoubleStringVO", "getValue", "java.lang.Double"));
+      for (int i=toSort.size()-1; i!=-1; i--)
+        validChainCombinations_.add(toSort.get(i).getKey());
 
 /****    }*/
   }
