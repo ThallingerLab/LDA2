@@ -1802,7 +1802,12 @@ public class FragRuleParser
         throw new RulesException("Hydroxylation specifications are neither for "+FRAGMENT_SUBSECTION_NAME+" nor for "+HEAD_SECTION_NAME +" sections allowed! Error at line number "+lineNumber+"!");
       }
       //check whether this number is present in the hydroxylation encodings
-      try { Settings.getLcbHydroxyEncoding().getEncodedPrefix(ohNumber);
+      try {
+        if (chainType == LipidomicsConstants.CHAIN_TYPE_LCB) {
+          Settings.getLcbHydroxyEncoding().getEncodedPrefix(ohNumber);
+        }else {
+          Settings.getFaHydroxyEncoding().getEncodedPrefix(ohNumber);
+        }
       }catch (HydroxylationEncodingException e) {
         throw new RulesException("The OH-Number \""+ohNumber+"\" of \""+FRAGMENT_HYDROXY+"\" is not present in the hydroxylation encodings! Error at line number "+lineNumber+"!");
       }
