@@ -1803,10 +1803,10 @@ public class FragRuleParser
       }
       //check whether this number is present in the hydroxylation encodings
       try {
-        if (chainType == LipidomicsConstants.CHAIN_TYPE_LCB) {
-          Settings.getLcbHydroxyEncoding().getEncodedPrefix(ohNumber);
-        }else {
+        if (chainType==LipidomicsConstants.CHAIN_TYPE_FA_ACYL || chainType == LipidomicsConstants.CHAIN_TYPE_FA_ALKYL || chainType == LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL) {
           Settings.getFaHydroxyEncoding().getEncodedPrefix(ohNumber);
+        }else {
+          Settings.getLcbHydroxyEncoding().getEncodedPrefix(ohNumber);
         }
       }catch (HydroxylationEncodingException e) {
         throw new RulesException("The OH-Number \""+ohNumber+"\" of \""+FRAGMENT_HYDROXY+"\" is not present in the hydroxylation encodings! Error at line number "+lineNumber+"!");
