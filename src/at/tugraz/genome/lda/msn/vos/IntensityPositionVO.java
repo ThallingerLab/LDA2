@@ -191,12 +191,13 @@ public class IntensityPositionVO extends IntensityRuleVO
    * @param faHydroxyEncoding the OH encodings of the FA moiety
    * @param lcbHydroxyEncoding the OH encodings of the LCB moiety
    * @param hasOhInfo has this intensity rule chain information - this is important for generating the human readable name
+   * @param usedAlexMSnTargets is this result from an ALEX123 target list
    * @return the intensity rule VO including the relevant chains
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (not containing type and OH number) cannot be decoded
    */
   public static IntensityPositionVO getFattyAcidsFromReadableRule(String storedRule, IntensityRuleVO ruleVO,
       Hashtable<String,Hashtable<String,CgProbe>> chainFragments, Hashtable<String,Short> missed, HydroxyEncoding faHydroxyEncoding,
-      HydroxyEncoding lcbHydroxyEncoding, boolean hasOhInfo) throws LipidCombinameEncodingException{
+      HydroxyEncoding lcbHydroxyEncoding, boolean hasOhInfo, boolean usedAlexMSnTargets) throws LipidCombinameEncodingException{
     String rule = new String(storedRule);
     boolean biggerOnlyMissed = false;
     boolean smallerOnlyMissed = false;
@@ -224,8 +225,8 @@ public class IntensityPositionVO extends IntensityRuleVO
     //the checkIfOnlyMissedValuesArePresent had been introduced because it was not possible to differentiate alkenylated species with same carbon dbs numbers; e.g. P-PE P-16:0/16:0
     if (checkIfOnlyMissedValuesArePresent(smallerNbpNames,missed))
       smallerOnlyMissed = true;
-    Hashtable<String,FattyAcidVO> biggerChains = IntensityChainVO.extractFANames(ruleBigger, biggerNbpNames, faHydroxyEncoding, lcbHydroxyEncoding);
-    Hashtable<String,FattyAcidVO> smallerChains = IntensityChainVO.extractFANames(ruleSmaller, smallerNbpNames, faHydroxyEncoding, lcbHydroxyEncoding);
+    Hashtable<String,FattyAcidVO> biggerChains = IntensityChainVO.extractFANames(ruleBigger, biggerNbpNames, faHydroxyEncoding, lcbHydroxyEncoding, usedAlexMSnTargets);
+    Hashtable<String,FattyAcidVO> smallerChains = IntensityChainVO.extractFANames(ruleSmaller, smallerNbpNames, faHydroxyEncoding, lcbHydroxyEncoding, usedAlexMSnTargets);
 
     FattyAcidVO biggerVO = null;
     FattyAcidVO smallerVO = null;

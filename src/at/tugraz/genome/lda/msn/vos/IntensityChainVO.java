@@ -199,11 +199,12 @@ public class IntensityChainVO extends IntensityRuleVO
    * @param faHydroxyEncoding the OH encodings of the FA moiety
    * @param lcbHydroxyEncoding the OH encodings of the LCB moiety
    * @param hasOhInfo does this object hold hydroxylation information
+   * @param usedAlexMsnTargets is this result from an ALEX123 target list
    * @return IntensityChainVO which includes the fatty acid
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (not containing type and OH number) cannot be decoded
    */
   public static IntensityChainVO getFattyAcidsFromReadableRule(String rule, IntensityRuleVO ruleVO, Hashtable<String,Hashtable<String,CgProbe>> chainFragments,
-      Hashtable<String,Short> missed, HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding, boolean hasOhInfo) throws LipidCombinameEncodingException{
+      Hashtable<String,Short> missed, HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding, boolean hasOhInfo, boolean usedAlexMsnTargets) throws LipidCombinameEncodingException{
     String biggerPart = "";
     String smallerPart = "";
     boolean orRule = rule.indexOf("|")!=-1 && rule.indexOf(">")==-1 && rule.indexOf("<")==-1;
@@ -216,8 +217,8 @@ public class IntensityChainVO extends IntensityRuleVO
     }
     Vector<ShortStringVO> biggerNbpNames =  FragmentRuleVO.getLengthSortedFragmentNames(new Hashtable<String,Short>(),ruleVO.getBiggerNonHeadAndBasePeakNames(),missed);
     Vector<ShortStringVO> smallerNbpNames = FragmentRuleVO.getLengthSortedFragmentNames(new Hashtable<String,Short>(),ruleVO.getSmallerNonHeadAndBasePeakNames(),missed);
-    Hashtable<String,FattyAcidVO> biggerChains = extractFANames(biggerPart, biggerNbpNames, faHydroxyEncoding, lcbHydroxyEncoding);
-    Hashtable<String,FattyAcidVO> smallerChains = extractFANames(smallerPart, smallerNbpNames, faHydroxyEncoding, lcbHydroxyEncoding);
+    Hashtable<String,FattyAcidVO> biggerChains = extractFANames(biggerPart, biggerNbpNames, faHydroxyEncoding, lcbHydroxyEncoding, usedAlexMsnTargets);
+    Hashtable<String,FattyAcidVO> smallerChains = extractFANames(smallerPart, smallerNbpNames, faHydroxyEncoding, lcbHydroxyEncoding, usedAlexMsnTargets);
     return new IntensityChainVO(ruleVO,biggerChains, smallerChains, hasOhInfo);
   }
   
@@ -228,17 +229,18 @@ public class IntensityChainVO extends IntensityRuleVO
    * @param names the possible fragment names
    * @param faHydroxyEncoding the character encoding of the number of hydroxylation sites for the FA
    * @param lcbHydroxyEncoding the character encoding of the number of hydroxylation sites for the LCB
+   * @param usedAlexMSnTargets is this result from an ALEX123 target list
    * @return the names of the chains - key: fragment name; value: decoded chain object
    * @throws LipidCombinameEncodingException thrown when a lipid id (containing type and OH number) cannot be decoded 
    */
-  public static Hashtable<String,FattyAcidVO> extractFANames(String ruleOriginal, Vector<ShortStringVO> names, HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding) throws LipidCombinameEncodingException {
+  public static Hashtable<String,FattyAcidVO> extractFANames(String ruleOriginal, Vector<ShortStringVO> names, HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding, boolean usedAlexMSnTargets) throws LipidCombinameEncodingException {
     Hashtable<String,FattyAcidVO> fas = new Hashtable<String,FattyAcidVO>();
     String rulePart = new String(ruleOriginal);
     char[] chars = rulePart.toCharArray();
-    if ((rulePart.indexOf("FA ")!=-1 && rulePart.length()>(rulePart.indexOf("FA ")+4) && (Character.isDigit(chars[rulePart.indexOf("FA ")+3])||
+    if (((rulePart.indexOf("FA ")!=-1 && rulePart.length()>(rulePart.indexOf("FA ")+4) && (Character.isDigit(chars[rulePart.indexOf("FA ")+3])||
         (chars[rulePart.indexOf("FA ")+4])=='-' && (chars[rulePart.indexOf("FA ")+3]=='P'||chars[rulePart.indexOf("FA ")+3]=='O'))) ||
         (rulePart.indexOf("LCB ")!=-1 && rulePart.length()>(rulePart.indexOf("LCB ")+5) && Character.isDigit(chars[rulePart.indexOf("LCB ")+4])) || 
-        (rulePart.indexOf("O-")!=-1 && rulePart.length()>(rulePart.indexOf("O-")+3) && Character.isDigit(chars[rulePart.indexOf("O-")+2]))){
+        (rulePart.indexOf("O-")!=-1 && rulePart.length()>(rulePart.indexOf("O-")+3) && Character.isDigit(chars[rulePart.indexOf("O-")+2]))) && usedAlexMSnTargets){
       fas = extracFANamesFromAlex123Annotation(rulePart,names,faHydroxyEncoding,lcbHydroxyEncoding);
     } else if (rulePart.indexOf("(")!=-1){
       for (ShortStringVO nameVO : names){

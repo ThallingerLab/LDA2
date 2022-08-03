@@ -1121,9 +1121,9 @@ public class LDAResultReaderApachePOI
           if (chainRules || positionRules){
             IntensityRuleVO ruleInst = null;
             if (chainRules) ruleInst = IntensityChainVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO,chainFragments,missed,
-                faHydroxyEncoding, lcbHydroxyEncoding, addingMSnEvidence.getOhNumber()>0);
+                faHydroxyEncoding, lcbHydroxyEncoding, addingMSnEvidence.getOhNumber()>0,usedAlexMsnTargets);
             else if (positionRules) ruleInst = IntensityPositionVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO,chainFragments,missed,
-                faHydroxyEncoding, lcbHydroxyEncoding, addingMSnEvidence.getOhNumber()>0);
+                faHydroxyEncoding, lcbHydroxyEncoding, addingMSnEvidence.getOhNumber()>0,usedAlexMsnTargets);
             if (ruleInst!=null) ruleVO = ruleInst;
           }
           if (ruleVO.containsBasePeak()){

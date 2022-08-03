@@ -803,9 +803,9 @@ public class LDAResultReader
           if (chainRules || positionRules){
             IntensityRuleVO ruleInst = null;
             if (chainRules) ruleInst = IntensityChainVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO,chainFragments,missed,
-                faHydroxyEncoding_, lcbHydroxyEncoding_, addingMSnEvidence.getOhNumber()>0);
+                faHydroxyEncoding_, lcbHydroxyEncoding_, addingMSnEvidence.getOhNumber()>0,usedAlexMsnTargets);
             else if (positionRules) ruleInst = IntensityPositionVO.getFattyAcidsFromReadableRule(readableRuleInterpretation,ruleVO,chainFragments,missed,
-                faHydroxyEncoding_, lcbHydroxyEncoding_, addingMSnEvidence.getOhNumber()>0);
+                faHydroxyEncoding_, lcbHydroxyEncoding_, addingMSnEvidence.getOhNumber()>0,usedAlexMsnTargets);
             if (ruleInst!=null) ruleVO = ruleInst;
           }
           if (ruleVO.containsBasePeak()){

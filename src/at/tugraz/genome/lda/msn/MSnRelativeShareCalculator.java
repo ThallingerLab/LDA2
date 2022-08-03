@@ -91,7 +91,8 @@ public class MSnRelativeShareCalculator
       combiLookup_.put(StaticUtils.encodeLipidCombi(StaticUtils.sortChainVOs(StaticUtils.decodeLipidNamesFromChainCombi(combi))),combi);
     }
     ////sortedCombis_ = sortCombis(sortedFAs_.keySet(),combiLookup_.keySet(),"");
-    sortedCombis_ = StaticUtils.sortChainCombinations(new HashSet<String>(combiLookup_.values()));
+    ////sortedCombis_ = StaticUtils.sortChainCombinations(new HashSet<String>(combiLookup_.values()));
+    sortedCombis_ = StaticUtils.sortChainCombinations(new HashSet<String>(combiLookup_.keySet()));
     this.relativeChainCutoff_ = relativeChainCutoff;
     this.debug_ = debug;
     this.debugVO_ = debugVO;
@@ -132,7 +133,7 @@ public class MSnRelativeShareCalculator
         //System.out.println(/*i+"."+*/sortedCombis_.get(i)+"\t\t"+params.A[i][0]);
         if (params.A[i][0]>=relativeChainCutoff_*highest)
           continue;
-        if (debug_) debugVO_.addViolatedCombinations(sortedCombis_.get(i), MSnDebugVO.COMBINATION_LOWER_CHAIN_CUTOFF);
+        if (debug_) debugVO_.addViolatedCombinations(combiLookup_.get(sortedCombis_.get(i)), MSnDebugVO.COMBINATION_LOWER_CHAIN_CUTOFF);
         negativeParams++;
         negatives.add(new FloatStringVO(sortedCombis_.get(i),params.A[i][0]));
         lookup.put(sortedCombis_.get(i), i);
@@ -183,7 +184,7 @@ public class MSnRelativeShareCalculator
     for (int i=0;i!=params.A.length; i++) total += params.A[i][0];
     relativeIntensities_ = new Hashtable<String,Double>();
     for (int i=0;i!=params.A.length; i++){
-      relativeIntensities_.put(sortedCombis_.get(i), ((double)params.A[i][0])/total);
+      relativeIntensities_.put(combiLookup_.get(sortedCombis_.get(i)), ((double)params.A[i][0])/total);
     }
 //    System.out.println("----------------------------------------------------------");
     
