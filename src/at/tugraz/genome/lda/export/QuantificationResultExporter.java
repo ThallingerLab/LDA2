@@ -57,11 +57,11 @@ import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.utils.StaticUtils;
-import at.tugraz.genome.lda.utils.Pair;
 //import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.maspectras.quantification.CgAreaStatus;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.maspectras.quantification.Probe3D;
+import at.tugraz.genome.lda.utils.Pair;
 
 /**
  * 
@@ -511,16 +511,17 @@ public class QuantificationResultExporter
       }
       
       totalArea_+=totalIsoArea;
+    }
       
-      //the first row follows last, as the value for totalArea_ is not known before
+    //the first row follows last, as the value for totalArea_ is not known before
       
-      ws.value(rowFirst, headerTitles.indexOf(HEADER_INDEX), new Integer(resultCount));
-      ws.value(rowFirst, headerTitles.indexOf(HEADER_NAME), param.Peptide);
-      ws.value(rowFirst, headerTitles.indexOf(HEADER_DBS), String.valueOf(param.getDoubleBonds()));
+    ws.value(rowFirst, headerTitles.indexOf(HEADER_INDEX), new Integer(resultCount));
+    ws.value(rowFirst, headerTitles.indexOf(HEADER_NAME), param.Peptide);
+    ws.value(rowFirst, headerTitles.indexOf(HEADER_DBS), String.valueOf(param.getDoubleBonds()));
       
-      if (headerTitles.indexOf(LipidomicsConstants.EXCEL_MS_OH) >= 0) {
-        ws.value(rowFirst, headerTitles.indexOf(LipidomicsConstants.EXCEL_MS_OH), String.valueOf(param.getOhNumber()));
-      }
+    if (headerTitles.indexOf(LipidomicsConstants.EXCEL_MS_OH) >= 0) {
+      ws.value(rowFirst, headerTitles.indexOf(LipidomicsConstants.EXCEL_MS_OH), String.valueOf(param.getOhNumber()));
+    }
       
       //TODO: I still believe we should not write the double bond positions out here
 //      if ((headerTitles.indexOf(HEADER_OMEGA_POSITION) >= 0) && !(param instanceof LipidomicsMSnSet) && param.hasOmegaInformation()) {
@@ -534,30 +535,29 @@ public class QuantificationResultExporter
 //        
 //      }
       
-      ws.value(rowFirst, headerTitles.indexOf(HEADER_MODIFICATION), param.getModificationName());
-      ws.value(rowFirst, headerTitles.indexOf(HEADER_FORMULA), param.getAnalyteFormula());
-      ws.value(rowFirst, headerTitles.indexOf(HEADER_MOD_FORMULA), param.getModificationFormula());
-
-      if (headerTitles.indexOf(HEADER_RT) >= 0) {
-        ws.value(rowFirst, headerTitles.indexOf(HEADER_RT), param.getRt());
-      }
+    ws.value(rowFirst, headerTitles.indexOf(HEADER_MODIFICATION), param.getModificationName());
+    ws.value(rowFirst, headerTitles.indexOf(HEADER_FORMULA), param.getAnalyteFormula());
+    ws.value(rowFirst, headerTitles.indexOf(HEADER_MOD_FORMULA), param.getModificationFormula());
+    
+    if (headerTitles.indexOf(HEADER_RT) >= 0) {
+      ws.value(rowFirst, headerTitles.indexOf(HEADER_RT), param.getRt());
+    }
       
-      ws.value(rowFirst, headerTitles.indexOf(HEADER_AREA), totalArea_);
-      ws.value(rowFirst, headerTitles.indexOf(HEADER_CHARGE), param.getCharge());
-      ws.value(rowFirst, headerTitles.indexOf(HEADER_MZ_MS1), param.Mz[0]);
-      ws.value(rowFirst, headerTitles.indexOf(HEADER_MZ_TOLERANCE), param.LowerMzBand);
+    ws.value(rowFirst, headerTitles.indexOf(HEADER_AREA), totalArea_);
+    ws.value(rowFirst, headerTitles.indexOf(HEADER_CHARGE), param.getCharge());
+    ws.value(rowFirst, headerTitles.indexOf(HEADER_MZ_MS1), param.Mz[0]);
+    ws.value(rowFirst, headerTitles.indexOf(HEADER_MZ_TOLERANCE), param.LowerMzBand);
+    
+    if (param.getLowerRtHardLimit()>=0){
+      ws.value(rowFirst, headerTitles.indexOf(HEADER_LOWER_RT_HARD_LIMIT), param.getLowerRtHardLimit());
+    }
       
-      if (param.getLowerRtHardLimit()>=0){
-        ws.value(rowFirst, headerTitles.indexOf(HEADER_LOWER_RT_HARD_LIMIT), param.getLowerRtHardLimit());
-      }
+    if (param.getUpperRtHardLimit()>=0){
+      ws.value(rowFirst, headerTitles.indexOf(HEADER_UPPER_RT_HARD_LIMIT), param.getUpperRtHardLimit());
+    }
       
-      if (param.getUpperRtHardLimit()>=0){
-        ws.value(rowFirst, headerTitles.indexOf(HEADER_UPPER_RT_HARD_LIMIT), param.getUpperRtHardLimit());
-      }
-      
-      if (param.getPercentalSplit()>=0){
-        ws.value(rowFirst, headerTitles.indexOf(HEADER_PERCENTAL_SPLIT), param.getPercentalSplit());
-      }
+    if (param.getPercentalSplit()>=0){
+      ws.value(rowFirst, headerTitles.indexOf(HEADER_PERCENTAL_SPLIT), param.getPercentalSplit());
     }
     return row++;
   }
