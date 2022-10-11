@@ -1,0 +1,50 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.01%
+SpectrumCoverage=10%
+ChainCutoff=20%
+AlkenylChains=1
+RetentionTimePostprocessing=true
+
+
+[HEAD]
+!FRAGMENTS
+Name=NL_H2O				Formula=$PRECURSOR-H2O		Charge=1	MSLevel=2	mandatory=false
+Name=Plasmalogen_fragment_307		Formula=C21H39O			Charge=1	MSLevel=2	mandatory=false
+Name=Precursor_WRONG			Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=other
+Name=PEhead_WRONG			Formula=$PRECURSOR-P1O4C2N1H8	Charge=1	MSLevel=2	mandatory=other
+Name=PEhead_164_WRONG			Formula=C2H8NO4PNa		Charge=1	MSLevel=2	mandatory=other
+Name=PChead_WRONG			Formula=C5H15NO4P		Charge=1	MSLevel=2	mandatory=other
+Name=NL_Ethanolamine_43_WRONG		Formula=$PRECURSOR-C2H5N	Charge=1	MSLevel=2	mandatory=other
+
+!INTENSITIES
+Equation=PEhead_WRONG<$BASEPEAK*0.5			mandatory=true
+Equation=PEhead_WRONG<NL_H2O*3				mandatory=true
+Equation=PChead_WRONG<$BASEPEAK*0.5			mandatory=true
+Equation=PChead_WRONG<NL_H2O*3				mandatory=true
+Equation=NL_Ethanolamine_43_WRONG<0.4*$BASEPEAK		mandatory=true
+Equation=NL_Ethanolamine_43_WRONG<NL_H2O*2		mandatory=true
+Equation=Precursor_WRONG<$BASEPEAK*0.5			mandatory=true
+Equation=Precursor_WRONG<NL_H2O*2			mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=plasmalogen	Formula=$ALKENYLCHAIN+C2H7O3PN		Charge=1	MSLevel=2	mandatory=true
+Name=plasmalogen_H3PO4	Formula=$ALKENYLCHAIN+C2H7O3PN-H3PO4	Charge=1	MSLevel=2	mandatory=false
+Name=sn2		Formula=$CHAIN+C3H5O			Charge=1	MSLevel=2	mandatory=true
+
+!INTENSITIES
+Equation=plasmalogen>0.1*$BASEPEAK					mandatory=true
+Equation=sn2>0.1*$BASEPEAK						mandatory=true
+Equation=plasmalogen+0*$BASEPEAK>plasmalogen_H3PO4+0*$BASEPEAK		mandatory=true
+
+
+[POSITION]
+!INTENSITIES
+Equation=sn2[2]>0*plasmalogen[2]+0*$BASEPEAK	mandatory=true
+Equation=plasmalogen[1]>0*sn2[1]+0*$BASEPEAK	mandatory=true
+
