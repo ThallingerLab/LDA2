@@ -1129,7 +1129,8 @@ public class MSnAnalyzer
     for (String combi : allowedCombis) allowed.put(combi, combi);
     Vector<String> combisToRemove = new Vector<String>();
     for (String key : fulfilledChainIntensityRules_.keySet()){
-      if (key.indexOf(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)==-1) continue;
+      ////if (key.indexOf(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)==-1) continue;
+      if (key.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR)==-1) continue;
       if (!allowed.containsKey(key)) combisToRemove.add(key);
     }
     
