@@ -36,6 +36,7 @@ import at.tugraz.genome.lda.swing.BatchQuantificationTable;
 import at.tugraz.genome.lda.swing.BatchQuantificationTableModel;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.RawQuantificationPairVO;
+import at.tugraz.genome.lda.xml.AbstractXMLSpectraReader;
 import at.tugraz.genome.lda.xml.RawToChromThread;
 import at.tugraz.genome.maspectras.GlobalConstants;
 import at.tugraz.genome.maspectras.utils.StringUtils;
@@ -313,7 +314,7 @@ public class BatchQuantThread extends Thread
 //          threadStarted=true;
 //          return;
 //        }
-        if (suffix.equalsIgnoreCase(".mzXML") || suffix.equalsIgnoreCase(".mzML")){
+        if (suffix.equalsIgnoreCase("."+AbstractXMLSpectraReader.FILE_TYPE_MZ_XML) || suffix.equalsIgnoreCase("."+AbstractXMLSpectraReader.FILE_TYPE_MZ_ML)){
           File headerFile = new File(StringUtils.getChromFilePaths(filePair.getRawFile().getAbsolutePath())[1]);
           if (!headerFile.exists()){
             filePair.setStatus("Trans to chrom");
@@ -392,9 +393,10 @@ public class BatchQuantThread extends Thread
     Vector<File> filesToTranslate = new Vector<File>();
     String fileStart = filePath.substring(0,filePath.lastIndexOf("."));
     File[] filesOfDir = new File(StringUtils.extractDirName(fileStart)).listFiles();
-    for (int i=0; i!=filesOfDir.length; i++){          
-      if (filesOfDir[i].getAbsolutePath().startsWith(fileStart)&&
-          (filesOfDir[i].getAbsolutePath().endsWith(".mzXML")||filesOfDir[i].getAbsolutePath().endsWith(".mzML"))){
+    for (int i=0; i!=filesOfDir.length; i++){
+    	String absolutePath = filesOfDir[i].getAbsolutePath();
+      if (absolutePath.startsWith(fileStart)&&
+          (absolutePath.endsWith("."+AbstractXMLSpectraReader.FILE_TYPE_MZ_XML)||absolutePath.endsWith("."+AbstractXMLSpectraReader.FILE_TYPE_MZ_ML))){
         filesToTranslate.add(filesOfDir[i]);
       }
     }

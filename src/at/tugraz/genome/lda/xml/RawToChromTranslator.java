@@ -59,8 +59,7 @@ import at.tugraz.genome.util.BioUtilsConstants;
  *
  */
 public class RawToChromTranslator implements AddScan
-{
-  
+{	
   /** actual Scan Count (used as index) */
   private Hashtable<String,Integer> m_scanCount;
   /** actual polarity scan count (used as index) */
@@ -188,7 +187,7 @@ public class RawToChromTranslator implements AddScan
    * @param fileType the type of the file
    * @param maxMBForChromTranslation the highest number of MBytes that can be translated in one chrom translation iteration
    */
-  public RawToChromTranslator(String mzXMLPath,String fileType, int maxMBForChromTranslation)
+  private RawToChromTranslator(String mzXMLPath,String fileType, int maxMBForChromTranslation)
   {
     multiplicationFactorForInt_ = CgDefines.mzMultiplicationFactorForInt;
     lowestResolution_ = CgDefines.lowestResolution;
@@ -585,18 +584,18 @@ public class RawToChromTranslator implements AddScan
       m_reader = null;
       String justFileName = "";
       //check if several mzXML files exist (several MS/MS traces)
-      if (fileType_.equalsIgnoreCase("mzXML")){
+      if (fileType_.equals(AbstractXMLSpectraReader.FILE_TYPE_MZ_XML)){
         AddScan[] adders = new AddScan[1];
         adders[0] = this;
         m_reader = new MzXMLReader(adders, msms_&&!msmsInSeveralFiles_,multiplicationFactorForInt_);
-        if (m_fileName.endsWith(".mzXML")) justFileName = m_fileName.substring(0, m_fileName.length()-(".mzXML").length());
+        if (m_fileName.endsWith("."+AbstractXMLSpectraReader.FILE_TYPE_MZ_XML)) justFileName = m_fileName.substring(0, m_fileName.length()-("."+AbstractXMLSpectraReader.FILE_TYPE_MZ_XML).length());
         else justFileName = m_fileName; 
       }
-      if (fileType_.equalsIgnoreCase("mzML")){
+      if (fileType_.equals(AbstractXMLSpectraReader.FILE_TYPE_MZ_ML)){
         AddScan[] adders = new AddScan[1];
         adders[0] = this;
         m_reader = new MzMLReader(adders, msms_&&!msmsInSeveralFiles_,multiplicationFactorForInt_);
-        if (m_fileName.endsWith(".mzML")) justFileName = m_fileName.substring(0, m_fileName.length()-(".mzML").length());
+        if (m_fileName.endsWith("."+AbstractXMLSpectraReader.FILE_TYPE_MZ_ML)) justFileName = m_fileName.substring(0, m_fileName.length()-("."+AbstractXMLSpectraReader.FILE_TYPE_MZ_ML).length());
         else justFileName = m_fileName; 
       }
 /*    these are not updated to the parallelized reading

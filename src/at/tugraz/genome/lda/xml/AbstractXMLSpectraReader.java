@@ -52,6 +52,11 @@ import at.tugraz.genome.maspectras.quantification.CgScan;
  */
 public abstract class AbstractXMLSpectraReader implements XMLSpectraReader
 {
+  
+  //the accepted file types
+  public final static String FILE_TYPE_MZ_XML = "mzXML";
+  public final static String FILE_TYPE_MZ_ML = "mzML";
+	
   //the reader
   XMLStreamReader reader_;
   

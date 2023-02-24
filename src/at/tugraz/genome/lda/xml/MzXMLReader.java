@@ -69,14 +69,14 @@ public class MzXMLReader extends AbstractXMLSpectraReader
   //the required XML tag, of which the content will be read. 
   private static final String TAG_RUN = "msRun";
   
-//  //accessible XML sub-tags of TAG_RUN
+  //accessible XML sub-tags of TAG_RUN
   private static final String TAG_PARENT_FILE = "parentFile"; 
   private static final String TAG_SCAN = "scan";
   private static final String TAG_PEAKS = "peaks";
   private static final String TAG_END_PEAKS = "</peaks>";
   private static final String TAG_PRECURSOR_MZ = "precursorMz";
    
-//  //accessible XML attributes
+  //accessible XML attributes
   private static final String ATTRIBUTE_FILE_NAME = "fileName"; 
   private static final String ATTRIBUTE_SCAN_COUNT = "scanCount";
   private static final String ATTRIBUTE_START_TIME = "startTime";

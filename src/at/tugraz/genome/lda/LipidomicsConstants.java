@@ -53,6 +53,7 @@ import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.xml.AbstractXMLSpectraReader;
 
 /**
  * 
@@ -537,7 +538,7 @@ public class LipidomicsConstants
   /** the intermediate file format for the translation of RAW to chrom */
   private final static String INTERMEDIATE_FILE_FORMAT = "intermediateFileFormat";
   /** the default intermediate file format for the translation of RAW to chrom */
-  private final static String INTERMEDIATE_FILE_FORMAT_DEFAULT = "mzXML";
+  private final static String INTERMEDIATE_FILE_FORMAT_DEFAULT = AbstractXMLSpectraReader.FILE_TYPE_MZ_XML;
   
   public static LipidomicsConstants getInstance() {
     if (instance_ == null) {

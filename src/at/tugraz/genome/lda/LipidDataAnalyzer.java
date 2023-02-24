@@ -164,6 +164,7 @@ import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
 import at.tugraz.genome.lda.xml.AbsoluteQuantSettingsWholeReader;
 import at.tugraz.genome.lda.xml.AbsoluteQuantSettingsWholeWriter;
+import at.tugraz.genome.lda.xml.AbstractXMLSpectraReader;
 import at.tugraz.genome.lda.xml.CutoffSettingsReader;
 import at.tugraz.genome.lda.xml.CutoffSettingsWriter;
 import at.tugraz.genome.lda.xml.RawToChromThread;
@@ -2375,8 +2376,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
               String[] fileNameAndSuffix = StaticUtils.extractFileNameAndSuffix(rawFileCandidates[i].getAbsolutePath()); 
               String suffix = fileNameAndSuffix[1];
               String fileName = fileNameAndSuffix[0];
-              if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("mzml")||suffix.equalsIgnoreCase("raw")||suffix.equalsIgnoreCase("chrom")||suffix.equalsIgnoreCase("wiff")){
-                if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("mzml")||suffix.equalsIgnoreCase("chrom")) mzXMLOrChromPresent = true;
+              if (suffix.equalsIgnoreCase(AbstractXMLSpectraReader.FILE_TYPE_MZ_XML)||
+              		suffix.equalsIgnoreCase(AbstractXMLSpectraReader.FILE_TYPE_MZ_ML)||
+              		suffix.equalsIgnoreCase("raw")||
+              		suffix.equalsIgnoreCase("chrom")||
+              		suffix.equalsIgnoreCase("wiff")){
+                if (suffix.equalsIgnoreCase(AbstractXMLSpectraReader.FILE_TYPE_MZ_XML)||suffix.equalsIgnoreCase(AbstractXMLSpectraReader.FILE_TYPE_MZ_ML)||suffix.equalsIgnoreCase("chrom")) mzXMLOrChromPresent = true;
                 Vector<File> theFiles = new Vector<File>();
                 if (avoidDuplication.containsKey(fileName)){
                   theFiles = avoidDuplication.get(fileName);
@@ -2423,7 +2428,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                   File file = theFiles.get(i);
                   String suffix = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf(".")+1);
                   if (mzXMLOrChromPresent && suffix.equalsIgnoreCase("wiff")) continue;
-                  if (suffix.equalsIgnoreCase("mzXML") || suffix.equalsIgnoreCase("mzML")){
+                  if (suffix.equalsIgnoreCase(AbstractXMLSpectraReader.FILE_TYPE_MZ_XML) || suffix.equalsIgnoreCase(AbstractXMLSpectraReader.FILE_TYPE_MZ_ML)){
                     rawFiles.add(theFiles.get(i));
                   }
                 }  
@@ -2559,8 +2564,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         if (canStartQuantification){
           String suffix = selectedMzxmlFile.getText().substring(selectedMzxmlFile.getText().lastIndexOf(".")+1);
           if (!(suffix.equalsIgnoreCase("chrom")||suffix.equalsIgnoreCase("head")||suffix.equalsIgnoreCase("idx")||
-              suffix.equalsIgnoreCase("rtt")||suffix.equalsIgnoreCase("mzXML")||suffix.equalsIgnoreCase("mzML")||
-              suffix.equalsIgnoreCase("raw")||suffix.equalsIgnoreCase("d")||suffix.equalsIgnoreCase("wiff"))){
+              suffix.equalsIgnoreCase("rtt")||suffix.equalsIgnoreCase("raw")||suffix.equalsIgnoreCase("d")||suffix.equalsIgnoreCase("wiff")||
+              suffix.equalsIgnoreCase(AbstractXMLSpectraReader.FILE_TYPE_MZ_XML)||
+              suffix.equalsIgnoreCase(AbstractXMLSpectraReader.FILE_TYPE_MZ_ML))){
             new WarningMessage(new JFrame(), "Error", "For the raw data just files and directories with the suffix raw, mzXML, mzML, d, wiff, and chrom are allowed!"); 
             return;
           }
