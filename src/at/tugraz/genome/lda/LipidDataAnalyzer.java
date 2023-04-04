@@ -496,7 +496,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   /** the lock range must be updated if true*/
   private boolean lockRangeUpdateRequired_ = false;
   /** the export dialog for omega retention time map*/
-  private OmegaExportDialog  omegaExport_ = null;
+//  private OmegaExportDialog  omegaExport_ = null;
 
   
   public LipidDataAnalyzer(){
@@ -3243,32 +3243,35 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       exportSettings_.setVisible(false);
       if (exportSettingsGroup_!=null)
         exportSettingsGroup_.setVisible(false);
-    } else if (command.equalsIgnoreCase("AcceptOmegaExport")) {
-      Vector<IsotopicLabelVO> labelInfo = omegaExport_.getEnteredLabelInformation();
-      //TODO: this is only for debugging
-      for (IsotopicLabelVO label : labelInfo)
-        System.out.println(label);
-      
-      // get the directory where to store the omega mass list file
-      exportFileChooser_.setFileSelectionMode(JFileChooser.FILES_ONLY);
-      String fileName = "n-Masslist.xlsx";
-      String confirmDialogTitle = "\u03C9-RT export";
-      FileNameExtensionFilter filter = new FileNameExtensionFilter("Microsoft Office Excel Woorkbook (*.xlsx)","xlsx");
-      exportFileChooser_.setSelectedFile(new File(fileName));
-      exportFileChooser_.setFileFilter(filter);
-      if (JOptionPane.showConfirmDialog(this, "Only selected analytes with the current isotopes selected will be exported! Continue?",confirmDialogTitle,JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){
-        int returnVal = exportFileChooser_.showSaveDialog(new JFrame());
-        if (returnVal != JFileChooser.APPROVE_OPTION)
-          return;
-        File fileToStore = exportFileChooser_.getSelectedFile();
-        @SuppressWarnings("rawtypes")
-        Vector results = HeatMapDrawing.checkFileStorage(fileToStore,"txt",resultsPanel_);
-        fileToStore = (File)results.get(0);
-        if ((Boolean)results.get(1))
-          exportOmegaMasslist(fileToStore,labelInfo);
-      }
-      exportFileChooser_.setSelectedFile(new File(""));
-    }
+    } 
+    
+    //TODO: remove when alternative isoLabel algo is finalized
+//    else if (command.equalsIgnoreCase("AcceptOmegaExport")) {
+//      Vector<IsotopicLabelVO> labelInfo = omegaExport_.getEnteredLabelInformation();
+//      //TODO: this is only for debugging
+//      for (IsotopicLabelVO label : labelInfo)
+//        System.out.println(label);
+//      
+//      // get the directory where to store the omega mass list file
+//      exportFileChooser_.setFileSelectionMode(JFileChooser.FILES_ONLY);
+//      String fileName = "n-Masslist.xlsx";
+//      String confirmDialogTitle = "\u03C9-RT export";
+//      FileNameExtensionFilter filter = new FileNameExtensionFilter("Microsoft Office Excel Woorkbook (*.xlsx)","xlsx");
+//      exportFileChooser_.setSelectedFile(new File(fileName));
+//      exportFileChooser_.setFileFilter(filter);
+//      if (JOptionPane.showConfirmDialog(this, "Only selected analytes with the current isotopes selected will be exported! Continue?",confirmDialogTitle,JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){
+//        int returnVal = exportFileChooser_.showSaveDialog(new JFrame());
+//        if (returnVal != JFileChooser.APPROVE_OPTION)
+//          return;
+//        File fileToStore = exportFileChooser_.getSelectedFile();
+//        @SuppressWarnings("rawtypes")
+//        Vector results = HeatMapDrawing.checkFileStorage(fileToStore,"txt",resultsPanel_);
+//        fileToStore = (File)results.get(0);
+//        if ((Boolean)results.get(1))
+//          exportOmegaMasslist(fileToStore,labelInfo);
+//      }
+//      exportFileChooser_.setSelectedFile(new File(""));
+//    }
   }
   
   public void showExportSettingsDialog(boolean grouped){
@@ -3457,8 +3460,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     if (this.groupsPanel_.getGroups().size()>0)
       exportSettingsGroup_ = new ExportSettingsPanel(true,this);
     
-    omegaExport_ = new OmegaExportDialog("\u03C9-RT export",analysisModule_.getIsoLabels(),this);
-    omegaExport_.setVisible(false);
+    	//TODO: remove when alternative isoLabel algo is finalized
+//    omegaExport_ = new OmegaExportDialog("\u03C9-RT export",analysisModule_.getIsoLabels(),this);
+//    omegaExport_.setVisible(false);
     
     for (String molGroup : analysisResults.keySet()){
       JPanel aResultsViewPanel = new JPanel(new BorderLayout());
@@ -3504,7 +3508,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       ResultSelectionSettings selectionSettings = new ResultSelectionSettings(null,molNames,true);
       ResultSelectionSettings combinedChartSettings = new ResultSelectionSettings(null,molNames,false);
       HeatMapDrawing drawing = new HeatMapDrawing(molGroup,resultsOfOneGroup, expNames,molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,null,
-          displaySettings,selectionSettings,combinedChartSettings,exportSettings_,omegaExport_, analysisModule_.getRtTolerance());
+          displaySettings,selectionSettings,combinedChartSettings,exportSettings_,analysisModule_.getRtTolerance());
+      
+      //TODO: remove when alternative isoLabel algo is finalized
+//      HeatMapDrawing drawing = new HeatMapDrawing(molGroup,resultsOfOneGroup, expNames,molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,null,
+//          displaySettings,selectionSettings,combinedChartSettings,exportSettings_,omegaExport_, analysisModule_.getRtTolerance());
       displaySettings.addActionListener(drawing);
       selectionSettings.addActionListener(drawing);
       combinedChartSettings.addActionListener(drawing);
@@ -3526,7 +3534,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         JPanel groupPanel = new JPanel();
         groupPanel.setLayout(new BorderLayout());
         HeatMapDrawing groupDrawing = new HeatMapDrawing(molGroup,groupedResultsOfOneGroup, this.groupsPanel_.getGroups(),molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,
-            drawing, displaySettings,selectionSettings,combinedChartSettings,exportSettingsGroup_,omegaExport_,analysisModule_.getRtTolerance());
+            drawing, displaySettings,selectionSettings,combinedChartSettings,exportSettingsGroup_,analysisModule_.getRtTolerance());
+        //TODO: remove when alternative isoLabel algo is finalized
+//        HeatMapDrawing groupDrawing = new HeatMapDrawing(molGroup,groupedResultsOfOneGroup, this.groupsPanel_.getGroups(),molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,
+//            drawing, displaySettings,selectionSettings,combinedChartSettings,exportSettingsGroup_,omegaExport_,analysisModule_.getRtTolerance());
         displaySettings.addActionListener(groupDrawing);
         selectionSettings.addActionListener(groupDrawing);
         combinedChartSettings.addActionListener(groupDrawing);
@@ -3827,7 +3838,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     String titleString = "Lipid Data Analyzer "+Settings.VERSION+"   "+LipidomicsConstants.getCurrentMSMachine()+" settings ";
     String fragSelected = Settings.getFragmentSettingsString();
     if (fragSelected!=null) titleString += " "+fragSelected;    
-    titleString += "         \u00A9 2023 - J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger, Leonida M Lamp - GNU GPL v3 license";
+    titleString += "         \u00A9 2022 - J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger, Leonida M Lamp - GNU GPL v3 license";
     return titleString;
   }
 

@@ -139,7 +139,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   protected ResultDisplaySettings displaySettings_;
   protected ResultSelectionSettings selectionSettings_;
   protected ExportSettingsPanel exportSettings_;
-  protected OmegaExportDialog omegaExport_;
+//  protected OmegaExportDialog omegaExport_;
   protected ResultSelectionSettings combinedChartSettings_;
   protected boolean isGrouped_ = false;
   protected Hashtable<String,String> preferredUnit_ = null;
@@ -213,14 +213,14 @@ public class HeatMapDrawing extends JPanel implements ActionListener
    * @param selectionSettings a dialog box for choosing the values to be displayed in the heat map
    * @param combinedChartSettings a dialog box for choosing the values to be displayed in a combined chart
    * @param exportSettings a dialog box for choosing parameters for the export
-   * @param omegaExport a dialog box for exporting an omega retention time mass list
+   * @param omegaExport a dialog box for exporting an omega retention time mass list //TODO: remove when alternative isoLabel algo is finalized
    * @param rtTolerance the retention time tolerance value (if selected, otherwise null)
    */
   public HeatMapDrawing(String molGroupName,Hashtable<String,Hashtable<String,ResultCompVO>> resultsOfOneGroup, Vector<String> experimentNames, 
       Vector<String> moleculeNames, Hashtable<String,Integer> isLookup, Hashtable<String,Integer> esLookup, int maxIsotopesOfGroup,
       Vector<String> modifications, JLabel statusText, HeatMapClickListener listener, String groupName, HeatMapDrawing ungroupedPartner,
       ResultDisplaySettings displaySettings, ResultSelectionSettings selectionSettings, ResultSelectionSettings combinedChartSettings,
-      ExportSettingsPanel exportSettings, OmegaExportDialog omegaExport, Double rtTolerance){
+      ExportSettingsPanel exportSettings, Double rtTolerance){
     selectedMolecules_ = new Hashtable<String,String>();
     selectedSingleMolecules_ = new Hashtable<String,Hashtable<String,Color>>();
     selectedSingleMoleculesMods_ = new Hashtable<String,Hashtable<String,String>>(); 
@@ -366,7 +366,9 @@ public class HeatMapDrawing extends JPanel implements ActionListener
 //    selectionSettings_ = new ResultSelectionSettings(moleculeNames_,true,this);
 //    combinedChartSettings_ = new ResultSelectionSettings(moleculeNames_,false,this);
     exportSettings_ = exportSettings;
-    omegaExport_ = omegaExport;
+    
+  //TODO: remove when alternative isoLabel algo is finalized
+//    omegaExport_ = omegaExport;
     
     exportFileChooser_ = new JFileChooser();
     exportFileChooser_.setPreferredSize(new Dimension(600,500));
@@ -691,9 +693,12 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     	
     } else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_CHROMS)){
       chromExport_.setVisible(true);
-    } else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_N_RT)){
-      omegaExport_.setVisible(true);
-    } else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_MAF)) {
+    } 
+    //TODO: remove when alternative isoLabel algo is finalized
+//    else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_N_RT)){
+//      omegaExport_.setVisible(true);
+//    } 
+    else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_MAF)) {
     // get the directory where to store the maf.tsv file (1 per experiment)
       exportFileChooser_.setFileSelectionMode(JFileChooser.FILES_ONLY);
       int equalPartsAtBeginning = StaticUtils.detectNameUnequalitiesBeforeAndAfter(experimentNames_)[0];
@@ -1588,7 +1593,8 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       timer_.purge();
     }
     timer_ = null;
-    omegaExport_ = null;
+  //TODO: remove when alternative isoLabel algo is finalized
+//    omegaExport_ = null;
   }
   
   public Hashtable<String,Hashtable<String,Vector<Double>>> getResultValues(String valueType) throws NumberFormatException, CalculationNotPossibleException{
