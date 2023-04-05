@@ -3838,7 +3838,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     String titleString = "Lipid Data Analyzer "+Settings.VERSION+"   "+LipidomicsConstants.getCurrentMSMachine()+" settings ";
     String fragSelected = Settings.getFragmentSettingsString();
     if (fragSelected!=null) titleString += " "+fragSelected;    
-    titleString += "         \u00A9 2022 - J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger, Leonida M Lamp - GNU GPL v3 license";
+    titleString += "         \u00A9 2023 - J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger, Leonida M Lamp - GNU GPL v3 license";
     return titleString;
   }
 
