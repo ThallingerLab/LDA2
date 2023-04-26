@@ -23,6 +23,7 @@
 
 package at.tugraz.genome.lda.xml;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.DoubleBuffer;
@@ -31,6 +32,7 @@ import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
@@ -44,7 +46,7 @@ import at.tugraz.genome.maspectras.quantification.MsMsScan;
 
 
 /**
- * StAX based mzML Reader for the Package.
+ * StAX based mzML Reader.
  * 
  * This class reads an mzML file with hierarchical scans. It uses two methods
  * defined in the AddScan interface to return created header and spectrum
@@ -61,19 +63,15 @@ public class MzMLReader extends AbstractXMLSpectraReader
   //the call back interface for the header information
   private CgScanHeader myHeader_;
   
-  /** the precursor m/z values of the current spectrum*/
-  protected Vector<String> precursorMz_;
-  
-  /** the MS-level of the previous scan*/
-  private int lastMsLevel_;
-  
   //the required XML tag, of which the content will be read. 
   private static final String TAG_RUN = "run";
   
-  //accessible XML sub-tags of TAG_RUN
+  //accessed XML sub-tags of TAG_RUN
   private static final String TAG_SPECTRUM_LIST = "spectrumList"; 
-  private static final String TAG_CV_PARAM = "cvParam";
   private static final String TAG_SPECTRUM = "spectrum";
+  private static final String TAG_CV_PARAM = "cvParam";
+  private static final String TAG_SCAN_LIST = "scanList";
+  private static final String TAG_PRECURSOR_LIST = "precursorList";
   private static final String TAG_BINARY_DATA_ARRAY_LIST = "binaryDataArrayList";
   private static final String TAG_BINARY_DATA_ARRAY = "binaryDataArray";
   private static final String TAG_BINARY = "binary";
@@ -89,8 +87,8 @@ public class MzMLReader extends AbstractXMLSpectraReader
   
   //accessible XML attribute-entries
   private static final String ENTRY_MS_LEVEL = "ms level";
-  private static final String ENTRY_LOWEST_OBSERVED_MZ = "lowest observed m/z";
-  private static final String ENTRY_HIGHEST_OBSERVED_MZ = "highest observed m/z";
+  private static final String ENTRY_LOWEST_OBSERVED_MZ = "lowest observed m/z"; //TODO: replace with 'scan window lower limit'
+  private static final String ENTRY_HIGHEST_OBSERVED_MZ = "highest observed m/z"; //TODO: replace with 'scan window upper limit'
   private static final String ENTRY_POSITIVE_SCAN = "positive scan";
   private static final String ENTRY_NEGATIVE_SCAN = "negative scan";
   private static final String ENTRY_SCAN_START_TIME = "scan start time";
@@ -105,7 +103,7 @@ public class MzMLReader extends AbstractXMLSpectraReader
   private static final String ENTRY_TOTAL_ION_CURRENT = "total ion current";
   private static final String ENTRY_MINUTE = "minute";
   private static final String ENTRY_SELECTED_ION_MZ = "selected ion m/z";
-  private static final String ENTRY_PEAK_INTENSITY = "peak intensity";
+//  private static final String ENTRY_PEAK_INTENSITY = "peak intensity";
   
   
    
@@ -165,40 +163,77 @@ public class MzMLReader extends AbstractXMLSpectraReader
    */
   protected void readMsRun(boolean readOnlyRequiredInfoForMultiThreading) throws CgException
   {
-    int eventType;
-    lastMsLevel_ = 0;
     String parentFileName = "";
 
     try {
-      do {
-        eventType = reader_.getEventType();
-        switch (eventType) {
-          
-          case XMLStreamReader.START_ELEMENT:
-            
-            if (reader_.getLocalName().equalsIgnoreCase(TAG_RUN)){   
-              parentFileName = getRequiredAttribute(reader_, ATTRIBUTE_ID);
-            } else if (reader_.getLocalName().equalsIgnoreCase(TAG_SPECTRUM_LIST)) {
-              int scanCount = Integer.parseInt(getRequiredAttribute(reader_, ATTRIBUTE_COUNT));
-              informAdders(readOnlyRequiredInfoForMultiThreading, parentFileName, scanCount);
-              if (readOnlyRequiredInfoForMultiThreading) {
-                readOnlyRequiredInfoForMultiThreading();
-              } else {
-                readScan(null, null);
-              }
-            }
-            break;
-            
-          case XMLStreamReader.END_ELEMENT:   
-            
-            if (reader_.getLocalName().equalsIgnoreCase(this.getTagRun()))
-              return;
-            break;
-        }
-        eventType = reader_.next();
-      } while (eventType != XMLStreamReader.END_DOCUMENT);
+      while (reader_.hasNext()) 
+      {
+      	if (isStartElement(TAG_RUN))
+      	{
+      		parentFileName = getRequiredAttribute(reader_, ATTRIBUTE_ID);
+      		reader_.next();
+      	}
+      	else if (isStartElement(TAG_SPECTRUM_LIST))
+      	{
+      		int scanCount = Integer.parseInt(getRequiredAttribute(reader_, ATTRIBUTE_COUNT));
+          informAdders(readOnlyRequiredInfoForMultiThreading, parentFileName, scanCount);
+          readSpectrumList(readOnlyRequiredInfoForMultiThreading);
+      	}
+      	else if (isEndElement(this.getTagRun()))
+      	{
+      		return;
+      	}
+      	else
+      	{
+      		reader_.next();
+      	}
+      }
     }
     catch (Exception ex) {
+      throw new CgException(ex.getMessage());
+    }
+  }
+  
+  /**
+   * This method reads the full structure of the XML element constant TAG_SPECTRUM_LIST into memory.
+   * @param readOnlyRequiredInfoForMultiThreading
+   * 					Reads only the information required for getting an idea about the 
+   *          m/z ranges for splitting in iterations and/or threads,
+   *          the retention time range, 
+   *          highest msLevel, 
+   *          as well as whether polarity switching is used
+   * @throws CgException
+   * 					All internal exceptions are mapped to the CgException type.
+   */
+  private void readSpectrumList(boolean readOnlyRequiredInfoForMultiThreading) throws CgException
+  {
+  	AddScanHelper helper = new AddScanHelper();
+  	Precursor precursor = new Precursor();
+  	try {
+      while (reader_.hasNext()) 
+      {
+      	if (isStartElement(TAG_SPECTRUM))
+      	{
+      		if (readOnlyRequiredInfoForMultiThreading) 
+      		{
+            readOnlyRequiredInfoForMultiThreading();
+          } 
+      		else 
+          {
+            readSpectrum(helper, precursor);
+          }
+      	}
+      	else if (isEndElement(TAG_SPECTRUM_LIST))
+      	{
+      		return;
+      	}
+      	else
+      	{
+      		reader_.next();
+      	}
+      }
+  	}
+  	catch (Exception ex) {
       throw new CgException(ex.getMessage());
     }
   }
@@ -215,111 +250,102 @@ public class MzMLReader extends AbstractXMLSpectraReader
    */
   protected void readOnlyRequiredInfoForMultiThreading() throws CgException
   {
-    int spectrumIndex = -1;
-    int peaksCount = 0;
-    int eventType;
-    String value = null;
-    int msLevel = 0;
-    float lowMz = Float.MAX_VALUE;
-    float highMz = 0f;
-    boolean lowMzFound = false;
-    boolean highMzFound = false;
-    int polarity = CgDefines.POLARITY_NO;
+  	SpectrumParams params = new SpectrumParams();
+  	boolean spectrumTagFound = false;
     //the following line is for QQQ PIS/NLS and PRM
 //    float precursor = -1;
     
-    if (reader_.getLocalName().equalsIgnoreCase(TAG_SPECTRUM)) {
-      spectrumIndex = Integer.parseInt(getRequiredAttribute(reader_, ATTRIBUTE_INDEX));
-      peaksCount = Integer.parseInt(getRequiredAttribute(reader_, ATTRIBUTE_DEFAULT_ARRAY_LENGTH));
-    }
-    
     try {
-      eventType = reader_.next();
-      do {
-        switch (eventType) {
-          
-          case XMLStreamReader.START_ELEMENT:
-            
-            if (reader_.getLocalName().equalsIgnoreCase(TAG_CV_PARAM)) {
-              switch (getRequiredAttribute(reader_, ATTRIBUTE_NAME)) {
-                case ENTRY_MS_LEVEL:
-                  value = reader_.getAttributeValue(null, ATTRIBUTE_VALUE);
-                  if (!value.equals("")) {
-                    msLevel = Integer.parseInt(value);
-                    evaluateMsLevel(msLevel);
-                  }
-                  break;
-                case ENTRY_LOWEST_OBSERVED_MZ:
-                  value = reader_.getAttributeValue(null, ATTRIBUTE_VALUE);
-                  if (!value.equals("")) {
-                    lowMz = Float.parseFloat(value);
-                    lowMzFound = true;
-                  }
-                  break;
-                case ENTRY_HIGHEST_OBSERVED_MZ:
-                  value = reader_.getAttributeValue(null, ATTRIBUTE_VALUE);
-                  if (!value.equals("")) {
-                    highMz = Float.parseFloat(value);
-                    highMzFound = true;
-                  }
-                  break;
-                case ENTRY_POSITIVE_SCAN:
-                  polarity = CgDefines.POLARITY_POSITIVE;
-                  break;
-                case ENTRY_NEGATIVE_SCAN:
-                  polarity = CgDefines.POLARITY_NEGATIVE; 
-                  break;
-                case ENTRY_SCAN_START_TIME:
-                  if (spectrumIndex == 0) {
-                    myHeader_.StartTime = convertTimeFormat(
-                        reader_.getAttributeValue(null, ATTRIBUTE_VALUE), reader_.getAttributeValue(null, ATTRIBUTE_UNIT_NAME));
-                  } else if (spectrumIndex == (myHeader_.ScanCount -1)) {
-                    myHeader_.EndTime = convertTimeFormat(
-                        reader_.getAttributeValue(null, ATTRIBUTE_VALUE), reader_.getAttributeValue(null, ATTRIBUTE_UNIT_NAME));
-                  }
-                  break;
+      while (reader_.hasNext()) {
+      	if (isStartElement(TAG_SPECTRUM))
+      	{
+      		params.setSpectrumIndex(Integer.parseInt(getRequiredAttribute(reader_, ATTRIBUTE_INDEX)) +1); //mzXML files start at 1, mzML at 0
+      		params.setPeaksCount(Integer.parseInt(getRequiredAttribute(reader_, ATTRIBUTE_DEFAULT_ARRAY_LENGTH)));
+      		spectrumTagFound = true;
+          reader_.next();
+      	}
+      	else if (spectrumTagFound && isStartElement(TAG_CV_PARAM))
+      	{
+      		parseSpectrumCVParamsOverview(params); //TODO: put the reader next thing in there, so that this part stops when there's a new section (e.g. scanlist)...
+      		reader_.next();
+      	}
+      	else if (spectrumTagFound && isStartElement(TAG_BINARY_DATA_ARRAY))
+      	{
+      		boolean foundMzBorders = params.isFoundMzBorders();
+        	evaluateScan(params);
+        	
+          if (params.getMsLevel() == 1) {
+            if (!foundMzBorders && (params.getPeaksCount()>0)){
+              float[] maxima = getMaximaFromBinaryDataArray();
+              if (!Arrays.equals(maxima, new float[]{Float.MAX_VALUE, 0f})) {
+              	params.setLowMz(maxima[0]);
+              	params.setHighMz(maxima[1]);
+              	params.setLowMzFound(true);
+              	params.setHighMzFound(true);
               }
-              
-            } else if (reader_.getLocalName().equalsIgnoreCase(TAG_BINARY_DATA_ARRAY)) {
-              if (msLevel == 1) {
-                if (!(lowMzFound&&highMzFound) && (peaksCount>0)){
-                  float[] maxima = getMaximaFromBinaryDataArray();
-                  if (!Arrays.equals(maxima, new float[]{Float.MAX_VALUE, 0f})) {
-                    lowMz = maxima[0];
-                    highMz = maxima[1];
-                    lowMzFound = highMzFound = true;
-                  }
-                }
-                setCurrentGlobalMaxima(lowMz, highMz);
-              }
-              
-            } else if (reader_.getLocalName().equalsIgnoreCase(TAG_SPECTRUM)) {
-              readOnlyRequiredInfoForMultiThreading();
             }
-            break;
-            
-          case XMLStreamReader.END_ELEMENT:
-            
-            if (reader_.getLocalName().equalsIgnoreCase(TAG_SPECTRUM)) {
-              if (polarity == CgDefines.POLARITY_NO) {
-                throw new CgException(String.format("The polarity at spectrum index %s could not be found.", 
-                    spectrumIndex));
-              } else {
-                setPolaritySwitching(checkPolaritySwitching(polarity));  
-              }
-              return;   
-              
-            } else if (reader_.getLocalName().equalsIgnoreCase(TAG_SPECTRUM_LIST)){
-              return;
-            }
-            break;
-        }
-        
-        eventType = reader_.next();
-      } while (eventType != XMLStreamReader.END_DOCUMENT);
+            setCurrentGlobalMaxima(params.getLowMz(), params.getHighMz());
+          }
+          reader_.next();
+      	}
+      	else if (isEndElement(TAG_SPECTRUM))
+      	{
+      		if (params.getPolarity() == CgDefines.POLARITY_NO) {
+            throw new CgException(String.format("The polarity at spectrum index %s could not be found.", 
+                params.getSpectrumIndex()));
+          } else {
+            setPolaritySwitching(checkPolaritySwitching(params.getPolarity()));  
+          }
+      		return;
+      	}
+      	else
+      	{
+      		reader_.next();
+      	}
+      }
     }
     catch (Exception ex) {
       throw new CgException(ex.getMessage());
+    }
+  }
+  
+  /**
+   * Parses an attribute to return the corresponding integer value.
+   * @param entry							The entry (name) this attribute belongs to.
+   * @param attribute					The attribute to parse the value of.
+   * @return
+   * @throws IOException			If the value of the attribute is missing.
+   */
+  private int parseIntegerValue(String entry, String attribute) throws IOException
+  {
+  	String value = reader_.getAttributeValue(null, attribute);
+    if (!value.equals("")) 
+    {
+    	return Integer.parseInt(value);
+    }
+    else
+    {
+    	throw new IOException(String.format("A value for a '%s' entry is missing!", entry));
+    }
+  }
+  
+  /**
+   * Parses an attribute to return the corresponding float value.
+   * @param entry							The entry (name) this attribute belongs to (for error messages).
+   * @param attribute					The attribute to parse the value of.
+   * @return
+   * @throws IOException			If the value of the attribute is missing.
+   */
+  private float parseFloatValue(String entry, String attribute) throws IOException
+  {
+  	String value = reader_.getAttributeValue(null, attribute);
+    if (!value.equals("")) 
+    {
+    	return Float.parseFloat(value);
+    }
+    else
+    {
+    	throw new IOException(String.format("A value for a '%s' entry is missing!", entry));
     }
   }
   
@@ -333,63 +359,64 @@ public class MzMLReader extends AbstractXMLSpectraReader
   protected float[] getMaximaFromBinaryDataArray() throws CgException
   {
     float[] maxima = new float[]{Float.MAX_VALUE, 0f};
-    float floatArray[];
-    int eventType;
     String precision = null;
     String compression = null;
     
     try {
-      eventType = reader_.next();
-      
-      do {
-        switch (eventType) {
-          
-          case XMLStreamReader.START_ELEMENT:
-            
-            if (reader_.getLocalName().equalsIgnoreCase(TAG_CV_PARAM)) {
-              switch (getRequiredAttribute(reader_, ATTRIBUTE_NAME)) {
-                case ENTRY_64_BIT_FLOAT:
-                  precision = ENTRY_64_BIT_FLOAT;
-                  break;
-                case ENTRY_32_BIT_FLOAT:
-                  precision = ENTRY_32_BIT_FLOAT;
-                  break;
-                case ENTRY_NO_COMPRESSION:
-                  compression = ENTRY_NO_COMPRESSION;
-                  break;
-                case ENTRY_ZLIB_COMPRESSION:
-                  compression = ENTRY_ZLIB_COMPRESSION;
-                  break;
-                case ENTRY_MZ_ARRAY: 
-                  break;
-                case ENTRY_INTENSITY_ARRAY: // m/z maxima are stored in the m/z array
-                  return maxima;
-                  }
-              
-            } else if (reader_.getLocalName().equalsIgnoreCase(TAG_BINARY)) {
-              eventType = reader_.next();
-              if (eventType != XMLStreamReader.CHARACTERS) 
-                return maxima;
-              
-              String binaryString = reader_.getText().trim();
- 
-              if (precision==ENTRY_64_BIT_FLOAT){
-                floatArray = decode64(binaryString, compression);                  
-              }else{
-                floatArray = decode32(binaryString, compression); 
-              }
-              maxima[0] = floatArray[0];
-              maxima[1] = floatArray[floatArray.length-1];
-            }
-            break;
-          case XMLStreamReader.END_ELEMENT:
-            if (reader_.getLocalName().equalsIgnoreCase(TAG_BINARY_DATA_ARRAY)) {
+      while (reader_.hasNext()) {
+      	if (isStartElement(TAG_CV_PARAM))
+      	{
+      		switch (getRequiredAttribute(reader_, ATTRIBUTE_NAME)) 
+      		{
+            case ENTRY_64_BIT_FLOAT:
+              precision = ENTRY_64_BIT_FLOAT;
+              break;
+            case ENTRY_32_BIT_FLOAT:
+              precision = ENTRY_32_BIT_FLOAT;
+              break;
+            case ENTRY_NO_COMPRESSION:
+              compression = ENTRY_NO_COMPRESSION;
+              break;
+            case ENTRY_ZLIB_COMPRESSION:
+              compression = ENTRY_ZLIB_COMPRESSION;
+              break;
+            case ENTRY_MZ_ARRAY: 
+              break;
+            case ENTRY_INTENSITY_ARRAY:
               return maxima;
-            } 
-            break;
-        }
-        eventType = reader_.next();
-      } while (eventType != XMLStreamReader.END_DOCUMENT);
+            default:
+            	break;
+          }
+      		reader_.next();
+      	}
+      	else if (isStartElement(TAG_BINARY))
+      	{
+          if (reader_.next() != XMLStreamReader.CHARACTERS) 
+            return maxima;
+          
+          String binaryString = reader_.getText().trim();
+          float floatArray[];
+          if (precision==ENTRY_64_BIT_FLOAT)
+          {
+            floatArray = decode64(binaryString, compression);                  
+          }
+          else
+          {
+            floatArray = decode32(binaryString, compression); 
+          }
+          maxima[0] = floatArray[0];
+          maxima[1] = floatArray[floatArray.length-1];
+          reader_.next();
+      	}
+      	else if (isEndElement(TAG_BINARY_DATA_ARRAY))
+      	{
+      		return maxima;
+      	}
+      	else
+      	{
+      		reader_.next();
+      	}
+      }
     }
     catch (Exception ex) {
       throw new CgException(ex.getMessage());
@@ -400,12 +427,13 @@ public class MzMLReader extends AbstractXMLSpectraReader
   /**
    * This method decodes a float64 encoded binary String.
    * 
-   * @param binary The binary String to decode
-   * @param compression The compression of the binary String
+   * @param binary 				binary String to decode
+   * @param compression 	compression of the binary String
    * 
    * @return a float array containing the decoded information
    */
-  private float[] decode64(String binary, String compression) {
+  private float[] decode64(String binary, String compression) 
+  {
     CgBase64 cgb = new CgBase64();    
     byte[] decoded = cgb.decode(binary);
     
@@ -427,12 +455,13 @@ public class MzMLReader extends AbstractXMLSpectraReader
   /**
    * This method decodes a float32 encoded binary String.
    * 
-   * @param binary The binary String to decode
-   * @param compression The compression of the binary String
+   * @param binary 				binary String to decode
+   * @param compression 	ompression of the binary String
    * 
    * @return a float array containing the decoded information
    */
-  private float[] decode32(String binary, String compression) {
+  private float[] decode32(String binary, String compression) 
+  {
     CgBase64 cgb = new CgBase64();    
     byte[] decoded = cgb.decode(binary);
     
@@ -445,7 +474,28 @@ public class MzMLReader extends AbstractXMLSpectraReader
     floatBuf.get(floatArray);
     
     return floatArray;    
-  }  
+  }
+  
+  /**
+   * Decodes a binary String with the appropriate method depending on the encoding precision.
+   * @param precision			precision of the binary String
+   * @param binaryString	binary String to decode	
+   * @param compression		compression of the binary String
+   * @return a float array containing the decoded information
+   */
+  private float[] decodeBinaryArray(String precision, String binaryString, String compression)
+  {
+  	float binaryArray[] = {};
+  	if (precision==ENTRY_64_BIT_FLOAT)
+    {
+      binaryArray = decode64(binaryString, compression);
+    } 
+    else 
+    {
+      binaryArray = decode32(binaryString, compression); 
+    }
+  	return binaryArray;
+  }
   
   /**
    * This method checks if the polarity changes
@@ -470,6 +520,7 @@ public class MzMLReader extends AbstractXMLSpectraReader
   private void informAdders(boolean readOnlyRequiredInfoForMultiThreading, String parentFileName, int scanCount) throws CgException
   {
     myHeader_ = new CgScanHeader();
+    myHeader_.highestMSLevel = 1;
     myHeader_.ScanCount = scanCount;
     if (adders_ != null && adders_.length>0) 
       for (AddScan adder : adders_) {
@@ -484,11 +535,11 @@ public class MzMLReader extends AbstractXMLSpectraReader
   
   /**
    * This method converts a String representing a time to a float.
-   * Only supports time given in units of minutes and seconds so far, 
-   * needs to be extended should the need arise!
+   * Only supports time given in units of minutes and seconds. 
+   * Needs to be extended should the need arise!
    * 
-   * @param time String to convert
-   * @param unit Unit of the given time
+   * @param time 			String to convert
+   * @param unit 			Unit of the given time
    *          
    * @return float representing a number of seconds
    */
@@ -502,287 +553,458 @@ public class MzMLReader extends AbstractXMLSpectraReader
     return timeInSeconds;
   }
   
-  /**
-   * This method sets the CgScanHeader information, lastMsLevel_ as well as 
-   * the precursorMz_ Vector depending on the given msLevel.
-   * 
-   * @param msLevel MsLevel of the current scan.
-   */
-  private void evaluateMsLevel(int msLevel)
+  private boolean isStartElement(String localName)
   {
-    if (msLevel==1) {
-      myHeader_.hasMS1Scans = true;
-    }
-    if (msLevel==1 || this.getParseMsMs()) {
-      if (msLevel > myHeader_.highestMSLevel) 
-        myHeader_.highestMSLevel=msLevel;
-    }
-    if (msLevel<3){
-      precursorMz_ = new Vector<String>();
-    } else if (lastMsLevel_>=msLevel){
-      for (int i=(lastMsLevel_+1); i!=msLevel; i--){
-        precursorMz_.remove(precursorMz_.size()-1);
-      }
-    }
-    lastMsLevel_ = msLevel;
+  	return isElement(XMLStreamReader.START_ELEMENT, localName);
   }
   
-  /**
-   * This method reads a scan. It calls itself recursively in case scans are
-   * element of our scan. However, if the scan level is > 1, the scan's content
-   * is skipped for performance reasons.
-   * 
-   * @param scBase1
-   *          Pass the CgScan object that represents the level 1 scan to which
-   *          this scan belongs to.
-   * @param ranges1 The individually allowed m/z ranges of the AddScan interfaces
-   * 
-   * @throws CgException All internal exceptions are mapped to the CgException type.
-   */
-  protected void readScan(Vector<CgScan> scBase1, Vector<Range> ranges1) throws CgException
+  private boolean isEndElement(String localName)
   {
-    Vector<CgScan> baseScans = scBase1;
-    Vector<Range> scanRanges = ranges1;
+  	return isElement(XMLStreamReader.END_ELEMENT, localName);
+  }
+  
+  private boolean isElement(int eventType, String localName)
+  {
+  	if (reader_.getEventType() == eventType &&
+  			reader_.getLocalName().equalsIgnoreCase(localName))
+  	{
+  		return true;
+  	}
+  	return false;
+  }
+  
+  
+  /**
+   * This method reads the full structure of the XML element constant TAG_SPECTRUM into memory.
+   * 
+   * @param helper					Object containing the CgScan that represents the level 1 scan to which this scan belongs
+   * 												as well as the individually allowed m/z ranges of the AddScan interfaces.
+   * @param precursor				Object containing relevant information about precursors at lower MS levels.
+   * @throws CgException		All internal exceptions are mapped to the CgException type.
+   */
+  protected void readSpectrum(AddScanHelper helper, Precursor precursor) throws CgException
+  {
+  	SpectrumParams params = new SpectrumParams();
     CgScan sc = null;
-    String value = null;
-    int spectrumIndex = -1;
-    int peaksCount = 0;
-    int eventType;
-    int msLevel = 0;
-    float lowMz = Float.MAX_VALUE;
-    float highMz = 0f;
-    boolean lowMzFound = false;
-    boolean highMzFound = false;
-    int polarity = CgDefines.POLARITY_NO;
-    float scanStartTime = 0f;
-    float basePeakMz = 0f;
-    float basePeakIntensity = 0f;
-    float totalIonCurrent = 0f;
-    float precursorIntensity = 0f;
-  //the following line is for QQQ PIS/NLS and PRM data
-    float precursorMz = -1f;
-    
-    if (reader_.getLocalName().equalsIgnoreCase(TAG_SPECTRUM)) {
-      spectrumIndex = Integer.parseInt(getRequiredAttribute(reader_, ATTRIBUTE_INDEX));
-      peaksCount = Integer.parseInt(getRequiredAttribute(reader_, ATTRIBUTE_DEFAULT_ARRAY_LENGTH));
-    }
+    Vector<Float> scanStartTimes = new Vector<Float>();
+    boolean spectrumTagFound = false;
     
     try {
-      eventType = reader_.next();
-      do {
-        switch (eventType) {
-          
-          case XMLStreamReader.START_ELEMENT:
-            
-            if (reader_.getLocalName().equalsIgnoreCase(TAG_CV_PARAM)) {
-              switch (getRequiredAttribute(reader_, ATTRIBUTE_NAME)) {
-                case ENTRY_MS_LEVEL:
-                  value = reader_.getAttributeValue(null, ATTRIBUTE_VALUE);
-                  if (!value.equals("")) {
-                    msLevel = Integer.parseInt(value);
-                    evaluateMsLevel(msLevel);
-                  }
-                  break;
-                case ENTRY_LOWEST_OBSERVED_MZ:
-                  value = reader_.getAttributeValue(null, ATTRIBUTE_VALUE);
-                  if (!value.equals("")) {
-                    lowMz = Float.parseFloat(value);
-                    lowMzFound = true;
-                  }
-                  break;
-                case ENTRY_HIGHEST_OBSERVED_MZ:
-                  value = reader_.getAttributeValue(null, ATTRIBUTE_VALUE);
-                  if (!value.equals("")) {
-                    highMz = Float.parseFloat(value);
-                    highMzFound = true;
-                  }
-                  break;
-                case ENTRY_POSITIVE_SCAN:
-                  polarity = CgDefines.POLARITY_POSITIVE;
-                  break;
-                case ENTRY_NEGATIVE_SCAN:
-                  polarity = CgDefines.POLARITY_NEGATIVE; 
-                  break;
-                case ENTRY_SCAN_START_TIME:
-                  scanStartTime = convertTimeFormat(
-                      reader_.getAttributeValue(null, ATTRIBUTE_VALUE), reader_.getAttributeValue(null, ATTRIBUTE_UNIT_NAME));
-                  if (spectrumIndex == 0) {
-                    myHeader_.StartTime = scanStartTime;
-                  } else if (spectrumIndex == (myHeader_.ScanCount -1)) {
-                    myHeader_.EndTime = scanStartTime;
-                  }
-                  break;
-                case ENTRY_BASE_PEAK_MZ:
-                  value = reader_.getAttributeValue(null, ATTRIBUTE_VALUE);
-                  if (!value.equals("")) {
-                    basePeakMz = Float.parseFloat(value);
-                  }
-                  break;
-                case ENTRY_BASE_PEAK_INTENSITY:
-                  value = reader_.getAttributeValue(null, ATTRIBUTE_VALUE);
-                  if (!value.equals("")) {
-                    basePeakIntensity = Float.parseFloat(value);
-                  }
-                  break;
-                case ENTRY_TOTAL_ION_CURRENT:
-                  value = reader_.getAttributeValue(null, ATTRIBUTE_VALUE);
-                  if (!value.equals("")) {
-                    totalIonCurrent = Float.parseFloat(value);
-                  }
-                  break;
-                //TODO: mzML supports multiple precursor ions; handle that (precursorMz list?)!
-                case ENTRY_SELECTED_ION_MZ:
-                  value = reader_.getAttributeValue(null, ATTRIBUTE_VALUE);
-                  if (!value.equals("")) {
-                    precursorMz = Float.parseFloat(value);
-                    precursorMz_.add(value);
-                  }
-                  break; 
-                case ENTRY_PEAK_INTENSITY:
-                  value = reader_.getAttributeValue(null, ATTRIBUTE_VALUE);
-                  if (!value.equals("")) {
-                    precursorIntensity = Float.parseFloat(value);
-                  }
-                  break; 
-              }
-              
-            } else if (reader_.getLocalName().equalsIgnoreCase(TAG_BINARY_DATA_ARRAY_LIST)) {
-              if (msLevel == 1) {
-                sc = new CgScan(0, spectrumIndex+1, msLevel, scanStartTime, lowMz, highMz, basePeakMz, 
-                    basePeakIntensity, totalIonCurrent, polarity);
-                
-                if (adders_ != null && adders_.length>0){
-                  Vector<CgScan> scans = new Vector<CgScan>();
-                  Vector<Range> ranges = new Vector<Range>();
-                  for (AddScan adder : adders_){
-                    if (adders_.length==1) scans.add(sc);
-                    else scans.add(new CgScan(sc));
-                    ranges.add(new Range(adder.getLowerThreshold(),adder.getUpperThreshold()));
-                  }
-                  
-                  if (scans != null && scans.size()!=0) {
-                    readPeaks(scans,ranges,peaksCount,false,(lowMzFound&&highMzFound));
-                  }
-                  
-                  for (int j=0; j!=adders_.length; j++){
-                    AddScan adder = adders_[j];
-                    sc = scans.get(j);
-                    setCurrentGlobalMaxima(sc.LowMz, sc.HighMz);
-                   
-                    // =================================================
-                    // Now we can inform our caller that we have a valid
-                    // new scan!
-                    // =================================================
-                    adder.AddScan(sc);
-                  }
-                } else
-                  throw new CgException(
-                      "No adder for Header and Scans defined.");
-                
-              } else {
-                //the following lines (until end of bracket) are for QQQ PIS/NLS and PRM data
-                //this generates an artificial MS1 scans for shotgun MSn-only data
-                if (!myHeader_.hasMS1Scans && LipidomicsConstants.isShotgun()>LipidomicsConstants.SHOTGUN_FALSE && precursorMz>=0 ){
-                  //TODO: do shotgun stuff
-                }
-                
-                if (baseScans.size()>0){
-                  if (this.getParseMsMs()) {
-                    
-                    MsMsScan msMsSc = new MsMsScan(peaksCount, spectrumIndex+1, msLevel, scanStartTime,
-                        lowMz, highMz, basePeakMz, basePeakIntensity, totalIonCurrent, 
-                        getPrecursorMzString(precursorMz_), precursorIntensity, polarity);
-                    Vector<CgScan> qualifiedBaseScans = new Vector<CgScan>();
-                    Vector<Range> qualifiedRanges = new Vector<Range>();
-                    Vector<CgScan> ms2Scans = new Vector<CgScan>();
-                    for (int j=0; j!=baseScans.size(); j++){
-                      Range range = scanRanges.get(j);
-                      float precMz = msMsSc.getMs1PrecursorMz();//Float.valueOf(precursorMz);
-                      if (precMz<range.getStart() || range.getStop()<=precMz) continue;
-                      //if (!range.insideRange(Float.valueOf(precursorMz))) continue;
-                      qualifiedBaseScans.add(baseScans.get(j));
-                      qualifiedRanges.add(range);
-                      ms2Scans.add(new MsMsScan(msMsSc));
-                    }
-                    
-                    if (qualifiedBaseScans.size()>0 && ms2Scans != null && ms2Scans.size()!=0){
-                      //TODO: in the msms subscans should not be any ranges
-                      readPeaks(ms2Scans,qualifiedRanges,peaksCount,true,(lowMzFound&&highMzFound));
-                      
-                      for (int j=0; j!=qualifiedBaseScans.size(); j++){
-                        qualifiedBaseScans.get(j).AddSubscan(ms2Scans.get(j));
-                      }
-                    }
-                  } else {
-                    for (CgScan scBase : baseScans) scBase.AddSubscanNumber(spectrumIndex+1);
-                  }
-                } else
-                  throw new CgException("No base scan for subscan.");     
-              }
-              
-            } else if (reader_.getLocalName().equalsIgnoreCase(TAG_SPECTRUM)) {
-              if (baseScans != null && baseScans.size()>0){
-                readScan(baseScans,scanRanges);
-              } else {
-                baseScans = new Vector<CgScan>();
-                scanRanges = new Vector<Range>();
-                for (AddScan adder : this.adders_){
-                  if (adder.getLastBaseScan()!=null){
-                    baseScans.add(adder.getLastBaseScan());
-                    scanRanges.add(new Range(adder.getLowerThreshold(),adder.getUpperThreshold()));
-                  }
-                }
-                readScan(baseScans,scanRanges);
-              }
+      while (reader_.hasNext()) {
+      	if (isStartElement(TAG_SPECTRUM))
+      	{
+      		parseSpectrum(params);
+      		spectrumTagFound = true;
+      	}
+      	else if (spectrumTagFound && isStartElement(TAG_SCAN_LIST)) //TODO: I do not have any examples with more than one scan here, thus not tested for more than one
+      	{
+      		parseScanList(scanStartTimes, params);
+      	}
+      	else if (spectrumTagFound && isStartElement(TAG_PRECURSOR_LIST))
+      	{
+      		parsePrecursorList(precursor, params.getMsLevel());
+      	}
+      	else if (spectrumTagFound && isStartElement(TAG_BINARY_DATA_ARRAY_LIST))
+      	{
+      		evaluateScan(params);
+      		
+      		if (params.getMsLevel() == 1) 
+      		{
+      			readMS1BinaryDataArray(sc, params, precursor, scanStartTimes);
+      		}
+      		else
+      		{
+      		  //the following lines (until end of bracket) are for QQQ PIS/NLS and PRM data
+            //this generates an artificial MS1 scans for shotgun MSn-only data
+            if (!myHeader_.hasMS1Scans && LipidomicsConstants.isShotgun()>LipidomicsConstants.SHOTGUN_FALSE && precursor.getPrecursorMzFloat()>=0 )
+            {
+              //TODO: do shotgun stuff
             }
-            break;
-            
-          case XMLStreamReader.END_ELEMENT:
-            
-            if (reader_.getLocalName().equalsIgnoreCase(TAG_SPECTRUM)) {
-              if (polarity == CgDefines.POLARITY_NO) {
-                throw new CgException(String.format("The polarity at spectrum index %s could not be found.", 
-                    spectrumIndex));
-              } else {
-                setPolaritySwitching(checkPolaritySwitching(polarity));  
-              }
-              return;  
-              
-            } else if (reader_.getLocalName().equalsIgnoreCase(TAG_SPECTRUM_LIST)){
-              return;
-            }
-            break;
-        }
-        
-        eventType = reader_.next();
-      } while (eventType != XMLStreamReader.END_DOCUMENT);
+            readMSnBinaryDataArray(params, precursor, scanStartTimes, helper);
+            reader_.next();
+      		}
+      	}
+      	
+      	else if (isEndElement(TAG_SPECTRUM))
+      	{
+      		if (params.getPolarity() == CgDefines.POLARITY_NO) 
+          {
+            throw new CgException(String.format("The polarity at spectrum index %s could not be found.", 
+            		params.getSpectrumIndex()));
+          } else 
+          {
+            setPolaritySwitching(checkPolaritySwitching(params.getPolarity()));  
+          }
+      		helper.init(adders_);
+      		return;
+      	}
+      	else
+      	{
+      		reader_.next();
+      	}
+      }
     }
     catch (Exception ex) {
       throw new CgException(ex.getMessage());
     }
   }
   
+  
+  /**
+   * This method parses the structure of the XML element constant TAG_BINARY_DATA_ARRAY_LIST, belonging to a scan of an MS level higher than 1. 
+   * 
+   * @param params						Object containing the parameters of the corresponding spectrum.
+   * @param precursor					Object containing relevant information about precursors at lower MS levels.
+   * @param scanStartTimes		Vector containing the start times of the scan(s) belonging to this spectrum.
+   * @param helper						Object containing the CgScan that represents the level 1 scan to which this scan belongs
+   * 													as well as the individually allowed m/z ranges of the AddScan interfaces.
+   * @throws CgException			All internal exceptions are mapped to the CgException type.
+   */
+  private void readMSnBinaryDataArray(SpectrumParams params, Precursor precursor, Vector<Float> scanStartTimes, AddScanHelper helper) throws CgException
+  {
+  	helper.init(adders_);
+  	
+  	if (helper.getScans().size()>0){
+      if (this.getParseMsMs()) {
+        MsMsScan msmsSc = new MsMsScan(params.getPeaksCount(), params.getSpectrumIndex(), params.getMsLevel(), 
+        		scanStartTimes.get(0), //TODO: test data never has more than one scan, adapt in case more than one scan at different retention times happens...
+        		params.getLowMz(), params.getHighMz(), params.getBasePeakMz(), params.getBasePeakIntensity(),
+        		params.getTotalIonCurrent(), getPrecursorMzString(precursor.getPrecursorMz()), 0f, //setting precursor intensity to 0f, as it is never used
+        		params.getPolarity());
+        Vector<CgScan> qualifiedBaseScans = new Vector<CgScan>();
+        Vector<Range> qualifiedRanges = new Vector<Range>();
+        Vector<CgScan> ms2Scans = new Vector<CgScan>();
+        for (int j=0; j!=helper.getScans().size(); j++){
+          Range range = helper.getRanges().get(j);
+          float precMz = msmsSc.getMs1PrecursorMz();
+          if (!range.insideRange(Float.valueOf(precMz))) continue;
+          qualifiedBaseScans.add(helper.getScans().get(j));
+          qualifiedRanges.add(range);
+          ms2Scans.add(new MsMsScan(msmsSc));
+        }
+        
+        if (qualifiedBaseScans.size()>0){
+          //TODO: in the msms subscans should not be any ranges
+          readPeaks(ms2Scans,qualifiedRanges,true,params);
+          for (int j=0; j!=qualifiedBaseScans.size(); j++){
+            qualifiedBaseScans.get(j).AddSubscan(ms2Scans.get(j));
+          }
+          if (params.getMsLevel() > myHeader_.highestMSLevel) myHeader_.highestMSLevel=params.getMsLevel();
+        }
+
+      } else {
+        for (CgScan scBase : helper.getScans()) scBase.AddSubscanNumber(params.getSpectrumIndex());
+      }
+    } 
+    else
+    {
+    	throw new CgException("No base scan for subscan.");
+    }
+  }
+  
+  
+  /**
+   * This method parses the structure of the XML element constant TAG_BINARY_DATA_ARRAY_LIST, belonging to a scan of MS level = 1. 
+   * 
+   * @param sc								CgScan Object combining all information from this spectrum.					
+   * @param params						Object containing the parameters of the corresponding spectrum.
+   * @param precursor					Object containing relevant information about precursors at lower MS levels.
+   * @param scanStartTimes		Vector containing the start times of the scan(s) belonging to this spectrum.
+   * @throws CgException			All internal exceptions are mapped to the CgException type.
+   */
+  private void readMS1BinaryDataArray(CgScan sc, SpectrumParams params, Precursor precursor, Vector<Float> scanStartTimes) throws CgException
+  {
+		sc = new CgScan(0, params.getSpectrumIndex()+1, params.getMsLevel(), 
+				scanStartTimes.get(0), //TODO: test data never has more than one scan, adapt in case more than one scan at different retention times happens...
+				params.getLowMz(), params.getHighMz(), params.getBasePeakMz(), params.getBasePeakIntensity(),
+    		params.getTotalIonCurrent(), params.getPolarity());
+		
+		if (adders_ != null && adders_.length>0){
+			AddScanHelper helper = new AddScanHelper();
+			helper.init(adders_, sc);
+      readPeaks(helper.getScans(),helper.getRanges(),false,params);
+      
+      for (int j=0; j!=adders_.length; j++){
+        AddScan adder = adders_[j];
+        sc = helper.getScans().get(j);
+        setCurrentGlobalMaxima(sc.LowMz, sc.HighMz);
+       
+        // =================================================
+        // Now we can inform our caller that we have a valid
+        // new scan!
+        // =================================================
+        adder.AddScan(sc);
+      }
+    } 
+		else
+    {
+    	throw new CgException("No adder for Header and Scans defined.");
+    } 
+  }
+  
+  
+  /**
+   * This method parses the top level information of a an XML element constant TAG_SPECTRUM.
+   * 
+   * @param params					Object to hold the parsed information.
+   * @throws CgException		All internal exceptions are mapped to the CgException type.
+   */
+  private void parseSpectrum(SpectrumParams params) throws CgException
+  {
+  	params.setSpectrumIndex(Integer.parseInt(getRequiredAttribute(reader_, ATTRIBUTE_INDEX)) +1); //mzXML files start at 1, mzML at 0
+		params.setPeaksCount(Integer.parseInt(getRequiredAttribute(reader_, ATTRIBUTE_DEFAULT_ARRAY_LENGTH)));
+  	
+  	try {
+      while (reader_.hasNext()) {
+      	if (reader_.next() == XMLStreamReader.START_ELEMENT)
+      	{
+        	if (reader_.getLocalName().equalsIgnoreCase(TAG_CV_PARAM)) 
+          {
+        		parseSpectrumCVParams(params);
+          }
+          else
+          {
+          	return;
+          }
+      	}
+      }
+  	} 
+  	catch (XMLStreamException | IOException ex) 
+  	{
+  		throw new CgException(ex.getMessage());
+  	}
+  }
+  
+  /**
+   * This method parses all TAG_CV_PARAM elements of an XML element constant TAG_SPECTRUM.
+   * 
+   * @param params					Object to hold the parsed information.
+   * @throws IOException		Thrown if something went wrong parsing the file.
+   */
+  private void parseSpectrumCVParams(SpectrumParams params) throws IOException
+  {
+  	switch (getRequiredAttribute(reader_, ATTRIBUTE_NAME)) 
+    {
+      case ENTRY_MS_LEVEL:
+      	params.setMsLevel(parseIntegerValue(ENTRY_MS_LEVEL, ATTRIBUTE_VALUE));
+        break;
+      case ENTRY_POSITIVE_SCAN:
+      	params.setPolarity(CgDefines.POLARITY_POSITIVE);
+        break;
+      case ENTRY_NEGATIVE_SCAN:
+      	params.setPolarity(CgDefines.POLARITY_NEGATIVE);
+        break;
+      case ENTRY_BASE_PEAK_MZ:
+      	params.setBasePeakMz(parseFloatValue(ENTRY_BASE_PEAK_MZ, ATTRIBUTE_VALUE));
+        break;
+      case ENTRY_BASE_PEAK_INTENSITY:
+      	params.setBasePeakIntensity(parseFloatValue(ENTRY_BASE_PEAK_INTENSITY, ATTRIBUTE_VALUE));
+        break;
+      case ENTRY_TOTAL_ION_CURRENT:
+      	params.setTotalIonCurrent(parseFloatValue(ENTRY_TOTAL_ION_CURRENT, ATTRIBUTE_VALUE));
+        break;
+      case ENTRY_LOWEST_OBSERVED_MZ:
+      	params.setLowMz(parseFloatValue(ENTRY_LOWEST_OBSERVED_MZ, ATTRIBUTE_VALUE));
+      	params.setLowMzFound(true);
+        break;
+      case ENTRY_HIGHEST_OBSERVED_MZ:
+      	params.setHighMz(parseFloatValue(ENTRY_HIGHEST_OBSERVED_MZ, ATTRIBUTE_VALUE));
+      	params.setHighMzFound(true);
+        break;
+      default:
+      	break;
+    }
+  }
+  
+  /**
+   * This method parses all TAG_CV_PARAM elements of an XML element constant TAG_SPECTRUM,
+   * which are relevant for multithreading.
+   * 
+   * @param params					Object to hold the parsed information.
+   * @throws IOException		Thrown if something went wrong parsing the file.
+   */
+  private void parseSpectrumCVParamsOverview(SpectrumParams params) throws IOException
+  {
+  	switch (getRequiredAttribute(reader_, ATTRIBUTE_NAME)) 
+    {
+      case ENTRY_MS_LEVEL:
+      	params.setMsLevel(parseIntegerValue(ENTRY_MS_LEVEL, ATTRIBUTE_VALUE));
+        break;
+      case ENTRY_POSITIVE_SCAN:
+      	params.setPolarity(CgDefines.POLARITY_POSITIVE);
+        break;
+      case ENTRY_NEGATIVE_SCAN:
+      	params.setPolarity(CgDefines.POLARITY_NEGATIVE);
+        break;
+      case ENTRY_LOWEST_OBSERVED_MZ:
+      	params.setLowMz(parseFloatValue(ENTRY_LOWEST_OBSERVED_MZ, ATTRIBUTE_VALUE));
+      	params.setLowMzFound(true);
+        break;
+      case ENTRY_HIGHEST_OBSERVED_MZ:
+      	params.setHighMz(parseFloatValue(ENTRY_HIGHEST_OBSERVED_MZ, ATTRIBUTE_VALUE));
+      	params.setHighMzFound(true);
+        break;
+      case ENTRY_SCAN_START_TIME:
+      	if (params.getSpectrumIndex() == 0) 
+        {
+          myHeader_.StartTime = convertTimeFormat(
+              reader_.getAttributeValue(null, ATTRIBUTE_VALUE), reader_.getAttributeValue(null, ATTRIBUTE_UNIT_NAME));
+        } 
+        else if (params.getSpectrumIndex() == (myHeader_.ScanCount -1)) 
+        {
+          myHeader_.EndTime = convertTimeFormat(
+              reader_.getAttributeValue(null, ATTRIBUTE_VALUE), reader_.getAttributeValue(null, ATTRIBUTE_UNIT_NAME));
+        }
+        break;
+      default:
+      	break;
+    }
+  }
+  
+  
+  /**
+   * This method parses the structure of the XML element constant TAG_SCAN_LIST. 
+   * 
+   * @param scanStartTimes			Vector containing the start times of the scan(s) belonging to this spectrum.
+   * @param params							Object containing the parameters of the corresponding spectrum.
+   * @throws CgException				All internal exceptions are mapped to the CgException type.
+   */
+  private void parseScanList(Vector<Float> scanStartTimes, SpectrumParams params) throws CgException
+  {
+  	try {
+      while (reader_.hasNext()) 
+      {
+      	if (isStartElement(TAG_CV_PARAM) && getRequiredAttribute(reader_, ATTRIBUTE_NAME).equals(ENTRY_SCAN_START_TIME))
+      	{
+      		float scanStartTime = convertTimeFormat(
+              reader_.getAttributeValue(null, ATTRIBUTE_VALUE), reader_.getAttributeValue(null, ATTRIBUTE_UNIT_NAME));
+          scanStartTimes.add(scanStartTime);
+          if (params.getSpectrumIndex() == 0) {
+            myHeader_.StartTime = scanStartTime;
+          } else if (params.getSpectrumIndex() == (myHeader_.ScanCount -1)) {
+            myHeader_.EndTime = scanStartTime;
+          }
+          reader_.next();
+      	}
+      	else if (isEndElement(TAG_SCAN_LIST))
+      	{
+      		return;
+      	}
+      	else
+      	{
+      		reader_.next();
+      	}
+      }
+  	} 
+  	catch (XMLStreamException ex) 
+  	{
+  		throw new CgException(ex.getMessage());
+  	}
+  }
+  
+  
+  /**
+   * This method parses the structure of the XML element constant TAG_PRECURSOR_LIST. 
+   * 
+   * @param precursor				Object holding all precursor information.
+   * @param msLevel					The MS level of the current spectrum.
+   * @throws CgException		All internal exceptions are mapped to the CgException type.
+   */
+  private void parsePrecursorList(Precursor precursor, int msLevel) throws CgException
+  {
+  	if (msLevel<3)
+  	{
+  		precursor.setPrecursorMz(new Vector<String>());
+    } 
+  	else if (precursor.getLastMsLevel()>=msLevel)
+  	{
+      for (int i=(precursor.getLastMsLevel()+1); i>msLevel; i--){
+        precursor.removeLastPrecursorMz();
+      }
+    }
+    precursor.setLastMsLevel(msLevel);
+  	
+  	try {
+  		while (reader_.hasNext()) {
+  			if (isStartElement(TAG_CV_PARAM)) 
+        {
+      		switch (getRequiredAttribute(reader_, ATTRIBUTE_NAME)) 
+          {
+          	case ENTRY_SELECTED_ION_MZ:
+          		precursor.addPrecursorMz(reader_.getAttributeValue(null, ATTRIBUTE_VALUE));
+          		//the following line is for QQQ PIS/NLS and PRM
+          		precursor.setPrecursorMzFloat(parseFloatValue(ENTRY_SELECTED_ION_MZ, ATTRIBUTE_VALUE));
+          		reader_.next();
+              break;
+            default:
+            	reader_.next();
+            	break;
+          }
+        }
+  			else if (isEndElement(TAG_PRECURSOR_LIST))
+  			{
+  				return;
+  			}
+  			else
+  			{
+  				reader_.next();
+  			}
+  		}
+  	}
+  	catch (XMLStreamException | IOException ex)
+  	{
+  		throw new CgException(ex.getMessage());
+  	}
+  }
+  
+  
+  /**
+   * This method evaluates the parameters of a given spectrum to set relevant global variables.
+   * 
+   * @param params			Object containing the parameters of the corresponding spectrum.
+   */
+  private void evaluateScan(SpectrumParams params)
+  {
+  	if (params.getMsLevel()==1)
+  	{
+  		if (!params.isFoundMzBorders() && !myHeader_.hasMS1Scans)
+  		{
+  			this.setLowestMz(ONE_MILLION*CgDefines.mzMultiplicationFactorForInt);
+        this.setHighestMz(0); 
+  		}
+  		myHeader_.hasMS1Scans = true;
+  	}
+
+    if (params.getPolarity()!=CgDefines.POLARITY_NO)
+    {
+      if (currentPolarity_==CgDefines.POLARITY_NO)
+      {
+      	currentPolarity_ = params.getPolarity();
+      }
+      // if the polarity is suddenly different, polarity switching is used
+      else if (currentPolarity_!=params.getPolarity())
+      {
+      	this.setPolaritySwitching(true);
+      } 
+    }
+  }
+  
   /**
    * This method reads the binary data arrays of a single scan and stores them in a CgScan object.
    * 
-   * @param scans
-   *          Pass the CgScan object that represents the level 1 scan to which
-   *          this scan belongs to.
-   * @param ranges
-   *          The m/z range restrictions that apply for every CgScan object
-   * @param peaksCount The number of peaks in the binary data array
-   * @param msms True if it is a MSn scan
-   * @param foundMzBorders True if the lowest and highest m/z values of the file have been found
-   * 
-   * @throws CgException All internal exceptions are mapped to the CgException type.
+   * @param scans						Pass the CgScan object that represents the level 1 scan to which
+   *          							this scan belongs to.
+   * @param ranges					The m/z range restrictions that apply for every CgScan object
+   * @param msms						True if the relevant scan is an MSn scan
+   * @param params					Object containing the parameters of the corresponding spectrum.
+   * @throws CgException		All internal exceptions are mapped to the CgException type.
    */
-  protected void readPeaks(Vector<CgScan> scans, Vector<Range> ranges, int peaksCount, boolean msms, boolean foundMzBorders) throws CgException
+  protected void readPeaks(Vector<CgScan> scans, Vector<Range> ranges, boolean msms, SpectrumParams params) throws CgException
   {  
     float mzValueArray[] = {};
     float intensityValueArray[] = {};
     boolean mzValueArrayFound = false;
     boolean intensityValueArrayFound = false;
-    int eventType;
     String precision = null;
     String compression = null;
     String valueType = "";
@@ -795,107 +1017,313 @@ public class MzMLReader extends AbstractXMLSpectraReader
     }
     
     try {
-      eventType = reader_.next();
-      
-      do {
-        switch (eventType) {
+      while (reader_.hasNext()) {
+      	if (isStartElement(TAG_CV_PARAM))
+      	{
+      		switch (getRequiredAttribute(reader_, ATTRIBUTE_NAME)) {
+            case ENTRY_64_BIT_FLOAT:
+              precision = ENTRY_64_BIT_FLOAT;
+              break;
+            case ENTRY_32_BIT_FLOAT:
+              precision = ENTRY_32_BIT_FLOAT;
+              break;
+            case ENTRY_NO_COMPRESSION:
+              compression = ENTRY_NO_COMPRESSION;
+              break;
+            case ENTRY_ZLIB_COMPRESSION:
+              compression = ENTRY_ZLIB_COMPRESSION;
+              break;
+            case ENTRY_MZ_ARRAY: 
+              valueType = ENTRY_MZ_ARRAY;
+              break;
+            case ENTRY_INTENSITY_ARRAY:
+              valueType = ENTRY_INTENSITY_ARRAY;
+              break;
+            default:
+            	break;
+          }
+      	}
+      	else if (isStartElement(TAG_BINARY) && valueType == ENTRY_MZ_ARRAY)
+      	{
+          if (reader_.next() != XMLStreamReader.CHARACTERS) return;
           
-          case XMLStreamReader.START_ELEMENT:
-            
-            if (reader_.getLocalName().equalsIgnoreCase(TAG_CV_PARAM)) {
-              switch (getRequiredAttribute(reader_, ATTRIBUTE_NAME)) {
-                case ENTRY_64_BIT_FLOAT:
-                  precision = ENTRY_64_BIT_FLOAT;
-                  break;
-                case ENTRY_32_BIT_FLOAT:
-                  precision = ENTRY_32_BIT_FLOAT;
-                  break;
-                case ENTRY_NO_COMPRESSION:
-                  compression = ENTRY_NO_COMPRESSION;
-                  break;
-                case ENTRY_ZLIB_COMPRESSION:
-                  compression = ENTRY_ZLIB_COMPRESSION;
-                  break;
-                case ENTRY_MZ_ARRAY: 
-                  valueType = ENTRY_MZ_ARRAY;
-                  break;
-                case ENTRY_INTENSITY_ARRAY:
-                  valueType = ENTRY_INTENSITY_ARRAY;
-                  break;
-                  }
-              
-            } else if (reader_.getLocalName().equalsIgnoreCase(TAG_BINARY) && valueType == ENTRY_MZ_ARRAY) {
-              eventType = reader_.next();
-              if (eventType != XMLStreamReader.CHARACTERS) 
-                return;
-              
-              String binaryString = reader_.getText().trim();
-              if (precision==ENTRY_64_BIT_FLOAT){
-                mzValueArray = decode64(binaryString, compression);
-              } else {
-                mzValueArray = decode32(binaryString, compression); 
+          mzValueArray = decodeBinaryArray(precision, reader_.getText().trim(), compression);
+          mzValueArrayFound = true;
+      	}
+      	else if (isStartElement(TAG_BINARY) && valueType == ENTRY_INTENSITY_ARRAY)
+      	{
+          if (reader_.next() != XMLStreamReader.CHARACTERS) return;
+          
+          intensityValueArray = decodeBinaryArray(precision, reader_.getText().trim(), compression);
+          intensityValueArrayFound = true;
+      	}
+      	else if (isEndElement(TAG_BINARY_DATA_ARRAY_LIST))
+      	{
+      		if (mzValueArrayFound&&intensityValueArrayFound) 
+      		{
+            for (int i = 0; i < params.getPeaksCount(); i++) 
+            {
+              float mzValue = mzValueArray[i];
+              float intensityValue = intensityValueArray[i];
+              if (!msms && scans.size()>1 && (mzValue<getMaxRange().getStart() || getMaxRange().getStop()<=mzValue)) continue;
+              for (int k=0;k!=scans.size();k++)
+              {
+                if (msms || (ranges.get(k).getStart()<=mzValue && mzValue<ranges.get(k).getStop()))
+                {  
+                  mzValueHash.get(k).add(mzValue);
+                  intensityValueHash.get(k).add(intensityValue);
+                }
               }
-              mzValueArrayFound = true;
-              
-            } else if (reader_.getLocalName().equalsIgnoreCase(TAG_BINARY) && valueType == ENTRY_INTENSITY_ARRAY) {
-              eventType = reader_.next();
-              if (eventType != XMLStreamReader.CHARACTERS) 
-                return;
-              
-              String binaryString = reader_.getText().trim();
-              if (precision==ENTRY_64_BIT_FLOAT){
-                intensityValueArray = decode64(binaryString, compression);
-              } else {
-                intensityValueArray = decode32(binaryString, compression); 
-              }
-              intensityValueArrayFound = true;
-              
             }
-            break;
-            
-          case XMLStreamReader.END_ELEMENT:
-            
-            if (reader_.getLocalName().equalsIgnoreCase(TAG_BINARY_DATA_ARRAY_LIST)) {
-              if (mzValueArrayFound&&intensityValueArrayFound) {
-                
-                for (int i = 0; i < peaksCount; i++) {
-                  float mzValue = mzValueArray[i];
-                  float intensityValue = intensityValueArray[i];
-                  if (!msms && scans.size()>1 && (mzValue<getMaxRange().getStart() || getMaxRange().getStop()<=mzValue))continue;
-                  for (int k=0;k!=scans.size();k++){
-                    if (msms || (ranges.get(k).getStart()<=mzValue && mzValue<ranges.get(k).getStop())){  
-                      mzValueHash.get(k).add(mzValue);
-                      intensityValueHash.get(k).add(intensityValue);
-                    }
-                  }
-                }
-
-                for (int k=0;k!=scans.size();k++){
-                  CgScan scan = scans.get(k);
-                  scan.PeaksCount = mzValueHash.get(k).size();
-                  scan.Scan = new float[scan.PeaksCount][2];
-                  for (int i=0; i!=scan.PeaksCount;i++){
-                    scan.Scan[i][0] = mzValueHash.get(k).get(i);
-                    scan.Scan[i][1] = intensityValueHash.get(k).get(i);
-                  }
-                  if (scan.PeaksCount>0 && !foundMzBorders){
-                    scan.LowMz = mzValueArray[0];
-                    scan.HighMz = mzValueArray[mzValueArray.length-1];
-                  }
-                }
-                
+            for (int k=0;k!=scans.size();k++)
+            {
+              CgScan scan = scans.get(k);
+              scan.PeaksCount = mzValueHash.get(k).size();
+              scan.Scan = new float[scan.PeaksCount][2];
+              for (int i=0; i!=scan.PeaksCount;i++)
+              {
+                scan.Scan[i][0] = mzValueHash.get(k).get(i);
+                scan.Scan[i][1] = intensityValueHash.get(k).get(i);
               }
-              return;
-            } 
-            break;
-        }
-        eventType = reader_.next();
-      } while (eventType != XMLStreamReader.END_DOCUMENT);
+              if (scan.PeaksCount>0 && !params.isFoundMzBorders())
+              {
+                scan.LowMz = mzValueArray[0];
+                scan.HighMz = mzValueArray[mzValueArray.length-1];
+              }
+            }
+          }
+          return;
+      	}
+        reader_.next();
+      }
     }
     catch (Exception ex) {
       throw new CgException(ex.getMessage());
     } 
-  } 
+  }
   
   
+  /**
+   * Private helper class to encapsulate the parameters of a spectrum.
+   * 
+   * @author Leonida M. Lamp
+   *
+   */
+  private class SpectrumParams
+  {
+		int spectrumIndex_ = -1;
+    int peaksCount_ = 0;
+  	int msLevel_ = 0;
+  	int polarity_ = CgDefines.POLARITY_NO;
+  	float basePeakMz_ = 0f;
+  	float basePeakIntensity_ = 0f;
+  	float totalIonCurrent_ = 0f;
+  	float lowMz_ = Float.MAX_VALUE;
+    float highMz_ = 0f;
+    boolean lowMzFound_ = false;
+    boolean highMzFound_ = false;
+    
+    public int getSpectrumIndex()
+		{
+			return spectrumIndex_;
+		}
+
+		public void setSpectrumIndex(int spectrumIndex)
+		{
+			this.spectrumIndex_ = spectrumIndex;
+		}
+
+		public int getPeaksCount()
+		{
+			return peaksCount_;
+		}
+
+		public void setPeaksCount(int peaksCount)
+		{
+			this.peaksCount_ = peaksCount;
+		}
+
+		public int getMsLevel()
+		{
+			return msLevel_;
+		}
+
+		public void setMsLevel(int msLevel)
+		{
+			this.msLevel_ = msLevel;
+		}
+
+		public int getPolarity()
+		{
+			return polarity_;
+		}
+
+		public void setPolarity(int polarity)
+		{
+			this.polarity_ = polarity;
+		}
+
+		public float getBasePeakMz()
+		{
+			return basePeakMz_;
+		}
+
+		public void setBasePeakMz(float basePeakMz)
+		{
+			this.basePeakMz_ = basePeakMz;
+		}
+
+		public float getBasePeakIntensity()
+		{
+			return basePeakIntensity_;
+		}
+
+		public void setBasePeakIntensity(float basePeakIntensity)
+		{
+			this.basePeakIntensity_ = basePeakIntensity;
+		}
+
+		public float getTotalIonCurrent()
+		{
+			return totalIonCurrent_;
+		}
+
+		public void setTotalIonCurrent(float totalIonCurrent)
+		{
+			this.totalIonCurrent_ = totalIonCurrent;
+		}
+
+		public float getLowMz()
+		{
+			return lowMz_;
+		}
+
+		public void setLowMz(float lowMz)
+		{
+			this.lowMz_ = lowMz;
+		}
+
+		public float getHighMz()
+		{
+			return highMz_;
+		}
+
+		public void setHighMz(float highMz)
+		{
+			this.highMz_ = highMz;
+		}
+
+		public void setLowMzFound(boolean lowMzFound)
+		{
+			this.lowMzFound_ = lowMzFound;
+		}
+
+		public void setHighMzFound(boolean highMzFound)
+		{
+			this.highMzFound_ = highMzFound;
+		}
+		
+		public boolean isFoundMzBorders()
+		{
+			return this.highMzFound_ && this.lowMzFound_;
+		}
+  }
+  
+  /**
+   * Private helper class to encapsulate CgScan objects and m/z range restrictions applying to them.
+   * 
+   * @author Leonida M. Lamp
+   *
+   */
+  private class AddScanHelper
+  {
+  	Vector<CgScan> scans_ = null;
+    Vector<Range> ranges_ = null;
+    
+    public void init(AddScan[] adders)
+    {
+    	if (scans_==null){
+        scans_ = new Vector<CgScan>();
+        ranges_ = new Vector<Range>();
+        for (AddScan adder : adders){
+          if (adder.getLastBaseScan()!=null){
+            scans_.add(adder.getLastBaseScan());
+            ranges_.add(new Range(adder.getLowerThreshold(),adder.getUpperThreshold()));
+          }
+        }
+      }
+    }
+    
+    public void init(AddScan[] adders, CgScan sc)
+    {
+    	scans_ = new Vector<CgScan>();
+      ranges_ = new Vector<Range>();
+      for (AddScan adder : adders){
+        if (adders.length==1) scans_.add(sc);
+        else scans_.add(new CgScan(sc));
+        ranges_.add(new Range(adder.getLowerThreshold(),adder.getUpperThreshold()));
+      }
+    }
+
+		public Vector<CgScan> getScans()
+		{
+			return scans_;
+		}
+
+		public Vector<Range> getRanges()
+		{
+			return ranges_;
+		}
+  }
+  
+  
+  /**
+   * Private helper class encapsulating all relevant precursor information.
+   * 
+   * @author Leonida M. Lamp
+   *
+   */
+  private class Precursor
+  {
+  	Vector<String> precursorMz_ = new Vector<String>();
+  	private int lastMsLevel_ = 0;
+  	//the following line is for QQQ PIS/NLS and PRM data
+  	float precursorMzFloat_ = -1f;
+  	
+		public Vector<String> getPrecursorMz()
+		{
+			return precursorMz_;
+		}
+		public void addPrecursorMz(String precursorMz)
+		{
+			this.precursorMz_.add(precursorMz);
+		}
+		public void setPrecursorMz(Vector<String> precursorMz)
+		{
+			this.precursorMz_ = precursorMz;
+		}
+		public void removeLastPrecursorMz()
+		{
+			precursorMz_.remove(precursorMz_.size()-1);
+		}
+		//the following method is for QQQ PIS/NLS and PRM data >>> not tested with mzML files
+		public float getPrecursorMzFloat()
+		{
+			return precursorMzFloat_;
+		}
+		//the following method is for QQQ PIS/NLS and PRM data >>> not tested with mzML files
+		public void setPrecursorMzFloat(float precursorMzFloat)
+		{
+			this.precursorMzFloat_ = precursorMzFloat;
+		}
+		public int getLastMsLevel()
+		{
+			return lastMsLevel_;
+		}
+		public void setLastMsLevel(int lastMsLevel)
+		{
+			this.lastMsLevel_ = lastMsLevel;
+		}
+		
+  }
 }

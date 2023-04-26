@@ -186,7 +186,7 @@ public abstract class AbstractXMLSpectraReader implements XMLSpectraReader
       // =========================================================
       
       eventType = reader_.getEventType();
-      do {
+      while (reader_.hasNext()) {
         switch (eventType) {
           case XMLStreamReader.START_DOCUMENT:
             break;
@@ -198,9 +198,11 @@ public abstract class AbstractXMLSpectraReader implements XMLSpectraReader
               readMsRun(readOnlyRequiredInfoForMultiThreading);
             }
             break;
+          default:
+            break;
         }
         eventType = reader_.next();
-      } while (eventType != XMLStreamReader.END_DOCUMENT);
+      }
     }
     catch (Exception ex) {
       ex.printStackTrace();
@@ -339,37 +341,6 @@ public abstract class AbstractXMLSpectraReader implements XMLSpectraReader
    * @throws CgException All internal exceptions are mapped to the CgException type.
    */
   protected abstract float[] getMaximaFromBinaryDataArray() throws CgException;
-  
-  /**
-   * This method reads a scan. It calls itself recursively in case scans are
-   * element of our scan. However, if the scan level is > 1, the scan's content
-   * is skipped for performance reasons.
-   * 
-   * @param scBase1
-   *          Pass the CgScan object that represents the level 1 scan to which
-   *          this scan belongs to.
-   * @param ranges1 The individually allowed m/z ranges of the AddScan interfaces
-   * 
-   * @throws CgException All internal exceptions are mapped to the CgException type.
-   */
-  protected abstract void readScan(Vector<CgScan> scBase1, Vector<Range> ranges1) throws CgException;
-  
-
-  /**
-   * This method reads the binary data arrays of a single scan and stores them in a CgScan object.
-   * 
-   * @param scans
-   *          Pass the CgScan object that represents the level 1 scan to which
-   *          this scan belongs to.
-   * @param ranges
-   *          The m/z range restrictions that apply for every CgScan object
-   * @param peaksCount The number of peaks in the binary data array
-   * @param msms True if it is a MSn scan
-   * @param foundMzBorders True if the lowest and highest m/z values of the file have been found
-   * 
-   * @throws CgException All internal exceptions are mapped to the CgException type.
-   */
-  protected abstract void readPeaks(Vector<CgScan> scans, Vector<Range> ranges, int peaksCount, boolean msms, boolean foundMzBorders) throws CgException;
   
   /**
    * Returns the XML element constant, the content of which will be read. 

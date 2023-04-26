@@ -35,11 +35,16 @@ import org.junit.jupiter.api.AfterEach;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.stream.Stream;
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
 
+import at.tugraz.genome.lda.MzxmlToChromThread;
 import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.maspectras.quantification.CgDefines;
+import at.tugraz.genome.maspectras.utils.StringUtils;
 
 /**
  * 
@@ -57,15 +62,16 @@ class MzMLReaderTest
   XMLSpectraReader readerMzMLInterface;
   
   //The path to the test folder
-  String folderPath = "E:/Development/testMzXML/";
+  String folderPath = "D:\\Collaborator_Files\\testMzXML\\";
   
   //The sub paths to the test files
   private static Stream<String> filePaths() {
     return Stream.of(
-//      "absciex/Data20141110_versch_CE_pos+neg1_proper.mzML",
-//      "agilent/Sample1_pos_01_proper.mzML",
-//      "bruker/Mix25_RD1_01_1360_proper.mzML",
-      "thermo/Schev_Meth_test_mono-iso-CID_120731120418_proper.mzML"
+      "absciex/testFile.mzML",
+      "agilent/testFile.mzML",
+      "thermo/testFile.mzML",
+      "Kathi_Melbourne/testFile.mzML",
+      "bruker/testFile.mzML"
     );
   }
     
@@ -105,39 +111,108 @@ class MzMLReaderTest
   
   @ParameterizedTest
   @MethodSource("filePaths")
-  @DisplayName("Translates mzML files without throwing an exception.")
+  @DisplayName("Translates mzML files to chrom as expected.")
   void translateToChromatogramsTest(String XMLFile)
   {
-    //given
-    final String testPath = folderPath+XMLFile;
-    if (new File(testPath).exists() == false) {
-      fail(String.format("The file %s does not exist!", testPath));
-    }
-    String fileType = "mzML";
-    int maxMBForChromTranslation = 2000;
-    int numberOfThreads = 7;
-    int multiplicationFactorForInt = 1000;
-    int lowestResulution = 1;
-    boolean msms = true;
-    
+  	//given
+  	final String testPath = folderPath+XMLFile;
+  	File testFile = new File(testPath);
+  	assertTrue(testFile.exists(), String.format("The file %s does not exist!", testPath.toString()));
+  	String fileWOExtension = testPath.substring(0,testPath.lastIndexOf("."));
+  	File chromFolder = new File(fileWOExtension+".chrom");
+  	if (chromFolder.exists()) chromFolder.delete(); //make sure a fully new chrom folder is written.
+  	File parent = testFile.getParentFile();
+  	File chromFolderReference = new File(parent.toString()+"\\reference.chrom");
+  	assertTrue(chromFolderReference.exists(), String.format("The required reference chrom file (%s) does not exist or has a different name!", chromFolderReference.toString()) );
+  	String[] subFilesReference = chromFolderReference.list();
+  	
     //when
-    RawToChromTranslator mzMLTranslator = new RawToChromTranslator(
-        testPath,fileType,maxMBForChromTranslation,numberOfThreads,multiplicationFactorForInt,lowestResulution,msms);
-    
-    //then   
     try{
-      mzMLTranslator.translateToChromatograms();
+    	int numProcessors = 1;
+//      int numProcessors = Runtime.getRuntime().availableProcessors();
+//      numProcessors = numProcessors < 1 ? 1 : numProcessors;
+      MzxmlToChromThread thread = new MzXMLToChromThreadTest(testPath,numProcessors);
+      thread.run();
+      
     } catch (Exception ex) {
-      fail(String.format("An exception occurred while translating the file %s.", testPath));
-      ex.printStackTrace();
+      fail(String.format("An exception occurred while translating the file %s: %s", testPath, ex.getMessage()));
+    }
+    
+    //then
+    assertTrue(chromFolder.exists(), String.format("The expected chrom file (%s) does not exist or has a different name!", chromFolder.toString()) );
+    assertEquals(subFilesReference.length, chromFolder.list().length, String.format("The written chrom file (%s) does not contain the expected number of files.", chromFolder.toString()) );
+    
+    File headerFile = new File(StringUtils.getChromFilePaths(testPath.toString())[1]);
+    assertTrue(headerFile.exists(), "The expected header file does not exist!");
+    for (int i=0; i<chromFolder.list().length; i++)
+    {
+    	String subFile = chromFolder + "\\" + chromFolder.list()[i];
+    	String subFileType = subFile.substring(subFile.lastIndexOf(".")+1);
+    	if (subFileType.contains("chrom") || subFileType.contains("idx"))
+    	{
+    		String referenceSubFile = subFile.replace("testFile", "reference");
+    		assertTrue(new File(referenceSubFile).exists(), String.format("No reference found for (%s)!", subFile) );
+    		try 
+        {
+        	assertEquals(-1L, filesCompareByByte(subFile, referenceSubFile), String.format("The output file (%s) does not match the reference!", subFile) );
+        } 
+        catch (IOException ex)
+        {
+        	fail("An IOException occurred trying to compare the output file to the reference: "+ex.getMessage());
+        }
+    	}
     }
   }
+  
+  /**
+   * Class to mimick the MzxmlToChromThread without relying on LipidomicsConstants
+   * @author Leonida M. Lamp
+   */
+  private class MzXMLToChromThreadTest extends MzxmlToChromThread
+  {
+		private MzXMLToChromThreadTest(String filePath, int numberOfThreads)
+		{
+			super(filePath, numberOfThreads);
+		}
+		
+		@Override
+		protected void translateToChrom(String filePath, int numberOfThreads) throws Exception{
+	    RawToChromTranslator translator = new RawToChromTranslator(filePath,super.getFileType(filePath),200,
+	        numberOfThreads,1000,1,true);
+	      translator.translateToChromatograms();
+	      super.polaritySwitched_ = translator.isPolaritySwitched();
+	  }
+  }
+  
+  private long filesCompareByByte(String path1, String path2) throws IOException 
+	{
+    try (BufferedInputStream fis1 = new BufferedInputStream(new FileInputStream(new File(path1)));
+         BufferedInputStream fis2 = new BufferedInputStream(new FileInputStream(new File(path2)))) 
+    {
+      int ch = 0;
+      long pos = 1;
+      while ((ch = fis1.read()) != -1) 
+      {
+        if (ch != fis2.read()) 
+        {
+            return pos;
+        }
+        pos++;
+      }
+      if (fis2.read() == -1) {
+        return -1;
+      }
+      else {
+        return pos;
+      }
+    }
+	}
   
   
   @ParameterizedTest
   @MethodSource("filePaths")
-  @DisplayName("Reads mzML files.")
-  void readFileTest(String XMLFile)
+  @DisplayName("Reads mzML file overview.")
+  void readFileOverviewTest(String XMLFile)
   {
     //given
     final String testPath = folderPath+XMLFile;
@@ -148,16 +223,15 @@ class MzMLReaderTest
     //when
     int[] maximaBefore = {readerMzMLInterface.getHighestMz(), readerMzMLInterface.getLowestMz()}; 
     try{
-      readerMzMLInterface.ReadFile(testPath, false);
+    	readerMzMLInterface.ReadFile(testPath, true);
     } catch (Exception ex) {
-      fail(String.format("An exception occurred while translating the file %s.", testPath));
-      ex.printStackTrace();
+      fail(String.format("An exception occurred while reading the file %s: %s", testPath, ex.getMessage()));
     }
     
     //then
     int[] maximaAfter = {readerMzMLInterface.getHighestMz(), readerMzMLInterface.getLowestMz()};
     assertFalse(Arrays.equals(maximaBefore, maximaAfter));
-  }  
+  }
   
   
   @ParameterizedTest
@@ -176,7 +250,7 @@ class MzMLReaderTest
     try{
       readerMzMLInterface.ReadFile(testPath, true);
     } catch (Exception ex) {
-      fail(String.format("An exception occurred while translating the file %s.", testPath));
+      fail(String.format("An exception occurred while reading the file %s.", testPath));
       ex.printStackTrace();
     }
     
