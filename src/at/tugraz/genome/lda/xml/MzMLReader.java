@@ -87,8 +87,8 @@ public class MzMLReader extends AbstractXMLSpectraReader
   
   //accessible XML attribute-entries
   private static final String ENTRY_MS_LEVEL = "ms level";
-  private static final String ENTRY_LOWEST_OBSERVED_MZ = "lowest observed m/z"; //TODO: replace with 'scan window lower limit'
-  private static final String ENTRY_HIGHEST_OBSERVED_MZ = "highest observed m/z"; //TODO: replace with 'scan window upper limit'
+  private static final String ENTRY_LOWEST_OBSERVED_MZ = "lowest observed m/z"; //TODO: consider replacing with 'scan window lower limit'
+  private static final String ENTRY_HIGHEST_OBSERVED_MZ = "highest observed m/z"; //TODO: consider replacing with 'scan window upper limit'
   private static final String ENTRY_POSITIVE_SCAN = "positive scan";
   private static final String ENTRY_NEGATIVE_SCAN = "negative scan";
   private static final String ENTRY_SCAN_START_TIME = "scan start time";
@@ -103,7 +103,6 @@ public class MzMLReader extends AbstractXMLSpectraReader
   private static final String ENTRY_TOTAL_ION_CURRENT = "total ion current";
   private static final String ENTRY_MINUTE = "minute";
   private static final String ENTRY_SELECTED_ION_MZ = "selected ion m/z";
-//  private static final String ENTRY_PEAK_INTENSITY = "peak intensity";
   
   
    

@@ -226,14 +226,18 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
         }
       }
       
-      if (name!=null&&name.length()>0){
+      if (name!=null&&name.length()>0)
+      {
         Integer doubleBonds = null;
-        if (headerTitles.contains(QuantificationResultExporter.HEADER_MODIFICATION)){
-          Object[] components = ComparativeNameExtractor.splitOldNameStringToComponents(name);
+        if (dbs > -1)
+        {
+        	doubleBonds = dbs;
+        }
+        else if (headerTitles.contains(QuantificationResultExporter.HEADER_MODIFICATION))
+        {
+        	Object[] components = ComparativeNameExtractor.splitOldNameStringToComponents(name);
           name = (String)components[0];
           doubleBonds = (Integer)components[1];
-        }else{
-          doubleBonds = dbs;
         }
         name = StaticUtils.generateLipidNameString(name,doubleBonds,-1);
         if (isSelectionPrefix_!=null && name.startsWith(isSelectionPrefix_)){
