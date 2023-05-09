@@ -233,7 +233,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
         {
         	doubleBonds = dbs;
         }
-        else if (headerTitles.contains(QuantificationResultExporter.HEADER_MODIFICATION))
+        else if (!headerTitles.contains(QuantificationResultExporter.HEADER_MODIFICATION)) 
         {
         	Object[] components = ComparativeNameExtractor.splitOldNameStringToComponents(name);
           name = (String)components[0];
@@ -421,6 +421,8 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
     return position;
   }
   
+  //TODO: this is very old code. remove as soon as the projects are merged.
+  @Deprecated
   public static Object[] splitOldNameStringToComponents(String fullNameString){
     Object[] components = new Object[3];
     String name = "";
