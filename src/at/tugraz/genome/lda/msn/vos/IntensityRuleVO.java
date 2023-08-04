@@ -318,11 +318,23 @@ public class IntensityRuleVO
    * @param chainFragments the found chain fragments
    * @return returns the idendified fragment
    */
-  public CgProbe checkForFragmentAvailability(String frag, Hashtable<String,CgProbe> headFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments) {
+  public CgProbe checkForFragmentAvailability(String frag, Hashtable<String,CgProbe> headFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments) 
+  {
     if (headFragments.containsKey(frag))
-      return headFragments.get(frag);
+    {
+    	return headFragments.get(frag);
+    }
     else
-      return null;
+    {
+    	for (String faName : chainFragments.keySet())
+      {
+      	if (chainFragments.get(faName).containsKey(frag))
+      	{
+      		return chainFragments.get(faName).get(frag);
+      	}
+      }
+    }
+    return null;
   }
   
   
