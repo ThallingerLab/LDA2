@@ -1756,8 +1756,72 @@ public class MSnAnalyzer
       }
     }
     positionEvidence = cleanWrongEvidence(chains, positions, positionEvidence);
+    positionEvidence = correctForNonExistingChainTypes(positionEvidence);
     posEvidenceAccordToProposedDefinition_.put(combiName, positionEvidence);
     return positions;
+  }
+  
+  /**
+   * For example in the case of plasmalogens, some position rules can lead to position evidence that conflicts with the chain fragment information.
+   * This occurs due to fatty acids that may get assigned with the wrong chain type. If such a non existant fatty acid is detected, this method corrects for the chain type.
+   * @param positionEvidence
+   * @return
+   */
+  private Hashtable<Integer,Vector<IntensityPositionVO>> correctForNonExistingChainTypes(Hashtable<Integer,Vector<IntensityPositionVO>> positionEvidence)
+  {
+  	for (Integer position : positionEvidence.keySet())
+  	{
+  		for (IntensityPositionVO vo : positionEvidence.get(position))
+  		{
+  			FattyAcidVO biggerFA = vo.getBiggerFA();
+  			Set<String> biggerNames = vo.getBiggerNames();
+  			if (biggerNames != null)
+  			{
+  				for (String fragmentName : biggerNames)
+    			{
+    				if (!chainFragments_.get(biggerFA.getChainId()).keySet().contains(fragmentName))
+    				{
+    					FattyAcidVO fa = findFAOfFragment(biggerFA, fragmentName);
+    					vo.putBiggerChainsEntry(fragmentName, fa);
+    				}
+    			}
+  			}
+  			
+  			FattyAcidVO smallerFA = vo.getSmallerFA();
+  			Set<String> smallerNames = vo.getSmallerNames();
+  			if (smallerNames != null)
+  			{
+  				for (String fragmentName : smallerNames)
+    			{
+    				if (!chainFragments_.get(smallerFA.getChainId()).keySet().contains(fragmentName))
+    				{
+    					FattyAcidVO fa = findFAOfFragment(smallerFA, fragmentName);
+    					vo.putSmallerChainsEntry(fragmentName, fa);
+    				}
+    			}
+  			}
+  		}
+  	}
+  	return positionEvidence;
+  }
+  
+  /**
+   * Checks if chain fragments for either chain type 0, 1 (ALKYL), 2 (ALKENYL) or 3 (LCB) of the specified fragmentName are available.
+   * @param fragmentName
+   * @return the fatty acid with the corrected chain type, or if none could be found, the fatty acid as originally present.
+   */
+  private FattyAcidVO findFAOfFragment(FattyAcidVO fa, String fragmentName)
+  {
+  	FattyAcidVO newFA = new FattyAcidVO(fa);
+  	for (short chainType = 0; chainType<=3; chainType++)
+  	{
+  		newFA.correctChainType(chainType);
+  		if (chainFragments_.get(newFA.getChainId()) != null && chainFragments_.get(newFA.getChainId()).get(fragmentName) != null)
+  		{
+  			return newFA;
+  		}
+  	}
+  	return fa;
   }
   
   /**

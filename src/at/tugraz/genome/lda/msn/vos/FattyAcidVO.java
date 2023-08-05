@@ -73,6 +73,11 @@ public class FattyAcidVO
   }
   
   
+  public FattyAcidVO(FattyAcidVO other) {
+    this(other.getChainType(), other.getPrefix(), other.getcAtoms(), other.getDoubleBonds(), other.getOhNumber(), other.getMass(), other.getFormula());
+    this.setOmegaPosition(other.getOmegaPosition());
+  }
+  
   
   /**
    * 

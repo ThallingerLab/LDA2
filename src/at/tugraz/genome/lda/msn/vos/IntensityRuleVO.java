@@ -320,21 +320,10 @@ public class IntensityRuleVO
    */
   public CgProbe checkForFragmentAvailability(String frag, Hashtable<String,CgProbe> headFragments, Hashtable<String,Hashtable<String,CgProbe>> chainFragments) 
   {
-    if (headFragments.containsKey(frag))
-    {
-    	return headFragments.get(frag);
-    }
-    else
-    {
-    	for (String faName : chainFragments.keySet())
-      {
-      	if (chainFragments.get(faName).containsKey(frag))
-      	{
-      		return chainFragments.get(faName).get(frag);
-      	}
-      }
-    }
-    return null;
+  	if (headFragments.containsKey(frag))
+  		return headFragments.get(frag);
+  	else
+  		return null;
   }
   
   

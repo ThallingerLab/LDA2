@@ -25,6 +25,7 @@ package at.tugraz.genome.lda.msn.vos;
 
 import java.util.Hashtable;
 import java.util.Objects;
+import java.util.Set;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
@@ -99,6 +100,22 @@ public class IntensityPositionVO extends IntensityRuleVO
     else
       return null;
   }
+  
+  /**
+   * @return the fragment names at the greater part of the comparator
+   */
+  public Set<String> getBiggerNames()
+  {
+  	if (biggerChains_!=null && biggerChains_.size()>0)
+  		return biggerChains_.keySet();
+  	else
+  		return null;
+  }
+  
+  public void putBiggerChainsEntry(String key, FattyAcidVO vo)
+  {
+  	this.biggerChains_.put(key, vo);
+  }
 
   /**
    * @return fatty acid that was verified at at the lesser part of the comparator
@@ -109,6 +126,22 @@ public class IntensityPositionVO extends IntensityRuleVO
       return smallerChains_.values().iterator().next();
     else
       return null;
+  }
+  
+  /**
+   * @return the fragment names at the lesser part of the comparator
+   */
+  public Set<String> getSmallerNames()
+  {
+  	if (smallerChains_!=null && smallerChains_.size()>0)
+  		return smallerChains_.keySet();
+  	else
+  		return null;
+  }
+  
+  public void putSmallerChainsEntry(String key, FattyAcidVO vo)
+  {
+  	this.smallerChains_.put(key, vo);
   }
   
   /**
