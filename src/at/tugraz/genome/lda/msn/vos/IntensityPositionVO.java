@@ -251,12 +251,14 @@ public class IntensityPositionVO extends IntensityRuleVO
       ruleBigger = rule.substring(rule.indexOf("<")+1);
     }
     Vector<ShortStringVO> biggerNbpNames =  FragmentRuleVO.getLengthSortedFragmentNames(new Hashtable<String,Short>(),ruleVO.getBiggerNonHeadAndBasePeakNames(),new Hashtable<String,Short>());
+    Vector<ShortStringVO> biggerPosNames =  FragmentRuleVO.getLengthSortedFragmentNames(new Hashtable<String,Short>(),getNonHeadAndBasePeakNamesPlusPos(ruleVO.biggerExpression_.getFragments()),new Hashtable<String,Short>());
     //the checkIfOnlyMissedValuesArePresent had been introduced because it was not possible to differentiate alkenylated species with same carbon dbs numbers; e.g. P-PE P-16:0/16:0
-    if (checkIfOnlyMissedValuesArePresent(biggerNbpNames,missed))
+    if (checkIfOnlyMissedValuesArePresent(biggerPosNames,missed))
       biggerOnlyMissed = true;
     Vector<ShortStringVO> smallerNbpNames = FragmentRuleVO.getLengthSortedFragmentNames(new Hashtable<String,Short>(),ruleVO.getSmallerNonHeadAndBasePeakNames(),new Hashtable<String,Short>());
+    Vector<ShortStringVO> smallerPosNames =  FragmentRuleVO.getLengthSortedFragmentNames(new Hashtable<String,Short>(),getNonHeadAndBasePeakNamesPlusPos(ruleVO.smallerExpression_.getFragments()),new Hashtable<String,Short>());
     //the checkIfOnlyMissedValuesArePresent had been introduced because it was not possible to differentiate alkenylated species with same carbon dbs numbers; e.g. P-PE P-16:0/16:0
-    if (checkIfOnlyMissedValuesArePresent(smallerNbpNames,missed))
+    if (checkIfOnlyMissedValuesArePresent(smallerPosNames,missed))
       smallerOnlyMissed = true;
     Hashtable<String,FattyAcidVO> biggerChains = IntensityChainVO.extractFANames(ruleBigger, biggerNbpNames, faHydroxyEncoding, lcbHydroxyEncoding, usedAlexMSnTargets);
     Hashtable<String,FattyAcidVO> smallerChains = IntensityChainVO.extractFANames(ruleSmaller, smallerNbpNames, faHydroxyEncoding, lcbHydroxyEncoding, usedAlexMSnTargets);
@@ -346,5 +348,25 @@ public class IntensityPositionVO extends IntensityRuleVO
         && Objects.equals(smallerChains_, other.smallerChains_)
         && smallerOnlyMissed_ == other.smallerOnlyMissed_;
   }
+  
+  
+  /**
+   * returns all fragment names which are whether base peak names nor head group fragments
+   * @param parts the fragment parts
+   * @return fragment names which are whether base peak names nor head group fragments; key: fragment name; value: fragment type
+   */
+  private static Hashtable<String,Short> getNonHeadAndBasePeakNamesPlusPos(Vector<FragmentMultVO> parts) {
+    Hashtable<String,Short> filteredNames = new Hashtable<String,Short>();
+    for (FragmentMultVO multVO : parts){
+      if (!multVO.getFragmentName().equalsIgnoreCase(BASEPEAK_NAME) && multVO.getFragmentType()!=LipidomicsConstants.CHAIN_TYPE_NO_CHAIN){
+        String name = multVO.getFragmentName();
+        if (multVO.getPosition()>0)
+          name+="["+multVO.getPosition()+"]";
+        filteredNames.put(name, multVO.getFragmentType());
+      }
+    }
+    return filteredNames;
+  }
+  
   
 }

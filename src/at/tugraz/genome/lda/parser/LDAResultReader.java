@@ -758,13 +758,18 @@ public class LDAResultReader
           String missedString = "";
           if (ruleMissedColumn>-1 && cellEntries.containsKey(ruleMissedColumn)) missedString = (String)cellEntries.get(ruleMissedColumn);
           Hashtable<String,Short> missed = new Hashtable<String,Short>();
+          Hashtable<String,Short> missedPosition = new Hashtable<String,Short>();
           StringTokenizer tokenizer = new StringTokenizer(missedString,";");
           while (tokenizer.hasMoreTokens()){
             String token = tokenizer.nextToken();
             //this is necessary for position rules
-            if (token.indexOf("[")!=-1)
+            if (token.indexOf("[")!=-1) {
+              if (positionRules)
+                missedPosition.put(token, LipidomicsConstants.CHAIN_TYPE_NO_CHAIN);
               token = token.substring(0, token.indexOf("["));
+            }
             short type = LipidomicsConstants.CHAIN_TYPE_NO_CHAIN;
+            
             if (chainRules||positionRules){
               boolean isAChain = false;
               //is it a chain fragment in Alex notation
