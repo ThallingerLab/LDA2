@@ -45,6 +45,6 @@ Equation=plasmalogen+0*$BASEPEAK>plasmalogen_H3PO4+0*$BASEPEAK		mandatory=true
 
 [POSITION]
 !INTENSITIES
-Equation=sn2[2]>0*plasmalogen[2]+0*$BASEPEAK	mandatory=true
-Equation=plasmalogen[1]>0*sn2[1]+0*$BASEPEAK	mandatory=true
+Equation=sn2[2]>0*$BASEPEAK	mandatory=true
+Equation=plasmalogen[1]>0*$BASEPEAK	mandatory=true
 

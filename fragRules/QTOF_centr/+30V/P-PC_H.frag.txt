@@ -40,5 +40,5 @@ Equation=NL_Carb_Alk*1.1>NL_Ketene		mandatory=true
 
 [POSITION]
 !INTENSITIES
-Equation=NL_Carb_Alk[1]>0.1*NL_Ketene[1]+0*$BASEPEAK				mandatory=true
+Equation=NL_Carb_Alk[1]>0.1*NL_Ketene[2]+0*$BASEPEAK				mandatory=true
 

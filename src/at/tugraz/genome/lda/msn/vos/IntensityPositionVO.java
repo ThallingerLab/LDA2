@@ -25,7 +25,6 @@ package at.tugraz.genome.lda.msn.vos;
 
 import java.util.Hashtable;
 import java.util.Objects;
-import java.util.Set;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;

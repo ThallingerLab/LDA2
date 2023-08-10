@@ -42,5 +42,5 @@ Equation=NL_plasmalogen>Precursor					mandatory=true
 
 [POSITION]
 !INTENSITIES
-Equation=sn2[2]>0*NL_plasmalogen[2]+0*$BASEPEAK	mandatory=true
-Equation=NL_plasmalogen[1]>0*sn2[1]+0*$BASEPEAK	mandatory=true
+Equation=sn2[2]>0*$BASEPEAK	mandatory=true
+Equation=NL_plasmalogen[1]>0*$BASEPEAK	mandatory=true

@@ -1250,7 +1250,7 @@ public class MSnAnalyzer
       if (rule.getBiggerPosition() != rule.getSmallerPosition())
         affectedPositions.add(rule.getSmallerPosition());
       String identifier = getIdentifierForPositions(affectedPositions);
-      if (rule.getBiggerPosition() == rule.getSmallerPosition())
+      if (rule.getBiggerPosition() == rule.getSmallerPosition() || rule.getBiggerPosition()==0 || rule.getSmallerPosition()==0)
         addToPositionSpecificRuleHash(positionSpecificSingleRules,identifier,rule);
       else
         addToPositionSpecificRuleHash(positionSpecificRules,identifier,rule);

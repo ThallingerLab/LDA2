@@ -47,4 +47,4 @@ Equation=NL_plasmalogen>PChead_184_WRONG	mandatory=true
 
 [POSITION]
 !INTENSITIES
-Equation=NL_plasmalogen[1]>0*NL_sn2[1]+0*$BASEPEAK	mandatory=true
+Equation=NL_plasmalogen[1]>0*$BASEPEAK	mandatory=true

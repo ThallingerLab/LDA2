@@ -28,5 +28,5 @@ Equation=sn2*1.1>plasmalogen-H3PO4	mandatory=true
 
 [POSITION]
 !INTENSITIES
-Equation=sn2[2]>0*plasmalogen[2]+0*$BASEPEAK	mandatory=true
-Equation=plasmalogen[1]>0*sn2[1]+0*$BASEPEAK	mandatory=true
+Equation=sn2[2]>0*$BASEPEAK	mandatory=true
+Equation=plasmalogen[1]>0*$BASEPEAK	mandatory=true

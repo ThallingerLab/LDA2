@@ -1658,7 +1658,7 @@ public class StaticUtils
    * @return the encoded human readable display name for a chain combination
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  private static String getHumanReadableCombiName(Vector<FattyAcidVO> chains, HydroxyEncoding faEncoding,
+  public static String getHumanReadableCombiName(Vector<FattyAcidVO> chains, HydroxyEncoding faEncoding,
         HydroxyEncoding lcbEncoding) throws LipidCombinameEncodingException {
     StringBuilder combi = new StringBuilder();
     boolean ohPresent = areThereOhInCombi(chains);

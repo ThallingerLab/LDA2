@@ -37,4 +37,4 @@ Equation=NL_plasmalogen*2.0>sn2			mandatory=true
 
 [POSITION]
 !INTENSITIES
-Equation=NL_plasmalogen[1]>0*NL_plasm+H2O[1]+0*$BASEPEAK	mandatory=true
+Equation=NL_plasmalogen[1]>0*$BASEPEAK	mandatory=true

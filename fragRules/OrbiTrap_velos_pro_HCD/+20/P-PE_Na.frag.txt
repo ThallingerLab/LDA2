@@ -46,5 +46,5 @@ Equation=NL_sn2+sn2>0.01*$BASEPEAK	mandatory=false
 
 [POSITION]
 !INTENSITIES
-Equation=sn2[2]>0*NL_plasmalogen[2]+0*$BASEPEAK	mandatory=false
-Equation=NL_plasmalogen[1]>0*sn2[1]+0*$BASEPEAK	mandatory=false
+Equation=sn2[2]>0*$BASEPEAK	mandatory=false
+Equation=NL_plasmalogen[1]>0*$BASEPEAK	mandatory=false

@@ -37,5 +37,5 @@ Equation=NL_Carboxy_Na*10>Plasmalogen_fragment_307	mandatory=true
 
 [POSITION]
 !INTENSITIES
-Equation=NL_Carboxy_Na[2]>0*NL_Akenyl[2]+0*$BASEPEAK	mandatory=true
+Equation=NL_Carboxy_Na[2]>0*$BASEPEAK	mandatory=true
 

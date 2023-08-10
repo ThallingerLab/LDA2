@@ -39,4 +39,4 @@ Equation=0.2*Carboxy>Alkenyl		mandatory=true
 [POSITION]
 !INTENSITIES
 Equation=Carboxy[2]>0.1*NL_Ketene_head[2]+0*$BASEPEAK		mandatory=false
-Equation=Carboxy[2]>0*Alkenyl[2]+0*$BASEPEAK			mandatory=true
+Equation=Carboxy[2]>0*$BASEPEAK			mandatory=true

@@ -73,6 +73,7 @@ public class FattyAcidVO
   }
   
   
+  
   /**
    * 
    * @return the type of chain: LipidomicsConstants.CHAIN_TYPE_FA or LipidomicsConstants.CHAIN_TYPE_LCB

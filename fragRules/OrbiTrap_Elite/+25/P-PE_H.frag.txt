@@ -41,6 +41,6 @@ Equation=sn2>0.5*Precursor_WRONG		mandatory=true
 
 [POSITION]
 !INTENSITIES
-Equation=sn2[2]>0*plasmalogen[2]+0*$BASEPEAK	mandatory=true
-Equation=plasmalogen[1]>0*sn2[1]+0*$BASEPEAK	mandatory=true
+Equation=sn2[2]>0*$BASEPEAK	mandatory=true
+Equation=plasmalogen[1]>0*$BASEPEAK	mandatory=true
 
