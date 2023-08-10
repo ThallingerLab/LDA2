@@ -73,12 +73,6 @@ public class FattyAcidVO
   }
   
   
-  public FattyAcidVO(FattyAcidVO other) {
-    this(other.getChainType(), other.getPrefix(), other.getcAtoms(), other.getDoubleBonds(), other.getOhNumber(), other.getMass(), other.getFormula());
-    this.setOmegaPosition(other.getOmegaPosition());
-  }
-  
-  
   /**
    * 
    * @return the type of chain: LipidomicsConstants.CHAIN_TYPE_FA or LipidomicsConstants.CHAIN_TYPE_LCB
