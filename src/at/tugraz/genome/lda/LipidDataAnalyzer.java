@@ -27,9 +27,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.FontMetrics;
 import java.awt.Frame;
-import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -92,8 +90,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 
-import jlk.LicenseHandler;
-import jlk.MatrixLipidDataAnalyzer2;
 import uk.ac.ebi.pride.jmztab2.utils.errors.MZTabErrorType.Level;
 
 import org.apache.batik.dom.GenericDOMImplementation;
@@ -133,7 +129,6 @@ import at.tugraz.genome.lda.mztab.SmallMztabMolecule;
 import at.tugraz.genome.lda.parser.LDAResultReader;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
-import at.tugraz.genome.lda.quantification.LipidomicsChromatogram;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.swing.AbsoluteQuantSettingsPanel;
 import at.tugraz.genome.lda.swing.BarChartPainter;
@@ -524,7 +519,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private int statisticsViewMode_ = 0;
   
   public LipidDataAnalyzer(){
-	this.checkLicense();
+  	this.checkLicense();
     this.createDisplayTopMenu();
     this.createSingleQuantMenu();
     this.createBatchQuantMenu();
@@ -729,43 +724,46 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     displayPanel_.add(displayTopMenu,BorderLayout.NORTH);
     displayPanel_.add(selectionPane,BorderLayout.WEST);
 
-    JPanel singleQuantificationPanel_ = new JPanel();
-    singleQuantificationPanel_.setLayout(new BorderLayout());
-    JPanel batchQuantificationPanel_ = new JPanel();
-    batchQuantificationPanel_.setLayout(new BorderLayout());
+    JPanel singleQuantificationPanel = new JPanel();
+    singleQuantificationPanel.setLayout(new BorderLayout());
+    JPanel batchQuantificationPanel = new JPanel();
+    batchQuantificationPanel.setLayout(new BorderLayout());
     resultsPanel_ = new JPanel();
     resultsPanel_.setLayout(new BorderLayout());
     settingsPanel_ = new JPanel();
     initSettingsPanel();
-	licensePanel_ = new JPanel();
+    licensePanel_ = new JPanel();
     helpPanel_ = new JPanel();
     initHelpPanel();
     aboutPanel_ = new JPanel();
     initAboutPanel();
 
     
-    mainTabs.addTab("Quantitation", singleQuantificationPanel_);
-    mainTabs.setToolTipTextAt(0, TooltipTexts.TABS_MAIN_QUANTITATION);
-    mainTabs.addTab("Batch Quantitation", batchQuantificationPanel_);
-    mainTabs.setToolTipTextAt(1, TooltipTexts.TABS_MAIN_BATCH);
+    mainTabs.addTab("Quantitation", singleQuantificationPanel);
+    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(singleQuantificationPanel), TooltipTexts.TABS_MAIN_QUANTITATION);
+    mainTabs.addTab("Batch Quantitation", batchQuantificationPanel);
+    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(batchQuantificationPanel), TooltipTexts.TABS_MAIN_BATCH);
     mainTabs.addTab("Statistical Analysis", resultsPanel_);
-    mainTabs.setToolTipTextAt(2, TooltipTexts.TABS_MAIN_STATISTICS);
+    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(resultsPanel_), TooltipTexts.TABS_MAIN_STATISTICS);
     mainTabs.addTab("Display Results", displayPanel_);
-    mainTabs.setToolTipTextAt(3, TooltipTexts.TABS_MAIN_DISPLAY);
+    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(displayPanel_), TooltipTexts.TABS_MAIN_DISPLAY);
     mainTabs.addTab("Settings", settingsPanel_);
-    mainTabs.setToolTipTextAt(4, TooltipTexts.TABS_MAIN_SETTINGS);
-    mainTabs.addTab("License", licensePanel_);
-    mainTabs.setToolTipTextAt(5, TooltipTexts.TABS_MAIN_LICENSE);
+    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(settingsPanel_), TooltipTexts.TABS_MAIN_SETTINGS);
+    if (LicenseChecker.isCheckLicense())
+    {
+      mainTabs.addTab("License", licensePanel_);
+      mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(licensePanel_), TooltipTexts.TABS_MAIN_LICENSE);
+      LicenseChangeListener licenseListener = new LicenseChangeListener();
+      mainTabs.addChangeListener(licenseListener);
+    }
+    
     mainTabs.addTab("Help", helpPanel_);
-    mainTabs.setToolTipTextAt(6, TooltipTexts.TABS_MAIN_HELP);
+    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(helpPanel_), TooltipTexts.TABS_MAIN_HELP);
     mainTabs.addTab("About", aboutPanel_);
-    mainTabs.setToolTipTextAt(7, TooltipTexts.TABS_MAIN_ABOUT);
-    LicenseChangeListener licenseListener = new LicenseChangeListener();
-    //mainTabs.addMouseListener(licenseListener);
-    mainTabs.addChangeListener(licenseListener);
+    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(aboutPanel_), TooltipTexts.TABS_MAIN_ABOUT);
     mainTabs.setSelectedIndex(0);
-    singleQuantificationPanel_.add(singleQuantMenu_);
-    batchQuantificationPanel_.add(batchQuantMenu_);
+    singleQuantificationPanel.add(singleQuantMenu_);
+    batchQuantificationPanel.add(batchQuantMenu_);
     resultTabs_= new JTabbedPane();
     resultsPanel_.add(resultTabs_,BorderLayout.CENTER);
     resultStatusPanel_ = new JPanel(new BorderLayout());
@@ -4756,7 +4754,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           }
         }
         if (moelculeTableName!=null){
-          mainTabs.setSelectedIndex(3);
+          mainTabs.setSelectedIndex(mainTabs.indexOfComponent(displayPanel_));
 //          try {
 //            Thread.sleep(100);
 //          }
@@ -5441,35 +5439,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     return oneThere;
   }
   
-  private void checkLicense(){
-    MatrixLipidDataAnalyzer2 licenseMatrix = new MatrixLipidDataAnalyzer2();
-    Vector<String> forbiddenkeys = new Vector<String>();
-    LicenseHandler.setForbiddenKeyMD5Hashes(forbiddenkeys);
-    LicenseHandler.setLicenseArray(licenseMatrix);
-    LicenseHandler.setApplicationIcon(new ImageIcon(getClass().getResource("/images/Delete.gif")));
-    LicenseHandler.setAppName(licenseMatrix.getApplicationName());
-    LicenseHandler.setModuleNames(new String[]{"0"});
-    LicenseHandler.setDemoModeEnabled(false);
-    LicenseHandler.setUseRoamingProfileEnabled(false);
-    File licenseFolder = new File(Settings.getLicensePath());
-    File ldaHomeFolder = new File (Settings.getLdaUserHomePath());
-    if (!ldaHomeFolder.exists()) {
-      if (!ldaHomeFolder.mkdirs()) {
-        System.err.println("Could not create mandatory directory "+ldaHomeFolder.getAbsolutePath());
-        System.exit(-1);
-      }
-      try {
-        Runtime.getRuntime().exec("attrib +h \""+ldaHomeFolder.getAbsolutePath()+"\"");
-      } catch (Exception ex) {
-        System.err.println("Could not hide directory "+ldaHomeFolder.getAbsolutePath());
-      }
-    }
-    ////this is for the demo license for the reviewers
-    //if (!licenseFolder.exists()) {               
-      //TODO: this license for reviewing is valid until the 30th of November 2021!
-     //LicenseHandler.writeLicenseStringAndUserName(licenseFolder,"mG46-sSp]-[WSu-Ob8S-^7kF-4z@v-XO5r-K]^z","Test 2.8.1");
-    //}
-    LicenseHandler.checkLicenseInFolder(licenseFolder);
+  private void checkLicense()
+  {
+  	new LicenseChecker().checkLicense();
   }
   
   private class LicenseChangeListener implements ChangeListener{
@@ -5477,18 +5449,23 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     int currentSelectedIndex_;
     int lastSelectedIndex_;
    
-    public LicenseChangeListener(){
+    public LicenseChangeListener()
+    {
       currentSelectedIndex_ = 0;
     }
 
     public void stateChanged(ChangeEvent e)
     {
-      lastSelectedIndex_ = currentSelectedIndex_;
-      currentSelectedIndex_ = mainTabs.getSelectedIndex();
-      if (mainTabs.getSelectedIndex()==5){
-        LicenseHandler.showLicenseDialog();
-        mainTabs.setSelectedIndex(lastSelectedIndex_);
-      }
+    	if (LicenseChecker.isCheckLicense())
+    	{
+    		lastSelectedIndex_ = currentSelectedIndex_;
+        currentSelectedIndex_ = mainTabs.getSelectedIndex();
+        if (mainTabs.getSelectedIndex()==mainTabs.indexOfComponent(licensePanel_))
+        {
+        	LicenseChecker.showLicenseDialog();
+          mainTabs.setSelectedIndex(lastSelectedIndex_);
+        }
+    	}
     }
   }
   
