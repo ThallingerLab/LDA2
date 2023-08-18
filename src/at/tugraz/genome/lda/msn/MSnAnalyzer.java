@@ -70,6 +70,7 @@ import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.maspectras.quantification.ChromatogramReader;
 import at.tugraz.genome.maspectras.utils.Calculator;
 import at.tugraz.genome.voutils.GeneralComparator;
+import javafx.util.Pair;
 
 /**
  * Central class for the verification of MSn evidence
@@ -153,6 +154,7 @@ public class MSnAnalyzer
   /** reports for which MS-levels spectra are present*/
   Hashtable<Integer,Boolean> msLevels_;
   
+  private float coverage_;
   
   
     
@@ -236,13 +238,20 @@ public class MSnAnalyzer
         //This is checking if there exist any rules - used only for definition of a base peak cutoff!!!! - I am not sure if I should remove this
         try{
           fragCalc_ = new FragmentCalculator(rulesDir_,className_,modName_,set_.getNameStringWithoutRt(),set_.getChemicalFormula(),
-              set_.getChemicalFormulaWODeducts(),set_.Mz[0],set_.getCharge(),set_.getOhNumber());          
+              set_.getChemicalFormulaWODeducts(),set_.Mz[0],set_.getCharge(),set_.getOhNumber(),quantVO.getOxState());          
         } catch (NoRuleException nrx){
         }
         this.checkMSnByAlexFragments((TargetlistEntry)quantVO,msLevels_);
       }else{
-        fragCalc_ = new FragmentCalculator(rulesDir_,className_,modName_,set_.getNameStringWithoutRt(),set_.getChemicalFormula(),
-            set_.getChemicalFormulaWODeducts(),set_.Mz[0],set_.getCharge(),set_.getOhNumber());
+    	
+    	String oxState = "";  
+    	if(quantVO != null)
+    		oxState = quantVO.getOxState();
+    	else
+    		oxState = set.getOxState();
+
+    	fragCalc_ = new FragmentCalculator(rulesDir_,className_,modName_,set_.getNameStringWithoutRt(),set_.getChemicalFormula(),
+            set_.getChemicalFormulaWODeducts(),set_.Mz[0],set_.getCharge(),set_.getOhNumber(),oxState);
         this.checkMSnEvidence(msLevels_);
       }
       transferResultsToLipidParameterSet();
@@ -332,7 +341,7 @@ public class MSnAnalyzer
         return;
       }
       fragCalc_ = new FragmentCalculator(rulesDir_,className_,modName_,set_.getNameStringWithoutRt(),set_.getChemicalFormula(),set_.getChemicalFormulaWODeducts(),
-          set_.Mz[0],set_.getCharge(),set_.getOhNumber());
+          set_.Mz[0],set_.getCharge(),set_.getOhNumber(),set_.getOxState());
       Vector<Range> ranges = analyzer_.findSingleSpectraRanges(fragCalc_.getSpectrumLevelRange());
       if (ranges.size()>0) this.msnSpectraPresent_ = false;
       for (Range range : ranges){
@@ -384,6 +393,7 @@ public class MSnAnalyzer
       this.status_ = LipidomicsMSnSet.NO_MSN_PRESENT;
       return;
     }
+    
     if (fragCalc_.getChainCutoff()>=0) relativeChainCutoff_ = fragCalc_.getChainCutoff();
     basePeakValues_ = calculateBasePeakValuesIfRequired(msLevels);
     checkHeadGroupFragments(probesWithMSnSpectra_);
@@ -497,7 +507,7 @@ public class MSnAnalyzer
         }
       }
     }
-    if (!foundAnyFragments) this.status_ = LipidomicsMSnSet.DISCARD_HIT;
+    if (!foundAnyFragments) this.status_ = LipidomicsMSnSet.DISCARD_HIT; //System.out.println(this.className_ + " " + this.set_.getNameString() + "_" + this.modName_ + " no fragments found - discarded");}
     if (foundHeadFragments && status_!=LipidomicsMSnSet.DISCARD_HIT) this.status_ = LipidomicsMSnSet.HEAD_GROUP_DETECTED;
     if (foundChainFragments && status_!=LipidomicsMSnSet.DISCARD_HIT) this.status_ = LipidomicsMSnSet.FRAGMENTS_DETECTED;
     
@@ -2008,6 +2018,7 @@ public class MSnAnalyzer
           chainFragments_, fulfilledChainIntensityRules_, validChainCombinations_,relativeIntensityOfCombination_,positionDefinition_, posEvidenceAccordToProposedDefinition_,
           fragCalc_!=null ? fragCalc_.getAllowedChainPositions() : 1, basePeakValues_, msnRetentionTimes, Settings.getFaHydroxyEncoding(),
               Settings.getLcbHydroxyEncoding());
+      set_.setCoverage(this.coverage_);
     }
   }
   
@@ -2059,8 +2070,16 @@ public class MSnAnalyzer
         else foundHits.add(hit);
       }
     }
-    if (!isSpectrumCovered(this.analyzer_,this.set_,msLevels,foundHits,new Vector<CgProbe>(),(float)RulesContainer.getBasePeakCutoff(StaticUtils.getRuleName(this.className_, this.modName_),this.rulesDir_),
-        (float)RulesContainer.getSpectrumCoverageMin(StaticUtils.getRuleName(this.className_, this.modName_),this.rulesDir_),this.ignoreAbsolute_,this.debug_,this.debugVO_))
+    
+    Pair<Boolean, Float> spectrumCoverage= isSpectrumCovered(this.analyzer_,this.set_,msLevels,foundHits,new Vector<CgProbe>(),(float)RulesContainer.getBasePeakCutoff(StaticUtils.getRuleName(this.className_, this.modName_),this.rulesDir_),
+            (float)RulesContainer.getSpectrumCoverageMin(StaticUtils.getRuleName(this.className_, this.modName_),this.rulesDir_),this.ignoreAbsolute_,this.debug_,this.debugVO_);
+    boolean isCovered = spectrumCoverage.getKey();
+    float coverage = spectrumCoverage.getValue();
+    
+
+    this.coverage_ = coverage;
+    
+    if (!isCovered)
       this.status_ = LipidomicsMSnSet.DISCARD_HIT;
   }
 
@@ -2084,7 +2103,7 @@ public class MSnAnalyzer
    * @throws SpectrummillParserException exception if there is something wrong about the elementconfig.xml, or an element is not there
    * throws CgException errors from the quantitation process
    */
-  private static boolean isSpectrumCovered(LipidomicsAnalyzer analyzer, LipidParameterSet set, Hashtable<Integer,Boolean> msLevels, Vector<CgProbe> foundHits, Vector<CgProbe> notCountedHits, float bpCutoff, float coverageMin, boolean ignoreAbsolute, boolean debug, MSnDebugVO debugVO) throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException {
+  private static Pair<Boolean, Float> isSpectrumCovered(LipidomicsAnalyzer analyzer, LipidParameterSet set, Hashtable<Integer,Boolean> msLevels, Vector<CgProbe> foundHits, Vector<CgProbe> notCountedHits, float bpCutoff, float coverageMin, boolean ignoreAbsolute, boolean debug, MSnDebugVO debugVO) throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException {
     Vector<Integer> levels = new Vector<Integer>();
     for (int level : msLevels.keySet()){
       //TODO: spectrum coverage is currently only allowed for MS-level: 2
@@ -2106,7 +2125,7 @@ public class MSnAnalyzer
         break;
       }
     }
-    return covered;
+    return new Pair<>(covered, coverages.get(2));
   }
     
   /**
@@ -2126,7 +2145,7 @@ public class MSnAnalyzer
    * throws CgException errors from the quantitation process
    */
   public static boolean isSpectrumCovered(LipidomicsAnalyzer analyzer, LipidParameterSet set, Hashtable<Integer,Boolean> msLevels, Vector<CgProbe> foundHits, Vector<CgProbe> notCountedHits, float bpCutoff, float coverageMin) throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException {
-    return isSpectrumCovered(analyzer, set, msLevels, foundHits, notCountedHits, bpCutoff, coverageMin, false, false, null);
+    return isSpectrumCovered(analyzer, set, msLevels, foundHits, notCountedHits, bpCutoff, coverageMin, false, false, null).getKey();
   }
 
 

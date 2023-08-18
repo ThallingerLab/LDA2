@@ -47,6 +47,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.dhatim.fastexcel.reader.CellType;
 import org.dhatim.fastexcel.reader.ReadableWorkbook;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
@@ -105,7 +106,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
     this.filesOfGroup_ = filesOfGroup;  
   }
     
-  protected void extractInformation() throws ExcelInputFileException, LipidCombinameEncodingException{
+  protected void extractInformation(int statisticsViewMode, boolean combineOxWithNonOx) throws ExcelInputFileException, LipidCombinameEncodingException{
     expNameCut1_ = new  Vector<String>();
     expNameCut2_ = new  Vector<String>();
     if (resultFiles_.size()>1){
@@ -140,7 +141,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
         expNames_.put(fileName,fileName);
       expNameToFile_.put(fileName, resultFile);
       expNamesInSequence_.add(fileName);
-      parseResultFile(resultFile,fileName);
+      parseResultFile(resultFile,fileName, statisticsViewMode, combineOxWithNonOx);
     }
     buildResultHashes();
     for (String className : sortedISNames_.keySet()){
@@ -153,9 +154,9 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
     
   }
   
-  protected void parseResultFile(File resultFile, String fileName) throws ExcelInputFileException, LipidCombinameEncodingException{
+  protected void parseResultFile(File resultFile, String fileName, int statisticsViewMode, boolean combineOxWithNonOx) throws ExcelInputFileException, LipidCombinameEncodingException{
   	if (resultFile.getAbsolutePath().endsWith(".xlsx")){
-    	parseResultFileFastExcel(resultFile, fileName);
+    	parseResultFileFastExcel(resultFile, fileName, statisticsViewMode, combineOxWithNonOx);
     }
   	//for backwards compatibility, in case there are files in the old excel format
   	else if (resultFile.getAbsolutePath().endsWith(".xls")) {
@@ -166,10 +167,10 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
     }
   }
   
-  protected void parseResultFileFastExcel(File resultFile, String fileName) throws ExcelInputFileException, LipidCombinameEncodingException{
-  	try (InputStream is = new FileInputStream(resultFile);
-        ReadableWorkbook wb = new ReadableWorkbook(is);
-        Stream<org.dhatim.fastexcel.reader.Sheet> sheets = wb.getSheets();) 
+  protected void parseResultFileFastExcel(File resultFile, String fileName, int statisticsViewMode, boolean combineOxWithNonOx) throws ExcelInputFileException, LipidCombinameEncodingException{
+    try (InputStream is = new FileInputStream(resultFile);
+      ReadableWorkbook wb = new ReadableWorkbook(is);
+        Stream<org.dhatim.fastexcel.reader.Sheet> sheets = wb.getSheets();)
   	{
       sheets.filter((s) -> (!s.getName().equals(QuantificationResultExporter.SHEET_CONSTANTS)&&
 						                !s.getName().endsWith(QuantificationResultExporter.ADDUCT_OMEGA_SHEET)&&
@@ -182,7 +183,6 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
       throw new ExcelInputFileException(ex);
     }
   }
-  
   //adapted from the original apache poi version
   protected void parseSheet(org.dhatim.fastexcel.reader.Sheet sheet) {
   	Hashtable<String,String> isNames = new Hashtable<String,String>();
@@ -214,6 +214,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
       String rawValue;
       String name = null;
       int dbs = -1;
+      String oxState = "";
       
       for (org.dhatim.fastexcel.reader.Cell cell : cells) {
         index  = cell.getColumnIndex();
@@ -223,6 +224,8 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
           name = rawValue;
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_DBS)) {
           dbs = (int)Float.parseFloat(rawValue);
+        } else if (index == headerTitles.indexOf(LipidomicsConstants.CHAIN_MOD_COLUMN_NAME)) {
+          oxState = rawValue;
         }
       }
       
@@ -239,7 +242,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
           name = (String)components[0];
           doubleBonds = (Integer)components[1];
         }
-        name = StaticUtils.generateLipidNameString(name,doubleBonds,-1);
+        name = StaticUtils.generateLipidNameString(name,doubleBonds,-1, oxState);
         if (isSelectionPrefix_!=null && name.startsWith(isSelectionPrefix_)){
           if (!isNames.containsKey(name)){
             isNames.put(name, name);
@@ -308,6 +311,8 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
     int nameColumn = -1;
     int dbsColumn = -1;
     int modificationColumn = -1;
+    int oxStateColumn = -1;
+    
     for (int rowCount=0;rowCount!=(sheet.getLastRowNum()+1);rowCount++){
       Row row = sheet.getRow(rowCount);
       String name = null;
@@ -326,6 +331,8 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
             dbsColumn = i;
           if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_MODIFICATION))
             modificationColumn = i;
+          if (contents.equalsIgnoreCase(LipidomicsConstants.CHAIN_MOD_COLUMN_NAME))
+          	oxStateColumn = i;
         }
       }else if (nameColumn >-1){
         Cell cell = row.getCell(nameColumn);
@@ -335,26 +342,39 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
         if (cellType==Cell.CELL_TYPE_STRING){
           contents = cell.getStringCellValue();
         }
-        if (contents!=null&&contents.length()>0){
-          Integer doubleBonds = null;
-          if (modificationColumn==-1){
-            Object[] components = ComparativeNameExtractor.splitOldNameStringToComponents(contents);
-            name = (String)components[0];
-            doubleBonds = (Integer)components[1];
-          }else{
-            name = contents;
-            cell = row.getCell(dbsColumn);
-            cellType = -1;
-            Double numeric = null;
-            if (cell!=null) cellType = cell.getCellType();
-            if (cellType==Cell.CELL_TYPE_STRING){
-              try{ numeric = new Double(cell.getStringCellValue());}catch(NumberFormatException nfx){nfx.printStackTrace();};
-            }else if (cellType==Cell.CELL_TYPE_NUMERIC || cellType==Cell.CELL_TYPE_FORMULA){
-             numeric = cell.getNumericCellValue();
-            }
-            doubleBonds = numeric.intValue();
-          }
-          name = StaticUtils.generateLipidNameString(name,doubleBonds,-1);
+          
+          String oxState = "";
+              if (contents!=null&&contents.length()>0){
+                Integer doubleBonds = null;
+                if (modificationColumn==-1){
+                  Object[] components = ComparativeNameExtractor.splitOldNameStringToComponents(contents);
+                  name = (String)components[0];
+                  doubleBonds = (Integer)components[1];
+                }else{
+                  name = contents;
+                  cell = row.getCell(dbsColumn);
+                  cellType = -1;
+                  Double numeric = null;
+                  if (cell!=null) cellType = cell.getCellType();
+                  if (cellType==Cell.CELL_TYPE_STRING){
+                    try{ numeric = new Double(cell.getStringCellValue());}catch(NumberFormatException nfx){nfx.printStackTrace();};
+                  }else if (cellType==Cell.CELL_TYPE_NUMERIC || cellType==Cell.CELL_TYPE_FORMULA){
+                   numeric = cell.getNumericCellValue();
+                  }
+                  doubleBonds = numeric.intValue();
+                  
+                  //read also the LipidomicsConstants.CHAIN_MOD_COLUMN_NAME if the column exists
+                  if(oxStateColumn >-1)
+                  {
+                	  cell = row.getCell(oxStateColumn);
+                      if (cell!=null) cellType = cell.getCellType();
+                      if (cellType==Cell.CELL_TYPE_STRING){
+                        oxState = cell.getStringCellValue();
+                  }
+
+                }
+               }
+          name = StaticUtils.generateLipidNameString(name,doubleBonds,-1, oxState);
           if (isSelectionPrefix_!=null && name.startsWith(isSelectionPrefix_)){
             if (!isNames.containsKey(name)){
               isNames.put(name, name);

@@ -165,7 +165,7 @@ public class SingleQuantThread extends Thread
       } else if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_PRM){
         //TODO: the MS-level is here always set to 2
         isotopicProbes = analyzer.processPrmData((float)quantSet.getAnalyteMass(),quantSet.getCharge(),2,quantSet.getAnalyteClass(),
-            quantSet.getModName(), StaticUtils.generateLipidNameString(quantSet.getAnalyteName(), quantSet.getDbs(), -1),quantSet.getAnalyteFormula(),quantSet.getOhNumber());
+            quantSet.getModName(), StaticUtils.generateLipidNameString(quantSet.getAnalyteName(), quantSet.getDbs(),-1,quantSet.getOxState()),quantSet.getAnalyteFormula(),quantSet.getOhNumber(),quantSet.getOxState());
 //        for (Integer hitNumber : isotopicProbes.keySet()){
 //          for (Integer isoNr: isotopicProbes.get(hitNumber).keySet()){
 //            for (CgProbe probe : isotopicProbes.get(hitNumber).get(isoNr)){
@@ -352,6 +352,7 @@ public class SingleQuantThread extends Thread
         }
         for (QuantVO quant : isobarHitsOfOneSpecies.keySet()){
           LipidParameterSet set = isobarHitsOfOneSpecies.get(quant);
+          set.setOxState(quant.getOxState());
           Hashtable<String,LipidParameterSet> hitsOfOneMod = new Hashtable<String,LipidParameterSet>();
           if (hitsAccordingToQuant.containsKey(quant)) hitsOfOneMod = hitsAccordingToQuant.get(quant);
           String rt = "";

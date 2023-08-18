@@ -40,6 +40,8 @@ import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.QuantificationThread;
@@ -168,7 +170,6 @@ public class QuantificationResultExporter
   /** total area of all isotopes of one analyte, calculated in writeEvidenceMS1 */
   private static double totalArea_;
   
-  
   /**
    * Write a QuantificationResult to an Excel file
    * @param filePath the path to write the Excel file to
@@ -176,6 +177,203 @@ public class QuantificationResultExporter
    * @throws ExportException
    */
   public static void writeResultsToExcel(String filePath, QuantificationResult quantRes) throws ExportException {
+	  writeResultsToExcel(filePath, quantRes, null);
+  }
+  
+  /**
+   * Write a QuantificationResult to an Excel file
+   * @param filePath the path to write the Excel file to
+   * @param quantRes the QuantificationResult to write out
+   * @param bestMatchBySpectrumCoverage lipid classes for which the best matches should be picked by spectrum coverage
+   * @throws ExportException
+   */
+  public static void writeResultsToExcel(String filePath, QuantificationResult quantRes, Hashtable<String,Boolean> bestMatchBySpectrumCoverage) throws ExportException {
+	  
+		
+		//remove oxLipids also identified as conventional lipids
+		  ArrayList<LipidParameterSet> removeElements = new ArrayList<LipidParameterSet>();
+		  for (String key : quantRes.getIdentifications().keySet()){
+		  	if (key.contains("ox")) {
+		  		for (LipidParameterSet param1 : quantRes.getIdentifications().get(key)) {
+		  			boolean remove = false;
+		  			if(param1 instanceof LipidomicsMSnSet) {
+		  				LipidomicsMSnSet msn_param1 = (LipidomicsMSnSet) param1;
+		  				for (int msnp1 : msn_param1.getMsnRetentionTimes().get(2).keySet()) {
+		  					for (String key2 : quantRes.getIdentifications().keySet()){
+		  						if (!key2.contains("ox")) {
+		  							for (LipidParameterSet param2 : quantRes.getIdentifications().get(key2)) {
+		  								if(param2 instanceof LipidomicsMSnSet) {
+		  									LipidomicsMSnSet msn_param2 = (LipidomicsMSnSet) param2;
+		  									for (int msnp2 : msn_param2.getMsnRetentionTimes().get(2).keySet()) {				
+		  										//&& msn_param1.getMsnRetentionTimes().get(2).get(msnp1) == msn_param2.getMsnRetentionTimes().get(2).get(msnp2)
+		  										if(msnp1==msnp2 ) {
+		  											String h1 = msn_param1.getNamePlusModHumanReadable();
+		  											String h2 = msn_param2.getNamePlusModHumanReadable();
+		  											String mz1 = Float.toString(msn_param1.Mz[0]);
+		  											String mz2 = Float.toString(msn_param2.Mz[0]);
+		  											remove = true;
+		  											//System.out.println(h1 + " " + mz1 + " :: " + h2 + " " + mz2);
+		  										}
+		  									}
+		  								}
+		  							}
+		  						}
+		  						
+		  					}
+		  				}
+		  				
+		  				if (remove) {
+		  					removeElements.add(param1);
+		  				}
+		  				
+		  			}
+		  		}
+		  		for(LipidParameterSet element:removeElements) {
+		  			quantRes.getIdentifications().get(key).remove(element);
+		  		}
+		  	}
+		  }
+		  
+
+		  //version2
+		  Hashtable<Integer, Vector<Pair<String, Integer>>> duplicates = new Hashtable<Integer, Vector<Pair<String, Integer>>>();  
+		  for (String lipidClass : quantRes.getIdentifications().keySet()){
+			  if (bestMatchBySpectrumCoverage != null) {
+		  		if (bestMatchBySpectrumCoverage.containsKey(lipidClass) && bestMatchBySpectrumCoverage.get(lipidClass) == true) {
+		  	
+		  		for (int index = 0; index < quantRes.getIdentifications().get(lipidClass).size()-1; index++) {
+		  		//for (LipidParameterSet lms : quantRes.getIdentifications().get(lipidClass)) {
+		  			
+		  			LipidParameterSet lms = quantRes.getIdentifications().get(lipidClass).get(index);
+		  			if (!(lms instanceof LipidomicsMSnSet)){
+		  				continue;
+		  			}
+		  			
+		  			LipidomicsMSnSet lmn = (LipidomicsMSnSet)lms;
+		  		
+		  			for (int key : lmn.getMsnRetentionTimes().keySet()) {
+		  				LinkedHashMap<Integer, Float> scan_rt_pair = lmn.getMsnRetentionTimes().get(key);
+		  				for (int key2 : scan_rt_pair.keySet()) {
+		  					//System.out.println(key2);
+		  					
+		  					Vector<Pair<String, Integer>> vlps;
+		  					if (duplicates.containsKey(key2)) {
+		  						vlps = duplicates.get(key2);
+		  						vlps.add(new Pair<>(lipidClass, index));
+		  					}
+		  					else {
+		  						vlps = new Vector<Pair<String, Integer>>();
+		  						vlps.add(new Pair<>(lipidClass, index));
+		  					}
+		  					
+		  					duplicates.put(key2, vlps);
+		  				}
+		  				
+		  			}
+		  		}
+		  		}
+		  }
+		  	}
+		//
+		//
+		//
+		  //pick best match from duplicates drop others
+		  for (int key : duplicates.keySet()) {
+		  	Vector<Pair<String, Integer>> vlps = duplicates.get(key);
+		  	if (vlps.size()>1) {
+		  		float minDiff = 100;
+		  		float maxCoverage = 0;
+		  		float minMods = 0;
+		  		String bestOut = "";
+		  		String out = "";
+		  		LipidomicsMSnSet bestMatch = null;
+		  		
+		  		//find best match
+		  		for (Pair<String, Integer> pair: vlps) {
+		  			LipidomicsMSnSet lps = (LipidomicsMSnSet)quantRes.getIdentifications().get(pair.getKey()).get(pair.getValue());
+		  			float theoMz = lps.Mz[0];
+		  			float evMz = lps.getIsotopicProbes().get(0).get(0).Mz;
+		  			float diff = Math.abs(theoMz-evMz);
+		  			float coverage = lps.getCoverage();
+		  			
+		  			//figure out total number of modifications
+		  			int mods = 0;
+		  			String oxState = lps.getOxState();
+		  			
+		  			if(!oxState.equals("")) {
+		  				Pattern p = Pattern.compile("(\\d+)");
+			  	        Matcher m = p.matcher(oxState);
+			  	        
+			  	        if(m.find()) {
+			  	        	mods =+ Integer.parseInt(m.group());
+			  	        	while(m.find()) {
+				  	            mods =+ Integer.parseInt(m.group());
+				  	        }
+			  	        }
+			  	        else {
+			  	        	mods =+1 ;
+			  	        }
+			  	        
+		  			}
+		  			
+		  	        
+		  	        out = pair.getKey() + " "+ lps.getNamePlusModHumanReadable() + " theo: " + theoMz + " ev: " + evMz + " diff: " + diff + " coverage: " + coverage;
+		  		    
+		  	        if (coverage>maxCoverage) {
+		  	        	maxCoverage = coverage;
+		  	        	bestMatch = lps;
+		  	        	minDiff = diff;
+		  	        	minMods = mods;
+		  	        	bestOut = out;
+		  	        }
+		  	        else if(coverage==maxCoverage && mods==minMods) {
+		  	        	if(diff<minDiff) {
+		  	        		bestMatch = lps;
+		  	        		minDiff = diff;
+		  	        		bestOut = out;
+		  	        	}
+		  	        }
+		  	        else if(coverage==maxCoverage) {
+		  	        	if(mods<minMods) {
+		  	        		bestMatch = lps;
+		  	        		minMods = mods;
+		  	        		minDiff = diff;
+		  	        		bestOut = out;
+		  	        	}
+		  	        }
+		  	
+		  			
+		  			System.out.println(out);
+		  		}
+		  		System.out.println("Best " + bestOut);
+		  		
+		  		//remove all other matches
+		  		for (Pair<String, Integer> pair: vlps) {
+		  			LipidomicsMSnSet lps = (LipidomicsMSnSet)quantRes.getIdentifications().get(pair.getKey()).get(pair.getValue());
+		  			if (lps!=bestMatch) {
+		  				Hashtable<Integer, LinkedHashMap<Integer, Float>> scans = lps.getMsnRetentionTimes();
+		  				scans.get(2).remove(key);
+		  				lps.setMsnRetentionTimes(scans);
+		  				
+		  				if(lps.getMsnRetentionTimes().get(2).isEmpty())
+		  				{
+		  					lps = null;
+		  				}
+		  				
+		  				//new
+		  				//lps = null;
+		  				
+		  				quantRes.getIdentifications().get(pair.getKey()).set(pair.getValue(),lps);
+		  			}
+		  			
+		  		}
+		  		
+		  		System.out.println("");
+		  	}
+		  		 
+		  } 
+		  
+	  
     try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(filePath));) {
       String s = Settings.VERSION;
       //the constructor can only take a version number in the format xx.yyyy
@@ -234,9 +432,12 @@ public class QuantificationResultExporter
 //        int omegaRowCount = HEADER_ROW+1; 
         
         for (LipidParameterSet param : params){
-          ms1RowCount = writeEvidenceMS1(ms1RowCount, resultCount, resultSheet, param, mS1HeaderTitles);
-          
-          if (param instanceof LipidomicsMSnSet){
+        	if (param==null)
+        		continue;
+       	
+        	ms1RowCount = writeEvidenceMS1(ms1RowCount, resultCount, resultSheet, param, mS1HeaderTitles);
+
+        	if (param instanceof LipidomicsMSnSet){
             try {
               msnRowCount = writeEvidenceMSn(msnRowCount,resultSheetMSn,(LipidomicsMSnSet)param,
                   quantRes.getFaHydroxyEncoding(),quantRes.getLcbHydroxyEncoding());
@@ -274,6 +475,9 @@ public class QuantificationResultExporter
     hasOmegaInformation_ = false;
     hasOhInformation_ = false;
     for (LipidParameterSet param : params){
+    	if (param==null){
+      		continue;
+      	}
       int maxIso = param.getIsotopicProbes().size();
       if (maxIso>amountOfIsotopes_) amountOfIsotopes_ = maxIso;
       if (param instanceof LipidomicsMSnSet) { hasMSnInformation_ = true;}
@@ -377,6 +581,7 @@ public class QuantificationResultExporter
     headerTitles.add(HEADER_LOWER_MZ50PC);
     headerTitles.add(HEADER_UPPER_MZ50PC);
     headerTitles.add(HEADER_UPPER_MZ10PC);
+    headerTitles.add(LipidomicsConstants.CHAIN_MOD_COLUMN_NAME);
     /** keep in header row for backward compatibility with older result files */
     headerTitles.add(String.format("%s%s", HEADER_MS_LEVEL, String.valueOf(msLevel)));
     
@@ -559,6 +764,10 @@ public class QuantificationResultExporter
     if (param.getPercentalSplit()>=0){
       ws.value(rowFirst, headerTitles.indexOf(HEADER_PERCENTAL_SPLIT), param.getPercentalSplit());
     }
+    
+    if (param.getOxState() != null && !param.getOxState().isEmpty())
+    	ws.value(rowFirst,  headerTitles.indexOf(LipidomicsConstants.CHAIN_MOD_COLUMN_NAME), param.getOxState());
+    
     return row++;
   }
   
@@ -725,21 +934,29 @@ public class QuantificationResultExporter
 //    }
     String identificationString;
     Vector<Object> detected = param.getMSnIdentificationNames();
+    Vector<String> newNomenclature = param.getMSnIdentificationNamesWithSNPositions();
+    int nameCount = 0;
     for (Object nameObject : detected){
       identificationString = "";
       double area = 0d;
       if (nameObject instanceof Vector){
         area = param.getRelativeIntensity(((Vector<String>)nameObject).get(0))*((double)param.Area);
-        for (String name : (Vector<String>)nameObject){
-          identificationString+=name+LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS;
-        }
-        identificationString = identificationString.substring(0,identificationString.length()-1);
+      // LL         for (String name : (Vector<String>)nameObject){ //
+      // LL   identificationString+=name+LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS_OLD; //
+      // LL  }
+      // LL  identificationString = identificationString.substring(0,identificationString.length()-1); //
+        
+        identificationString = newNomenclature.get(nameCount);
+        nameCount++;
       }else{
+    	    
         String name = (String) nameObject;
-        identificationString = name;
+      // LL  identificationString = name;
+        identificationString = newNomenclature.get(nameCount);
+        nameCount++;
         if (param.getStatus()==LipidomicsMSnSet.HEAD_GROUP_DETECTED) area = (double)param.Area;
         else area = param.getRelativeIntensity(name)*((double)param.Area);
-      }
+     }
       
       /** write double bond position assignment if available */
 //      if (assignedDoubleBondPositionVOs != null) {

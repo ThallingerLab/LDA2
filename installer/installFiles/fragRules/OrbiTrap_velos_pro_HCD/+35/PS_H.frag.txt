@@ -1,0 +1,14 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.02%
+ChainCutoff=60%
+
+[HEAD]
+!FRAGMENTS
+Name=NL_PShead_185	Formula=$PRECURSOR-C3H8NO6P	Charge=1	MSLevel=2	mandatory=true
+
+!INTENSITIES
+Equation=NL_PShead_185>0.05*$BASEPEAK			mandatory=true

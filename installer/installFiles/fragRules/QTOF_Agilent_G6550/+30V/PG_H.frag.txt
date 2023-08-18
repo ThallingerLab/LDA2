@@ -1,0 +1,16 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.1%
+SpectrumCoverage=10%
+RetentionTimePostprocessing=true
+
+
+[HEAD]
+!FRAGMENTS
+Name=NL_H2O		Formula=$PRECURSOR-H2O		Charge=1	MSLevel=2	mandatory=false
+Name=NL_PGhead_172	Formula=$PRECURSOR-C3H9O6P	Charge=1	MSLevel=2	mandatory=true
+
+

@@ -1,4 +1,6 @@
 /classes/
 /toInstall/
 *.bak
-/test-output/
+
+# Eclipse Core
+.project

@@ -64,7 +64,7 @@ public class FattyAcidsContainer
    * fourth key: amount of double bonds of key
    * fifth key: prefix
    */
-  private Hashtable<String,Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>> fattyAcids_;
+  private Hashtable<String,Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>>> fattyAcids_;
   
   /**
    * the available isotopic labels
@@ -79,7 +79,7 @@ public class FattyAcidsContainer
    * fourth key: amount of double bonds of key
    * fifth key: prefix
    */  
-  private Hashtable<String,Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>> lcbs_;
+  private Hashtable<String,Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>>> lcbs_;
 
   
   /**
@@ -90,8 +90,8 @@ public class FattyAcidsContainer
    */
   private FattyAcidsContainer(String faDir) throws RulesException, IOException {
     faDir_ = faDir;
-    fattyAcids_ = new Hashtable<String,Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>>();
-    lcbs_ = new Hashtable<String,Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>>();
+    fattyAcids_ = new Hashtable<String,Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>>>();
+    lcbs_ = new Hashtable<String,Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>>>();
     availableLabels_ = new Hashtable<String,Set<String>>();
     extractChains();
   }
@@ -144,7 +144,7 @@ public class FattyAcidsContainer
    * @throws NoRuleException thrown if the library is not there
    * @throws IOException exception if there is something wrong about the file
    */
-  public static Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> getAllFattyAcidChains(String faLibName) throws RulesException, NoRuleException, IOException {
+  public static Hashtable<String, Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>>> getAllFattyAcidChains(String faLibName) throws RulesException, NoRuleException, IOException {
     return getAllFattyAcidChains(faLibName, faDir_);
   }
 
@@ -158,7 +158,7 @@ public class FattyAcidsContainer
    * @throws NoRuleException thrown if the library is not there
    * @throws IOException exception if there is something wrong about the file
    */
-  public static Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> getAllFattyAcidChains(String faLibName, String faLibDir) throws RulesException, NoRuleException, IOException {
+  public static Hashtable<String, Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>>> getAllFattyAcidChains(String faLibName, String faLibDir) throws RulesException, NoRuleException, IOException {
     checkIfFALibExists(faLibName,faLibDir);
     return instance_.fattyAcids_.get(faLibName);
   }
@@ -203,7 +203,7 @@ public class FattyAcidsContainer
    * @throws NoRuleException thrown if the library is not there
    * @throws IOException exception if there is something wrong about the file
    */
-  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getFattyAcidChains(String faLibName, String encoded)
+  public static Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> getFattyAcidChains(String faLibName, String encoded)
       throws HydroxylationEncodingException, RulesException, NoRuleException, IOException {
     return getFattyAcidChains(faLibName, faDir_, encoded);
   }
@@ -220,7 +220,7 @@ public class FattyAcidsContainer
    * @throws NoRuleException thrown if the library is not there
    * @throws IOException exception if there is something wrong about the file
    */
-  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getFattyAcidChains(String faLibName, String faLibDir, String encoded)
+  public static Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> getFattyAcidChains(String faLibName, String faLibDir, String encoded)
       throws HydroxylationEncodingException, RulesException, NoRuleException, IOException {
     checkIfFALibExists(faLibName, faLibDir);
     if (!instance_.fattyAcids_.get(faLibName).containsKey(encoded))
@@ -239,7 +239,7 @@ public class FattyAcidsContainer
    * @throws NoRuleException thrown if the library is not there
    * @throws IOException exception if there is something wrong about the file
    */
-  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getFattyAcidChains(String faLibName, short hydroxyNr)
+  public static Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> getFattyAcidChains(String faLibName, short hydroxyNr)
       throws HydroxylationEncodingException, RulesException, NoRuleException, IOException {
     return getFattyAcidChains(faLibName, faDir_, hydroxyNr);
   }
@@ -255,7 +255,7 @@ public class FattyAcidsContainer
    * @throws NoRuleException thrown if the library is not there
    * @throws IOException exception if there is something wrong about the file
    */
-  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getFattyAcidChains(String faLibName, String faLibDir, short hydroxyNr)
+  public static Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> getFattyAcidChains(String faLibName, String faLibDir, short hydroxyNr)
       throws HydroxylationEncodingException, RulesException, NoRuleException, IOException {
     String encoding = Settings.getFaHydroxyEncoding().getEncodedPrefix(hydroxyNr);
     try {
@@ -274,7 +274,7 @@ public class FattyAcidsContainer
    * @throws NoRuleException thrown if the library is not there
    * @throws IOException exception if there is something wrong about the file
    */
-  public static Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> getAllLCBs(String lcbLibName) throws RulesException, NoRuleException, IOException {
+  public static Hashtable<String, Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>>> getAllLCBs(String lcbLibName) throws RulesException, NoRuleException, IOException {
     return getAllLCBs(lcbLibName, faDir_);
   }
 
@@ -288,7 +288,7 @@ public class FattyAcidsContainer
    * @throws NoRuleException thrown if the library is not there
    * @throws IOException exception if there is something wrong about the file
    */
-  public static Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> getAllLCBs(String lcbLibName, String lcbLibDir) throws RulesException, NoRuleException, IOException {
+  public static Hashtable<String, Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>>> getAllLCBs(String lcbLibName, String lcbLibDir) throws RulesException, NoRuleException, IOException {
     checkIfFALibExists(lcbLibName,lcbLibDir);
     return instance_.lcbs_.get(lcbLibName);
   }
@@ -305,7 +305,7 @@ public class FattyAcidsContainer
    * @throws NoRuleException thrown if the library is not there
    * @throws IOException exception if there is something wrong about the file
    */
-  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getLCBs(String lcbLibName, String encoded)
+  public static Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> getLCBs(String lcbLibName, String encoded)
       throws HydroxylationEncodingException, RulesException, NoRuleException, IOException {
     return getLCBs(lcbLibName, faDir_, encoded);
   }
@@ -322,7 +322,7 @@ public class FattyAcidsContainer
    * @throws NoRuleException thrown if the library is not there
    * @throws IOException exception if there is something wrong about the file
    */
-  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getLCBs(String lcbLibName, String lcbLibDir, String encoded)
+  public static Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> getLCBs(String lcbLibName, String lcbLibDir, String encoded)
       throws HydroxylationEncodingException, RulesException, NoRuleException, IOException {
     checkIfFALibExists(lcbLibName, lcbLibDir);
     if (!instance_.lcbs_.get(lcbLibName).containsKey(encoded))
@@ -342,7 +342,7 @@ public class FattyAcidsContainer
    * @throws NoRuleException thrown if the library is not there
    * @throws IOException exception if there is something wrong about the file
    */
-  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getLCBs(String lcbLibName, short hydroxyNr)
+  public static Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> getLCBs(String lcbLibName, short hydroxyNr)
       throws HydroxylationEncodingException, RulesException, NoRuleException, IOException {
     return getLCBs(lcbLibName, faDir_, hydroxyNr);
   }
@@ -358,7 +358,7 @@ public class FattyAcidsContainer
    * @throws NoRuleException thrown if the library is not there
    * @throws IOException exception if there is something wrong about the file
    */
-  public static Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> getLCBs(String lcbLibName, String lcbLibDir, short hydroxyNr)
+  public static Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> getLCBs(String lcbLibName, String lcbLibDir, short hydroxyNr)
       throws HydroxylationEncodingException, RulesException, NoRuleException, IOException {
     String encoding = Settings.getLcbHydroxyEncoding().getEncodedPrefix(hydroxyNr);
     try {

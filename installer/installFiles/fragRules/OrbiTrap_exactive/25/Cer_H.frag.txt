@@ -1,0 +1,62 @@
+[GENERAL]
+AmountOfChains=2
+AmountOfLCBs=1
+ChainLibrary=fattyAcidChains.xlsx
+LCBLibrary=dLCB.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+SpectrumCoverage=5%
+BasePeakCutoff=0.2%
+ChainCutoff=30%
+ChainFragmentAbsoluteThreshold=120
+FaHydroxylationRange=0-1
+LcbHydroxylationRange=1-3
+RetentionTimePostprocessing=true
+SingleChainIdentification=true
+IsobarSCExclusionRatio=0.2
+
+
+
+[HEAD]
+!FRAGMENTS
+Name=NL_H2O		Formula=$PRECURSOR-H2O		Charge=1	MSLevel=2	mandatory=true
+Name=NL_2xH2O_36	Formula=$PRECURSOR-H4O2		Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=NL_H2O>$BASEPEAK*0.3		mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=LCB-Ion		Formula=$LCB+H				Charge=1	MSLevel=2	mandatory=true		oh=1
+Name=LCB-H2O		Formula=$LCB-HO				Charge=1	MSLevel=2	mandatory=false		oh=1=class,2,3=true
+Name=LCB-2H2O		Formula=$LCB-H3O2			Charge=1	MSLevel=2	mandatory=true		oh=2=class,3=class
+Name=LCB-3H2O		Formula=$LCB-H5O3			Charge=1	MSLevel=2	mandatory=false		oh=3
+Name=LCB-CH5O3		Formula=$LCB-CH5O3			Charge=1	MSLevel=2	mandatory=false		oh=3
+Name=LCB-C1H2O		Formula=$LCB-C1H3O2			Charge=1	MSLevel=2	mandatory=false		oh=2,3
+Name=NL_LCB		Formula=$PRECURSOR-$LCB			Charge=1	MSLevel=2	mandatory=false		oh=1
+Name=NL_LCB+H2O		Formula=$PRECURSOR-$LCB+H2O		Charge=1	MSLevel=2	mandatory=false		oh=1
+Name=LCB-mono_WRONG	Formula=LCB-H2O-C			Charge=1	MSLevel=2	mandatory=other		oh=1
+Name=LCB-tri_WRONG	Formula=$LCB+H				Charge=1	MSLevel=2	mandatory=other		oh=2
+
+!INTENSITIES
+Equation=LCB-mono_WRONG<0.02*LCB-H2O		mandatory=true	oh=1
+Equation=LCB-H2O*1.5>LCB-Ion			mandatory=true	oh=1
+Equation=LCB-H2O>0.1*NL_H2O			mandatory=true	oh=1
+Equation=LCB-H2O>$BASEPEAK*0.25			mandatory=true	oh=1
+Equation=NL_H2O<LCB-H2O*0.05			mandatory=true	oh=1
+Equation=LCB-2H2O+LCB-H2O>LCB-C1H2O		mandatory=true	oh=2
+Equation=LCB-2H2O*7>LCB-H2O			mandatory=true	oh=2
+Equation=LCB-tri_WRONG*0.8<NL_H2O		mandatory=true	oh=2
+Equation=LCB-H2O*2>LCB-tri_WRONG		mandatory=true	oh=2
+Equation=LCB-2H2O+LCB-H2O*0.5>$BASEPEAK*0.15	mandatory=true	oh=2
+Equation=LCB-2H2O+LCB-H2O*0.5>NL_H2O*0.15	mandatory=true	oh=2
+Equation=LCB-2H2O*2>LCB-3H2O			mandatory=true	oh=3
+Equation=LCB-2H2O<NL_H2O*1.2			mandatory=true	oh=2
+Equation=LCB-2H2O<NL_H2O*4			mandatory=true	oh=3
+
+
+[POSITION]
+!INTENSITIES
+Equation=LCB-2H2O[1]>0*$BASEPEAK	mandatory=true
+Equation=LCB-H2O[1]>0*$BASEPEAK		mandatory=true

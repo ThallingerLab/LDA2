@@ -53,7 +53,7 @@ import at.tugraz.genome.lda.swing.RuleDefinitionInterface;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
-
+import at.tugraz.genome.lda.xml.ModConfigParser;
 /**
  * 
  * @author Juergen Hartler
@@ -64,8 +64,8 @@ public class Settings
 {
   private static Settings instance_ = null;
 
-  public final static String VERSION = "2.8.3_5";
-  
+  public final static String VERSION = "2.9.0";
+
   public final static String SETTINGS_FILE = ".settings";
   
   /** property label for making empty entries when an analyte cannot by found by "Quant. anal. at not found" and "Take exact peak for others"*/
@@ -78,7 +78,9 @@ public class Settings
   private static String massWolfPath_;
   private static String massPlusPlusPath_;
   private static String elementConfigPath_;
+  private static String modConfigPath_;
   private static ElementConfigParser elementParser_;
+  private static ModConfigParser modParser_;
   private static String alexIsotopeLookup_;
   private static boolean overviewExcelWorkbook_;
   private static boolean overviewExcelMass_;
@@ -97,7 +99,6 @@ public class Settings
   private static boolean emptyEntriesForQuantAnalNotFound_;
   /** the peak selection type for the omega export"*/
   private static short omegaExportPeakSelection_;
-
    
   /** the lookup of isotopes from the Alex format to the LDA format*/
   private static Hashtable<String,String> alexIsoLookup_ = new Hashtable<String,String>();
@@ -186,7 +187,11 @@ public class Settings
         e.printStackTrace();
         new WarningMessage(new JFrame(), "Error", "There is something wrong with the elementconfig.xml: "+e.getMessage());
       }
-
+      
+      modConfigPath_ = properties.getProperty("ModConfig", null);
+      modParser_ = new ModConfigParser(modConfigPath_);
+      modParser_.parse();
+      
       alexIsotopeLookup_ = properties.getProperty("AlexIsotopeLookup", "alex123_isotopeLookup.txt");
       String overviewExcelString = properties.getProperty("OverviewExcelWorkbook", null);
       if (overviewExcelString!=null&&(overviewExcelString.equalsIgnoreCase("true")||overviewExcelString.equalsIgnoreCase("yes"))){
@@ -360,6 +365,11 @@ public class Settings
     Settings.getInstance();
     return Settings.elementParser_;
   }
+  
+  public static ModConfigParser getModParser(){
+	    Settings.getInstance();
+	    return Settings.modParser_;
+	  }
   
   public static String getAlexIsotopeLookup(){
     Settings.getInstance();

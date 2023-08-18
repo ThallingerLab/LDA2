@@ -34,6 +34,7 @@ import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.exception.LMException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
@@ -969,10 +970,10 @@ public class PostQuantificationProcessor
     Hashtable<Integer,RangeInteger> dbsRanges = new Hashtable<Integer,RangeInteger>();
 
     for (String analyteName : input.keySet()){
-      Matcher cAtomsMatcher = cAtomsPattern.matcher(analyteName);
+      Matcher cAtomsMatcher = cAtomsPattern.matcher(analyteName.split(LipidomicsConstants.CHAIN_MOD_SEPARATOR)[0]);
       if (!cAtomsMatcher.matches()) throw new RulesException("The analyte "+analyteName+" does not match the "+FragRuleParser.GENERAL_CATOMS_PARSE+" pattern \""+RulesContainer.getCAtomsFromNamePattern(ruleName)+"\" of the class "+ruleName+"!");
       int cAtoms = Integer.parseInt(cAtomsMatcher.group(1));
-      Matcher dbsMatcher = dbsPattern.matcher(analyteName);
+      Matcher dbsMatcher = dbsPattern.matcher(analyteName.split(LipidomicsConstants.CHAIN_MOD_SEPARATOR)[0]);
       if (!dbsMatcher.matches()) throw new RulesException("The analyte "+analyteName+" does not match the "+FragRuleParser.GENERAL_DBOND_PARSE+" pattern \""+RulesContainer.getDoubleBondsFromNamePattern(ruleName)+"\" of the class "+ruleName+"!");
       int dbs = Integer.parseInt(dbsMatcher.group(1));
       if (cAtoms<cAtomsRange.getStart()) cAtomsRange = new RangeInteger(cAtoms,cAtomsRange.getStop());

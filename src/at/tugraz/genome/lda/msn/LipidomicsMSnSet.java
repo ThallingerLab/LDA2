@@ -101,6 +101,8 @@ public class LipidomicsMSnSet extends LipidParameterSet
   
   /** lookup table from human readable lipid molecular species names to the ones used in the hash tables*/
   private LinkedHashMap<String,String> nameLookupHumReadableToPositionInsensitve_;
+  /** lookup table from human readable lipid molecular species names to the ones used in the hash tables for new nomenclature*/
+  private LinkedHashMap<String,String> nameLookupPositionSnNomenclature_;
   /** lookup table from human readable lipid molecular species names to the ones used in the hash tables*/
   private LinkedHashMap<String,String> nameLookupPositionInsensitve_;
   /** lipid molecular species identifications where an ambiguous position assignment was made*/
@@ -189,7 +191,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
     }
     numberOfPositions_ = numberOfPositions;
     basePeakValues_ = new  Hashtable<Integer,Float>(basePeakValues);
-    msnRetentionTimes_ = msnRetentionTimes;
+    setMsnRetentionTimes(msnRetentionTimes);
   }
   
   
@@ -224,6 +226,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
         positionEvidence, numberOfPositions, basePeakValues, msnRetentionTimes);
     //generate the human readable lookup and the combination relative areas;
     nameLookupHumReadableToPositionInsensitve_ = new LinkedHashMap<String,String>();
+    nameLookupPositionSnNomenclature_ = new LinkedHashMap<String,String>();
     nameLookupPositionInsensitve_ = new LinkedHashMap<String,String>();
     ambiguousPositionIdentifications_ = new Hashtable<String,Vector<String>>();
     chainNameLookupHumanReadable_ = new Hashtable<String,String>();
@@ -232,6 +235,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
     Hashtable<String,Integer> faChainOccurrences = new Hashtable<String,Integer>();
     if (status_==NO_MSN_PRESENT || status_==HEAD_GROUP_DETECTED){
       nameLookupHumReadableToPositionInsensitve_.put(getNameStringWithoutRt(),getNameStringWithoutRt());
+      nameLookupPositionSnNomenclature_.put(getNameStringWithoutRt(), getNameStringWithoutRt());
     } else if (status_==FRAGMENTS_DETECTED || status_==POSITION_DETECTED){
       for (String combiName : validChainCombinations_){
         //this part is for calculating the relative intensities
@@ -264,14 +268,26 @@ public class LipidomicsMSnSet extends LipidParameterSet
         nameLookupPositionInsensitve_.put(combiName, StaticUtils.getHumanReadableCombiName(combiName,faEncoding,lcbEncoding));
         if (status_==POSITION_DETECTED && positionDefinition_.containsKey(combiName)){
           Vector<String> posNames = getPositionSpecificCombiNames(combiName,positionDefinition_.get(combiName),faEncoding,lcbEncoding);
-          if (posNames.size()==1) nameLookupHumReadableToPositionInsensitve_.put(posNames.get(0),combiName);
+          Vector<String> snPosNames = getPositionSpecificCombiName(combiName,positionDefinition_.get(combiName),faEncoding,lcbEncoding);
+          if (posNames.size()==1){
+        	  nameLookupHumReadableToPositionInsensitve_.put(posNames.get(0),combiName);
+        	  nameLookupPositionSnNomenclature_.put(snPosNames.get(0),combiName);
+          }
           else {
             ambiguousPositionIdentifications_.put(combiName, posNames);
             for (String ambigName : posNames)
               nameLookupHumReadableToPositionInsensitve_.put(ambigName,combiName);
           }
+          nameLookupPositionSnNomenclature_.put(snPosNames.get(0),combiName);
+          /*if (posNames.size()==1) nameLookupHumReadableToPositionInsensitve_.put(posNames.get(0),combiName);
+          else {
+            ambiguousPositionIdentifications_.put(combiName, posNames);
+            for (String ambigName : posNames)
+              nameLookupHumReadableToPositionInsensitve_.put(ambigName,combiName);
+          }*/
         }else{
           nameLookupHumReadableToPositionInsensitve_.put(StaticUtils.getHumanReadableCombiName(combiName,faEncoding,lcbEncoding),combiName);
+          nameLookupPositionSnNomenclature_.put(StaticUtils.getHumanReadableCombiName(combiName,faEncoding,lcbEncoding),combiName);
         }
         //this part is for calculatating the relative intensities
         Vector<FattyAcidVO> chains = StaticUtils.decodeLipidNamesFromChainCombi(combiName);
@@ -292,8 +308,9 @@ public class LipidomicsMSnSet extends LipidParameterSet
   public LipidomicsMSnSet(LipidomicsMSnSet set) throws LipidCombinameEncodingException{
     this(set,set.status_,set.mzTolerance_,set.headGroupFragments_,set.headIntensityRules_,set.chainFragments_,set.chainIntensityRules_,
         set.validChainCombinations_,set.relativeIntensityOfCombination_,set.positionDefinition_,set.positionEvidence_,set.numberOfPositions_,set.basePeakValues_,
-        set.msnRetentionTimes_);
+        set.getMsnRetentionTimes());
     this.nameLookupHumReadableToPositionInsensitve_ = set.nameLookupHumReadableToPositionInsensitve_;
+    this.nameLookupPositionSnNomenclature_ = set.nameLookupPositionSnNomenclature_;
     this.ambiguousPositionIdentifications_ = set.ambiguousPositionIdentifications_;
     this.nameLookupPositionInsensitve_ = set.nameLookupPositionInsensitve_;
     this.chainNameLookupHumanReadable_ = set.chainNameLookupHumanReadable_;
@@ -375,6 +392,18 @@ public class LipidomicsMSnSet extends LipidParameterSet
   }
   
   /**
+   * @return the lipid names for the identified lipid species based on MSn evidence according to new nomenclature (sn positions in brackets)
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
+   */
+  public Vector<String> getMSnIdentificationNamesWithSNPositions() throws LipidCombinameEncodingException{
+    Vector<String> names = new Vector<String>();
+    for (String humanReadable : nameLookupPositionSnNomenclature_.keySet()) {
+        names.add(humanReadable);
+    }
+    return names;
+  }
+  
+  /**
    * returns the position-inspecific, human readable version of a chain combination
    * @param encoded
    * @return the the position-inspecific, human readable version of a chain combination
@@ -404,6 +433,28 @@ public class LipidomicsMSnSet extends LipidParameterSet
       else definedPositions.put(positions.get(i), StaticUtils.getHumanReadableChainName(chains.get(i),faEncoding, lcbEncoding, hydroxylationSites));
     }
     return getPermutedChainPositionNames(definedPositions, unassignedFAs);
+  }
+  
+  /**
+   * for position evidence, returns the name of the FA combination according to new nomenclature
+   * @param combiName the name of the FA combination without position assignments
+   * @param positions; key: the position of the chain in the combiName; value the true position on the backbone
+   * @param faEncoding the hydroxylation encoding for FA chains
+   * @param lcbEncoding the hydroxylation encoding for LCB chains
+   * @return all the position combinations that are possible with this rules
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
+   */
+  private Vector<String> getPositionSpecificCombiName(String combiName, Hashtable<Integer,Integer> positions,
+      HydroxyEncoding faEncoding, HydroxyEncoding lcbEncoding) throws LipidCombinameEncodingException{
+    Vector<String> unassignedFAs = new Vector<String>();
+    Vector<FattyAcidVO> chains = StaticUtils.decodeLipidNamesFromChainCombi(combiName);
+    boolean hydroxylationSites = StaticUtils.areThereOhInCombi(chains);
+    Hashtable<Integer,String> definedPositions = new Hashtable<Integer,String>();
+    for (int i=0;i!=chains.size();i++){
+      if (!positions.containsKey(i) || positions.get(i)==-1) unassignedFAs.add(StaticUtils.getHumanReadableChainName(chains.get(i), faEncoding, lcbEncoding, hydroxylationSites));
+      else definedPositions.put(positions.get(i), StaticUtils.getHumanReadableChainName(chains.get(i),faEncoding, lcbEncoding, hydroxylationSites));
+    }
+    return getChainPositionNames(definedPositions, unassignedFAs);
   }
   
   /**
@@ -456,6 +507,76 @@ public class LipidomicsMSnSet extends LipidParameterSet
       }
       names.add(name);
     }
+    return names;
+  }
+  
+  /**
+   * returns names according to new nomenclature if only part of the chains could be correctly assigned
+   * @param definedPositions positions where a definite assignment is given
+   * @param unassignedFAs fatty acids where no assignment could be made
+   * @return the lipid names that are possible with these assignments
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
+   */
+  private Vector<String> getChainPositionNames(Hashtable<Integer,String> definedPositions, Vector<String> unassignedFAs) throws LipidCombinameEncodingException{
+    Vector<Hashtable<Integer,String>> possibleCombis = new Vector<Hashtable<Integer,String>>();
+    Hashtable<Integer,String> combiHash = new Hashtable<Integer,String>();
+    Vector<String> names = new Vector<String>();
+    
+    if (unassignedFAs.size()==0){
+      possibleCombis.add(definedPositions);
+      String name = "";
+      for (Hashtable<Integer,String> combi : possibleCombis){
+          
+          for (int i=0;i!=this.numberOfPositions_;i++){
+            if (i!=0) name+= LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS;
+            if (combi.containsKey(i))
+              name += combi.get(i);
+            else
+              name += LipidomicsConstants.NO_FA_LINKED;
+          }
+          names.add(name);
+        }
+    }else{
+      Vector<String> unassigned = new Vector<String>(unassignedFAs);
+      for (int i=(definedPositions.size()+unassignedFAs.size()); i<numberOfPositions_;i++){
+        unassigned.add("-");
+      }
+      
+      int noPositionCount = 0;
+      String chainSeparator = LipidomicsConstants.CHAIN_SEPARATOR_NO_POS;
+      for (int i=0; i!=(definedPositions.size()+unassigned.size());i++){
+          String fa = null;
+          if (definedPositions.containsKey(i)) {
+        	  if(numberOfPositions_ - definedPositions.size() > 1)	// if more than 1 unknown positions (e.g. if 1 position out of 2 positions is known, the other one should also be known
+        		  fa = definedPositions.get(i) + " " + LipidomicsConstants.SN_POSITION_START + (i + 1) + LipidomicsConstants.SN_POSITION_END;
+        	  else {
+        		  fa = definedPositions.get(i);
+        		  chainSeparator = LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS;
+        	  }
+          }
+          else {
+            fa = unassigned.get(noPositionCount);
+            noPositionCount++;
+          }
+          combiHash.put(i, fa);
+      }
+      possibleCombis.add(combiHash);
+      
+      String name = "";
+      for (Hashtable<Integer,String> combi : possibleCombis){
+          
+          for (int i=0;i!=this.numberOfPositions_;i++){
+            if (i!=0) name+= chainSeparator;
+            if (combi.containsKey(i))
+              name += combi.get(i);
+            else
+              name += "-";
+          }
+          names.add(name);
+        }
+    }
+
+
     return names;
   }
   
@@ -672,6 +793,10 @@ public class LipidomicsMSnSet extends LipidParameterSet
   
   public String getCombiIdFromHumanReadable(String humanReadable) {
     return this.nameLookupHumReadableToPositionInsensitve_.get(humanReadable);
+  }
+  
+  public void setMsnRetentionTimes(Hashtable<Integer,LinkedHashMap<Integer,Float>> msnRetentionTimes_) {
+		this.msnRetentionTimes_ = msnRetentionTimes_;
   }
   
   

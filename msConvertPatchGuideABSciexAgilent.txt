@@ -1,0 +1,58 @@
+Guide how to replace AB Sciex/Agilent library files for correcting the license
+----------------------------------------------------------------------
+
+msconvert ist a part of the Proteowizard (pwiz) package.
+msconvert as downloaded, does not translate the write the precursor mass
+in an excat manner. The correct precursor m/z value is of utmost importance
+for MS/MS analysis.
+
+The required steps can be only performed in a Windows 7 operating system.
+The reason is that Thermo libraries are only available under Windows.
+
+The problem is that msconvert comes with dlls that are licensed for Proteo Wizard.
+In order to correct this, follow the steps outlined below.
+
+1) Follow the msConvertPatchGuide.txt until step 4) for 32-bit builds or step 2) for
+   64-bit builds
+
+2) The files that have to be exchanged are contained in the package, in the 7zip file
+   at pwiz_aux/msrc/utility/vendor_api.7z; the problem is that the file is write protected.
+   To extract the required libraries, start the compilation as outlined in step 5) and step 3)
+   for the 64-bit and 32-bit build, respectively. Wait untile the line
+   "Extracting vendor APIs ..." appears.
+   As soon as the next line appears stop the build by pressing Ctrl+c
+
+3) You can find the extracted vendor APIs at pwiz_aux/msrc/utility/vendor_api. Copy this folder
+   to a different location (do not move it, since it contains other stuff as well, that is not
+   contained in the vendor_api.7z).
+
+4) Open the old vendor_api.7z (e.g. with WinRar), and delete in the folder that you copied
+   under 3), all of the files, that are not in in the vendor_api.7z.
+
+5) Replace in vendor_API/ABI/vc10 the DLLs with the ones from ABI. You can find them at
+   \\majestix\Prj-LipidDataAnalyzer\ABSciex\WiffReaderSDK\WiffReaderSDK_beta-Assemblies-Revision1450-2013-07-12-1456.08\Bin
+
+6) Edit vendor_API/ABI/vc10/LicenseKey.h and replace the entries corresponding to the license we received
+   \\majestix\Prj-LipidDataAnalyzer\ABSciex\WiffReaderSDK\UniversityGraz_Beta Agreement_Redistributable_2014-12-11.license
+
+7) Replace in vendor_API/Agilent_vc10_x86 all the files with the ones from Agilent. Attention: do not add any additional files (.tlb or .bat). The files are located at:
+   \\majestix\Prj-LipidDataAnalyzer\Agilent\MHDAC\MHDAC_MIDAC_Package\MHDAC_32bit\bin
+
+8) Replace in vendor_API/Agilent_vc10_x64 all the files with the ones from Agilent. Attention: do not add any additional files (.tlb or .bat). The files are located at:
+   \\majestix\Prj-LipidDataAnalyzer\Agilent\MHDAC\MHDAC_MIDAC_Package\MHDAC_64bit\bin
+
+9) Remove all files in the vendor_api\Waters folder and subdirectories, but do not remove the directories.
+
+10) Remove all files in the vendor_api\Bruker folder and subdirectories, but do not remove the directories.
+
+11) Pack this changed vendor_api folder as vendor_api.7z.
+
+12) Replace the pwiz_aux/msrc/utility/vendor_api.7z with the one you created
+
+13) Clean the build by excuting clean.bat
+
+14) Restart the build as in 1) and follow the remaining instructions of the msConvertPatchGuide.txt
+
+15) While the build is running you can check if the pwiz_aux/msrc/utility/vendor_api/ABI/vc10/LicenseKey.h
+    contains our license
+

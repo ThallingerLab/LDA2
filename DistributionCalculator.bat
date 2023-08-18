@@ -1,0 +1,1 @@
+java -jar DistributionCalculator.jar %1

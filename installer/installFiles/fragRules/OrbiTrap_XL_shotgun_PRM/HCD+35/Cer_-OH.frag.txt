@@ -1,0 +1,20 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+SpectrumCoverage=10%
+BasePeakCutoff=0.01%
+ChainCutoff=10%
+RetentionTimePostprocessing=true
+
+[HEAD]
+!FRAGMENTS
+
+Name=SPH_fragment_252	Formula=C17H34N			Charge=1	MSLevel=2	mandatory=false
+Name=SPH_fragment_264	Formula=C18H34N			Charge=1	MSLevel=2	mandatory=true
+Name=SPH_fragment_282	Formula=C18H36NO		Charge=1	MSLevel=2	mandatory=false
+Name=NL_SPH_264		Formula=$PRECURSOR-C18H32O	Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=SPH_fragment_264>$BASEPEAK*0.5

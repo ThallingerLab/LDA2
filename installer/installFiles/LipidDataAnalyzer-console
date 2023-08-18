@@ -1,0 +1,2 @@
+cd "${installer:sys.installationDir}"
+${installer:javaBinLocation} -Xms${installer:xms}m -Xmx${installer:xmx}m ${installer:javaProp3DL} ${installer:headlessProp} at.tugraz.genome.lda.LipidDataAnalyzer

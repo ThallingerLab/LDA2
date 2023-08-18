@@ -52,6 +52,7 @@ import at.tugraz.genome.lda.exception.SettingsException;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.utils.ExcelUtils;
+import at.tugraz.genome.lda.utils.Pair;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.xml.AbstractXMLSpectraReader;
 
@@ -148,7 +149,15 @@ public class LipidomicsConstants
   /** the separator between the number of carbon atoms and the double bonds*/  
   public final static String CHAIN_SEPARATOR_DBS = ":";
   /** separator used between human readable chain combinations to show that there are more than one possible position assignment*/
-  public final static String CHAIN_COMBI_SEPARATOR_AMBIG_POS = ";";
+  public final static String CHAIN_COMBI_SEPARATOR_AMBIG_POS_OLD = ";";
+  
+  /** String starting the sn position assignment for proven positions*/
+  public final static String SN_POSITION_START = "(sn-";
+  /** String ending the sn position assignment for proofen positions*/
+  public final static String SN_POSITION_END = ")";
+  
+  /** String indicating that no FA is linked at this position*/
+  public final static String NO_FA_LINKED = "-";
   
   /** the String for separating the OH numbers*/
   public final static String ALEX_OH_SEPARATOR = ";";
@@ -165,6 +174,11 @@ public class LipidomicsConstants
   /** the String indicating an internal standard*/
   public final static String ALEX_IS_PREFIX = "IS ";
 
+  
+  
+  /**chain-modification variables*/
+  public final static String CHAIN_MOD_SEPARATOR =";";
+  public final static String CHAIN_MOD_COLUMN_NAME ="PSM";
   
   public static String LDA_PROPERTIES_FILE = "LipidDataAnalyzer.properties";
   public static String MZTAB_PROPERTIES_FILE = "mzTab.properties";
@@ -2322,6 +2336,10 @@ public class LipidomicsConstants
     this.ldaVersion_ = ldaVersion;
   }
   
+  public String getLDAVersion() {
+	  return ldaVersion_;
+  }
+  
   public String getRawFileName(){
     return rawFileName_;
   }
@@ -2377,7 +2395,50 @@ public class LipidomicsConstants
   public boolean getRespectIsotopicDistribution(){
     return respectIsotopicDistribution_;
   }
+  
+  /**
+   * returns the ambigious position separator depending on the LDA version
+   */
+  public String getChainCombiSeparatorAmbigPosDependingOnVersion()
+  {
+	  if (shouldOldEncodingBeUsed())
+		  return CHAIN_COMBI_SEPARATOR_AMBIG_POS_OLD;
+	  
+	  // return null for new encoding since it is not a separator anymore (sn nomenclature)
+	  return null;	  
+  }
+  
+  /**
+   * returns the modification separator depending on the LDA version
+   */
+  public String getModSeparatorDependingOnVersion()
+  {
+	  if (!shouldOldEncodingBeUsed())
+		  return CHAIN_MOD_SEPARATOR;
+	  
+	  // old separator (at least starting one)
+	  return "[";	  
+  }
+  
+  /**
+   * returns true if old encoding should be used, false otherwise
+   */
+  public boolean shouldOldEncodingBeUsed()
+  {
+	  String[] version = this.ldaVersion_.split("_")[0].split("\\.");
 
+	  // for versions >= 2.9 use new encoding
+	  if (Integer.parseInt(version[0]) > 2)
+		  return false;
+	  else if (Integer.parseInt(version[0]) >= 2) {
+		  if (Integer.parseInt(version[1]) >= 9)
+				  return false;
+	  }
+
+	  // for all other versions use old encoding
+	  return true;
+  }
+  
   /**
    * 
    * @param tolerance the tolerance value in its original unit

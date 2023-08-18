@@ -1,0 +1,60 @@
+================================================================================
+Preject settings
+================================================================================
+
+Project -> Properties -> Build -> Settings -> CUDA -> Device linker mode = Seperate compilation
+                                                   -> Generate PTX code = 3.5
+                                                   -> Generate GPU code = 3.5
+                                                   -> Source editor compute capability = 3.5
+                                           -> Tool Settings -> NVCC Compiler -> Includes -> Include paths (-l) = /PATH/TO/jvm/java-8-oracle/include
+                                                                                                               = /PATH/TO/jvm/java-8-oracle/include/linux
+                                                                             -> Optimization -> Optimization Level = Optimize most (-O3)
+                                                                             -> Miscellaneous -> Position Independent Code (-fPCI)
+                                                            -> NVCC Linker -> Miscellaneous -> Shared (-shared)
+                                           -> Build Artifact -> Artifact Type = Shared Library
+
+================================================================================
+Testing machine
+================================================================================
+
+local:
+Arch Linux
+kernel x86_64 Linux 4.8.6.1.ARCH
+Intel Core i5 M 480 @ 2.667 GHz
+Readon HD 5400/6300 series
+nvcc V7.5.17
+Nsight V7.5 (Eclipse Edition)
+
+remote:
+Debian GNU/Linux 8 (jessie)
+Intel Xeon CPU E5-2630 v2 @ 2.60 GHz
+Tesla K20Xm
+2688 CUDA cores
+2 Gb DRAM
+732 MHz
+compute capability 3.5
+nvcc V7.5.17
+										   
+================================================================================
+Example Release Build
+================================================================================
+
+13:19:25 **** Build of configuration Release for project SavGol ****
+Info: Configuration "Release" uses tool-chain "CUDA Toolkit 7.5" that is unsupported on this system, attempting to build anyway.
+make all -C /home/s/stebran/SavGol/Release 
+make: Entering directory '/home/s/stebran/SavGol/Release'
+Building file: ../src/SavGolJNI.cu
+Invoking: NVCC Compiler
+/usr/local/cuda-7.5/bin/nvcc -I/usr/lib/jvm/java-8-oracle/include -I/usr/lib/jvm/java-8-oracle/include/linux -O3 -Xcompiler -fPIC -gencode arch=compute_35,code=sm_35 -m64 -odir "src" -M -o "src/SavGolJNI.d" "../src/SavGolJNI.cu"
+/usr/local/cuda-7.5/bin/nvcc -I/usr/lib/jvm/java-8-oracle/include -I/usr/lib/jvm/java-8-oracle/include/linux -O3 -Xcompiler -fPIC --compile --relocatable-device-code=true -gencode arch=compute_35,code=compute_35 -gencode arch=compute_35,code=sm_35 -m64  -x cu -o  "src/SavGolJNI.o" "../src/SavGolJNI.cu"
+Finished building: ../src/SavGolJNI.cu
+ 
+Building target: libSavGol
+Invoking: NVCC Linker
+/usr/local/cuda-7.5/bin/nvcc --cudart static -shared --relocatable-device-code=true -gencode arch=compute_35,code=compute_35 -gencode arch=compute_35,code=sm_35 -m64 -link -o  "libSavGol"  ./src/SavGolJNI.o   
+Finished building target: libSavGol
+ 
+make: Leaving directory '/home/s/stebran/SavGol/Release'
+> Shell Completed (exit code = 0)
+
+13:20:23 Build Finished (took 58s.429ms)

@@ -74,6 +74,7 @@ public class ResultAreaVO
   /** is MSn evidence available*/
   private boolean msnEvidence_;
   
+  private String oxState_;
   
   
   /**
@@ -90,9 +91,9 @@ public class ResultAreaVO
    * @throws ChemicalFormulaException thrown when an element is missing in the elementconfig.xml
    */
   public ResultAreaVO(String name, Integer dbs, String rt, String expName, String chemicalFormula, float percentalSplit,double neutralMass,
-      boolean internalStandard, boolean externalStandard) throws ChemicalFormulaException
+      boolean internalStandard, boolean externalStandard, String oxState) throws ChemicalFormulaException
   {
-    this(name,dbs,expName,chemicalFormula,percentalSplit,neutralMass,internalStandard,externalStandard);
+    this(name,dbs,expName,chemicalFormula,percentalSplit,neutralMass,internalStandard,externalStandard, oxState);
     this.rtOriginal_ = rt;
     this.rt_ = rt;
     allOriginalRts_ = new Hashtable<String,Hashtable<String,String>>();
@@ -112,7 +113,7 @@ public class ResultAreaVO
    * @throws ChemicalFormulaException thrown when an element is missing in the elementconfig.xml
    */
   private ResultAreaVO(String name, Integer dbs, String expName, String chemicalFormula, float percentalSplit,double neutralMass,
-      boolean internalStandard, boolean externalStandard) throws ChemicalFormulaException
+      boolean internalStandard, boolean externalStandard, String oxState) throws ChemicalFormulaException
   {
     super();
     name_ = name;
@@ -240,12 +241,14 @@ public class ResultAreaVO
   
   public String getMoleculeName()
   {
-    return StaticUtils.generateLipidNameString(name_, dbs_, rt_);
+    return StaticUtils.generateLipidNameString(name_, dbs_, rt_,oxState_);
   } 
   
   public String getMoleculeNameWoRT()
   {
-    return StaticUtils.generateLipidNameString(name_, dbs_,-1);
+
+    return StaticUtils.generateLipidNameString(name_, dbs_,-1,oxState_);
+    
   }
   
   public String getExpName()

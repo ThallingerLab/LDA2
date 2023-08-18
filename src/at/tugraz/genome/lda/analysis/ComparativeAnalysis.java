@@ -241,14 +241,14 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
     chainsOfClass_ = new Hashtable<String,Integer>();
   }
   
-  public void parseInput() throws ExcelInputFileException, LipidCombinameEncodingException{
+  public void parseInput(int statisticsViewMode, boolean combineOxWithNonOx) throws ExcelInputFileException, LipidCombinameEncodingException{
     elementParser_ = Settings.getElementParser();
     unprocessedResults_ = new Hashtable<String,Hashtable<String,Vector<Hashtable<String,ResultAreaVO>>>>();
     isNullResult_ = new Hashtable<String,Hashtable<String,Hashtable<String,Boolean>>>();
     allResults_ = new Hashtable<String,Hashtable<String,Vector<ResultAreaVO>>>();
     allResultsHash_ = new Hashtable<String,Hashtable<String,Hashtable<String,ResultAreaVO>>>();
     modifications_ = new Hashtable<String,Hashtable<String,String>>();
-    extractInformation();
+    extractInformation(statisticsViewMode, combineOxWithNonOx);
     // this is to find out the experiments for the files of the group
     if (groups_!=null){
       expNamesOfGroup_ = new Hashtable<String,Vector<String>>();
@@ -968,7 +968,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
     return ratio;
   }
   
-  protected void parseResultFile(File resultFile, String fileName) throws ExcelInputFileException, LipidCombinameEncodingException{
+  protected void parseResultFile(File resultFile, String fileName, int statisticsViewMode, boolean combineOxWithNonOx) throws ExcelInputFileException, LipidCombinameEncodingException{
     Hashtable<String,Vector<LipidParameterSet>> results = new Hashtable<String,Vector<LipidParameterSet>>();
     Hashtable<String,Boolean> showMods = new Hashtable<String,Boolean>();
     QuantificationResult quantRes = LDAResultReader.readResultFile(resultFile.getAbsolutePath(), showMods);
@@ -988,6 +988,40 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
       this.faHydroxyEncoding_ = quantRes.getFaHydroxyEncoding();  
     results = quantRes.getIdentifications();
 
+    Hashtable<String,Vector<LipidParameterSet>> MSnHash = new Hashtable<String,Vector<LipidParameterSet>>();
+    Hashtable<String,Vector<LipidParameterSet>> chainHash = new Hashtable<String,Vector<LipidParameterSet>>(); 
+    if(statisticsViewMode != 0)
+    {
+        for (String lipidClass : results.keySet()) {
+        	Vector<LipidParameterSet> params = results.get(lipidClass);
+        	Vector<LipidParameterSet> MSnSets = new Vector<LipidParameterSet>();
+        	Vector<LipidParameterSet> chainSets = new Vector<LipidParameterSet>();
+        	for (LipidParameterSet param  : params){
+      			if (param instanceof LipidomicsMSnSet) {
+      				MSnSets.add(param);
+      				LipidomicsMSnSet msn_param = (LipidomicsMSnSet) param;
+      				if(!msn_param.getChainFragments().isEmpty())
+      				{
+      					chainSets.add(param);
+      				}
+      			}
+      		}
+        	MSnHash.put(lipidClass, MSnSets);
+        	chainHash.put(lipidClass, chainSets);
+        }
+    }
+    if(statisticsViewMode == 1)
+    {
+    	results = MSnHash;
+    }
+    if(statisticsViewMode == 2)
+    {
+    	results = chainHash;
+    }
+    
+    
+    
+    
     Hashtable<String,Vector<Hashtable<String,ResultAreaVO>>> areaSheetVOs = new Hashtable<String,Vector<Hashtable<String,ResultAreaVO>>>();    
     ElementConfigParser elementParser = Settings.getElementParser();
     try{
@@ -1005,7 +1039,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
         String recentModification = null;
         for (LipidParameterSet param: params){
           String rtDef = "";
-          String analId = StaticUtils.generateLipidNameString(param.getName(), param.getDoubleBonds(),-1);
+          String analId = StaticUtils.generateLipidNameString(param.getName(), param.getDoubleBonds(),-1,param.getOxState());
           boolean isInternalStandard = (isSelectionPrefix_!=null && param.getName().startsWith(isSelectionPrefix_));
           boolean isExternalStandard = (esSelectionPrefix_!=null && param.getName().startsWith(esSelectionPrefix_));;
           double retentionTime = -1d;
@@ -1045,7 +1079,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
             else if (rtDef!=null&&rtDef.length()>0){
               areaVO = hasAreaSameRt(rtDef,sameMoleculeDiffRet);
               if (areaVO==null) areaVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass,
-                  isInternalStandard,isExternalStandard);
+                  isInternalStandard,isExternalStandard,param.getOxState());
               // Juergen: I am not sure if this "if" and the setting of the retention time is required; for various charge states it seems to be counterproductive
               else /*if (areaVO.hasModification(param.getModificationName()))*/{
                 sameMoleculeDiffRet.remove(areaVO.getRt());
@@ -1054,7 +1088,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
           }else{
             if (param.getArea()>0f){
               areaVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass,
-                  isInternalStandard,isExternalStandard);
+                  isInternalStandard,isExternalStandard,param.getOxState());
               if (orderedAnalytes.size()==0||!orderedAnalytes.get(orderedAnalytes.size()-1).equalsIgnoreCase(analId))
                 orderedAnalytes.add(analId);
             }else{
@@ -1063,7 +1097,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
               Hashtable<String,Boolean> sheetHash = new Hashtable<String,Boolean>();
               if (fileHash.containsKey(sheetName)) sheetHash = fileHash.get(sheetName);
               ResultAreaVO dummyVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass,
-                  isInternalStandard,isExternalStandard);
+                  isInternalStandard,isExternalStandard,param.getOxState());
               sheetHash.put(dummyVO.getMoleculeName(), true);
               fileHash.put(sheetName, sheetHash);
               isNullResult_.put(fileName,fileHash);
@@ -3769,7 +3803,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
         if (correct.get(i)) {
           FattyAcidVO old = fas.get(i);
           //it does not matter if I take the wrong old masses
-          fasNew.add(new FattyAcidVO(old.getChainType(), label.getLabelId(), old.getcAtoms(), old.getDoubleBonds(), old.getOhNumber(), old.getMass(), old.getFormula()));
+          fasNew.add(new FattyAcidVO(old.getChainType(), label.getLabelId(), old.getcAtoms(), old.getDoubleBonds(), old.getOhNumber(), old.getMass(), old.getFormula(), old.getOxState()));
         }else {
           fasNew.add(fas.get(i));
         }

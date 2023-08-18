@@ -23,7 +23,11 @@
 
 package at.tugraz.genome;
 
+import java.applet.Applet;
+import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Stroke;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -37,13 +41,19 @@ import java.io.InputStream;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URL;
+import java.sql.Array;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -83,6 +93,24 @@ import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+//import org.jfree.chart.StandardChartTheme;
+//import org.jfree.chart.axis.LogAxis;
+//import org.jfree.chart.ChartFactory;
+//import org.jfree.chart.ChartPanel;
+//import org.jfree.chart.JFreeChart;
+//import org.jfree.chart.StandardChartTheme;
+//import org.jfree.chart.axis.LogAxis;
+//import org.jfree.chart.axis.LogarithmicAxis;
+//import org.jfree.chart.axis.NumberAxis;
+//import org.jfree.chart.axis.NumberTickUnit;
+//import org.jfree.chart.axis.ValueAxis;
+//import org.jfree.chart.plot.PlotOrientation;
+//import org.jfree.chart.plot.XYPlot;
+//import org.jfree.chart.renderer.xy.XYItemRenderer;
+//import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+//import org.jfree.data.category.DefaultCategoryDataset;
+//import org.jfree.data.xy.XYSeries;
+//import org.jfree.data.xy.XYSeriesCollection;
 //import org.jfree.chart.ChartFactory;
 //import org.jfree.chart.JFreeChart;
 //import org.jfree.chart.plot.PlotOrientation;
@@ -130,6 +158,7 @@ import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.QuantificationThread;
 import at.tugraz.genome.lda.SingleQuantThread;
 import at.tugraz.genome.lda.WarningMessage;
+import at.tugraz.genome.lda.alex123.RdbOutputWriter;
 import at.tugraz.genome.lda.alex123.TargetlistDirParser;
 import at.tugraz.genome.lda.alex123.TargetlistParser;
 import at.tugraz.genome.lda.alex123.vos.TargetlistEntry;
@@ -206,8 +235,11 @@ import at.tugraz.genome.parsers.MSDialTxtParser;
 import at.tugraz.genome.parsers.MSFinderStructureParser;
 import at.tugraz.genome.util.FloatMatrix;
 import at.tugraz.genome.util.index.IndexFileException;
+import at.tugraz.genome.vos.AlexScoreVO;
 import at.tugraz.genome.vos.BrainSpecies;
+import at.tugraz.genome.vos.HumanPlasma;
 import at.tugraz.genome.vos.FoundBiologicalSpecies;
+import at.tugraz.genome.vos.FoundBiologicalSpeciesInclStandards;
 import at.tugraz.genome.vos.LdaDialStandardsEvidence;
 import at.tugraz.genome.vos.LdaLBLASTCompareVO;
 import at.tugraz.genome.vos.LdaLbStandardsEvidence;
@@ -303,6 +335,26 @@ public class TestClass extends JApplet implements AddScan
   
   private final static double MSDIAL_MZ_TOL = 0.006d;
   private final static float MSDIAL_RT_TOL = 0.25f;
+  
+  private final String COLUMN_HEADER_ADDUCT = "Adduct";
+  private final String COLUMN_HEADER_SCORE = "ALEX score";
+  private final String COLUMN_HEADER_TYPE = "Fragment type";
+  private final String COLUMN_HEADER_CLASS = "Lipid class";
+  private final String COLUMN_HEADER_SPECIES = "Lipid species";
+  private final String COLUMN_HEADER_MOL_SPECIES = "Molecular lipid species";
+  private final String COLUMN_HEADER_POLARITY= "Polarity";
+  private final String COLUMN_HEADER_RT_GROUP= "RT group";
+  private final String COLUMN_HEADER_TP= "TP";
+  
+  private final String TYPE_SPECIES = "Species-level identification";
+  private final String TYPE_SPECIES_ABBREV = "LCSF";
+  private final String TYPE_MOL_SPECIES = "Molecular species-level identification";
+  private final String TYPE_MOL_SPECIES_ABBREV = "MLSSF";
+  
+  private final short ALEX_DATA_BIN_FIXED_0_04 = 0;
+  private final short ALEX_DATA_BIN_LOW_RES = 1;
+  private final short ALEX_DATA_BIN_HIGH_RES = 2;
+
 
   public TestClass()
   {
@@ -371,6 +423,7 @@ public class TestClass extends JApplet implements AddScan
     //this.testAfterStructuralIdentification();
     //this.quantifyPeak();
     //this.checkForMassDeviation();
+    //this.sixOf45();
     //this.parseRule();
     //this.countMS2();
     //this.mergeTGRessults();
@@ -408,7 +461,34 @@ public class TestClass extends JApplet implements AddScan
     //this.compareLDAMSDialNaturalProbesNegative();
     //parseMSFinderStructure();
     //this.generateDetailsSphingosBiologicalExperiment();
-    this.generateDetailsSphingosControlExperiment();
+    //this.generateDetailsSphingosControlExperiment();
+    //this.compareIsoDistriMeasuredTheoretical();
+    //this.generateMonoglycerideMasslist();
+    
+    //printFunctionOnLogarithmicScale();
+    //this.printMichaelisMenten();
+    //this.printLineweaverBurk();
+    //this.printEadieHofstee();
+    //this.printInhibition();
+    //this.splitStudentsToLectureRooms();
+    //this.countWordLengths();
+    //this.printRapidEquilibrium();
+    //this.printSteadyState();
+    //this.printDoubleLogPlotForReactionOrder();
+    //this.printScatchardPlot();
+//    this.testLychrel();
+    //this.calculateMixtureModelProbabilities();
+    //printEmptyBoxPlotDiagram();
+    //printReactionFirstOrderOnLogarithmicScale();
+    //filterOnlyRelevantLipidClasses();
+    //this.calculateFdrOfWeibullLogNormal();
+    //this.printZeroOrderReaction();
+    //this.mixtureModelLM();
+    //this.checkMixtureModelLMFormula();
+    //this.mixtureModelWithDecoySearch();
+    //this.mixtureModelWithDecoySearchAddFunction();
+    this.validateHitsBasedOnRetentionTime();
+    //this.generateCodeForSpeciesEvaluation();
   }
 
   private void testExportPanel()
@@ -596,7 +676,7 @@ public class TestClass extends JApplet implements AddScan
             Hashtable<String,Float> hash = new Hashtable<String,Float>();
             if (sameMasses.containsKey(intValue))
               hash = sameMasses.get(intValue);
-            hash.put(sheet.getSheetName() + "_" + StaticUtils.generateLipidNameString(sideChain, doubleBonds,-1)+"_"+modName, (float)massOfInterest);
+            hash.put(sheet.getSheetName() + "_" + StaticUtils.generateLipidNameString(sideChain, doubleBonds,-1,"")+"_"+modName, (float)massOfInterest);
             sameMasses.put(intValue, hash);
           }
         }
@@ -911,7 +991,7 @@ public class TestClass extends JApplet implements AddScan
     try {
       parser.parse();
       //System.out.println(parser.calculateTheoreticalMass("C18 H31 O1", false));
-      System.out.println(parser.calculateTheoreticalMass("C18 H33 N1", false));
+      System.out.println(parser.calculateTheoreticalMass("C2 F3 O2", false));
       //System.out.println(parser.calculateTheoreticalMass("C44 H83 O8 P1 N1", false));
     }
     catch (SpectrummillParserException e) {
@@ -3269,7 +3349,12 @@ public void testTabFile() throws Exception {
 
   private void readMSnIdentification(){
     //String filePath = "C:\\Sphingolipids\\dataStandardsPrelim\\20190111\\positive\\01092018 CER and SPH Mixes positive-10uM MIX 1_Cer_test_pos.xlsx";
-    String filePath = "C:\\data\\BiologicalExperiment\\Orbitrap_CID\\positive\\002_liver2-1_Orbitrap_CID_pos_positive.xlsx";
+    //String filePath = "C:\\data\\BiologicalExperiment\\Orbitrap_CID\\positive\\002_liver2-1_Orbitrap_CID_pos_positive.xlsx";
+    //String filePath = "C:\\data\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_1_test.xlsx";
+    //String filePath = "C:\\data\\Sphingolipids\\Brain\\Orbitrap\\positive\\test\\Brain_pos_1_TargetDB_pos.xlsx";
+    String filePath = "C:\\data\\Sphingolipids\\Brain\\Orbitrap\\positive\\old_TargetDB\\Brain_pos_1_TargetDB_pos.xlsx";
+    //String filePath = "C:\\data\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_1_positive.xlsx";
+    
     try {
       Hashtable<String,Boolean> showMods = new  Hashtable<String,Boolean>();
       QuantificationResult result = LDAResultReader.readResultFile(filePath, showMods);
@@ -9421,7 +9506,27 @@ public void testTabFile() throws Exception {
 
     return false;
   }
-    
+  
+  private void sixOf45(){
+    Vector<Integer> numbers = new Vector<Integer>();
+    while (numbers.size()<6){
+      int number = (int)(Math.random()*45d)+1;
+      if (number==46) number--;
+      boolean found = false;
+      for (Integer other : numbers){
+        if (other==number){
+          found = true;
+          break;
+        }
+      }
+      if (!found) numbers.add(number);
+    }
+    Collections.sort(numbers);
+    for (Integer number : numbers){
+      System.out.println(number);
+    }
+  }
+  
   private void parseRule(){
     try{
       ElementConfigParser elPar = Settings.getElementParser();
@@ -14389,8 +14494,11 @@ public void testTabFile() throws Exception {
 //  }
 
   private void readAlex123File(){
-    String folderName = "D:\\Christer\\20170531\\target_lists_alex";
+    //String folderName = "D:\\Christer\\20170531\\target_lists_alex";
+    //String folderName = "C:\\data\\Christer\\20210519\\O\\O-neg";
+    String folderName = "C:\\data\\Christer\\20210519\\TG";
     try{
+      //TargetlistDirParser dirParser = new TargetlistDirParser(folderName,false);
       TargetlistDirParser dirParser = new TargetlistDirParser(folderName,true);
       dirParser.parse();
       LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,TargetlistEntry>>> sortedEntries = dirParser.getResults();
@@ -14400,8 +14508,13 @@ public void testTabFile() throws Exception {
           LinkedHashMap<String,TargetlistEntry> ofAnalyte = ofClass.get(analyte);
           for (String mod : ofAnalyte.keySet()){
             TargetlistEntry entry = ofAnalyte.get(mod);
-            //System.out.println(entry.getSpecies()+":\t"+entry.getAnalyteName()+" --------- "+entry.getDbs());
-            System.out.println(entry.getSpecies()+":\t"+entry.getModName()+" -------- "+entry.getModFormula()+"\t"+entry.getAnalyteFormula());
+            if (!entry.getOriginalClassName().startsWith("IS"))
+              continue;
+            System.out.println(entry.getSpecies()+":\t"+entry.getAnalyteName()+" --------- "+entry.getDbs());
+            Hashtable<String,String> lookup = entry.getMolSpeciesLookup();
+            for (String ldaKey : lookup.keySet())
+              System.out.println("            "+ldaKey+" ----> "+lookup.get(ldaKey));
+            //System.out.println(entry.getSpecies()+":\t"+entry.getModName()+" -------- "+entry.getModFormula()+"\t"+entry.getAnalyteFormula());
           }
         }
 //        System.out.println(lipidClass+": "+sortedEntries.get(lipidClass).size());
@@ -14685,7 +14798,7 @@ public void testTabFile() throws Exception {
 
       LipidomicsAnalyzer lAnalyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
       setStandardParameters(lAnalyzer);
-      Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> results = lAnalyzer.processPrmData(mz, charge, msLevel, className, modName, analyteName, formula,0);
+      Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> results = lAnalyzer.processPrmData(mz, charge, msLevel, className, modName, analyteName, formula,0,"");
       for (Integer hitNumber : results.keySet()){
         for (Integer isoNr: results.get(hitNumber).keySet()){
           for (CgProbe probe : results.get(hitNumber).get(isoNr)){
@@ -16931,8 +17044,26 @@ public void testTabFile() throws Exception {
 //      probe1.isotopeNumber = 0;
 //      param.AddProbe(probe1);
 //      String[] chromPaths = StringUtils.getChromFilePaths("C:\\Sphingolipids\\dataStandardsPrelim\\20190205\\negative\\02042019 IDA neg new-new CER SPH Mix 1 neg.chrom");
+//
+//      LipidParameterSet param = new LipidParameterSet(600.520874023437f, "34", 0, "HCOO", "", "C34 H69 N O4", "C1 H1 O2",1,3);
+//
+//      CgProbe probe1 = new CgProbe(0,1);
+//      probe1.AreaStatus = CgAreaStatus.OK;
+//      probe1.Area = 1993875328f;
+//      probe1.AreaError = 398507968f;
+//      probe1.Background = 4764792f;
+//      probe1.Peak = 1244.77001953125f;
+//      probe1.LowerValley = 1227.31994628906f;
+//      probe1.UpperValley = 1259.92004394531f;
+//      probe1.Mz = 600.52294921875f;
+//      probe1.LowerMzBand = 0.00506591796875f;
+//      probe1.UpperMzBand = 0.00897216796875f;
+//      probe1.isotopeNumber = 0;
+//      param.AddProbe(probe1);
+//      String[] chromPaths = StringUtils.getChromFilePaths("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix1\\Mix1_neg_1.chrom");
+      
+      LipidParameterSet param = new LipidParameterSet(682.59912109375f, "40", 1, "HCOO", "", "C40 H79 N O4", "C1 H1 O2",1,3);
 
-      LipidParameterSet param = new LipidParameterSet(600.520874023437f, "34", 0, "HCOO", "", "C34 H69 N O4", "C1 H1 O2",1,3);
 
       CgProbe probe1 = new CgProbe(0,1);
       probe1.AreaStatus = CgAreaStatus.OK;
@@ -18044,67 +18175,108 @@ public void testTabFile() throws Exception {
       e.printStackTrace();
     }
   }
-
+  
   private void generateIsoLabeledMassList() {
+    //parameters to be changes
+    Hashtable<String,String> labels = new Hashtable<String,String>();
+    //label A
+//    String massListFile = "C:\\LDA-Collaborations\\Joe\\massLists\\negative_A.xlsx";
+//    labels.put("A","D");
+//    String faLibPath = "C:\\Development\\LipidDataAnalyzer-2.8.0\\fattyAcids\\fattyAcidChains_JA_A.xlsx";
+    // label B
+//    String massListFile = "C:\\LDA-Collaborations\\Joe\\massLists\\negative_B.xlsx";
+//    labels.put("B","D");
+//    String faLibPath = "C:\\Development\\LipidDataAnalyzer-2.8.0\\fattyAcids\\fattyAcidChains_JA_B.xlsx";
+    // label C
+//    String massListFile = "C:\\LDA-Collaborations\\Joe\\massLists\\negative_C.xlsx";
+//    labels.put("C","D");
+//    String faLibPath = "C:\\Development\\LipidDataAnalyzer-2.8.0\\fattyAcids\\fattyAcidChains_JA_C.xlsx";
+    // label D
+//    String massListFile = "C:\\LDA-Collaborations\\Joe\\massLists\\negative_D.xlsx";
+//    labels.put("D","Cc");
+//    String faLibPath = "C:\\Development\\LipidDataAnalyzer-2.8.0\\fattyAcids\\fattyAcidChains_JA_D.xlsx";
+    // label D and F
+//    String massListFile = "C:\\LDA-Collaborations\\Joe\\massLists\\negative_DF.xlsx";
+//    labels.put("D","Cc");
+//    labels.put("F","Cc");
+//    String faLibPath = "C:\\Development\\LipidDataAnalyzer-2.8.0\\fattyAcids\\fattyAcidChains_JA_DF.xlsx";
+    // label E
+    String massListFile = "C:\\LDA-Collaborations\\Joe\\massLists\\negative_E.xlsx";
+    labels.put("E","D");
+    String faLibPath = "C:\\Development\\LipidDataAnalyzer-2.8.0\\fattyAcids\\fattyAcidChains_JA_E.xlsx";
+
+    Vector<String> lipidClasses = new Vector<String>();
+    lipidClasses.add("PC");
+    lipidClasses.add("LPC");
+    lipidClasses.add("PE");
+    lipidClasses.add("LPE");
+    lipidClasses.add("PS");
+    lipidClasses.add("LPS");
+    lipidClasses.add("PI");
+    lipidClasses.add("PG");
+    lipidClasses.add("P-PE");
+
+    BufferedOutputStream out = null;
+    XSSFWorkbook resultWorkbook = null;
     try{
       ElementConfigParser parser = new ElementConfigParser("elementconfig.xml");
       parser.parse();
-      FALibParser faParser = new FALibParser("C:\\Development\\LipidDataAnalyzer\\fattyAcids\\fattyAcidChains.xlsx");
+      FALibParser faParser = new FALibParser(faLibPath);
       faParser.parseFile();
-      Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> fas = faParser.getFattyAcids().get("n");
+      Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> fas = faParser.getFattyAcids().get("n");
       Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
       for (Integer cAtoms : fas.keySet()) {
         for (Integer dbs : fas.get(cAtoms).keySet()) {
           for (String pref : fas.get(cAtoms).get(dbs).keySet()) {
-            chains.add(fas.get(cAtoms).get(dbs).get(pref));
+        	  for (String oxState : fas.get(cAtoms).get(dbs).get(pref).keySet()) {
+        		  chains.add(fas.get(cAtoms).get(dbs).get(pref).get(oxState));
+        	  }
+            
           }
         }
       }
-      //Vector<String> combis = FragmentCalculator.getAllPossibleChainCombinations(2,chains);
-      
-      // for PC 
-      //String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\PC_negative.xlsx";
-      // for PE 
-      //String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\PE_negative.xlsx";
-      // for PS 
-      //String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\PS_negative.xlsx";
-      // for PI 
-      //String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\PI_negative.xlsx";
-      // for PG 
-      //String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\PG_negative.xlsx";
-      // for P-PE 
-      //String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\P-PE_negative.xlsx";
-      // for LPC 
-      //String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\LPC_negative.xlsx";
-      // for LPE 
-      //String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\LPE_negative.xlsx";
-      // for LPE 
-      String quantFile = "C:\\LDA-Collaborations\\Joe\\massLists\\LPS_negative.xlsx";
-      
-      BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(quantFile));
-      XSSFWorkbook resultWorkbook = new XSSFWorkbook();
+      out = new BufferedOutputStream(new FileOutputStream(massListFile));
+      resultWorkbook = new XSSFWorkbook();
       XSSFCellStyle headerStyle = getHeaderStyle(resultWorkbook);
-      
-      //for PC mass list
-      //Sheet resultSheet = resultWorkbook.createSheet("PC");
-      //for PE mass list
-      //Sheet resultSheet = resultWorkbook.createSheet("PE");
-      //for PS mass list
-      //Sheet resultSheet = resultWorkbook.createSheet("PS");
-      //for PI mass list
-      //Sheet resultSheet = resultWorkbook.createSheet("PI");      
-      //for PG mass list
-      //Sheet resultSheet = resultWorkbook.createSheet("PG");      
-      //for P-PE mass list
-      //Sheet resultSheet = resultWorkbook.createSheet("P-PE");      
-      //for P-PE mass list
-      //Sheet resultSheet = resultWorkbook.createSheet("LPC");      
-      //for LPE mass list
-      //Sheet resultSheet = resultWorkbook.createSheet("LPE");      
-      //for LPS mass list
-      Sheet resultSheet = resultWorkbook.createSheet("LPS");      
 
+      for (String lClass : lipidClasses) {
+        generateIsoLabeledMassList(labels, lClass, parser, chains, resultWorkbook, headerStyle,false);
+      }
       
+    } catch (Exception ex){
+      ex.printStackTrace();
+    } finally {
+      if (resultWorkbook!=null) {
+        try {resultWorkbook.write(out);}catch (IOException e) {e.printStackTrace();}
+      }
+      if (out!=null) {
+        try {out.close();}catch (IOException e) {e.printStackTrace();}
+      }
+    }
+  }
+
+  private void generateIsoLabeledMassList(Hashtable<String,String> labels, String lClass, ElementConfigParser parser,
+      Vector<FattyAcidVO> chains, XSSFWorkbook resultWorkbook, XSSFCellStyle headerStyle, boolean positive) throws Exception {
+      Set<String> labelElements = new HashSet<String>();
+      
+      Hashtable<String,Integer> elementDifference = new Hashtable<String,Integer>();
+      int elementAmount = 0;
+      for (String label : labels.keySet()) {
+        labelElements.add(labels.get(label));
+        for (FattyAcidVO fa : chains) {
+          if (!fa.getPrefix().contentEquals(label))
+            continue;
+          elementAmount = StaticUtils.categorizeFormula(fa.getFormula()).get(labels.get(label));
+          elementDifference.put(label, elementAmount);
+          break;
+        }
+      }
+      List<String> labelElementsSorted = new ArrayList<String>(labelElements);
+      Collections.sort(labelElementsSorted);
+      //Vector<String> combis = FragmentCalculator.getAllPossibleChainCombinations(2,chains);
+            
+      Sheet resultSheet = resultWorkbook.createSheet(lClass);
+
       int rowCount = 4;
       Row outRow = resultSheet.createRow(rowCount);
       Cell label = outRow.createCell(0,HSSFCell.CELL_TYPE_STRING);
@@ -18128,17 +18300,22 @@ public void testTabFile() throws Exception {
       label = outRow.createCell(7,HSSFCell.CELL_TYPE_STRING);
       label.setCellValue("N");
       label.setCellStyle(headerStyle);
-      label = outRow.createCell(8,HSSFCell.CELL_TYPE_STRING);
-      label.setCellValue("D");
-      label.setCellStyle(headerStyle);
+      int columnCount = 8;
+      for (String isoElement : labelElementsSorted) {
+        label = outRow.createCell(columnCount,HSSFCell.CELL_TYPE_STRING);
+        label.setCellValue(isoElement);
+        label.setCellStyle(headerStyle);
+        columnCount++;
+      }
       //for sphingoid backbone chain library
 //      label = outRow.createCell(9,HSSFCell.CELL_TYPE_STRING);
 //      label.setCellValue("mass");
 //      label.setCellStyle(headerStyle);
       //for all others
-      label = outRow.createCell(9,HSSFCell.CELL_TYPE_STRING);
+      label = outRow.createCell(columnCount,HSSFCell.CELL_TYPE_STRING);
       label.setCellValue("M");
       label.setCellStyle(headerStyle);
+      columnCount++;
 
       
       //for positive ion mode data
@@ -18152,12 +18329,32 @@ public void testTabFile() throws Exception {
 //      label.setCellValue("mass(form[+Na] name[Na])");
 //      label.setCellStyle(headerStyle);
       //for negative ion mode data
-      label = outRow.createCell(10,HSSFCell.CELL_TYPE_STRING);      
-      label.setCellValue("mass(form[-H] name[-H])");
-      label.setCellStyle(headerStyle);
-//      label = outRow.createCell(10,HSSFCell.CELL_TYPE_STRING);      
-//      label.setCellValue("mass(form[+HCOO] name[HCOO])");
-//      label.setCellStyle(headerStyle);
+      if (!positive && (lClass.equalsIgnoreCase("PE") || lClass.equalsIgnoreCase("LPE") || lClass.equalsIgnoreCase("PS") || lClass.equalsIgnoreCase("LPS") ||
+          lClass.equalsIgnoreCase("PI") || lClass.equalsIgnoreCase("PG") || lClass.equalsIgnoreCase("P-PE") || lClass.equalsIgnoreCase("MG"))) {
+        label = outRow.createCell(columnCount,HSSFCell.CELL_TYPE_STRING);      
+        label.setCellValue("mass(form[-H] name[-H])");
+        label.setCellStyle(headerStyle);
+        columnCount++;
+      } else if (!positive && (lClass.equalsIgnoreCase("PC") || lClass.equalsIgnoreCase("LPC"))) {
+        label = outRow.createCell(columnCount,HSSFCell.CELL_TYPE_STRING);      
+        label.setCellValue("mass(form[+HCOO] name[HCOO])");
+        label.setCellStyle(headerStyle);
+        columnCount++;
+      } else if (positive && lClass.equalsIgnoreCase("MG")) {
+        label = outRow.createCell(columnCount,HSSFCell.CELL_TYPE_STRING);      
+        label.setCellValue("mass(form[+NH4] name[NH4])");
+        label.setCellStyle(headerStyle);
+        columnCount++;
+        label = outRow.createCell(columnCount,HSSFCell.CELL_TYPE_STRING);      
+        label.setCellValue("mass(form[+Na] name[Na])");
+        label.setCellStyle(headerStyle);
+        columnCount++;
+        label = outRow.createCell(columnCount,HSSFCell.CELL_TYPE_STRING);      
+        label.setCellValue("mass(form[+H] name[H])");
+        label.setCellStyle(headerStyle);
+        columnCount++;
+        
+      }
 //      label = outRow.createCell(11,HSSFCell.CELL_TYPE_STRING);      
 //      label.setCellValue("mass(form[-CH3] name[-CH3])");
 //      label.setCellStyle(headerStyle);
@@ -18167,159 +18364,246 @@ public void testTabFile() throws Exception {
 //      label.setCellStyle(headerStyle);
       
       //for all except for sphingoid backbone chain library
-      label = outRow.createCell(11,HSSFCell.CELL_TYPE_STRING);
+      label = outRow.createCell(columnCount,HSSFCell.CELL_TYPE_STRING);
       label.setCellValue("tR (min)");
       label.setCellStyle(headerStyle);
+      columnCount++;
       rowCount++;
       
       Hashtable<Integer,Integer> cDbsCombi = new Hashtable<Integer,Integer>();
-
-      
+      int cAtomsStart = 0;
+      int cAtomsEnd = 0;  
+      int nrOfChains = 0;
       //for PC, PE, PS, PI, PG, P-PE
-//      for (int i=20; i!=49; i++) {
-//        for (int j=0; j!=13; j++) {
-//          if (j>4 && i<30)
-//            continue;
-//          else if (j>6 && i<36)
-//            continue;
-//          else if (j>8 && i<38)
-//            continue;
-//          else if (j>10 && i<40)
-//            continue;
-//          cDbsCombi.put(i, j);
-//        }
-//      }
-
-      //for LPC, LPE, LPS
-      for (int i=12; i!=27; i++) {
-        for (int j=0; j!=9; j++) {
-          if (j>4 && i<16)
-            continue;
-          else if (j>6 && i<20)
-            continue;
-          cDbsCombi.put(i, j);
+      if (lClass.equalsIgnoreCase("PC") || lClass.equalsIgnoreCase("PE") || lClass.equalsIgnoreCase("PS") || lClass.equalsIgnoreCase("PI") ||
+          lClass.equalsIgnoreCase("PG") || lClass.equalsIgnoreCase("P-PE")) {
+        for (int i=20; i!=49; i++) {
+          for (int j=0; j!=13; j++) {
+            if (j>4 && i<30)
+              continue;
+            else if (j>6 && i<36)
+              continue;
+            else if (j>8 && i<38)
+              continue;
+            else if (j>10 && i<40)
+              continue;
+            cDbsCombi.put(i, j);
+          }
         }
+        cAtomsStart = 20;
+        cAtomsEnd = 48;
+        nrOfChains = 2;
       }
-
+      //for LPC, LPE, LPS
+      if (lClass.equalsIgnoreCase("LPC") || lClass.equalsIgnoreCase("LPE") || lClass.equalsIgnoreCase("LPS")){
+        for (int i=12; i!=27; i++) {
+          for (int j=0; j!=9; j++) {
+            if (j>4 && i<16)
+              continue;
+            else if (j>6 && i<20)
+              continue;
+            cDbsCombi.put(i, j);
+          }
+        }
+        cAtomsStart = 12;
+        cAtomsEnd = 26;
+        nrOfChains = 1;
+      }
+      //for MG
+      if (lClass.equalsIgnoreCase("MG")){
+        for (int i=8; i!=27; i++) {
+          for (int j=0; j!=9; j++) {
+            if (j>1 && i<12)
+              continue;
+            if (j>4 && i<16)
+              continue;
+            else if (j>6 && i<20)
+              continue;
+            cDbsCombi.put(i, j);
+          }
+        }
+        cAtomsStart = 8;
+        cAtomsEnd = 26;
+        nrOfChains = 1;
+      }
+      
       
       //for sphingoid backbone chain library
       //for (int cAtoms=10; cAtoms<21; cAtoms+=1){
       
-      //for PC, PE, PS, PI, PG, P-PE
-      //for (int cAtoms=20; cAtoms<49; cAtoms+=1){
-      //for LPC, LPE, LPS
-      for (int cAtoms=12; cAtoms<27; cAtoms+=1){
-        int dbs = 0;
-        int dbsMax = cDbsCombi.get(cAtoms)+1;
+      int dbs;
+      int dbsMax;
+//      int maxLabeled;
+//      int nrLabeled;
+      Hashtable<String,List<String>> labelCombinations;
+      List<String> labelCombisSorted;
+      Vector<Vector<FattyAcidVO>> filtered;
+      
+      int totalC;
+      int hAtoms;
+      int oAtoms;
+      int pAtoms;
+      int nAtoms;
+      int dAtoms;
+      int c13Atoms;
+      StringBuilder sb;
+      String labelCombi;
+      List<String> labelsUsed;
+      String isoElement;
+      double mass_minusH;
+      double massHCOO;
+      double massCH3;
+      
+      double massH;
+      double massNa;
+      double massNH4;
+      
+      for (int cAtoms=cAtomsStart; cAtoms<(cAtomsEnd+1); cAtoms+=1){
+        dbs = 0;
+        dbsMax = cDbsCombi.get(cAtoms)+1;
         while (dbs<dbsMax){
-          //for PC, PE, PS, PI, PG, P-PE
-          //Vector<Vector<FattyAcidVO>> filtered = getPossCombis(2,cAtoms,dbs,chains, new Vector<FattyAcidVO>());
-          //for LPC, LPE
-          Vector<Vector<FattyAcidVO>> filtered = getPossCombis(1,cAtoms,dbs,chains, new Vector<FattyAcidVO>());
-          int maxDeut = 0;
+          filtered = getPossCombis(nrOfChains,cAtoms,dbs,chains, new Vector<FattyAcidVO>());
+          labelCombinations = new Hashtable<String,List<String>>(); 
           for (Vector<FattyAcidVO> combs : filtered) {
-            int nrDeut = 0;
+            labelsUsed = new ArrayList<String>();
             for (FattyAcidVO fa : combs) {
-              if (fa.getPrefix().length()>0)
-                nrDeut++;
+              if (fa.getPrefix().length()==0)
+                continue;
+              if (!labels.containsKey(fa.getPrefix()))
+                throw new Exception("The label \""+fa.getPrefix()+"\" is not supported!");
+              labelsUsed.add(fa.getPrefix());
             }
-            if (nrDeut>maxDeut)
-              maxDeut = nrDeut;
+            if (labelsUsed.size()==0)
+              continue;
+            Collections.sort(labelsUsed);
+            sb = new StringBuilder();
+            for (String oneLabel : labelsUsed)
+              sb.append(oneLabel);
+            labelCombi = sb.toString();
+            if (labelCombinations.containsKey(labelCombi))
+              continue;
+            labelCombinations.put(labelCombi, labelsUsed);          
           }
+          labelCombisSorted = new ArrayList<String>(labelCombinations.keySet());
+          Collections.sort(labelCombisSorted);
 //            for (String combi:combis) {
 //              System.out.println(combi);
 //            }
+          for (int i=0; i!=(labelCombisSorted.size()+1); i++){
+            totalC = 0;
+            hAtoms = 0;
+            oAtoms = 0;
+            pAtoms = 0;
+            nAtoms = 0;
+            dAtoms = 0;
+            c13Atoms = 0;
+            if (lClass.contentEquals("PC")) {
+              totalC = cAtoms+8;
+              hAtoms = totalC*2-2*dbs;
+              oAtoms = 8;
+              pAtoms = 1;
+              nAtoms = 1;
+            } else if (lClass.contentEquals("PE")) {
+              totalC = cAtoms+5;
+              hAtoms = totalC*2-2*dbs;
+              oAtoms = 8;
+              pAtoms = 1;
+              nAtoms = 1;
+            } else if (lClass.contentEquals("PI")) {
+              totalC = cAtoms+9;
+              hAtoms = totalC*2-2*dbs-3;
+              oAtoms = 13;
+              pAtoms = 1;
+            } else if (lClass.contentEquals("PG")) {
+              totalC = cAtoms+6;
+              hAtoms = totalC*2-2*dbs-1;
+              oAtoms = 10;
+              pAtoms = 1;
+            } else if (lClass.contentEquals("P-PE")) {
+              totalC = cAtoms+5;
+              hAtoms = totalC*2-2*dbs;
+              oAtoms = 7;
+              pAtoms = 1;
+              nAtoms = 1;
+            } else if (lClass.contentEquals("LPC")) {
+              totalC = cAtoms+8;
+              hAtoms = totalC*2-2*dbs+2;
+              oAtoms = 7;
+              pAtoms = 1;
+              nAtoms = 1;
+            } else if (lClass.contentEquals("LPE")) {
+              totalC = cAtoms+5;
+              hAtoms = totalC*2-2*dbs+2;
+              oAtoms = 7;
+              pAtoms = 1;
+              nAtoms = 1;
+            } else if (lClass.contentEquals("LPS")) {
+              totalC = cAtoms+6;
+              hAtoms = totalC*2-2*dbs;
+              oAtoms = 9;
+              pAtoms = 1;
+              nAtoms = 1;
+            } else if (lClass.contentEquals("PS")) {
+              totalC = cAtoms+6;
+              hAtoms = totalC*2-2*dbs-2;
+              oAtoms = 10;
+              pAtoms = 1;
+              nAtoms = 1;
+            } else if (lClass.contentEquals("MG")) {
+              totalC = cAtoms+3;
+              hAtoms = totalC*2-2*dbs;
+              oAtoms = 4;
+              pAtoms = 0;
+              nAtoms = 0;
 
-          for (int i=0; i!=(maxDeut+1); i++){ 
-        
-            //for PC chain library
-//            int totalC = cAtoms+8;
-//            int hAtoms = totalC*2-2*dbs;
-//            int oAtoms = 8;
-//            int pAtoms = 1;
-//            int nAtoms = 1;
+            } else 
+              throw new Exception ("The lipid class "+lClass+" is not supported!");
 
-            //for PE chain library
-//            int totalC = cAtoms+5;
-//            int hAtoms = totalC*2-2*dbs;
-//            int oAtoms = 8;
-//            int pAtoms = 1;
-//            int nAtoms = 1;
-
-            //for PS chain library
-//            int totalC = cAtoms+9;
-//            int hAtoms = totalC*2-2*dbs-3;
-//            int oAtoms = 13;
-//            int pAtoms = 1;
-//            int nAtoms = 0;
-
-            //for PG chain library
-//            int totalC = cAtoms+6;
-//            int hAtoms = totalC*2-2*dbs-1;
-//            int oAtoms = 10;
-//            int pAtoms = 1;
-//            int nAtoms = 0;
-
-            //for P-PE chain library
-//            int totalC = cAtoms+5;
-//            int hAtoms = totalC*2-2*dbs;
-//            int oAtoms = 7;
-//            int pAtoms = 1;
-//            int nAtoms = 1;
-
-            //for LPC chain library
-//            int totalC = cAtoms+8;
-//            int hAtoms = totalC*2-2*dbs+2;
-//            int oAtoms = 7;
-//            int pAtoms = 1;
-//            int nAtoms = 1;
-
-//            //for LPE chain library
-//            int totalC = cAtoms+5;
-//            int hAtoms = totalC*2-2*dbs+2;
-//            int oAtoms = 7;
-//            int pAtoms = 1;
-//            int nAtoms = 1;
-
-            //for LPS chain library
-            int totalC = cAtoms+6;
-            int hAtoms = totalC*2-2*dbs;
-            int oAtoms = 9;
-            int pAtoms = 1;
-            int nAtoms = 1;
-
-            
-            int dAtoms = 0;
             String name = "";
-            for (int j=0; j!=i; j++) {
-              name+="D";
-              hAtoms -= 11;
-              dAtoms += 11;
+            if (i!=0) {
+              labelCombi = labelCombisSorted.get(i-1);
+              name += labelCombi;
+              labelsUsed = labelCombinations.get(labelCombi);
+              for (String isoLabel : labelsUsed) {
+                isoElement = labels.get(isoLabel);
+                if (isoElement.contentEquals("D")) {
+                  hAtoms -= elementDifference.get(isoLabel);
+                  dAtoms += elementDifference.get(isoLabel);
+                } else if (isoElement.contentEquals("Cc")) {
+                  totalC -= elementDifference.get(isoLabel);
+                  c13Atoms += elementDifference.get(isoLabel);
+                }
+              }
             }
+//            for (int j=0; j!=i; j++) {
+//              name += isoLabel;
+//            }
 
-            
             
             double massNeutral = parser.getElementDetails("C").getMonoMass()*((double)totalC)+parser.getElementDetails("H").getMonoMass()*((double)hAtoms)+
                 parser.getElementDetails("O").getMonoMass()*((double)oAtoms)+parser.getElementDetails("P").getMonoMass()*((double)pAtoms)+
-                parser.getElementDetails("N").getMonoMass()*((double)nAtoms)+parser.getElementDetails("D").getMonoMass()*((double)dAtoms);
+                parser.getElementDetails("N").getMonoMass()*((double)nAtoms)+parser.getElementDetails("D").getMonoMass()*((double)dAtoms)+
+                parser.getElementDetails("Cc").getMonoMass()*((double)c13Atoms);
             //double massCharged = massNeutral+parser.getElementDetails("H").getMonoMass()+parser.getElementDetails("C").getMonoMass()+2d*parser.getElementDetails("O").getMonoMass();
           
             //for positive ion mode
             //protonated
-//            double massH = massNeutral+parser.getElementDetails("h").getMonoMass();
+            massH = massNeutral+parser.getElementDetails("h").getMonoMass();
 //            //water loss
 //            double massOH = massNeutral+parser.getElementDetails("h").getMonoMass()-2*parser.getElementDetails("H").getMonoMass()-parser.getElementDetails("O").getMonoMass();
 //            //sodiated
-//            double massNa = massNeutral+parser.getElementDetails("na").getMonoMass();
+            massNa = massNeutral+parser.getElementDetails("Na").getMonoMass();
+            // amoniated
+            massNH4 = massNeutral+parser.getElementDetails("N").getMonoMass()+parser.getElementDetails("H").getMonoMass()*3+parser.getElementDetails("h").getMonoMass();
 
-          //for negative ion mode
-          //deprotonated
-          double massH = massNeutral-parser.getElementDetails("h").getMonoMass();
-          //formate
-//          double massHCOO = massNeutral-parser.getElementDetails("h").getMonoMass()+2*parser.getElementDetails("H").getMonoMass()+parser.getElementDetails("C").getMonoMass()+2*parser.getElementDetails("O").getMonoMass();  
-//          //methyl loss
-//          double massCH3 = massNeutral-parser.getElementDetails("h").getMonoMass()-2*parser.getElementDetails("H").getMonoMass()-parser.getElementDetails("C").getMonoMass();
-
+            //for negative ion mode
+            //deprotonated
+            mass_minusH = massNeutral-parser.getElementDetails("h").getMonoMass();
+            //formate
+            massHCOO = massNeutral-parser.getElementDetails("h").getMonoMass()+2*parser.getElementDetails("H").getMonoMass()+parser.getElementDetails("C").getMonoMass()+2*parser.getElementDetails("O").getMonoMass();  
+            //methyl loss
+            massCH3 = massNeutral-parser.getElementDetails("h").getMonoMass()-2*parser.getElementDetails("H").getMonoMass()-parser.getElementDetails("C").getMonoMass();
+ 
             
             outRow = resultSheet.createRow(rowCount);
             label = outRow.createCell(0,HSSFCell.CELL_TYPE_NUMERIC);
@@ -18338,41 +18622,54 @@ public void testTabFile() throws Exception {
             label.setCellValue(pAtoms);
             label = outRow.createCell(7,HSSFCell.CELL_TYPE_NUMERIC);
             label.setCellValue(nAtoms);
-            label = outRow.createCell(8,HSSFCell.CELL_TYPE_NUMERIC);
-            label.setCellValue(dAtoms);
+            columnCount = 8;
+            for (String oneElement : labelElements) {
+              label = outRow.createCell(columnCount,HSSFCell.CELL_TYPE_STRING);
+              if (oneElement.contentEquals("D"))
+                label.setCellValue(dAtoms);
+              else if (oneElement.contentEquals("Cc"))
+                label.setCellValue(c13Atoms);
+              columnCount++;
+            }
             label = outRow.createCell(9,HSSFCell.CELL_TYPE_NUMERIC);
             label.setCellValue(massNeutral);
-          
-          //positive
+            columnCount++;
+            //positive
 //          label = outRow.createCell(10,HSSFCell.CELL_TYPE_NUMERIC);
 //          label.setCellValue(massH);
 //          label = outRow.createCell(11,HSSFCell.CELL_TYPE_NUMERIC);
 //          label.setCellValue(massOH);
 //          label = outRow.createCell(12,HSSFCell.CELL_TYPE_NUMERIC);
 //          label.setCellValue(massNa);
-          //negative
-            label = outRow.createCell(10,HSSFCell.CELL_TYPE_NUMERIC);
-            label.setCellValue(massH);
-//            label = outRow.createCell(10,HSSFCell.CELL_TYPE_NUMERIC);
-//            label.setCellValue(massHCOO);
-//            label = outRow.createCell(11,HSSFCell.CELL_TYPE_NUMERIC);
-//            label.setCellValue(massCH3);
-            
-//            label = outRow.createCell(12,HSSFCell.CELL_TYPE_NUMERIC);
-//            label.setCellValue(massCl);
+            //negative
+            if (!positive && (lClass.equalsIgnoreCase("PE") || lClass.equalsIgnoreCase("LPE") || lClass.equalsIgnoreCase("PS") || lClass.equalsIgnoreCase("LPS") ||
+                lClass.equalsIgnoreCase("PI") || lClass.equalsIgnoreCase("PG") || lClass.equalsIgnoreCase("P-PE") || lClass.equalsIgnoreCase("MG"))) {
+              label = outRow.createCell(columnCount,HSSFCell.CELL_TYPE_NUMERIC);      
+              label.setCellValue(mass_minusH);
+              columnCount++;
+            } else if (!positive && (lClass.equalsIgnoreCase("PC") || lClass.equalsIgnoreCase("LPC"))) {
+              label = outRow.createCell(columnCount,HSSFCell.CELL_TYPE_NUMERIC);      
+              label.setCellValue(massHCOO);
+              columnCount++;
+            } else if (positive && lClass.equalsIgnoreCase("MG")) {
+              label = outRow.createCell(columnCount,HSSFCell.CELL_TYPE_NUMERIC);      
+              label.setCellValue(massNH4);
+              columnCount++;
+              label = outRow.createCell(columnCount,HSSFCell.CELL_TYPE_NUMERIC);      
+              label.setCellValue(massNa);
+              columnCount++;
+              label = outRow.createCell(columnCount,HSSFCell.CELL_TYPE_NUMERIC);      
+              label.setCellValue(massH);
+              columnCount++;
+            }
             rowCount++;
           }
           dbs++;
         }
       }
-      
-      resultWorkbook.write(out);
-      out.close();
-    } catch (Exception ex){
-      ex.printStackTrace();
-    }
-
   }
+  
+  
   private Vector<Vector<FattyAcidVO>> getPossCombis(int chains, int cAtoms, int dbs, Vector<FattyAcidVO> fas, Vector<FattyAcidVO> added){
     Vector<Vector<FattyAcidVO>> combis = new Vector<Vector<FattyAcidVO>>();
     for (FattyAcidVO fa : fas) {
@@ -18547,12 +18844,16 @@ public void testTabFile() throws Exception {
       //remove DIAL hits with four or more hydroxygens
       for (String lClass : resultsDial.keySet()) {
         Vector<String> toRemove = new Vector<String>();
-        int[] cAndDbs;
+        String[] cAndDbsAndOx;
         for (String analyte : resultsDial.get(lClass).keySet()) {
           if ((lClass.equalsIgnoreCase("Cer") || lClass.equalsIgnoreCase("Cer1P") || lClass.equalsIgnoreCase("HexCer")) && analyte.startsWith("q"))
             toRemove.add(analyte);
           else if (lClass.equalsIgnoreCase("Cer") || lClass.equalsIgnoreCase("Cer1P") || lClass.equalsIgnoreCase("HexCer") || lClass.equalsIgnoreCase("SM")){
-            cAndDbs = StaticUtils.parseCAndDbsFromChainId(analyte.substring(1));
+            cAndDbsAndOx = StaticUtils.parseCAndDbsFromChainId(analyte.substring(1));
+            int[] cAndDbs = new int[1];
+            cAndDbs[0] = Integer.parseInt(cAndDbsAndOx[0]);
+            cAndDbs[1] = Integer.parseInt(cAndDbsAndOx[1]);
+            
             if (cAndDbs[0]<26 && cAndDbs[1]>1)
               toRemove.add(analyte);
             else if (cAndDbs[0]<28 && cAndDbs[1]>2)
@@ -20332,4 +20633,3027 @@ public void testTabFile() throws Exception {
     return returnValues;
   }
   
+  private void compareIsoDistriMeasuredTheoretical() {
+    try {
+      ElementConfigParser aaParser = Settings.getElementParser();
+      QuantificationResult result = LDAResultReader.readResultFile("C:\\LDA-Collaborations\\Joe\\20200803_SILDA2_tests\\200802_222_negative_D_old.xlsx",  new Hashtable<String,Boolean>());
+      double zeroArea;
+      double oneArea;
+      for (String lClass : result.getIdentifications().keySet()) {
+        if (!lClass.equalsIgnoreCase("PC"))
+          continue;
+        Vector<LipidParameterSet> params = result.getIdentifications().get(lClass);
+        for (LipidParameterSet param : params) {
+          if (!param.getName().startsWith("D") || !(param instanceof LipidomicsMSnSet))
+            continue;
+          zeroArea = param.getArea(0);
+          oneArea = param.getArea(1)-zeroArea;
+          Vector<Double> theor = StaticUtils.calculateChemicalFormulaIntensityDistribution(aaParser, param.getChemicalFormula(),2,false);
+          System.out.println(lClass+" "+param.getNameString());          
+          System.out.println("Meas: "+oneArea/zeroArea);
+          System.out.println("Theo: "+theor.get(1)/theor.get(0));
+        }
+      }
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
+    //for ()
+  }
+  
+  private void generateMonoglycerideMasslist() {
+    Hashtable<String,String> labels = new Hashtable<String,String>();
+    String massListFile = "C:\\data\\Aaron\\20200821\\massLists\\MG.xlsx";
+    String faLibPath = "C:\\Development\\LipidDataAnalyzer-2.8.0\\fattyAcids\\fattyAcidChains.xlsx";
+
+    Vector<String> lipidClasses = new Vector<String>();
+    lipidClasses.add("MG");
+
+    BufferedOutputStream out = null;
+    XSSFWorkbook resultWorkbook = null;
+    try{
+      ElementConfigParser parser = new ElementConfigParser("elementconfig.xml");
+      parser.parse();
+      FALibParser faParser = new FALibParser(faLibPath);
+      faParser.parseFile();
+      Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> fas = faParser.getFattyAcids().get("n");
+      Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
+      for (Integer cAtoms : fas.keySet()) {
+          for (Integer dbs : fas.get(cAtoms).keySet()) {
+            for (String pref : fas.get(cAtoms).get(dbs).keySet()) {
+          	  for (String oxState : fas.get(cAtoms).get(dbs).get(pref).keySet()) {
+          		  chains.add(fas.get(cAtoms).get(dbs).get(pref).get(oxState));
+          	  }
+              
+            }
+          }
+        }
+      out = new BufferedOutputStream(new FileOutputStream(massListFile));
+      resultWorkbook = new XSSFWorkbook();
+      XSSFCellStyle headerStyle = getHeaderStyle(resultWorkbook);
+
+      for (String lClass : lipidClasses) {
+        generateIsoLabeledMassList(labels, lClass, parser, chains, resultWorkbook, headerStyle,false);
+      }
+      
+    } catch (Exception ex){
+      ex.printStackTrace();
+    } finally {
+      if (resultWorkbook!=null) {
+        try {resultWorkbook.write(out);}catch (IOException e) {e.printStackTrace();}
+      }
+      if (out!=null) {
+        try {out.close();}catch (IOException e) {e.printStackTrace();}
+      }
+    }
+  }
+  
+
+ 
+  
+  private Vector<AlexScoreVO> readAlexScoreResults(String scoreFile) throws Exception{
+    Vector<AlexScoreVO> results = new Vector<AlexScoreVO>();
+    LineNumberReader reader = null;
+    String line;
+    
+
+   
+    
+    try{
+      reader = new LineNumberReader(new FileReader(scoreFile));
+      
+      boolean headerLineFound = false;
+      
+      int adductColumn = -1;
+      int scoreColumn = -1;
+      int typeColumn = -1;
+      int classColumn = -1;
+      int speciesColumn = -1;
+      int molSpeciesColumn = -1;
+      int polarityColumn = -1;
+      int rtGroupColumn = -1;
+      int lineNumber=0;
+      
+      String lipidClass;
+      String lipidSpecies;
+      String molSpecies;
+      short identificationType;
+      double score;
+      String adduct;
+      Boolean polarity;
+      String rtGroup;
+      
+      while ((line = reader.readLine()) != null) {
+        line = line.trim();
+        lineNumber++;
+        if (headerLineFound){
+          lipidClass = null;
+          lipidSpecies = null;
+          molSpecies = null;
+          identificationType = -1;
+          score = -1d;
+          adduct = null;
+          polarity = null;
+          rtGroup = null;
+          
+          String[] columns = line.split("\t");
+          if (columns.length==0)
+            continue;
+          if (adductColumn>=0)
+            adduct = columns[adductColumn];
+          if (scoreColumn>=0) {
+            try {
+              score = Double.parseDouble(columns[scoreColumn]);
+            }catch(NumberFormatException nfx) {
+              throw new Exception ("The value of the column \""+COLUMN_HEADER_SCORE+"\" is not double format: "+columns[scoreColumn]+". Error at line "+lineNumber);
+            }
+          }
+          if (typeColumn>=0) {
+            if (columns[typeColumn].equalsIgnoreCase(TYPE_SPECIES)||columns[typeColumn].equalsIgnoreCase(TYPE_SPECIES_ABBREV))
+              identificationType = AlexScoreVO.IDENT_TYPE_SPECIES;
+            else if (columns[typeColumn].equalsIgnoreCase(TYPE_MOL_SPECIES) || columns[typeColumn].equalsIgnoreCase(TYPE_MOL_SPECIES_ABBREV))
+              identificationType = AlexScoreVO.IDENT_TYPE_MOL_SPECIES;
+            else
+              throw new Exception ("The value of the column \""+COLUMN_HEADER_TYPE+"\" is not allowed: "+columns[typeColumn]+". Error at line "+lineNumber);
+          }
+          if (classColumn>=0)
+            lipidClass = columns[classColumn];
+          if (speciesColumn>=0)
+            lipidSpecies = columns[speciesColumn];
+          if (molSpeciesColumn>=0)
+            molSpecies = columns[molSpeciesColumn];
+          if (polarityColumn>=0) {
+            if (columns[polarityColumn].equalsIgnoreCase("+"))
+              polarity = true;
+            else if (columns[polarityColumn].equalsIgnoreCase("-"))
+              polarity = false;
+            else
+              throw new Exception ("The value of the column \""+COLUMN_HEADER_POLARITY+"\" is not allowed: "+columns[polarityColumn]+". Error at line "+lineNumber);
+          }
+          if (rtGroupColumn>=0 && columns.length>rtGroupColumn && columns[rtGroupColumn]!=null && columns[rtGroupColumn].length()>0)
+            rtGroup = columns[rtGroupColumn];
+          
+          if (adduct==null)
+            throw new Exception ("The value of the column \""+COLUMN_HEADER_ADDUCT+"\" must not be empty. Error at line "+lineNumber);
+          else if (score<0)
+            throw new Exception ("The value of the column \""+COLUMN_HEADER_SCORE+"\" must not be empty. Error at line "+lineNumber);
+          else if (identificationType<0)
+            throw new Exception ("The value of the column \""+COLUMN_HEADER_TYPE+"\" must not be empty. Error at line "+lineNumber);
+          else if (lipidClass==null)
+            throw new Exception ("The value of the column \""+COLUMN_HEADER_CLASS+"\" must not be empty. Error at line "+lineNumber);
+          else if (lipidSpecies==null)
+            throw new Exception ("The value of the column \""+COLUMN_HEADER_SPECIES+"\" must not be empty. Error at line "+lineNumber);
+          else if (molSpecies==null)
+            throw new Exception ("The value of the column \""+COLUMN_HEADER_MOL_SPECIES+"\" must not be empty. Error at line "+lineNumber);
+          else if (polarity==null)
+            throw new Exception ("The value of the column \""+COLUMN_HEADER_POLARITY+"\" must not be empty. Error at line "+lineNumber);
+          results.add(new AlexScoreVO(lipidClass, lipidSpecies, molSpecies, identificationType, score, adduct, polarity, rtGroup,""));
+          
+        }else if (line.contains(COLUMN_HEADER_ADDUCT) && line.contains(COLUMN_HEADER_SCORE) &&
+            line.contains(COLUMN_HEADER_TYPE) && line.contains(COLUMN_HEADER_CLASS) && 
+            line.contains(COLUMN_HEADER_SPECIES) && line.contains(COLUMN_HEADER_MOL_SPECIES) &&
+            line.contains(COLUMN_HEADER_POLARITY)/*&& line.contains(COLUMN_HEADER_RT_GROUP)*/){
+          String[] columns = line.split("\t");
+          for (int columnNr=0; columnNr!=columns.length; columnNr++){
+            if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_ADDUCT)){
+              adductColumn = columnNr;
+            } else if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_SCORE)){
+              scoreColumn = columnNr;
+            } else if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_TYPE)){
+              typeColumn = columnNr;
+            } else if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_CLASS)){
+              classColumn = columnNr;
+            } else if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_SPECIES)){
+              speciesColumn = columnNr;
+            } else if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_MOL_SPECIES)){
+              molSpeciesColumn = columnNr;
+            } else if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_POLARITY)){
+              polarityColumn = columnNr;
+            } else if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_RT_GROUP)){
+              rtGroupColumn = columnNr;
+            }
+          }
+          headerLineFound = true;
+        }
+      }
+    }catch (IOException ex){
+      ex.printStackTrace();
+    }finally{
+      try{if (reader!=null)reader.close();}catch(Exception ex){}
+    }
+    return results;
+  }
+
+/****  
+  private void plotAlexHistogram(Vector<AlexScoreVO> hits, String alexHistogramFileSpecies, String alexHistogramFileMolSpecies) {
+    LinkedHashMap<Integer,Integer> speciesHisto = new LinkedHashMap<Integer,Integer>();
+    LinkedHashMap<Integer,Integer> molHisto = new LinkedHashMap<Integer,Integer>();
+    for (int i=0; i!=100; i++) {
+      speciesHisto.put(i, 0);
+      molHisto.put(i, 0);
+    }
+    int bin;
+    int species = 0;
+    int molSpecies = 0;
+    for (AlexScoreVO hit : hits) {
+      if (hit.getScore()<0.001)
+        continue;
+      if (hit.getScore()>=0.999)
+        continue;
+      bin = (int)Math.round(Calculator.roundDBL(hit.getScore()*100d, 0, BigDecimal.ROUND_DOWN));
+//      System.out.println(hit.getScore()+": "+bin);
+////      if (hit.getIdentificationType()==AlexScoreVO.IDENT_TYPE_SPECIES) {
+////        species++;
+////        speciesHisto.put(bin, (speciesHisto.get(bin)+1));
+////      }
+////      else if (hit.getIdentificationType()==AlexScoreVO.IDENT_TYPE_MOL_SPECIES) {
+        molHisto.put(bin, (molHisto.get(bin)+1));
+        molSpecies++;
+////      }
+    }
+//    for (int i=0; i!=100; i++) {
+//      System.out.println(i+": "+molHisto.get(i));
+//    }
+    //for the species histogram
+    //XYSeries series = new XYSeries("Species histogram");
+    DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+    for (Integer binNr : speciesHisto.keySet()) {
+      //series.add((((double)binNr)/100d+0.005d),speciesHisto.get(binNr));
+      dataset.addValue((double)speciesHisto.get(binNr), "both", (Comparable)(((double)binNr)/100d+0.005d));
+    }
+    //XYSeriesCollection coll1 = new XYSeriesCollection(series);
+    JFreeChart chart = ChartFactory.createBarChart("Mol species histogram", "ALEX score", "frequency", dataset, PlotOrientation.VERTICAL, false, false, false);
+    //JFreeChart chart = ChartFactory.createXYLineChart("ALEX score","time","Intensity",coll1,PlotOrientation.VERTICAL,true,false,false);
+    BufferedOutputStream stream;
+    try {
+      stream = new BufferedOutputStream(new FileOutputStream(alexHistogramFileSpecies));
+      ImageIO.write(chart.createBufferedImage(1000, 700), "JPEG", stream);
+      stream.close();
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+    
+    //for the mol species histogram
+    XYSeries series = new XYSeries("mol species plot");
+    dataset = new DefaultCategoryDataset();
+    for (Integer binNr : molHisto.keySet()) {
+      series.add((((double)binNr)/100d+0.005d),molHisto.get(binNr));
+      //dataset.addValue((double)molHisto.get(binNr), "both", (Comparable)(((double)binNr)/100d+0.005d));
+    }  
+    
+    //for painting the positive distribution
+    //double correctHits = 948d/10d;
+    double correctHits = 20d;
+    XYSeries pos = new XYSeries("posDistri");
+    double x;
+    double y;
+    //double mu = 0.71084768d;
+    ////double mu = 0.49342132d;
+//    double mu = 0.8061791d;
+//    double beta = 0.12556322;
+//    double mu = 0.706709d;
+//    double beta = 0.19385259;
+//    double mu = 0.6875573d;
+//    double beta = 0.15581915;
+//    double mu = 0.6516958d;
+//    double beta = 0.16009194;
+//    double mu = 0.8240995d;
+//    double beta = 0.17385428;
+//    double mu = 0.68695974d;
+//    double beta = 0.17124954;
+//    double mu = 0.70947784d;
+//    double beta = 0.17512545;
+//    double mu = 0.8921394d;
+//    double beta = 0.10242641;
+//    double mu = 0.5881145d;
+//    double beta = 0.22913589;
+//    double mu = 0.939679d;
+//    double beta = 0.0023079403;
+//    double mu = 0.52108d;
+//    double beta = 0.03935682;
+//    double mu = 0.81770283d;
+//    double beta = 0.17434183;
+//    double mu = 0.9602029d;
+//    double beta = 0.10493677d;
+//    double mu = 0.97064877d;
+//    double beta = 0.08182064d;
+//    double mu = 0.9443368d;
+//    double beta = 0.122873835d;
+//    double mu = 0.748364873d;
+//    double beta = 0.1640583d;
+    double mu = 0.7896082d;
+    double beta = 0.19097407d;
+
+    
+//    double mu = 0.6021345d;
+//    double beta = 0.24156281;
+    for (int i=0; i!=102; i++) {
+      x=(double)i*0.01d;
+      ////float negexponent = (float) Math.exp(-(x - mu) / beta);
+      /////y= correctHits*negexponent * (float) Math.exp(-negexponent) / beta;
+      y = (correctHits/beta)*Math.exp((x-mu)/beta)*Math.exp(-Math.exp((x-mu)/beta));
+      ////System.out.println(x+": "+y);
+      pos.add(x,y);
+    }
+
+    
+    //for painting the negative distribution
+    ////double wrongHits = 11400d;
+    double wrongHits = 8d;
+    XYSeries neg = new XYSeries("negDistri");
+    ////mu = -0.000806823d;
+    ////beta = 0.0016093272;
+//    mu = -0.017719377d;
+//    beta = 0.04671246;
+//    mu = -0.000715d;
+//    beta = 0.00141721;
+//    mu = 0.048123907d;
+//    beta = 0.050513852;
+//    mu = 0.012116077d;
+//    beta = 0.021298865;
+//    mu = 0.025687782d;
+//    beta = 0.04394873;
+//    mu = 0.0141977575d;
+//    beta = 0.02856214;
+//    mu = 0.021690203d;
+//    beta = 0.044020426;
+//    mu = 0.025390599d;
+//    beta = 0.039385498d;
+//    mu = -0.00063028035d;
+//    beta = 0.0012935632d;
+//    mu = 0.17344938d;
+//    beta = 0.23144443d;
+//    mu = 0.12113216d;
+//    beta = 0.14747563d;
+//    mu = 0.037355192d;
+//    beta = 0.06587686d;
+//    mu = 0.03379005d;
+//    beta = 0.061178036d;
+//    mu = 0.039337672d;
+//    beta = 0.06877362d;
+//    mu = 0.1889149d;
+//    beta = 0.1586277d;
+    mu = 0.018159438d;
+    beta = 0.032301974d;
+
+//    mu = 0.00012208063d;
+//    beta = 0.0020640418;
+
+    for (int i=0; i!=101; i++) {
+      x=(double)i*0.01d;
+      float negexponent = (float) Math.exp(-(x - mu) / beta);
+      y= wrongHits*negexponent * (float) Math.exp(-negexponent) / beta;
+      //y = (wrongHits/beta)*Math.pow(Math.E, (x-mu)/beta)*Math.pow(Math.E, -Math.pow(Math.E, (x-mu)/beta));
+      //System.out.println(x+": "+y);
+      neg.add(x,y);
+    }
+    
+    XYSeriesCollection coll1 = new XYSeriesCollection(series);
+    coll1.addSeries(pos);
+    coll1.addSeries(neg);
+    //chart = ChartFactory.createBarChart("Mol-species histogram", "ALEX score", "frequency", dataset, PlotOrientation.VERTICAL, false, false, false);
+    chart = ChartFactory.createXYLineChart("ALEX score","ALEX score","Frequency",coll1,PlotOrientation.VERTICAL,true,false,false);
+    
+
+    
+//    //for the mol species histogram
+//    //series = new XYSeries("Mol Species histogram");
+//    dataset = new DefaultCategoryDataset();
+//    for (Integer binNr : molHisto.keySet()) {
+//      //series.add((((double)binNr)/100d+0.005d),molHisto.get(binNr));
+//      dataset.addValue((double)molHisto.get(binNr), "both", (Comparable)(((double)binNr)/100d+0.005d));
+//    }  
+//    //coll1 = new XYSeriesCollection(series);
+//    chart = ChartFactory.createBarChart("Mol-species histogram", "ALEX score", "frequency", dataset, PlotOrientation.VERTICAL, false, false, false);
+//    //chart = ChartFactory.createXYLineChart("ALEX score","time","Intensity",coll1,PlotOrientation.VERTICAL,true,false,false);
+    
+    try {
+      stream = new BufferedOutputStream(new FileOutputStream(alexHistogramFileMolSpecies));
+      ImageIO.write(chart.createBufferedImage(1000, 700), "PNG", stream);
+      stream.close();
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+  }
+****/  
+    
+  static double logGamma(double x) {
+    double tmp = (x - 0.5) * Math.log(x + 4.5) - (x + 4.5);
+    double ser = 1.0 + 76.18009173    / (x + 0)   - 86.50532033    / (x + 1)
+                     + 24.01409822    / (x + 2)   -  1.231739516   / (x + 3)
+                     +  0.00120858003 / (x + 4)   -  0.00000536382 / (x + 5);
+    return tmp + Math.log(ser * Math.sqrt(2 * Math.PI));
+ }
+  
+ static double gamma(double x) { return Math.exp(logGamma(x)); }
+ 
+ private void filterOnlyRelevantLipidClasses() {
+   //for filtering LC-MS liver
+//   String baseDir = "C:\\data\\Christer\\20220119_decoyLCMS-liver\\";
+//   String alexIdentificationFile = baseDir+"21_LCMSdata_Liver_allALEXscores_targetsearch_v220303.tab";
+//   String output = baseDir+"LCMSdata_liver_targetsearch.tab";
+   //for filtering LC-MS Exp 1
+//   String baseDir = "C:\\data\\Christer\\20220204_decoyLCMS-Exp1\\";
+//   String alexIdentificationFile = baseDir+"13_LCMSdata_CtrlEx1_allALEXscores_targetDB_v220305.tab";
+//   String output = baseDir+"LCMSdata_CtrlEx1_targetsearch.tab";
+	 //for mouse brain
+//   String baseDir = "C:\\data\\Christer\\20220222_decoyLCMS-brain\\";
+//   String alexIdentificationFile = baseDir+"21_LCMSdata_brain_allALEXscores_targetsearch_v220303.tab";
+//   String output = baseDir+"LCMSdata_brain_targetsearch.tab";
+   //for NIST human plasma
+   String baseDir = "C:\\Collaborator_Files\\Christer\\20220610_decoyLCMS-plasma\\";
+   String alexIdentificationFile = baseDir+"21_LCMSdata_serum_allALEXscores_targetsearch_v220609.tab";
+   String output = baseDir+"LCMSdata_plasma_targetsearch.tab";
+   
+
+   BufferedOutputStream out = null;
+   String line;
+   try {
+     Vector<AlexScoreVO> results = readAlexScoreResults(alexIdentificationFile);
+     System.out.println("Lines: "+results.size());
+     //Vector<AlexScoreVO> resultsmolSpecies = new Vector<AlexScoreVO>();
+     
+     out = new BufferedOutputStream(new FileOutputStream(output));
+     line = COLUMN_HEADER_ADDUCT+"\t"+COLUMN_HEADER_SCORE+"\t"+COLUMN_HEADER_TYPE+"\t"+COLUMN_HEADER_CLASS+"\t"+COLUMN_HEADER_SPECIES+"\t"+COLUMN_HEADER_MOL_SPECIES+"\t"+COLUMN_HEADER_POLARITY+"\t"+COLUMN_HEADER_RT_GROUP+"\n";
+     out.write(line.getBytes());
+     //Hashtable<String,String> lClasses = new Hashtable<String,String>();
+     Hashtable<String,String> removedClasses = new Hashtable<String,String>();
+     for (AlexScoreVO result : results) {
+       //lClasses.put(result.getLipidClass(), result.getLipidClass());
+       //this check is for the LC-MS liver data set and LC-MS Exp1
+//       if (result.getLipidClass().equalsIgnoreCase("Cer") || result.getLipidClass().equalsIgnoreCase("TAG") || result.getLipidClass().equalsIgnoreCase("DAG") || result.getLipidClass().equalsIgnoreCase("PE O-") ||
+//           result.getLipidClass().equalsIgnoreCase("PS") || result.getLipidClass().equalsIgnoreCase("LPS") || result.getLipidClass().equalsIgnoreCase("SM") || result.getLipidClass().equalsIgnoreCase("PI") ||
+//           result.getLipidClass().equalsIgnoreCase("IS SM") || result.getLipidClass().equalsIgnoreCase("PG") || result.getLipidClass().equalsIgnoreCase("PE") || result.getLipidClass().equalsIgnoreCase("LPE") ||
+//           result.getLipidClass().equalsIgnoreCase("PC") || result.getLipidClass().equalsIgnoreCase("LPC")) {
+       
+       //this check is for LC-MS mouse brain
+       if (result.getLipidClass().equalsIgnoreCase("Cer") || result.getLipidClass().equalsIgnoreCase("TAG") || result.getLipidClass().equalsIgnoreCase("DAG") || result.getLipidClass().equalsIgnoreCase("PE O-") ||
+           result.getLipidClass().equalsIgnoreCase("PS") || result.getLipidClass().equalsIgnoreCase("LPS") || result.getLipidClass().equalsIgnoreCase("SM") || result.getLipidClass().equalsIgnoreCase("PI") ||
+           result.getLipidClass().equalsIgnoreCase("IS SM") || result.getLipidClass().equalsIgnoreCase("PG") || result.getLipidClass().equalsIgnoreCase("PE") || result.getLipidClass().equalsIgnoreCase("LPE") ||
+           result.getLipidClass().equalsIgnoreCase("PC") || result.getLipidClass().equalsIgnoreCase("LPC") || 
+           result.getLipidClass().equalsIgnoreCase("PC O-")) {
+
+         line = result.getAdduct()+"\t"+(result.getScore()==0d ? "0" : String.valueOf(result.getScore()))+"\t"+(result.getIdentificationType()==AlexScoreVO.IDENT_TYPE_MOL_SPECIES ? TYPE_MOL_SPECIES_ABBREV : TYPE_SPECIES_ABBREV)+"\t"
+             +result.getLipidClass()+"\t"+result.getLipidSpecies()+"\t"+result.getMolSpecies()+"\t"+(result.isPositive() ? "+" : "-")+"\t"+result.getRtGroup()+"\n";
+         out.write(line.toString().getBytes());
+       }else {
+         removedClasses.put(result.getLipidClass(), result.getLipidClass());
+       }
+       
+     }
+     for (String lClass : removedClasses.keySet()) {
+       System.out.println("Removed: "+lClass);
+     }
+     //System.out.println(lClasses.keySet());
+   }
+   catch (Exception e) {
+     e.printStackTrace();
+   }finally {
+     if (out!=null){
+       try {out.close();
+       }catch (IOException e) {
+         e.printStackTrace();
+       }
+     
+     }
+   }
+ }
+ 
+
+ 
+ 
+ private void calculateFdrOfWeibullLogNormal() {
+   String plotFile = "C:\\data\\Christer\\20211129\\distributions.png";
+   
+   //parameters for Lognormal distribution; correct
+   double posPrior = 0.8308746062d;
+   //should be scale according to SAS - this is the median in the logNormal; the mean mu is calculated by applying the ln
+   double posMean = 0.480087836d;
+   //should be the shape according to SAS
+   double posStdev = 0.3176680099d;
+   
+   //parameters for Weibull distribution; incorrect
+   double negPrior = 0.1691253938d;
+   double negScaleLambda = 0.1313d;
+   double negShapeK = 0.7754608304d;
+   
+   double posMu = Math.log(posMean)-(posStdev*posStdev)/2d;
+   logNormal(0.5d,posPrior,Math.log(posMean),posStdev);
+   
+   ///plotWeibullAndLogNormal(plotFile, posPrior,Math.log(posMean),posStdev,negPrior,negScaleLambda,negShapeK);
+   
+   int count = 0;
+   double alexScore;
+   double posprob;
+   double negprob;
+   double cumProbs = 0d;
+   double currentProb;
+   double fdr;
+   
+   double fdrOnePerc = -1d;
+   double fdrFivePerc = -1d;
+   double fdrTenPerc = -1d;
+   
+   double lowestFdr = 1000d;
+   double scorelowestFdr = -1d;
+   
+   double scoreSameProb=-1d;
+   
+//   System.out.println("Probability at 1: "+(logNormal(1d,posPrior,posMean,posStdev)/(logNormal(1d,posPrior,posMean,posStdev)+weibull(1d,negPrior,negScaleLambda,negShapeK))));
+//   System.out.println("Probability at 0.8: "+(logNormal(0.8d,posPrior,posMean,posStdev)/(logNormal(0.8d,posPrior,posMean,posStdev)+weibull(0.8d,negPrior,negScaleLambda,negShapeK))));
+//   System.out.println("Probability at 0.5: "+(logNormal(0.5d,posPrior,posMean,posStdev)/(logNormal(0.5d,posPrior,posMean,posStdev)+weibull(0.5d,negPrior,negScaleLambda,negShapeK))));
+//   System.out.println("Probability at 0.28: "+(logNormal(0.28d,posPrior,posMean,posStdev)/(logNormal(0.28d,posPrior,posMean,posStdev)+weibull(0.28d,negPrior,negScaleLambda,negShapeK))));   
+   for (int i=100000; i!=-1; i--) {
+     count++;
+     alexScore = ((double)i)/100000d;     
+     posprob = logNormal(alexScore,posPrior,posMean,posStdev);
+     negprob = weibull(alexScore,negPrior,negScaleLambda,negShapeK);
+     if ((negprob-0.00001)<posprob && posprob<(negprob+0.00001))
+       scoreSameProb =alexScore;
+     //this is for calculation by mean
+     cumProbs+=posprob/(posprob+negprob);
+     currentProb = cumProbs/((double)count);
+     //System.out.println("currentProb "+alexScore+": "+currentProb);
+     
+     if (cumProbs!=0d) {
+       fdr = 1d-currentProb;
+       if (fdr<lowestFdr) {
+         lowestFdr=fdr;
+         scorelowestFdr=alexScore;
+       }
+       if (fdr<=0.01d)
+         fdrOnePerc = alexScore;
+       if (fdr<=0.05)
+         fdrFivePerc = alexScore;
+       if (fdr<=0.1)
+         fdrTenPerc = alexScore;
+     }
+     
+     
+//     out2.write(line.getBytes());
+//     
+//     posprob = distri.getPosDistr().getProb(alexScore);
+//     negprob = distri.getNegDistr().getProb(alexScore);
+//     if (model.priors_ != null && model.priors_[0] >= 0.0f)
+//     {
+//         posprob *= totalCorrect;
+//         negprob *= totalIncorrect;
+//     }
+//
+//     line = Float.toString(alexScore)+"\t"+(posprob/(posprob+negprob))+"\n";
+//     out5.write(line.getBytes());
+   }
+   System.out.println("Probability 50%: "+scoreSameProb);
+   
+   System.out.println("Lowest-FDR: "+scorelowestFdr+" - "+lowestFdr);
+
+   System.out.println(" 1% FDR-probSum:    "+fdrOnePerc);
+   System.out.println(" 5% FDR-probSum:    "+fdrFivePerc);
+   System.out.println("10% FDR-probSum:    "+fdrTenPerc);
+   //System.out.println("Gamma: "+gamma(0.1));
+   
+ }
+ 
+
+ private double logNormal(double x, double mult, double scale, double shape) {
+   double exponent = -Math.pow((Math.log(x)-scale),2);
+   exponent = exponent/(2*Math.pow(shape, 2));
+   double normalizedResult = (1/(x*shape*Math.sqrt(2*Math.PI)))*Math.exp(exponent);
+   return mult*normalizedResult;
+
+ 
+// private double logNormal(double x, double mult, double mu, double stdev) {
+//   double exponent = -(Math.pow(((Math.log(x)-mu)),2)/(2*Math.pow(stdev, 2)));
+//   double normalizedResult = (1/(x*stdev*Math.sqrt(2*Math.PI)))*Math.exp(exponent);
+//   return mult*normalizedResult;
+//   double exponent = -(Math.pow(((Math.log(x)-Math.log(median))),2)/(2*Math.pow(stdev, 2)));
+//   double normalizedResult = (1/(x*stdev*Math.sqrt(2*Math.PI)))*Math.exp(exponent);
+//   return mult*normalizedResult;
+ }
+ 
+ private double weibull(double x, double mult, double lambda, double k) {
+   double xLambda = x/lambda;
+   double exponent = -Math.pow(xLambda, k);
+   double normalizedResult = (k/lambda)*Math.pow(xLambda,k-1d)*Math.exp(exponent);
+   return mult*normalizedResult;
+//   double exponent = -scale*Math.pow(x,k);
+//   double normalizedResult = scale*k*Math.pow(x,k-1)*Math.exp(exponent);
+//   return mult*normalizedResult;
+ }
+
+ /****
+ private void plotWeibullAndLogNormal(String file, double posPrior, double posMu, double posStdev, double negPrior, double negScaleLambda, double negShapeK) {
+  
+   //for the mol species histogram
+   XYSeries posSeries = new XYSeries("correct");
+   XYSeries negSeries = new XYSeries("incorrect");
+   
+   double x;
+   for (int i=0; i!=1002; i++) {
+     x=(double)i*0.001d;
+     posSeries.add(x,logNormal(x,posPrior,posMu,posStdev));
+     if (i==0)
+       continue;
+     negSeries.add(x,weibull(x,negPrior,negScaleLambda,negShapeK));
+     //System.out.println(x+": "+weibull(x,negPrior,negScaleLambda,negShapeK));
+   }
+   
+   XYSeriesCollection coll1 = new XYSeriesCollection();
+   coll1.addSeries(posSeries);
+   coll1.addSeries(negSeries);
+   JFreeChart chart = ChartFactory.createXYLineChart("Mixture-Model","ALEX score","Frequency",coll1,PlotOrientation.VERTICAL,true,false,false);
+   
+
+   BufferedOutputStream stream = null;
+   try {
+     stream = new BufferedOutputStream(new FileOutputStream(file));
+     ImageIO.write(chart.createBufferedImage(1000, 700), "PNG", stream);
+     stream.close();
+   } catch (IOException e) {
+     // TODO Auto-generated catch block
+     e.printStackTrace();
+   }
+ }
+*/
+ 
+  
+ /****  
+ private void printReactionFirstOrderOnLogarithmicScale() {
+   String pathName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\images\\logFirstOrder.png";
+   String chartName = "";
+   String series1Name = "";
+   double xStartValue = 0.0;
+   double xStopValue = 2500;
+   double stepSizeSmall = 10;
+   
+   Double[] value;
+   Vector<Double[]> values = new Vector<Double[]>();
+   
+   org.jfree.data.Range xRange = new org.jfree.data.Range(0,1500f);
+   org.jfree.data.Range yRange = new org.jfree.data.Range(Math.pow(10, -1),Math.pow(10, 2.2));
+   double xTick = 200;
+   double yTick = 0.3;
+   
+   double halfTime = 200;
+
+   double x = xStartValue;
+   double y;
+   while (x<xStopValue) {
+     y = 100*Math.exp(-x*Math.log(2)/halfTime);
+     value = new Double[2];
+     value[0] = x;
+     value[1] = y;
+     values.add(value);
+     
+     x += stepSizeSmall;
+   }
+   XYSeries series1 = new XYSeries(series1Name);
+   for (int i=0;i!=values.size();i++){
+     Double[] valuePair = values.get(i);
+     //  if (cx.Value[j][0]<782.55f)
+     series1.add(valuePair[0],valuePair[1]);
+   }
+   XYSeriesCollection coll1 = new XYSeriesCollection(series1);
+ 
+   java.awt.Font tickFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 18);
+   java.awt.Font labelFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 22);
+   LogarithmicAxis logAxis = new LogarithmicAxis("[A] (\u00B5M)");
+
+   logAxis.setRange(yRange);
+   //TODO: ????
+   logAxis.setVerticalTickLabels(false);
+   logAxis.setLabel("[A] (\u00B5M)");
+   logAxis.setLabelFont(labelFont);
+   logAxis.setExpTickLabelsFlag(true);
+//   ValueAxis range = xyPlot.getRangeAxis();
+   NumberAxis range = new NumberAxis("");
+   range.setRange(xRange);
+   range.setTickUnit(new NumberTickUnit(xTick));
+   range.setTickLabelFont(tickFont);
+   range.setLabelFont(labelFont);
+   //range.setLabel("[A] (\u00B5M)");
+   range.setLabel("t (s)");
+   Stroke solid = new BasicStroke(1);
+   XYPlot xyPlot = new XYPlot(coll1,
+       //TODO: what do those true and false mean???
+       range, logAxis, new XYLineAndShapeRenderer(true, false));
+   XYItemRenderer renderer = xyPlot.getRenderer();
+   renderer.setSeriesPaint(0, Color.black);
+   renderer.setSeriesStroke(0, new BasicStroke(1.5f));
+   
+   
+   xyPlot.setRangeGridlineStroke(solid);
+   xyPlot.setRangeGridlinePaint(Color.BLUE);
+   xyPlot.setDomainGridlineStroke(solid);
+   xyPlot.setDomainGridlinePaint(Color.BLUE);
+   xyPlot.setBackgroundPaint(Color.WHITE);
+////   xyPlot.setDomainMinorGridlinesVisible(true);
+////   xyPlot.setRangeMinorGridlinesVisible(true);
+   
+   ChartFactory.setChartTheme(StandardChartTheme.createLegacyTheme());
+   JFreeChart chart = new JFreeChart(
+       "Chart", JFreeChart.DEFAULT_TITLE_FONT, xyPlot, false);
+
+   
+   BufferedOutputStream stream;
+   try {
+     stream = new BufferedOutputStream(new FileOutputStream(pathName));
+     ImageIO.write(chart.createBufferedImage(1000, 700), "PNG", stream);
+     stream.close();
+   }
+   catch (IOException e) {
+     // TODO Auto-generated catch block
+     e.printStackTrace();
+   }
+ }
+
+  private void printFunctionOnLogarithmicScale() {
+    String pathName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\Pruefungen\\21-22\\20220321\\images\\Figure14_A.png";
+    String chartName = "";
+    String series1Name = "";
+
+    
+    Vector<Double[]> values = new Vector<Double[]>();
+    Vector<Double[]> values2 = new Vector<Double[]>();
+    Vector<Double[]> values3 = new Vector<Double[]>();
+    Double[] value;
+    
+    
+    
+    double xStartValue = 0.0f;
+    double xStopValue = 100000f;
+    double stepSizeSmall = 0.0000001f;
+    double stepSize = 0.001f;
+    double stepSizeBig = 1f;
+    org.jfree.data.Range xRange = new org.jfree.data.Range(Math.pow(10, -7),Math.pow(10, 1));
+    org.jfree.data.Range yRange = new org.jfree.data.Range(0,500f);
+    double xTick = 1;
+    double yTick = 20;
+    
+//    double xStartValue = -5.05f;
+//    double xStopValue = 10.5f;
+//    double stepSize = 0.001f;
+//    Range xRange = new Range(-5.05,5.05);
+//    Range yRange = new Range(-10.05,10.05);
+//    double xTick = Math.PI/2;
+//    double yTick = 10;
+
+    
+    double x = xStartValue;
+    double y;
+    while (x<xStopValue) {
+//      y = Math.pow(x, 4)/100+Math.pow(x, 3)/20-Math.pow(x, 2)/10+1;
+      //y = Math.pow(2, x);
+      //y = Math.exp(x);
+      //y = Math.pow(0.5, x);
+      //y = 1/x;
+//      y = Math.pow(3, -x);
+      
+      // Beispiel B
+      //y = 600*Math.exp((-x*Math.log(2))/0.003)+200*Math.exp((-x*Math.log(2))/20);      
+      // Beispiel C
+      //y = 300*Math.exp((-x*Math.log(2))/0.001)+300*Math.exp((-x*Math.log(2))/3);
+      
+      // Beispiel A   12.11.2020
+      //y = 60*Math.exp((-x*Math.log(2))/0.002)+140*Math.exp((-x*Math.log(2))/30);      
+      // Beispiel B   12.11.2020
+      //y = 80*Math.exp((-x*Math.log(2))/0.02)+120*Math.exp((-x*Math.log(2))/200);
+      // Beispiel C   12.11.2020
+      //y = 160*Math.exp((-x*Math.log(2))/0.4)+240*Math.exp((-x*Math.log(2))/1000);
+      // Beispiel A   03.05.2021
+      //y = 80*Math.exp((-x*Math.log(2))/0.03)+320*Math.exp((-x*Math.log(2))/200);
+      // Beispiel B   12.11.2020
+      //y = 360*Math.exp((-x*Math.log(2))/0.02)+40*Math.exp((-x*Math.log(2))/400);
+      // Beispiel A   10.12.2021
+      //y = 160*Math.exp((-x*Math.log(2))/0.02)+60*Math.exp((-x*Math.log(2))/300);
+      // Beispiel B   10.12.2021
+      //y = 40*Math.exp((-x*Math.log(2))/0.01)+320*Math.exp((-x*Math.log(2))/40);
+      // Beispiel C   10.12.2021
+      //y = 1.2d*Math.exp((-x*Math.log(2))/0.1)+0.8d*Math.exp((-x*Math.log(2))/200);
+      // Beispiel A   21.03.2022
+      y = 320d*Math.exp((-x*Math.log(2))/0.0001)+160d*Math.exp((-x*Math.log(2))/0.4);      
+      // Beispiel B   21.03.2022
+      //y = 150d*Math.exp((-x*Math.log(2))/0.0003)+350d*Math.exp((-x*Math.log(2))/2);
+      
+      //y = Math.sqrt(x);
+      //y = Math.log10(x)/Math.log10(2);
+      //y = Math.tan(x);
+      value = new Double[2];
+      value[0] = x;
+      value[1] = y;
+      values.add(value);
+      
+      if (x<0.2f)
+        x += stepSizeSmall;
+      else if (x<100)
+        x += stepSize;
+      else
+        x += stepSizeBig;
+    }
+    
+//    x = xStartValue;
+//    while (x<xStopValue) {
+//      y = Math.log(x);
+//      x += stepSize;
+//      value = new Double[2];
+//      value[0] = x;
+//      value[1] = y;
+//      values2.add(value);
+//    }
+//    x = xStartValue;
+//    while (x<xStopValue) {
+//      y = Math.log10(x);
+//      x += stepSize;
+//      value = new Double[2];
+//      value[0] = x;
+//      value[1] = y;
+//      values3.add(value);
+//    }
+
+    XYSeries series1 = new XYSeries(series1Name);
+    for (int i=0;i!=values.size();i++){
+      Double[] valuePair = values.get(i);
+      //  if (cx.Value[j][0]<782.55f)
+      series1.add(valuePair[0],valuePair[1]);
+    }
+//    XYSeries series2 = new XYSeries("ln");
+//    for (int i=0;i!=values2.size();i++){
+//      Double[] valuePair = values2.get(i);
+//      //  if (cx.Value[j][0]<782.55f)
+//      series2.add(valuePair[0],valuePair[1]);
+//    }
+//    XYSeries series3 = new XYSeries("log");
+//    for (int i=0;i!=values3.size();i++){
+//      Double[] valuePair = values3.get(i);
+//      //  if (cx.Value[j][0]<782.55f)
+//      series3.add(valuePair[0],valuePair[1]);
+//    }
+    
+    XYSeriesCollection coll1 = new XYSeriesCollection(series1);
+//    coll1.addSeries(series2);
+//    coll1.addSeries(series3);
+    //JFreeChart chart = ChartFactory.createXYLineChart(chartName,"x","y",coll1,PlotOrientation.VERTICAL,true,false,false);
+    //JFreeChart chart = ChartFactory.createScatterPlot(chartName,"x","y",coll1,PlotOrientation.VERTICAL,true,false,false);
+    //XYPlot xyPlot = chart.getXYPlot();
+    
+//    XYDotRenderer xydotrenderer = new XYDotRenderer();
+//    xyPlot.setRenderer(xydotrenderer);
+//    xydotrenderer.setSeriesShape(0, new Rectangle(0,0,2,2));
+//    xydotrenderer.setSeriesPaint(0, Color.blue);
+    
+    java.awt.Font tickFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 18);
+    java.awt.Font labelFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 22);
+    LogarithmicAxis logAxis = new LogarithmicAxis("t (s)");
+    
+//    logAxis2.setRange(xRange);
+    //System.out.println(logAxis2.getMinorTickMarkInsideLength());
+    logAxis.setRange(xRange);
+    //logAxis.setStandardTickUnits(LogarithmicAxis.createStandardTickUnits());
+    //logAxis.setTickUnit(new NumberTickUnit(xTick));
+    //logAxis.setNumberFormatOverride(NumberFormat.getNumberInstance());
+////    logAxis.setMinorTickMarksVisible(true);
+    //logAxis.setAutoTickUnitSelection(false);
+//    logAxis2.setMinorTickMarkInsideLength(0);
+//    logAxis.setLo.setBase(10);
+    //logAxis.setTickUnit(new NumberTickUnit(2));
+
+    //logAxis.setAutoTickUnitSelection(true);
+    //logAxis.setLog10TickLabelsFlag(true);
+    //logAxis.setMinorTickCount(10);
+    //logAxis.setNumberFormatOverride(new DecimalFormat("0.######E0"));
+////    logAxis.setMinorTickMarksVisible(true);
+    //logAxis.setAutoRange(false);
+    //logAxis.setStandardTickUnits(LogAxis.createLogTickUnits(Locale.ENGLISH));
+    //xyPlot.setDomainAxes(logAxis);
+//    NumberAxis domain = (NumberAxis) xyPlot.getDomainAxis();
+//    domain.setRange(xRange);
+//    domain.setTickUnit(new NumberTickUnit(xTick));
+//    logAxis.setTickLabelFont(tickFont);
+    logAxis.setVerticalTickLabels(false);
+    logAxis.setLabel("t (s)");
+    logAxis.setLabelFont(labelFont);
+    logAxis.setExpTickLabelsFlag(true);
+//    ValueAxis range = xyPlot.getRangeAxis();
+    NumberAxis range = new NumberAxis("");
+    range.setRange(yRange);
+    range.setTickUnit(new NumberTickUnit(yTick));
+    range.setTickLabelFont(tickFont);
+    range.setLabelFont(labelFont);
+    range.setLabel("[A] (\u00B5M)");
+    //range.setLabel("[A] (nM)");
+    Stroke solid = new BasicStroke(1);
+    XYPlot xyPlot = new XYPlot(coll1,
+        logAxis, range, new XYLineAndShapeRenderer(true, false));
+    XYItemRenderer renderer = xyPlot.getRenderer();
+    renderer.setSeriesPaint(0, Color.black);
+    renderer.setSeriesStroke(0, new BasicStroke(1.5f));
+    
+    
+    xyPlot.setRangeGridlineStroke(solid);
+    xyPlot.setRangeGridlinePaint(Color.BLUE);
+    xyPlot.setDomainGridlineStroke(solid);
+    xyPlot.setDomainGridlinePaint(Color.BLUE);
+    xyPlot.setBackgroundPaint(Color.WHITE);
+////    xyPlot.setDomainMinorGridlinesVisible(true);
+////    xyPlot.setRangeMinorGridlinesVisible(true);
+    
+    ChartFactory.setChartTheme(StandardChartTheme.createLegacyTheme());
+    JFreeChart chart = new JFreeChart(
+        "Chart", JFreeChart.DEFAULT_TITLE_FONT, xyPlot, false);
+
+    
+    BufferedOutputStream stream;
+    try {
+      stream = new BufferedOutputStream(new FileOutputStream(pathName));
+      ImageIO.write(chart.createBufferedImage(1000, 700), "PNG", stream);
+      stream.close();
+    }
+    catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
+ 
+  
+  private void printMichaelisMenten(){
+    String pathName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\Pruefungen\\21-22\\20220429\\images\\MichaelisMenten_B.png";
+    String chartName = "";
+    String series1Name = "";
+
+    Vector<Double[]> values = new Vector<Double[]>();
+    Double[] value;
+    
+    
+    
+    double xStartValue = 0.0f;
+    double xStopValue = 1050f;
+    double stepSize = 0.001f;
+    org.jfree.data.Range xRange = new org.jfree.data.Range(0.0,102);
+    org.jfree.data.Range yRange = new org.jfree.data.Range(0,20);
+    double xTick = 5;
+    double yTick = 2;
+    
+    
+    double x = xStartValue;
+    double y;
+    double vmax = 16;
+    double Km = 55;
+    while (x<xStopValue) {
+      y = vmax*x/(x+Km);
+      x += stepSize;
+      value = new Double[2];
+      value[0] = x;
+      value[1] = y;
+      values.add(value);
+    }
+    
+    XYSeries series1 = new XYSeries(series1Name);
+    for (int i=0;i!=values.size();i++){
+      Double[] valuePair = values.get(i);
+      //  if (cx.Value[j][0]<782.55f)
+      series1.add(valuePair[0],valuePair[1]);
+    }
+    
+    XYSeriesCollection coll1 = new XYSeriesCollection(series1);
+    //ChartFactory.setChartTheme(StandardChartTheme.createJFreeTheme());
+    //ChartFactory.setChartTheme(new StandardChartTheme("JFree/Shadow"));
+    ChartFactory.setChartTheme(StandardChartTheme.createLegacyTheme());
+
+    JFreeChart chart = ChartFactory.createXYLineChart(chartName,"x","y",coll1,PlotOrientation.VERTICAL,false,false,false);
+    chart.setBackgroundPaint(Color.WHITE);
+    XYPlot xyPlot = chart.getXYPlot();
+    XYItemRenderer renderer = xyPlot.getRenderer();
+    renderer.setSeriesPaint(0, Color.black);
+    
+    java.awt.Font tickFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 18);
+    java.awt.Font labelFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 22);
+    NumberAxis domain = (NumberAxis) xyPlot.getDomainAxis();
+    domain.setTickUnit(new NumberTickUnit(xTick));
+    domain.setRange(xRange);
+    domain.setTickMarkInsideLength(10f);
+    //domain.setMinorTickMarkInsideLength(6f);
+    domain.setMinorTickMarkOutsideLength(0f);
+    domain.setTickLabelFont(tickFont);
+    domain.setVerticalTickLabels(false);
+    domain.setLabel("[S] (\u00B5M)");
+    domain.setLabelFont(labelFont);
+    domain.setMinorTickCount(5);
+    domain.setMinorTickMarksVisible(true);
+    NumberAxis range = (NumberAxis) xyPlot.getRangeAxis();
+    range.setRange(yRange);
+    //range.setMinorTickCount(5);
+    range.setMinorTickMarksVisible(true);
+    range.setTickUnit(new NumberTickUnit(yTick));
+    range.setTickMarkInsideLength(10f);
+    range.setMinorTickMarkInsideLength(6f);
+    range.setMinorTickMarkOutsideLength(0f);
+    range.setTickLabelFont(tickFont);
+    range.setLabelFont(labelFont);
+    range.setLabel("v (\u00B5M/s)");
+    Stroke solid = new BasicStroke(0.5f);
+    xyPlot.setRangeGridlineStroke(solid);
+    xyPlot.setRangeGridlinePaint(Color.BLUE);
+    xyPlot.setDomainGridlineStroke(solid);
+    xyPlot.setDomainGridlinePaint(Color.BLUE);
+    
+    
+    BufferedOutputStream stream;
+    try {
+      stream = new BufferedOutputStream(new FileOutputStream(pathName));
+      ImageIO.write(chart.createBufferedImage(1000, 700), "PNG", stream);
+      stream.close();
+    }
+    catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }    
+  } 
+
+
+  private void printLineweaverBurk(){
+    String pathName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\Pruefungen\\21-22\\20220613\\images\\Frage16_B.png";
+    String chartName = "";
+    String series1Name = "";
+
+    Vector<Double[]> values = new Vector<Double[]>();
+    Double[] value;
+    
+    
+    
+    double xStopValue = 100f;
+    double stepSize = 0.0001f;
+    //Pruefung 12.11.2020 A
+//    org.jfree.data.Range xRange = new org.jfree.data.Range(-10.5f,10.5f);
+//    org.jfree.data.Range yRange = new org.jfree.data.Range(0.0,15.5f);
+//    double xTick = 1;
+//    double yTick = 20;
+    //Pruefung 12.11.2020 B
+//    org.jfree.data.Range xRange = new org.jfree.data.Range(-0.055f,0.055f);
+//    org.jfree.data.Range yRange = new org.jfree.data.Range(0.0,0.060);
+//    double xTick = 0.01;
+//    double yTick = 0.01;
+    //Pruefung 12.11.2020 C
+//    org.jfree.data.Range xRange = new org.jfree.data.Range(-0.405f,0.405f);
+//    org.jfree.data.Range yRange = new org.jfree.data.Range(0.0,1.05);
+//    double xTick = 0.1;
+//    double yTick = 0.1;
+    //Pruefung 14.06.2021 A
+//    org.jfree.data.Range xRange = new org.jfree.data.Range(-0.055f,0.055f);
+//    org.jfree.data.Range yRange = new org.jfree.data.Range(0.0,0.80);
+//    double xTick = 0.01;
+//    double yTick = 0.1;
+    //Pruefung 14.06.2021 B
+//    org.jfree.data.Range xRange = new org.jfree.data.Range(-0.055f,0.055f);
+//    org.jfree.data.Range yRange = new org.jfree.data.Range(0.0,0.60);
+//    double xTick = 0.01;
+//    double yTick = 0.1;
+    //Pruefung 01.10.2021 A
+    org.jfree.data.Range xRange = new org.jfree.data.Range(-5f,5f);
+    org.jfree.data.Range yRange = new org.jfree.data.Range(0.0f,0.3f);
+    double xTick = 1;
+    double yTick = 0.02;
+
+    
+    double y;
+    //Pruefung 12.11.2020 A
+//    double vmax = 0.01;
+//    double Km = 0.125;
+    //Pruefung 12.11.2020 B
+//    double vmax = 50;
+//    double Km = 25;
+    //Pruefung 12.11.2020 C
+//    double vmax = 2;
+//    double Km = 4;
+    //Pruefung 14.06.2021 A
+//    double vmax = 2.5;
+//    double Km = 25;
+    //Pruefung 14.06.2021 B
+//    double vmax = 5;
+//    double Km = 20;
+    //Pruefung 01.10.2021 A
+    double vmax = 6.25;
+    double Km = 0.25;
+
+    double x = -1/Km;
+    while (x<xStopValue) {
+//      y = vmax*x/(x+Km);
+//      x += stepSize;
+      //y=(1/vmax)*(x*Km+1);
+      y=(x*Km)/vmax+(1/vmax);
+      x += stepSize;
+      value = new Double[2];
+      value[0] = x;
+      value[1] = y;
+      values.add(value);
+    }
+    
+    XYSeries series1 = new XYSeries(series1Name);
+    for (int i=0;i!=values.size();i++){
+      Double[] valuePair = values.get(i);
+      //  if (cx.Value[j][0]<782.55f)
+      series1.add(valuePair[0],valuePair[1]);
+    }
+    
+    XYSeriesCollection coll1 = new XYSeriesCollection(series1);
+    ChartFactory.setChartTheme(StandardChartTheme.createLegacyTheme());
+
+    JFreeChart chart = ChartFactory.createXYLineChart(chartName,"x","y",coll1,PlotOrientation.VERTICAL,false,false,false);
+    chart.setBackgroundPaint(Color.WHITE);
+    XYPlot xyPlot = chart.getXYPlot();
+    XYItemRenderer renderer = xyPlot.getRenderer();
+    renderer.setSeriesPaint(0, Color.black);
+    
+    java.awt.Font tickFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 18);
+    java.awt.Font labelFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 22);
+    NumberAxis domain = (NumberAxis) xyPlot.getDomainAxis();
+    domain.setTickUnit(new NumberTickUnit(xTick));
+    domain.setRange(xRange);
+    domain.setTickMarkInsideLength(10f);
+    domain.setMinorTickMarkInsideLength(6f);
+    domain.setMinorTickMarkOutsideLength(0f);
+    domain.setTickLabelFont(tickFont);
+    domain.setVerticalTickLabels(false);
+    ////domain.setLabel("1/[S] (\u00B5M  )");
+    domain.setLabel("1/[S] (mM  )");
+    domain.setLabelFont(labelFont);
+    //domain.setMinorTickCount(5);
+    //Pruefung 12.11.2020 C
+    domain.setMinorTickCount(2);
+    domain.setMinorTickMarksVisible(true);
+    NumberAxis range = (NumberAxis) xyPlot.getRangeAxis();
+    range.setRange(yRange);
+    range.setMinorTickCount(2);
+    range.setMinorTickMarksVisible(true);
+    range.setTickUnit(new NumberTickUnit(yTick));
+    range.setTickMarkInsideLength(10f);
+    range.setMinorTickMarkInsideLength(6f);
+    range.setMinorTickMarkOutsideLength(0f);
+    range.setTickLabelFont(tickFont);
+    range.setLabelFont(labelFont);
+    range.setLabel("1/v (s/\u00B5M)");
+    Stroke solid = new BasicStroke(0.5f);
+    xyPlot.setRangeGridlineStroke(solid);
+    xyPlot.setRangeGridlinePaint(Color.BLUE);
+    xyPlot.setDomainGridlineStroke(solid);
+    xyPlot.setDomainGridlinePaint(Color.BLUE);
+    
+    
+    BufferedOutputStream stream;
+    try {
+      stream = new BufferedOutputStream(new FileOutputStream(pathName));
+      ImageIO.write(chart.createBufferedImage(1000, 700), "PNG", stream);
+      stream.close();
+    }
+    catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }    
+  } 
+  */ 
+/****
+  private void printEadieHofstee(){
+    String pathName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\Pruefungen\\21-22\\20220114\\images\\Frage16_A.png";
+    String chartName = "";
+    String series1Name = "";
+
+    Vector<Double[]> values = new Vector<Double[]>();
+    Double[] value;
+    
+    
+    
+    double xStartValue = 0.0f;
+    double xStopValue = 0.23f;
+    double stepSize = 0.0001f;
+    org.jfree.data.Range xRange = new org.jfree.data.Range(0,0.222);
+    org.jfree.data.Range yRange = new org.jfree.data.Range(0,50);
+    double xTick = 0.02;
+    double yTick = 10;
+    
+    
+    double x = xStartValue;
+    double y;
+    double vmax = 34;
+    double Km = 170;
+    while (x<xStopValue) {
+      y = -Km*x+vmax;
+      value = new Double[2];
+      value[0] = x;
+      value[1] = y;
+      x += stepSize;
+      values.add(value);
+    }
+    XYSeries series1 = new XYSeries(series1Name);
+    for (int i=0;i!=values.size();i++){
+      Double[] valuePair = values.get(i);
+      //  if (cx.Value[j][0]<782.55f)
+      series1.add(valuePair[0],valuePair[1]);
+    }
+    
+    XYSeriesCollection coll1 = new XYSeriesCollection(series1);
+    ChartFactory.setChartTheme(StandardChartTheme.createLegacyTheme());
+
+    JFreeChart chart = ChartFactory.createXYLineChart(chartName,"x","y",coll1,PlotOrientation.VERTICAL,false,false,false);
+    chart.setBackgroundPaint(Color.WHITE);
+    XYPlot xyPlot = chart.getXYPlot();
+    XYItemRenderer renderer = xyPlot.getRenderer();
+    renderer.setSeriesPaint(0, Color.black);
+    
+    java.awt.Font tickFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 18);
+    java.awt.Font labelFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 22);
+    NumberAxis domain = (NumberAxis) xyPlot.getDomainAxis();
+    domain.setTickUnit(new NumberTickUnit(xTick));
+    domain.setRange(xRange);
+    domain.setTickMarkInsideLength(10f);
+    domain.setMinorTickMarkInsideLength(6f);
+    domain.setMinorTickMarkOutsideLength(0f);
+    domain.setTickLabelFont(tickFont);
+    domain.setVerticalTickLabels(false);
+    domain.setLabel("v/[S] (s  )");
+    domain.setLabelFont(labelFont);
+    domain.setMinorTickCount(2);
+    domain.setMinorTickMarksVisible(true);
+    NumberAxis range = (NumberAxis) xyPlot.getRangeAxis();
+    range.setRange(yRange);
+    //range.setMinorTickCount(2);
+    range.setMinorTickCount(5);
+    range.setMinorTickMarksVisible(true);
+    range.setTickUnit(new NumberTickUnit(yTick));
+    range.setTickMarkInsideLength(10f);
+    range.setMinorTickMarkInsideLength(6f);
+    range.setMinorTickMarkOutsideLength(0f);
+    range.setTickLabelFont(tickFont);
+    range.setLabelFont(labelFont);
+    range.setLabel("v (\u00B5M/s)");
+    //range.setLabel("v (nM/s)");
+    Stroke solid = new BasicStroke(0.5f);
+    xyPlot.setRangeGridlineStroke(solid);
+    xyPlot.setRangeGridlinePaint(Color.BLUE);
+    xyPlot.setDomainGridlineStroke(solid);
+    xyPlot.setDomainGridlinePaint(Color.BLUE);
+    
+    
+    BufferedOutputStream stream;
+    try {
+      stream = new BufferedOutputStream(new FileOutputStream(pathName));
+      ImageIO.write(chart.createBufferedImage(1000, 700), "PNG", stream);
+      stream.close();
+    }
+    catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }    
+  }  
+
+  private void printInhibition() {
+    String pathName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\images\\function_inhibition.png";
+    String chartName = "";
+    String series1Name = "";
+
+    Vector<Double[]> values = new Vector<Double[]>();
+    Vector<Double[]> values2 = new Vector<Double[]>();
+    Double[] value;
+    
+    double xStartValue = 0.0f;
+    double xStopValue = 300f;
+    double stepSize = 0.001f;
+    org.jfree.data.Range xRange = new org.jfree.data.Range(0.0,300);
+    org.jfree.data.Range yRange = new org.jfree.data.Range(0,200);
+    double xTick = 50;
+    double yTick = 50;
+    
+    
+    double x = xStartValue;
+    double y;
+    double vmax = 200;
+    double Km = 10;
+    while (x<xStopValue) {
+      y = vmax*x/(x+Km);
+      x += stepSize;
+      value = new Double[2];
+      value[0] = x;
+      value[1] = y;
+      values.add(value);
+    }
+    
+    double Km2 = 150;
+    x = xStartValue;
+    while (x<xStopValue) {
+      y = vmax*x/(x+Km2);
+      x += stepSize;
+      value = new Double[2];
+      value[0] = x;
+      value[1] = y;
+      values2.add(value);
+    }
+    
+    XYSeries series1 = new XYSeries(series1Name);
+    for (int i=0;i!=values.size();i++){
+      Double[] valuePair = values.get(i);
+      //  if (cx.Value[j][0]<782.55f)
+      series1.add(valuePair[0],valuePair[1]);
+    }
+    
+    XYSeries series2 = new XYSeries(" ");
+    for (int i=0;i!=values2.size();i++){
+      Double[] valuePair = values2.get(i);
+      //  if (cx.Value[j][0]<782.55f)
+      series2.add(valuePair[0],valuePair[1]);
+    }
+    
+    XYSeriesCollection coll1 = new XYSeriesCollection(series1);
+    coll1.addSeries(series2);
+    //ChartFactory.setChartTheme(StandardChartTheme.createJFreeTheme());
+    //ChartFactory.setChartTheme(new StandardChartTheme("JFree/Shadow"));
+    ChartFactory.setChartTheme(StandardChartTheme.createLegacyTheme());
+
+    JFreeChart chart = ChartFactory.createXYLineChart(chartName,"x","y",coll1,PlotOrientation.VERTICAL,true,false,false);
+    chart.setBackgroundPaint(Color.WHITE);
+    XYPlot xyPlot = chart.getXYPlot();
+    XYItemRenderer renderer = xyPlot.getRenderer();
+    renderer.setSeriesPaint(0, Color.GREEN);
+    renderer.setSeriesPaint(1, Color.RED);
+    
+    java.awt.Font tickFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 18);
+    java.awt.Font labelFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 22);
+    NumberAxis domain = (NumberAxis) xyPlot.getDomainAxis();
+    domain.setTickUnit(new NumberTickUnit(xTick));
+    domain.setRange(xRange);
+    domain.setTickMarkInsideLength(10f);
+    domain.setMinorTickMarkInsideLength(6f);
+    domain.setMinorTickMarkOutsideLength(0f);
+    domain.setTickLabelFont(tickFont);
+    domain.setVerticalTickLabels(false);
+    domain.setLabel("[S] (\u00B5M)");
+    domain.setLabelFont(labelFont);
+    domain.setMinorTickCount(5);
+    domain.setMinorTickMarksVisible(true);
+    NumberAxis range = (NumberAxis) xyPlot.getRangeAxis();
+    range.setRange(yRange);
+    range.setMinorTickCount(5);
+    range.setMinorTickMarksVisible(true);
+    range.setTickUnit(new NumberTickUnit(yTick));
+    range.setTickMarkInsideLength(10f);
+    range.setMinorTickMarkInsideLength(6f);
+    range.setMinorTickMarkOutsideLength(0f);
+    range.setTickLabelFont(tickFont);
+    range.setLabelFont(labelFont);
+    range.setLabel("v (nM/s)");
+    Stroke solid = new BasicStroke(0.5f);
+    xyPlot.setRangeGridlineStroke(solid);
+    xyPlot.setRangeGridlinePaint(Color.BLUE);
+    xyPlot.setDomainGridlineStroke(solid);
+    xyPlot.setDomainGridlinePaint(Color.BLUE);
+    
+    
+    BufferedOutputStream stream;
+    try {
+      stream = new BufferedOutputStream(new FileOutputStream(pathName));
+      ImageIO.write(chart.createBufferedImage(1000, 700), "PNG", stream);
+      stream.close();
+    }
+    catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }    
+
+  }
+*/  
+
+ 
+  private void splitStudentsToLectureRooms() {
+//    String fileName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\Pruefungen\\21-22\\20220114\\Kandidaten\\Hoersaalzuteilung\\Lehrveranstaltungspruefung_14012022-1330_652215_VO_MathematikinausgewaehltenKapiteln.txt";
+//    String outName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\Pruefungen\\\\21-22\\20220114\\Kandidaten\\Hoersaalzuteilung\\Hoersaalzuteilung.tsv";
+    String fileName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\MolekularbiologischeArbeitstechniken\\SS22\\Durchgang2\\Gruppenzuteilung\\TN_LV652928_2022-06-10.txt";
+    String outName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\MolekularbiologischeArbeitstechniken\\SS22\\Durchgang2\\Gruppenzuteilung\\Gruppenzuteilung.tsv";
+
+    Hashtable<Integer,LectureRoom> rooms = new Hashtable<Integer,LectureRoom>();
+//    rooms.put(0, new LectureRoom("HS 12.11",66,"13:30-16:00"));
+//    rooms.put(1, new LectureRoom("HS 12.01",36,"13:30-16:00"));
+    rooms.put(0, new LectureRoom("A",4,"Gruppe A"));
+    rooms.put(1, new LectureRoom("B",4,"Gruppe B"));
+    rooms.put(2, new LectureRoom("C",4,"Gruppe C"));
+    rooms.put(3, new LectureRoom("D",4,"Gruppe D"));
+    rooms.put(4, new LectureRoom("E",4,"Gruppe E"));
+    rooms.put(5, new LectureRoom("F",4,"Gruppe F"));
+    rooms.put(6, new LectureRoom("G",4,"Gruppe G"));
+    rooms.put(7, new LectureRoom("H",4,"Gruppe H"));
+    rooms.put(8, new LectureRoom("I",4,"Gruppe I"));
+    rooms.put(9, new LectureRoom("J",4,"Gruppe J"));
+    
+    
+//    Hashtable<Integer,Integer> count = new Hashtable<Integer,Integer>();
+//    for (Integer key : rooms.keySet()) count.put(key, 0);
+//    for (int i=0; i!=30000;i++) {
+//      int random = selectARandomNumberStartingWithZeroTo(rooms.size());
+//      count.put(random, count.get(random)+1);
+//    }
+//    for (Integer key : rooms.keySet()) System.out.println(key+": "+count.get(key));
+    
+    Vector<Student> students = parseStudentInformation(fileName);
+//    Student stud = students.get(1);
+//    System.out.println(stud.getRegistrationNumber()+"; "+stud.getFamilyName()+"; "+stud.getFirstName()+"; "+stud.getEmail()+"; "+stud.getBirthday());
+    Hashtable<String,Student> studHash = new Hashtable<String,Student>();
+    for (Student student: students)
+      studHash.put(student.getRegistrationNumber(), student);
+    
+
+    Hashtable<Integer,Integer> participantCount = new Hashtable<Integer,Integer>();
+    for (Integer key : rooms.keySet()) participantCount.put(key, 0);
+    int studentsAssigned = 0;
+    for (String reg: studHash.keySet()) {
+      boolean wasAssigned = false;
+      while (!wasAssigned) {
+        int randomRoom = selectARandomNumberStartingWithZeroTo(rooms.size());
+        int participantsInTheRoom = participantCount.get(randomRoom);
+        //if the room is full, try again
+        if (rooms.get(randomRoom).getCapacity()==(participantsInTheRoom)) continue;
+        
+        studHash.get(reg).setLectureRoom(rooms.get(randomRoom));
+        participantCount.put(randomRoom, participantCount.get(randomRoom)+1);
+        studentsAssigned++;
+        wasAssigned = true;
+        //System.out.println("Students assigned: "+studentsAssigned);
+      }
+    }
+    
+    //this check is to find out whehter the number of room assignments war correct
+    Hashtable<String, Integer> studentsInTheRoom = new Hashtable<String, Integer>();
+    for (Integer key : rooms.keySet()) studentsInTheRoom.put(rooms.get(key).getName(), 0);
+    for (Student student : students) {
+      String lect = student.getLectureRoom().getName();
+      studentsInTheRoom.put(lect, (studentsInTheRoom.get(lect)+1));
+    }
+    for (String key: studentsInTheRoom.keySet()) {
+      System.out.println("Students assigned to the room "+key+": "+studentsInTheRoom.get(key));
+    }
+    
+    try {
+      BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(outName));
+      String header = "Matr. Nummer\tFamilienname\tVorname\tHoersaal\tZeit\n\r";
+      stream.write(header.getBytes());
+      for (Student student: students) {
+        String studentString = student.registrationNumber+"\t"+student.getFamilyName()+"\t"+student.getFirstName()+"\t"+student.getLectureRoom().getName()+"\t"+student.getLectureRoom().getTime()+"\n\r";
+        stream.write(studentString.getBytes());
+      }
+      stream.close();
+    }
+    catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    
+  }
+  
+  private Vector<Student> parseStudentInformation(String file) {
+    Vector<Student> students = new Vector<Student>();
+    try {
+      LineNumberReader reader = new LineNumberReader(new FileReader(file));
+      String line;
+      boolean firstSet = false;
+      int lineNumber = 0;
+      String[] splitLine;
+      String value = null;
+      
+      int columnReg = -1;
+      int columnFamName = -1;
+      int columnFirstName = -1;
+      int columnEmail = -1;
+      int columnBirthday = -1;
+      
+      String reg;
+      String famName;
+      String firstName;
+      String email;
+      String birthday;
+      
+      while ((line = reader.readLine()) != null) {
+        if (line==null || line.trim().length()==0) continue;
+        splitLine = line.split(";");
+        if (lineNumber==0) {
+          for (int i=0; i!=splitLine.length; i++) {
+            value = splitLine[i];
+            if (value==null || value.length()==0) continue;
+            value = value.substring(value.indexOf("\"")+1);
+            value = value.substring(0,value.lastIndexOf("\"")).trim();
+            if (value==null || value.length()==0) continue;
+            ////if (value.equalsIgnoreCase("REGISTRATION_NUMBER"))
+            if (value.equalsIgnoreCase("Matrikelnummer"))
+              columnReg = i;
+            ////if (value.equalsIgnoreCase("FAMILY_NAME_OF_STUDENT"))
+            if (value.equalsIgnoreCase("Familienname"))
+              columnFamName = i;
+            ////if (value.equalsIgnoreCase("FIRST_NAME_OF_STUDENT"))
+            if (value.equalsIgnoreCase("Vorname"))
+              columnFirstName = i;
+            ////if (value.equalsIgnoreCase("EMAIL_ADDRESS"))
+            if (value.equalsIgnoreCase("E-Mail"))
+              columnEmail = i;
+            ////if (value.equalsIgnoreCase("Birthday_Of_Student"))
+            if (value.equalsIgnoreCase("Birthday_Of_Student"))
+              columnBirthday = i;
+          }
+        }else {
+          reg = null;
+          famName = null;
+          firstName = null;
+          email = null;
+          birthday = null;          
+          for (int i=0; i!=splitLine.length; i++) {
+            value = splitLine[i];
+            //System.out.println(value);
+            if (value==null || value.length()==0) continue;
+            value = value.substring(value.indexOf("\"")+1);
+            value = value.substring(0,value.lastIndexOf("\"")).trim();
+            if (value==null || value.length()==0) continue;
+            if (i==columnReg)
+              reg = value;
+            if (i==columnFamName)
+              famName = value;
+            if (i==columnFirstName)
+              firstName = value;
+            if (i==columnEmail)
+              email = value;
+            if (i==columnBirthday)
+              birthday = value;
+          }
+          if (reg!=null && reg.length()>0 && famName!=null && firstName!=null && email!=null) {//// && birthday!=null) {
+            Student student = new Student(reg,famName,firstName,email,birthday);
+            students.add(student);
+          }
+          
+        }
+        lineNumber++;
+      }
+      reader.close();
+    }
+    catch (IOException e) {
+      e.printStackTrace();
+    }
+    return students;
+  }
+  
+  private int selectARandomNumberStartingWithZeroTo(int to) {
+    int number = (int)Calculator.roundDBL(Math.random()*to,0,BigDecimal.ROUND_DOWN);
+    if (number==to)
+      number--;
+    return number;
+  }
+  
+  
+  
+  private class Student{
+    
+    private String registrationNumber;
+    
+    private String familyName;
+    
+    private String firstName;
+    
+    private String email;
+    
+    private String birthday;
+    
+    private LectureRoom lectureRoom;
+
+    public Student(String registrationNumber, String familyName, String firstName,
+        String email, String birthday)
+    {
+      super();
+      this.registrationNumber = registrationNumber;
+      this.familyName = familyName;
+      this.firstName = firstName;
+      this.email = email;
+      this.birthday = birthday;
+    }
+
+    public String getRegistrationNumber()
+    {
+      return registrationNumber;
+    }
+
+    public String getFamilyName()
+    {
+      return familyName;
+    }
+
+    public String getFirstName()
+    {
+      return firstName;
+    }
+
+    public String getEmail()
+    {
+      return email;
+    }
+
+    public String getBirthday()
+    {
+      return birthday;
+    }
+
+    public LectureRoom getLectureRoom()
+    {
+      return lectureRoom;
+    }
+
+    public void setLectureRoom(LectureRoom lectureRoom)
+    {
+      this.lectureRoom = lectureRoom;
+    }
+    
+    
+  }
+  
+  private class LectureRoom {
+    
+    private String name;
+    private int capacity;
+    private String time;
+    
+    public LectureRoom(String name, int capacity, String time)
+    {
+      super();
+      this.name = name;
+      this.capacity = capacity;
+      this.time = time;
+    }
+
+    public String getName()
+    {
+      return name;
+    }
+
+    public int getCapacity()
+    {
+      return capacity;
+    }
+
+    public String getTime()
+    {
+      return time;
+    }
+    
+  }
+  
+/****  
+  private void countWordLengths() {
+    String textFile = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\Pruefungen\\21-22\\20220429\\Frage10\\UnderTheBridge.txt";
+    
+    Hashtable<Integer,Integer> numberOfWordsWithLength = new Hashtable<Integer,Integer>();
+    String line;
+    StringBuilder sb = null;
+    boolean isWord;
+    boolean isLetter;
+    String word;
+    int wordLength;
+    try {
+      LineNumberReader reader = new LineNumberReader(new FileReader(textFile));
+      while ((line = reader.readLine()) != null) {
+        char[] chars = line.toCharArray();
+        isWord = false;
+        for (int i=0; i!= chars.length; i++) {
+          isLetter = Character.isLetterOrDigit(chars[i]);
+          if (isWord) {
+            if (isLetter) {
+              sb.append(chars[i]);
+            }else {
+              isWord = false;
+              word = sb.toString();
+              //System.out.println(word);
+              wordLength = word.length();
+//              if (wordLength>9)
+//                System.out.println(wordLength+": "+word);
+              if (!numberOfWordsWithLength.containsKey(wordLength))
+                numberOfWordsWithLength.put(wordLength, 0);
+              numberOfWordsWithLength.put(wordLength, numberOfWordsWithLength.get(wordLength)+1);
+              sb = null;
+            }
+          } else {
+            if (isLetter) {
+              isWord = true;
+              sb = new StringBuilder();
+              sb.append(chars[i]);
+            }
+          }
+        }
+        if (isWord && sb!=null) {
+          word = sb.toString();
+          //System.out.println(word);
+          wordLength = word.length();
+//          if (wordLength>9)
+//            System.out.println(wordLength+": "+word);
+          if (!numberOfWordsWithLength.containsKey(wordLength))
+            numberOfWordsWithLength.put(wordLength, 0);
+          numberOfWordsWithLength.put(wordLength, numberOfWordsWithLength.get(wordLength)+1);
+        }
+      }
+      int longestWord = 0;
+      for (int length : numberOfWordsWithLength.keySet()) {
+        if (length>longestWord)
+          longestWord = length;
+      }
+      for (int i=1; i!=(longestWord+1); i++) {
+        int number = 0;
+        if (numberOfWordsWithLength.containsKey(i))
+          number = numberOfWordsWithLength.get(i);
+        System.out.println(i+"\t"+number);
+//        for (int j=0;j!=number;j++) {
+//          System.out.println(i);
+//        }
+      }
+    }catch(Exception ex) {
+      ex.printStackTrace();
+    }
+    
+  }
+   
+  private void printRapidEquilibrium(){
+    String pathName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\Pruefungen\\21-22\\20220429\\images\\RapidEquil_A.png";
+    String chartName = "";
+    String series1Name = "";
+    String series2Name = " ";
+
+    Vector<Double[]> values = new Vector<Double[]>();
+    Double[] value;
+    
+    
+    double xStartValue = 0.0f;
+    double xStopValue = 6f;
+    double stepSize = 0.001f;
+    double stepSizeLine = 0.1f;
+    // 2021.01.14 A and C
+    //double yEnd = 0.9f;
+    // 2021.01.14 B
+    double yEnd = 1.5f;
+    org.jfree.data.Range xRange = new org.jfree.data.Range(0.0,5.2);
+    org.jfree.data.Range yRange = new org.jfree.data.Range(0,yEnd);
+    double xTick = 0.5;
+    double yTick = 0.1;
+    
+    
+    double x = xStartValue;
+    double xReal;
+    double y;
+    // 2021.01.14 A
+//    double K1 = 4*Math.pow(10, 6);
+//    double k2 = 0.45;
+    // 2021.01.14 B
+//    double K1 = 1.25*Math.pow(10, 6);
+//    double k2 = 0.8;
+    // 2021.01.14 C
+//    double K1 = 1.5*Math.pow(10, 6);
+//    double k2 = 0.6;
+
+    // 2022.04.29 A
+    double K1 = 2*Math.pow(10, 6);
+    double k2 = 1.4;
+    // 2022.04.29 B
+//    double K1 = 3*Math.pow(10, 6);
+//    double k2 = 1.2;
+    
+    while (x<xStopValue) {
+      x += stepSize;
+      xReal = x*Math.pow(10, -6);
+      y = (K1*k2*xReal)/(K1*xReal+1);
+      value = new Double[2];
+      value[0] = x;
+      value[1] = y;
+      values.add(value);
+    }
+    
+    XYSeries series1 = new XYSeries(series1Name);
+    XYSeries series2 = new XYSeries(series2Name);
+    for (int i=0;i!=values.size();i++){
+      Double[] valuePair = values.get(i);
+      //  if (cx.Value[j][0]<782.55f)
+      series1.add(valuePair[0],valuePair[1]);
+    }
+    series2.add(0,0);
+    series2.add(yEnd*Math.pow(10, 6)/(K1*k2),yEnd);
+
+    
+    XYSeriesCollection coll1 = new XYSeriesCollection(series1);
+    coll1.addSeries(series2);
+    
+    //ChartFactory.setChartTheme(StandardChartTheme.createJFreeTheme());
+    //ChartFactory.setChartTheme(new StandardChartTheme("JFree/Shadow"));
+    ChartFactory.setChartTheme(StandardChartTheme.createLegacyTheme());
+
+    JFreeChart chart = ChartFactory.createXYLineChart(chartName,null,"y",coll1,PlotOrientation.VERTICAL,false,false,false);
+    chart.setBackgroundPaint(Color.WHITE);
+    XYPlot xyPlot = chart.getXYPlot();
+    XYItemRenderer renderer = xyPlot.getRenderer();
+    renderer.setSeriesPaint(0, Color.black);
+    renderer.setSeriesPaint(1, Color.red);
+    renderer.setSeriesStroke(1, new BasicStroke(3.0f, BasicStroke.CAP_BUTT,
+        BasicStroke.JOIN_ROUND, 1f, new float[]{7f,7f}, 0.0f));
+    
+    java.awt.Font tickFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 18);
+    java.awt.Font labelFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 22);
+    NumberAxis domain = (NumberAxis) xyPlot.getDomainAxis();
+    domain.setTickUnit(new NumberTickUnit(xTick));
+    domain.setRange(xRange);
+    domain.setTickMarkInsideLength(10f);
+    domain.setMinorTickMarkInsideLength(6f);
+    domain.setMinorTickMarkOutsideLength(0f);
+    domain.setTickLabelFont(tickFont);
+    domain.setVerticalTickLabels(false);
+//    domain.setLabel("[A] (\u00B5M)");
+//    domain.setLabelFont(labelFont);
+    domain.setMinorTickCount(2);
+    domain.setMinorTickMarksVisible(true);
+    NumberAxis range = (NumberAxis) xyPlot.getRangeAxis();
+    range.setRange(yRange);
+    range.setMinorTickCount(2);
+    range.setMinorTickMarksVisible(true);
+    range.setTickUnit(new NumberTickUnit(yTick));
+    range.setTickMarkInsideLength(10f);
+    range.setMinorTickMarkInsideLength(6f);
+    range.setMinorTickMarkOutsideLength(0f);
+    range.setTickLabelFont(tickFont);
+    range.setLabelFont(labelFont);
+    range.setLabel("v /[B] (s  )");
+    Stroke solid = new BasicStroke(0.5f);
+    xyPlot.setRangeGridlineStroke(solid);
+    xyPlot.setRangeGridlinePaint(Color.BLUE);
+    xyPlot.setDomainGridlineStroke(solid);
+    xyPlot.setDomainGridlinePaint(Color.BLUE);
+    
+    
+    BufferedOutputStream stream;
+    try {
+      stream = new BufferedOutputStream(new FileOutputStream(pathName));
+      ImageIO.write(chart.createBufferedImage(1000, 700), "PNG", stream);
+      stream.close();
+    }
+    catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }    
+  }
+  
+  
+  private void printSteadyState() {
+    String pathName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\Pruefungen\\21-22\\20220114\\images\\Frage13_A.png";
+    String chartName = "";
+    String series1Name = "";
+    String series2Name = " ";
+
+    Vector<Double[]> values = new Vector<Double[]>();
+    Double[] value;
+    
+    
+    double xStartValue = 0.0f;
+    double xStopValue = 160f;
+    double stepSize = 0.001f;
+    double stepSizeLine = 0.1f;
+    // 2021.01.14 A and C
+    //double yEnd = 0.9f;
+    // 2021.01.14 B
+    double yEnd = 30.5f;
+    org.jfree.data.Range xRange = new org.jfree.data.Range(0.0,152);
+    org.jfree.data.Range yRange = new org.jfree.data.Range(0,yEnd);
+    double xTick = 10;
+    double yTick = 2;
+    
+    
+    double x = xStartValue;
+    double xReal;
+    double y;
+    // 2021.01.14 A
+//    double K1 = 4*Math.pow(10, 6);
+//    double k2 = 0.45;
+    // 2021.01.14 B
+//    double k1 = 2000000;
+//    double k2 = 0.7;
+    // 2021.01.14 C
+//    double K1 = 1.5*Math.pow(10, 6);
+//    double k2 = 0.6;
+
+    //2022.01.14 A
+//    double k1 = 400000;
+//    double k2 = 26;
+
+    //2022.01.14 B
+    double k1 = 600000;
+    double k2 = 23;
+    
+    //2022.01.14 C
+//    double k1 = 500000;
+//    double k2 = 22;
+
+    
+    while (x<xStopValue) {
+      x += stepSize;
+      xReal = x*Math.pow(10, -6);
+      y = (k1*k2*xReal)/(k1*xReal+k2);
+      value = new Double[2];
+      value[0] = x;
+      value[1] = y;
+      values.add(value);
+    }
+    
+    XYSeries series1 = new XYSeries(series1Name);
+    XYSeries series2 = new XYSeries(series2Name);
+    for (int i=0;i!=values.size();i++){
+      Double[] valuePair = values.get(i);
+      //  if (cx.Value[j][0]<782.55f)
+      series1.add(valuePair[0],valuePair[1]);
+    }
+    series2.add(0,0);
+    series2.add(yEnd*Math.pow(10, 6)/(k1),yEnd);
+
+    
+    XYSeriesCollection coll1 = new XYSeriesCollection(series1);
+    coll1.addSeries(series2);
+    
+    //ChartFactory.setChartTheme(StandardChartTheme.createJFreeTheme());
+    //ChartFactory.setChartTheme(new StandardChartTheme("JFree/Shadow"));
+    ChartFactory.setChartTheme(StandardChartTheme.createLegacyTheme());
+
+    JFreeChart chart = ChartFactory.createXYLineChart(chartName,"x","y",coll1,PlotOrientation.VERTICAL,false,false,false);
+    chart.setBackgroundPaint(Color.WHITE);
+    XYPlot xyPlot = chart.getXYPlot();
+    XYItemRenderer renderer = xyPlot.getRenderer();
+    renderer.setSeriesPaint(0, Color.black);
+    renderer.setSeriesPaint(1, Color.red);
+    renderer.setSeriesStroke(1, new BasicStroke(3.0f, BasicStroke.CAP_BUTT,
+        BasicStroke.JOIN_ROUND, 1f, new float[]{7f,7f}, 0.0f));
+    
+    java.awt.Font tickFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 18);
+    java.awt.Font labelFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 22);
+    NumberAxis domain = (NumberAxis) xyPlot.getDomainAxis();
+    domain.setTickUnit(new NumberTickUnit(xTick));
+    domain.setRange(xRange);
+    domain.setTickMarkInsideLength(10f);
+    domain.setMinorTickMarkInsideLength(6f);
+    domain.setMinorTickMarkOutsideLength(0f);
+    domain.setTickLabelFont(tickFont);
+    domain.setVerticalTickLabels(false);
+    domain.setLabel("[A] (\u00B5M)");
+    //domain.setLabel("[A] (nM)");
+    //domain.setLabelFont(labelFont);
+    domain.setMinorTickCount(2);
+    domain.setMinorTickMarksVisible(true);
+    NumberAxis range = (NumberAxis) xyPlot.getRangeAxis();
+    range.setRange(yRange);
+    range.setMinorTickCount(2);
+    range.setMinorTickMarksVisible(true);
+    range.setTickUnit(new NumberTickUnit(yTick));
+    range.setTickMarkInsideLength(10f);
+    range.setMinorTickMarkInsideLength(6f);
+    range.setMinorTickMarkOutsideLength(0f);
+    range.setTickLabelFont(tickFont);
+    range.setLabelFont(labelFont);
+    range.setLabel("v /[B] (s  )");
+    Stroke solid = new BasicStroke(0.5f);
+    xyPlot.setRangeGridlineStroke(solid);
+    xyPlot.setRangeGridlinePaint(Color.BLUE);
+    xyPlot.setDomainGridlineStroke(solid);
+    xyPlot.setDomainGridlinePaint(Color.BLUE);
+    
+    
+    BufferedOutputStream stream;
+    try {
+      stream = new BufferedOutputStream(new FileOutputStream(pathName));
+      ImageIO.write(chart.createBufferedImage(1000, 700), "PNG", stream);
+      stream.close();
+    }
+    catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }    
+    
+  }
+  
+  private void printDoubleLogPlotForReactionOrder() {
+    String pathName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\Pruefungen\\21-22\\20220321\\images\\Frage15_A.png";
+    String chartName = "";
+    String series1Name = "";
+    String series2Name = " ";
+
+    Vector<Double[]> values = new Vector<Double[]>();
+    Double[] value;
+    
+    
+    double xStartValue = 0.0f;
+    double xStopValue = 6f;
+    double stepSize = 0.001f;
+    double stepSizeLine = 0.1f;
+    // 2021.01.14 A and C
+    //double yEnd = 0.9f;
+    // 2021.01.14 B
+    double yEnd = 1.0f;
+    org.jfree.data.Range xRange = new org.jfree.data.Range(-5.5,-4.5);
+    org.jfree.data.Range yRange = new org.jfree.data.Range(-5.5,-4.5);
+    double xTick = 0.1;
+    double yTick = 0.1;
+    
+    
+    double x = xStartValue;
+    double xReal;
+    double y;
+    // 2021.01.14 A
+//    double K1 = 4*Math.pow(10, 6);
+//    double k2 = 0.45;
+    // 2021.01.14 B
+    double k1 = 2000000;
+    double k2 = 0.7;
+    // 2021.01.14 C
+//    double K1 = 1.5*Math.pow(10, 6);
+//    double k2 = 0.6;
+    
+    while (x<xStopValue) {
+      x += stepSize;
+      xReal = x*Math.pow(10, -5);
+      y = (k1*k2*xReal)/(k1*xReal+k2);
+      value = new Double[2];
+      value[0] = x;
+      value[1] = y;
+      values.add(value);
+    }
+    
+    XYSeries series1 = new XYSeries(series1Name);
+    //second Order
+//    series1.add(-6.0,-6.0);
+//    series1.add(-5.0,-4.0);
+    //third order
+    series1.add(-5.5,-5.5);
+    series1.add(-4.5,-3.5);
+    
+    XYSeries series2 = new XYSeries(series2Name);
+    series2.add(-5.5,-5.2);
+    series2.add(-4.5,-4.2);
+    
+    XYSeriesCollection coll1 = new XYSeriesCollection(series1);
+    coll1.addSeries(series2);
+    
+    //ChartFactory.setChartTheme(StandardChartTheme.createJFreeTheme());
+    //ChartFactory.setChartTheme(new StandardChartTheme("JFree/Shadow"));
+    ChartFactory.setChartTheme(StandardChartTheme.createLegacyTheme());
+
+    JFreeChart chart = ChartFactory.createXYLineChart(chartName,"x","y",coll1,PlotOrientation.VERTICAL,false,false,false);
+    chart.setBackgroundPaint(Color.WHITE);
+    XYPlot xyPlot = chart.getXYPlot();
+    XYItemRenderer renderer = xyPlot.getRenderer();
+    renderer.setSeriesPaint(0, Color.red);
+    renderer.setSeriesStroke(0, new BasicStroke(3.0f, BasicStroke.CAP_BUTT,
+        BasicStroke.JOIN_ROUND, 1f, new float[]{7f,7f}, 0.0f));
+    renderer.setSeriesPaint(1, Color.blue);
+    renderer.setSeriesStroke(1, new BasicStroke(3.0f, BasicStroke.CAP_BUTT,
+        BasicStroke.JOIN_ROUND, 1f, new float[]{7f,7f}, 0.0f));
+    
+    java.awt.Font tickFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 18);
+    java.awt.Font labelFont = new java.awt.Font("Arial",java.awt.Font.PLAIN, 22);
+    NumberAxis domain = (NumberAxis) xyPlot.getDomainAxis();
+    domain.setTickUnit(new NumberTickUnit(xTick));
+    domain.setRange(xRange);
+    domain.setTickMarkInsideLength(10f);
+    domain.setMinorTickMarkInsideLength(6f);
+    domain.setMinorTickMarkOutsideLength(0f);
+    domain.setTickLabelFont(tickFont);
+    domain.setVerticalTickLabels(false);
+    domain.setLabel("log([A] )");
+    domain.setLabelFont(labelFont);
+    domain.setMinorTickCount(2);
+    domain.setMinorTickMarksVisible(true);
+    domain.setLabelPaint(Color.red);
+    NumberAxis range = (NumberAxis) xyPlot.getRangeAxis();
+    range.setRange(yRange);
+    range.setMinorTickCount(2);
+    range.setMinorTickMarksVisible(true);
+    range.setTickUnit(new NumberTickUnit(yTick));
+    range.setTickMarkInsideLength(10f);
+    range.setMinorTickMarkInsideLength(6f);
+    range.setMinorTickMarkOutsideLength(0f);
+    range.setTickLabelFont(tickFont);
+    range.setLabelFont(labelFont);
+    range.setLabel("log(v )");
+    Stroke solid = new BasicStroke(0.5f);
+    xyPlot.setRangeGridlineStroke(solid);
+    xyPlot.setRangeGridlinePaint(Color.BLUE);
+    xyPlot.setDomainGridlineStroke(solid);
+    xyPlot.setDomainGridlinePaint(Color.BLUE);
+    
+    
+    BufferedOutputStream stream;
+    try {
+      stream = new BufferedOutputStream(new FileOutputStream(pathName));
+      ImageIO.write(chart.createBufferedImage(1000, 700), "PNG", stream);
+      stream.close();
+    }
+    catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }    
+  }
+  
+  
+ private void printScatchardPlot() {
+   
+   String pathName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Stoechiometrie\\SS22\\8_Biochemie\\ScatchardPlot.png";
+   
+   org.jfree.data.Range xRange = new org.jfree.data.Range(0,23);
+   org.jfree.data.Range yRange = new org.jfree.data.Range(35,80);
+   double xTick = 1;
+   double yTick = 5;
+   
+   XYSeries series = new XYSeries("");
+   series.add(5.81d,5.81d/0.074d);
+   series.add(7.32d,7.32d/0.099d);
+   series.add(10.38d,10.38d/0.15d);
+   series.add(12.30d,12.30d/0.20d);
+   series.add(16.56d,16.56d/0.35d);
+   series.add(21.65d,21.65d/0.60d);
+
+   XYSeriesCollection coll = new XYSeriesCollection(series);
+   ChartFactory.setChartTheme(StandardChartTheme.createLegacyTheme());
+   JFreeChart chart = ChartFactory.createScatterPlot("Scatchard Plot","r","r/[RNA]",coll,PlotOrientation.VERTICAL,false,false,false);
+   chart.setBackgroundPaint(Color.WHITE);
+
+   XYPlot xyPlot = chart.getXYPlot();
+   
+   java.awt.Font tickFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 18);
+   java.awt.Font labelFont = new java.awt.Font("Arial",java.awt.Font.PLAIN, 22);
+   NumberAxis domain = (NumberAxis) xyPlot.getDomainAxis();
+   domain.setTickUnit(new NumberTickUnit(xTick));
+   domain.setRange(xRange);
+   domain.setTickMarkInsideLength(10f);
+   domain.setMinorTickMarkInsideLength(6f);
+   domain.setMinorTickMarkOutsideLength(0f);
+   domain.setTickLabelFont(tickFont);
+   domain.setVerticalTickLabels(false);
+   domain.setLabel("r");
+   domain.setLabelFont(labelFont);
+   domain.setMinorTickCount(1);
+   domain.setMinorTickMarksVisible(true);
+   NumberAxis range = (NumberAxis) xyPlot.getRangeAxis();
+   range.setRange(yRange);
+   range.setMinorTickCount(5);
+   range.setMinorTickMarksVisible(true);
+   range.setTickUnit(new NumberTickUnit(yTick));
+   range.setTickMarkInsideLength(10f);
+   range.setMinorTickMarkInsideLength(6f);
+   range.setMinorTickMarkOutsideLength(0f);
+   range.setTickLabelFont(tickFont);
+   range.setLabelFont(labelFont);
+   range.setLabel("r/[RNA]");
+   Stroke solid = new BasicStroke(0.5f);
+   xyPlot.setRangeGridlineStroke(solid);
+   xyPlot.setRangeGridlinePaint(Color.BLUE);
+   xyPlot.setDomainGridlineStroke(solid);
+   xyPlot.setDomainGridlinePaint(Color.BLUE);
+   
+   
+   BufferedOutputStream stream;
+   try {
+     stream = new BufferedOutputStream(new FileOutputStream(pathName));
+     ImageIO.write(chart.createBufferedImage(1000, 700), "PNG", stream);
+     stream.close();
+   }
+   catch (IOException e) {
+     // TODO Auto-generated catch block
+     e.printStackTrace();
+   }    
+ }
+ 
+
+  private void testLychrel() {
+    long time = System.currentTimeMillis();
+    //test the numbers
+    BigInteger number;
+    BigInteger reverse;
+    int maxIt = 300;
+    //Set<BigInteger> used = new HashSet<BigInteger>();
+    Set<String> used = new HashSet<String>();
+    BigInteger[] usedNumbers = new BigInteger[maxIt];
+    boolean palindrome = false;
+    for (long i=0; i!=500001; i++) {
+      if (used.contains(String.valueOf(i)))
+        continue;
+      number = new BigInteger(String.valueOf(i));
+      palindrome = false;
+      if (isPalindrome(number)) {
+//        System.out.println(i+";"+number.toString());
+        palindrome = true;
+      }
+      //int count = 0;
+      cleanArray(usedNumbers);
+      for (int j=0; j!=maxIt; j++) {
+        if (palindrome)
+          break;
+        reverse = reverseNumber(number);        
+        number = number.add(reverse);
+        usedNumbers[j] = number;
+        if (isPalindrome(number)) {
+//          System.out.println(i+";"+number.toString());
+          palindrome = true;
+          for (int k=0; k!=maxIt; k++) {
+            if (usedNumbers[k]==null)
+              break;
+            else
+              used.add(usedNumbers[k].toString());
+          }
+        }
+        //count++;
+      }
+//      if (!palindrome)
+//        System.out.println(i);
+    }
+    System.out.println((System.currentTimeMillis()-time)/1000l+" seconds");
+
+  }
+  
+  private void cleanArray(BigInteger[] used){
+    for (int i=0; i!=used.length;i++) {
+//      if (used[i]!=null)
+        used[i]=null;
+//      else
+//        break;
+    }
+  }
+
+  
+  private BigInteger reverseNumber(BigInteger number) {
+    char[] k = number.toString().toCharArray();
+    char[] inverted = new char[k.length];
+    for (int i=0; i!=k.length;i++) {
+      inverted[k.length-i-1] = k[i];
+    }
+//    System.out.println("("+new String(k)+")("+new String(inverted)+")");
+    return new BigInteger(new String(inverted));
+  }
+ 
+  private boolean isPalindrome(BigInteger number) {
+    return number.equals(reverseNumber(number));
+  }
+ 
+  
+  private void printEmptyBoxPlotDiagram(){
+    String pathName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\images\\emptyBoxplot.png";
+    String chartName = "";
+    String series1Name = "";
+
+    Vector<Double[]> values = new Vector<Double[]>();
+    Double[] value;
+    values.add(new Double[]{-1d,-1d});
+    
+    
+    
+    double xStopValue = 1f;
+    org.jfree.data.Range xRange = new org.jfree.data.Range(0f,1f);
+    org.jfree.data.Range yRange = new org.jfree.data.Range(0,150);
+    double xTick = 10;
+    double yTick = 10;
+
+    
+    double y;
+    
+    XYSeries series1 = new XYSeries(series1Name);
+    for (int i=0;i!=values.size();i++){
+      Double[] valuePair = values.get(i);
+      series1.add(valuePair[0],valuePair[1]);
+    }
+    
+    XYSeriesCollection coll1 = new XYSeriesCollection(series1);
+    ChartFactory.setChartTheme(StandardChartTheme.createLegacyTheme());
+
+    JFreeChart chart = ChartFactory.createXYLineChart(chartName,"x","y",coll1,PlotOrientation.VERTICAL,false,false,false);
+    chart.setBackgroundPaint(Color.WHITE);
+    XYPlot xyPlot = chart.getXYPlot();
+    XYItemRenderer renderer = xyPlot.getRenderer();
+    renderer.setSeriesPaint(0, Color.black);
+    
+    java.awt.Font tickFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 18);
+    java.awt.Font labelFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 22);
+    NumberAxis domain = (NumberAxis) xyPlot.getDomainAxis();
+    domain.setTickUnit(new NumberTickUnit(xTick));
+    domain.setRange(xRange);
+    domain.setTickMarkInsideLength(10f);
+    domain.setMinorTickMarkInsideLength(6f);
+    domain.setMinorTickMarkOutsideLength(0f);
+    domain.setTickLabelFont(tickFont);
+    domain.setVerticalTickLabels(false);
+    domain.setLabel("");
+    domain.setLabelFont(labelFont);
+//    domain.setMinorTickCount(5);
+    //Pruefung 12.11.2020 C
+    //domain.setMinorTickCount(2);
+    domain.setMinorTickMarksVisible(true);
+    NumberAxis range = (NumberAxis) xyPlot.getRangeAxis();
+    range.setRange(yRange);
+    //range.setMinorTickCount(5);
+    //range.setMinorTickMarksVisible(true);
+    range.setTickUnit(new NumberTickUnit(yTick));
+    range.setTickMarkInsideLength(10f);
+    range.setMinorTickMarkInsideLength(6f);
+    range.setMinorTickMarkOutsideLength(0f);
+    range.setTickLabelFont(tickFont);
+    range.setLabelFont(labelFont);
+    range.setLabel("kg");
+    Stroke solid = new BasicStroke(0.5f);
+    xyPlot.setRangeGridlineStroke(solid);
+    xyPlot.setRangeGridlinePaint(Color.BLUE);
+    xyPlot.setDomainGridlineStroke(solid);
+    xyPlot.setDomainGridlinePaint(Color.BLUE);
+    
+    
+    BufferedOutputStream stream;
+    try {
+      stream = new BufferedOutputStream(new FileOutputStream(pathName));
+      ImageIO.write(chart.createBufferedImage(1000, 700), "PNG", stream);
+      stream.close();
+    }
+    catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }    
+  }
+   
+ 
+   private void printZeroOrderReaction() {
+     String pathName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\Pruefungen\\21-22\\20211210\\images\\zeroOrder_A.png";
+     String chartName = "";
+     String series1Name = "";
+
+     Vector<Double[]> values = new Vector<Double[]>();
+     Double[] value;
+     
+     
+     
+     double xStartValue = 0.0f;
+     double xStopValue = 115f;
+     double stepSize = 0.01f;
+     org.jfree.data.Range xRange = new org.jfree.data.Range(0,112.1);
+     org.jfree.data.Range yRange = new org.jfree.data.Range(0,10);
+     double xTick = 5;
+     double yTick = 1;
+     
+     
+     double x = xStartValue;
+     double y;
+     double A0 = 8;
+     double k = 0.05;
+     while (x<xStopValue) {
+       y = A0-k*x;
+       value = new Double[2];
+       value[0] = x;
+       value[1] = y;
+       values.add(value);
+       x += stepSize;
+     }
+     XYSeries series1 = new XYSeries(series1Name);
+     for (int i=0;i!=values.size();i++){
+       Double[] valuePair = values.get(i);
+       //  if (cx.Value[j][0]<782.55f)
+       series1.add(valuePair[0],valuePair[1]);
+     }
+     
+     XYSeriesCollection coll1 = new XYSeriesCollection(series1);
+     ChartFactory.setChartTheme(StandardChartTheme.createLegacyTheme());
+
+     JFreeChart chart = ChartFactory.createXYLineChart(chartName,"x","y",coll1,PlotOrientation.VERTICAL,false,false,false);
+     //chart.setBackgroundPaint(Color.WHITE);
+     XYPlot xyPlot = chart.getXYPlot();
+     XYItemRenderer renderer = xyPlot.getRenderer();
+     renderer.setSeriesPaint(0, Color.black);
+     
+     java.awt.Font tickFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 18);
+     java.awt.Font labelFont = new java.awt.Font("Dialog",java.awt.Font.PLAIN, 22);
+     NumberAxis domain = (NumberAxis) xyPlot.getDomainAxis();
+     domain.setTickUnit(new NumberTickUnit(xTick));
+     domain.setRange(xRange);
+     domain.setTickMarkInsideLength(10f);
+     domain.setMinorTickMarkInsideLength(6f);
+     domain.setMinorTickMarkOutsideLength(0f);
+     domain.setTickLabelFont(tickFont);
+     domain.setVerticalTickLabels(false);
+     domain.setLabel("t (s)");
+     domain.setLabelFont(labelFont);
+     domain.setMinorTickCount(2);
+     domain.setMinorTickMarksVisible(true);
+     NumberAxis range = (NumberAxis) xyPlot.getRangeAxis();
+     range.setRange(yRange);
+     range.setMinorTickCount(2);
+     range.setMinorTickMarksVisible(true);
+     range.setTickUnit(new NumberTickUnit(yTick));
+     range.setTickMarkInsideLength(10f);
+     range.setMinorTickMarkInsideLength(6f);
+     range.setMinorTickMarkOutsideLength(0f);
+     range.setTickLabelFont(tickFont);
+     range.setLabelFont(labelFont);
+     range.setLabel("[A] (mM)");
+     Stroke solid = new BasicStroke(0.5f);
+     xyPlot.setRangeGridlineStroke(solid);
+     xyPlot.setRangeGridlinePaint(Color.BLUE);
+     xyPlot.setDomainGridlineStroke(solid);
+     xyPlot.setDomainGridlinePaint(Color.BLUE);
+     
+     
+     BufferedOutputStream stream;
+     try {
+       stream = new BufferedOutputStream(new FileOutputStream(pathName));
+       ImageIO.write(chart.createBufferedImage(1000, 700), "PNG", stream);
+       stream.close();
+     }
+     catch (IOException e) {
+       // TODO Auto-generated catch block
+       e.printStackTrace();
+     }    
+
+   }
+*/
+   private void checkMixtureModelLMFormula() {
+     //for two Gumbel distributions
+     float value = 0.001f;
+   
+/*     float[][] initParameters = new float[6][1] ;
+     int total = 500;
+     int correct = 50;
+     int zeroValues = 300;
+     float muIncorrect = 0.1f;
+     float betaIncorrect = 0.2f;
+     float muCorrect = 0.9f;
+     float betaCorrect = 0.2f;
+     
+     initParameters[0][0] = (float)correct;
+     initParameters[1][0] = (float)zeroValues;
+     initParameters[2][0] = muIncorrect;
+     initParameters[3][0] = betaIncorrect;
+     initParameters[4][0] = muCorrect;
+     initParameters[5][0] = betaCorrect;  
+     FloatMatrix paramsVector = new FloatMatrix(initParameters);
+     
+     float[][] values = new float[1][1];
+     values[0][0] = value;
+     
+     float[] observations = new float[1];
+     observations[0] = 5f;
+     
+     LMZeroIGumbelGumbelMixModel optimizer = new LMZeroIGumbelGumbelMixModel(total, values, observations, paramsVector,0d);
+     FloatMatrix result = optimizer.calculateEquationResults(values,paramsVector);
+     System.out.println("Result: "+result.A[0][0]);*/
+     
+     //f(x) = B*I(0)  +  (TOTAL-A-B)*(1/D)*e^(-(X-C)/D)*e^(-e^(-(X-C)/D)  +  A*(1/F)*e^((X-E)/F)*e^(-e^((X-E)/F))
+     
+     //for zero-inflated decay, normal distribution and exponential
+     //A*I(0)  +  B*x^-E  +  C*(1/SquareRoot(2*PI*G))*e^(-(x-F)^2/2*G)  +  D*e^((x-H)*J)
+     float[][] initParameters = new float[9][1] ;
+     float zeroInflated = 8238;
+     float b = 1f;
+     float c = 25f;
+     float d = 1f;
+     float e = 1.5f;
+     float f = 0.6f;
+     float g = (float)Math.pow(0.1, 2d);
+     float h = 0.5f;
+     float j = 10f;
+     
+     initParameters[0][0] = zeroInflated;
+     initParameters[1][0] = b;
+     initParameters[2][0] = c;
+     initParameters[3][0] = d;
+     initParameters[4][0] = e;
+     initParameters[5][0] = f;
+     initParameters[6][0] = g;  
+     initParameters[7][0] = h;
+     initParameters[8][0] = j;
+     FloatMatrix paramsVector = new FloatMatrix(initParameters);
+     
+     float[][] values = new float[4][1];
+     values[0][0] = 0f;
+     values[1][0] = 0.2f;
+     values[2][0] = 0.55f;
+     values[3][0] = 0.9f;
+     
+//     LMZeroDecayNormalExponentialNineVariables optimizer = new LMZeroDecayNormalExponentialNineVariables(0d);
+//     FloatMatrix result = optimizer.calculateEquationResults(values, paramsVector);
+//      
+   }
+   
+   private void validateHitsBasedOnRetentionTime() {
+     //this is for LC-MS Exp1
+//     String decoyBaseDir = "C:\\data\\Christer\\20220204_decoyLCMS-Exp1\\";
+//     String alexIdentificationFile = decoyBaseDir+"LCMSdata_CtrlEx1targetsearch.tab";
+//     String outFile = decoyBaseDir+"LCMSdata_CtrlEx1targetsearch_rtChecked.tab";
+     //this is for LC-MS mouse brain
+//     String decoyBaseDir = "C:\\data\\Christer\\20220222_decoyLCMS-brain\\";
+//  	 String decoyBaseDir = "C:\\Collaborator_Files\\Christer\\20220610_decoyLCMS-plasma";
+//     String alexIdentificationFile = decoyBaseDir+"LCMSdata_brain_targetsearch.tab";
+//     String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked.tab";
+  	 
+  	 //this is for LC-MS NIST Human Plasma
+  	 String decoyBaseDir = "C:\\Collaborator_Files\\Christer\\20220610_decoyLCMS-plasma\\";
+     String alexIdentificationFile = decoyBaseDir+"LCMSdata_plasma_targetsearch.tab";
+     String outFile = decoyBaseDir+"LCMSdata_plasma_targetsearch_rtChecked.tab";
+     String lookupClass;
+     String lookupSpecies;
+     String lookupMolSpecies;
+     String refMolSpecies;
+     LipidClassInfoVO info;
+     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> speciesAll;
+     LinkedHashMap<String,ReferenceInfoVO> molSpecInfo;
+     double rt;
+     double refRt;
+     String tpString;
+     BufferedOutputStream out = null;
+     short nrOh;
+     String[] twoChains;
+     
+     
+     LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>>();
+     Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
+     //LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
+     //this is for LC-MS Exp1
+     //getValidOrbitrapCIDCtrlExp1SpeciesPositive(lipidClasses, lipidClassInfo, adducts);
+     //this is for LC-MS mouse brain
+     //getValidOrbitrapCIDMouseBrainSpecies(lipidClasses, lipidClassInfo);
+     //this is for LC-MS NIST Human Plasma
+     getValidOrbitrapCIDHumanPlasmaSpecies(lipidClasses, lipidClassInfo);
+     
+     try {
+      List<AlexScoreVO> resultsAll = new ArrayList<AlexScoreVO>(readAlexScoreResults(alexIdentificationFile));
+      Collections.sort(resultsAll,new GeneralComparator("at.tugraz.genome.vos.AlexScoreVO", "getScore", "java.lang.Double"));
+      //for (AlexScoreVO result : resultsAll) {
+      for (int i=resultsAll.size()-1; i!=-1; i--) {
+        AlexScoreVO result = resultsAll.get(i);
+        result.setTp("false");
+        lookupClass = result.getLipidClass();
+        if (lookupClass.equalsIgnoreCase("DAG"))
+          lookupClass = "DG";
+        if (lookupClass.equalsIgnoreCase("TAG"))
+          lookupClass = "TG";
+        if (lookupClass.equalsIgnoreCase("PC O-"))
+          lookupClass = "P-PC";
+        if (lookupClass.equalsIgnoreCase("PE O-"))
+          lookupClass = "P-PE";
+        if (!lipidClasses.containsKey(lookupClass)) {
+          //System.out.println(result.getLipidClass());
+          continue;
+        }
+        info = lipidClassInfo.get(lookupClass);
+        speciesAll = lipidClasses.get(lookupClass);
+        lookupSpecies = result.getLipidSpecies().substring(result.getLipidClass().length()+1);
+        if (lookupClass.equalsIgnoreCase("P-PE") || lookupClass.equalsIgnoreCase("P-PC")) {
+          lookupSpecies = result.getLipidSpecies().substring("PE O-".length());
+          int lastDigit = Integer.parseInt(lookupSpecies.substring(lookupSpecies.length()-1,lookupSpecies.length()));
+          lastDigit--;
+          lookupSpecies = lookupSpecies.substring(0,lookupSpecies.length()-1)+String.valueOf(lastDigit);
+        } else if (result.getLipidClass().equalsIgnoreCase("Cer") || result.getLipidClass().equalsIgnoreCase("HexCer") || result.getLipidClass().equalsIgnoreCase("SM")) {
+          nrOh = Short.parseShort(lookupSpecies.substring(lookupSpecies.indexOf(";")+1));
+          lookupSpecies = Settings.getLcbHydroxyEncoding().getEncodedPrefix(nrOh)+lookupSpecies.substring(0,lookupSpecies.indexOf(";"));
+        }
+        if (!speciesAll.containsKey(lookupSpecies))
+          continue;
+        molSpecInfo = speciesAll.get(lookupSpecies);
+        lookupMolSpecies = result.getMolSpecies().substring((result.getLipidClass().length()+1)).replaceAll("-", "_");
+        if ((lookupClass.equalsIgnoreCase("P-PE") || lookupClass.equalsIgnoreCase("P-PC")) && result.getIdentificationType()==AlexScoreVO.IDENT_TYPE_MOL_SPECIES) {
+          lookupMolSpecies = result.getMolSpecies().substring(("PE ".length()));
+          String firstPart = "P"+lookupMolSpecies.substring(1,lookupMolSpecies.indexOf("/"));
+          int lastDigit = Integer.parseInt(firstPart.substring(firstPart.length()-1,firstPart.length()));
+          lastDigit--;
+          firstPart = firstPart.substring(0,firstPart.length()-1)+String.valueOf(lastDigit);
+//          if (lookupClass.equalsIgnoreCase("P-PE")) {
+//            System.out.println("1. "+lookupSpecies+" ; "+lookupMolSpecies+" ; "+(firstPart+lookupMolSpecies.substring(lookupMolSpecies.indexOf("/"))));
+//          }
+          lookupMolSpecies = firstPart+lookupMolSpecies.substring(lookupMolSpecies.indexOf("/"));
+        } else if ((result.getLipidClass().equalsIgnoreCase("Cer") || result.getLipidClass().equalsIgnoreCase("HexCer") || result.getLipidClass().equalsIgnoreCase("SM"))
+            && result.getIdentificationType()==AlexScoreVO.IDENT_TYPE_MOL_SPECIES) {
+          twoChains = lookupMolSpecies.split("/");
+          nrOh = Short.parseShort(twoChains[0].substring(twoChains[0].indexOf(";")+1));
+          lookupMolSpecies = Settings.getLcbHydroxyEncoding().getEncodedPrefix(nrOh)+twoChains[0].substring(0,twoChains[0].indexOf(";"))+"/n"+twoChains[1];
+//          System.out.println(lookupMolSpecies);
+        }
+        lookupMolSpecies = lookupMolSpecies.replaceAll("/", "_");
+//        if (lookupClass.equalsIgnoreCase("P-PE")) {
+//          System.out.println("1. "+lookupSpecies+" ; "+lookupMolSpecies);
+//        }
+        rt = Double.parseDouble(result.getRtGroup());
+        //I have to add here a check of the retention time
+        tpString = "false";
+        for (ReferenceInfoVO refMolSpec : molSpecInfo.values()) {
+          for (double refAsFixed : refMolSpec.getCorrectRts()) {
+            refRt = refAsFixed;
+            //this is for LC-MS Exp1 data
+//            if (!result.isPositive()) {
+//              if (lookupClass.startsWith("L"))
+//                refRt = refRt-0.2d;
+//              else
+//                refRt = refRt-0.6d;
+//            }
+          //this is for LC-MS Exp1 brain
+            if (result.isPositive()) {
+              refRt = refRt-0.05d;
+            }
+            if ((refRt-info.getRtTolerance())<rt && rt<(refRt+info.getRtTolerance())) {
+              tpString = "true";
+            //this lead of too many hits to check
+            //}else if (!tpString.equalsIgnoreCase("true") && ((refRt-2d*info.getRtTolerance())<rt && rt<(refRt+2d*info.getRtTolerance()))) {
+            //thus, I take only 1.5 times the RT tolerance
+            }else if (!tpString.equalsIgnoreCase("true") && ((refRt-1.5d*info.getRtTolerance())<rt && rt<(refRt+1.5d*info.getRtTolerance()))) {
+              tpString = String.valueOf(refRt);
+            }
+//            if (lookupClass.equalsIgnoreCase("SM") && lookupSpecies.equalsIgnoreCase("36:2;2")) {
+//              System.out.println(result.getLipidSpecies()+" ; "+result.getMolSpecies()+" ; "+rt+"-"+refRt+" ; "+tpString);
+//            }
+          }
+        }
+        if (tpString.equalsIgnoreCase("false"))
+          continue;
+        if (result.getIdentificationType()==AlexScoreVO.IDENT_TYPE_SPECIES) {
+          result.setTp(tpString);
+        }else if (result.getIdentificationType()==AlexScoreVO.IDENT_TYPE_MOL_SPECIES) {
+          tpString = "this mol species is not in lookup";
+          for (ReferenceInfoVO refMolSpec : molSpecInfo.values()) {
+            boolean correctMolSpecies = false;
+            refMolSpecies = refMolSpec.getMS2Name().replaceAll("/", "_");
+//            if (lookupClass.equalsIgnoreCase("Cer")) {
+//              System.out.println(lookupMolSpecies+" & "+refMolSpecies);
+//            }
+            if (lookupMolSpecies.equalsIgnoreCase(refMolSpecies) || StaticUtils.isAPermutedVersion(lookupMolSpecies, refMolSpecies, "_")) {
+              for (double refAsFixed : refMolSpec.getCorrectRts()) {
+                refRt = refAsFixed;
+//                if (!result.isPositive()) {
+//                  if (lookupClass.startsWith("L"))
+//                    refRt = refRt-0.2d;
+//                  else
+//                    refRt = refRt-0.6d;
+//                }
+                if ((refRt-info.getRtTolerance())<rt && rt<(refRt+info.getRtTolerance())) {
+                  tpString = "true";
+                }else if (!tpString.equalsIgnoreCase("true") && ((refRt-2d*info.getRtTolerance())<rt && rt<(refRt+2d*info.getRtTolerance()))) {
+                  tpString = String.valueOf(refRt);
+                }
+              }
+            }
+//            if (lookupClass.equalsIgnoreCase("PC") && lookupSpecies.equalsIgnoreCase("40:0")) {
+//              System.out.println(result.getLipidSpecies()+" ; "+result.getMolSpecies()+" ; "+tpString);
+//            }
+
+          } 
+          result.setTp(tpString);
+        }else
+          continue;
+        
+        
+//        if (lookupClass.equalsIgnoreCase("Cer") && speciesAll.containsKey(lookupSpecies)) {
+//          
+//          System.out.println(result.getLipidSpecies()+"; "+lookupMolSpecies);
+//        }
+        
+      }
+      String line;
+      out = new BufferedOutputStream(new FileOutputStream(outFile));
+      line = COLUMN_HEADER_ADDUCT+"\t"+COLUMN_HEADER_SCORE+"\t"+COLUMN_HEADER_TYPE+"\t"+COLUMN_HEADER_CLASS+"\t"+COLUMN_HEADER_SPECIES+"\t"+COLUMN_HEADER_MOL_SPECIES+"\t"+COLUMN_HEADER_POLARITY+"\t"+COLUMN_HEADER_RT_GROUP+"\t"+COLUMN_HEADER_TP+"\n";
+      out.write(line.getBytes());
+//      for (AlexScoreVO result : resultsAll) {
+      for (int i=resultsAll.size()-1; i!=-1; i--) {
+        AlexScoreVO result = resultsAll.get(i);
+            line = result.getAdduct()+"\t"+(result.getScore()==0d ? "0" : String.valueOf(result.getScore()))+"\t"+(result.getIdentificationType()==AlexScoreVO.IDENT_TYPE_MOL_SPECIES ? TYPE_MOL_SPECIES_ABBREV : TYPE_SPECIES_ABBREV)+"\t"
+                +result.getLipidClass()+"\t"+result.getLipidSpecies()+"\t"+result.getMolSpecies()+"\t"+(result.isPositive() ? "+" : "-")+"\t"+result.getRtGroup()+"\t"+result.getTp()+"\n";
+            out.write(line.toString().getBytes());
+      }
+    }catch (Exception e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }finally {
+      try {
+        if (out!=null) out.close();
+      }catch(Exception ex) {
+        ex.printStackTrace();
+      }
+    }
+   }
+   
+   
+   private void getValidOrbitrapCIDCtrlExp1SpeciesPositive(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
+       Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
+     lipidClasses.put("PI", FoundBiologicalSpeciesInclStandards.getPISpeciesOrbitrap());
+     adducts.put("-H", true);
+     lipidClassInfo.put("PI", new LipidClassInfoVO(2,true,0.7d,adducts));
+     lipidClasses.put("P-PC", FoundBiologicalSpeciesInclStandards.getPPCSpeciesOrbitrap());
+     adducts.put("H", true);
+     adducts.put("Na", true);
+     lipidClassInfo.put("P-PC", new LipidClassInfoVO(2,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("P-PE", FoundBiologicalSpeciesInclStandards.getPPESpeciesOrbitrap());
+     adducts.put("H", true);
+     adducts.put("Na", true);
+     lipidClassInfo.put("P-PE", new LipidClassInfoVO(2,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("LPE", FoundBiologicalSpeciesInclStandards.getLPESpeciesOrbitrap());
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     lipidClassInfo.put("LPE", new LipidClassInfoVO(1,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("PS", FoundBiologicalSpeciesInclStandards.getPSSpeciesOrbitrap());
+     adducts.put("H", true);
+     lipidClassInfo.put("PS", new LipidClassInfoVO(2,true,6d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("PC", FoundBiologicalSpeciesInclStandards.getPCSpeciesOrbitrap());
+     adducts.put("H", true);
+     adducts.put("Na", true);
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClassInfo.put("PC", new LipidClassInfoVO(2,true,0.7d,adducts));
+     lipidClasses.put("PE", FoundBiologicalSpeciesInclStandards.getPESpeciesOrbitrap());
+     adducts.put("H", true);
+     adducts.put("Na", true);
+     lipidClassInfo.put("PE", new LipidClassInfoVO(2,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("Cer", FoundBiologicalSpeciesInclStandards.getCerSpeciesOrbitrap());
+     adducts.put("H", false);
+     lipidClassInfo.put("Cer", new LipidClassInfoVO(1,true,0.7d,adducts));
+     
+     //this has to be before LPC, DG, TG and SM
+     correctRetentionTimes(-0.2d,lipidClasses);
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("LPC", FoundBiologicalSpeciesInclStandards.getLPCSpeciesOrbitrap());
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,1.2d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("LPS", FoundBiologicalSpeciesInclStandards.getLPSSpeciesOrbitrap());
+     adducts.put("H", false);
+     lipidClassInfo.put("LPS", new LipidClassInfoVO(1,true,3.0d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("PG", FoundBiologicalSpeciesInclStandards.getPGSpeciesOrbitrap());
+     adducts.put("-H", true);
+     lipidClassInfo.put("PG", new LipidClassInfoVO(2,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("DG", FoundBiologicalSpeciesInclStandards.getDGSpeciesOrbitrap());
+     adducts.put("Na", true);
+     adducts.put("NH4", true);
+     lipidClassInfo.put("DG", new LipidClassInfoVO(3,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("TG", FoundBiologicalSpeciesInclStandards.getTGSpeciesOrbitrap());
+     adducts.put("NH4", true);
+     adducts.put("Na", true);
+     lipidClassInfo.put("TG", new LipidClassInfoVO(3,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("SM", FoundBiologicalSpeciesInclStandards.getSMSpeciesOrbitrap());
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     lipidClassInfo.put("SM", new LipidClassInfoVO(2,true,0.7d,adducts));
+   }
+   
+   private void getValidOrbitrapCIDMouseBrainSpecies (LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
+       Hashtable<String,LipidClassInfoVO> lipidClassInfo){
+     LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
+     getValidSphingoOrbitrapCIDSpeciesNegative(lipidClasses, lipidClassInfo, adducts);
+
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("TG", BrainSpecies.getTGSpeciesOrbitrap());
+     adducts.put("NH4", false);
+     adducts.put("Na", true);
+     lipidClassInfo.put("TG", new LipidClassInfoVO(3,true,0.7d,adducts));     
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("PS", BrainSpecies.getPSSpeciesOrbitrap());
+     adducts.put("H", true);
+     adducts.put("-H", true);
+     adducts.put("Na-H2", true);
+     lipidClassInfo.put("PS", new LipidClassInfoVO(2,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("LPS", BrainSpecies.getLPSSpeciesOrbitrap());
+     adducts.put("H", true);
+     adducts.put("-H", true);
+     lipidClassInfo.put("LPS", new LipidClassInfoVO(1,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("P-PE", BrainSpecies.getPPESpeciesOrbitrap());
+     adducts.put("H", true);
+     adducts.put("Na", true);
+     adducts.put("-H", true);
+     lipidClassInfo.put("P-PE", new LipidClassInfoVO(2,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("P-PC", BrainSpecies.getPPCSpeciesOrbitrap());
+     adducts.put("H", true);
+     adducts.put("Na", true);
+     adducts.put("-H", true);
+     lipidClassInfo.put("P-PC", new LipidClassInfoVO(2,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("DG", BrainSpecies.getDGSpeciesOrbitrap());
+     adducts.put("NH4", false);
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     lipidClassInfo.put("DG", new LipidClassInfoVO(3,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("PI", BrainSpecies.getPISpeciesOrbitrap());
+     adducts.put("NH4", false);
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     adducts.put("-H", false);
+     lipidClassInfo.put("PI", new LipidClassInfoVO(2,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("PG", BrainSpecies.getPGSpeciesOrbitrap());
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     adducts.put("-H", false);
+     lipidClassInfo.put("PG", new LipidClassInfoVO(2,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("PE", BrainSpecies.getPESpeciesOrbitrap());
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     adducts.put("-H", false);
+     lipidClassInfo.put("PE", new LipidClassInfoVO(2,true,0.5d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("LPE", BrainSpecies.getLPESpeciesOrbitrap());
+     adducts.put("Na", true);
+     adducts.put("H", true);
+     adducts.put("-H", true);
+     lipidClassInfo.put("LPE", new LipidClassInfoVO(1,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("PC", BrainSpecies.getPCSpeciesOrbitrap());
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     adducts.put("HCOO", false);
+     adducts.put("-CH3", false);
+     lipidClassInfo.put("PC", new LipidClassInfoVO(2,true,0.5d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("LPC", BrainSpecies.getLPCSpeciesOrbitrap());
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     adducts.put("-OH", false);
+     adducts.put("HCOO", false);
+     adducts.put("-CH3", false);
+     lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,0.7d,adducts));
+   }
+   
+   private void getValidOrbitrapCIDHumanPlasmaSpecies(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
+       Hashtable<String,LipidClassInfoVO> lipidClassInfo){
+     LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
+     
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("Cer", HumanPlasma.getCerSpeciesOrbitrap());
+     adducts.put("HCOO", false);
+     adducts.put("-H", true);
+     lipidClassInfo.put("Cer", new LipidClassInfoVO(2,true,0.4d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("Cer1P", HumanPlasma.getCer1PSpeciesOrbitrap());
+     adducts.put("-H", true);
+     lipidClassInfo.put("Cer1P", new LipidClassInfoVO(2,false,0.4d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("HexCer", HumanPlasma.getHexCerSpeciesOrbitrap());
+     adducts.put("HCOO", false);
+     adducts.put("-H", true);
+     lipidClassInfo.put("HexCer", new LipidClassInfoVO(2,true,0.4d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("SM", HumanPlasma.getSMSpeciesOrbitrap());
+     adducts.put("HCOO", false);
+     lipidClassInfo.put("SM", new LipidClassInfoVO(2,true,0.4d,adducts));    
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("TG", HumanPlasma.getTGSpeciesOrbitrap());
+     adducts.put("NH4", false);
+     adducts.put("Na", true);
+     lipidClassInfo.put("TG", new LipidClassInfoVO(3,true,0.7d,adducts));     
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("PS", HumanPlasma.getPSSpeciesOrbitrap());
+     adducts.put("H", true);
+     adducts.put("-H", true);
+     adducts.put("Na-H2", true);
+     lipidClassInfo.put("PS", new LipidClassInfoVO(2,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("LPS", HumanPlasma.getLPSSpeciesOrbitrap());
+     adducts.put("H", true);
+     adducts.put("-H", true);
+     lipidClassInfo.put("LPS", new LipidClassInfoVO(1,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("P-PE", HumanPlasma.getPPESpeciesOrbitrap());
+     adducts.put("H", true);
+     adducts.put("Na", true);
+     adducts.put("-H", true);
+     lipidClassInfo.put("P-PE", new LipidClassInfoVO(2,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("P-PC", HumanPlasma.getPPCSpeciesOrbitrap());
+     adducts.put("H", true);
+     adducts.put("Na", true);
+     adducts.put("-H", true);
+     lipidClassInfo.put("P-PC", new LipidClassInfoVO(2,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("DG", HumanPlasma.getDGSpeciesOrbitrap());
+     adducts.put("NH4", false);
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     lipidClassInfo.put("DG", new LipidClassInfoVO(3,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("PI", HumanPlasma.getPISpeciesOrbitrap());
+     adducts.put("NH4", false);
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     adducts.put("-H", false);
+     lipidClassInfo.put("PI", new LipidClassInfoVO(2,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("PG", HumanPlasma.getPGSpeciesOrbitrap());
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     adducts.put("-H", false);
+     lipidClassInfo.put("PG", new LipidClassInfoVO(2,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("PE", HumanPlasma.getPESpeciesOrbitrap());
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     adducts.put("-H", false);
+     lipidClassInfo.put("PE", new LipidClassInfoVO(2,true,0.5d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("LPE", HumanPlasma.getLPESpeciesOrbitrap());
+     adducts.put("Na", true);
+     adducts.put("H", true);
+     adducts.put("-H", true);
+     lipidClassInfo.put("LPE", new LipidClassInfoVO(1,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("PC", HumanPlasma.getPCSpeciesOrbitrap());
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     adducts.put("HCOO", false);
+     adducts.put("-CH3", false);
+     lipidClassInfo.put("PC", new LipidClassInfoVO(2,true,0.5d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("LPC", HumanPlasma.getLPCSpeciesOrbitrap());
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     adducts.put("-OH", false);
+     adducts.put("HCOO", false);
+     adducts.put("-CH3", false);
+     lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,0.7d,adducts));
+   }
+   
+   private void generateCodeForSpeciesEvaluation() {
+     //for positive ion mode data
+     double addRt = 0.05d;
+     //for negative ion mode data
+     //double addRt = 0.00d;
+     String excelFileWithSpecies = "C:\\data\\Christer\\20220222_decoyLCMS-brain\\correction\\PC.xlsx";
+     String codeOutputFile = "C:\\data\\Christer\\20220222_decoyLCMS-brain\\correction\\codeOutput_PC.txt";
+     BufferedOutputStream out = null;
+     InputStream in = null;
+     Workbook workbook = null;
+     try {
+       out = new BufferedOutputStream(new FileOutputStream(codeOutputFile));
+       in = new FileInputStream(excelFileWithSpecies);
+       workbook  = new XSSFWorkbook(in);
+       String currentSpecies = "";
+       String newSpecies = "";
+       String molSpecies = "";
+       double rt;
+       for (int sheetNumber=0;sheetNumber!=workbook.getNumberOfSheets();sheetNumber++){
+         Sheet sheet = workbook.getSheetAt(sheetNumber);
+         for (int rowCount=0;rowCount!=(sheet.getLastRowNum()+1);rowCount++){
+           Row row = sheet.getRow(rowCount);
+           if (row.getCell(0)==null)
+             continue;
+           Cell cell = row.getCell(0);
+           if (cell.getCellType()!=Cell.CELL_TYPE_STRING)
+             continue;
+           String value = cell.getStringCellValue();
+           //remove the next two lines, if you want to use lyso species
+           if (value.indexOf("|")==-1)
+             continue;
+           if (value.indexOf("_")==-1)
+             continue;
+           //replace the next line with the following one, if you want to use lyso species
+           newSpecies = value.substring(value.indexOf(" ")+1,value.indexOf("|"));
+//         newSpecies = value.substring(value.indexOf(" ")+1);
+           rt = Double.parseDouble(newSpecies.substring(newSpecies.indexOf("_")+1));
+           rt += addRt;
+           newSpecies = newSpecies.substring(0,newSpecies.indexOf("_"));
+           //replace the next line with the following one, if you want to use lyso species
+           molSpecies = value.substring(value.indexOf("|")+1).trim();
+           //molSpecies = newSpecies;
+           if (!newSpecies.equalsIgnoreCase(currentSpecies)) {
+             if (currentSpecies!=null && currentSpecies.length()>0) {
+               out.write(("species.put(\""+currentSpecies+"\", molSpecies);\n").getBytes());
+               out.write(("\n").getBytes());
+             }
+             out.write(("molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();\n").getBytes());
+           }
+           out.write(("molSpecies.put(\""+molSpecies+"\", new ReferenceInfoVO(\""+molSpecies+"\","+Calculator.FormatNumberToString(rt, 2)+"d,true,false));\n").getBytes());          
+           currentSpecies = newSpecies;
+         }
+         out.write(("species.put(\""+currentSpecies+"\", molSpecies);\n").getBytes());
+       }
+       
+     }catch(Exception ex) {
+       ex.printStackTrace();
+     }finally {
+       try {
+         if (out!=null) out.close();
+       }catch(Exception ex) {
+         ex.printStackTrace();
+       }
+       try {
+         if (workbook!=null) workbook.close();
+       }catch(Exception ex) {
+         ex.printStackTrace();
+       }
+       try {
+         if (in!=null) in.close();
+       }catch(Exception ex) {
+         ex.printStackTrace();
+       }
+
+     }
+   }
+   
 }

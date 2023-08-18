@@ -1,0 +1,25 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.01%
+RetentionTimePostprocessing=true
+
+[HEAD]
+!FRAGMENTS
+Name=PL153		Formula=C3H6O5P			Charge=1	MSLevel=2	mandatory=false
+Name=PL171		Formula=C3H8O6P			Charge=1	MSLevel=2	mandatory=false
+Name=NL_serine_87	Formula=$PRECURSOR-C3H5NO2	Charge=1	MSLevel=2	mandatory=false
+Name=NL_serine_105	Formula=$PRECURSOR-C3H7NO3	Charge=1	MSLevel=2	mandatory=false
+
+[CHAINS]
+!FRAGMENTS
+Name=Carboxy		Formula=$CHAIN-H			Charge=1	MSLevel=2	mandatory=false
+Name=NL_Carboxy_serine	Formula=$PRECURSOR-$CHAIN-C3H5NO2	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Ketene_serine	Formula=$PRECURSOR-$CHAIN+H2O-C3H5NO2	Charge=1	MSLevel=2	mandatory=false
+
+
+
+
+

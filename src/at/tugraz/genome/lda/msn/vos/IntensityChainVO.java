@@ -249,7 +249,7 @@ public class IntensityChainVO extends IntensityRuleVO
         if ((rulePart.indexOf(name)+name.length()+2)>rulePart.length() || !rulePart.substring(rulePart.indexOf(name)+name.length()).startsWith("("))
           continue;
         String subPart = rulePart.substring(rulePart.indexOf(name)+name.length());
-        fas.put(nameVO.getKey(),StaticUtils.decodeHumanReadableChain(subPart.substring(subPart.indexOf("(")+1,subPart.indexOf(")")),faHydroxyEncoding,lcbHydroxyEncoding, false));
+        fas.put(nameVO.getKey(),StaticUtils.decodeHumanReadableChain(subPart.substring(subPart.indexOf("(")+1,subPart.indexOf(")")),faHydroxyEncoding,lcbHydroxyEncoding, false, null));
         //the next two lines are for backward compatibility - I am not sure whether I can keep it this way
         if (nameVO.getValue()!=LipidomicsConstants.CHAIN_TYPE_MISSED)
           fas.get(nameVO.getKey()).correctChainType(nameVO.getValue());
@@ -327,8 +327,8 @@ public class IntensityChainVO extends IntensityRuleVO
           }
         }
         try {
-          int[] cAndDbs = StaticUtils.parseCAndDbsFromChainId(oneChain);
-          fas.put(name.getKey(), new FattyAcidVO(name.getValue(),prefix,cAndDbs[0],cAndDbs[1],oh,-1, null));
+          String[] cAndDbsAndOx = StaticUtils.parseCAndDbsFromChainId(oneChain);
+          fas.put(name.getKey(), new FattyAcidVO(name.getValue(),prefix,Integer.parseInt(cAndDbsAndOx[0]),Integer.parseInt(cAndDbsAndOx[1]),oh,-1, null,cAndDbsAndOx[2]));
         }
         catch (Exception e) {
           e.printStackTrace();

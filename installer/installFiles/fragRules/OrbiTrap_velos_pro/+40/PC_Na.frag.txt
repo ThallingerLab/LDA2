@@ -1,0 +1,40 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.02%
+ChainCutoff=50%
+RetentionTimePostprocessing=true
+SpectrumCoverage=10%
+
+
+[HEAD]
+!FRAGMENTS
+Name=NL_trimethylamine_59	Formula=$PRECURSOR-C3H9N	Charge=1	MSLevel=2	mandatory=true
+Name=NL_PChead_183		Formula=$PRECURSOR-C5H14NO4P	Charge=1	MSLevel=2	mandatory=true
+Name=NL_PChead_205		Formula=$PRECURSOR-C5H13NO4PNa	Charge=1	MSLevel=2	mandatory=true
+Name=NL_trimethylamine_59_iso	Formula=NL_trimethylamine_59-H	Charge=1	MSLevel=2	mandatory=other
+Name=NL_PChead_183_iso		Formula=NL_PChead_183-H		Charge=1	MSLevel=2	mandatory=false
+Name=NL_PEhead_wrong		Formula=$PRECURSOR-C2H8NO4P	Charge=1	MSLevel=2	mandatory=other
+
+!INTENSITIES
+Equation=NL_trimethylamine_59>0.9*$BASEPEAK		mandatory=true
+Equation=NL_trimethylamine_59*0.9>NL_PChead_183		mandatory=true
+Equation=NL_PChead_183*0.5>NL_PChead_205		mandatory=true
+Equation=NL_trimethylamine_59_iso<0.05*$BASEPEAK	mandatory=true
+Equation=NL_PChead_183_iso<0.05*$BASEPEAK		mandatory=true
+Equation=NL_trimethylamine_59*2>NL_PEhead_wrong		mandatory=true
+
+[CHAINS]
+!FRAGMENTS
+Name=NL_Carboxy		Formula=$PRECURSOR-$CHAIN		Charge=1	MSLevel=2	mandatory=false
+Name=NL_Carboxy_Na	Formula=$PRECURSOR-$CHAIN+H-Na		Charge=1	MSLevel=2	mandatory=false
+Name=NL_Carboxy_Head	Formula=$PRECURSOR-$CHAIN-NC3H9		Charge=1	MSLevel=2	mandatory=true
+Name=NL_Carboxy_Head_Na	Formula=$PRECURSOR-$CHAIN-NC3H8Na	Charge=1	MSLevel=2	mandatory=false
+
+[POSITION]
+!INTENSITIES
+Equation=NL_Carboxy_Head[1]*0.7>NL_Carboxy_Head[2]			mandatory=false
+Equation=NL_Carboxy_Head_Na[1]*0.5>NL_Carboxy_Head_Na[2]		mandatory=false
+Equation=NL_Carboxy[1]*0.7>NL_Carboxy[2]				mandatory=false

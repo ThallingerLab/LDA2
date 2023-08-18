@@ -1,0 +1,21 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.1%
+ChainCutoff=1%
+SpectrumCoverage=10%
+RetentionTimePostprocessing=true
+
+
+[HEAD]
+!FRAGMENTS
+Name=NL_formic_acid_46			Formula=$PRECURSOR-CH2O2	Charge=1	MSLevel=2	mandatory=true
+Name=Precursor				Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=other
+Name=NL_sphingosine_256_WRONG		Formula=$PRECURSOR-C16H32O2	Charge=1	MSLevel=2	mandatory=other
+
+!INTENSITIES
+Equation=NL_formic_acid_46>0.5*$BASEPEAK			mandatory=true
+Equation=NL_formic_acid_46*1.5>NL_sphingosine_256_WRONG		mandatory=true
+Equation=NL_formic_acid_46>Precursor				mandatory=true

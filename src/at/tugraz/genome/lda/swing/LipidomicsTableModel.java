@@ -88,26 +88,40 @@ public class LipidomicsTableModel extends DefaultTableModel implements TableMode
       if (showMSn && param instanceof LipidomicsMSnSet && (((LipidomicsMSnSet)param).getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED)){
         LipidomicsMSnSet msnSet = (LipidomicsMSnSet)param;
         Vector<Object> detected = null;
-        try {detected = msnSet.getMSnIdentificationNames();
+        Vector<String> detectedNewNomen = null;
+        try {
+        	detected = msnSet.getMSnIdentificationNames();
+        	detectedNewNomen = msnSet.getMSnIdentificationNamesWithSNPositions();
         }catch (LipidCombinameEncodingException lcx) {
-          detected = new Vector<Object>();
+            detected = new Vector<Object>();
+        	detectedNewNomen = new Vector<String>();
           lcx.printStackTrace();
         }
+        int rowCountNewNom = 0;
         for (Object nameObj : detected){
           String nameString = "";
+          String newNomen = "";
           if (nameObj instanceof String){
             nameString = (String)nameObj;
+            newNomen = detectedNewNomen.get(rowCountNewNom);
+            rowCountNewNom++;
             areaLookup_.put(rowCount, nameString);
           } else{
+        	  
+        	  newNomen = detectedNewNomen.get(rowCountNewNom);
+              rowCountNewNom++;
+        	  
             for (String name : (Vector<String>)nameObj){
-              nameString+=name+";";
+              nameString+=name+";"; //
               areaLookup_.put(rowCount, name);
             }
-            nameString = nameString.substring(0,nameString.length()-1);
+            nameString = nameString.substring(0,nameString.length()-1); //
           }
           if (param.getRt()!=null && param.getRt().length()>0)
-            nameString += "_"+param.getRt();
-          String paramName = getLipidParamsDisplayString(param,nameString);
+           newNomen += "_" + param.getRt(); // nameString += "_"+param.getRt();
+
+        //  String paramName = getLipidParamsDisplayString(param,nameString); //
+          String paramName = getLipidParamsDisplayString(param,newNomen);
           rowToName_.put(rowCount, paramName);
           rowToParam_.put(rowCount, param); 
           for (int i=0; i!=paramsOriginal.size();i++){

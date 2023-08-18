@@ -500,14 +500,14 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
    * @return quantification results
    */
   public Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> processPrmData(float mz, int charge, int msLevel, String className, String modName,
-      String analyteName, String formula, int ohNumber) {
+      String analyteName, String formula, int ohNumber, String oxState) {
     Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> finalResults = null;
     try{
       float mzTolerance = LipidomicsConstants.getCoarseChromMzTolerance(mz);
       this.prepareMSnSpectraCache(mz-mzTolerance, mz+mzTolerance,LipidomicsConstants.getMs2MinIntsForNoiseRemoval());
 
       //TODO: here, the analyteFormula without deducts is not implemented - has to be changed in future!
-      FragmentCalculator fragCalc = new FragmentCalculator(null,className,modName,analyteName,formula,formula,mz,charge,ohNumber);
+      FragmentCalculator fragCalc = new FragmentCalculator(null,className,modName,analyteName,formula,formula,mz,charge,ohNumber,oxState);
       Vector<FragmentVO> mandHeadFragments = fragCalc.getHeadFragments(ohNumber).get(true);
       Hashtable<String,Vector<CgProbe>> headPeaks = new Hashtable<String,Vector<CgProbe>>();
       for (FragmentVO frag : mandHeadFragments){

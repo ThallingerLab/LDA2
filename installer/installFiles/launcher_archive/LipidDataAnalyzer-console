@@ -1,0 +1,3 @@
+CURRENTDIR=`dirname $0`
+cd $CURRENTDIR
+java -Xms512m -Xmx1024m -Djava.awt.headless=false -Djava.ext.dirs=./ -jar LipidDataAnalyzer.jar

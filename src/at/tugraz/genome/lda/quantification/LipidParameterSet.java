@@ -56,6 +56,8 @@ public class LipidParameterSet extends CgParameterSet
   private String rt_;
   /** (total) number of hydroxylation sites present on the molecule*/
   private Integer ohNumber_;
+  private String oxState_="";
+  private float coverage_ = 0;
   
   public final static String MOD_SEPARATOR = "_-_";
   public final static String MOD_SEPARATOR_HR = "_";
@@ -86,6 +88,7 @@ public class LipidParameterSet extends CgParameterSet
     this.lowerRtHardLimit_ = set.getLowerRtHardLimit();
     this.upperRtHardLimit_ = set.getUpperRtHardLimit();
     this.percentalSplit_ = set.getPercentalSplit();
+    this.oxState_ = set.getOxState();
   }
   
   /**
@@ -178,11 +181,13 @@ public class LipidParameterSet extends CgParameterSet
   }
   
   public String getNameString(){
-    return StaticUtils.generateLipidNameString(Peptide, doubleBonds_,rt_);
+    return StaticUtils.generateLipidNameString(Peptide, doubleBonds_,rt_,oxState_);
   }
   
   public String getNameStringWithoutRt(){
-    return StaticUtils.generateLipidNameString(Peptide, doubleBonds_,-1);
+	
+    return StaticUtils.generateLipidNameString(Peptide, doubleBonds_,-1,oxState_);
+    
   }
  
   public String getName(){
@@ -213,10 +218,20 @@ public class LipidParameterSet extends CgParameterSet
   {
     return charge_;
   }
-
+  
+  public String getOxState()
+  {
+	  return oxState_;
+  }
+  
   public void setCharge(Integer charge)
   {
     this.charge_ = charge;
+  }
+  
+  public void setOxState(String oxState)
+  {
+	  this.oxState_ = oxState;
   }
   
   public String getRt()
@@ -444,6 +459,15 @@ public class LipidParameterSet extends CgParameterSet
   {
     this.choseMoreLikelyRtWhenEqualMSn_ = choseMoreLikelyRtWhenEqualMSn;
   }
+  
+
+public float getCoverage() {
+	return coverage_;
+}
+
+public void setCoverage(float coverage) {
+	this.coverage_ = coverage;
+}
   
   
   /**

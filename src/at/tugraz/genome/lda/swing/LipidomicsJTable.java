@@ -80,6 +80,9 @@ public class LipidomicsJTable extends JTable implements ActionListener
   private final static String LABEL_EDIT_RT = "Edit Rt";
   /** do these LipidParameterSets contain any OH information*/
   private boolean hasOh_;
+  
+  /** just for testing*/
+ // private final static String LABEL_COPY = "Copy to clipboard";
 
 
   public LipidomicsJTable(LipidomicsTableModel model,TableCellRenderer renderer,boolean showMs2,int orderType,boolean showRtInAddDialog,
@@ -139,6 +142,11 @@ public class LipidomicsJTable extends JTable implements ActionListener
       item.addActionListener(this);
       addItemPopup_.add(item);
     }
+    
+    /**just for testing
+    item = new JMenuItem(LABEL_COPY);
+    item.addActionListener(this);
+    addItemPopup_.add(item);*/
     
     this.add(addItemPopup_);
     controlDown_ = false;

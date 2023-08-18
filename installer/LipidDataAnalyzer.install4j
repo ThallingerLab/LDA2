@@ -1,0 +1,1989 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<install4j version="5.1.15" transformSequenceNumber="4">
+  <directoryPresets config="./installFiles/launcher_archive/ldaCmd.sh" />
+  <application name="Lipid Data Analyzer" distributionSourceDir="" applicationId="7095-5139-4826-4510" mediaDir="./i4j-output" mediaFilePattern="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" compression="6" lzmaCompression="false" pack200Compression="false" excludeSignedFromPacking="true" commonExternalFiles="false" createMd5Sums="true" shrinkRuntime="true" shortName="LDA" publisher="Graz University of Technology" publisherWeb="http://genome.tugraz.at/" version="2.8.3" allPathsRelative="true" backupOnSave="false" autoSave="false" convertDotsToUnderscores="true" macSignature="????" installerName="" javaMinVersion="1.6" javaMaxVersion="" allowBetaVM="true" jdkMode="runtimeJre" jdkName="">
+    <languages skipLanguageSelection="false" languageSelectionInPrincipalLanguage="false">
+      <principalLanguage id="en" customLocalizationFile="" />
+      <additionalLanguages />
+    </languages>
+    <searchSequence>
+      <registry />
+      <envVar name="JAVA_HOME" />
+      <envVar name="JDK_HOME" />
+    </searchSequence>
+    <variables>
+      <variable name="javaProp3D" value="" description="" category="" />
+      <variable name="headlessTrue" value="" description="" category="" />
+    </variables>
+    <mergedProjects />
+    <codeSigning macEnabled="false" macPkcs12File="" windowsEnabled="false" windowsKeySource="pkcs12" windowsPvkFile="" windowsSpcFile="" windowsPkcs12File="" />
+  </application>
+  <files keepModificationTimes="false" missingFilesStrategy="warn" globalExcludeSuffixes="" defaultOverwriteMode="4" defaultUninstallMode="0" launcherOverwriteMode="3" defaultFileMode="644" defaultDirMode="755">
+    <filesets>
+      <fileset name="Java 3D - Windows - 64" id="234" customizedId="" />
+      <fileset name="Java 3D - Linux - 64" id="241" customizedId="" />
+      <fileset name="Properties archive installation" id="568" customizedId="" />
+      <fileset name="CUDA - Windows" id="1411" customizedId="" />
+      <fileset name="CUDA - Windows - 64" id="1415" customizedId="" />
+      <fileset name="CUDA - Linux" id="1420" customizedId="" />
+      <fileset name="CUDA - Mac" id="1422" customizedId="" />
+      <fileset name="Java 3D - Mac OS X" id="1540" customizedId="" />
+    </filesets>
+    <roots>
+      <root id="235" fileset="234" location="" />
+      <root id="242" fileset="241" location="" />
+      <root id="569" fileset="568" location="" />
+      <root id="1412" fileset="1411" location="" />
+      <root id="1416" fileset="1415" location="" />
+      <root id="1421" fileset="1420" location="" />
+      <root id="1423" fileset="1422" location="" />
+      <root id="1541" fileset="1540" location="" />
+    </roots>
+    <mountPoints>
+      <mountPoint id="22" root="" location="" mode="755" />
+      <mountPoint id="277" root="235" location="" mode="755" />
+      <mountPoint id="279" root="242" location="" mode="755" />
+      <mountPoint id="572" root="569" location="" mode="755" />
+      <mountPoint id="1417" root="1412" location="" mode="755" />
+      <mountPoint id="1419" root="1416" location="" mode="755" />
+      <mountPoint id="1424" root="1421" location="" mode="755" />
+      <mountPoint id="1425" root="1423" location="" mode="755" />
+      <mountPoint id="1542" root="1541" location="" mode="755" />
+    </mountPoints>
+    <entries>
+      <dirEntry mountPoint="22" file="./installFiles" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="installFiles" excludeSuffixes=".svn" dirMode="755" overrideDirMode="false">
+        <exclude>
+          <entry location="launcher_archive" fileType="regular" />
+          <entry location="LipidDataAnalyzer.properties" fileType="regular" />
+        </exclude>
+      </dirEntry>
+      <dirEntry mountPoint="277" file="./java3d/windows64" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="bin" excludeSuffixes=".svn" dirMode="755" overrideDirMode="false">
+        <exclude />
+      </dirEntry>
+      <dirEntry mountPoint="277" file="./windows/x64" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="x64" excludeSuffixes="" dirMode="755" overrideDirMode="false">
+        <exclude />
+      </dirEntry>
+      <dirEntry mountPoint="279" file="./java3d/linux64" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="amd64" excludeSuffixes=".svn" dirMode="755" overrideDirMode="false">
+        <exclude />
+      </dirEntry>
+      <fileEntry mountPoint="572" file="./installFiles/LipidDataAnalyzer.properties" overwriteMode="1" shared="false" fileMode="664" uninstallMode="2" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="572" file="./installFiles/launcher_archive/ldaCmd.sh" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="572" file="./installFiles/launcher_archive/LipidDataAnalyzer-console" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <dirEntry mountPoint="1417" file="./cuda/windows" overwriteMode="4" shared="true" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="windows" excludeSuffixes="" dirMode="755" overrideDirMode="false">
+        <exclude />
+      </dirEntry>
+      <dirEntry mountPoint="1419" file="./cuda/windows64" overwriteMode="4" shared="true" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="windows64" excludeSuffixes="" dirMode="755" overrideDirMode="false">
+        <exclude />
+      </dirEntry>
+      <dirEntry mountPoint="1424" file="./cuda/linux" overwriteMode="4" shared="false" fileMode="770" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="linux" excludeSuffixes="" dirMode="755" overrideDirMode="false">
+        <exclude />
+      </dirEntry>
+      <dirEntry mountPoint="1425" file="./cuda/mac" overwriteMode="4" shared="false" fileMode="774" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="mac" excludeSuffixes="" dirMode="755" overrideDirMode="false">
+        <exclude />
+      </dirEntry>
+      <dirEntry mountPoint="1542" file="./java3d/mac" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="mac" excludeSuffixes=".svn" dirMode="755" overrideDirMode="false">
+        <exclude />
+      </dirEntry>
+    </entries>
+    <components />
+  </files>
+  <launchers>
+    <launcher name="LipidDataAnalyzer (windows console)" id="69" customizedId="" external="true" excludeFromMenu="false" unixMode="755" menuName="Lipid Data Analyzer (console)" externalFile="LipidDataAnalyzer.bat" />
+    <launcher name="LipidDataAnalyzer (linux console)" id="169" customizedId="" external="true" excludeFromMenu="false" unixMode="755" menuName="Lipid Data Analyzer (console)" externalFile="LipidDataAnalyzer" />
+    <launcher name="Lipid Data Analyzer" id="440" customizedId="" external="false" excludeFromMenu="false" unixMode="755" menuName="" icnsFile="" customMacBundleIdentifier="false" macBundleIdentifier="" swtApp="false" fileset="" macBundleBinary="JavaApplicationStub" addMacEntitlements="false" macEntitlementsFile="">
+      <executable name="Lipid Data Analyzer" type="1" iconSet="false" iconFile="" executableDir="." redirectStderr="false" stderrFile="error.log" stderrMode="overwrite" redirectStdout="false" stdoutFile="output.log" stdoutMode="overwrite" failOnStderrOutput="true" executableMode="1" changeWorkingDirectory="true" workingDirectory="." singleInstance="false" serviceStartType="2" serviceDependencies="" serviceDescription="" jreLocation="" executionLevel="asInvoker" checkConsoleParameter="false" globalSingleInstance="false" singleInstanceActivate="true">
+        <versionInfo include="false" fileVersion="" fileDescription="" legalCopyright="" internalName="" productName="" />
+      </executable>
+      <splashScreen show="false" autoOff="true" alwaysOnTop="true" width="0" height="0" bitmapFile="" java6SplashScreen="false">
+        <text>
+          <statusLine x="20" y="20" text="" font="Arial" fontSize="8" fontColor="0,0,0" fontWeight="500" />
+          <versionLine x="20" y="40" text="version ${compiler:sys.version}" font="Arial" fontSize="8" fontColor="0,0,0" fontWeight="500" />
+        </text>
+      </splashScreen>
+      <java mainClass="at.tugraz.genome.lda.LipidDataAnalyzer" vmParameters="${compiler:javaProp3D} ${compiler:headlessTrue}" arguments="" allowVMPassthroughParameters="true" preferredVM="" bundleRuntime="true">
+        <classPath>
+          <archive location="LipidDataAnalyzer.jar" failOnError="false" />
+          <archive location="j3dcore.jar" failOnError="false" />
+          <archive location="j3dutils.jar" failOnError="false" />
+          <archive location="vecmath.jar" failOnError="false" />
+        </classPath>
+        <nativeLibraryDirectories />
+      </java>
+      <includedFiles />
+      <unextractableFiles />
+      <vmOptionsFile mode="template" overwriteMode="0" fileMode="644">
+        <content />
+      </vmOptionsFile>
+      <customScript mode="1" file="">
+        <content />
+      </customScript>
+      <infoPlist mode="1" file="">
+        <content />
+      </infoPlist>
+      <iconImageFiles />
+    </launcher>
+  </launchers>
+  <installerGui installerType="1" addOnAppId="" suggestPreviousLocations="true" autoUpdateDescriptorUrl="" useAutoUpdateBaseUrl="false" autoUpdateBaseUrl="">
+    <customCode />
+    <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
+      <commentFiles />
+      <customAttributes />
+    </autoUpdate>
+    <applications>
+      <application name="" id="installer" customizedId="" beanClass="com.install4j.runtime.beans.applications.InstallerApplication" enabled="true" commentSet="false" comment="" actionElevationType="none" fileset="" customIcnsFile="" customIcoFile="" macEntitlementsFile="" automaticLauncherIntegration="false" launchMode="startupFirstWindow" launchInNewProcess="false" launchSchedule="updateSchedule" allLaunchers="true">
+        <serializedBean>
+          <java class="java.beans.XMLDecoder">
+            <object class="com.install4j.runtime.beans.applications.InstallerApplication">
+              <void property="resizable">
+                <boolean>false</boolean>
+              </void>
+              <void property="watermark">
+                <boolean>false</boolean>
+              </void>
+            </object>
+          </java>
+        </serializedBean>
+        <launcherIds />
+        <variables />
+        <startup>
+          <screen name="" id="1" customizedId="" beanClass="com.install4j.runtime.beans.screens.StartupScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.StartupScreen" />
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions>
+              <action name="" id="13" customizedId="" beanClass="com.install4j.runtime.beans.actions.misc.RequestPrivilegesAction" enabled="true" commentSet="false" comment="" actionElevationType="none" rollbackBarrier="false" multiExec="false" failureStrategy="4" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.misc.RequestPrivilegesAction">
+                      <void property="failIfNotRootUnix">
+                        <boolean>true</boolean>
+                      </void>
+                      <void property="obtainIfAdminMac">
+                        <boolean>true</boolean>
+                      </void>
+                      <void property="obtainIfNormalMac">
+                        <boolean>true</boolean>
+                      </void>
+                      <void property="obtainIfNormalWin">
+                        <boolean>true</boolean>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <condition />
+              </action>
+            </actions>
+            <formComponents />
+          </screen>
+        </startup>
+        <screens>
+          <screen name="" id="2" customizedId="" beanClass="com.install4j.runtime.beans.screens.WelcomeScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.WelcomeScreen" />
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions>
+              <action name="" id="3" customizedId="" beanClass="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" multiExec="true" failureStrategy="1" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction">
+                      <void property="excludedVariables">
+                        <array class="java.lang.String" length="1">
+                          <void index="0">
+                            <string>sys.installationDir</string>
+                          </void>
+                        </array>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <condition>context.getBooleanVariable("sys.confirmedUpdateInstallation")</condition>
+              </action>
+            </actions>
+            <formComponents />
+          </screen>
+          <screen name="License agreement to LDA (GNU GPL v3)" id="1199" customizedId="" beanClass="com.install4j.runtime.beans.screens.LicenseScreen" enabled="true" commentSet="true" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.LicenseScreen">
+                  <void property="displayedText">
+                    <string>&lt;html&gt;&lt;body&gt;
+&lt;h2&gt;LICENSE AGREEMENT for Lipid Data Analyzer&lt;/h2&gt;
+&lt;h2&gt;GNU GENERAL PUBLIC LICENSE&lt;/h2&gt;
+&lt;h4&gt;Version 3, 29 June 2007&lt;/h4&gt;
+
+&lt;p&gt;Copyright (C) 2007 Free Software Foundation, Inc. &amp;lt;http://fsf.org/&amp;gt;&lt;br/&gt;
+  Everyone is permitted to copy and distribute verbatim copies of this license document, but changing it is not allowed.&lt;/p&gt;
+
+&lt;h3&gt;Preamble&lt;/h3&gt;
+
+&lt;p&gt;The GNU General Public License is a free, copyleft license for software and other kinds of works.&lt;/p&gt;
+&lt;p&gt;The licenses for most software and other practical works are designed to take away your freedom to share and change the works. By contrast, the GNU General Public License is intended to guarantee your freedom to share and change all versions of a program--to make sure it remains free software for all its users.  We, the Free Software Foundation, use the GNU General Public License for most of our software; it applies also to any other work released this way by its authors.  You can apply it to your programs, too.&lt;/p&gt;
+&lt;p&gt;When we speak of free software, we are referring to freedom, not price. Our General Public Licenses are designed to make sure that you have the freedom to distribute copies of free software (and charge for them if you wish), that you receive source code or can get it if you want it, that you can change the software or use pieces of it in new free programs, and that you know you can do these things.&lt;/p&gt;
+&lt;p&gt;To protect your rights, we need to prevent others from denying you these rights or asking you to surrender the rights.  Therefore, you have certain responsibilities if you distribute copies of the software, or if you modify it: responsibilities to respect the freedom of others.&lt;/p&gt;
+&lt;p&gt;For example, if you distribute copies of such a program, whether gratis or for a fee, you must pass on to the recipients the same freedoms that you received. You must make sure that they, too, receive or can get the source code.  And you must show them these terms so they know their rights.&lt;/p&gt;
+&lt;p&gt;Developers that use the GNU GPL protect your rights with two steps: (1) assert copyright on the software, and (2) offer you this License giving you legal permission to copy, distribute and/or modify it.&lt;/p&gt;
+&lt;p&gt;For the developers' and authors' protection, the GPL clearly explains that there is no warranty for this free software.  For both users' and authors' sake, the GPL requires that modified versions be marked as changed, so that their problems will not be attributed erroneously to authors of previous versions.&lt;/p&gt;
+&lt;p&gt;Some devices are designed to deny users access to install or run modified versions of the software inside them, although the manufacturer can do so.  This is fundamentally incompatible with the aim of protecting users' freedom to change the software. The systematic pattern of such abuse occurs in the area of products for individuals to use, which is precisely where it is most unacceptable.  Therefore, we have designed this version of the GPL to prohibit the practice for those products.  If such problems arise substantially in other domains, we stand ready to extend this provision to those domains in future versions of the GPL, as needed to protect the freedom of users.&lt;/p&gt;
+&lt;p&gt;Finally, every program is threatened constantly by software patents. States should not allow patents to restrict development and use of software on general-purpose computers, but in those that do, we wish to avoid the special danger that patents applied to a free program could make it effectively proprietary.  To prevent this, the GPL assures that patents cannot be used to render the program non-free.&lt;/p&gt;
+&lt;p&gt;The precise terms and conditions for copying, distribution and modification follow.&lt;/p&gt;
+
+&lt;h3&gt;TERMS AND CONDITIONS&lt;/h3&gt;
+
+&lt;h4&gt;0. Definitions.&lt;/h4&gt;
+&lt;p&gt;"This License" refers to version 3 of the GNU General Public License.&lt;/p&gt;
+&lt;p&gt;"Copyright" also means copyright-like laws that apply to other kinds of works, such as semiconductor masks.&lt;/p&gt;
+&lt;p&gt;"The Program" refers to any copyrightable work licensed under this License.  Each licensee is addressed as "you". "Licensees" and "recipients" may be individuals or organizations.&lt;/p&gt;
+&lt;p&gt;To "modify" a work means to copy from or adapt all or part of the work in a fashion requiring copyright permission, other than the making of an exact copy.  The resulting work is called a "modified version" of the earlier work or a work "based on" the earlier work.&lt;/p&gt;
+&lt;p&gt;A "covered work" means either the unmodified Program or a work based on the Program.&lt;/p&gt;
+&lt;p&gt;To "propagate" a work means to do anything with it that, without permission, would make you directly or secondarily liable for infringement under applicable copyright law, except executing it on a computer or modifying a private copy. Propagation includes copying, distribution (with or without modification), making available to the public, and in some countries other activities as well.&lt;/p&gt;
+&lt;p&gt;To "convey" a work means any kind of propagation that enables other
+parties to make or receive copies.  Mere interaction with a user through a computer network, with no transfer of a copy, is not conveying.&lt;/p&gt;
+&lt;p&gt;An interactive user interface displays "Appropriate Legal Notices" to the extent that it includes a convenient and prominently visible feature that (1) displays an appropriate copyright notice, and (2) tells the user that there is no warranty for the work (except to the extent that warranties are provided), that licensees may convey the work under this License, and how to view a copy of this License. If the interface presents a list of user commands or options, such as a menu, a prominent item in the list meets this criterion.&lt;/p&gt;
+
+&lt;h4&gt;1. Source Code.&lt;/h4&gt;
+&lt;p&gt;The "source code" for a work means the preferred form of the work for making modifications to it.  "Object code" means any non-source form of a work.&lt;/p&gt;
+&lt;p&gt;A "Standard Interface" means an interface that either is an official standard defined by a recognized standards body, or, in the case of interfaces specified for a particular programming language, one that is widely used among developers working in that language.&lt;/p&gt;
+&lt;p&gt;The "System Libraries" of an executable work include anything, other than the work as a whole, that (a) is included in the normal form of packaging a Major Component, but which is not part of that Major Component, and (b) serves only to enable use of the work with that Major Component, or to implement a Standard Interface for which an implementation is available to the public in source code form.  A "Major Component", in this context, means a major essential component (kernel, window system, and so on) of the specific operating system (if any) on which the executable work runs, or a compiler used to produce the work, or an object code interpreter used to run it.&lt;/p&gt;
+&lt;p&gt;The "Corresponding Source" for a work in object code form means all the source code needed to generate, install, and (for an executable work) run the object code and to modify the work, including scripts to control those activities.  However, it does not include the work's System Libraries, or general-purpose tools or generally available free programs which are used unmodified in performing those activities but which are not part of the work.  For example, Corresponding Source includes interface definition files associated with source files for the work, and the source code for shared libraries and dynamically linked subprograms that the work is specifically designed to require, such as by intimate data communication or control flow between those subprograms and other parts of the work.&lt;/p&gt;
+&lt;p&gt;The Corresponding Source need not include anything that users can regenerate automatically from other parts of the Corresponding Source.&lt;/p&gt;
+&lt;p&gt;The Corresponding Source for a work in source code form is that same work.&lt;/p&gt;
+
+&lt;h4&gt;2. Basic Permissions.&lt;/h4&gt;
+&lt;p&gt;All rights granted under this License are granted for the term of copyright on the Program, and are irrevocable provided the stated conditions are met.  This License explicitly affirms your unlimited permission to run the unmodified Program.  The output from running a covered work is covered by this License only if the output, given its content, constitutes a covered work.  This License acknowledges your rights of fair use or other equivalent, as provided by copyright law.&lt;/p&gt;
+&lt;p&gt;You may make, run and propagate covered works that you do not convey, without conditions so long as your license otherwise remains in force.  You may convey covered works to others for the sole purpose of having them make modifications exclusively for you, or provide you with facilities for running those works, provided that you comply with the terms of this License in conveying all material for which you do not control copyright.  Those thus making or running the covered works for you must do so exclusively on your behalf, under your direction and control, on terms that prohibit them from making any copies of your copyrighted material outside their relationship with you.&lt;/p&gt;
+&lt;p&gt;Conveying under any other circumstances is permitted solely under the conditions stated below.  Sublicensing is not allowed; section 10 makes it unnecessary.&lt;/p&gt;
+
+&lt;h4&gt;3. Protecting Users' Legal Rights From Anti-Circumvention Law.&lt;/h4&gt;
+&lt;p&gt;No covered work shall be deemed part of an effective technological measure under any applicable law fulfilling obligations under article 11 of the WIPO copyright treaty adopted on 20 December 1996, or similar laws prohibiting or restricting circumvention of such measures.&lt;/p&gt;
+&lt;p&gt;When you convey a covered work, you waive any legal power to forbid circumvention of technological measures to the extent such circumvention is effected by exercising rights under this License with respect to the covered work, and you disclaim any intention to limit operation or modification of the work as a means of enforcing, against the work's users, your or third parties' legal rights to forbid circumvention of technological measures.&lt;/p&gt;
+
+&lt;h4&gt;4. Conveying Verbatim Copies.&lt;/h4&gt;
+&lt;p&gt;You may convey verbatim copies of the Program's source code as you receive it, in any medium, provided that you conspicuously and appropriately publish on each copy an appropriate copyright notice; keep intact all notices stating that this License and any non-permissive terms added in accord with section 7 apply to the code; keep intact all notices of the absence of any warranty; and give all recipients a copy of this License along with the Program.&lt;/p&gt;
+&lt;p&gt;You may charge any price or no price for each copy that you convey, and you may offer support or warranty protection for a fee.&lt;/p&gt;
+
+&lt;h4&gt;5. Conveying Modified Source Versions.&lt;/h4&gt;
+&lt;p&gt;You may convey a work based on the Program, or the modifications to produce it from the Program, in the form of source code under the terms of section 4, provided that you also meet all of these conditions:&lt;/p&gt;
+&lt;p&gt;a) The work must carry prominent notices stating that you modified it, and giving a relevant date.&lt;/p&gt;
+&lt;p&gt;b) The work must carry prominent notices stating that it is released under this License and any conditions added under section 7.  This requirement modifies the requirement in section 4 to "keep intact all notices".&lt;/p&gt;
+&lt;p&gt;c) You must license the entire work, as a whole, under this License to anyone who comes into possession of a copy.  This License will therefore apply, along with any applicable section 7 additional terms, to the whole of the work, and all its parts, regardless of how they are packaged.  This License gives no permission to license the work in any other way, but it does not invalidate such permission if you have separately received it.&lt;/p&gt;
+&lt;p&gt;If the work has interactive user interfaces, each must display Appropriate Legal Notices; however, if the Program has interactive interfaces that do not display Appropriate Legal Notices, your work need not make them do so.&lt;/p&gt;
+&lt;p&gt;A compilation of a covered work with other separate and independent works, which are not by their nature extensions of the covered work, and which are not combined with it such as to form a larger program, in or on a volume of a storage or distribution medium, is called an "aggregate" if the compilation and its resulting copyright are not used to limit the access or legal rights of the compilation's users beyond what the individual works permit.  Inclusion of a covered work in an aggregate does not cause this License to apply to the other parts of the aggregate.&lt;/p&gt;
+
+&lt;h4&gt;6. Conveying Non-Source Forms.&lt;/h4&gt;
+&lt;p&gt;You may convey a covered work in object code form under the terms of sections 4 and 5, provided that you also convey the machine-readable Corresponding Source under the terms of this License, in one of these ways:&lt;/p&gt;
+&lt;p&gt;a) Convey the object code in, or embodied in, a physical product (including a physical distribution medium), accompanied by the Corresponding Source fixed on a durable physical medium customarily used for software interchange.&lt;/p&gt;
+&lt;p&gt;b) Convey the object code in, or embodied in, a physical product (including a physical distribution medium), accompanied by a written offer, valid for at least three years and valid for as long as you offer spare parts or customer support for that product model, to give anyone who possesses the object code either (1) a copy of the Corresponding Source for all the software in the product that is covered by this License, on a durable physical medium customarily used for software interchange, for a price no more than your reasonable cost of physically performing this conveying of source, or (2) access to copy the Corresponding Source from a network server at no charge.&lt;/p&gt;
+&lt;p&gt;c) Convey individual copies of the object code with a copy of the written offer to provide the Corresponding Source.  This alternative is allowed only occasionally and noncommercially, and only if you received the object code with such an offer, in accord with subsection 6b.&lt;/p&gt;
+&lt;p&gt;d) Convey the object code by offering access from a designated place (gratis or for a charge), and offer equivalent access to the Corresponding Source in the same way through the same place at no further charge.  You need not require recipients to copy the Corresponding Source along with the object code.  If the place to copy the object code is a network server, the Corresponding Source may be on a different server (operated by you or a third party) that supports equivalent copying facilities, provided you maintain clear directions next to the object code saying where to find the Corresponding Source.  Regardless of what server hosts the Corresponding Source, you remain obligated to ensure that it is available for as long as needed to satisfy these requirements.&lt;/p&gt;
+&lt;p&gt;e) Convey the object code using peer-to-peer transmission, provided you inform other peers where the object code and Corresponding Source of the work are being offered to the general public at no charge under subsection 6d.&lt;/p&gt;
+&lt;p&gt;A separable portion of the object code, whose source code is excluded from the Corresponding Source as a System Library, need not be included in conveying the object code work.&lt;/p&gt;
+&lt;p&gt;A "User Product" is either (1) a "consumer product", which means any tangible personal property which is normally used for personal, family, or household purposes, or (2) anything designed or sold for incorporation into a dwelling.  In determining whether a product is a consumer product, doubtful cases shall be resolved in favor of coverage.  For a particular product received by a particular user, "normally used" refers to a typical or common use of that class of product, regardless of the status of the particular user or of the way in which the particular user actually uses, or expects or is expected to use, the product.  A product is a consumer product regardless of whether the product has substantial commercial, industrial or non-consumer uses, unless such uses represent the only significant mode of use of the product.&lt;/p&gt;
+&lt;p&gt;"Installation Information" for a User Product means any methods, procedures, authorization keys, or other information required to install and execute modified versions of a covered work in that User Product from a modified version of its Corresponding Source.  The information must suffice to ensure that the continued functioning of the modified object code is in no case prevented or interfered with solely because modification has been made.&lt;/p&gt;
+&lt;p&gt;If you convey an object code work under this section in, or with, or specifically for use in, a User Product, and the conveying occurs as part of a transaction in which the right of possession and use of the User Product is transferred to the recipient in perpetuity or for a fixed term (regardless of how the transaction is characterized), the Corresponding Source conveyed under this section must be accompanied by the Installation Information.  But this requirement does not apply if neither you nor any third party retains the ability to install modified object code on the User Product (for example, the work has been installed in ROM).&lt;/p&gt;
+&lt;p&gt;The requirement to provide Installation Information does not include a requirement to continue to provide support service, warranty, or updates for a work that has been modified or installed by the recipient, or for the User Product in which it has been modified or installed.  Access to a network may be denied when the modification itself materially and adversely affects the operation of the network or violates the rules and protocols for communication across the network.&lt;/p&gt;
+&lt;p&gt;Corresponding Source conveyed, and Installation Information provided, in accord with this section must be in a format that is publicly documented (and with an implementation available to the public in source code form), and must require no special password or key for unpacking, reading or copying.&lt;/p&gt;
+
+&lt;h4&gt;7. Additional Terms.&lt;/h4&gt;
+&lt;p&gt;"Additional permissions" are terms that supplement the terms of this License by making exceptions from one or more of its conditions. Additional permissions that are applicable to the entire Program shall be treated as though they were included in this License, to the extent that they are valid under applicable law.  If additional permissions apply only to part of the Program, that part may be used separately under those permissions, but the entire Program remains governed by this License without regard to the additional permissions.&lt;/p&gt;
+&lt;p&gt;When you convey a copy of a covered work, you may at your option remove any additional permissions from that copy, or from any part of it.  (Additional permissions may be written to require their own removal in certain cases when you modify the work.)  You may place additional permissions on material, added by you to a covered work, for which you have or can give appropriate copyright permission.&lt;/p&gt;
+&lt;p&gt;Notwithstanding any other provision of this License, for material you add to a covered work, you may (if authorized by the copyright holders of that material) supplement the terms of this License with terms:&lt;/p&gt;
+&lt;p&gt;a) Disclaiming warranty or limiting liability differently from the terms of sections 15 and 16 of this License; or&lt;/p&gt;
+&lt;p&gt;b) Requiring preservation of specified reasonable legal notices or author attributions in that material or in the Appropriate Legal Notices displayed by works containing it; or&lt;/p&gt;
+&lt;p&gt;c) Prohibiting misrepresentation of the origin of that material, or requiring that modified versions of such material be marked in reasonable ways as different from the original version; or&lt;/p&gt;
+&lt;p&gt;d) Limiting the use for publicity purposes of names of licensors or authors of the material; or&lt;/p&gt;
+&lt;p&gt;e) Declining to grant rights under trademark law for use of some trade names, trademarks, or service marks; or&lt;/p&gt;
+&lt;p&gt;f) Requiring indemnification of licensors and authors of that material by anyone who conveys the material (or modified versions of it) with contractual assumptions of liability to the recipient, for any liability that these contractual assumptions directly impose on those licensors and authors.&lt;/p&gt;
+&lt;p&gt;All other non-permissive additional terms are considered "further restrictions" within the meaning of section 10.  If the Program as you received it, or any part of it, contains a notice stating that it is governed by this License along with a term that is a further restriction, you may remove that term.  If a license document contains a further restriction but permits relicensing or conveying under this License, you may add to a covered work material governed by the terms of that license document, provided that the further restriction does not survive such relicensing or conveying.&lt;/p&gt;
+&lt;p&gt;If you add terms to a covered work in accord with this section, you must place, in the relevant source files, a statement of the additional terms that apply to those files, or a notice indicating where to find the applicable terms.&lt;/p&gt;
+&lt;p&gt;Additional terms, permissive or non-permissive, may be stated in the form of a separately written license, or stated as exceptions; the above requirements apply either way.&lt;/p&gt;
+
+&lt;h4&gt;8. Termination.&lt;/h4&gt;
+&lt;p&gt;You may not propagate or modify a covered work except as expressly provided under this License.  Any attempt otherwise to propagate or modify it is void, and will automatically terminate your rights under this License (including any patent licenses granted under the third paragraph of section 11).&lt;/p&gt;
+&lt;p&gt;However, if you cease all violation of this License, then your license from a particular copyright holder is reinstated (a) provisionally, unless and until the copyright holder explicitly and finally terminates your license, and (b) permanently, if the copyright holder fails to notify you of the violation by some reasonable means prior to 60 days after the cessation.&lt;/p&gt;
+&lt;p&gt;Moreover, your license from a particular copyright holder is reinstated permanently if the copyright holder notifies you of the violation by some reasonable means, this is the first time you have received notice of violation of this License (for any work) from that copyright holder, and you cure the violation prior to 30 days after your receipt of the notice.&lt;/p&gt;
+&lt;p&gt;Termination of your rights under this section does not terminate the licenses of parties who have received copies or rights from you under this License.  If your rights have been terminated and not permanently reinstated, you do not qualify to receive new licenses for the same material under section 10.&lt;/p&gt;
+
+&lt;h4&gt;9. Acceptance Not Required for Having Copies.&lt;/h4&gt;
+&lt;p&gt;You are not required to accept this License in order to receive or run a copy of the Program.  Ancillary propagation of a covered work occurring solely as a consequence of using peer-to-peer transmission to receive a copy likewise does not require acceptance.  However, nothing other than this License grants you permission to propagate or modify any covered work.  These actions infringe copyright if you do not accept this License.  Therefore, by modifying or propagating a covered work, you indicate your acceptance of this License to do so.&lt;/p&gt;
+
+&lt;h4&gt;10. Automatic Licensing of Downstream Recipients.&lt;/h4&gt;
+&lt;p&gt;Each time you convey a covered work, the recipient automatically receives a license from the original licensors, to run, modify and propagate that work, subject to this License.  You are not responsible for enforcing compliance by third parties with this License.&lt;/p&gt;
+&lt;p&gt;An "entity transaction" is a transaction transferring control of an organization, or substantially all assets of one, or subdividing an organization, or merging organizations.  If propagation of a covered work results from an entity transaction, each party to that transaction who receives a copy of the work also receives whatever licenses to the work the party's predecessor in interest had or could give under the previous paragraph, plus a right to possession of the Corresponding Source of the work from the predecessor in interest, if the predecessor has it or can get it with reasonable efforts.&lt;/p&gt;
+&lt;p&gt;You may not impose any further restrictions on the exercise of the rights granted or affirmed under this License.  For example, you may not impose a license fee, royalty, or other charge for exercise of rights granted under this License, and you may not initiate litigation (including a cross-claim or counterclaim in a lawsuit) alleging that any patent claim is infringed by making, using, selling, offering for sale, or importing the Program or any portion of it.&lt;/p&gt;
+
+&lt;h4&gt;11. Patents.&lt;/h4&gt;
+&lt;p&gt;A "contributor" is a copyright holder who authorizes use under this License of the Program or a work on which the Program is based.  The work thus licensed is called the contributor's "contributor version".&lt;/p&gt;
+&lt;p&gt;A contributor's "essential patent claims" are all patent claims owned or controlled by the contributor, whether already acquired or hereafter acquired, that would be infringed by some manner, permitted by this License, of making, using, or selling its contributor version, but do not include claims that would be infringed only as a consequence of further modification of the contributor version.  For purposes of this definition, "control" includes the right to grant patent sublicenses in a manner consistent with the requirements of this License.&lt;/p&gt;
+&lt;p&gt;Each contributor grants you a non-exclusive, worldwide, royalty-free patent license under the contributor's essential patent claims, to make, use, sell, offer for sale, import and otherwise run, modify and propagate the contents of its contributor version.&lt;/p&gt;
+&lt;p&gt;In the following three paragraphs, a "patent license" is any express agreement or commitment, however denominated, not to enforce a patent (such as an express permission to practice a patent or covenant not to sue for patent infringement).  To "grant" such a patent license to a party means to make such an agreement or commitment not to enforce a patent against the party.&lt;/p&gt;
+&lt;p&gt;If you convey a covered work, knowingly relying on a patent license, and the Corresponding Source of the work is not available for anyone to copy, free of charge and under the terms of this License, through a publicly available network server or other readily accessible means, then you must either (1) cause the Corresponding Source to be so available, or (2) arrange to deprive yourself of the benefit of the patent license for this particular work, or (3) arrange, in a manner consistent with the requirements of this License, to extend the patent license to downstream recipients.  "Knowingly relying" means you have actual knowledge that, but for the patent license, your conveying the covered work in a country, or your recipient's use of the covered work in a country, would infringe one or more identifiable patents in that country that you have reason to believe are valid.&lt;/p&gt;
+&lt;p&gt;If, pursuant to or in connection with a single transaction or arrangement, you convey, or propagate by procuring conveyance of, a covered work, and grant a patent license to some of the parties receiving the covered work authorizing them to use, propagate, modify or convey a specific copy of the covered work, then the patent license you grant is automatically extended to all recipients of the covered work and works based on it.&lt;/p&gt;
+&lt;p&gt;A patent license is "discriminatory" if it does not include within the scope of its coverage, prohibits the exercise of, or is conditioned on the non-exercise of one or more of the rights that are specifically granted under this License.  You may not convey a covered work if you are a party to an arrangement with a third party that is in the business of distributing software, under which you make payment to the third party based on the extent of your activity of conveying the work, and under which the third party grants, to any of the parties who would receive the covered work from you, a discriminatory patent license (a) in connection with copies of the covered work conveyed by you (or copies made from those copies), or (b) primarily for and in connection with specific products or compilations that contain the covered work, unless you entered into that arrangement, or that patent license was granted, prior to 28 March 2007.&lt;/p&gt;
+&lt;p&gt;Nothing in this License shall be construed as excluding or limiting any implied license or other defenses to infringement that may otherwise be available to you under applicable patent law.&lt;/p&gt;
+
+&lt;h4&gt;12. No Surrender of Others' Freedom.&lt;/h4&gt;
+&lt;p&gt;If conditions are imposed on you (whether by court order, agreement or otherwise) that contradict the conditions of this License, they do not excuse you from the conditions of this License.  If you cannot convey a covered work so as to satisfy simultaneously your obligations under this License and any other pertinent obligations, then as a consequence you may not convey it at all.  For example, if you agree to terms that obligate you to collect a royalty for further conveying from those to whom you convey the Program, the only way you could satisfy both those terms and this License would be to refrain entirely from conveying the Program.&lt;/p&gt;
+
+&lt;h4&gt;13. Use with the GNU Affero General Public License.&lt;/h4&gt;
+&lt;p&gt;Notwithstanding any other provision of this License, you have permission to link or combine any covered work with a work licensed under version 3 of the GNU Affero General Public License into a single combined work, and to convey the resulting work.  The terms of this License will continue to apply to the part which is the covered work, but the special requirements of the GNU Affero General Public License, section 13, concerning interaction through a network will apply to the combination as such.&lt;/p&gt;
+
+&lt;h4&gt;14. Revised Versions of this License.&lt;/h4&gt;
+&lt;p&gt;The Free Software Foundation may publish revised and/or new versions of the GNU General Public License from time to time.  Such new versions will be similar in spirit to the present version, but may differ in detail to address new problems or concerns.&lt;/p&gt;
+&lt;p&gt;Each version is given a distinguishing version number.  If the Program specifies that a certain numbered version of the GNU General Public License "or any later version" applies to it, you have the option of following the terms and conditions either of that numbered version or of any later version published by the Free Software Foundation.  If the Program does not specify a version number of the GNU General Public License, you may choose any version ever published by the Free Software Foundation.&lt;/p&gt;
+&lt;p&gt;If the Program specifies that a proxy can decide which future versions of the GNU General Public License can be used, that proxy's public statement of acceptance of a version permanently authorizes you to choose that version for the Program.&lt;/p&gt;
+&lt;p&gt;Later license versions may give you additional or different permissions.  However, no additional obligations are imposed on any author or copyright holder as a result of your choosing to follow a later version.&lt;/p&gt;
+
+&lt;h4&gt;15. Disclaimer of Warranty.&lt;/h4&gt;
+&lt;p&gt;THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION.&lt;/p&gt;
+
+&lt;h4&gt;16. Limitation of Liability.&lt;/h4&gt;
+&lt;p&gt;IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.&lt;/p&gt;
+
+&lt;h4&gt;17. Interpretation of Sections 15 and 16.&lt;/h4&gt;
+&lt;p&gt;If the disclaimer of warranty and limitation of liability provided above cannot be given local legal effect according to their terms, reviewing courts shall apply local law that most closely approximates an absolute waiver of all civil liability in connection with the Program, unless a warranty or assumption of liability accompanies a copy of the Program in return for a fee.&lt;/p&gt;
+
+&lt;h3&gt;END OF TERMS AND CONDITIONS&lt;/h3&gt;
+
+
+&lt;h3&gt;How to Apply These Terms to Your New Programs&lt;/h3&gt;
+&lt;p&gt;If you develop a new program, and you want it to be of the greatest possible use to the public, the best way to achieve this is to make it free software which everyone can redistribute and change under these terms.&lt;/p&gt;
+&lt;p&gt;To do so, attach the following notices to the program.  It is safest to attach them to the start of each source file to most effectively state the exclusion of warranty; and each file should have at least the "copyright" line and a pointer to where the full notice is found.&lt;/p&gt;
+&lt;p&gt;Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry Copyright (C) 2017  Jürgen Hartler, Andreas Ziegl, Gerhard G Thallinger&lt;/p&gt;
+&lt;p&gt;This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.&lt;/p&gt;
+&lt;p&gt;This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.&lt;/p&gt;
+&lt;p&gt;You should have received a copy of the GNU General Public License along with this program.  If not, see &amp;lt;http://www.gnu.org/licenses/&amp;gt;.&lt;/p&gt;
+&lt;p&gt;Also add information on how to contact you by electronic and paper mail.&lt;/p&gt;
+&lt;p&gt;If the program does terminal interaction, make it output a short notice like this when it starts in an interactive mode:&lt;/p&gt;
+&lt;p&gt;LDA  Copyright (C) 2017  Lipid Data Analyzer&lt;br/&gt;
+This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.&lt;br/&gt;
+This is free software, and you are welcome to redistribute it under certain conditions; type `show c' for details.&lt;/p&gt;
+&lt;p&gt;The hypothetical commands `show w' and `show c' should show the appropriate parts of the General Public License.  Of course, your program's commands might be different; for a GUI interface, you would use an "about box".&lt;/p&gt;
+&lt;p&gt;You should also get your employer (if you work as a programmer) or school, if any, to sign a "copyright disclaimer" for the program, if necessary. For more information on this, and how to apply and follow the GNU GPL, see &amp;lt;http://www.gnu.org/licenses/&amp;gt;.&lt;/p&gt;
+&lt;p&gt;The GNU General Public License does not permit incorporating your program into proprietary programs.  If your program is a subroutine library, you may consider it more useful to permit linking proprietary applications with the library.  If this is what you want to do, use the GNU Lesser General Public License instead of this License.  But first, please read &amp;lt;http://www.gnu.org/philosophy/why-not-lgpl.html&amp;gt;.&lt;/p&gt;
+
+&lt;/body&gt;&lt;/html&gt;
+</string>
+                  </void>
+                  <void property="textSource">
+                    <object class="com.install4j.runtime.beans.screens.components.TextSource" field="DIRECT" />
+                  </void>
+                </object>
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions />
+            <formComponents />
+          </screen>
+          <screen name="Licence agreements" id="915" customizedId="" beanClass="com.install4j.runtime.beans.screens.FormScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.FormScreen">
+                  <void property="subTitle">
+                    <string>ProteoWizard, AB Sciex WiffReader, Agilent MHDAC, Bruker CompassXtract,and Thermo MSFileReader</string>
+                  </void>
+                  <void property="title">
+                    <string>Licence agreements</string>
+                  </void>
+                </object>
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions />
+            <formComponents>
+              <formComponent name="" id="919" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent">
+                      <void property="labelText">
+                        <string>This installer provides the independent generally freely available msconvert from ProteoWizard package (freely available at http://proteowizard.sourceforge.net) which depends on ABSciex WiffReader, Agilent MassHunter Data Access Component, Bruker CompassXtract, and Thermo MSFileReader. These software are individual software packages which in no event represent combined work with Lipid Data Analyzer.
+Thus, none of these software are governed by the license the Lipid Data Analyzer is providing you. All of them are subject to their own individual license agreements. Therefore, you have to accept all of these licence agreements to install the software.</string>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <initScript />
+                <visibilityScript />
+              </formComponent>
+            </formComponents>
+          </screen>
+          <screen name="Licence agreement to msconvert" id="912" customizedId="" beanClass="com.install4j.runtime.beans.screens.LicenseScreen" enabled="true" commentSet="true" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.LicenseScreen">
+                  <void property="displayedText">
+                    <string>&lt;html&gt;&lt;body&gt;
+&lt;h2&gt;LICENCE AGREEMENT for msconvert (ProteoWizard)&lt;/h2&gt;
+ADDENDUM TO APACHE LICENSE&lt;br/&gt;&lt;br/&gt;
+To the best of our ability we deliver this software to you under the Apache 2.0 License listed below (the source code is available in the ProteoWizard project). This software does, however, depend on other software libraries which place further restrictions on its use and redistribution. By accepting the license terms for this software, you agree to comply with the restrictions imposed on you by the license agreements of the software libraries on which it depends:&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;AB Sciex WIFF Reader Library&lt;/b&gt;&lt;br/&gt;
+&lt;b&gt;Agilent Mass Hunter Data Access Component Library&lt;/b&gt;&lt;br/&gt;
+&lt;b&gt;Bruker CompassXtract&lt;/b&gt;&lt;br/&gt;
+&lt;b&gt;Thermo-Scientific MSFileReader Library&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;
+
+NOTE: If you do not plan to redistribute this software yourself, then you are the "end-user" in the above agreements.&lt;br/&gt;
+&lt;hr/&gt;
+Apache License - Covers Core ProteoWizard Tools and Library&lt;br/&gt;&lt;br/&gt;
+
+Version 2.0, January 2004&lt;br/&gt;&lt;br/&gt;
+
+&lt;a href="http://www.apache.org/licenses/"&gt;http://www.apache.org/licenses/&lt;/a&gt;&lt;br/&gt;&lt;br/&gt;
+
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;1. Definitions.&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;
+
+"License" shall mean the terms and conditions for use, reproduction, and distribution as defined by Sections 1 through 9 of this document.&lt;br/&gt;&lt;br/&gt;
+
+"Licensor" shall mean the copyright owner or entity authorized by the copyright owner that is granting the License.&lt;br/&gt;&lt;br/&gt;
+
+"Legal Entity" shall mean the union of the acting entity and all other entities that control, are controlled by, or are under common control with that entity. For the purposes of this definition, "control" means (i) the power, direct or indirect, to cause the direction or management of such entity, whether by contract or otherwise, or (ii) ownership of fifty percent (50%) or more of the outstanding shares, or (iii) beneficial ownership of such entity.&lt;br/&gt;&lt;br/&gt;
+
+"You" (or "Your") shall mean an individual or Legal Entity exercising permissions granted by this License.&lt;br/&gt;&lt;br/&gt;
+
+"Source" form shall mean the preferred form for making modifications, including but not limited to software source code, documentation source, and configuration files.&lt;br/&gt;&lt;br/&gt;
+
+"Object" form shall mean any form resulting from mechanical transformation or translation of a Source form, including but not limited to compiled object code, generated documentation, and conversions to other media types.&lt;br/&gt;&lt;br/&gt;
+
+"Work" shall mean the work of authorship, whether in Source or Object form, made available under the License, as indicated by a copyright notice that is included in or attached to the work (an example is provided in the Appendix below).&lt;br/&gt;&lt;br/&gt;
+
+"Derivative Works" shall mean any work, whether in Source or Object form, that is based on (or derived from) the Work and for which the editorial revisions, annotations, elaborations, or other modifications represent, as a whole, an original work of authorship. For the purposes of this License, Derivative Works shall not include works that remain separable from, or merely link (or bind by name) to the interfaces of, the Work and Derivative Works thereof.&lt;br/&gt;&lt;br/&gt;
+
+"Contribution" shall mean any work of authorship, including the original version of the Work and any modifications or additions to that Work or Derivative Works thereof, that is intentionally submitted to Licensor for inclusion in the Work by the copyright owner or by an individual or Legal Entity authorized to submit on behalf of the copyright owner. For the purposes of this definition, "submitted" means any form of electronic, verbal, or written communication sent to the Licensor or its representatives, including but not limited to communication on electronic mailing lists, source code control systems, and issue tracking systems that are managed by, or on behalf of, the Licensor for the purpose of discussing and improving the Work, but excluding communication that is conspicuously marked or otherwise designated in writing by the copyright owner as "Not a Contribution."&lt;br/&gt;&lt;br/&gt;
+
+"Contributor" shall mean Licensor and any individual or Legal Entity on behalf of whom a Contribution has been received by Licensor and subsequently incorporated within the Work.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;2. Grant of Copyright License.&lt;/b&gt; Subject to the terms and conditions of this License, each Contributor hereby grants to You a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable copyright license to reproduce, prepare Derivative Works of, publicly display, publicly perform, sublicense, and distribute the Work and such Derivative Works in Source or Object form.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;3. Grant of Patent License.&lt;/b&gt; Subject to the terms and conditions of this License, each Contributor hereby grants to You a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable (except as stated in this section) patent license to make, have made, use, offer to sell, sell, import, and otherwise transfer the Work, where such license applies only to those patent claims licensable by such Contributor that are necessarily infringed by their Contribution(s) alone or by combination of their Contribution(s) with the Work to which such Contribution(s) was submitted. If You institute patent litigation against any entity (including a cross-claim or counterclaim in a lawsuit) alleging that the Work or a Contribution incorporated within the Work constitutes direct or contributory patent infringement, then any patent licenses granted to You under this License for that Work shall terminate as of the date such litigation is filed.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;4. Redistribution.&lt;/b&gt; You may reproduce and distribute copies of the Work or Derivative Works thereof in any medium, with or without modifications, and in Source or Object form, provided that You meet the following conditions:&lt;br/&gt;&lt;br/&gt;
+&lt;ol&gt;
+&lt;li&gt;You must give any other recipients of the Work or Derivative Works a copy of this License; and&lt;/li&gt;
+
+&lt;li&gt;You must cause any modified files to carry prominent notices stating that You changed the files; and&lt;/li&gt;
+
+&lt;li&gt;You must retain, in the Source form of any Derivative Works that You distribute, all copyright, patent, trademark, and attribution notices from the Source form of the Work, excluding those notices that do not pertain to any part of the Derivative Works; and&lt;/li&gt;
+
+&lt;li&gt;If the Work includes a "NOTICE" text file as part of its distribution, then any Derivative Works that You distribute must include a readable copy of the attribution notices contained within such NOTICE file, excluding those notices that do not pertain to any part of the Derivative Works, in at least one of the following places: within a NOTICE text file distributed as part of the Derivative Works; within the Source form or documentation, if provided along with the Derivative Works; or, within a display generated by the Derivative Works, if and wherever such third-party notices normally appear. The contents of the NOTICE file are for informational purposes only and do not modify the License. You may add Your own attribution notices within Derivative Works that You distribute, alongside or as an addendum to the NOTICE text from the Work, provided that such additional attribution notices cannot be construed as modifying the License. You may add Your own copyright statement to Your modifications and may provide additional or different license terms and conditions for use, reproduction, or distribution of Your modifications, or for any such Derivative Works as a whole, provided Your use, reproduction, and distribution of the Work otherwise complies with the conditions stated in this License.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;b&gt;5. Submission of Contributions.&lt;/b&gt; Unless You explicitly state otherwise, any Contribution intentionally submitted for inclusion in the Work by You to the Licensor shall be under the terms and conditions of this License, without any additional terms or conditions. Notwithstanding the above, nothing herein shall supersede or modify the terms of any separate license agreement you may have executed with Licensor regarding such Contributions.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;6. Trademarks.&lt;/b&gt; This License does not grant permission to use the trade names, trademarks, service marks, or product names of the Licensor, except as required for reasonable and customary use in describing the origin of the Work and reproducing the content of the NOTICE file.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;7. Disclaimer of Warranty.&lt;/b&gt; Unless required by applicable law or agreed to in writing, Licensor provides the Work (and each Contributor provides its Contributions) on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE. You are solely responsible for determining the appropriateness of using or redistributing the Work and assume any risks associated with Your exercise of permissions under this License.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;8. Limitation of Liability.&lt;/b&gt; In no event and under no legal theory, whether in tort (including negligence), contract, or otherwise, unless required by applicable law (such as deliberate and grossly negligent acts) or agreed to in writing, shall any Contributor be liable to You for damages, including any direct, indirect, special, incidental, or consequential damages of any character arising as a result of this License or out of the use or inability to use the Work (including but not limited to damages for loss of goodwill, work stoppage, computer failure or malfunction, or any and all other commercial damages or losses), even if such Contributor has been advised of the possibility of such damages.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;9. Accepting Warranty or Additional Liability.&lt;/b&gt; While redistributing the Work or Derivative Works thereof, You may choose to offer, and charge a fee for, acceptance of support, warranty, indemnity, or other liability obligations and/or rights consistent with this License. However, in accepting such obligations, You may act only on Your own behalf and on Your sole responsibility, not on behalf of any other Contributor, and only if You agree to indemnify, defend, and hold each Contributor harmless for any liability incurred by, or claims asserted against, such Contributor by reason of your accepting any such warranty or additional liability.
+&lt;/body&gt;&lt;/html&gt;</string>
+                  </void>
+                  <void property="textSource">
+                    <object class="com.install4j.runtime.beans.screens.components.TextSource" field="DIRECT" />
+                  </void>
+                </object>
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions />
+            <formComponents />
+          </screen>
+          <screen name="Licence agreement for AB Sciex WiffReader" id="1075" customizedId="" beanClass="com.install4j.runtime.beans.screens.LicenseScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.LicenseScreen">
+                  <void property="displayedText">
+                    <string>&lt;html&gt;&lt;body&gt;
+&lt;p align="center"&gt;&lt;b&gt;AB Sciex LLC&lt;br/&gt;
+END USER BETA SOFTWARE LICENSE AGREEMENT&lt;br/&gt;
+and&lt;br/&gt;
+LIMITED DEVELOPER LICENSE&lt;/b&gt;&lt;br/&gt;
+&lt;i&gt;WIFF Reader Distributable Beta SDK&lt;/i&gt;&lt;/p&gt;&lt;br/&gt;&lt;br/&gt;
+&lt;b&gt;NOTICE TO USER: PLEASE READ THIS DOCUMENT CAREFULLY.  THIS IS THE CONTRACT BETWEEN YOU AND AB SCIEX REGARDING THIS SOFTWARE PRODUCT.  THIS AGREEMENT INCLUDES LICENSE TERMS AND RESTRICTIONS, WARRANTY AND LIABILITY DISCLAIMERS, AND LIMITATIONS.&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;YOUR INSTALLATION AND USE OF THIS AB SCIEX SDK IS SUBJECT TO THE TERMS AND CONDITIONS CONTAINED IN THIS END USER SOFTWARE LICENSE AGREEMENT.&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;
+
+This AB Sciex End User Software License Agreement (EULA) and Limited Developer &amp; Redistribution License accompanies this AB Sciex WIFF Reader Distributable Beta SDK product ("Software") and related explanatory materials ("Documentation"). The term "SDK" also includes any upgrades, modified versions, updates, additions and copies of the SDK licensed to you by AB Sciex.  The term “AB Sciex,” as used in this License, means AB Sciex LLC and its subsidiaries and affiliates.  The term “License” or “Agreement” means this EULA and Limited Developer &amp; Redistribution License including any and all Appendices.  The term “you” or “Licensee” means the purchaser of this License to the Software.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;Third Party Products&lt;/b&gt;&lt;br/&gt;
+This Software may include software products licensed by third party provider(s). In addition, the Software may enable you to run multiple instances of third-party software and application programs. You are responsible for reviewing and complying with any licenses necessary to use any such third-party software.  Such licenses may be included in your AB Sciex installation package.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;TITLE&lt;/b&gt;&lt;br/&gt;
+Title, ownership rights and intellectual property rights in and to the Software and Documentation shall at all times remain with AB Sciex and its subsidiaries, and their suppliers.  All rights not specifically granted by this License, including Federal and international copyrights, are reserved by AB Sciex or their respective owners.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;COPYRIGHT&lt;/b&gt;&lt;br/&gt;
+The Software, including its structure, organization, code, user interface and associated Documentation, is a proprietary product of AB Sciex or its suppliers, and is protected by international laws of copyright. The law provides for civil and criminal penalties for anyone in violation of the laws of copyright.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;LICENSE&lt;/b&gt;&lt;br/&gt;
+&lt;b&gt;Use of the Software&lt;/b&gt;&lt;br/&gt;
+1.As a Developer License, AB Sciex grants to you one (1) personal, nontransferable, nonexclusive, license to use copies of the Software and install such Software on your machine(s) for your single concurrent internal use.&lt;br/&gt;
+2.	You may make one copy of the Software in machine-readable form solely for backup or archival purposes.  You must reproduce on any such copy all copyright notices and any other proprietary legends found on the original.  You may not make any other copies of the Software.&lt;br/&gt;
+3.	From time to time, AB Sciex may change the terms of this Agreement.  AB Sciex will notify you of such change.  Your continued use of the Software will indicate your agreement to the change.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;Use Restrictions&lt;/b&gt;&lt;br/&gt;
+1.  You may not use the Software, Documentation, or any associated documentation, in whole or in part, except as expressly permitted in this Agreement.&lt;br/&gt;
+2.  You may not sublicense, copy, merge, modify, sell, resell, rent, lease, assign, transfer (except temporarily in the event of a computer malfunction or as expressly permitted under the Section “Use of the Software”), or distribute this license or the Software, or create derivative works based on the Software (except as outlined in the Distribution Rights below), or any part thereof or any interest therein.&lt;br/&gt;
+3.  You may not reverse assemble, decompile, modify, create any derivative works, or otherwise attempt, cause, or permit any reverse engineering of the Software or any part thereof.&lt;br/&gt;
+4.  You acknowledge that the Software in human-readable (source code) form, including its structure, sequence, and organization, is and remains the confidential trade secret of AB Sciex.  You agree that you shall not attempt, cause or permit the reverse engineering, modification, decompiliation, disassembly of the Software to any human readable or perceivable form, or creation of any derivative works based on the Software or any part thereof except as expressly permitted under the Section “Use of the Software”.&lt;br/&gt;
+5.  You may not remove any proprietary, copyright, trade secret or warning legend from the Software or any Documentation and you acknowledge that the Software in human-readable (source code) form, including its structure, sequence, and organization, is and remains the confidential trade secret of AB Sciex.&lt;br/&gt;
+6.  You agree to comply fully with all export laws and restrictions and regulations of the United States or applicable foreign agencies or authorities.  You agree that you will not export or reexport, directly or indirectly, the Software into any country prohibited by the United States Export Administration Act and the regulations thereunder or other applicable United States law.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b/&gt;Distribution of the Distributable Components (DCs)&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;
+1.  &lt;b&gt;Distributable Components.&lt;/b&gt; The Software contains Distributable Components that you are permitted&lt;/b&gt;&lt;br/&gt;
+to distribute for non-commercial purposes provided that: (a) the Distributable Components are bundled as part of, and for the sole purpose of running programs developed by you and supplied by you; and (b) you comply with all other terms in this EULA.  As used herein commercial purposes include, but are not limited to, charging a purchase price, license fee, maintenance fee, subscription fee, or providing software incorporating Distributable Components for use with a product sold by you or an affiliate.&lt;br/&gt;&lt;br/&gt;
+2.  &lt;b&gt;Right to Use and Distribute.&lt;/b&gt; The code and text files listed in Appendix A are “Distributable Components”.  All other code and text files of the Software are not distributable.&lt;br/&gt;&lt;br/&gt;
+3.  &lt;b&gt;Third Party Distribution.&lt;/b&gt; You may not permit distributors of your programs or end users of your programs to copy and distribute the Distributable Components as part of those or their programs.&lt;br/&gt;&lt;br/&gt;
+4. &lt;b&gt;Distribution Requirements, General.&lt;/b&gt; For any Distributable Component you distribute, you must:&lt;br/&gt;
+(a) embed the license key in your program such that it is obscured from end users seeing it.  In the event that your program is open source, this license key must not be part of the open source;&lt;br/&gt;
+(b) add significant primary functionality to it in your programs;&lt;br/&gt;
+(c) for any Distributable Component having a filename extension of .lib, distribute only the results of running such Distributable Component through a linker with your program;&lt;br/&gt;
+(d) distribute Distributable Components included in a setup program only as part of that setup program without modification;&lt;br/&gt;
+(e) require distributors and external end users to agree to terms that protect it at least as much as this EULA; and&lt;br/&gt;
+(f) display your valid copyright notice on your programs.&lt;br/&gt;&lt;br/&gt;
+5. &lt;b&gt;Distribution Requirement, Indemnification.&lt;/b&gt;  For any Distributable Component you distribute, you must and you hereby agree to: indemnify, defend, and hold harmless AB Sciex from any and all claims and costs, including attorneys’ fees, related to the distribution or use of your programs.&lt;br/&gt;&lt;br/&gt;
+6. &lt;b&gt;Distribution Restrictions.&lt;/b&gt; You may not:&lt;br/&gt;
+(a) alter any copyright, trademark or patent notice in the Distributable Component;&lt;br/&gt;
+(b) use AB Sciex or AB Sciex’s trademarks in your programs’ names or in a way that suggests your programs come from or are endorsed by AB Sciex;&lt;br/&gt;
+(c) include Distributable Components in malicious, deceptive or unlawful programs; or&lt;br/&gt;
+(d) modify or distribute the source code of any Distributable Component so that any part of it becomes subject to an Excluded License. An Excluded License is one that requires, as a condition of use, modification or distribution, that (i) the code be disclosed or distributed in source code form; and/or (ii) others have the right to modify it.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;Trial&lt;/b&gt;&lt;br/&gt;
+If this license is granted on a trial basis, you are hereby notified that license management software may be included to automatically cause the Software to cease functioning at the end of the trial period.&lt;br/&gt;&lt;br&gt;
+
+&lt;b&gt;Termination&lt;/b&gt;&lt;br/&gt;
+You may terminate this Agreement by discontinuing use of the Software, removing all copies from your computers and storage media, and returning the Software and Documentation, and all copies thereof, to AB Sciex.  AB Sciex may terminate this Agreement if you fail to comply with all of its terms, in which case you agree to discontinue using the Software, remove all copies from your computers and storage media, and return the Software and Documentation, and all copies thereof, to AB Sciex.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;U.S. Government End Users&lt;/b&gt;&lt;br/&gt;
+The Software is a "commercial item," as that term is defined in 48 C.F.R. 2.101 (Oct. 1995), consisting of "commercial computer software" and "commercial computer software documentation," as such terms are used in 48 C.F.R. 12.212 (Sept. 1995). Consistent with 48 C.F.R. 12.212 and 48 C.F.R. 227.7202-1 through 227.7202-4 (June 1995), all U.S. Government End Users acquire the Software with only those rights set forth herein.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;European Community End Users&lt;/b&gt;&lt;br/&gt;
+If this Software is used within a country of the European Community, nothing in this Agreement shall be construed as restricting any rights available under the European Community Software Directive, O.J. Eur. Comm. (No. L. 122) 42 (1991).&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;Regulated Uses&lt;/b&gt;&lt;br/&gt;
+You acknowledge that the Software has not been cleared, approved, registered or otherwise qualified (collectively, “Approval”) by AB Sciex with any regulatory agency, including without limitation for use in diagnostic or therapeutic procedures or any other use requiring compliance with any federal or state law regulating diagnostic or therapeutic products, blood products, medical devices or any similar product (hereafter collectively referred to as "federal or state drug laws").  The Software may not be used for any purpose that would require any such Approval unless proper Approval is obtained.  You agree that if you elect to use the Software for a purpose that would subject you or the Software to the jurisdiction of any federal or state drug laws, you will be solely responsible for obtaining any required Approvals and otherwise ensuring that your use of the Software complies with such laws.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;NO WARRANTY and LIMITATION OF REMEDIES&lt;/b&gt;&lt;br/&gt;
+AB SCIEX MAKES NO WARRANTIES OF ANY KIND WHATSOEVER, EXPRESS OR IMPLIED, WITH RESPECT TO THE SOFTWARE OR DOCUMENTATION, INCLUDING BUT NOT LIMITED TO WARRANTIES OF FITNESS FOR A PARTICULAR PURPOSE OR MERCHANTABILITY OR THAT THE SOFTWARE OR DOCUMENTATION IS NON-INFRINGING.  ALL OTHER WARRANTIES ARE EXPRESSLY DISCLAIMED.  WITHOUT LIMITING THE GENERALITY OF THE FOREGOING, AB SCIEX MAKES NO WARRANTIES THAT THE SOFTWARE WILL MEET YOUR REQUIREMENTS, THAT OPERATION OF THE LICENSED SOFTWARE WILL BE UNINTERRUPTED OR ERROR FREE OR WILL CONFORM EXACTLY TO THE DOCUMENTATION, OR THAT AB SCIEX WILL CORRECT ALL PROGRAM ERRORS.  AB SCIEX’S SOLE LIABILITY AND RESPONSIBILITY FOR BREACH OF WARRANTY RELATING TO THE SOFTWARE OR DOCUMENTATION SHALL BE LIMITED, AT AB SCIEX’S SOLE OPTION, TO (1) CORRECTION OF ANY ERROR IDENTIFIED TO AB SCIEX IN A WRITING FROM YOU IN A SUBSEQUENT RELEASE OF THE SOFTWARE, WHICH SHALL BE SUPPLIED TO YOU FREE OF CHARGE, (2) ACCEPTING A RETURN OF THE PRODUCT AND REFUNDING THE PURCHASE PRICE UPON RETURN OF THE PRODUCT AND REMOVAL OF ALL COPIES OF THE SOFTWARE FROM YOUR COMPUTERS AND STORAGE DEVICES, (3) REPLACEMENT OF THE DEFECTIVE SOFTWARE WITH A FUNCTIONALLY EQUIVALENT PROGRAM AT NO CHARGE TO YOU, OR (4) PROVIDING A REASONABLE WORK AROUND WITHIN A REASONABLE TIME.  AB SCIEX SOLE LIABILITY AND RESPONSIBILITY UNDER THIS AGREEMENT FOR BREACH OF WARRANTY RELATING TO MEDIA IS THE REPLACEMENT OF DEFECTIVE MEDIA RETURNED WITHIN 90 DAYS OF THE DELIVERY DATE.  THESE ARE YOUR SOLE AND EXCLUSIVE REMEDIES FOR ANY BREACH OF WARRANTY.  WARRANTY CLAIMS MUST BE MADE WITHIN THE APPLICABLE WARRANTY PERIOD.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;LIMITATION OF LIABILITY&lt;/b&gt;&lt;br/&gt;
+IN NO EVENT SHALL AB SCIEX OR ITS AGENTS, CONSULTANTS, CONTRACTORS OR SUPPLIERS BE RESPONSIBLE OR LIABLE, WHETHER IN CONTRACT, TORT, WARRANTY OR UNDER ANY STATUTE (INCLUDING WITHOUT LIMITATION ANY TRADE PRACTICE, UNFAIR COMPETITION OR OTHER STATUTE OF SIMILAR IMPORT) OR ON ANY OTHER BASIS FOR SPECIAL, INDIRECT, INCIDENTAL, MULTIPLE, PUNITIVE, OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE POSSESSION OR USE OF, OR THE INABILITY TO USE, THE SOFTWARE OR DOCUMENTATION, EVEN IF AB SCIEX IS ADVISED IN ADVANCE OF THE POSSIBILITY OF SUCH DAMAGES, INCLUDING WITHOUT LIMITATION DAMAGES ARISING FROM OR RELATED TO LOSS OF USE, LOSS OF DATA, DOWNTIME, OR FOR LOSS OF REVENUE, PROFITS, GOODWILL OR BUSINESS OR OTHER FINANCIAL LOSS.  IN ANY CASE, THE ENTIRE LIABILITY OF AB SCIEX AND ITS AGENTS, CONSULTANTS, CONTRACTORS AND SUPPLIERS UNDER THIS LICENSE, OR ARISING OUT OF THE USE OF THE SOFTWARE, SHALL NOT EXCEED IN THE AGGREGATE THE PURCHASE PRICE OF THE LICENSE OR LICENSES TO THE SOFTWARE.&lt;br/&gt;&lt;br/&gt;
+
+SOME STATES, COUNTRIES OR JURISDICTIONS LIMIT THE SCOPE OF OR PRECLUDE LIMITATIONS OR EXCLUSION OF REMEDIES OR DAMAGES, OR OF LIABILITY, SUCH AS LIABILITY FOR GROSS NEGLIGENCE OR WILLFUL MISCONDUCT, AS OR TO THE EXTENT SET FORTH ABOVE, OR DO NOT ALLOW IMPLIED WARRANTIES TO BE EXCLUDED.  IN SUCH STATES, COUNTRIES OR JURISDICTIONS, THE LIMITATION OR EXCLUSION OF WARRANTIES, REMEDIES, DAMAGES OR LIABILITY SET FORTH ABOVE MAY NOT APPLY TO YOU.  HOWEVER, ALTHOUGH THEY SHALL NOT APPLY TO THE EXTENT PROHIBITED BY LAW, THEY SHALL APPLY TO THE FULLEST EXTENT PERMITTED BY LAW.  YOU MAY ALSO HAVE OTHER RIGHTS THAT VARY BY STATE, COUNTRY OR OTHER JURISDICTION.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;GENERAL&lt;/b&gt;&lt;br/&gt;
+This Agreement shall be governed by laws of the Commonwealth of Massachusetts, U.S.A., exclusive of its conflict of laws provisions.  This Agreement shall not be governed by the United Nations Convention on Contracts for the International Sale of Goods.  This Agreement contains the complete agreement between the parties with respect to the subject matter hereof, and supersedes all prior or contemporaneous agreements or understandings, whether oral or written.  If any provision of this Agreement is held by a court of competent jurisdiction to be contrary to law, that provision will be enforced to the maximum extent permissible, and the remaining provisions of this Agreement will remain in full force and effect.  The controlling language of this Agreement, and any proceedings relating to this Agreement, shall be English.  You agree to bear any and all costs of translation, if necessary.  The headings to the sections of this Agreement are used for convenience only and shall have no substantive meaning.  All questions concerning this Agreement shall be directed to: AB Sciex, 500 Old Connecticut Path, Framingham MA U.S.A., Attention: Legal Department.&lt;br/&gt;&lt;br/&gt;
+
+Unpublished rights reserved under the copyright laws of the United States.&lt;br/&gt;
+AB Sciex LLC, 500 Old Connecticut Path, Framingham, MA 01701 U.S.A.&lt;br/&gt;&lt;br/&gt;
+For Research Use Only. Not for use in diagnostic procedures.  The trademarks mentioned herein are the property of AB Sciex Pte. Ltd. or their respective owners.  AB SCIEX™ is being used under license.&lt;br/&gt;
+© 2013 AB SCIEX&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;&lt;p align="center"&gt;APPENDIX A&lt;br/&gt;
+DISTRIBUTABLE COMPONENTS OF THE SOFTWARE&lt;/p&gt;&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;
+Clearcore2.Compression.dll&lt;br/&gt;
+Clearcore2.Data.AnalystDataProvider.dll&lt;br/&gt;
+Clearcore2.Data.CommonInterfaces.dll&lt;br/&gt;
+Clearcore2.Data.dll&lt;br/&gt;
+Clearcore2.Data.WiffReader.dll&lt;br/&gt;
+Clearcore2.InternalRawXYProcessing.dll&lt;br/&gt;
+Clearcore2.Muni.dll&lt;br/&gt;
+Clearcore2.ProjectUtilities.dll&lt;br/&gt;
+Clearcore2.RawXYProcessing.dll&lt;br/&gt;
+Clearcore2.StructuredStorage.dll&lt;br/&gt;
+Clearcore2.Utility.dll&lt;br/&gt;
+&lt;/body&gt;&lt;/html&gt;</string>
+                  </void>
+                  <void property="textSource">
+                    <object class="com.install4j.runtime.beans.screens.components.TextSource" field="DIRECT" />
+                  </void>
+                </object>
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions />
+            <formComponents />
+          </screen>
+          <screen name="Licence agreement for Agilent MHDAC" id="998" customizedId="" beanClass="com.install4j.runtime.beans.screens.LicenseScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.LicenseScreen">
+                  <void property="displayedText">
+                    <string>&lt;html&gt;&lt;body&gt;
+&lt;b&gt;END-USER LICENSE TERMS FOR AGILENT MHDAC&lt;br/&gt;&lt;br/&gt;
+ 
+AGILENT TECHNOLOGIES, INC. SOFTWARE LICENSE TERMS FOR THE MASSHUNTER DATA ACCESS COMPONENT RUNTIME VERSION&lt;br/&gt;&lt;br/&gt;
+ 
+ATTENTION:  USE OF THE SOFTWARE IS SUBJECT TO THE LICENSE TERMS SET FORTH BELOW.&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;
+
+IF YOU DO NOT AGREE TO THESE LICENSE TERMS, THEN (A) DO NOT INSTALL OR USE THE SOFTWARE, AND (B) YOU MAY RETURN THE SOFTWARE FOR A FULL REFUND, OR, IF THE SOFTWARE IS SUPPLIED AS PART OF ANOTHER PRODUCT, YOU MAY RETURN THE ENTIRE PRODUCT FOR A FULL REFUND. NOTWITHSTANDING ANYTHING TO THE CONTRARY IN THIS NOTICE, INSTALLING OR OTHERWISE USING THE SOFTWARE INDICATES YOUR ACCEPTANCE OF THESE TERMS.&lt;br/&gt;&lt;br/&gt;
+
+AGILENT SOFTWARE LICENSE TERMS&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;&lt;u&gt;Software.&lt;/u&gt;&lt;/b&gt;  “Software” means the Masshunter Data Access Component Runtime computer program in object code format.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;&lt;u&gt;License Grant.&lt;/u&gt;&lt;/b&gt;  Agilent grants you a non-exclusive, non-transferable license to (a) use one copy of the Software for internal purposes in accordance with these License Terms and the documentation provided with the Software or (b) to distribute the Software for non-commercial purposes only and only bundled as part of, and for the sole purpose of running, products supplied by you.  This Software is licensed for internal concurrent or network use of an unlimited number of copies, provided access to this Software and any copies is restricted to your employees, contractors and other personnel that are working in a capacity that is under your control and on your behalf.  If you distribute for non-commercial purposes only as permitted by this license, you must ensure that a copy of this license is distributed with the Software and that the recipient of the Software agrees to the terms of this license as a condition of execution of this Software.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;&lt;u&gt;License Restrictions.&lt;/u&gt;&lt;/b&gt;  You may make copies or adaptations of the Software only for archival purposes or only when copying or adaptation is an essential step in the authorized use of the Software. You must reproduce all copyright notices in the original Software on all permitted copies or adaptations.  You may not offer or provide unrestricted access to this Software on any public or distributed network.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;&lt;u&gt;Upgrades.&lt;/u&gt;&lt;/b&gt;  This license does not entitle you to receive upgrades, updates or technical support.  Such services may be purchased separately.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;&lt;u&gt;Ownership.&lt;/u&gt;&lt;/b&gt;  The Software and all copies thereof are owned and copyrighted by Agilent.  Agilent retains all right, title and interest in the Software.  Agilent and its third party suppliers may protect their rights in the Software in the event of any violation of these License Terms.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;&lt;u&gt;No Disassembly.&lt;/u&gt;&lt;/b&gt;  You may not disassemble, decompile or otherwise modify the Software without written authorization from Agilent, except as permitted by law.  Upon request, you will provide Agilent with reasonably detailed information regarding any permitted disassembly, decompilation or modification.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;&lt;u&gt;High Risk Activities.&lt;/u&gt;&lt;/b&gt;  The Software is not specifically designed, manufactured or intended for use in the planning, construction, maintenance or direct operation of a nuclear facility, nor for use in on line control or fail safe operation of aircraft navigation, control or communication systems, weapon systems or direct life support systems.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;&lt;u&gt;Termination.&lt;/u&gt;&lt;/b&gt;  Agilent may terminate your license upon notice for breach of these License Terms.  Upon termination, you must immediately destroy all copies of the Software.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;&lt;u&gt;No Warranty.&lt;/u&gt;&lt;/b&gt; THIS SOFTWARE IS LICENSED "AS IS" AND WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY, AND FITNESS FOR A PARTICULAR PURPOSE.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;&lt;u&gt;Limitation of Liability.&lt;/u&gt;&lt;/b&gt; TO THE EXTENT NOT PROHIBITED BY LAW, IN NO EVENT WILL AGILENT BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA, OR FOR SPECIAL, INDIRECT, CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED REGARDLESS OF THE THEORY OF LIABILITY, ARISING OUT OF OR RELATED TO THE USE OF OR INABILITY TO USE SOFTWARE, EVEN IF AGILENT HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. In no event will Agilent's liability to you, whether in contract, tort (including negligence), or otherwise, exceed the amount paid by you for the Software. The foregoing limitations will apply even if the above stated warranty fails of its essential purpose.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;&lt;u&gt;Export Requirements.&lt;/u&gt;&lt;/b&gt;  If you export, re-export or import Software, technology or technical data licensed hereunder, you assume responsibility for complying with applicable laws and regulations and for obtaining required export and import authorizations.  Agilent may terminate this license immediately if you are in violation of any applicable laws or regulations.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;&lt;u&gt;U.S. Government Restricted Rights.&lt;/u&gt;&lt;/b&gt;  Software and technical data rights granted to the federal government include only those rights customarily provided to end user customers.  Agilent provides this customary commercial license in Software and technical data pursuant to FAR 12.211 (Technical Data) and 12.212 (Computer Software) and, for the Department of Defense, DFARS 252.227-7015 (Technical Data – Commercial Items) and DFARS 227.7202-3 (Rights in Commercial Computer Software or Computer Software Documentation).&lt;br/&gt;&lt;br/&gt;
+&lt;/body&gt;&lt;/html&gt;</string>
+                  </void>
+                  <void property="textSource">
+                    <object class="com.install4j.runtime.beans.screens.components.TextSource" field="DIRECT" />
+                  </void>
+                </object>
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions />
+            <formComponents />
+          </screen>
+          <screen name="Licence agreement for Bruker CompassXtract" id="1282" customizedId="" beanClass="com.install4j.runtime.beans.screens.LicenseScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.LicenseScreen">
+                  <void property="displayedText">
+                    <string>&lt;html&gt;&lt;body&gt;
+&lt;p align="center"&gt;&lt;b&gt;SOFTWARE LICENSE AGREEMENT for CompassXtract and CompassXtract Libraries&lt;/b&gt;&lt;/p&gt;
+&lt;br/&gt;
+ 
+Bruker Daltonik GmbH (hereinafter referred to as &lt;b&gt;"Licensor"&lt;/b&gt;) has developed the CompassXtract software program (hereinafter referred to as "&lt;b&gt;CompassXtract&lt;/b&gt;"), which consists of documentation and individual CompassXtract libraries (hereinafter referred to as "&lt;b&gt;CompassXtract Libraries&lt;/b&gt;"). These license terms constitute an agreement (hereinafter referred to as "&lt;b&gt;Agreement&lt;/b&gt;") between you and Licensor and shall be the legal basis for any non-commercial usage of Licensor's CompassXtract. These license terms also apply to any updates or supplements for CompassXtract or separable parts of CompassXtract such as CompassXtract Libraries, unless other terms accompany those items, in which case those terms apply.&lt;br/&gt;
+ You may only use CompassXtract as a whole, if you have downloaded it from Licensor's Webserver at &lt;a href="http://www.bdal.de/compassxtract"&gt;http://www.bdal.de/compassxtract&lt;/a&gt; and accepted this Agreement as binding between Licensor and you. However, certain individual CompassXtract Libraries might be conveyed to you by others. In both cases, you may only legally use CompassXtract or any of the CompassXtract Libraries conveyed to you after having accepted this Agreement as binding between Licensor and you.&lt;br/&gt;&lt;br/&gt;
+ 
+&lt;b&gt;1. Purpose of CompassXtract and License&lt;/b&gt;&lt;br/&gt;
+CompassXtract is provided as it is, in a trial and development stage, not yet marketable and without any warranties regarding fitness for any purpose whatsoever. It may contain errors and defects. The aim and purpose of providing it free of charge and under the terms of this Agreement is to discover such errors and defects. It is, inter alia but not limited to, not designed, manufactured or intended for any use requiring fail-safe performance in which the failure of CompassXtract could lead to death, personal injury or physical and environmental damage, such as the operation of medical facilities. Nor is it, inter alia but not limited to, designed to perform any queries or operations which might require reliable results and/or which might be the basis for business and/or medical decisions. You agree not to use CompassXtract in connection with any such activities.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;2. Rights Granted&lt;/b&gt;&lt;br/&gt;
+You may install and use CompassXtract on any of your computing devices.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;3. Use Restrictions&lt;/b&gt;&lt;br/&gt;
+3.1 You may not decompile, disassemble, reverse engineer or modify CompassXtract.&lt;br/&gt;&lt;br/&gt;
+
+3.2 You may not distribute CompassXtract to others, breach of which terminates the rights granted under this agreement. This also applies to any integration or implementation of CompassXtract to software developed by you or by others on your behalf (hereinafter referred to as &lt;b&gt;“Own Software”&lt;/b&gt;) or any distribution of which CompassXtract is part of. However, you may distribute Own Software which requires the usage of or links to CompassXtract Libraries if you comply with the requirements set down in Section 4 of this Agreement.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;4. Requirements for Distribution of your own Software using CompassXtract Libraries&lt;/b&gt;&lt;br/&gt;
+You may only distribute CompassXtract Libraries to others if all of the following conditions are met:&lt;br/&gt;&lt;br/&gt;
+4.1 You distribute CompassXtract Libraries as part of Own Software which you license to third parties (hereinafter &lt;b&gt;"Your Licensees"&lt;/b&gt;);&lt;br/&gt;&lt;br/&gt;
+
+4.2 Your Own Software requires all the CompassXtract Libraries distributed by you in order to function properly when used by Your Licensees;&lt;br/&gt;&lt;br/&gt;
+
+4.3 You provide to Your Licensee a URL to Licensor's Webserver at &lt;a href="http://www.bdal.de/compassxtract"&gt;http://www.bdal.de/compassxtract&lt;/a&gt; and require Your Licensees, as condition for being granted the right to use your Own Software, to acquire the usage rights for CompassXtract directly from Licensor by agreeing to the terms of this Agreement, which you distribute in unmodified form with your Own Software.&lt;br/&gt;&lt;br/&gt;
+
+4.4 In your Own Software's "About" box the following text is displayed: "This software uses CompassXtract software. Copyright © 2011, 2013 by Bruker Daltonik GmbH. All rights reserved."&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;5. Restrictions for Distribution of your own Products&lt;/b&gt;&lt;br/&gt;
+5.1 You may not use the Licensor's trademarks in a way that suggests your software components and/or programs are provided by or are endorsed by the Licensor.&lt;br/&gt;&lt;br/&gt;
+
+5.2 You may not commercially exploit CompassXtract and/or CompassXtract Libraries. Commercial exploitation includes, but is not limited to, charging a purchase price, license fee, maintenance fee, or subscription fee. However, your Own Software rightfully using CompassXtract Libraries under this Agreement may be distributed for a fee with no obligation to pay any royalties to Licensor.&lt;br/&gt;&lt;br/&gt;
+
+5.3 Your rights to CompassXtract do not include any license, right, power or authority to subject CompassXtract in whole or in part to any of the terms of an Excluded License. &lt;b&gt;"Excluded License"&lt;/b&gt; means any license that requires as a condition of use, modification and/or distribution of software that such software or other software combined and/or distributed with such software shall be (a) disclosed or distributed in source code form; or (b) licensed for the purpose of making derivative works. Without limiting the foregoing obligation, you are specifically prohibited from distributing CompassXtract or CompassXtract Libraries with any software that is subject to the General Public License (GPL) or similar license in a manner that would create a combined work.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;6. Liability&lt;/b&gt;&lt;br/&gt;
+6.1 As Licensor delivers the software for free, Licensor is not liable for any kind of damage, direct or indirect, which may arise due to simple negligence (Section 521 German Civil Code). In the event, that there should be – for whatever reason – a statutory liability of Licensor for simple negliegence, the aforementioned exclusion of liability applies nevertheless, but with the exception of damages to life, body or health.&lt;br/&gt;&lt;br/&gt;
+
+6.2 You indemnify, defend and hold harmless the Licensor from any liability claims, including attorney fees, of third parties in connection with your usage of CompassXtract as well as the distribution of your Own Software which requires usage of or links to CompassXtract Libraries and other circumstances for which you are responsible.&lt;br/&gt;&lt;br/&gt;
+
+&lt;b&gt;7. Additional Terms Applicable to CompassXtract&lt;/b&gt;&lt;br/&gt;
+7.1 CompassXtract is licensed, not sold. This License only gives you some rights to use CompassXtract and the CompassXtract Libraries; the Licensor reserves all other rights. Unless applicable law gives you more rights despite this limitation, you may use CompassXtract and the CompassXtract Libraries only as expressly permitted in this License.&lt;br/&gt;&lt;br/&gt;
+
+7.2 Licensor has no obligation to fix, update, supplement or support CompassXtract and/or the CompassXtract Libraries.&lt;br/&gt;&lt;br/&gt;
+
+7.3 Your rights under this License terminate automatically if you breach this License in any way. Termination of this License will not affect any of your obligations or liabilities arising prior to termination. The following sections of this License shall survive termination: 3.1, 3.2, 5.1, 5.2, 5.3, 6.1., 6.2.&lt;br/&gt;&lt;br/&gt;
+
+7.4 No subsidiary agreements of this Agreement have been made. Supplements and amendments to this Agreement must be made in writing as prescribed by law in order to be valid. The requirement of written form under this Agreement may be waived in writing only.&lt;br/&gt;&lt;br/&gt;
+
+7.5 This Agreement is governed by German law to the exclusion of the UN Convention on Contracts for the International Sale of Goods. If you are a consumer, this does not apply if legal provisions, in particular consumer protection legislation, conflict with this choice. The courts of Bremen shall have exclusive jurisdiction. If you are not a merchant, a legal entity under public law or a public-law special fund in the sense Section 38 of the German Code of Civil Procedure (ZPO), the agreement on the place of jurisdiction is replaced by the legal provisions.&lt;br/&gt;&lt;br/&gt;
+
+7.6 If individual provisions of this Agreement are or become invalid or contain a gap which needs to be filled, the validity of the remaining provisions of the Agreement will not be affected thereby. The Parties hereby undertake to substitute the invalid or lacking provision with a valid provision which comes closest to the documented intentions of the Parties.&lt;br/&gt;&lt;br/&gt;
+&lt;/body&gt;&lt;/html&gt;</string>
+                  </void>
+                  <void property="textSource">
+                    <object class="com.install4j.runtime.beans.screens.components.TextSource" field="DIRECT" />
+                  </void>
+                </object>
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions />
+            <formComponents />
+          </screen>
+          <screen name="Licence agreement for MSFileReader" id="911" customizedId="" beanClass="com.install4j.runtime.beans.screens.LicenseScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.LicenseScreen">
+                  <void property="displayedText">
+                    <string>&lt;html&gt;&lt;body&gt;
+&lt;p align="center"&gt;&lt;b&gt;SOFTWARE LICENSE AGREEMENT (“License”) FOR MSFileReader&lt;/b&gt;&lt;/p&gt;
+&lt;br/&gt;
+These License terms are an agreement between you and Thermo Finnigan LLC ("Licensor"). They apply to Licensor’s MSFileReader software program (“Software”), which includes documentation and any media on which you received it. These terms also apply to any updates or supplements for this Software, unless other terms accompany those items, in which case those terms apply. &lt;b&gt;If you use this Software, you accept this License. If you do not accept this License, you are prohibited from using this software.  If you comply with these License terms, you have the rights set forth below.&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;
+
+1. Rights Granted:&lt;br/&gt;&lt;br/&gt;
+
+1.1. You may install and use this Software on any of your computing devices.&lt;br/&gt;&lt;br/&gt;
+
+1.2. You may distribute this Software to others, but only in combination with other software components and/or programs that you provide and subject to distribution requirements and restrictions below.&lt;br/&gt;&lt;br/&gt;
+
+2.  Use Restrictions:&lt;br/&gt;&lt;br/&gt;
+
+2.1. You may not decompile, disassemble, reverse engineer or modify this Software.&lt;br/&gt;&lt;br/&gt;
+
+3. Distribution Requirements:&lt;br/&gt;&lt;br/&gt;
+
+If you distribute this Software to others, you agree to:&lt;br/&gt;&lt;br/&gt;
+
+3.1. Indemnify, defend and hold harmless the Licensor from any claims, including attorneys’ fees, related to the distribution or use of this Software;&lt;br/&gt;&lt;br/&gt;
+
+3.2. Display the following text in your software’s “About” box: &lt;b&gt;“MSFileReader file reading tool. Copyright © 2009 - 2014 by Thermo Fisher Scientific, Inc. All rights reserved.”&lt;/b&gt;;&lt;br/&gt;&lt;br/&gt;
+
+3.3. Require your end users to agree to a license agreement that prohibits them from redistributing this Software to others.&lt;br/&gt;&lt;br/&gt;
+
+4.  Distribution Restrictions:&lt;br/&gt;&lt;br/&gt;
+
+4.1. You may not use the Licensor’s trademarks in a way that suggests your software components and/or programs are provided by or are endorsed by the Licensor; and&lt;br/&gt;&lt;br/&gt;
+
+4.2. You may not &lt;b&gt;commercially exploit&lt;/b&gt; this Software or products that incorporate this Software without prior written consent of Licensor. Commercial exploitation includes, but is not limited to, charging a purchase price, license fee, maintenance fee, or subscription fee; or licensing, transferring or redistributing the Software in exchange for consideration of any kind.&lt;br/&gt;&lt;br/&gt;
+
+4.3. Your rights to this Software do not include any license, right, power or authority to subject this Software in whole or in part to any of the terms of an Excluded License. "Excluded License" means any license that requires as a condition of use, modification and/or distribution of software subject to the Excluded License, that such software or other software combined and/or distributed with such software be (a) disclosed or distributed in source code form; or (b) licensed for the purpose of making derivative works.  Without limiting the foregoing obligation, you are specifically prohibited from distributing this Software with any software that is subject to the General Public License (GPL) or similar license in a manner that would create a combined work.&lt;br/&gt;&lt;br/&gt;
+
+5.  Additional Terms Applicable to Software:&lt;br/&gt;&lt;br/&gt;
+
+5.1. This Software is licensed, not sold. This License only gives you some rights to use this Software; the Licensor reserves all other rights. Unless applicable law gives you more rights despite this limitation, you may use this Software only as expressly permitted in this License.&lt;br/&gt;&lt;br/&gt;
+
+5.2. Licensor has no obligation to fix, update, supplement or support this Software.&lt;br/&gt;&lt;br/&gt;
+
+5.3. This Software is not designed, manufactured or intended for any use requiring fail-safe performance in which the failure of this Software could lead to death, serious personal injury or severe physical and environmental damage (“High Risk Activities”), such as the operation of aircraft, medical or nuclear facilities. You agree not to use, or license the use of, this Software in connection with any High Risk Activities.&lt;br/&gt;&lt;br/&gt;
+
+5.4. Your rights under this License terminate automatically if you breach this License in any way. Termination of this License will not affect any of your obligations or liabilities arising prior to termination. The following sections of this License shall survive termination: 2.1, 3.1, 3.2, 3.3, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.5, 5.6, 5.7, 5.8, and 5.9.&lt;br/&gt;&lt;br/&gt;
+
+5.5. This Software is subject to United States export laws and regulations. You agree to comply with all domestic and international export laws and regulations that apply to this Software. These laws include restrictions on destinations, end users and end use.&lt;br/&gt;&lt;br/&gt;
+
+5.6. This License shall be construed and controlled by the laws of the State of California, U.S.A., without regard to conflicts of law. You consent to the jurisdiction of the state and federal courts situated in the State of California in any action arising under this License. The application of the U.N. Convention on Contracts for the International Sale of Goods to this License is hereby expressly excluded. If any provision of this License shall be deemed unenforceable or contrary to law, the rest of this License shall remain in full effect and interpreted in an enforceable manner that most nearly captures the intent of the original language.&lt;br/&gt;&lt;br/&gt;
+
+5.7. THIS SOFTWARE IS LICENSED "AS IS". YOU BEAR ALL RISKS OF USING IT. LICENSOR GIVES NO AND DISCLAIMS ALL EXPRESS AND IMPLIED WARRANTIES, REPRESENTATIONS OR GUARANTEES. YOU MAY HAVE ADDITIONAL CONSUMER RIGHTS UNDER YOUR LOCAL LAWS WHICH THIS LICENSE CANNOT CHANGE. TO THE EXTENT PERMITTED UNDER YOUR LOCAL LAWS, LICENSOR EXCLUDES THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.&lt;br/&gt;&lt;br/&gt;
+
+5.8. LICENSOR’S TOTAL LIABILITY TO YOU FOR DIRECT DAMAGES ARISING UNDER THIS LICENSE IS LIMITED TO U.S. $1.00. YOU CANNOT RECOVER ANY OTHER DAMAGES, INCLUDING CONSEQUENTIAL, LOST PROFITS, SPECIAL, INDIRECT OR INCIDENTAL DAMAGES, EVEN IF LICENSOR IS EXPRESSLY MADE AWARE OF THE POSSIBILITY THEREOF OR IS NEGLIGENT. THIS LIMITATION APPLIES TO ANYTHING RELATED TO THIS SOFTWARE, SERVICES, CONTENT (INCLUDING CODE) ON THIRD PARTY INTERNET SITES, OR THIRD PARTY PROGRAMS, AND CLAIMS FOR BREACH OF CONTRACT, BREACH OF WARRANTY, GUARANTEE  OR CONDITION, STRICT LIABILITY, NEGLIGENCE, OR OTHER TORT TO THE EXTENT PERMITTED BY APPLICABLE LAW.&lt;br/&gt;&lt;br/&gt;
+
+5.9. Use, duplication or disclosure of this Software by the U.S. Government is subject to the restricted rights applicable to commercial computer software (under FAR 52.227019 and DFARS 252.227-7013 or parallel regulations). The manufacturer for this purpose is Thermo Finnigan LLC, 355 River Oaks Parkway, San Jose, California 95134, U.S.A.&lt;br/&gt;&lt;br/&gt;
+&lt;/body&gt;&lt;/html&gt;</string>
+                  </void>
+                  <void property="textSource">
+                    <object class="com.install4j.runtime.beans.screens.components.TextSource" field="DIRECT" />
+                  </void>
+                </object>
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions />
+            <formComponents />
+          </screen>
+          <screen name="" id="4" customizedId="" beanClass="com.install4j.runtime.beans.screens.InstallationDirectoryScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.InstallationDirectoryScreen" />
+              </java>
+            </serializedBean>
+            <condition>!context.getBooleanVariable("sys.confirmedUpdateInstallation")</condition>
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions>
+              <action name="" id="5" customizedId="" beanClass="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" multiExec="true" failureStrategy="1" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction">
+                      <void property="excludedVariables">
+                        <array class="java.lang.String" length="1">
+                          <void index="0">
+                            <string>sys.installationDir</string>
+                          </void>
+                        </array>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <condition>context.getVariable("sys.responseFile") == null</condition>
+              </action>
+            </actions>
+            <formComponents />
+          </screen>
+          <screen name="" id="6" customizedId="" beanClass="com.install4j.runtime.beans.screens.ComponentsScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.ComponentsScreen">
+                  <void property="allowNewFolderCreation">
+                    <boolean>true</boolean>
+                  </void>
+                  <void property="showInstallationDirectoryChooser">
+                    <boolean>true</boolean>
+                  </void>
+                </object>
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions />
+            <formComponents />
+          </screen>
+          <screen name="Additional Configuration" id="74" customizedId="" beanClass="com.install4j.runtime.beans.screens.FormScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.FormScreen">
+                  <void property="subTitle">
+                    <string>Please choose a machine.</string>
+                  </void>
+                  <void property="title">
+                    <string>Additional configuration</string>
+                  </void>
+                </object>
+              </java>
+            </serializedBean>
+            <condition />
+            <validation>return true;</validation>
+            <preActivation />
+            <postActivation />
+            <actions />
+            <formComponents>
+              <formComponent name="Configuration radio group" id="78" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.RadiobuttonsComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.formcomponents.RadiobuttonsComponent">
+                      <void property="labelText">
+                        <string>Available machines: </string>
+                      </void>
+                      <void property="radioButtonLabels">
+                        <array class="java.lang.String" length="8">
+                          <void index="0">
+                            <string>FT</string>
+                          </void>
+                          <void index="1">
+                            <string>Orbitrap exactive</string>
+                          </void>
+                          <void index="2">
+                            <string>Orbitrap velos</string>
+                          </void>
+                          <void index="3">
+                            <string>Orbitrap XL</string>
+                          </void>
+                          <void index="4">
+                            <string>QTOF profile</string>
+                          </void>
+                          <void index="5">
+                            <string>QTOF centroid</string>
+                          </void>
+                          <void index="6">
+                            <string>QTOF centroid processed</string>
+                          </void>
+                          <void index="7">
+                            <string>QTRAP</string>
+                          </void>
+                        </array>
+                      </void>
+                      <void property="variableName">
+                        <string>config_radioGroup</string>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <initScript />
+                <visibilityScript />
+              </formComponent>
+            </formComponents>
+          </screen>
+          <screen name="" id="773" customizedId="" beanClass="com.install4j.runtime.beans.screens.FormScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.FormScreen">
+                  <void property="subTitle">
+                    <string>Memory settings</string>
+                  </void>
+                  <void property="title">
+                    <string>Additional configuration</string>
+                  </void>
+                </object>
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions />
+            <formComponents>
+              <formComponent name="" id="775" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.IntegerTextfieldComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.formcomponents.IntegerTextfieldComponent">
+                      <void property="checkIfEmpty">
+                        <boolean>true</boolean>
+                      </void>
+                      <void property="initialText">
+                        <string>1024</string>
+                      </void>
+                      <void property="labelText">
+                        <string>Memory available in MB (for 32Bit systems 1512 is maximum) -Xmx</string>
+                      </void>
+                      <void property="variableName">
+                        <string>xmx</string>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <initScript />
+                <visibilityScript />
+              </formComponent>
+              <formComponent name="" id="841" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.LabelComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.formcomponents.LabelComponent">
+                      <void property="labelText">
+                        <string>It is recommended to use your system RAM minus the MEM that is usually reserved by the OS</string>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <initScript />
+                <visibilityScript />
+              </formComponent>
+              <formComponent name="" id="843" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.SpacerComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.formcomponents.SpacerComponent" />
+                  </java>
+                </serializedBean>
+                <initScript />
+                <visibilityScript />
+              </formComponent>
+              <formComponent name="" id="776" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.IntegerTextfieldComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.formcomponents.IntegerTextfieldComponent">
+                      <void property="initialText">
+                        <string>512</string>
+                      </void>
+                      <void property="labelText">
+                        <string>Reserved memory at initialization in MB -Xms</string>
+                      </void>
+                      <void property="variableName">
+                        <string>xms</string>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <initScript />
+                <visibilityScript />
+              </formComponent>
+              <formComponent name="" id="845" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.LabelComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.formcomponents.LabelComponent">
+                      <void property="labelText">
+                        <string>It is recommended to use half of the Xmx value for Xms</string>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <initScript />
+                <visibilityScript />
+              </formComponent>
+              <formComponent name="" id="844" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.SpacerComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.formcomponents.SpacerComponent" />
+                  </java>
+                </serializedBean>
+                <initScript />
+                <visibilityScript />
+              </formComponent>
+              <formComponent name="" id="777" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.LabelComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.formcomponents.LabelComponent">
+                      <void property="labelText">
+                        <string>After installation, the labels can be changed at the "Lipid Data Analyzer.vmoptions",</string>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <initScript />
+                <visibilityScript />
+              </formComponent>
+              <formComponent name="" id="778" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.LabelComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.formcomponents.LabelComponent">
+                      <void property="labelText">
+                        <string>or for the console in the .bat and .sh, respectively</string>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <initScript />
+                <visibilityScript />
+              </formComponent>
+            </formComponents>
+          </screen>
+          <screen name="" id="7" customizedId="" beanClass="com.install4j.runtime.beans.screens.StandardProgramGroupScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.StandardProgramGroupScreen">
+                  <void property="programGroupName">
+                    <string>${compiler:sys.fullName}</string>
+                  </void>
+                </object>
+              </java>
+            </serializedBean>
+            <condition>!context.getBooleanVariable("sys.confirmedUpdateInstallation")</condition>
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions />
+            <formComponents />
+          </screen>
+          <screen name="" id="8" customizedId="" beanClass="com.install4j.runtime.beans.screens.InstallationScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="true" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.InstallationScreen" />
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions>
+              <action name="" id="9" customizedId="" beanClass="com.install4j.runtime.beans.actions.InstallFilesAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="4" errorMessage="${i18n:FileCorrupted}">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.InstallFilesAction" />
+                  </java>
+                </serializedBean>
+                <condition />
+              </action>
+              <action name="" id="10" customizedId="" beanClass="com.install4j.runtime.beans.actions.desktop.CreateProgramGroupAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.desktop.CreateProgramGroupAction">
+                      <void property="uninstallerMenuName">
+                        <string>${i18n:UninstallerMenuEntry(${compiler:sys.fullName})}</string>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <condition>!context.getBooleanVariable("sys.programGroupDisabled")</condition>
+              </action>
+              <action name="" id="11" customizedId="" beanClass="com.install4j.runtime.beans.actions.desktop.RegisterAddRemoveAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.desktop.RegisterAddRemoveAction">
+                      <void property="itemName">
+                        <string>${compiler:sys.fullName} ${compiler:sys.version}</string>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <condition />
+              </action>
+              <group name="Machine configuration" id="266" customizedId="" beanClass="com.install4j.runtime.beans.groups.ActionGroup" enabled="true" commentSet="false" comment="" actionElevationType="inherit">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.groups.ActionGroup" />
+                  </java>
+                </serializedBean>
+                <beans>
+                  <action name="Machine configuration - Copy" id="130" customizedId="" beanClass="com.install4j.runtime.beans.actions.files.CopyFileAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="4" errorMessage="">
+                    <serializedBean>
+                      <java class="java.beans.XMLDecoder">
+                        <object class="com.install4j.runtime.beans.actions.files.CopyFileAction">
+                          <void property="destinationFile">
+                            <object class="java.io.File">
+                              <string>.</string>
+                            </object>
+                          </void>
+                          <void property="fileFilter">
+                            <object class="com.install4j.api.beans.ScriptProperty">
+                              <void property="value">
+                                <string>final String FILENAME_FT = "LipidDataAnalyzer_FT.properties";
+final String FILENAME_ORBI_EXACTIVE = "LipidDataAnalyzer_OrbiTrap_exactive.properties";
+final String FILENAME_ORBI_VELOS = "LipidDataAnalyzer_OrbiTrap_velos.properties";
+final String FILENAME_ORBI_XL = "LipidDataAnalyzer_OrbiTrap_XL.properties";
+final String FILENAME_QTOF = "LipidDataAnalyzer_QTOF.properties";
+final String FILENAME_QTOF_CENTR = "LipidDataAnalyzer_QTOF_centr.properties";
+final String FILENAME_QTOF_CENTR_PROC = "LipidDataAnalyzer_QTOF_centr_proc.properties";
+final String FILENAME_QTRAP = "LipidDataAnalyzer_QTRAP.properties";
+
+int machineSelection = Integer.valueOf(context.getVariable("config_radioGroup").toString());
+String currentFilename = file.getName();
+
+boolean returnValue = false;
+switch (machineSelection) {
+    case 0: if (currentFilename.equals(FILENAME_FT)) {
+                context.setVariable("workingFile", FILENAME_FT);
+                returnValue = true;
+            };
+            break;
+    case 1: if (currentFilename.equals(FILENAME_ORBI_EXACTIVE)) {
+                context.setVariable("workingFile",FILENAME_ORBI_EXACTIVE);
+                returnValue = true;
+            };
+            break;
+    case 2: if (currentFilename.equals(FILENAME_ORBI_VELOS)) {
+                context.setVariable("workingFile",FILENAME_ORBI_VELOS);
+                returnValue = true;
+            };
+            break;
+    case 3: if (currentFilename.equals(FILENAME_ORBI_XL)) {
+                context.setVariable("workingFile",FILENAME_ORBI_XL);
+                returnValue = true;
+            };
+            break;
+    case 4: if (currentFilename.equals(FILENAME_QTOF)) {
+                context.setVariable("workingFile", FILENAME_QTOF);
+                returnValue = true;
+            };
+            break;
+    case 5: if (currentFilename.equals(FILENAME_QTOF_CENTR)) {
+                context.setVariable("workingFile", FILENAME_QTOF_CENTR);
+                returnValue = true;
+            };
+            break;
+    case 6: if (currentFilename.equals(FILENAME_QTOF_CENTR_PROC)) {
+                context.setVariable("workingFile", FILENAME_QTOF_CENTR_PROC);
+                returnValue = true;
+            };
+            break;
+    case 7: if (currentFilename.equals(FILENAME_QTRAP)) {
+                context.setVariable("workingFile", FILENAME_QTRAP);
+                returnValue = true;
+            };
+            break;    
+}
+return returnValue;</string>
+                              </void>
+                            </object>
+                          </void>
+                          <void property="files">
+                            <array class="java.io.File" length="8">
+                              <void index="0">
+                                <object class="java.io.File">
+                                  <string>properties/LipidDataAnalyzer_FT.properties</string>
+                                </object>
+                              </void>
+                              <void index="1">
+                                <object class="java.io.File">
+                                  <string>properties/LipidDataAnalyzer_OrbiTrap_exactive.properties</string>
+                                </object>
+                              </void>
+                              <void index="2">
+                                <object class="java.io.File">
+                                  <string>properties/LipidDataAnalyzer_OrbiTrap_velos.properties</string>
+                                </object>
+                              </void>
+                              <void index="3">
+                                <object class="java.io.File">
+                                  <string>properties/LipidDataAnalyzer_OrbiTrap_XL.properties</string>
+                                </object>
+                              </void>
+                              <void index="4">
+                                <object class="java.io.File">
+                                  <string>properties/LipidDataAnalyzer_QTOF.properties</string>
+                                </object>
+                              </void>
+                              <void index="5">
+                                <object class="java.io.File">
+                                  <string>properties/LipidDataAnalyzer_QTOF_centr.properties</string>
+                                </object>
+                              </void>
+                              <void index="6">
+                                <object class="java.io.File">
+                                  <string>properties/LipidDataAnalyzer_QTOF_centr_proc.properties</string>
+                                </object>
+                              </void>
+                              <void index="7">
+                                <object class="java.io.File">
+                                  <string>properties/LipidDataAnalyzer_QTRAP.properties</string>
+                                </object>
+                              </void>
+                            </array>
+                          </void>
+                        </object>
+                      </java>
+                    </serializedBean>
+                    <condition />
+                  </action>
+                  <action name="Machine configuration - Rename" id="131" customizedId="" beanClass="com.install4j.runtime.beans.actions.control.RunScriptAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="4" errorMessage="Could not rename properties file to LipidDataAnalyzer.properties.">
+                    <serializedBean>
+                      <java class="java.beans.XMLDecoder">
+                        <object class="com.install4j.runtime.beans.actions.control.RunScriptAction">
+                          <void property="script">
+                            <object class="com.install4j.api.beans.ScriptProperty">
+                              <void property="value">
+                                <string>final String PROP_FILE = "LipidDataAnalyzer.properties";
+final String workingFileName = context.getVariable("workingFile").toString();
+final String installDir = (String)context.getVariable("sys.installationDir");
+
+File myFile = new File(installDir + File.separator + workingFileName);
+File destfile = new File(installDir + File.separator + PROP_FILE);
+boolean rename = myFile.renameTo(destfile);
+return rename;
+</string>
+                              </void>
+                            </object>
+                          </void>
+                        </object>
+                      </java>
+                    </serializedBean>
+                    <condition />
+                  </action>
+                </beans>
+              </group>
+              <group name="Java3D and Classpath settings" id="350" customizedId="" beanClass="com.install4j.runtime.beans.groups.ActionGroup" enabled="true" commentSet="false" comment="" actionElevationType="inherit">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.groups.ActionGroup" />
+                  </java>
+                </serializedBean>
+                <beans>
+                  <action name="Set JavaProp3D_L" id="516" customizedId="" beanClass="com.install4j.runtime.beans.actions.control.SetVariableAction" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                    <serializedBean>
+                      <java class="java.beans.XMLDecoder">
+                        <object class="com.install4j.runtime.beans.actions.control.SetVariableAction">
+                          <void property="script">
+                            <object class="com.install4j.api.beans.ScriptProperty">
+                              <void property="value">
+                                <string>String result;
+
+if (Util.isMacOS() || Util.isMacosInstaller()) {
+    result ="-Djava.ext.dirs=./:/System/Library/Frameworks/JavaVM.framework/Home/lib/ext";
+} else {
+    result =  "-Djava.ext.dirs=./";
+}
+
+return result;</string>
+                              </void>
+                            </object>
+                          </void>
+                          <void property="variableName">
+                            <string>javaProp3DL</string>
+                          </void>
+                        </object>
+                      </java>
+                    </serializedBean>
+                    <condition />
+                  </action>
+                  <action name="Set Java to MyJava" id="669" customizedId="" beanClass="com.install4j.runtime.beans.actions.control.SetVariableAction" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                    <serializedBean>
+                      <java class="java.beans.XMLDecoder">
+                        <object class="com.install4j.runtime.beans.actions.control.SetVariableAction">
+                          <void property="script">
+                            <object class="com.install4j.api.beans.ScriptProperty">
+                              <void property="value">
+                                <string>String installationDir = (String)context.getVariable("sys.installationDir");
+String path = "\"" + installationDir + "\\jre\\bin\\java.exe" + "\"";
+return path;</string>
+                              </void>
+                            </object>
+                          </void>
+                          <void property="variableName">
+                            <string>javaBinLocation</string>
+                          </void>
+                        </object>
+                      </java>
+                    </serializedBean>
+                    <condition />
+                  </action>
+                  <action name="Set Java To Java" id="668" customizedId="" beanClass="com.install4j.runtime.beans.actions.control.SetVariableAction" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                    <serializedBean>
+                      <java class="java.beans.XMLDecoder">
+                        <object class="com.install4j.runtime.beans.actions.control.SetVariableAction">
+                          <void property="script">
+                            <object class="com.install4j.api.beans.ScriptProperty">
+                              <void property="value">
+                                <string>return "java";</string>
+                              </void>
+                            </object>
+                          </void>
+                          <void property="variableName">
+                            <string>javaBinLocation</string>
+                          </void>
+                        </object>
+                      </java>
+                    </serializedBean>
+                    <condition />
+                  </action>
+                </beans>
+              </group>
+              <action name="" id="1154" customizedId="" beanClass="com.install4j.runtime.beans.actions.files.AddWindowsFileRightsAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.files.AddWindowsFileRightsAction">
+                      <void property="all">
+                        <boolean>false</boolean>
+                      </void>
+                      <void property="files">
+                        <array class="java.io.File" length="10">
+                          <void index="0">
+                            <object class="java.io.File">
+                              <string>LipidDataAnalyzer.properties</string>
+                            </object>
+                          </void>
+                          <void index="1">
+                            <object class="java.io.File">
+                              <string>cache</string>
+                            </object>
+                          </void>
+                          <void index="2">
+                            <object class="java.io.File">
+                              <string>fragRules</string>
+                            </object>
+                          </void>
+                          <void index="3">
+                            <object class="java.io.File">
+                              <string>properties</string>
+                            </object>
+                          </void>
+                          <void index="4">
+                            <object class="java.io.File">
+                              <string>fattyAcids</string>
+                            </object>
+                          </void>
+                          <void index="5">
+                            <object class="java.io.File">
+                              <string>.settings</string>
+                            </object>
+                          </void>
+                          <void index="6">
+                            <object class="java.io.File">
+                              <string>elementconfig.xml</string>
+                            </object>
+                          </void>
+                          <void index="7">
+                            <object class="java.io.File">
+                              <string>mzTab.properties</string>
+                            </object>
+                          </void>
+                          <void index="8">
+                            <object class="java.io.File">
+                              <string>faHydroxylationEncoding.txt</string>
+                            </object>
+                          </void>
+                          <void index="9">
+                            <object class="java.io.File">
+                              <string>lcbHydroxylationEncoding.txt</string>
+                            </object>
+                          </void>
+                        </array>
+                      </void>
+                      <void property="read">
+                        <boolean>true</boolean>
+                      </void>
+                      <void property="write">
+                        <boolean>true</boolean>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <condition />
+              </action>
+              <action name="" id="1360" customizedId="" beanClass="com.install4j.runtime.beans.actions.files.SetModeAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.files.SetModeAction">
+                      <void property="files">
+                        <array class="java.io.File" length="10">
+                          <void index="0">
+                            <object class="java.io.File">
+                              <string>LipidDataAnalyzer.properties</string>
+                            </object>
+                          </void>
+                          <void index="1">
+                            <object class="java.io.File">
+                              <string>cache</string>
+                            </object>
+                          </void>
+                          <void index="2">
+                            <object class="java.io.File">
+                              <string>fragRules</string>
+                            </object>
+                          </void>
+                          <void index="3">
+                            <object class="java.io.File">
+                              <string>properties</string>
+                            </object>
+                          </void>
+                          <void index="4">
+                            <object class="java.io.File">
+                              <string>fattyAcids</string>
+                            </object>
+                          </void>
+                          <void index="5">
+                            <object class="java.io.File">
+                              <string>.settings</string>
+                            </object>
+                          </void>
+                          <void index="6">
+                            <object class="java.io.File">
+                              <string>elementconfig.xml</string>
+                            </object>
+                          </void>
+                          <void index="7">
+                            <object class="java.io.File">
+                              <string>mzTab.properties</string>
+                            </object>
+                          </void>
+                          <void index="8">
+                            <object class="java.io.File">
+                              <string>faHydroxylationEncoding.txt</string>
+                            </object>
+                          </void>
+                          <void index="9">
+                            <object class="java.io.File">
+                              <string>lcbHydroxylationEncoding.txt</string>
+                            </object>
+                          </void>
+                        </array>
+                      </void>
+                      <void property="mode">
+                        <string>777</string>
+                      </void>
+                      <void property="recursive">
+                        <boolean>true</boolean>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <condition />
+              </action>
+              <action name="Set headless prop" id="722" customizedId="" beanClass="com.install4j.runtime.beans.actions.control.SetVariableAction" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.control.SetVariableAction">
+                      <void property="script">
+                        <object class="com.install4j.api.beans.ScriptProperty">
+                          <void property="value">
+                            <string>String returnValue;
+
+if (Util.isWindows() || Util.isWindowsInstaller() || Util.isMacOS() || Util.isMacosInstaller()) {
+    returnValue = "";
+} else {
+    returnValue = "-Djava.awt.headless=false";
+}
+
+return returnValue;</string>
+                          </void>
+                        </object>
+                      </void>
+                      <void property="variableName">
+                        <string>headlessProp</string>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <condition />
+              </action>
+              <action name="Windows Launcher Replace" id="176" customizedId="" beanClass="com.install4j.runtime.beans.actions.text.ReplaceInstallerVariablesAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.text.ReplaceInstallerVariablesAction">
+                      <void property="encoding">
+                        <string />
+                      </void>
+                      <void property="files">
+                        <array class="java.io.File" length="3">
+                          <void index="0">
+                            <object class="java.io.File">
+                              <string>LipidDataAnalyzer.bat</string>
+                            </object>
+                          </void>
+                          <void index="1">
+                            <object class="java.io.File">
+                              <string>ldaCmd.bat</string>
+                            </object>
+                          </void>
+                          <void index="2">
+                            <object class="java.io.File">
+                              <string>AlexRtGrouper.bat</string>
+                            </object>
+                          </void>
+                        </array>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <condition>return Util.isWindows();</condition>
+              </action>
+              <action name="Linux / Unix Launcher Replace" id="177" customizedId="" beanClass="com.install4j.runtime.beans.actions.text.ReplaceInstallerVariablesAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.text.ReplaceInstallerVariablesAction">
+                      <void property="files">
+                        <array class="java.io.File" length="2">
+                          <void index="0">
+                            <object class="java.io.File">
+                              <string>LipidDataAnalyzer-console</string>
+                            </object>
+                          </void>
+                          <void index="1">
+                            <object class="java.io.File">
+                              <string>ldaCmd.sh</string>
+                            </object>
+                          </void>
+                        </array>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <condition>return !(Util.isWindows());</condition>
+              </action>
+              <action name="Change .sh script permissions" id="162" customizedId="" beanClass="com.install4j.runtime.beans.actions.files.SetModeAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="4" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.files.SetModeAction">
+                      <void property="files">
+                        <array class="java.io.File" length="2">
+                          <void index="0">
+                            <object class="java.io.File">
+                              <string>LipidDataAnalyzer-console</string>
+                            </object>
+                          </void>
+                          <void index="1">
+                            <object class="java.io.File">
+                              <string>ldaCmd.sh</string>
+                            </object>
+                          </void>
+                        </array>
+                      </void>
+                      <void property="mode">
+                        <string>755</string>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <condition />
+              </action>
+              <action name="" id="779" customizedId="" beanClass="com.install4j.runtime.beans.actions.misc.AddVmOptionsAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.misc.AddVmOptionsAction">
+                      <void property="launcherId">
+                        <string>440</string>
+                      </void>
+                      <void property="vmOptions">
+                        <array class="java.lang.String" length="1">
+                          <void index="0">
+                            <string>-Xms${installer:xms}m</string>
+                          </void>
+                        </array>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <condition />
+              </action>
+              <action name="" id="771" customizedId="" beanClass="com.install4j.runtime.beans.actions.misc.AddVmOptionsAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.misc.AddVmOptionsAction">
+                      <void property="launcherId">
+                        <string>440</string>
+                      </void>
+                      <void property="vmOptions">
+                        <array class="java.lang.String" length="1">
+                          <void index="0">
+                            <string>-Xmx${installer:xmx}m</string>
+                          </void>
+                        </array>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <condition />
+              </action>
+            </actions>
+            <formComponents />
+          </screen>
+          <screen name="" id="12" customizedId="" beanClass="com.install4j.runtime.beans.screens.FinishedScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="true" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.FinishedScreen" />
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions />
+            <formComponents />
+          </screen>
+        </screens>
+      </application>
+      <application name="" id="uninstaller" customizedId="" beanClass="com.install4j.runtime.beans.applications.UninstallerApplication" enabled="true" commentSet="false" comment="" actionElevationType="none" fileset="" customIcnsFile="" customIcoFile="" macEntitlementsFile="" automaticLauncherIntegration="false" launchMode="startupFirstWindow" launchInNewProcess="false" launchSchedule="updateSchedule" allLaunchers="true">
+        <serializedBean>
+          <java class="java.beans.XMLDecoder">
+            <object class="com.install4j.runtime.beans.applications.UninstallerApplication" />
+          </java>
+        </serializedBean>
+        <launcherIds />
+        <variables />
+        <startup>
+          <screen name="" id="14" customizedId="" beanClass="com.install4j.runtime.beans.screens.StartupScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.StartupScreen" />
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions>
+              <link name="" id="20" customizedId="" beanClass="" enabled="true" targetId="13" mergedProjectId="" />
+              <action name="" id="21" customizedId="" beanClass="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction" />
+                  </java>
+                </serializedBean>
+                <condition />
+              </action>
+            </actions>
+            <formComponents />
+          </screen>
+        </startup>
+        <screens>
+          <screen name="" id="15" customizedId="" beanClass="com.install4j.runtime.beans.screens.UninstallWelcomeScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.UninstallWelcomeScreen" />
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions />
+            <formComponents />
+          </screen>
+          <screen name="" id="16" customizedId="" beanClass="com.install4j.runtime.beans.screens.UninstallationScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.UninstallationScreen" />
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions>
+              <action name="" id="17" customizedId="" beanClass="com.install4j.runtime.beans.actions.UninstallFilesAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.UninstallFilesAction" />
+                  </java>
+                </serializedBean>
+                <condition />
+              </action>
+              <action name="Remove property file" id="135" customizedId="" beanClass="com.install4j.runtime.beans.actions.control.RunScriptAction" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.control.RunScriptAction">
+                      <void property="script">
+                        <object class="com.install4j.api.beans.ScriptProperty">
+                          <void property="value">
+                            <string>final String PROP_FILE = "LipidDataAnalyzer.properties";
+final String installDir = (String)context.getVariable("sys.installationDir");
+
+File myFile = new File(installDir + File.separator + PROP_FILE);
+if (myFile.isFile()) {
+    myFile.delete();
+} 
+
+return true;</string>
+                          </void>
+                        </object>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <condition />
+              </action>
+            </actions>
+            <formComponents />
+          </screen>
+          <screen name="" id="19" customizedId="" beanClass="com.install4j.runtime.beans.screens.UninstallFailureScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="true" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.UninstallFailureScreen" />
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions />
+            <formComponents />
+          </screen>
+          <screen name="" id="18" customizedId="" beanClass="com.install4j.runtime.beans.screens.UninstallSuccessScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="true" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.UninstallSuccessScreen" />
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions />
+            <formComponents />
+          </screen>
+        </screens>
+      </application>
+    </applications>
+  </installerGui>
+  <mediaSets>
+    <windows name="Windows 64bit" id="258" customizedId="" mediaFileName="" installDir="LDA" overridePrincipalLanguage="false" jreBitType="64" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="false" customInstallBaseDir="" contentFilesType="1" downloadURL="" verifyIntegrity="true">
+      <excludedLaunchers>
+        <launcher id="169" />
+      </excludedLaunchers>
+      <excludedBeans>
+        <bean refId="669" />
+      </excludedBeans>
+      <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
+      <exclude>
+        <entry location="ldaCmd.sh" fileType="regular" />
+        <entry location="LipidDataAnalyzer-console" fileType="regular" />
+        <entry location=".i4j_fileset_241" fileType="regular" />
+        <entry location=".i4j_fileset_568" fileType="regular" />
+        <entry location=".i4j_fileset_1420" fileType="regular" />
+        <entry location=".i4j_fileset_1422" fileType="regular" />
+        <entry location=".i4j_fileset_1540" fileType="regular" />
+      </exclude>
+      <variables>
+        <variable name="javaProp3D" value="-Djava.ext.dirs=./" description="" category="" />
+      </variables>
+      <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
+        <commentFiles />
+        <customAttributes />
+      </autoUpdate>
+      <excludedComponents />
+      <includedDownloadableComponents />
+    </windows>
+    <unixInstaller name="Unix 64bit" id="261" customizedId="" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}-x64_${compiler:sys.version}" installDir="LDA" overridePrincipalLanguage="false" jreBitType="all" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="false" customInstallBaseDir="" contentFilesType="1" downloadURL="">
+      <excludedLaunchers>
+        <launcher id="69" />
+      </excludedLaunchers>
+      <excludedBeans>
+        <bean refId="915" />
+        <bean refId="912" />
+        <bean refId="1075" />
+        <bean refId="998" />
+        <bean refId="1282" />
+        <bean refId="911" />
+        <bean refId="669" />
+      </excludedBeans>
+      <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
+      <exclude>
+        <entry location="ldaCmd.bat" fileType="regular" />
+        <entry location="LipidDataAnalyzer.bat" fileType="regular" />
+        <entry location=".i4j_fileset_234" fileType="regular" />
+        <entry location=".i4j_fileset_568" fileType="regular" />
+        <entry location=".i4j_fileset_1411" fileType="regular" />
+        <entry location=".i4j_fileset_1415" fileType="regular" />
+        <entry location=".i4j_fileset_1422" fileType="regular" />
+        <entry location=".i4j_fileset_1540" fileType="regular" />
+      </exclude>
+      <variables>
+        <variable name="javaProp3D" value="-Djava.ext.dirs=./" description="" category="" />
+        <variable name="headlessTrue" value="-Djava.awt.headless=false" description="" category="" />
+      </variables>
+      <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
+        <commentFiles />
+        <customAttributes />
+      </autoUpdate>
+      <excludedComponents />
+      <includedDownloadableComponents />
+      <installerScript mode="1" file="">
+        <content />
+      </installerScript>
+    </unixInstaller>
+    <macosFolder name="Mac OS X" id="152" customizedId="" mediaFileName="" installDir="LDA" overridePrincipalLanguage="false" jreBitType="all" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="macosx-amd64-1.8.0_60" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="false" appleJre="false" requiredVmIdPrefix="" customInstallBaseDir="" contentFilesType="1" downloadURL="" signLaunchers="false">
+      <excludedLaunchers>
+        <launcher id="69" />
+      </excludedLaunchers>
+      <excludedBeans>
+        <bean refId="915" />
+        <bean refId="912" />
+        <bean refId="1075" />
+        <bean refId="998" />
+        <bean refId="1282" />
+        <bean refId="911" />
+        <bean refId="669" />
+      </excludedBeans>
+      <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
+      <exclude>
+        <entry location="ldaCmd.bat" fileType="regular" />
+        <entry location="LipidDataAnalyzer.bat" fileType="regular" />
+        <entry location=".i4j_fileset_234" fileType="regular" />
+        <entry location=".i4j_fileset_241" fileType="regular" />
+        <entry location=".i4j_fileset_568" fileType="regular" />
+        <entry location=".i4j_fileset_1411" fileType="regular" />
+        <entry location=".i4j_fileset_1415" fileType="regular" />
+        <entry location=".i4j_fileset_1420" fileType="regular" />
+      </exclude>
+      <variables>
+        <variable name="javaProp3D" value="-Djava.ext.dirs=./:/System/Library/Frameworks/JavaVM.framework/Home/lib/ext" description="" category="" />
+      </variables>
+      <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
+        <commentFiles />
+        <customAttributes />
+      </autoUpdate>
+      <excludedComponents />
+      <includedDownloadableComponents />
+    </macosFolder>
+    <windows name="Windows 64bit (jre)" id="511" customizedId="" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}_jre" installDir="LDA" overridePrincipalLanguage="false" jreBitType="64" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="windows-amd64-1.8.0_202" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="false" customInstallBaseDir="" contentFilesType="1" downloadURL="" verifyIntegrity="true">
+      <excludedLaunchers>
+        <launcher id="169" />
+      </excludedLaunchers>
+      <excludedBeans>
+        <bean refId="668" />
+      </excludedBeans>
+      <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
+      <exclude>
+        <entry location="ldaCmd.sh" fileType="regular" />
+        <entry location="LipidDataAnalyzer-console" fileType="regular" />
+        <entry location=".i4j_fileset_241" fileType="regular" />
+        <entry location=".i4j_fileset_568" fileType="regular" />
+        <entry location=".i4j_fileset_1420" fileType="regular" />
+        <entry location=".i4j_fileset_1422" fileType="regular" />
+        <entry location=".i4j_fileset_1540" fileType="regular" />
+      </exclude>
+      <variables>
+        <variable name="javaProp3D" value="-Djava.ext.dirs=./" description="" category="" />
+      </variables>
+      <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
+        <commentFiles />
+        <customAttributes />
+      </autoUpdate>
+      <excludedComponents />
+      <includedDownloadableComponents />
+    </windows>
+    <linuxRPM name="Linux RPM 64bit" id="560" customizedId="" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}_64bit" installDir="/opt/LDA" overridePrincipalLanguage="false" jreBitType="all" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="" manualJREEntry="false" os="linux" arch="i386">
+      <excludedLaunchers>
+        <launcher id="69" />
+      </excludedLaunchers>
+      <excludedBeans />
+      <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
+      <exclude>
+        <entry location="ldaCmd.bat" fileType="regular" />
+        <entry location="ldaCmd.sh" fileType="regular" />
+        <entry location="LipidDataAnalyzer-console" fileType="regular" />
+        <entry location="LipidDataAnalyzer.bat" fileType="regular" />
+        <entry location=".i4j_fileset_234" fileType="regular" />
+        <entry location=".i4j_fileset_1411" fileType="regular" />
+        <entry location=".i4j_fileset_1415" fileType="regular" />
+        <entry location=".i4j_fileset_1422" fileType="regular" />
+        <entry location=".i4j_fileset_1540" fileType="regular" />
+      </exclude>
+      <variables>
+        <variable name="javaProp3D" value="-Djava.ext.dirs=./" description="" category="" />
+        <variable name="headlessTrue" value="-Djava.awt.headless=false" description="" category="" />
+      </variables>
+      <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
+        <commentFiles />
+        <customAttributes />
+      </autoUpdate>
+      <preInstallScript mode="1" file="">
+        <content />
+      </preInstallScript>
+      <postInstallScript mode="3" file="">
+        <content>chmod -R 777 LipidDataAnalyzer.properties cache fragRules properties fattyAcids .settings elementconfig.xml mzTab.properties</content>
+      </postInstallScript>
+      <preUninstallScript mode="1" file="">
+        <content />
+      </preUninstallScript>
+      <postUninstallScript mode="1" file="">
+        <content />
+      </postUninstallScript>
+    </linuxRPM>
+    <unixArchive name="Unix Archive 64bit" id="564" customizedId="" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}_64bit" installDir="LDA" overridePrincipalLanguage="false" jreBitType="all" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="" manualJREEntry="false">
+      <excludedLaunchers>
+        <launcher id="69" />
+      </excludedLaunchers>
+      <excludedBeans />
+      <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
+      <exclude>
+        <entry location="ldaCmd.bat" fileType="regular" />
+        <entry location="ldaCmd.sh" fileType="regular" />
+        <entry location="LipidDataAnalyzer-console" fileType="regular" />
+        <entry location="LipidDataAnalyzer.bat" fileType="regular" />
+        <entry location=".i4j_fileset_234" fileType="regular" />
+        <entry location=".i4j_fileset_1411" fileType="regular" />
+        <entry location=".i4j_fileset_1415" fileType="regular" />
+        <entry location=".i4j_fileset_1422" fileType="regular" />
+        <entry location=".i4j_fileset_1540" fileType="regular" />
+      </exclude>
+      <variables>
+        <variable name="javaProp3D" value="-Djava.ext.dirs=./" description="" category="" />
+        <variable name="headlessTrue" value="-Djava.awt.headless=false" description="" category="" />
+      </variables>
+      <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
+        <commentFiles />
+        <customAttributes />
+      </autoUpdate>
+    </unixArchive>
+  </mediaSets>
+  <buildIds buildAll="true">
+    <mediaSet refId="258" />
+    <mediaSet refId="511" />
+  </buildIds>
+  <buildOptions verbose="false" faster="false" disableSigning="false" debug="false" />
+</install4j>
+

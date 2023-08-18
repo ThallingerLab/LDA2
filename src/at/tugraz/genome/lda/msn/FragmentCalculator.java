@@ -49,6 +49,7 @@ import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.msn.vos.FragmentRuleVO;
 import at.tugraz.genome.lda.msn.vos.FragmentVO;
 import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
+import at.tugraz.genome.lda.parser.ModificationParser;
 import at.tugraz.genome.lda.utils.RangeInteger;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
@@ -101,13 +102,13 @@ public class FragmentCalculator
   /** this hash table stores which hydroxylations are possible/allowed for LCB chains; key: the chain combination; value: Vector containing a Vector with the possibly hydroxylation combinations*/
   private Hashtable<String,Vector<Vector<Integer>>> allowedLcbHydroxylationsCombinations_;
   /** the principally (from the chemical formula) possible FA chains*/
-  private Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableFAChainsBeforeCombiCheck_;
+  private Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableFAChainsBeforeCombiCheck_;
   /** the principally (from the chemical formula) possible FA chains*/
-  private Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableAlkylChainsBeforeCombiCheck_;
+  private Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableAlkylChainsBeforeCombiCheck_;
   /** the principally (from the chemical formula) possible FA chains*/
-  private Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableAlkenylChainsBeforeCombiCheck_;
+  private Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableAlkenylChainsBeforeCombiCheck_;
   /** the principally (from the chemical formula) possible FA chains*/
-  private Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableLCBChainsBeforeCombiCheck_;
+  private Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableLCBChainsBeforeCombiCheck_;
   /** the available isotopic labels*/
   private Hashtable<String,Integer> availableLabels_;
   /** the available isotopic labels*/
@@ -117,7 +118,8 @@ public class FragmentCalculator
   /** how many labels are allowed in the chains*/
   private Hashtable<String,Integer> allowedLabelsInChains_;
   
-
+  private String analyteOxState_;
+ 
   /**
    * constructor requiring information about the MS1 analyte -
    * fetch of rule information is immediately started
@@ -138,7 +140,7 @@ public class FragmentCalculator
    * @throws ChemicalFormulaException thrown if there is something wrong with the formula
    */
   public FragmentCalculator(String rulesDir, String className, String modName, String analyteName, String analyteFormula, String formulaWoDeducts,
-      double precursorMz, int precursorCharge, int ohNumber) throws RulesException, NoRuleException, IOException, SpectrummillParserException, HydroxylationEncodingException, ChemicalFormulaException {
+      double precursorMz, int precursorCharge, int ohNumber, String analyteOxState) throws RulesException, NoRuleException, IOException, SpectrummillParserException, HydroxylationEncodingException, ChemicalFormulaException {
     this.rulesDir_ = rulesDir;
     this.ruleName_ = StaticUtils.getRuleName(className, modName);
     this.analyteName_ = analyteName;
@@ -149,6 +151,8 @@ public class FragmentCalculator
     this.ohNumber_ = ohNumber;
     if (ohNumber_<0)
       this.ohNumber_ = 0;
+    this.analyteOxState_ = analyteOxState;
+    
     initCalculator();
   }
   
@@ -193,22 +197,27 @@ public class FragmentCalculator
 //          System.out.println("Label: "+key+"-"+this.availableLabels_.get(key));
 //        }
 
-//        System.out.println("FA-chains");
-//        for (int c : this.availableFAChainsBeforeCombiCheck_.get(0).keySet()) {
-//          for (int db : this.availableFAChainsBeforeCombiCheck_.get(0).get(c).keySet()){
-//            for (String prefix: this.availableFAChainsBeforeCombiCheck_.get(0).get(c).get(db).keySet()) {
-//              System.out.println(prefix+c+":"+db);
-//            }
-//          }
-//        }
-//        System.out.println("LCB-chains");
-//        for (int c : this.availableLCBChainsBeforeCombiCheck_.get(2).keySet()) {
-//          for (int db : this.availableLCBChainsBeforeCombiCheck_.get(2).get(c).keySet()){
-//            for (String prefix: this.availableLCBChainsBeforeCombiCheck_.get(2).get(c).get(db).keySet()) {
-//              System.out.println(prefix+c+":"+db);
-//            }
-//          }
-//        }        
+/*
+        System.out.println(this.analyteName_);
+        System.out.println("FA-chains");
+        if (availableFAChainsBeforeCombiCheck_.get(0) != null)
+        for (int c : this.availableFAChainsBeforeCombiCheck_.get(0).keySet()) {
+          for (int db : this.availableFAChainsBeforeCombiCheck_.get(0).get(c).keySet()){
+            for (String prefix: this.availableFAChainsBeforeCombiCheck_.get(0).get(c).get(db).keySet()) {
+              System.out.println(prefix+c+":"+db);
+            }
+          }
+        }
+        System.out.println("LCB-chains");
+        if (availableLCBChainsBeforeCombiCheck_.get(2) != null)
+        for (int c : this.availableLCBChainsBeforeCombiCheck_.get(2).keySet()) {
+          for (int db : this.availableLCBChainsBeforeCombiCheck_.get(2).get(c).keySet()){
+            for (String prefix: this.availableLCBChainsBeforeCombiCheck_.get(2).get(c).get(db).keySet()) {
+              System.out.println(prefix+c+":"+db);
+            }
+          }
+        }
+*/
         extractPotentialChainCombinations(amountOfChains,fattyChains,lcbChains,acylChains,alkylChains,alkenylChains,cAtoms,dbs);
       } catch (NoRuleException nrx){
         throw new RulesException("Error in rule \""+ruleName_+"\"! "+nrx.getMessage());
@@ -238,13 +247,13 @@ public class FragmentCalculator
   private void extractPotentialChainCombinations(int chainsTotal, int faChains, int lcbChains, int acylChains, int alkylChains,
       int alkenylChains, int cs, int dbs) throws RulesException{
     // step one: extract all available chain names from the provided libraries (FA and LCB)
-    Hashtable<Integer,Hashtable<Integer,Integer>> possibleCAtomsDbs = new Hashtable<Integer,Hashtable<Integer,Integer>>();
+	  Hashtable<Integer,Hashtable<Integer,Hashtable<String,String>>> possibleCAtomsDbsOxs = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,String>>>();
     if (availableFAChainsBeforeCombiCheck_!=null)
-      this.addUniqueChainDbsCombis(possibleCAtomsDbs, availableFAChainsBeforeCombiCheck_);
+      this.addUniqueChainDbsCombis(possibleCAtomsDbsOxs, availableFAChainsBeforeCombiCheck_);
     if (availableLCBChainsBeforeCombiCheck_!=null)
-      this.addUniqueChainDbsCombis(possibleCAtomsDbs, availableLCBChainsBeforeCombiCheck_);
+      this.addUniqueChainDbsCombis(possibleCAtomsDbsOxs, availableLCBChainsBeforeCombiCheck_);
     // step two: calculate all possible chain combinations respecting C atoms and double bonds (OH number and isotopes are not respected)
-    Vector<String> potentialCombinations = calcuatePotentialChainCombinations(chainsTotal,cs,dbs,possibleCAtomsDbs);
+    Vector<String> potentialCombinations = calcuatePotentialChainCombinations(chainsTotal,cs,dbs,possibleCAtomsDbsOxs);
     // step three: go over all combinations of possibleOhCombinations_, check which chain combinations are actually possible by
     // respecting the FA and LCB chain constraints, and the actually present OH numbers 
     availableChains_ = new Hashtable<String,FattyAcidVO>();
@@ -258,12 +267,12 @@ public class FragmentCalculator
    * @param chains the number of chains
    * @param cs the total number of C atoms
    * @param dbs the total number of double bonds
-   * @param possibleCAtomsDbs the possible C atom and double bond numbers without respecting the origin (FA or LCB)
+   * @param possibleCAtomsDbsOxs the possible C atom and double bond numbers without respecting the origin (FA or LCB)
    * @return potential permutations of chains that fulfil the total C atom and double bond number of the species for a given number of chains
    */
-  private Vector<String> calcuatePotentialChainCombinations(int chains, int cs, int dbs, Hashtable<Integer,Hashtable<Integer,Integer>> possibleCAtomsDbs){
+  private Vector<String> calcuatePotentialChainCombinations(int chains, int cs, int dbs, Hashtable<Integer,Hashtable<Integer,Hashtable<String,String>>> possibleCAtomsDbsOxs){
     Vector<String> combinations = new Vector<String>();
-    List<Integer> availableCs = new ArrayList<Integer>(possibleCAtomsDbs.keySet());
+    List<Integer> availableCs = new ArrayList<Integer>(possibleCAtomsDbsOxs.keySet());
     Hashtable<Integer,List<Integer>> availableCHash = new Hashtable<Integer,List<Integer>>();
     for (int i=0; i!=chains; i++) availableCHash.put((i+1), availableCs);
     Vector<Vector<Integer>> combis = getCombinations(cs, chains, availableCHash, new Vector<Integer>(), 0,false);
@@ -272,12 +281,12 @@ public class FragmentCalculator
     for (Vector<Integer> cCombis : combis){
       Hashtable<Integer,List<Integer>> availableDbsHash = new Hashtable<Integer,List<Integer>>();
       boolean doubleBonds = true;
-      if (possibleCAtomsDbs.get(cCombis.get(0)).size()==1 && possibleCAtomsDbs.get(cCombis.get(0)).keySet().iterator().next()==-1)
+      if (possibleCAtomsDbsOxs.get(cCombis.get(0)).size()==1 && possibleCAtomsDbsOxs.get(cCombis.get(0)).keySet().iterator().next()==-1)
         doubleBonds = false;
       Vector<Vector<Integer>> dbCombis = new Vector<Vector<Integer>>();
       if (doubleBonds){
         for (int i=0; i!=chains; i++){
-          availableDbsHash.put(chains-i, new ArrayList<Integer>(possibleCAtomsDbs.get(cCombis.get(i)).keySet()));
+          availableDbsHash.put(chains-i, new ArrayList<Integer>(possibleCAtomsDbsOxs.get(cCombis.get(i)).keySet()));
         }
         dbCombis = getCombinations(dbs, chains, availableDbsHash, new Vector<Integer>(), 0, true);
       }else{
@@ -285,30 +294,40 @@ public class FragmentCalculator
         for (int i=0; i!=chains; i++) noDbsCombis.add(-1);
         dbCombis.add(noDbsCombis);
       }
+      
       for (Vector<Integer> dbCombi : dbCombis){
-        String combiName = "";
-        Vector<String> singleCombiParts = new Vector<String>();
-        for (int i=0; i!=chains; i++){
-          int cAtoms = cCombis.get(i);
-          int dBonds = dbCombi.get(i);
-          String partName = StaticUtils.generateLipidNameString(String.valueOf(cAtoms), dBonds, -1);
-          combiName += partName+LipidomicsConstants.CHAIN_SEPARATOR_NO_POS;
-          singleCombiParts.add(partName);
-        }
-        combiName = combiName.substring(0,combiName.length()-1);
-        //this is for filtering permuted double entries
-        Vector<String> permutedNames = StaticUtils.getPermutedChainNames(singleCombiParts,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
-        boolean isThere = false;
-        for (String permutedName : permutedNames){
-          if (permutedCombinations.containsKey(permutedName)){
-            isThere = true;
-            break;
-          }
-        }
-        if (!isThere){
-          for (String permutedName : permutedNames) permutedCombinations.put(permutedName, permutedName);
-          combinations.add(combiName);
-        }
+          
+    	  List<String> oxStates = new ArrayList<>(possibleCAtomsDbsOxs.get(cCombis.get(0)).get(dbCombi.get(0)).keySet());
+		  Set<List<String>> oxCombis = getOxCombinations(oxStates,chains);
+		  Set<List<String>> validOxCombis = ValidateCombinations(oxCombis); 
+		  
+    	  for(List<String> oxCombi : validOxCombis) {
+    		    String combiName = "";
+    	        Vector<String> singleCombiParts = new Vector<String>();
+    	        for (int i=0; i!=chains; i++){
+    	          int cAtoms = cCombis.get(i);
+    	          int dBonds = dbCombi.get(i);
+    	          String oxState = oxCombi.get(i);
+    	          String partName = StaticUtils.generateLipidNameString(String.valueOf(cAtoms), dBonds,-1,oxState);
+    	          combiName += partName+LipidomicsConstants.CHAIN_SEPARATOR_NO_POS;
+    	          singleCombiParts.add(partName);
+    	          
+    	        }
+    	        combiName = combiName.substring(0,combiName.length()-1);
+    	        //this is for filtering permuted double entries
+    	        Vector<String> permutedNames = StaticUtils.getPermutedChainNames(singleCombiParts,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
+    	        boolean isThere = false;
+    	        for (String permutedName : permutedNames){
+    	          if (permutedCombinations.containsKey(permutedName)){
+    	            isThere = true;
+    	            break;
+    	          }
+    	        }
+    	        if (!isThere){
+    	          for (String permutedName : permutedNames) permutedCombinations.put(permutedName, permutedName);
+    	          combinations.add(combiName);
+    	        }
+    	  }  
       }
     }
     return combinations;
@@ -335,12 +354,12 @@ public class FragmentCalculator
    */
   private Hashtable<String,Hashtable<String,Vector<FattyAcidVO>>> payAttentionToActuallyPresentFaAndLcbChains(int chainsTotal, int faChains, int lcbChains,
       int acylChains, int alkylChains, int alkenylChains, Vector<String> potentialCombinations, Vector<int[]> ohCombis,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableFAChains,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableLCBChains,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableAlkylChains,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableAlkenylChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableFAChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableLCBChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableAlkylChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableAlkenylChains,
       Hashtable<String,FattyAcidVO> uniqueChains) throws RulesException{
-    Hashtable<String,Hashtable<String,Vector<FattyAcidVO>>> potentialChainCombis = new Hashtable<String,Hashtable<String,Vector<FattyAcidVO>>>();
+      Hashtable<String,Hashtable<String,Vector<FattyAcidVO>>> potentialChainCombis = new Hashtable<String,Hashtable<String,Vector<FattyAcidVO>>>();
     //the key for these hashes is the OH number; then follows a vector of available chains
     Hashtable<Integer,Hashtable<String,String>> acylChainsInLib = null;
     Hashtable<Integer,Hashtable<String,String>> alkylChainsInLib = null;
@@ -851,7 +870,12 @@ public class FragmentCalculator
   public static int getIntValueFromParsingRule(String rule, String analyte, String lClass, String inputKey) throws RulesException {
     Pattern cAtomsPattern =  Pattern.compile(rule);
     Matcher cAtomsMatcher = cAtomsPattern.matcher(analyte);
-    if (!cAtomsMatcher.matches()) throw new RulesException("The analyte "+analyte+" does not match the "+inputKey+" pattern \""+rule+"\" of the class "+lClass+"!");
+    if (!cAtomsMatcher.matches()){
+    	//to match also oxidation modifications e.g.: 34:3;O1
+    	cAtomsPattern =  Pattern.compile(rule+"\\"+LipidomicsConstants.CHAIN_MOD_SEPARATOR + ".*");
+    	cAtomsMatcher = cAtomsPattern.matcher(analyte);
+    	if (!cAtomsMatcher.matches())  throw new RulesException("The analyte "+analyte+" does not match the "+inputKey+" pattern \""+rule+"\" of the class "+lClass+"!");
+    }
     String valueString  = cAtomsMatcher.group(1);
     try{
       int value = Integer.parseInt(valueString);
@@ -885,9 +909,9 @@ public class FragmentCalculator
     if (chainLib==null) {
       availableFAChainsBeforeCombiCheck_ = null;
     } else {
-      availableFAChainsBeforeCombiCheck_ = new Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>();
-      Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> faHydroxies = FattyAcidsContainer.getAllFattyAcidChains(chainLib);
-      addAvailableLabels(FattyAcidsContainer.getAvailableLabels(chainLib));
+      availableFAChainsBeforeCombiCheck_ = new Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>>();
+      Hashtable<String, Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>>> faHydroxies = FattyAcidsContainer.getAllFattyAcidChains(chainLib);
+	  addAvailableLabels(FattyAcidsContainer.getAvailableLabels(chainLib));
       for (int ohNumber : getPossibleFaHydroxylations()) {
         String encoded = HydroxyEncoding.HYDROXYLATION_ZERO;
         if (ohNumber!=0) encoded = Settings.getFaHydroxyEncoding().getEncodedPrefix((short)ohNumber);
@@ -905,8 +929,8 @@ public class FragmentCalculator
     if (lcbLib==null) {
       availableLCBChainsBeforeCombiCheck_ = null;
     } else {
-      availableLCBChainsBeforeCombiCheck_ = new Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>();
-      Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> lcbHydroxies = FattyAcidsContainer.getAllLCBs(lcbLib);
+      availableLCBChainsBeforeCombiCheck_ = new Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>>();
+      Hashtable<String, Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>>> lcbHydroxies = FattyAcidsContainer.getAllLCBs(lcbLib);
       addAvailableLabels(FattyAcidsContainer.getAvailableLabels(lcbLib));
       for (int ohNumber : getPossibleLcbHydroxylations()) {
         String encoded = Settings.getLcbHydroxyEncoding().getEncodedPrefix((short)ohNumber);
@@ -964,31 +988,36 @@ public class FragmentCalculator
    * @param maxDbs the maximum number of allowed double bonds
    * @throws RulesException RulesException thrown if there is something wrong
    */
-  private void checkPlausibilityAndAddToHash(Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> hash,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> toBeChecked, int ohNumber, int maxCAtoms, int maxDbs) throws RulesException {
-    Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> chains = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>();
+  private void checkPlausibilityAndAddToHash(Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> hash,
+		  Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> toBeChecked, int ohNumber, int maxCAtoms, int maxDbs) throws RulesException {
+    Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> chains = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>();
     try{
       Hashtable<String,Integer> formulaAmounts = StaticUtils.categorizeFormula(this.analyteFormulaWODeducts_);
       for (Integer cAtoms : toBeChecked.keySet()){
         if (cAtoms>maxCAtoms)
           continue;
-        Hashtable<Integer,Hashtable<String,FattyAcidVO>> sameCAtoms = new Hashtable<Integer,Hashtable<String,FattyAcidVO>>();
+        Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>> sameCAtoms = new Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>();
         for (Integer dbs : toBeChecked.get(cAtoms).keySet()){
           if (dbs>maxDbs)
             continue;
-          Hashtable<String,FattyAcidVO> sameDbs = new Hashtable<String,FattyAcidVO>();
+          Hashtable<String,Hashtable<String,FattyAcidVO>> sameDbs = new Hashtable<String,Hashtable<String,FattyAcidVO>>();
           for (String prefix : toBeChecked.get(cAtoms).get(dbs).keySet()){
-            FattyAcidVO fa = toBeChecked.get(cAtoms).get(dbs).get(prefix);
-            Hashtable<String,Integer> faElements = StaticUtils.categorizeFormula(fa.getFormula());
-            boolean isOk = true;
-            for (String element : faElements.keySet()){
-              if (!formulaAmounts.containsKey(element) || formulaAmounts.get(element)<faElements.get(element)){
-                isOk = false;
-                break;
+        	Hashtable<String,FattyAcidVO> sameOxs = new Hashtable<String,FattyAcidVO>();
+        	for(String oxState : toBeChecked.get(cAtoms).get(dbs).get(prefix).keySet())
+        	{
+        	  FattyAcidVO fa = toBeChecked.get(cAtoms).get(dbs).get(prefix).get(oxState);
+        	  Hashtable<String,Integer> faElements = StaticUtils.categorizeFormula(fa.getFormula());
+        	  boolean isOk = true;
+              for (String element : faElements.keySet()){
+                if (!formulaAmounts.containsKey(element) || formulaAmounts.get(element)<faElements.get(element)){
+                  isOk = false;
+                  break;
+                }
               }
-            }
-            if (isOk)
-              sameDbs.put(prefix, fa);
+              if (isOk)
+            	  sameOxs.put(oxState, fa);
+        	}
+        	if (sameOxs.size()>0) sameDbs.put(prefix, sameOxs);   
           }
           if (sameDbs.size()>0) sameCAtoms.put(dbs, sameDbs);
         }
@@ -1118,19 +1147,40 @@ public class FragmentCalculator
    * @param hash the unique carbon atoms/dbs combinations hash
    * @param toBeAdded the stored hashes that have to be checked for adding
    */
-  private void addUniqueChainDbsCombis(Hashtable<Integer,Hashtable<Integer,Integer>> hash,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> toBeAdded) {
-    for (Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> carbonHash : toBeAdded.values()) {
+  private void addUniqueChainDbsCombis(Hashtable<Integer,Hashtable<Integer,Hashtable<String,String>>> hash,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> toBeAdded) {
+    for (Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> carbonHash : toBeAdded.values()) {
       for (Integer cAtoms : carbonHash.keySet()) {
-        Hashtable<Integer,Integer> dbHash;
+        Hashtable<Integer,Hashtable<String,String>> dbHash;
         if (hash.containsKey(cAtoms)) {
           dbHash = hash.get(cAtoms);
         }else {
-          dbHash = new Hashtable<Integer,Integer>();
+          dbHash = new Hashtable<Integer,Hashtable<String,String>>();
           hash.put(cAtoms, dbHash);
         }
         for (Integer dbs : carbonHash.get(cAtoms).keySet())
-          dbHash.put(dbs, dbs);
+        {
+          Hashtable<String,String> oxHash;
+          if(dbHash.containsKey(dbs))
+          {
+        	  oxHash = hash.get(cAtoms).get(dbs);
+          }
+          else {
+        	  oxHash = new Hashtable<String,String>();
+        	  dbHash.put(dbs, oxHash);
+          }
+          
+          for(String prefix : carbonHash.get(cAtoms).get(dbs).keySet()) 
+          {
+        	  for(String oxs : carbonHash.get(cAtoms).get(dbs).get(prefix).keySet())
+        	  {
+        		  oxHash.put(oxs,oxs);
+        	  }
+        	  
+        	  
+          }
+          
+        }
       }
     }
   }
@@ -1142,33 +1192,39 @@ public class FragmentCalculator
    * @return the alkylated or alkenylated chain hash
    * @throws ChemicalFormulaException thrown if there is something wrong with the formula
    */
-  private Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> createAlkylAlkenylatedHash(short chainType,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> faHash) throws ChemicalFormulaException{
-    Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> newHash = new Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>();
+  private Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>>  createAlkylAlkenylatedHash(short chainType,
+		  Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>>  faHash) throws ChemicalFormulaException{
+	Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>>  newHash = new Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>>();
     for (Integer oh : faHash.keySet()) {
-      newHash.put(oh, new Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>());
+      newHash.put(oh, new Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>());
       for (Integer c : faHash.get(oh).keySet()) {
-        newHash.get(oh).put(c, new Hashtable<Integer,Hashtable<String,FattyAcidVO>>());
-        for (Integer dbs : faHash.get(oh).get(c).keySet()) {
-          newHash.get(oh).get(c).put(dbs, new Hashtable<String,FattyAcidVO>());
+        newHash.get(oh).put(c, new Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>());
+        for (Integer dbs : faHash.get(oh).get(c).keySet()) 
+        {
+          newHash.get(oh).get(c).put(dbs, new Hashtable<String,Hashtable<String,FattyAcidVO>>());
           for (String prefix : faHash.get(oh).get(c).get(dbs).keySet()) {
-            FattyAcidVO faVO = faHash.get(oh).get(c).get(dbs).get(prefix);
-            Hashtable<String,Integer> faElements = StaticUtils.categorizeFormula(faVO.getFormula());
-            double mass = faVO.getMass();
-            if (!faElements.containsKey("O"))
-              continue;
-            if (chainType==LipidomicsConstants.CHAIN_TYPE_FA_ALKYL){
-              mass += (2d*elements_.getElementDetails("H").getMonoMass()-elements_.getElementDetails("O").getMonoMass());
-              faElements.put("H",(faElements.get("H")+2));
-              faElements.put("O",(faElements.get("O")-1));
-            } else if (chainType==LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL){
-              mass += (-1d*elements_.getElementDetails("O").getMonoMass());
-              faElements.put("O",(faElements.get("O")-1));
-            }
-            if (faElements.get("O")<0 || mass<0d)
-              continue;
-            newHash.get(oh).get(c).get(dbs).put(prefix, new FattyAcidVO(chainType, faVO.getPrefix(), faVO.getcAtoms(),
-                faVO.getDoubleBonds(), oh, mass, StaticUtils.getFormulaInHillNotation(faElements, true)));
+        	newHash.get(oh).get(c).get(dbs).put(prefix, new Hashtable<String,FattyAcidVO>());  
+        	
+        	for(String oxState : faHash.get(oh).get(c).get(dbs).get(prefix).keySet())
+        	{
+        		FattyAcidVO faVO = faHash.get(oh).get(c).get(dbs).get(prefix).get(oxState);
+                Hashtable<String,Integer> faElements = StaticUtils.categorizeFormula(faVO.getFormula());
+                double mass = faVO.getMass();
+                if (!faElements.containsKey("O"))
+                  continue;
+                if (chainType==LipidomicsConstants.CHAIN_TYPE_FA_ALKYL){
+                  mass += (2d*elements_.getElementDetails("H").getMonoMass()-elements_.getElementDetails("O").getMonoMass());
+                  faElements.put("H",(faElements.get("H")+2));
+                  faElements.put("O",(faElements.get("O")-1));
+                } else if (chainType==LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL){
+                  mass += (-1d*elements_.getElementDetails("O").getMonoMass());
+                  faElements.put("O",(faElements.get("O")-1));
+                }
+                if (faElements.get("O")<0 || mass<0d)
+                  continue;
+                newHash.get(oh).get(c).get(dbs).get(prefix).put(oxState, new FattyAcidVO(chainType, faVO.getPrefix(), faVO.getcAtoms(),
+                    faVO.getDoubleBonds(), oh, mass, StaticUtils.getFormulaInHillNotation(faElements, true),faVO.getOxState()));
+        	}
           }
         }
       }
@@ -1199,15 +1255,16 @@ public class FragmentCalculator
    * @throws RulesException exception thrown when there is something wrong with the chain name
    */
   private void checkWhetherFaIsInLib(String chain, Set<Integer> ohNumbers, Hashtable<Integer,Hashtable<String,String>> hashToAdd,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> chainLib) throws RulesException {
-    int[] cAndDb = null;
+		  Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> chainLib) throws RulesException {
+    String[] cAndDbAndOx = null;
     try {
-      cAndDb = StaticUtils.parseCAndDbsFromChainId(chain);
+      cAndDbAndOx = StaticUtils.parseCAndDbsFromChainId(chain);
     } catch (Exception e) { throw new RulesException(e.getMessage());}
     for (Integer oh : ohNumbers) {
       if (!hashToAdd.containsKey(oh)) hashToAdd.put(oh, new Hashtable<String,String>());
-      if (chainLib.containsKey(oh) && chainLib.get(oh).containsKey(cAndDb[0]) && chainLib.get(oh).get(cAndDb[0]).containsKey(cAndDb[1]) &&
-          chainLib.get(oh).get(cAndDb[0]).get(cAndDb[1]).size()>0)
+      if (chainLib.containsKey(oh) && chainLib.get(oh).containsKey(Integer.parseInt(cAndDbAndOx[0])) && chainLib.get(oh).get(Integer.parseInt(cAndDbAndOx[0])).containsKey(Integer.parseInt(cAndDbAndOx[1])) &&
+    		  chainLib.get(oh).get(Integer.parseInt(cAndDbAndOx[0])).get(Integer.parseInt(cAndDbAndOx[1])).get("").containsKey(cAndDbAndOx[2]) &&
+    		  chainLib.get(oh).get(Integer.parseInt(cAndDbAndOx[0])).get(Integer.parseInt(cAndDbAndOx[1])).get("").size()>0)
         hashToAdd.get(oh).put(chain,chain);     
     }
   }
@@ -1522,6 +1579,7 @@ public class FragmentCalculator
     }
     return decoded;
   }
+
   
   /**
    * this method permutes first the available FA chains among the defined chain type and OH combinations stored in ohDistri
@@ -1542,13 +1600,14 @@ public class FragmentCalculator
    * @param uniqueChains all the chains that are possible after the combinatorial check; key is the chain id that contains information about chain type and hydroxylation sites
    * @throws RulesException thrown when there is something wrong
    */
+  
   private void permuteChainCombinationsOnOhPositionsAndCheckForValidity(String chainCombi, String ohDistri, Hashtable<String,Vector<FattyAcidVO>> toAdd,
       Hashtable<Integer,Hashtable<String,String>> acylChainsInLib,  Hashtable<Integer,Hashtable<String,String>> alkylChainsInLib,
       Hashtable<Integer,Hashtable<String,String>> alkenylChainsInLib,  Hashtable<Integer,Hashtable<String,String>> lcbChainsInLib,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableFAChains,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableAlkylChains,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableAlkenylChains,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableLCBChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableFAChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableAlkylChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableAlkenylChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableLCBChains,
       Hashtable<String,FattyAcidVO> uniqueChains) throws RulesException {
     String[] chains = chainCombi.split(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
 //    String[] ohIds = ohDistri.split(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
@@ -1573,10 +1632,10 @@ public class FragmentCalculator
   private Vector<String> getPermutedChainsSplitOnChainAndOhTypes(String ohId, String[] chains, boolean[] usedChains, 
       Hashtable<Integer,Hashtable<String,String>> acylChainsInLib,  Hashtable<Integer,Hashtable<String,String>> alkylChainsInLib,
       Hashtable<Integer,Hashtable<String,String>> alkenylChainsInLib,  Hashtable<Integer,Hashtable<String,String>> lcbChainsInLib,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableFAChains,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableAlkylChains,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableAlkenylChains,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableLCBChains) throws RulesException, LipidCombinameEncodingException {
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableFAChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableAlkylChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableAlkenylChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableLCBChains) throws RulesException, LipidCombinameEncodingException {
     String ohTypeFrequencyId;
     String remainingOhId = null;
     boolean lastOccurence = false;
@@ -1594,7 +1653,7 @@ public class FragmentCalculator
     int oh = decoded[1];
     int nrOfChains = decoded[2];
     Hashtable<String,String> lookup = null;
-    Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> values = null;
+    Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> values = null;
     if (type==LipidomicsConstants.CHAIN_TYPE_FA_ACYL) {
       lookup = acylChainsInLib.get(oh);
       values = availableFAChains.get(oh);
@@ -1627,10 +1686,10 @@ public class FragmentCalculator
       //System.out.println("combi: "+combi);
       for (String chain : combi.split(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)) {
         if (encoded.length()>0) encoded.append(LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
-        int[] cAndDbs;
+        String[] cAndDbs;
         try {
           cAndDbs = StaticUtils.parseCAndDbsFromChainId(chain);
-          encoded.append(values.get(cAndDbs[0]).get(cAndDbs[1]).values().iterator().next().getChainIdWOPrefix());
+          encoded.append(values.get(Integer.parseInt(cAndDbs[0])).get(Integer.parseInt(cAndDbs[1])).get("").get(cAndDbs[2]).getChainIdWOPrefix());
         }
         catch (Exception e) {
           throw new RulesException(e);
@@ -1720,24 +1779,28 @@ public class FragmentCalculator
    * @throws ChemicalFormulaException when there is something wrong with the chemical formula
    */
   private void addIsotopeLabelsToMutations(String permuteId, Hashtable<String,Vector<FattyAcidVO>> toAdd, 
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableFAChains,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableAlkylChains,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableAlkenylChains,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableLCBChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableFAChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableAlkylChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableAlkenylChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableLCBChains,
       Hashtable<String,FattyAcidVO> uniqueChains) throws LipidCombinameEncodingException, ChemicalFormulaException {
     Vector<FattyAcidVO> chains = StaticUtils.decodeLipidNamesFromChainCombi(permuteId);
     //first, it is evaluated how many different options are present for each chain position
     int isotopicLabels[] = new int[chains.size()];
     int[] divisors = new int[chains.size()];
     FattyAcidVO chain;
-    Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> available;
+    Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> available;
     Hashtable<Integer,Hashtable<String,FattyAcidVO>> chainVOsByPosition = new Hashtable<Integer,Hashtable<String,FattyAcidVO>>();
     //System.out.println("-----------------------------------");
     //System.out.println(permuteId);
     for (int i=0; i!=chains.size(); i++){
       chain = chains.get(i);
       available = getLookupHashByChainType(chain.getChainType(),availableFAChains,availableAlkylChains,availableAlkenylChains,availableLCBChains);
-      chainVOsByPosition.put(i,available.get(chain.getOhNumber()).get(chain.getcAtoms()).get(chain.getDoubleBonds()));
+      
+      Hashtable<String, FattyAcidVO> available_new = new Hashtable<String, FattyAcidVO>();
+      available_new.put("",available.get(chain.getOhNumber()).get(chain.getcAtoms()).get(chain.getDoubleBonds()).get("").get(chain.getOxState()));
+      
+      chainVOsByPosition.put(i,available_new);
       isotopicLabels[i] = chainVOsByPosition.get(i).size();
     }
     //second, it is calculated how many combinations of the different label are possible
@@ -1845,11 +1908,11 @@ public class FragmentCalculator
    * @return correct lookup hash
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  private  Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> getLookupHashByChainType(short chainType,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableFAChains,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableAlkylChains,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableAlkenylChains,
-      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> availableLCBChains) throws LipidCombinameEncodingException {
+  private  Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> getLookupHashByChainType(short chainType,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableFAChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableAlkylChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableAlkenylChains,
+      Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableLCBChains) throws LipidCombinameEncodingException {
     if (chainType==LipidomicsConstants.CHAIN_TYPE_FA_ACYL)
       return availableFAChains;
     else if  (chainType==LipidomicsConstants.CHAIN_TYPE_FA_ALKYL) 
@@ -2022,7 +2085,90 @@ public class FragmentCalculator
     }
     return combiOhs;
   }
- 
   
+
+	 /**
+	  * creates all LipidomicsConstants.CHAIN_MOD_COLUMN_NAME combinations possible for a specified number of chains
+	  * @param oxStates a list of all possible LipidomicsConstants.CHAIN_MOD_COLUMN_NAMEs on a chain 
+	  * @param chains the number of chains of the analyte
+	  * @return the LipidomicsConstants.CHAIN_MOD_COLUMN_NAME combinations
+	  */
+	public  Set<List<String>> getOxCombinations(List<String> oxStates, int chains) 
+	{
+	    Set<List<String>> oxStateCombinations = new HashSet<List<String>>();
+	    Set<List<String>> newCombinations;
+
+	    int index = 0;
+	    for(String i: oxStates) {
+	        List<String> newList = new ArrayList<String>();
+	        newList.add(i);
+	        oxStateCombinations.add(newList);
+	    }
+	    index++;
+	    while(index < chains) {
+	        List<String> nextList = oxStates;
+	        newCombinations = new HashSet<List<String>>();
+	        for(List<String> first: oxStateCombinations) {
+	            for(String second: nextList) {
+	                List<String> newList = new ArrayList<String>();
+	                newList.addAll(first);
+	                newList.add(second);
+	                newCombinations.add(newList);
+	            }
+	        }
+	        oxStateCombinations = newCombinations;
+
+	        index++;
+	    }
+
+	    return oxStateCombinations;
+	}
+	
+	/**
+	  * validates LipidomicsConstants.CHAIN_MOD_COLUMN_NAME combinations possible on chains against the LipidomicsConstants.CHAIN_MOD_COLUMN_NAME of the analyte 
+	  * @param combs the LipidomicsConstants.CHAIN_MOD_COLUMN_NAME combinations possible on chains
+	  * @return only LipidomicsConstants.CHAIN_MOD_COLUMN_NAME combinations that are the same as the analyte`s LipidomicsConstants.CHAIN_MOD_COLUMN_NAME
+	  */
+	public  Set<List<String>> ValidateCombinations(Set<List<String>> combs) 
+	{
+		Set<List<String>> validCombinations = new HashSet<List<String>>();
+		ModificationParser mcp; 
+
+		for(List<String> combi : combs)
+		{
+			//get a string of the combination like "O,4OH"
+			String combiString = "";
+			for(String s : combi)
+			{
+				if(!combiString.equals("") && !s.equals(""))
+				{
+					combiString+= ","+s;
+				}
+				else if(combiString.equals("") && !s.equals(""))
+				{
+					combiString=s;
+				}
+			}
+			combiString = combiString.replaceAll("\\s", "");
+			
+			//get elemental change of the chain modifications
+			mcp = new ModificationParser(combiString);
+			mcp.parse();
+			String combiFormula = mcp.getModificationComposition();
+			
+			//get elemental change of the analyte modification
+			mcp = new ModificationParser(analyteOxState_.replaceAll("\\s", ""));
+			mcp.parse();
+			String analyteOxFormula = mcp.getModificationComposition();
+			
+			//compare chain modifications to analyte modifications
+			if(combiFormula.equals(analyteOxFormula))
+	        {
+				validCombinations.add(combi);
+	        }
+		}
+		
+		return validCombinations;
+	} 
 }
 

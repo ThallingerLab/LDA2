@@ -1,0 +1,68 @@
+================================================================================
+Preject settings
+================================================================================
+
+Project -> Properties -> Build -> Settings -> CUDA -> Device linker mode = Whole program compilation
+                                                   -> Generate PTX code = 1.1
+                                                   -> Generate GPU code = 1.1
+                                                   -> Source editor compute capability = 1.1
+                                           -> Tool Settings -> NVCC Compiler -> Includes -> Include paths (-l) = /Library/Java/JavaVirtualMachines/jdk1.8.0_112.jdk/Contents/Home/include/
+                                                                                                               = /…/include/darwin/
+                                                                             -> Optimisation -> Optimisation Level = Optimize most (-O3)
+                                                                             -> Miscellaneous -> Position indipendent Code (-fPIC)
+                                                            -> NVCC Linker -> Miscellaneous -> Schared (-shared)
+
+================================================================================
+Testing machine
+================================================================================
+
+iMac (24 inch Early 2009)
+MacOS version 10.10.3
+Intel Core 2 Duo 3.06 GHz E8435
+GeForce GT 130
+48 cores
+500 MHz
+768 Mb DRAM
+compute capability 1.1
+nvcc V6.5.12
+Nsight V6.5 (Eclips Edition)
+
+================================================================================
+Example Release Build
+================================================================================
+
+14:18:57 **** Incremental Build of configuration Release for project SavGoli ****
+make all 
+nvcc warning : The 'compute_11', 'compute_12', 'compute_13', 'sm_11', 'sm_12', and 'sm_13' architectures are deprecated, and may be removed in a future release.
+Building file: ../SavGolJNI.cu
+Invoking: NVCC Compiler
+/Developer/NVIDIA/CUDA-6.5/bin/nvcc -I/Library/Java/JavaVirtualMachines/jdk1.8.0_112.jdk/Contents/Home/include/darwin/ -I/Library/Java/JavaVirtualMachines/jdk1.8.0_112.jdk/Contents/Home/include/ -O3 -Xcompiler -fPIC -gencode arch=compute_11,code=sm_11  -odir "" -M -o "SavGolJNI.d" "../SavGolJNI.cu"
+/Developer/NVIDIA/CUDA-6.5/bin/nvcc -I/Library/Java/JavaVirtualMachines/jdk1.8.0_112.jdk/Contents/Home/include/darwin/ -I/Library/Java/JavaVirtualMachines/jdk1.8.0_112.jdk/Contents/Home/include/ -O3 -Xcompiler -fPIC --compile --relocatable-device-code=false -gencode arch=compute_11,code=compute_11 -gencode arch=compute_11,code=sm_11  -x cu -o  "SavGolJNI.o" "../SavGolJNI.cu"
+nvcc warning : The 'compute_11', 'compute_12', 'compute_13', 'sm_11', 'sm_12', and 'sm_13' architectures are deprecated, and may be removed in a future release.
+/Developer/NVIDIA/CUDA-6.5/bin/../include/cuda_runtime.h(1394): warning: argument of type "void (*)(float *, float *, int, int)" is incompatible with parameter of type "const void *"
+          detected during:
+            instantiation of "cudaError_t <unnamed>::cudaOccupancyMaxPotentialBlockSizeVariableSMem(int *, int *, T, UnaryFunction, int) [with UnaryFunction=<unnamed>::__cudaOccupancyB2DHelper, T=void (*)(float *, float *, int, int)]" 
+(1278): here
+            instantiation of "cudaError_t <unnamed>::cudaOccupancyMaxPotentialBlockSize(int *, int *, T, size_t, int) [with T=void (*)(float *, float *, int, int)]" 
+../SavGolJNI.cu(634): here
+
+/Developer/NVIDIA/CUDA-6.5/bin/../include/cuda_runtime.h(1394): warning: argument of type "void (*)(float, float, float *, float *, int, int, int, int, int, int)" is incompatible with parameter of type "const void *"
+          detected during:
+            instantiation of "cudaError_t <unnamed>::cudaOccupancyMaxPotentialBlockSizeVariableSMem(int *, int *, T, UnaryFunction, int) [with UnaryFunction=<unnamed>::__cudaOccupancyB2DHelper, T=void (*)(float, float, float *, float *, int, int, int, int, int, int)]" 
+(1278): here
+            instantiation of "cudaError_t <unnamed>::cudaOccupancyMaxPotentialBlockSize(int *, int *, T, size_t, int) [with T=void (*)(float, float, float *, float *, int, int, int, int, int, int)]" 
+../SavGolJNI.cu(636): here
+
+ptxas /var/folders/4h/vlh5k4mj3s52t0dzw4prvkvm0000gr/T//tmpxft_000015c5_00000000-5_SavGolJNI.ptx, line 729; warning : Double is not supported. Demoting to float
+Finished building: ../SavGolJNI.cu
+ 
+
+Building target: libSavGoli
+Invoking: NVCC Linker
+/Developer/NVIDIA/CUDA-6.5/bin/nvcc --cudart static -shared --relocatable-device-code=false -gencode arch=compute_11,code=compute_11 -gencode arch=compute_11,code=sm_11 -link -o  "libSavGoli"  ./SavGolJNI.o   
+nvcc warning : The 'compute_11', 'compute_12', 'compute_13', 'sm_11', 'sm_12', and 'sm_13' architectures are deprecated, and may be removed in a future release.
+Finished building target: libSavGoli
+ 
+
+
+14:19:01 Build Finished (took 3s.917ms)

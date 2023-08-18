@@ -51,6 +51,8 @@ public class FattyAcidVO
   private int ohNumber_;
   /** omegaPosition*/
   private int omegaPosition_;
+    // oxidation state
+  private String oxState_;
   
   /**
    * all the information has to be provided in the constructor
@@ -61,7 +63,7 @@ public class FattyAcidVO
    * @param mass mass value
    * @param formula chemical formula
    */
-  public FattyAcidVO(short chainType, String prefix, int cAtoms, int doubleBonds, int ohNumber, double mass, String formula){
+  public FattyAcidVO(short chainType, String prefix, int cAtoms, int doubleBonds, int ohNumber, double mass, String formula, String oxState){
     this.chainType_ = chainType;
     this.prefix_ = prefix;
     this.cAtoms_ = cAtoms;
@@ -70,10 +72,11 @@ public class FattyAcidVO
     this.mass_ = mass;
     this.formula_ = formula;
     this.omegaPosition_ = -1;
+    this.oxState_ = oxState;
   }
   
-  
-  
+ 
+ 
   /**
    * 
    * @return the type of chain: LipidomicsConstants.CHAIN_TYPE_FA or LipidomicsConstants.CHAIN_TYPE_LCB
@@ -183,13 +186,22 @@ public class FattyAcidVO
     this.omegaPosition_ = omegaPosition;
   }
 
-
+  /**
+   * 
+   * @return oxidation state
+   */
+  public String getOxState()
+  {
+    return oxState_;
+  }
 
   /**
    * @return name consisting of number of C atoms : number of double bonds
    */
   public String getCarbonDbsId(){
-    return StaticUtils.generateLipidNameString(prefix_+String.valueOf(cAtoms_),doubleBonds_,omegaPosition_);
+	
+    return StaticUtils.generateLipidNameString(prefix_+String.valueOf(cAtoms_),doubleBonds_,omegaPosition_,oxState_);
+    
   }
   
   /**

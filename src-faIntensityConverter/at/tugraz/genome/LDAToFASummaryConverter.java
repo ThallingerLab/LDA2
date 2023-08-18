@@ -197,7 +197,7 @@ public class LDAToFASummaryConverter extends ConverterBase
       if (!res.getIdentifications().containsKey(lClass))
         continue;
       for (LipidParameterSet set : res.getIdentifications().get(lClass)){
-        species.add(StaticUtils.decodeHumanReadableChain(set.getNameStringWithoutRt(), res.getFaHydroxyEncoding(), res.getLcbHydroxyEncoding(), res.getConstants().isAlexTargetlist()).getChainId());
+        species.add(StaticUtils.decodeHumanReadableChain(set.getNameStringWithoutRt(), res.getFaHydroxyEncoding(), res.getLcbHydroxyEncoding(), res.getConstants().isAlexTargetlist(), res.getConstants()).getChainId());
         if (!modAreas.containsKey(set.getModificationName()))
           modAreas.put(set.getModificationName(), new FloatStringVO(set.getModificationName(),0f));
         modAreas.get(set.getModificationName()).addValue(set.getArea());

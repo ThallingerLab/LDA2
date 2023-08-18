@@ -1,0 +1,28 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.02%
+ChainCutoff=50%
+AlkenylChains=1
+RetentionTimePostprocessing=true
+SpectrumCoverage=5%
+
+[HEAD]
+!FRAGMENTS
+Name=PChead_147			Formula=C2H5O4PNa		Charge=1	MSLevel=2	mandatory=true
+Name=Plasmalogen_fragment_307	Formula=C21H39O			Charge=1	MSLevel=2	mandatory=false
+Name=NL_trimethylamine_59	Formula=$PRECURSOR-C3H9N	Charge=1	MSLevel=2	mandatory=true
+Name=NL_PChead_183		Formula=$PRECURSOR-C5H14NO4P	Charge=1	MSLevel=2	mandatory=false
+Name=NL_PChead_205		Formula=$PRECURSOR-C5H13NO4PNa	Charge=1	MSLevel=2	mandatory=false
+Name=Precursor			Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=NL_trimethylamine_59*1.1>Precursor			mandatory=true
+Equation=NL_trimethylamine_59*0.6>Plasmalogen_fragment_307	mandatory=true
+Equation=NL_trimethylamine_59*0.6>NL_PChead_183			mandatory=true
+Equation=NL_trimethylamine_59*0.3>NL_PChead_205			mandatory=true
+Equation=PChead_147*0.9>Plasmalogen_fragment_307		mandatory=true
+Equation=PChead_147*0.7>NL_PChead_205				mandatory=true
+Equation=PChead_147>0.05*$BASEPEAK				mandatory=true

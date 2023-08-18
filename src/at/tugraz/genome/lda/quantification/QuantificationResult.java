@@ -74,6 +74,14 @@ public class QuantificationResult
   {
     return identifications_;
   }
+  
+  /**
+   * set the Identifications (needed for OxSheets)
+   */
+  public void setIdentifications(Hashtable<String,Vector<LipidParameterSet>> identifications)
+  {
+    this.identifications_ = identifications;
+  }
 
   /**
    * 

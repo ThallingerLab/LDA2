@@ -329,7 +329,7 @@ public class OmegaMasslistExporter extends LDAExporter
                     molSpeciesHash.get(chainsWithoutLabel).get(encodedOmegaChainInformation).put(rt, countRts);
                   }
                 } else if (nrChains==1) {
-                  encodedOmegaChainInformation = StaticUtils.encodeOmegaPositions(StaticUtils.encodeLipidCombi(StaticUtils.decodeFAsFromHumanReadableName(info.getLabelDetection().substring(0,info.getLabelDetection().lastIndexOf("_")),analysisModule.getFaHydroxyEncoding(),analysisModule.getLcbHydroxyEncoding(),false)),info.getLabels(),analysisModule.getFaHydroxyEncoding(), analysisModule.getLcbHydroxyEncoding());
+                  encodedOmegaChainInformation = StaticUtils.encodeOmegaPositions(StaticUtils.encodeLipidCombi(StaticUtils.decodeFAsFromHumanReadableName(info.getLabelDetection().substring(0,info.getLabelDetection().lastIndexOf("_")),analysisModule.getFaHydroxyEncoding(),analysisModule.getLcbHydroxyEncoding(),false,null)),info.getLabels(),analysisModule.getFaHydroxyEncoding(), analysisModule.getLcbHydroxyEncoding());
                   if (!sumSpeciesHash.containsKey(encodedOmegaChainInformation))
                     sumSpeciesHash.put(encodedOmegaChainInformation, new Hashtable<Double,DoubleIntegerVO>());
                   rt = Calculator.FormatNumber(info.calculateRtIncludingTheShift(Double.parseDouble(areaVO.getRtOriginal())),5d);
@@ -723,8 +723,8 @@ public class OmegaMasslistExporter extends LDAExporter
    * @throws LipidCombinameEncodingException when there is something wrong with the lipid name encoding
    */
   private String findAnObsoleteIdentification(String one, String two, HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding) throws LipidCombinameEncodingException {
-    Vector<FattyAcidVO> first = StaticUtils.decodeFAsFromHumanReadableName(one, faHydroxyEncoding, lcbHydroxyEncoding, false);
-    Vector<FattyAcidVO> second = StaticUtils.decodeFAsFromHumanReadableName(two, faHydroxyEncoding, lcbHydroxyEncoding, false);
+    Vector<FattyAcidVO> first = StaticUtils.decodeFAsFromHumanReadableName(one, faHydroxyEncoding, lcbHydroxyEncoding, false, null);
+    Vector<FattyAcidVO> second = StaticUtils.decodeFAsFromHumanReadableName(two, faHydroxyEncoding, lcbHydroxyEncoding, false, null);
     if (first.size()!=second.size())
       return null;
     int omegaPos = -1;

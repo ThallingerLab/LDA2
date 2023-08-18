@@ -42,6 +42,7 @@ import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
+import at.tugraz.genome.maspectras.utils.Calculator;
 
 /**
  * 
@@ -109,7 +110,8 @@ public class DistributionCalculator extends JFrame implements ActionListener
       new WarningMessage(new JFrame(), "Error", "Please enter a formula!");
       return;
     }
-    Vector<Vector<Double>> bothDistris = calculateDistribution(input_.getText());
+    String formula = input_.getText();
+    Vector<Vector<Double>> bothDistris = calculateDistribution(formula);
     displayPanel_.removeAll();
     Vector<Double> distri = bothDistris.get(0);
     for (int i=0; i!=distri.size(); i++){
@@ -121,8 +123,10 @@ public class DistributionCalculator extends JFrame implements ActionListener
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 0, 0, 0), 2, 0));
     }
     int add = distri.size()+1;
-    if (bothDistris.size()>1){
+    Vector<Double> mass = bothDistris.get(1);
+    if (bothDistris.size()>2){
       distri = bothDistris.get(1);
+      mass = bothDistris.get(2);
       for (int i=0; i!=distri.size(); i++){
         JLabel label = new JLabel("-"+i+": ");
         JLabel value = new JLabel(distri.get(i).toString());
@@ -131,7 +135,13 @@ public class DistributionCalculator extends JFrame implements ActionListener
         displayPanel_.add(value,new GridBagConstraints(1, i+add, 1, 1, 0.0, 0.0
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 0, 0, 0), 2, 0));
       }
+      add += distri.size();
     }
+    displayPanel_.add(new JLabel("mass: "),new GridBagConstraints(0, add+1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 0, 0, 0), 2, 0));
+      displayPanel_.add(new JLabel(Calculator.FormatNumberToString(mass.get(0),5d)),new GridBagConstraints(1, add+1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 0, 0, 0), 2, 0));
+    
     displayPanel_.invalidate();
     displayPanel_.updateUI();
   }
@@ -147,7 +157,11 @@ public class DistributionCalculator extends JFrame implements ActionListener
         formulaToCheck += elem+categorized.get(elem).toString();
       }
       aaParser.parse();
-      return aaParser.calculateChemicalFormulaIntensityDistribution(formulaToCheck,5,false);
+      distri = aaParser.calculateChemicalFormulaIntensityDistribution(formulaToCheck,5,false);
+      Vector<Double> mass = new Vector<Double>();
+      mass.add(aaParser.calculateTheoreticalMass(formulaToCheck, false));
+      distri.add(mass);
+      return distri;
     }
     catch (SpectrummillParserException e) {
       new WarningMessage(new JFrame(), "Warning", e.getMessage());

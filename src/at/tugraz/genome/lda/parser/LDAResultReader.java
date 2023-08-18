@@ -114,10 +114,10 @@ public class LDAResultReader
     if (filePath!=null && filePath.length()>3)
       suffix = filePath.substring(filePath.lastIndexOf("."));
     //for backwards compatibility, in case there are files in the old excel format
-    if (suffix.equalsIgnoreCase(".xls")) {
+  /*  if (suffix.equalsIgnoreCase(".xls")) {
     	//TODO: remove completely after an adequate transition period *note written: 25.05.2022*
       return LDAResultReaderApachePOI.readResultFile(filePath, showModifications, specificClass);
-    } else if (!(suffix.equalsIgnoreCase(".xlsx"))){
+    } else*/ if (!(suffix.equalsIgnoreCase(".xlsx"))){
       new WarningMessage(new JFrame(), "ERROR", "The specified file format is not supported!");
       throw new ExcelInputFileException("The specified file format is not supported!");
     } 
@@ -397,6 +397,7 @@ public class LDAResultReader
         containsAlkenyl = false;
         while (cellEntries.containsKey(count)){
           String lipidIdentification = (String)cellEntries.get(count);
+          
           if (lipidIdentification!=null && lipidIdentification.length()>0){
             //this put has to be here to store the MSn scan numbers
             columnToIdentification.put(count, lipidIdentification);
@@ -406,10 +407,10 @@ public class LDAResultReader
               boolean isAlexOhEncoding = false;
               //if there is a ";", the next character after the following numbers must be a ":"; if there is a "/" or a "_" it is the OH index of an Alex123 notation
               if (usedAlexMsnTargets){
-                if (lipidIdentification.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS)!=-1){
+                if (lipidIdentification.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS_OLD)!=-1){
                   boolean makeSubstring = false;
                   char[] chars = lipidIdentification.toCharArray();
-                  for (int i=lipidIdentification.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS)+1; i!=chars.length; i++){
+                  for (int i=lipidIdentification.indexOf(lipidomicsConstants_.getChainCombiSeparatorAmbigPosDependingOnVersion())+1; i!=chars.length; i++){
                     //it is the OH index of an Alex123 notation
                     if (chars[i]==knownPosSep || chars[i]==unknownPosSep) {
                       isAlexOhEncoding = true;
@@ -422,14 +423,23 @@ public class LDAResultReader
                       continue;
                   }
                   if (makeSubstring)
-                    lipidIdentification = lipidIdentification.substring(0,lipidIdentification.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS));
+                    lipidIdentification = lipidIdentification.substring(0,lipidIdentification.indexOf(lipidomicsConstants_.getChainCombiSeparatorAmbigPosDependingOnVersion()));
                 }
-              }else{
-                if (lipidIdentification.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS)!=-1)lipidIdentification = lipidIdentification.substring(0,lipidIdentification.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS));
+              } else {
+            	  if (lipidomicsConstants_.getChainCombiSeparatorAmbigPosDependingOnVersion() != null) {
+            		  if (lipidIdentification.indexOf(lipidomicsConstants_.getChainCombiSeparatorAmbigPosDependingOnVersion())!=-1) {
+            			  lipidIdentification = lipidIdentification.substring(0,lipidIdentification.indexOf(lipidomicsConstants_.getChainCombiSeparatorAmbigPosDependingOnVersion()));
+            		  }
+            	  }
               }
-              /** remove omega-DB position annotations if present */
+              
+              // remove sn position annotations if present
+              lipidIdentification = StaticUtils.removeSNPositions(lipidIdentification);
+              
+              // remove omega-DB position annotations if present
               lipidIdentification = StaticUtils.getHumanReadableWODoubleBondPositions(lipidIdentification);
-              Object[] nameAndNumberOfPos = StaticUtils.cleanEmptyFAPositionsAndEncodeToLDACombiName(lipidIdentification,faHydroxyEncoding_,lcbHydroxyEncoding_,isAlexOhEncoding);
+              
+              Object[] nameAndNumberOfPos = StaticUtils.cleanEmptyFAPositionsAndEncodeToLDACombiName(lipidIdentification,faHydroxyEncoding_,lcbHydroxyEncoding_,isAlexOhEncoding,lipidomicsConstants_);
               lipidIdentification = (String)nameAndNumberOfPos[0];
               int posNr = (Integer)nameAndNumberOfPos[1];
               if (posNr>numberOfPositions) numberOfPositions = posNr;
@@ -438,7 +448,6 @@ public class LDAResultReader
               //when the correct MSn LDA decoded MSn identification name is known, put the correct one to the column
               columnToIdentification.put(count, lipidIdentification);
               validChainCombinations.add(lipidIdentification);
-              //System.out.println("0. lipidIdentification: "+sheet.getSheetName()+" "+lipidIdentification);
             }
           }
           count++;
@@ -563,12 +572,21 @@ public class LDAResultReader
         readIntensityHeaderRow = true;
         intensityHeaderRead = false;
         combiKey = ((String)cellEntries.get(QuantificationResultExporter.MSN_ROW_FRAGMENT_NAME)).trim().substring(LipidomicsConstants.EXCEL_MSN_SECTION_POSITION_INTENSITIES.length());
-        combiKey = combiKey.substring(combiKey.indexOf("(")+1,combiKey.indexOf(")"));
-        if (combiKey.indexOf(";")!=-1) combiKey = combiKey.substring(0,combiKey.indexOf(";"));
+        
+        combiKey = combiKey.substring(combiKey.indexOf("(")+1,combiKey.indexOf(")"));      
+        
+        if (lipidomicsConstants_.getChainCombiSeparatorAmbigPosDependingOnVersion() != null) {
+        	if (combiKey.indexOf(lipidomicsConstants_.getChainCombiSeparatorAmbigPosDependingOnVersion())!=-1) combiKey = combiKey.substring(0,combiKey.indexOf(lipidomicsConstants_.getChainCombiSeparatorAmbigPosDependingOnVersion()));
+        } else {
+        	combiKey = StaticUtils.removeSNPositions(combiKey);
+        	//combiKey = StaticUtils.removeModification(combiKey);
+        }
+        
         validChainCombinations = correctUndefinedChainCombinations(combiKey,validChainCombinations,relativeAreas,LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
         Hashtable<String,Integer> chainOccurenceInCombi = new Hashtable<String,Integer>();
         combiKey = (String)StaticUtils.cleanEmptyFAPositionsAndEncodeToLDACombiName(combiKey,faHydroxyEncoding_,
-            lcbHydroxyEncoding_,  (usedAlexMsnTargets && combiKey.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS)!=-1))[0];
+            lcbHydroxyEncoding_,  (usedAlexMsnTargets && combiKey.indexOf(lipidomicsConstants_.getChainCombiSeparatorAmbigPosDependingOnVersion())!=-1), lipidomicsConstants_)[0];
+        
         combiKey = getPermutationThatIsInValidChainCombinations(combiKey, validChainCombinations);
         
         Vector<String> fas = StaticUtils.splitChainCombiToEncodedStrings(combiKey,LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
@@ -733,7 +751,7 @@ public class LDAResultReader
             status = LipidomicsMSnSet.HEAD_GROUP_DETECTED;
           }else if (chainFragmentActive){
             status = LipidomicsMSnSet.FRAGMENTS_DETECTED;
-            Object[] faAndFragment = StaticUtils.parseChainFaAndFragmentNameFromExcel(fragmentName,chainType,oh);
+            Object[] faAndFragment = StaticUtils.parseChainFaAndFragmentNameFromExcel(fragmentName,chainType,oh,lipidomicsConstants_.shouldOldEncodingBeUsed());
             FattyAcidVO faName = (FattyAcidVO)faAndFragment[0];
             fragmentName =  (String)faAndFragment[1];
             Hashtable<String,CgProbe> fragments = new Hashtable<String,CgProbe>();
@@ -764,12 +782,11 @@ public class LDAResultReader
             String token = tokenizer.nextToken();
             //this is necessary for position rules
             if (token.indexOf("[")!=-1) {
-              if (positionRules)
-                missedPosition.put(token, LipidomicsConstants.CHAIN_TYPE_NO_CHAIN);
+                if (positionRules)
+                    missedPosition.put(token, LipidomicsConstants.CHAIN_TYPE_NO_CHAIN);
               token = token.substring(0, token.indexOf("["));
             }
             short type = LipidomicsConstants.CHAIN_TYPE_NO_CHAIN;
-            
             if (chainRules||positionRules){
               boolean isAChain = false;
               //is it a chain fragment in Alex notation
@@ -1076,6 +1093,7 @@ public class LDAResultReader
       float lowerRtHardLimit = -1f;
       float upperRtHardLimit = -1f;
       float percentalSplit = -1f;
+      String oxState="";
       
       int index;
       String rawValue;
@@ -1156,6 +1174,8 @@ public class LDAResultReader
           upperMz10Pc = Float.parseFloat(rawValue);
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_UPPER_MZ50PC)) {
           upperMz50Pc = Float.parseFloat(rawValue);
+        } else if (index == headerTitles.indexOf(LipidomicsConstants.CHAIN_MOD_COLUMN_NAME)) {
+        	oxState = rawValue;
         }
 
       }
@@ -1187,6 +1207,7 @@ public class LDAResultReader
         params.Area = area;
         params.LowerMzBand = mzTolerance;
         params.UpperMzBand = mzTolerance;
+        params.setOxState(oxState); 
       }else{
         if (params!=null){
           //due to this any row without a value in the 'charge' column will be ignored
@@ -1404,8 +1425,9 @@ public class LDAResultReader
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   private static String getPermutationThatIsInValidChainCombinations(String combiKey, Vector<String> validChainCombinations) throws LipidCombinameEncodingException {
-    Vector<String> chains = StaticUtils.splitChainCombiToEncodedStrings(combiKey,LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
+	Vector<String> chains = StaticUtils.splitChainCombiToEncodedStrings(combiKey,LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
     Vector<String> permuts = StaticUtils.getPermutedChainNames(chains, LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
+    
     for (String permut : permuts) {
       if (validChainCombinations.contains(permut))
         return permut;

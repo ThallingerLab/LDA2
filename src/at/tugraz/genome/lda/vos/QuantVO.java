@@ -23,6 +23,7 @@
 
 package at.tugraz.genome.lda.vos;
 
+import java.util.Collections;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
@@ -35,7 +36,7 @@ import at.tugraz.genome.lda.utils.StaticUtils;
  * @author Juergen Hartler
  *
  */
-public class QuantVO
+public class QuantVO implements Comparable<QuantVO>
 {
   protected String analyteClass_;
   protected String prefixOrName_;
@@ -60,6 +61,7 @@ public class QuantVO
   protected Vector<QuantVO> isobaricSpecies_;
   /** will this QuantVO be quantified by another isobar?*/
   protected boolean quantifiedByOtherIsobar_;
+  protected String oxState_;
   
   /**
    * constructor for an object holding necessary information for 
@@ -85,7 +87,7 @@ public class QuantVO
       String modName, String modFormula, float retTime,
       float usedMinusTime, float usedPlusTime,
       Vector<Double> mustMatchProbabs, Vector<Double> probabs,
-      int negativeStartValue) throws HydroxylationEncodingException
+      int negativeStartValue,String oxState) throws HydroxylationEncodingException
   {
     super();
     this.analyteClass_ = analyteClass;
@@ -114,6 +116,7 @@ public class QuantVO
     this.negStartValue_ = negativeStartValue;
     this.isobaricSpecies_ = new Vector<QuantVO>();
     this.quantifiedByOtherIsobar_ = false;
+    this.oxState_ = oxState;
   }
   
   public String getAnalyteClass()
@@ -138,7 +141,13 @@ public class QuantVO
   {
     return oh_;
   }
-
+  
+  public String getOxState()
+  {
+	  return oxState_;
+  }
+ 
+  	
   public String getAnalyteFormula()
   {
     return analyteFormula_;
@@ -167,6 +176,7 @@ public class QuantVO
   {
     return retTime_;
   }
+  
   /**
    * setter method for the retention time
    * @param rt the retention time
@@ -202,7 +212,7 @@ public class QuantVO
    * @return original string for the analyte name
    */
   public String getIdString(){
-    return StaticUtils.generateLipidNameString(getAnalyteName(),dbs_,-1);
+    return StaticUtils.generateLipidNameString(getAnalyteName(),dbs_,-1,oxState_);
   }
   
   /**
@@ -243,6 +253,7 @@ public class QuantVO
         }
       }
     }
+    Collections.sort(this.isobaricSpecies_);
   }
 
   /**
@@ -322,4 +333,14 @@ public class QuantVO
     return prefixAndC;
   }
   
+  /**
+   * this method compares two QuantVOs by analyte mass
+   * @param otherQuantVO the other QuantVO to compare
+   * @return -1 if analyte mass of other QuantVO is smaller, 0 for equality and 1 if analyte mass of other QuantVO is bigger
+   */
+  public int compareTo(QuantVO otherQuantVO) {
+	  
+	  int ret = (this.getAnalyteFormula() + this.getModFormula()).compareTo(otherQuantVO.getAnalyteFormula() + otherQuantVO.getModFormula());
+	  return ret;
+  }
 }

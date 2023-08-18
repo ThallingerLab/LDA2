@@ -1,0 +1,23 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.02%
+ChainCutoff=50%
+AlkenylChains=1
+RetentionTimePostprocessing=true
+SpectrumCoverage=5%
+
+
+[HEAD]
+!FRAGMENTS
+Name=NL_trimethylamine_59	Formula=$PRECURSOR-C3H9N	Charge=1	MSLevel=2	mandatory=true
+Name=NL_PChead_183		Formula=$PRECURSOR-C5H14NO4P	Charge=1	MSLevel=2	mandatory=false
+Name=NL_PChead_205		Formula=$PRECURSOR-C5H13NO4PNa	Charge=1	MSLevel=2	mandatory=false
+Name=Precursor			Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=true
+
+!INTENSITIES
+Equation=Precursor>0.5*$BASEPEAK				mandatory=true
+Equation=NL_trimethylamine_59>Precursor*0.02			mandatory=true
+Equation=NL_trimethylamine_59*0.2>NL_PChead_183			mandatory=true

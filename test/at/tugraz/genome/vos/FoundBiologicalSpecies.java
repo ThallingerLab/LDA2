@@ -56,7 +56,7 @@ public class FoundBiologicalSpecies{
   public final static Hashtable<String,String> modToIonisationMode = new Hashtable<String,String>(){
 
     private static final long serialVersionUID = 179548399794419935L;
-    
+
     {
       put("H","+");
       put("Na","+");

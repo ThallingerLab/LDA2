@@ -24,6 +24,7 @@ package at.tugraz.genome.vos;
 
 import java.util.Hashtable;
 
+import at.tugraz.genome.exception.LipidBLASTException;
 import at.tugraz.genome.exception.MSDialException;
 
 /**

@@ -1,0 +1,28 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.02%
+ChainCutoff=60%
+RetentionTimePostprocessing=true
+RetentionTimeParallelSeries=true
+
+[HEAD]
+!FRAGMENTS
+Name=NL_PEhead_141	Formula=$PRECURSOR-C2H8NO4P	Charge=1	MSLevel=2	mandatory=false
+Name=PE-NC2		Formula=$PRECURSOR-N1C2H5	Charge=1	MSLevel=2	mandatory=false
+
+[CHAINS]
+!FRAGMENTS
+Name=Carboxy_OH		Formula=$CHAIN-OH		Charge=1	MSLevel=2	mandatory=false
+Name=Carboxy_H2O_OH	Formula=$CHAIN-H3O2		Charge=1	MSLevel=2	mandatory=false
+Name=NL_Carboxy		Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Ketene		Formula=$PRECURSOR-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Ketene_Head	Formula=NL_PEhead_141-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false
+
+
+[POSITION]
+!INTENSITIES
+Equation=NL_Carboxy[2]*0.6>NL_Carboxy[1]			mandatory=false
+Equation=NL_Ketene[2]*0.6>NL_Ketene[1]				mandatory=false

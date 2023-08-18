@@ -1,0 +1,40 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.01%
+ChainCutoff=1%
+RetentionTimePostprocessing=true
+SpectrumCoverage=25%
+
+
+[HEAD]
+!FRAGMENTS
+Name=Precursor		Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=true
+Name=PChead_168_WRONG	Formula=C4H11NO4P		Charge=1	MSLevel=2	mandatory=other
+Name=PChead_224_WRONG	Formula=C7H15O5NP		Charge=1	MSLevel=2	mandatory=other
+Name=PChead_242_WRONG	Formula=C7H17O6NP		Charge=1	MSLevel=2	mandatory=other
+Name=NL_PChead_60_WRONG	Formula=$PRECURSOR-C2O2H4	Charge=1	MSLevel=2	mandatory=other
+
+!INTENSITIES
+Equation=PChead_168_WRONG+PChead_224_WRONG+PChead_242_WRONG+Precursor*0<0.02*$BASEPEAK				mandatory=true
+Equation=PChead_168_WRONG+PChead_224_WRONG+PChead_242_WRONG+NL_PChead_60_WRONG+0*Precursor<0.02*Precursor	mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=Carboxy		Formula=$CHAIN-H		Charge=1	MSLevel=2	mandatory=true
+Name=NL_Carboxy		Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Ketene		Formula=$PRECURSOR-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=Carboxy>NL_Ketene		mandatory=true
+Equation=0.6*Carboxy>NL_Carboxy		mandatory=true
+Equation=Carboxy>0.005*$BASEPEAK		mandatory=true
+
+
+[POSITION]
+!INTENSITIES
+Equation=Carboxy[2]*0.7>Carboxy[1]			mandatory=true
+Equation=NL_Ketene[2]*0.9>NL_Ketene[1]			mandatory=false
