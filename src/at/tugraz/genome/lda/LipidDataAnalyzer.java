@@ -2876,7 +2876,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         }
       }
     }
-    if (command.equalsIgnoreCase("updateQuantTolOfCurrentlySelected")){
+    if (command.equalsIgnoreCase(DisplayTolerancePanel.UPDATE_QUANT_TOL_OF_CURRENTLY_SELECTED)){
       if (params_!=null){
         if (this.displaysMs2_){
           if (ms1ProbesWhileMs2Display_!=null){
@@ -4158,7 +4158,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       this.l2DPainter_.setRaw(false);
       this.l2DPainter_.repaint();
     }
-    if (command.equalsIgnoreCase("show2dChanged")){
+    if (command.equalsIgnoreCase(DisplayTolerancePanel.SHOW_2D_CHANGED)){
       if (this.params_!=null){
         if (this.displayTolerancePanel_.getShow2D().isSelected())
           this.initMS1OrMS2View(params_);
@@ -4167,7 +4167,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       }
 ///        this.initANewViewer(params_);
     }
-    if (command.equalsIgnoreCase("showMSnOnly")){
+    if (command.equalsIgnoreCase(DisplayTolerancePanel.SHOW_MSN_ONLY)){
     	if(this.displayTolerancePanel_.getShowMSnEvidence().isSelected())
     	{
     		result_ = MSnResult_;
@@ -4180,7 +4180,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     	}
       this.updateResultListSelectionTable();
     }
-    if (command.equalsIgnoreCase("showChainOnly")){
+    if (command.equalsIgnoreCase(DisplayTolerancePanel.SHOW_CHAIN_ONLY)){
     	if(this.displayTolerancePanel_.getShowChainEvidence().isSelected())
     	{
     		result_ = chainResult_;
@@ -4265,9 +4265,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           }        
         }
       }
-    } else if (command.equalsIgnoreCase("showMSnNames")){
+    } else if (command.equalsIgnoreCase(DisplayTolerancePanel.SHOW_MSN_NAMES)){
       updateResultListSelectionTable();
-    } else if (command.equalsIgnoreCase("showOmegaNames")) {
+    } else if (command.equalsIgnoreCase(DisplayTolerancePanel.SHOW_OMEGA_NAMES)) {
       updateResultListSelectionTable();
     } else if (command.equalsIgnoreCase(DisplayTolerancePanel.CHANGE_LOCK_MZ_RANGE)) {
       changeLockMzRange();

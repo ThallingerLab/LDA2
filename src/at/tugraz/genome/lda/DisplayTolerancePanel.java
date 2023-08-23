@@ -39,7 +39,7 @@ import javax.swing.JTextField;
 import at.tugraz.genome.lda.verifier.DoubleVerifier;
 
 /**
- * A panel allowing for the selection of display tolerances in the display results tab.
+ * A panel allowing for the selection of display options in the display results tab.
  * 
  * @author Juergen Hartler
  * @author Leonida M. Lamp
@@ -56,6 +56,19 @@ public class DisplayTolerancePanel extends JPanel
   public final static String CHANGE_LOCK_MZ_RANGE = "lockMzRange";
   /** the displayed label next to check box for activating the lock mass range*/
   public final static String DISPLAY_LOCK_MZ_TEXT = "Lock m/z range ";
+  
+  public final static String UPDATE_QUANT_TOL_OF_CURRENTLY_SELECTED = "updateQuantTolOfCurrentlySelected";
+  
+  public final static String SHOW_MSN_ONLY = "showMSnOnly";
+  
+  public final static String SHOW_CHAIN_ONLY = "showChainOnly";
+  
+  public final static String SHOW_MSN_NAMES = "showMSnNames";
+  
+  public final static String SHOW_2D_CHANGED = "show2dChanged";
+  
+  public final static String SHOW_OMEGA_NAMES = "showOmegaNames";
+  
 	
 	private JTextField displayMinusTolerance_;
 	private JTextField displayPlusTolerance_;
@@ -189,7 +202,7 @@ public class DisplayTolerancePanel extends JPanel
     quantTolUpdate.addActionListener(lda_);
     quantTolUpdate.setFont(quantTolUpdate.getFont().deriveFont(10f));
     quantTolUpdate.setMargin(new Insets(1,5,1,5));
-    quantTolUpdate.setActionCommand("updateQuantTolOfCurrentlySelected");
+    quantTolUpdate.setActionCommand(UPDATE_QUANT_TOL_OF_CURRENTLY_SELECTED);
     quantTolUpdate.setToolTipText(TooltipTexts.DISPLAY_UPDATE);
     this.add(quantTolUpdate,new GridBagConstraints(5, 0, 1, 2, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(5, 6, 0, 0), 0, 0));
@@ -207,7 +220,7 @@ public class DisplayTolerancePanel extends JPanel
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
     
     showMSnEvidence_ = new JCheckBox("");
-    showMSnEvidence_.addItemListener(new PanelItemListener("showMSnOnly"));
+    showMSnEvidence_.addItemListener(new PanelItemListener(SHOW_MSN_ONLY));
     showOptionsPanel2.add(showMSnEvidence_);
     JLabel showMSnEvidence = new JLabel("Show MSn Only");
     showMSnEvidence.setToolTipText("Show only lipids with MSn headgroup evidence");
@@ -215,7 +228,7 @@ public class DisplayTolerancePanel extends JPanel
   	
     showChainEvidence_ = new JCheckBox("");
     showChainEvidence_.setEnabled(false);
-    showChainEvidence_.addItemListener(new PanelItemListener("showChainOnly"));
+    showChainEvidence_.addItemListener(new PanelItemListener(SHOW_CHAIN_ONLY));
     showOptionsPanel3.add(showChainEvidence_);
     JLabel showChainEvidence = new JLabel("Chain Evidence Only");
     showChainEvidence.setToolTipText("Show only lipids with MSn headgroup- and chain evidence");
@@ -223,7 +236,7 @@ public class DisplayTolerancePanel extends JPanel
     //end: added with the oxidized lipids extension
     
     showMSnNames_ = new JCheckBox();
-    showMSnNames_.addItemListener(new PanelItemListener("showMSnNames"));
+    showMSnNames_.addItemListener(new PanelItemListener(SHOW_MSN_NAMES));
     showMSnNames_.setToolTipText(TooltipTexts.DISPLAY_SHOW_MSN);
     showOptionsPanel.add(showMSnNames_);
     JLabel showMSn = new JLabel("Show MSn");
@@ -232,7 +245,7 @@ public class DisplayTolerancePanel extends JPanel
     
     show2D_ = new JCheckBox();
     show2D_.setSelected(true);
-    show2D_.addItemListener(new PanelItemListener("show2dChanged"));
+    show2D_.addItemListener(new PanelItemListener(SHOW_2D_CHANGED));
     show2D_.setToolTipText(TooltipTexts.DISPLAY_SHOW_2D);
     showOptionsPanel.add(show2D_);
     JLabel show2d = new JLabel("Show 2D-View");
@@ -241,7 +254,7 @@ public class DisplayTolerancePanel extends JPanel
     
     showOmegaNames_ = new JCheckBox();
     if (showOmegaEditingTools) {
-      showOmegaNames_.addItemListener(new PanelItemListener("showOmegaNames"));
+      showOmegaNames_.addItemListener(new PanelItemListener(SHOW_OMEGA_NAMES));
       showOmegaNames_.setToolTipText(TooltipTexts.DISPLAY_SHOW_OMEGA);
       JPanel showOmegaOptionPanel = new JPanel();
       showOmegaOptionPanel.add(showOmegaNames_);
