@@ -390,4 +390,5 @@ public class IntensityChainVO extends IntensityRuleVO
         && hasOhInfo_ == other.hasOhInfo_
         && Objects.equals(smallerChains_, other.smallerChains_);
   }
+  
 }

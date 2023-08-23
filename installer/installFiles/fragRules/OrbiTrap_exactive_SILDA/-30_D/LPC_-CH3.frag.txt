@@ -1,0 +1,26 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains_D.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.01%
+SpectrumCoverage=10%
+RetentionTimePostprocessing=true
+ClassSpecificMS1Cutoff=0.005
+
+
+[HEAD]
+!FRAGMENTS
+Name=PChead_224		Formula=C7H15O5NP	Charge=1	MSLevel=2	mandatory=false
+Name=Precursor		Formula=$PRECURSOR	Charge=1	MSLevel=2	mandatory=other
+
+!INTENSITIES
+Equation=PChead_224*2>Precursor	mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=Carboxy		Formula=$CHAIN-H	Charge=1	MSLevel=2	mandatory=true
+
+!INTENSITIES
+Equation=Carboxy>0.6*$BASEPEAK		mandatory=true

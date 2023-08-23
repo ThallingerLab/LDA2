@@ -23,17 +23,20 @@
 
 package at.tugraz.genome.lda.swing;
 
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.Vector;
 
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
-import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 
 /**
  * class holding the table data for Display Results table
@@ -58,8 +61,17 @@ public class LipidomicsTableModel extends DefaultTableModel implements TableMode
   private Hashtable<Integer,LipidParameterSet> rowToParam_;
   /** sorting changes the order - this returns the original index of the element - key: rowIndex; value: original index*/
   private Hashtable<Integer,Integer> rowToOriginal_;
+  /** to avoid displaying a lipid multiple times with different levels of identification (with and without omega double bond position) */
+  
+  private Hashtable<Integer,Boolean> rowToOmegaEvidenceConflict_;
+  
+  private Set<String> uniqueIdentifiers_;
+  
+  private Hashtable<Integer,String> rowToMolecularSpeciesHumanReadable_;
   /** should the data be displayed in MSn style */
   private boolean showMSn_;
+  /** should assigned omega double bond positions be displayed */
+  private boolean showOmega_;
   /** display the modification of the found hit */
   private boolean showMod_;
   /** do these LipidParameterSets contain any OH information*/
@@ -71,57 +83,72 @@ public class LipidomicsTableModel extends DefaultTableModel implements TableMode
    * @param paramsOriginal the params in their original order (as in the Excel file)
    * @param showMSn should the data be displayed in MSn style
    * @param showMod display the modification of the found hit
+   * @param boolean1 
    */
-  @SuppressWarnings("unchecked")
-  public LipidomicsTableModel(Vector<LipidParameterSet> params, Vector<LipidParameterSet> paramsOriginal, boolean showMSn, boolean showMod){
+  public LipidomicsTableModel(Vector<LipidParameterSet> params, Vector<LipidParameterSet> paramsOriginal, boolean showMSn, boolean showOmega, boolean showMod){
     showMSn_ = showMSn;
+    showOmega_ = showOmega;
     showMod_ = showMod;
     hasOh_ = false;
     rowToName_ = new Hashtable<Integer,String>();
     rowToParam_ = new Hashtable<Integer,LipidParameterSet>();
     rowToOriginal_ = new Hashtable<Integer,Integer>();
     areaLookup_ = new Hashtable<Integer,String>();
+    rowToOmegaEvidenceConflict_ = new Hashtable<Integer,Boolean>();
+    uniqueIdentifiers_ = new HashSet<String>();
+    rowToMolecularSpeciesHumanReadable_ = new Hashtable<Integer,String>();
     int rowCount = 0;
     for (LipidParameterSet param : params){
-      if (param.getOhNumber()>LipidomicsConstants.EXCEL_NO_OH_INFO)
+      if (param.getOhNumber()>LipidomicsConstants.EXCEL_NO_OH_INFO) {
         hasOh_ = true;
-      if (showMSn && param instanceof LipidomicsMSnSet && (((LipidomicsMSnSet)param).getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED)){
-        LipidomicsMSnSet msnSet = (LipidomicsMSnSet)param;
-        Vector<Object> detected = null;
-        Vector<String> detectedNewNomen = null;
-        try {
-        	detected = msnSet.getMSnIdentificationNames();
-        	detectedNewNomen = msnSet.getMSnIdentificationNamesWithSNPositions();
-        }catch (LipidCombinameEncodingException lcx) {
-            detected = new Vector<Object>();
-        	detectedNewNomen = new Vector<String>();
-          lcx.printStackTrace();
-        }
-        int rowCountNewNom = 0;
-        for (Object nameObj : detected){
-          String nameString = "";
-          String newNomen = "";
-          if (nameObj instanceof String){
-            nameString = (String)nameObj;
-            newNomen = detectedNewNomen.get(rowCountNewNom);
-            rowCountNewNom++;
-            areaLookup_.put(rowCount, nameString);
-          } else{
-        	  
-        	  newNomen = detectedNewNomen.get(rowCountNewNom);
-              rowCountNewNom++;
-        	  
-            for (String name : (Vector<String>)nameObj){
-              nameString+=name+";"; //
-              areaLookup_.put(rowCount, name);
-            }
-            nameString = nameString.substring(0,nameString.length()-1); //
-          }
+      }
+      
+      boolean hasRequestedOmegaData = hasRequestedOmegaData(showOmega, param);
+      boolean hasRequestedMSnData = hasRequestedMSnData(showMSn, param);
+      if (hasRequestedOmegaData || hasRequestedMSnData) {
+        if (hasRequestedOmegaData) {
+          rowCount = showRequestedOmegaData(param, paramsOriginal, rowCount);}
+        if (hasRequestedMSnData) {
+          rowCount = showRequestedMSnData(param, paramsOriginal, rowCount);}
+      } else {
+        rowCount = showRequestedParams(param, paramsOriginal, rowCount);}
+    }
+  }
+  
+  private boolean hasRequestedMSnData(boolean showMSn, LipidParameterSet param) {
+    if (showMSn && param instanceof LipidomicsMSnSet && (((LipidomicsMSnSet)param).getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED)) {
+      return true;
+    }
+    return false;
+  }
+  
+  private boolean hasRequestedOmegaData(boolean showOmega, LipidParameterSet param) {
+    if (showOmega && param.hasOmegaInformation()) {
+      Vector<DoubleBondPositionVO> assignedLabeledHits = StaticUtils.getAssignedDoubleBondPositions(param.getOmegaInformation());
+      if (!assignedLabeledHits.isEmpty()) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  private int showRequestedOmegaData(LipidParameterSet param, Vector<LipidParameterSet> paramsOriginal, int rowCount) {
+    Vector<DoubleBondPositionVO> omegaInfo = param.getOmegaInformation();
+    Set<String> molecularSpeciesSet = StaticUtils.getMolecularSpeciesSet(omegaInfo);
+    Iterator<String> it = molecularSpeciesSet.iterator();
+    while(it.hasNext()) {
+      String molecularSpecies = it.next();
+      Vector<DoubleBondPositionVO> labeledChainCombiVOsWithUnlabeledAssignment = StaticUtils.getDoubleBondAssignmentsOfMolecularSpecies(omegaInfo, molecularSpecies);
+      Vector<DoubleBondPositionVO> assignedHits = StaticUtils.getAssignedDoubleBondPositions(labeledChainCombiVOsWithUnlabeledAssignment);
+      if (!assignedHits.isEmpty()) {
+        for (DoubleBondPositionVO labeledChainCombiVO : assignedHits) {
+          String doubleBondPositionsHumanReadable = labeledChainCombiVO.getDoubleBondPositionsHumanReadable();
+          rowToMolecularSpeciesHumanReadable_.put(rowCount, molecularSpecies);
+          uniqueIdentifiers_.add(molecularSpecies + "_"+param.getRt());
+          areaLookup_.put(rowCount,molecularSpecies);
           if (param.getRt()!=null && param.getRt().length()>0)
-           newNomen += "_" + param.getRt(); // nameString += "_"+param.getRt();
-
-        //  String paramName = getLipidParamsDisplayString(param,nameString); //
-          String paramName = getLipidParamsDisplayString(param,newNomen);
+            doubleBondPositionsHumanReadable += "_"+param.getRt();
+          String paramName = getLipidParamsDisplayString(param,doubleBondPositionsHumanReadable);
           rowToName_.put(rowCount, paramName);
           rowToParam_.put(rowCount, param); 
           for (int i=0; i!=paramsOriginal.size();i++){
@@ -132,29 +159,74 @@ public class LipidomicsTableModel extends DefaultTableModel implements TableMode
           }
           rowCount++;
         }
-      }else{
-        String paramName = getLipidParamsDisplayString(param,param.getNameString());
-        rowToName_.put(rowCount, paramName);
-        rowToParam_.put(rowCount, param); 
-        for (int i=0; i!=paramsOriginal.size();i++){
-          if (paramName.equalsIgnoreCase(getLipidParamsDisplayString(paramsOriginal.get(i),paramsOriginal.get(i).getNameString()))){
-            rowToOriginal_.put(rowCount,i);
-            break;
-          }
+      } else {
+        if (!showMSn_) {
+          // if some molecular species have an ambiguous assignment
+          areaLookup_.put(rowCount, molecularSpecies);
+          rowToMolecularSpeciesHumanReadable_.put(rowCount, molecularSpecies);
+          rowCount = showRequestedParams(param, paramsOriginal, rowCount);
         }
-        rowCount++;
       }
     }
+    return rowCount;
   }
   
+  private int showRequestedMSnData(LipidParameterSet param, Vector<LipidParameterSet> paramsOriginal, int rowCount) {
+    LipidomicsMSnSet msnSet = (LipidomicsMSnSet)param;
+    //TODO: ensure using only the new nomenclature here makes sense.
+    Vector<String> detected = msnSet.getMSnIdentificationNamesWithSNPositions();
+    for (String name : detected)
+    {
+    	if (uniqueIdentifiers_.contains(name + "_"+param.getRt())) {continue;}
+      areaLookup_.put(rowCount, name);
+      
+      Vector<DoubleBondPositionVO> doubleBondPositionVO = StaticUtils.getDoubleBondAssignmentsOfMolecularSpecies(param.getOmegaInformation(), name);
+      if (StaticUtils.getHighAccuracyDoubleBondPositions(doubleBondPositionVO).size() >1) {
+        rowToOmegaEvidenceConflict_.put(rowCount, true);
+      }
+      
+      rowToMolecularSpeciesHumanReadable_.put(rowCount, name);
+      if (param.getRt()!=null && param.getRt().length()>0)
+      	name += "_"+param.getRt();
+      String paramName = getLipidParamsDisplayString(param,name);
+      rowToName_.put(rowCount, paramName);
+      rowToParam_.put(rowCount, param); 
+      for (int i=0; i!=paramsOriginal.size();i++){
+        if (getLipidParamsDisplayString(param,param.getNameString()).equalsIgnoreCase(getLipidParamsDisplayString(paramsOriginal.get(i),paramsOriginal.get(i).getNameString()))){
+          rowToOriginal_.put(rowCount,i);
+          break;
+        }
+      }
+      rowCount++;
+    }
+    return rowCount;
+  }
   
+  private int showRequestedParams(LipidParameterSet param, Vector<LipidParameterSet> paramsOriginal, int rowCount) {
+    Vector<DoubleBondPositionVO> highAccuracyHits = StaticUtils.getHighAccuracyDoubleBondPositions(param.getOmegaInformation());
+    if (highAccuracyHits.size() >1) {
+      rowToOmegaEvidenceConflict_.put(rowCount, true);
+    }
+    String paramName = getLipidParamsDisplayString(param,param.getNameString());
+    rowToName_.put(rowCount, paramName);
+    rowToParam_.put(rowCount, param); 
+    for (int i=0; i!=paramsOriginal.size();i++){
+      if (paramName.equalsIgnoreCase(getLipidParamsDisplayString(paramsOriginal.get(i),paramsOriginal.get(i).getNameString()))){
+        rowToOriginal_.put(rowCount,i);
+        break;
+      }
+    }
+    rowCount++;
+    return rowCount;
+  }
+
   public Object getValueAt(int rowIndex, int columnIndex)
   {
     String paramName = rowToName_.get(rowIndex);
     if (columnIndex==COLUMN_NAME) return paramName;
     else if (columnIndex==COLUMN_AREA){
       LipidParameterSet param = rowToParam_.get(rowIndex);
-      if (showMSn_ && param instanceof LipidomicsMSnSet && (((LipidomicsMSnSet)param).getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED)){
+      if ((hasRequestedMSnData(showMSn_, param) || hasRequestedOmegaData(showOmega_, param)) && param instanceof LipidomicsMSnSet){
         LipidomicsMSnSet msnSet = (LipidomicsMSnSet)param;
         return String.valueOf((float)msnSet.getRelativeIntensity(areaLookup_.get(rowIndex))*param.getArea());
       }else{
@@ -207,6 +279,13 @@ public class LipidomicsTableModel extends DefaultTableModel implements TableMode
     return false;
   }
   
+  public boolean hasOmegaEvidenceConflict(int rowIndex) {
+    if (showOmega_ && rowToOmegaEvidenceConflict_.containsKey(rowIndex)) {
+      return rowToOmegaEvidenceConflict_.get(rowIndex);
+    }
+    return false;
+  }
+  
   /**
    * sorting changes the order of the identifications
    * @return returns the original index of the element - key: rowIndex; value: original index
@@ -229,6 +308,10 @@ public class LipidomicsTableModel extends DefaultTableModel implements TableMode
   public Hashtable<Integer,String> getRowToName()
   {
     return this.rowToName_;
+  }
+  
+  public Hashtable<Integer,String> getRowToMolecularSpeciesHumanReadable(){
+    return this.rowToMolecularSpeciesHumanReadable_;
   }
   
   /**
@@ -260,6 +343,14 @@ public class LipidomicsTableModel extends DefaultTableModel implements TableMode
   public boolean isShowMSn()
   {
     return showMSn_;
+  }
+  
+  /**
+   * 
+   * @return is show omega selected
+   */
+  public boolean isShowOmega(){
+    return showOmega_;
   }
   
   /**

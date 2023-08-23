@@ -71,7 +71,11 @@ import at.tugraz.genome.lda.analysis.exception.CalculationNotPossibleException;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.ExportException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
+import at.tugraz.genome.lda.exception.NoRuleException;
+import at.tugraz.genome.lda.exception.RetentionTimeGroupingException;
+import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.export.ExcelAndTextExporter;
+import at.tugraz.genome.lda.msn.RulesContainer;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.ExportOptionsVO;
 import at.tugraz.genome.lda.vos.ResultCompGroupVO;
@@ -311,7 +315,7 @@ public class BarChartPainter extends JPanel implements ActionListener
       quantType_.addItem("area relative to molecule");
     if (settingVO_.getISStandMethod() != ResultCompVO.NO_STANDARD_CORRECTION || settingVO_.getESStandMethod() != ResultCompVO.NO_STANDARD_CORRECTION)
       quantType_.addItem("area relative to standard");
-    if (!settingVO_.getType().equalsIgnoreCase("relative value"))
+    if (!settingVO_.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_VALUE))
       quantType_.addItem("absolute quantity");
     repaintingBarChart_ = true;
     
@@ -372,7 +376,7 @@ public class BarChartPainter extends JPanel implements ActionListener
     isotpesLabel.setToolTipText(TooltipTexts.HEATMAP_ISOTOPES);
     menuItemsBar.add(isotpesLabel);
 
-    if (settingVO_.getType().equalsIgnoreCase("relative value"))
+    if (settingVO_.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_VALUE))
       quantType_.setSelectedItem("area absolute");
     else
       quantType_.setSelectedItem("absolute quantity");
@@ -478,7 +482,7 @@ public class BarChartPainter extends JPanel implements ActionListener
     }
     if (((String)quantType_.getSelectedItem()).equalsIgnoreCase("area absolute")){
       ResultDisplaySettingsVO standardizedSet = new ResultDisplaySettingsVO(settingVO_);
-      standardizedSet.setType("relative value");
+      standardizedSet.setType(ResultDisplaySettingsVO.REL_VALUE);
       boolean useAbsolute = false;
       if (type_ == TYPE_CLASSES){
         useAbsolute = true;
@@ -514,7 +518,7 @@ public class BarChartPainter extends JPanel implements ActionListener
           standardizedSet.setType("percentual value");
         standardizedSet.setDivisorMagnitude("");
         @SuppressWarnings("rawtypes")
-		Vector result = this.extractLowestHighestValue("getArea","getAreaSD","getAreaSE",maxIsotope,standardizedSet,true,"%");
+        Vector result = this.extractLowestHighestValue("getArea","getAreaSD","getAreaSE",maxIsotope,standardizedSet,true,"%");
         lowestValue = (Double)result.get(0);
         highestValue = (Double)result.get(1);
         valuesToPaint_ = (Hashtable<String,Hashtable<String,Double>>)result.get(2);
@@ -577,13 +581,13 @@ public class BarChartPainter extends JPanel implements ActionListener
       singleResultValues_ = (Hashtable<String,Hashtable<String,Double>>)result.get(4);
       yAxisText_ = unit_.substring(0,unit_.indexOf("[")+1)+(String)magnitudeChooser_.getSelectedItem()+unit_.substring(unit_.indexOf("[")+1+preferredUnit_.length());
       
-      if (settingVO_.getType().equalsIgnoreCase("relative to base peak")){
+      if (settingVO_.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_BASE_PEAK)){
         subTitle = "relative to highest peak of the "+groupName_+" class";
-      }else if (settingVO_.getType().equalsIgnoreCase("relative to measured class amount")){
+      }else if (settingVO_.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT)){
         subTitle = "relative to the total amount of "+groupName_+" class";
-      }else if (settingVO_.getType().equalsIgnoreCase("relative to highest total peak")){
+      }else if (settingVO_.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_HIGHEST_TOTAL_PEAK)){
         subTitle = "relative to the highest found peak";
-      }else if (settingVO_.getType().equalsIgnoreCase("relative to total amount")){
+      }else if (settingVO_.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT)){
         subTitle = "relative to the total of all quantified peaks";
       }else if (settingVO_.getType().equalsIgnoreCase("amount end-volume")){
         subTitle = "amount in end volume";
@@ -938,8 +942,9 @@ public class BarChartPainter extends JPanel implements ActionListener
       if ((barChart_.getRoundValue()+2)>roundValue)
         roundValue = barChart_.getRoundValue()+2;
       //TODO: add radio buttons for the species type
-      ExportOptionsVO exportVO = new ExportOptionsVO(exportType,sdValue,columnAnalyte_.isSelected(),exportRT,exportRTDev,roundValue,
-          LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES);
+      //TODO: add checkbox for exporting double bond positions
+      ExportOptionsVO exportVO = new ExportOptionsVO(exportType,sdValue,columnAnalyte_.isSelected(),exportRT,exportRTDev,false,
+          roundValue,LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES);
       if (e.getActionCommand().equalsIgnoreCase(ExportPanel.EXPORT_EXCEL)){
         exportFileChooser_.setFileFilter(new FileNameExtensionFilter("Microsoft Office Excel Woorkbook (*.xlsx)","xlsx"));
         int returnVal = exportFileChooser_.showSaveDialog(new JFrame());
@@ -954,7 +959,23 @@ public class BarChartPainter extends JPanel implements ActionListener
               @SuppressWarnings("rawtypes")
               Vector resultsVector = extractResultsVector();
               String headerTitle = StaticUtils.getAreaTypeString(settingVO_);
-              ExcelAndTextExporter.exportToFile(type_!=TYPE_CLASSES,exportVO.getSpeciesType(), groupName_,new BufferedOutputStream(new FileOutputStream(fileToStore)),true,
+              boolean exportDoubleBondPositionsForClass = exportVO.isExportDoubleBondPositions();
+              short speciesType = exportVO.getSpeciesType();
+              if (exportDoubleBondPositionsForClass) {
+                int numberOfChains = 2;
+                try {
+                  numberOfChains = Integer.parseInt(RulesContainer.getAmountOfChains(StaticUtils.getRuleName(groupName_, modifications_.get(0))));
+                } catch (RulesException | NoRuleException | IOException | SpectrummillParserException ex) {
+                  ex.printStackTrace();
+                }
+                if (numberOfChains > 1 && speciesType == LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES) {
+                  exportDoubleBondPositionsForClass = false;
+                //for lipid species with only one FA chain we export the double bond position information on lipid species level
+                } else if (numberOfChains == 1 && speciesType != LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES) {
+                  speciesType = LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES;
+                }
+              }
+              ExcelAndTextExporter.exportToFile(type_!=TYPE_CLASSES,speciesType, exportDoubleBondPositionsForClass, groupName_,new BufferedOutputStream(new FileOutputStream(fileToStore)),true,
                   maxIsotope, (Vector<String>)resultsVector.get(0), rtGrouped_, isGroupedView_, (Vector<String>)resultsVector.get(1),
                   (Hashtable<String,String>)resultsVector.get(2), sampleLookup_.getSampleResultFullPaths(), sampleLookup_.getSamplesOfGroups(),
                   (Hashtable<String,Hashtable<String,Vector<Double>>>)resultsVector.get(3), yAxisText_, headerTitle, exportVO, sampleLookup_.getComparativeResultsLookup(),
@@ -966,6 +987,8 @@ public class BarChartPainter extends JPanel implements ActionListener
             catch (IOException ex) {ex.printStackTrace();new WarningMessage(new JFrame(), "Error", ex.getMessage());}
             catch (ExcelInputFileException | ExportException | SpectrummillParserException | LipidCombinameEncodingException ex) {
               ex.printStackTrace();
+              new WarningMessage(new JFrame(), "Error", ex.getMessage());
+            } catch (RetentionTimeGroupingException ex) {
               new WarningMessage(new JFrame(), "Error", ex.getMessage());
             }
           }  
@@ -984,6 +1007,22 @@ public class BarChartPainter extends JPanel implements ActionListener
               @SuppressWarnings("rawtypes")
               Vector resultsVector = extractResultsVector();
               String headerTitle = StaticUtils.getAreaTypeString(settingVO_);
+              boolean exportDoubleBondPositionsForClass = exportVO.isExportDoubleBondPositions();
+              short speciesType = exportVO.getSpeciesType();
+              if (exportDoubleBondPositionsForClass) {
+                int numberOfChains = 2;
+                try {
+                  numberOfChains = Integer.parseInt(RulesContainer.getAmountOfChains(StaticUtils.getRuleName(groupName_, modifications_.get(0))));
+                } catch (RulesException | NoRuleException | IOException | SpectrummillParserException ex) {
+                  System.out.println(ex.getMessage());
+                }
+                if (numberOfChains > 1 && speciesType == LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES) {
+                  exportDoubleBondPositionsForClass = false;
+                //for lipid species with only one FA chain we export the double bond position information on species level
+                } else if (numberOfChains == 1 && speciesType != LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES) {
+                  speciesType = LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES;
+                }
+              }
                 if (((String)quantType_.getSelectedItem()).equalsIgnoreCase("area absolute")){
                   headerTitle = "Area";
                 } else if (((String)quantType_.getSelectedItem()).equalsIgnoreCase("area relative to molecule")){
@@ -991,7 +1030,7 @@ public class BarChartPainter extends JPanel implements ActionListener
                 } else if (((String)quantType_.getSelectedItem()).equalsIgnoreCase("area relative to standard")){
                   headerTitle = "Relative to Standard";
                 }
-                ExcelAndTextExporter.exportToFile(type_!=TYPE_CLASSES,exportVO.getSpeciesType(), groupName_,new BufferedOutputStream(new FileOutputStream(fileToStore)),false,
+                ExcelAndTextExporter.exportToFile(type_!=TYPE_CLASSES,speciesType, exportDoubleBondPositionsForClass, groupName_,new BufferedOutputStream(new FileOutputStream(fileToStore)),false,
                     maxIsotope, (Vector<String>)resultsVector.get(0), rtGrouped_, isGroupedView_, (Vector<String>)resultsVector.get(1),
                     (Hashtable<String,String>)resultsVector.get(2), sampleLookup_.getSampleResultFullPaths(), sampleLookup_.getSamplesOfGroups(),
                     (Hashtable<String,Hashtable<String,Vector<Double>>>)resultsVector.get(3), yAxisText_, headerTitle, exportVO, sampleLookup_.getComparativeResultsLookup(),
@@ -1002,6 +1041,8 @@ public class BarChartPainter extends JPanel implements ActionListener
             catch (FileNotFoundException ex) {new WarningMessage(new JFrame(), "Error", ex.getMessage());}
             catch (IOException ex) {new WarningMessage(new JFrame(), "Error", ex.getMessage());}
             catch (ExcelInputFileException | ExportException | SpectrummillParserException | LipidCombinameEncodingException ex) {
+              new WarningMessage(new JFrame(), "Error", ex.getMessage());
+            } catch (RetentionTimeGroupingException ex) {
               new WarningMessage(new JFrame(), "Error", ex.getMessage());
             }
           }  
@@ -1074,8 +1115,8 @@ public class BarChartPainter extends JPanel implements ActionListener
   
   private int extractCorrectIsotopesSetting(int maxIsotopes,ResultDisplaySettingsVO settingVO, String valueGetterMethod, ResultCompVO compVO){
     int isotopes = maxIsotopes;
-    if ((!settingVO.getType().equalsIgnoreCase("relative to measured class amount") && 
-        !settingVO.getType().equalsIgnoreCase("relative to total amount")) || valueGetterMethod.equalsIgnoreCase("getRelativeValue")){
+    if ((!settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT) && 
+        !settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT)) || valueGetterMethod.equalsIgnoreCase("getRelativeValue")){
       isotopes = compVO.getAvailableIsotopeNr(maxIsotopes);
     }  
     return isotopes;

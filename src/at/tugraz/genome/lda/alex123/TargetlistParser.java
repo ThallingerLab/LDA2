@@ -177,7 +177,7 @@ public class TargetlistParser
           int fragmentOhNumber = -1;
           String fragmentSumComposition = null;
           String fragmentFormula = null;
-          Hashtable<String,Integer> fragmentFormulaCategorized = null;
+//          Hashtable<String,Integer> fragmentFormulaCategorized = null;
           
           String[] columns = line.split("\t");
           //reads the single cells and assigns them to the corresponding variables
@@ -256,7 +256,7 @@ public class TargetlistParser
               fragmentSumComposition = entry;
             } else if (columnNr==fragmentFormulaColumn){
               fragmentFormula = parseChemicalFormula(elementParser, entry, FRAGMENT_FORMULA_COLUMN, lineNumber);
-              fragmentFormulaCategorized = StaticUtils.categorizeFormula(fragmentFormula);
+//              fragmentFormulaCategorized = StaticUtils.categorizeFormula(fragmentFormula);
             }          
           }
           

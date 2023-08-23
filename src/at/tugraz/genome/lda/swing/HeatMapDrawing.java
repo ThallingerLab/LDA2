@@ -84,16 +84,23 @@ import at.tugraz.genome.lda.LipidDataAnalyzer;
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.TooltipTexts;
 import at.tugraz.genome.lda.WarningMessage;
+import at.tugraz.genome.lda.analysis.ComparativeAnalysis;
 import at.tugraz.genome.lda.analysis.HeatMapClickListener;
 import at.tugraz.genome.lda.analysis.LipidomicsHeatMap;
 import at.tugraz.genome.lda.analysis.exception.CalculationNotPossibleException;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.ExportException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
+import at.tugraz.genome.lda.exception.NoRuleException;
+import at.tugraz.genome.lda.exception.RetentionTimeGroupingException;
+import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.export.ExcelAndTextExporter;
+import at.tugraz.genome.lda.msn.RulesContainer;
+import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.AutoAnalyteAddVO;
 import at.tugraz.genome.lda.vos.ExportOptionsVO;
+import at.tugraz.genome.lda.vos.ResultAreaVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
@@ -105,10 +112,6 @@ import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException
  */
 public class HeatMapDrawing extends JPanel implements ActionListener
 {
-
-  /**
-   * 
-   */
   private static final long serialVersionUID = 9212631108743680488L;
   protected static final String CHANGE_IS_STATUS = "changeISShowStatus";
   protected static final String CHANGE_ES_STATUS = "changeESShowStatus";
@@ -123,7 +126,6 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   private JPanel heatMapPanel_;
   private JLabel statusText_;
   private JPanel exportProgressPanel_;
-  protected ResultCompVO[][] compVOs_;
   protected HeatMapClickListener heatMapListener_;
   protected String groupName_;
   protected JCheckBox showInternalStandards_;
@@ -142,16 +144,13 @@ public class HeatMapDrawing extends JPanel implements ActionListener
 //  protected OmegaExportDialog omegaExport_;
   protected ResultSelectionSettings combinedChartSettings_;
   protected boolean isGrouped_ = false;
-  protected Hashtable<String,String> preferredUnit_ = null;
   private JFileChooser exportFileChooser_;
-  private String molGroupName_;
   protected JLabel exportLabel_;
   protected JProgressBar exportProgress_;
   protected JLabel spinnerLabel_;
   protected JButton cancelExport_;
   
   
-  private Hashtable<String,Hashtable<String,Color>> attentionProbes_;
   private Hashtable<String,String> selectedMolecules_;
   /** when single items in the heat map are selected; first key: analyte name; second key: experiment name*/
   private Hashtable<String,Hashtable<String,Color>> selectedSingleMolecules_;
@@ -194,49 +193,62 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   
   private ChromExportThread chromExportThread_;
   private Timer timer_;
-
+  
+  
   /**
    * constructor for a heat map
-   * @param molGroupName analyte class name
-   * @param resultsOfOneGroup the values; first key molecule name; second key: experiment name
-   * @param experimentNames the names of the experiments/sample groups
-   * @param moleculeNames the names of the analytes
-   * @param isLookup the lookup numbers for the individual internal standard correction options; key: standard correction option; value: lookup number
-   * @param esLookup the lookup numbers for the individual external standard correction options; key: standard correction option; value: lookup number
-   * @param maxIsotopesOfGroup the maximum number of isotopes allowed for this analyte class
-   * @param modifications the adducts for this analyte class
-   * @param statusText label containing information about the lipid the mouse is currently hoverd over (displayed at bottom of heat map)
-   * @param listener call back listener
-   * @param groupName analyte class name
-   * @param ungroupedPartner for sample groups, the heat map containing the individual experiments, null otherwise
-   * @param displaySettings dialog box for choosing the displayed values
-   * @param selectionSettings a dialog box for choosing the values to be displayed in the heat map
-   * @param combinedChartSettings a dialog box for choosing the values to be displayed in a combined chart
-   * @param exportSettings a dialog box for choosing parameters for the export
-   * @param omegaExport a dialog box for exporting an omega retention time mass list //TODO: remove when alternative isoLabel algo is finalized
-   * @param rtTolerance the retention time tolerance value (if selected, otherwise null)
+   * @param resultsOfOneGroup 					the values; first key molecule name; second key: experiment name
+   * @param experimentNames 						the names of the experiments/sample groups
+   * @param moleculeNames 							the names of the analytes
+   * @param isLookup 										the lookup numbers for the individual internal standard correction options; key: standard correction option; value: lookup number
+   * @param esLookup 										the lookup numbers for the individual external standard correction options; key: standard correction option; value: lookup number
+   * @param statusText 									label containing information about the lipid the mouse is currently hoverd over (displayed at bottom of heat map)
+   * @param listener 										call back listener
+   * @param groupName 									analyte class name
+   * @param ungroupedPartner 						for sample groups, the heat map containing the individual experiments, null otherwise
+   * @param displaySettings 						dialog box for choosing the displayed values
+   * @param selectionSettings 					a dialog box for choosing the values to be displayed in the heat map
+   * @param combinedChartSettings 			a dialog box for choosing the values to be displayed in a combined chart
+   * @param exportSettings 							a dialog box for choosing parameters for the export
+   * @param analysisModule							the analysis module containing the params and data about max isotopes, modifications, rt tolerance
    */
-  public HeatMapDrawing(String molGroupName,Hashtable<String,Hashtable<String,ResultCompVO>> resultsOfOneGroup, Vector<String> experimentNames, 
-      Vector<String> moleculeNames, Hashtable<String,Integer> isLookup, Hashtable<String,Integer> esLookup, int maxIsotopesOfGroup,
-      Vector<String> modifications, JLabel statusText, HeatMapClickListener listener, String groupName, HeatMapDrawing ungroupedPartner,
-      ResultDisplaySettings displaySettings, ResultSelectionSettings selectionSettings, ResultSelectionSettings combinedChartSettings,
-      ExportSettingsPanel exportSettings, Double rtTolerance){
-    selectedMolecules_ = new Hashtable<String,String>();
+  public HeatMapDrawing(Hashtable<String,Hashtable<String,ResultCompVO>> resultsOfOneGroup, Vector<String> experimentNames,
+  		Vector<String> moleculeNames, Hashtable<String,Integer> isLookup, Hashtable<String,Integer> esLookup,
+  		JLabel statusText, HeatMapClickListener listener, String groupName, HeatMapDrawing ungroupedPartner, 
+      ResultDisplaySettings displaySettings, ResultSelectionSettings selectionSettings, 
+      ResultSelectionSettings combinedChartSettings, ExportSettingsPanel exportSettings, ComparativeAnalysis analysisModule)
+  {
+  	this.resultsOfOneGroup_ = resultsOfOneGroup;
+    this.experimentNames_ = new Vector<String>(experimentNames);
+    this.moleculeNames_ = moleculeNames;
+    this.isLookup_ = isLookup;
+    this.esLookup_ = esLookup;
+    this.statusText_ = statusText;
+    this.heatMapListener_ = listener;
+    this.groupName_ = groupName;
+    this.isGrouped_ = ungroupedPartner!=null ? true : false;
+    this.ungroupedPartner_ = ungroupedPartner;
+    this.displaySettings_ = displaySettings;
+    this.selectionSettings_ = selectionSettings;
+    this.combinedChartSettings_ = combinedChartSettings;
+    this.exportSettings_ = exportSettings;
+    this.maxIsotopes_ = generateMaxIsotopesJComboBox(analysisModule.getMaxIsotopesOfGroup(groupName));
+    this.modifications_ = analysisModule.getModifications().get(groupName);
+    this.rtTolerance_ = analysisModule.getRtTolerance();
+    
+    
+    settingsVO_ = displaySettings_.getSettingsVO();
+    
+  	selectedMolecules_ = new Hashtable<String,String>();
     selectedSingleMolecules_ = new Hashtable<String,Hashtable<String,Color>>();
     selectedSingleMoleculesMods_ = new Hashtable<String,Hashtable<String,String>>(); 
     selectedSingleMoleculesAbsPaths_ = new Hashtable<String,String>();
     selectedSingleMoleculesAutoAnalyteAddVO_ = new Hashtable<String,Vector<AutoAnalyteAddVO>>();
     selectedSingleMoleculesMaxIso_ = new Hashtable<String,Integer>();
     parentAction_ = true;
-    this.rtTolerance_ = rtTolerance;
-    molGroupName_ = molGroupName;
+    
     combinedDialogOpen_ = false;
-    if (ungroupedPartner!=null)
-      this.isGrouped_ = true;
-    else
-      this.isGrouped_ = false;
-    this.ungroupedPartner_ = ungroupedPartner;
-    modifications_ = modifications;
+    
     this.setLayout(new BorderLayout());
     JPanel bottomPanel = new JPanel();
     bottomPanel.setLayout(new GridBagLayout());
@@ -249,14 +261,6 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     bottomPanel.add(showInternalStandards_, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(2, 2, 2, 2), 0, 0));
     
-    maxIsotopes_ = new JComboBox<String>();
-    for (int i=0;i!=maxIsotopesOfGroup;i++){
-      maxIsotopes_.addItem(String.valueOf(i));
-    }
-    maxIsotopes_.setSelectedItem(String.valueOf(maxIsotopesOfGroup-1));
-    SelectionItemListener isotopeListener = new SelectionItemListener("ChangeIsotope");
-    maxIsotopes_.addItemListener(isotopeListener);
-    maxIsotopes_.setToolTipText(TooltipTexts.HEATMAP_ISOTOPES);
     bottomPanel.add(maxIsotopes_, new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(2, 2, 2, 2), 0, 0));
     bottomPanel.add(new JLabel("isotopes"), new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
@@ -349,27 +353,6 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     removeAnalytePopup_.add(deselectItem_);    
     this .add(removeAnalytePopup_);
     
-    this.resultsOfOneGroup_ = resultsOfOneGroup;
-    this.experimentNames_ = new Vector<String>(experimentNames);
-    this.moleculeNames_ = moleculeNames;
-    this.isLookup_ = isLookup;
-    this.esLookup_ = esLookup;
-    this.groupName_ = groupName;
-    statusText_ = statusText;
-    this.heatMapListener_ = listener;
-    displaySettings_ = displaySettings;
-//    displaySettings_ = new ResultDisplaySettings(isAvailability,esAvailability,isLookup_,esLookup_,absoluteSettings, hasProtein,
-//        hasNeutralLipid,this);
-    settingsVO_ = displaySettings_.getSettingsVO();
-    selectionSettings_ = selectionSettings;
-    combinedChartSettings_ = combinedChartSettings;
-//    selectionSettings_ = new ResultSelectionSettings(moleculeNames_,true,this);
-//    combinedChartSettings_ = new ResultSelectionSettings(moleculeNames_,false,this);
-    exportSettings_ = exportSettings;
-    
-  //TODO: remove when alternative isoLabel algo is finalized
-//    omegaExport_ = omegaExport;
-    
     exportFileChooser_ = new JFileChooser();
     exportFileChooser_.setPreferredSize(new Dimension(600,500));
     
@@ -382,9 +365,21 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     this.generateHeatMap();
   }
   
-  @SuppressWarnings("unchecked")
+  private JComboBox<String> generateMaxIsotopesJComboBox(int maxIsotopesOfGroup)
+  {
+  	JComboBox<String> jComboBox = new JComboBox<String>();
+    for (int i=0;i!=maxIsotopesOfGroup;i++){
+    	jComboBox.addItem(String.valueOf(i));
+    }
+    jComboBox.setSelectedItem(String.valueOf(maxIsotopesOfGroup-1));
+    SelectionItemListener isotopeListener = new SelectionItemListener("ChangeIsotope");
+    jComboBox.addItemListener(isotopeListener);
+    jComboBox.setToolTipText(TooltipTexts.HEATMAP_ISOTOPES);
+    return jComboBox;
+  }
+  
+  
   public void generateHeatMap(){
-    preferredUnit_ = new Hashtable<String,String>();
     if (this.heatMapPanel_!=null)
       this.remove(heatMapPanel_);
     
@@ -410,15 +405,8 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       try{
         maxIsotopes = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
       } catch (NumberFormatException nfx){}  
-      @SuppressWarnings("rawtypes")
-      Vector results = LipidomicsHeatMap.getDataObjectForConstructor(resultsOfOneGroup_, experimentNames_, molNames,maxIsotopes, settingsVO_);
-      attentionProbes_ = (Hashtable<String,Hashtable<String,Color>>)results.get(3);
-      Hashtable<String,Hashtable<String,Color>> attentionProbesToPaint = new Hashtable<String,Hashtable<String,Color>>(attentionProbes_);
-      if (markDoublePeaks_!=null && !markDoublePeaks_.isSelected())
-        attentionProbesToPaint = new Hashtable<String,Hashtable<String,Color>>();
-      this.heatmap_ = new LipidomicsHeatMap((float[][])results.get(0),experimentNames_,heatMapListener_, molNames, attentionProbesToPaint);
-      this.compVOs_ = (ResultCompVO[][])results.get(1);
-      preferredUnit_ = (Hashtable<String,String>)results.get(2);
+      
+      this.heatmap_ = new LipidomicsHeatMap(resultsOfOneGroup_, experimentNames_, heatMapListener_, molNames, maxIsotopes, settingsVO_, isMarkDoublePeaks());
       renderedImage_ = this.heatmap_.createImage();
     
       heatMapPanel_ = new JPanel();
@@ -499,9 +487,9 @@ public class HeatMapDrawing extends JPanel implements ActionListener
           Hashtable<String,String> selectedHash = new Hashtable<String,String>();
           Hashtable<String,String> preferredUnits = new Hashtable<String,String>();
           for (String name : combinedChartSettings_.getSelected()) selectedHash.put(name, name);
-          for (String name : preferredUnit_.keySet()){
+          for (String name : heatmap_.getPreferredUnit().keySet()){
             if (selectedHash.containsKey(name))
-              preferredUnits.put(name, preferredUnit_.get(name));
+              preferredUnits.put(name, heatmap_.getPreferredUnit().get(name));
           }
           String preferredUnit = extractPreferredUnitForExp(preferredUnits);
           if (isGrouped_){
@@ -520,9 +508,9 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         chromExport_.checkMolecules(getUnselectedMoleculeNames(),false);
       }
       if (actionCommand.equalsIgnoreCase(CHANGE_IS_STATUS) && parentAction_)
-        heatMapListener_.changeISStatus(molGroupName_, isGrouped_, showInternalStandards_.isSelected());
+        heatMapListener_.changeISStatus(groupName_, isGrouped_, showInternalStandards_.isSelected());
       if (actionCommand.equalsIgnoreCase(CHANGE_ES_STATUS) && parentAction_)
-        heatMapListener_.changeESStatus(molGroupName_, isGrouped_, showExternalStandards_.isSelected());
+        heatMapListener_.changeESStatus(groupName_, isGrouped_, showExternalStandards_.isSelected());
 //      if (actionCommand.equalsIgnoreCase(CHANGE_DOUBLE_STATUS) && parentAction_)
 //        heatMapListener_.changeDoublePeakStatus(molGroupName_, markDoublePeaks_.isSelected());
       if (update){
@@ -598,18 +586,33 @@ public class HeatMapDrawing extends JPanel implements ActionListener
                 Hashtable<String,Hashtable<String,ResultCompVO>> compVOs = resultsOfOneGroup_;
                 if (isGrouped_)
                   compVOs = ungroupedPartner_.resultsOfOneGroup_;
-                String preferredUnit = HeatMapDrawing.extractPreferredUnitForExp(preferredUnit_);
+                String preferredUnit = HeatMapDrawing.extractPreferredUnitForExp(heatmap_.getPreferredUnit());
                 Hashtable<String,Hashtable<String,Vector<Double>>> resultValues = HeatMapDrawing.extractValuesOfInterest(compVOs, maxIsotope, settingsVO_, preferredUnit, expOptions,modifications_);
                 preferredUnit = StaticUtils.getCorrespondingUnit(settingsVO_,preferredUnit,true);
-                ExcelAndTextExporter.exportToFile(true,expOptions.getSpeciesType(), molGroupName_,new BufferedOutputStream(new FileOutputStream(fileToStore)),true,
+                boolean exportDoubleBondPositionsForClass = expOptions.isExportDoubleBondPositions();
+                short speciesType = expOptions.getSpeciesType();
+                if (exportDoubleBondPositionsForClass) {
+                  int numberOfChains = 2;
+                  try {
+                    numberOfChains = Integer.parseInt(RulesContainer.getAmountOfChains(StaticUtils.getRuleName(groupName_, modifications_.get(0))));
+                  } catch (RulesException | NoRuleException | IOException | SpectrummillParserException ex) {
+                    System.out.println(ex.getMessage());
+                  }
+                  if (numberOfChains > 1 && speciesType == LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES) {
+                    exportDoubleBondPositionsForClass = false;
+                  //for lipid species with only one FA chain we export the double bond position information on species level
+                  } else if (numberOfChains == 1 && speciesType != LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES) {
+                    speciesType = LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES;
+                  }
+                }
+                ExcelAndTextExporter.exportToFile(true,speciesType, exportDoubleBondPositionsForClass, groupName_,new BufferedOutputStream(new FileOutputStream(fileToStore)),true,
                     maxIsotope, getSelectedMoleculeNames(), rtTolerance_!=null, isGrouped_, experimentNames_,expIdToString, expFullPaths, heatMapListener_.getSamplesOfGroups(),
-                    resultValues, preferredUnit, StaticUtils.getAreaTypeString(settingsVO_), expOptions, heatMapListener_.getComparativeResultsLookup(),
-                    modifications_);
-              }
+                    resultValues, preferredUnit, StaticUtils.getAreaTypeString(settingsVO_), expOptions, heatMapListener_.getComparativeResultsLookup(), modifications_);
+              } 
               catch (NumberFormatException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
               catch (FileNotFoundException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
               catch (IOException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
-              catch (CalculationNotPossibleException | ExcelInputFileException | ExportException | SpectrummillParserException | LipidCombinameEncodingException e) {
+              catch (CalculationNotPossibleException | ExcelInputFileException | ExportException | SpectrummillParserException | LipidCombinameEncodingException | RetentionTimeGroupingException e) {
                 new WarningMessage(new JFrame(), "Error", e.getMessage());
               }
             }  
@@ -628,10 +631,26 @@ public class HeatMapDrawing extends JPanel implements ActionListener
                 Hashtable<String,Hashtable<String,ResultCompVO>> compVOs = resultsOfOneGroup_;
                 if (isGrouped_)
                   compVOs = ungroupedPartner_.resultsOfOneGroup_;
-                String preferredUnit = HeatMapDrawing.extractPreferredUnitForExp(preferredUnit_);
+                String preferredUnit = HeatMapDrawing.extractPreferredUnitForExp(heatmap_.getPreferredUnit());
                 Hashtable<String,Hashtable<String,Vector<Double>>> resultValues = HeatMapDrawing.extractValuesOfInterest(compVOs, maxIsotope, settingsVO_, preferredUnit, expOptions,modifications_);
                 preferredUnit = StaticUtils.getCorrespondingUnit(settingsVO_,preferredUnit,true);
-                ExcelAndTextExporter.exportToFile(true,expOptions.getSpeciesType(), molGroupName_,new BufferedOutputStream(new FileOutputStream(fileToStore)),false,
+                boolean exportDoubleBondPositionsForClass = expOptions.isExportDoubleBondPositions();
+                short speciesType = expOptions.getSpeciesType();
+                if (exportDoubleBondPositionsForClass) {
+                  int numberOfChains = 2;
+                  try {
+                    numberOfChains = Integer.parseInt(RulesContainer.getAmountOfChains(StaticUtils.getRuleName(groupName_, modifications_.get(0))));
+                  } catch (RulesException | NoRuleException | IOException | SpectrummillParserException ex) {
+                    System.out.println(ex.getMessage());
+                  }
+                  if (numberOfChains > 1 && speciesType == LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES) {
+                    exportDoubleBondPositionsForClass = false;
+                  //for lipid species with only one FA chain we export the double bond position information on species level
+                  } else if (numberOfChains == 1 && speciesType != LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES) {
+                    speciesType = LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES;
+                  }
+                }
+                ExcelAndTextExporter.exportToFile(true,speciesType, exportDoubleBondPositionsForClass, groupName_,new BufferedOutputStream(new FileOutputStream(fileToStore)),false,
                     maxIsotope, getSelectedMoleculeNames(), rtTolerance_!=null, isGrouped_, experimentNames_,expIdToString, expFullPaths, heatMapListener_.getSamplesOfGroups(),
                     resultValues, preferredUnit, StaticUtils.getAreaTypeString(settingsVO_), expOptions, heatMapListener_.getComparativeResultsLookup(),
                     modifications_);
@@ -640,7 +659,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
               catch (NumberFormatException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
               catch (FileNotFoundException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
               catch (IOException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
-              catch (CalculationNotPossibleException | ExcelInputFileException | ExportException | SpectrummillParserException | LipidCombinameEncodingException e) {
+              catch (CalculationNotPossibleException | ExcelInputFileException | ExportException | SpectrummillParserException | LipidCombinameEncodingException | RetentionTimeGroupingException e) {
                 new WarningMessage(new JFrame(), "Error", e.getMessage());
               }
             }  
@@ -685,7 +704,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
           Vector results = checkFileStorage(fileToStore,"txt",this);
           fileToStore = (File)results.get(0);
           if ((Boolean)results.get(1))
-    	        heatMapListener_.exportMzTab(fileToStore, expOptions.getSpeciesType());
+    	        heatMapListener_.exportMzTab(fileToStore, expOptions.getSpeciesType(), expOptions.isExportDoubleBondPositions());
     	    }
     	    else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_RDB)) heatMapListener_.exportRdb(exportFile);
       }
@@ -694,10 +713,6 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     } else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_CHROMS)){
       chromExport_.setVisible(true);
     } 
-    //TODO: remove when alternative isoLabel algo is finalized
-//    else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_N_RT)){
-//      omegaExport_.setVisible(true);
-//    } 
     else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_MAF)) {
     // get the directory where to store the maf.tsv file (1 per experiment)
       exportFileChooser_.setFileSelectionMode(JFileChooser.FILES_ONLY);
@@ -726,14 +741,14 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       Vector<String> resultFiles = new Vector<String>();
       Vector<String> chromsToUse = new Vector<String>();
       Vector<String> modsToUse = new Vector<String>();
+      boolean chromFileExists = false;
       for (int i=0;i!=this.experimentNames_.size();i++ ){
         String name = this.experimentNames_.get(i);
         if (chromExport_.isExperimentSelected(heatMapListener_.getDisplayName(name))){
-          if (compVOs_[i]!=null && compVOs_[i].length>0){
-            String resultFile = compVOs_[i][0].getAbsoluteFilePath();
+          if (heatmap_.getCompVOs()[i]!=null && heatmap_.getCompVOs()[i].length>0){
+            String resultFile = heatmap_.getCompVOs()[i][0].getAbsoluteFilePath();
             resultFiles.add(resultFile);
             String chromFileBase = StaticUtils.extractChromBaseName(resultFile,name);
-            boolean chromFileExists = false;
             if (chromFileBase!=null && chromFileBase.length()>0){
               chromFileExists = true;        
             }
@@ -742,49 +757,53 @@ public class HeatMapDrawing extends JPanel implements ActionListener
               String chromFilePath = chromFileBase+".chrom";
               chromsToUse.add(chromFilePath);
               expsToExport.add(heatMapListener_.getDisplayName(name));
+            } else {
+              new WarningMessage(new JFrame(), "Error", "The '.chrom' files are required to be in the same directory as the specified result excel files!");
+              break;
             }
           }  
         }
-      }
-      for (String mod : this.modifications_){
-        if (chromExport_.isModificationSelected(mod))modsToUse.add(mod);
-      }
-      for (String name : this.moleculeNames_){
-        if (chromExport_.isMoleculeSelected(name)){
-          if (modifications_.size()==1)
-            analsToExport.add(name);
-          else if (modifications_.size()>1){
-            for (String mod : modsToUse) analsToExport.add(name+"_"+mod);
-          }
+      } if (chromFileExists) {
+        for (String mod : this.modifications_){
+          if (chromExport_.isModificationSelected(mod))modsToUse.add(mod);
         }
-        
-      }
-      if (expsToExport.size()>0 && analsToExport.size()>0 && chromsToUse.size()>0 && modsToUse.size()>0){
-        exportFileChooser_.setSelectedFile(null);
-        exportFileChooser_.updateUI();
-        if (chromExport_.getPictureType().equalsIgnoreCase(ExportPanel.EXPORT_PNG))
-          exportFileChooser_.setFileFilter(new FileNameExtensionFilter("PNG (*.png)","png"));
-        else if (chromExport_.getPictureType().equalsIgnoreCase(ExportPanel.EXPORT_SVG))
-          exportFileChooser_.setFileFilter(new FileNameExtensionFilter("SVG (*.svg)","svg"));
-        int returnVal = exportFileChooser_.showSaveDialog(new JFrame());
-        if (returnVal == JFileChooser.APPROVE_OPTION) {
-          File fileToStore = exportFileChooser_.getSelectedFile();
-          @SuppressWarnings("rawtypes")
-          Vector results = null;
+        for (String name : this.moleculeNames_){
+          if (chromExport_.isMoleculeSelected(name)){
+            if (modifications_.size()==1)
+              analsToExport.add(name);
+            else if (modifications_.size()>1){
+              for (String mod : modsToUse) analsToExport.add(name+"_"+mod);
+            }
+          }
+          
+        }
+        if (expsToExport.size()>0 && analsToExport.size()>0 && chromsToUse.size()>0 && modsToUse.size()>0){
+          exportFileChooser_.setSelectedFile(null);
+          exportFileChooser_.updateUI();
           if (chromExport_.getPictureType().equalsIgnoreCase(ExportPanel.EXPORT_PNG))
-            results = checkFileStorage(fileToStore,"png",this);
-          if (chromExport_.getPictureType().equalsIgnoreCase(ExportPanel.EXPORT_SVG))
-            results = checkFileStorage(fileToStore,"svg",this);
-          fileToStore = (File)results.get(0);
-          if ((Boolean)results.get(1) && chromExportThread_==null){
-            chromExportThread_ = new ChromExportThread(groupName_,fileToStore,chromExport_.getPictureDimension(),
-                expsToExport,resultFiles,chromsToUse,analsToExport,chromExport_.getPictureType(),exportSettings_.getSettings().isAnalyteInColumn(),
-                rtTolerance_,isLookup_,esLookup_);
-            chromExportThread_.start();
-            spinnerLabel_.setVisible(true);
-            exportProgressPanel_.setVisible(true);
-          } else if (chromExportThread_!=null)
-            new WarningMessage(new JFrame(), "Error", "There is already a chromatogram export running! Wait until it is finished!");
+            exportFileChooser_.setFileFilter(new FileNameExtensionFilter("PNG (*.png)","png"));
+          else if (chromExport_.getPictureType().equalsIgnoreCase(ExportPanel.EXPORT_SVG))
+            exportFileChooser_.setFileFilter(new FileNameExtensionFilter("SVG (*.svg)","svg"));
+          int returnVal = exportFileChooser_.showSaveDialog(new JFrame());
+          if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File fileToStore = exportFileChooser_.getSelectedFile();
+            @SuppressWarnings("rawtypes")
+            Vector results = null;
+            if (chromExport_.getPictureType().equalsIgnoreCase(ExportPanel.EXPORT_PNG))
+              results = checkFileStorage(fileToStore,"png",this);
+            if (chromExport_.getPictureType().equalsIgnoreCase(ExportPanel.EXPORT_SVG))
+              results = checkFileStorage(fileToStore,"svg",this);
+            fileToStore = (File)results.get(0);
+            if ((Boolean)results.get(1) && chromExportThread_==null){
+              chromExportThread_ = new ChromExportThread(groupName_,fileToStore,chromExport_.getPictureDimension(),
+                  expsToExport,resultFiles,chromsToUse,analsToExport,chromExport_.getPictureType(),exportSettings_.getSettings().isAnalyteInColumn(),
+                  rtTolerance_,isLookup_,esLookup_);
+              chromExportThread_.start();
+              spinnerLabel_.setVisible(true);
+              exportProgressPanel_.setVisible(true);
+            } else if (chromExportThread_!=null)
+              new WarningMessage(new JFrame(), "Error", "There is already a chromatogram export running! Wait until it is finished!");
+          }
         }
       }
     } else if (actionCommand.equalsIgnoreCase("Choose just one peak for doubles") || actionCommand.equalsIgnoreCase("Quant. anal. at not found")||
@@ -801,7 +820,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
 //          System.out.println("Other selected: "+analName+" ; "+exp);
 //        }
 //      }
-      vo = compVOs_[lastClickedCellPos_[0]][lastClickedCellPos_[1]];
+      vo = heatmap_.getCompVOs()[lastClickedCellPos_[0]][lastClickedCellPos_[1]];
       Hashtable<String,String> availableMods = new Hashtable<String,String>();
       for (String modName : modifications_){
         if (vo.containsMod(modName)) availableMods.put(modName, modName);
@@ -812,7 +831,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       modHash = new Hashtable<String,String>();
       maxIsotope = 0;
       for (int i=0;i!=experimentNames_.size();i++){
-        ResultCompVO otherVO = compVOs_[i][lastClickedCellPos_[1]];
+        ResultCompVO otherVO = heatmap_.getCompVOs()[i][lastClickedCellPos_[1]];
         if (actionCommand.equalsIgnoreCase("Choose just one peak for doubles")){
           if (i!=lastClickedCellPos_[0] && otherVO.getMoreThanOnePeak(otherVO.getAvailableIsotopeNr(maxIsotopes))){
             boolean foundMod = false;
@@ -843,7 +862,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
           if (modMissing){
             String previousElement = "";
             for (int j=lastClickedCellPos_[1]-1;j>-1;j--){
-              if (compVOs_[i][j].existsInFile()){
+              if (heatmap_.getCompVOs()[i][j].existsInFile()){
                 previousElement = moleculeNames_.get(j);
                 break;
               }
@@ -871,7 +890,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       String analyteList = "";
       for (String analName : selectedAnalytes.keySet()) analyteList += analName+", ";
       Vector<String> messages = new Vector<String>();
-      messages.add("Do you really want to delete "+groupName_+" "+analyteList+" in all of the probes?");
+      messages.add("Do you really want to delete "+groupName_+" "+analyteList+" in all probes?");
       Vector<String> selectedMods = CheckBoxOptionPane.showConfirmDialog(new JFrame(), "Confirmation", messages, modifications_,false);
       if (selectedMods.size()>0){
         Hashtable<String,String> foundUpdate = new Hashtable<String,String>();
@@ -883,7 +902,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         
         for (Integer rowWhereFound: rowsWhereFound.keySet()){
           for (int i=0;i!=experimentNames_.size();i++){
-            ResultCompVO otherVO = compVOs_[i][rowWhereFound];
+            ResultCompVO otherVO = heatmap_.getCompVOs()[i][rowWhereFound];
             if (otherVO.getAbsoluteFilePath()!=null && otherVO.getAbsoluteFilePath().length()>0 && otherVO.existsInFile()){
               boolean foundMod = false;
               for (String modName : selectedMods){
@@ -971,8 +990,8 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         g2.setColor(Color.BLUE);
       }else if (actionCommand.equalsIgnoreCase("Deselect")){
         g2.setColor(this.deselectAnalyte(moleculeNames_.get(lastClickedCellPos_[1]),experimentNames_.get(lastClickedCellPos_[0])));
-        if (markDoublePeaks_.isSelected() && attentionProbes_.containsKey(experimentNames_.get(lastClickedCellPos_[0])) &&
-            attentionProbes_.get(experimentNames_.get(lastClickedCellPos_[0])).containsKey(moleculeNames_.get(lastClickedCellPos_[1]))){
+        if (isMarkDoublePeaks() && heatmap_.getAttentionProbes().containsKey(experimentNames_.get(lastClickedCellPos_[0])) &&
+            heatmap_.getAttentionProbes().get(experimentNames_.get(lastClickedCellPos_[0])).containsKey(moleculeNames_.get(lastClickedCellPos_[1]))){
           printAttentionRectangle = true;
         }
       }
@@ -980,7 +999,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       cellRect.setLocation(new Point(cellRect.getLocation().x+imagePositionX_,cellRect.getLocation().y+imagePositionY_));
       g2.fillRect(cellRect.x+1,cellRect.y+1,cellRect.width-1,cellRect.height-1);
       if (printAttentionRectangle){
-        heatmap_.paintAttentionRectangle(g2, attentionProbes_.get(experimentNames_.get(lastClickedCellPos_[0])).get(moleculeNames_.get(lastClickedCellPos_[1])), 
+        heatmap_.paintAttentionRectangle(g2, heatmap_.getAttentionProbes().get(experimentNames_.get(lastClickedCellPos_[0])).get(moleculeNames_.get(lastClickedCellPos_[1])), 
             lastClickedCellPos_[1], lastClickedCellPos_[0], heatmap_.getExpressionImageXStart(), heatmap_.getExpressionImageYStart());
       }
       this.invalidate();
@@ -996,12 +1015,12 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       for (String expKey : vos.get(molKey).keySet()){
         ResultCompVO compVO = vos.get(molKey).get(expKey);
         int isoNr = maxIsotope;
-        if (!settingVO.getType().equalsIgnoreCase("relative to measured class amount") && 
-            !settingVO.getType().equalsIgnoreCase("relative to total amount"))
+        if (!settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT) && 
+            !settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT))
           isoNr = compVO.getAvailableIsotopeNr(maxIsotope);
         double myArea = compVO.getArea(isoNr, settingVO);
-        if (settingVO.getType().equalsIgnoreCase("relative to measured class amount") || 
-            settingVO.getType().equalsIgnoreCase("relative to total amount"))
+        if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT) || 
+            settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT))
           compVO.getArea(maxIsotope, settingVO);
         myArea = StaticUtils.getAreaInCorrespondingUnit(myArea, preferredUnit);
         Vector<Double> areaPlusDev = new Vector<Double>();
@@ -1058,7 +1077,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
 //              System.out.println(cellName.get(0)+" ; "+cellName.get(1));
               int[] cellPos = heatmap_.getCellPosition(xInImage, yInImage);
               if (statusText_!=null){
-                ResultCompVO compVO = compVOs_[cellPos[0]][cellPos[1]];
+                ResultCompVO compVO = heatmap_.getCompVOs()[cellPos[0]][cellPos[1]];
                 int maxIsotope = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
                 String statusText = "";
                 try {
@@ -1067,10 +1086,10 @@ public class HeatMapDrawing extends JPanel implements ActionListener
                   if (isGrouped_) sampleTypeText = "Group";
                   statusText = "Lipid: "+cellName.get(1)+"; "+sampleTypeText+": "+cellName.get(0)+"; Relative: "+StaticUtils.extractDisplayValue(relativeValue);
                   double value = compVO.getArea(compVO.getAvailableIsotopeNr(maxIsotope), settingsVO_);
-                  if (settingsVO_.getType().equalsIgnoreCase("relative to measured class amount") || 
-                      settingsVO_.getType().equalsIgnoreCase("relative to total amount"))
+                  if (settingsVO_.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT) || 
+                      settingsVO_.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT))
                     value = compVO.getArea(maxIsotope, settingsVO_);
-                  String selectedAreaString = StaticUtils.getAreaString(value, settingsVO_, preferredUnit_.get(cellName.get(1)));
+                  String selectedAreaString = StaticUtils.getAreaString(value, settingsVO_, heatmap_.getPreferredUnit().get(cellName.get(1)));
                   if (selectedAreaString!=null&&selectedAreaString.length()>0)
                     statusText += "; "+selectedAreaString;
                   double standValue = compVO.getStandardizedArea(compVO.getAvailableIsotopeNr(maxIsotope), settingsVO_.getISStandMethod(),  settingsVO_.getESStandMethod(), settingsVO_.considerDilution());
@@ -1099,7 +1118,15 @@ public class HeatMapDrawing extends JPanel implements ActionListener
               rectToDraw_ = heatmap_.getRectangleForColumnName(expName);
               this.drawARectangle(g2);              
             }
-          }
+          } 
+//          else if (heatmap_.getLipidDoubleBondRowNameStart()<xInImage&& xInImage<heatmap_.getLipidDoubleBondRowNameEnd() &&
+//              heatmap_.getExpressionImageYStart()<=yInImage&&yInImage<heatmap_.getExpressionImageYEnd()){
+//            String[] doubleBondInfo = heatmap_.getLipidDoubleBondRowName(x,y);
+//            if (doubleBondInfo[1] != "") {
+//              rectToDraw_ = heatmap_.getRectangleForLipidDoubleBondRowName(doubleBondInfo[0]);
+//              this.drawARectangle(g2);
+//            }
+//          }
         }
       }  
     }
@@ -1131,16 +1158,16 @@ public class HeatMapDrawing extends JPanel implements ActionListener
             Vector<String> cellName = heatmap_.getCellName(xInImage, yInImage);
             if (cellName!=null&&cellName.size()==2&&cellName.get(0)!=null&&cellName.get(1)!=null){
               int[] cellPos = heatmap_.getCellPosition(xInImage, yInImage);
-              ResultCompVO compVO = compVOs_[cellPos[0]][cellPos[1]];
+              ResultCompVO compVO = heatmap_.getCompVOs()[cellPos[0]][cellPos[1]];
               if (compVO.getOriginalArea(0)>0 && heatMapListener_!=null){
                 if (!isGrouped_){
                   if (e.getButton()==MouseEvent.BUTTON1){
                     if (!heatMapListener_.heatMapClicked(cellName.get(0),compVO.getAbsoluteFilePath(),cellName.get(1)))
                       this.mouseMoved(e);
                   }else if (e.getButton()==MouseEvent.BUTTON3 || e.isPopupTrigger()){
-                    if (attentionProbes_.containsKey(cellName.get(0)) && attentionProbes_.get(cellName.get(0)).containsKey(cellName.get(1))  
-                        && (attentionProbes_.get(cellName.get(0)).get(cellName.get(1)) == LipidomicsHeatMap.ATTENTION_COLOR_DOUBLE_PEAK
-                        || attentionProbes_.get(cellName.get(0)).get(cellName.get(1)) == LipidomicsHeatMap.ATTENTION_DOUBLE_AND_NOT_ALL_MODS))
+                    if (heatmap_.getAttentionProbes().containsKey(cellName.get(0)) && heatmap_.getAttentionProbes().get(cellName.get(0)).containsKey(cellName.get(1))  
+                        && (heatmap_.getAttentionProbes().get(cellName.get(0)).get(cellName.get(1)) == LipidomicsHeatMap.ATTENTION_COLOR_DOUBLE_PEAK
+                        || heatmap_.getAttentionProbes().get(cellName.get(0)).get(cellName.get(1)) == LipidomicsHeatMap.ATTENTION_DOUBLE_AND_NOT_ALL_MODS))
                       this.mouseMoved(e);
                     else{
                       if (isAnalyteSelected(moleculeNames_.get(cellPos[1]),experimentNames_.get(cellPos[0]))){
@@ -1166,11 +1193,11 @@ public class HeatMapDrawing extends JPanel implements ActionListener
             boolean returnValue = false;
             if (isGrouped_)
               returnValue = heatMapListener_.analyteGroupClicked(analyteName,groupName_,maxIsotopes,rtTolerance_!=null,
-              settingsVO_,preferredUnit_.get(analyteName),StaticUtils.getCorrespondingUnit(settingsVO_, preferredUnit_.get(analyteName),true));
+              settingsVO_,heatmap_.getPreferredUnit().get(analyteName),StaticUtils.getCorrespondingUnit(settingsVO_, heatmap_.getPreferredUnit().get(analyteName),true));
             else{
               if (SwingUtilities.isLeftMouseButton(e)){
                 returnValue = heatMapListener_.analyteClicked(analyteName,groupName_,maxIsotopes,rtTolerance_!=null,
-                    settingsVO_,preferredUnit_.get(analyteName),StaticUtils.getCorrespondingUnit(settingsVO_, preferredUnit_.get(analyteName),true));
+                    settingsVO_,heatmap_.getPreferredUnit().get(analyteName),StaticUtils.getCorrespondingUnit(settingsVO_, heatmap_.getPreferredUnit().get(analyteName),true));
               } else if (SwingUtilities.isRightMouseButton(e)){
                 if (isAnalyteSelected(analyteName)){
                   selectItem_.setEnabled(false);
@@ -1190,7 +1217,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
             String expName = heatmap_.getColumnName(x,y);
             if (e.getButton()==MouseEvent.BUTTON1){
               boolean returnValue = false;
-              String preferredUnit = extractPreferredUnitForExp(preferredUnit_);
+              String preferredUnit = extractPreferredUnitForExp(heatmap_.getPreferredUnit());
               if (isGrouped_)
                 returnValue = heatMapListener_.experimentGroupClicked(expName,groupName_,maxIsotopes,rtTolerance_!=null,
                 settingsVO_,preferredUnit,StaticUtils.getCorrespondingUnit(settingsVO_, preferredUnit,true));
@@ -1498,8 +1525,22 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   }
   
   public void cleanup(){
-    if (heatmap_!=null) heatmap_.cleanup();
-    heatmap_ = null;
+  	if (heatmap_ != null)
+  	{
+  		if (heatmap_.getCompVOs()!=null)
+  		{
+        for (int i=0;i!=heatmap_.getCompVOs().length;i++)
+        {
+          for (int j=0;j!=heatmap_.getCompVOs()[i].length;j++)
+          {
+            heatmap_.getCompVOs()[i][j].cleanup();
+            heatmap_.getCompVOs()[i][j] = null;
+          }
+        }
+      }
+  		heatmap_.cleanup();
+  		heatmap_ = null;
+  	}
     if (renderedImage_!=null) renderedImage_.flush();
     renderedImage_ = null;
     rectToDraw_=null;
@@ -1511,15 +1552,6 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     statusText_ = null;
     if (exportProgressPanel_!=null) exportProgressPanel_.getGraphics().dispose();
     exportProgressPanel_ = null;
-    if (compVOs_!=null){
-      for (int i=0;i!=compVOs_.length;i++){
-        for (int j=0;j!=compVOs_[i].length;j++){
-          compVOs_[i][j].cleanup();
-          compVOs_[i][j] = null;
-        }
-      }
-    }
-    compVOs_ = null;
     heatMapListener_ = null;
     groupName_ = null;
     if (showInternalStandards_!=null) showInternalStandards_.getGraphics().dispose();
@@ -1552,11 +1584,8 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     selectionSettings_ = null;
     exportSettings_ = null;
     combinedChartSettings_ = null;
-    if (preferredUnit_!=null) preferredUnit_.clear();
-    preferredUnit_ = null;
     if (exportFileChooser_!=null && exportFileChooser_.getGraphics()!=null) exportFileChooser_.getGraphics().dispose();
     exportFileChooser_ = null;
-    molGroupName_ = null;
     if (exportLabel_!=null) exportLabel_.getGraphics().dispose();
     exportLabel_ = null;
     if (exportProgress_!=null) exportProgress_.getGraphics().dispose();
@@ -1565,8 +1594,6 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     spinnerLabel_ = null;
     if (cancelExport_!=null) cancelExport_.getGraphics().dispose();
     cancelExport_ = null;
-    if (attentionProbes_!=null) attentionProbes_.clear();
-    attentionProbes_ = null;
     if (selectedMolecules_!=null) selectedMolecules_.clear();
     selectedMolecules_ = null;
     if (applySettingsPopup_!=null) applySettingsPopup_.removeAll();
@@ -1593,16 +1620,14 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       timer_.purge();
     }
     timer_ = null;
-  //TODO: remove when alternative isoLabel algo is finalized
-//    omegaExport_ = null;
   }
   
   public Hashtable<String,Hashtable<String,Vector<Double>>> getResultValues(String valueType) throws NumberFormatException, CalculationNotPossibleException{
     int exportType = ExportOptionsVO.EXPORT_NO_DEVIATION;
     if (isGrouped_) exportType = ExportOptionsVO.EXPORT_SD_DEV_AND_ERROR;
-    ExportOptionsVO expOptions = new ExportOptionsVO(exportType,"1", false, true, false, 0, LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES);
+    ExportOptionsVO expOptions = new ExportOptionsVO(exportType,"1", false, true, false, false, 0, LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES);
     ResultDisplaySettingsVO settings = new ResultDisplaySettingsVO(settingsVO_);
-    settings.setType("relative value");
+    settings.setType(ResultDisplaySettingsVO.REL_VALUE);
     if (valueType!=null && valueType.length()>0)
       settings.setType(valueType);
     if (maxIsotopes_.getItemCount()>0)
@@ -1617,7 +1642,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
    * @return the currently set export options, or the default settings if the panel was not activated
    */
   private ExportOptionsVO getExportOptions(){
-    ExportOptionsVO expOptions = new ExportOptionsVO(ExportOptionsVO.EXPORT_NO_DEVIATION,null,true,false,false,6,LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES);
+    ExportOptionsVO expOptions = new ExportOptionsVO(ExportOptionsVO.EXPORT_NO_DEVIATION,null,true,false,false,false,6,LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES);
     if (exportSettings_ != null)
       expOptions = exportSettings_.getSettings();
     return expOptions;
@@ -1630,6 +1655,11 @@ public class HeatMapDrawing extends JPanel implements ActionListener
    */
   public String getValueType(){
     return this.settingsVO_.getType();
+  }
+  
+  protected boolean isMarkDoublePeaks()
+  {
+  	return markDoublePeaks_!=null && markDoublePeaks_.isSelected();
   }
   
   
@@ -1683,4 +1713,28 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     result.add(maxIsotopes);
     return result;
   }
+  
+  /**
+   * Extracts LipidParameterSets belonging to the individual molecule names of one lipid class as displayed in the heat map
+   * @param all all detected results of a certain experiment and lipid class
+   * @param areaVO the value object corresponding to one data point (rectangle) in the heat map
+   * @param msnOnly if true, only species verified by MSn evidence are exported
+   * @return the original information relevant to this one data point (rectangle)
+   */
+  protected static Hashtable<String,Vector<LipidParameterSet>> getRelevantOriginalResults(Vector<LipidParameterSet> all, ResultAreaVO areaVO){
+    Hashtable<String,Vector<LipidParameterSet>> results = new Hashtable<String,Vector<LipidParameterSet>>();
+    for (LipidParameterSet set : all){
+      if (!areaVO.getMoleculeNameWoRT().equalsIgnoreCase(set.getNameStringWithoutRt()))
+        continue;
+      if (!areaVO.belongsRtToThisAreaVO(set.getRt(), set.getModificationName()))
+        continue;
+      Vector<LipidParameterSet> ofOneMod = new Vector<LipidParameterSet>();
+      if (results.containsKey(set.getModificationName()))
+        ofOneMod = results.get(set.getModificationName());
+      ofOneMod.add(set);
+      results.put(set.getModificationName(), ofOneMod);
+    }
+    return results;
+  }
+  
 }

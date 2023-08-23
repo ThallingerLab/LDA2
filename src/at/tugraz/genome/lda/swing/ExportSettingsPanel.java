@@ -38,11 +38,14 @@ import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JRadioButton;
+import javax.swing.JSeparator;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.TooltipTexts;
 import at.tugraz.genome.lda.WarningMessage;
+import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.vos.ExportOptionsVO;
 
 /**
@@ -64,6 +67,8 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
   private JRadioButton columnExperiment_;
   protected JCheckBox exportRT_;
   protected JCheckBox exportRTDev_;
+  /** if selected double bond positions will be exported */
+  private JCheckBox exportDoubleBondPositions_;
   /** radio button indicating that the analytes shall be exported on the species level*/
   private JRadioButton speciesLevel_;
   /** radio button indicating that the analytes shall be exported on the chain level*/
@@ -74,13 +79,17 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
   
   private final static String CHANGE_SELECTION_STATUS = "changeSelectionStatus";
   public final static String CHANGE_RT_SELECTION_STATUS = "changeRTSelectionStatus";
+  public final static String CHANGE_EXPORT_LEVEL_SELECTION_STATUS = "changeExportLevelSelectionStatus";
   
   public ExportSettingsPanel(boolean isGrouped, ActionListener parent){
+    super.setTitle("Export Options");
     parent_ = parent;
     
     setLocation(380,240);
     setLayout(new GridBagLayout());
+    
     if (isGrouped){
+      
       exportDeviation_ = new JCheckBox("export deviation value"); 
       exportDeviation_.setActionCommand(CHANGE_SELECTION_STATUS);
       exportDeviation_.addActionListener(this);
@@ -89,7 +98,9 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
       exportDeviation_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_DEVIATION);
       this.add(exportDeviation_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+      
       ButtonGroup deviationGroup = new ButtonGroup();
+      
       standardDeviation_ = new JRadioButton("standard deviation");
       standardDeviation_.setSelected(true);
       standardDeviation_.setEnabled(false);
@@ -98,6 +109,7 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
       standardDeviation_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_STANDARD_DEVIATION);
       this.add(standardDeviation_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+      
       multStandardDeviation_ = new JTextField(3);
       multStandardDeviation_.setText("1.0");
       multStandardDeviation_.setEnabled(false);
@@ -105,6 +117,7 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
       multStandardDeviation_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_STANDARD_DEVIATION_WHICH);
       this.add(multStandardDeviation_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+      
       standardErrorMean_ = new JRadioButton("standard error mean");
       standardErrorMean_.setEnabled(false);
       standardErrorMean_.addItemListener(new SelectionItemListener("ChangeSD"));
@@ -112,65 +125,109 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
       standardErrorMean_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_STANDARD_ERROR);
       this.add(standardErrorMean_,new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+      
+      this.add(new JSeparator(SwingConstants.HORIZONTAL), new GridBagConstraints(0, 2, 0, 1, 1, 0.0, 
+          GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0));
+      
     }
+    
     ButtonGroup columnGroup = new ButtonGroup();
     columnAnalyte_ = new JRadioButton("analytes in column");
     columnAnalyte_.setSelected(true);
     columnGroup.add(columnAnalyte_);
     columnAnalyte_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_COLUMN_ANALYTE);
-    this.add(columnAnalyte_,new GridBagConstraints(0, 2, 2, 1, 0.0, 0.0
+    this.add(columnAnalyte_,new GridBagConstraints(0, 3, 2, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));    
+    
     columnExperiment_ = new JRadioButton("experiments in column");
     columnExperiment_.setSelected(false);
     columnGroup.add(columnExperiment_);
     columnExperiment_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_COLUMN_EXPERIMENT);
-    this.add(columnExperiment_,new GridBagConstraints(0, 3, 2, 1, 0.0, 0.0
+    this.add(columnExperiment_,new GridBagConstraints(0, 4, 2, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+    
+    this.add(new JSeparator(SwingConstants.HORIZONTAL), new GridBagConstraints(0, 5, 0, 1, 1, 0.0, 
+        GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0));
+    
     exportRT_ = new JCheckBox("export retention-time"); 
     exportRT_.setActionCommand(CHANGE_RT_SELECTION_STATUS);
     exportRT_.addActionListener(this);
     exportRT_.setSelected(false);
     exportRT_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_RT);  
-    this.add(exportRT_,new GridBagConstraints(0, 4, 2, 1, 0.0, 0.0
+    this.add(exportRT_,new GridBagConstraints(0, 6, 2, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+    
     if (isGrouped){
+      
       exportRTDev_ = new JCheckBox("export RT-stdev"); 
       exportRTDev_.addActionListener(this);
       exportRTDev_.setSelected(false);
       exportRTDev_.setEnabled(false);
       exportRTDev_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_RT_SD);  
-      this.add(exportRTDev_,new GridBagConstraints(0, 5, 2, 1, 0.0, 0.0
+      this.add(exportRTDev_,new GridBagConstraints(0, 7, 2, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));      
+      
     }
+    
+    this.add(new JSeparator(SwingConstants.HORIZONTAL), new GridBagConstraints(0, 8, 0, 1, 1, 0.0, 
+        GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0));
+    
     ButtonGroup speciesGroup = new ButtonGroup();
     speciesLevel_ = new JRadioButton("species level");
     speciesLevel_.setSelected(true);
     speciesGroup.add(speciesLevel_);
     speciesLevel_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_SPECIES);
-    this.add(speciesLevel_,new GridBagConstraints(0, 6, 2, 1, 0.0, 0.0
+    this.add(speciesLevel_,new GridBagConstraints(0, 9, 2, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));    
+    
     chainLevel_ = new JRadioButton("chain level");
     chainLevel_.setSelected(false);
     speciesGroup.add(chainLevel_);
     chainLevel_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_CHAIN);
-    this.add(chainLevel_,new GridBagConstraints(0, 7, 2, 1, 0.0, 0.0
+    this.add(chainLevel_,new GridBagConstraints(0, 10, 2, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+    
     positionLevel_ = new JRadioButton("position level");
     positionLevel_.setSelected(false);
     speciesGroup.add(positionLevel_);
     positionLevel_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_POSITION);
-    this.add(positionLevel_,new GridBagConstraints(0, 8, 2, 1, 0.0, 0.0
+    this.add(positionLevel_,new GridBagConstraints(0, 11, 2, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
-
+    
+    if (LipidParameterSet.isOmegaInformationAvailable()) {
+      
+      speciesLevel_.setSelected(false);
+      speciesLevel_.setActionCommand(CHANGE_EXPORT_LEVEL_SELECTION_STATUS);
+      speciesLevel_.addActionListener(this);
+      chainLevel_.setSelected(false);
+      positionLevel_.setSelected(true);
+      
+      this.add(new JSeparator(SwingConstants.HORIZONTAL), new GridBagConstraints(0, 12, 0, 1, 1, 0.0, 
+          GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0));
+      
+      exportDoubleBondPositions_ = new JCheckBox("export \u03C9 - double bond positions");
+      exportDoubleBondPositions_.setActionCommand(CHANGE_EXPORT_LEVEL_SELECTION_STATUS);
+      exportDoubleBondPositions_.addActionListener(this);
+      exportDoubleBondPositions_.setSelected(true);
+      exportDoubleBondPositions_.setToolTipText(TooltipTexts.HEATMAP_EXPORT_DB_POSITION);
+      this.add(exportDoubleBondPositions_,new GridBagConstraints(0, 13, 2, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+      
+    }
+    
+    this.add(new JSeparator(SwingConstants.HORIZONTAL), new GridBagConstraints(0, 14, 0, 1, 1, 0.0, 
+        GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0));
+    
     JButton button = new JButton("OK");
     button.setActionCommand("AcceptExportSettings");
     button.setToolTipText(TooltipTexts.ACCEPT_GENERAL);
-    this.add(button,new GridBagConstraints(0, 9, 3, 1, 0.0, 0.0
+    this.add(button,new GridBagConstraints(0, 15, 3, 1, 0.0, 0.0
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
     button.addActionListener(parent_);
     setVisible(false);
-    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    setDefaultCloseOperation(DISPOSE_ON_CLOSE );
     pack(); 
+    
   }
 
   public void actionPerformed(ActionEvent e)
@@ -194,7 +251,12 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
           exportRTDev_.setEnabled(false);
         }
       }
-    }
+    } else if (e.getActionCommand().equals(CHANGE_EXPORT_LEVEL_SELECTION_STATUS)){
+       if (exportDoubleBondPositions_.isSelected() && speciesLevel_.isSelected()) {
+         new WarningMessage(new JFrame(), "Warning", "<html>On 'species level' the export of \u03C9 - double bond positions will only be performed for lipid classes with no more than one FA chain.<br/>"
+             + "To export all detected \u03C9 - double bond positions, select either 'chain level' or 'position level'!</html>");
+       }
+    }  
   }
   
   private boolean verifySDFactInput(){
@@ -223,7 +285,7 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
           else
             multStandardDeviation_.setEnabled(false);
         }
-      }      
+      }   
     }
   }
   
@@ -246,8 +308,13 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
         exportType = ExportOptionsVO.EXPORT_SD_ERROR;
     }
     boolean exportRTDev = false;
-    if (exportRTDev_!=null && exportRTDev_.isSelected())
+    if (exportRTDev_!=null && exportRTDev_.isSelected()) {
       exportRTDev = true;
+    } 
+    boolean exportDoubleBondPositions = false;
+    if (exportDoubleBondPositions_!=null && exportDoubleBondPositions_.isSelected()) {
+      exportDoubleBondPositions = true;
+    }
     short speciesType = LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES;
     if (speciesLevel_.isSelected())
       speciesType = LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES;
@@ -255,6 +322,6 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
       speciesType = LipidomicsConstants.EXPORT_ANALYTE_TYPE_CHAIN;
     else if (positionLevel_.isSelected())
       speciesType = LipidomicsConstants.EXPORT_ANALYTE_TYPE_POSITION;    
-    return new ExportOptionsVO(exportType,variationValue,columnAnalyte_.isSelected(),exportRT_.isSelected(),exportRTDev,6,speciesType);
+    return new ExportOptionsVO(exportType,variationValue,columnAnalyte_.isSelected(),exportRT_.isSelected(),exportRTDev,exportDoubleBondPositions,6,speciesType);
   }
 }

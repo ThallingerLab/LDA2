@@ -25,6 +25,7 @@ package at.tugraz.genome.lda;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Frame;
@@ -52,9 +53,13 @@ import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -82,6 +87,9 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
+import javax.swing.border.Border;
+import javax.swing.border.EtchedBorder;
+import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -113,17 +121,18 @@ import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RdbWriterException;
+import at.tugraz.genome.lda.exception.RetentionTimeGroupingException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.exception.SettingsException;
 import at.tugraz.genome.lda.export.LDAExporter;
-import at.tugraz.genome.lda.export.OmegaMasslistExporter;
 import at.tugraz.genome.lda.export.QuantificationResultExporter;
-import at.tugraz.genome.lda.export.vos.AnalyteOmegaInfoVO;
 import at.tugraz.genome.lda.interfaces.ColorChangeListener;
 import at.tugraz.genome.lda.listeners.AnnotationThresholdListener;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.MSnAnalyzer;
+import at.tugraz.genome.lda.msn.RulesContainer;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
+import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.mztab.MztabUtils;
 import at.tugraz.genome.lda.mztab.SmallMztabMolecule;
 import at.tugraz.genome.lda.parser.LDAResultReader;
@@ -137,6 +146,7 @@ import at.tugraz.genome.lda.swing.BatchQuantificationTableModel;
 import at.tugraz.genome.lda.swing.ClassesOverviewPanel;
 import at.tugraz.genome.lda.swing.ColorChooserDialog;
 import at.tugraz.genome.lda.swing.CutoffSettingsPanel;
+import at.tugraz.genome.lda.swing.EditOmegaAssignmentJTable;
 import at.tugraz.genome.lda.swing.EditRtDialog;
 import at.tugraz.genome.lda.swing.ExportPanel;
 import at.tugraz.genome.lda.swing.ExportSettingsPanel;
@@ -153,6 +163,7 @@ import at.tugraz.genome.lda.swing.ResultDisplaySettings;
 import at.tugraz.genome.lda.swing.ResultSelectionSettings;
 import at.tugraz.genome.lda.swing.RuleDefinitionInterface;
 import at.tugraz.genome.lda.swing.SpectrumUpdateListener;
+import at.tugraz.genome.lda.target.JTargetFileWizard;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.verifier.DoubleVerifier;
 import at.tugraz.genome.lda.verifier.IntegerMaxVerifier;
@@ -160,10 +171,8 @@ import at.tugraz.genome.lda.vos.AbsoluteSettingsVO;
 import at.tugraz.genome.lda.vos.AddAnalyteVO;
 import at.tugraz.genome.lda.vos.AutoAnalyteAddVO;
 import at.tugraz.genome.lda.vos.IntegerStringVO;
-import at.tugraz.genome.lda.vos.IsotopicLabelVO;
 import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.lda.vos.RawQuantificationPairVO;
-import at.tugraz.genome.lda.vos.ResultAreaVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
 import at.tugraz.genome.lda.xml.AbsoluteQuantSettingsWholeReader;
@@ -221,6 +230,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     
   private static final long serialVersionUID = -1358973418774645198L;
   
+  private static final int FRAME_WIDTH = 1050;
+  private static final int FRAME_HEIGHT = 950;  
+  private static final int RESULTS_TABLE_WIDTH = 950;
+  
   private static MainFrame frame_;
   private JFileChooser mzXMLFileChooser;
   private JFileChooser mzXMLDirChooser;
@@ -231,6 +244,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JPanel resultsPanel_;
   private JPanel settingsPanel_;
   private JPanel licensePanel_;
+  private JTargetFileWizard targetFilePanel_;
   private JPanel helpPanel_;
   private JPanel aboutPanel_;
   private JPanel displayTopMenu;
@@ -270,10 +284,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JButton jButtonResultCutoff_;
   private JFileChooser resultsDirChooser_;
   private JFileChooser resultFilesChooser_;
-  private JScrollPane analysisTablePane;
+  private JScrollPane analysisTablePane_;
   private JPanel analysisSelectionTablePanel_;
-  private JTable resultFilesDisplayTable;
-  private ListSelectionModel resultListSelectionModel;
+  private JTable resultFilesDisplayTable_;
+  private ListSelectionModel resultListSelectionModel_;
   private ImageIcon addFilesIcon_ = new ImageIcon(getClass().getResource(
   "/images/addFiles.gif"));
   private ImageIcon addFolderIcon_ = new ImageIcon(getClass().getResource(
@@ -336,13 +350,14 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JButton jButtonResultOpen;
   private JButton startDisplay;
   private JFileChooser resultFileChooser_;
-  private LipidomicsJTable displayTable;
+  private LipidomicsJTable displayTable_;
   private BatchQuantificationTable batchQuantTable_;
   private BatchQuantificationTableModel batchQuantTableModel_;
   private ListSelectionModel listSelectionModel;
   private JPanel selectionPane;
   private JPanel tableContainer;
   private JPanel tablePanel_;
+  private JPanel displayTolerancePanel_;
   private JComboBox<String> selectedSheet_;
   private JPanel quantifyingPanel_;
   private JPanel quantifyingBatchPanel_;  
@@ -358,6 +373,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JCheckBox show2D_;
   /** show the names in MSn style in the display results or not*/
   private JCheckBox showMSnNames_;
+  /** show the names in MSn style with available omega double bond assignments in the display results or not*/
+  private JCheckBox showOmegaNames_;
   
   /** this check box decides whether a static (locked) range is used, or it is adapted to the selected analyte*/
   private JCheckBox lockMzRange_;
@@ -373,10 +390,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JScrollPane tablePane;
   private QuantificationResult result_;
   private QuantificationResult originalResult_;
-  private QuantificationResult MSnResult_;
+  private QuantificationResult MSnResult_; //TODO: rename to start small
   private QuantificationResult chainResult_;
-  
   private Hashtable<Integer,Integer> resultPositionToOriginalLoopkup_ = new Hashtable<Integer,Integer>();
+  private Hashtable<Integer,String> resultPositionToMolecularSpeciesLookup_;
   private Hashtable<String,Integer> orderResultsType_ = new Hashtable<String,Integer>();
   private Hashtable<String,Boolean> resultsShowModification_ = new Hashtable<String,Boolean>();
   private Vector<File> resultFiles_;
@@ -504,10 +521,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private ExportSettingsPanel exportSettingsGroup_ = null;
   /** the lock range must be updated if true*/
   private boolean lockRangeUpdateRequired_ = false;
-  /** the export dialog for omega retention time map*/
-//  private OmegaExportDialog  omegaExport_ = null;
-
- 
+  
   /**for oxLipids */
   private JCheckBox showMSnEvidence_;
   private JCheckBox showChainEvidence_;
@@ -517,6 +531,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private boolean combineOxWithNonOx_;
   
   private int statisticsViewMode_ = 0;
+
   
   public LipidDataAnalyzer(){
   	this.checkLicense();
@@ -527,171 +542,19 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     this.initL2dPanel();
     displaysMs2_ = false;
     shotgunIsDisplayed_ = false;
-
-    JPanel displayTolerancePanel = new JPanel();
-    displayTolerancePanel.setLayout(new GridBagLayout());
-    JLabel diplayTolMinus = new JLabel("- m/z: ");
-    diplayTolMinus.setFont(SMALL_FONT);
-    diplayTolMinus.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
-    displayTolerancePanel.add(diplayTolMinus,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
-    JLabel diplayTolPlus = new JLabel("+ m/z: ");
-    diplayTolPlus.setFont(SMALL_FONT);
-    diplayTolPlus.setToolTipText(TooltipTexts.DISPLAY_MZ_PLUS);
-    displayTolerancePanel.add(diplayTolPlus,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
-    displayMinusTolerance_ = new JTextField(2);
-    displayMinusTolerance_.setFont(SMALL_FONT);
-    displayMinusTolerance_.setText("1.5");
-    displayMinusTolerance_.setHorizontalAlignment(JTextField.RIGHT);
-    displayMinusTolerance_.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
-    displayMinusTolerance_.setInputVerifier(new DoubleVerifier());
-    displayTolerancePanel.add(displayMinusTolerance_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));    
-    displayPlusTolerance_ = new JTextField(2);
-    displayPlusTolerance_.setFont(SMALL_FONT);
-    displayPlusTolerance_.setText("2.5");
-    displayPlusTolerance_.setHorizontalAlignment(JTextField.RIGHT);
-    displayPlusTolerance_.setToolTipText(TooltipTexts.DISPLAY_MZ_PLUS);
-    displayPlusTolerance_.setInputVerifier(new DoubleVerifier());
-    displayTolerancePanel.add(displayPlusTolerance_,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
-    JLabel diplayTolUnit1 = new JLabel("[Da]");
-    diplayTolUnit1.setFont(SMALL_FONT);
-    displayTolerancePanel.add(diplayTolUnit1,new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
-    JLabel rtTolMinusText = new JLabel("Start: ");
-    rtTolMinusText.setFont(SMALL_FONT);
-    rtTolMinusText.setToolTipText(TooltipTexts.DISPLAY_RT_START);
-    displayTolerancePanel.add(rtTolMinusText,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
-    JLabel rtTolPlusText = new JLabel("Stop: ");
-    rtTolPlusText.setFont(SMALL_FONT);
-    rtTolPlusText.setToolTipText(TooltipTexts.DISPLAY_RT_STOP);
-    displayTolerancePanel.add(rtTolPlusText,new GridBagConstraints(2, 1, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
-    displayRtStart_ = new JTextField(2);
-    displayRtStart_.setFont(SMALL_FONT);
-    displayRtStart_.setText("");
-    displayRtStart_.setHorizontalAlignment(JTextField.RIGHT);
-    displayRtStart_.setToolTipText(TooltipTexts.DISPLAY_RT_START);
-    displayRtStart_.setInputVerifier(new DoubleVerifier());
-    displayTolerancePanel.add(displayRtStart_,new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
-    displayRtStop_ = new JTextField(2);
-    displayRtStop_.setFont(SMALL_FONT);
-    displayRtStop_.setText("");
-    displayRtStop_.setHorizontalAlignment(JTextField.RIGHT);
-    displayRtStop_.setToolTipText(TooltipTexts.DISPLAY_RT_STOP);
-    displayRtStop_.setInputVerifier(new DoubleVerifier());
-    displayTolerancePanel.add(displayRtStop_,new GridBagConstraints(3, 1, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
-    JLabel diplayTolUnit2 = new JLabel("[min]");
-    diplayTolUnit2.setFont(SMALL_FONT);
-//    diplayTolUnit1.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
-    displayTolerancePanel.add(diplayTolUnit2,new GridBagConstraints(4, 1, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
-    
-    JPanel lockMxSelectionPanel = new JPanel();
-    lockMzRange_ = new JCheckBox();
-    lockMzRange_.setFont(SMALL_FONT);
-    lockMzRange_.addItemListener(new LipidomicsItemListener(CHANGE_LOCK_MZ_RANGE));
-    lockMzRange_.setToolTipText(TooltipTexts.DISPLAY_LOCK_MZ);
-    lockMxSelectionPanel.add(lockMzRange_);
-    JLabel lockMz = new JLabel(DISPLAY_LOCK_MZ_TEXT);
-    lockMz.setToolTipText(TooltipTexts.DISPLAY_LOCK_MZ);
-    lockMz.setFont(SMALL_FONT);
-    lockMxSelectionPanel.add(lockMz);
-    displayMzStart_ = new JTextField(4);
-    displayMzStart_.setFont(SMALL_FONT);
-    displayMzStart_.setText("");
-    displayMzStart_.setHorizontalAlignment(JTextField.RIGHT);
-    displayMzStart_.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
-    displayMzStart_.setInputVerifier(new DoubleVerifier());
-    lockMxSelectionPanel.add(displayMzStart_);
-    displayMzStart_.setEnabled(false);
-    JLabel mzRangeSign = new JLabel("-");
-    lockMxSelectionPanel.add(mzRangeSign);
-    displayMzStop_ = new JTextField(4);
-    displayMzStop_.setFont(SMALL_FONT);
-    displayMzStop_.setText("");
-    displayMzStop_.setHorizontalAlignment(JTextField.RIGHT);
-    displayMzStop_.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
-    displayMzStop_.setInputVerifier(new DoubleVerifier());
-    displayMzStop_.setEnabled(false);
-    lockMxSelectionPanel.add(displayMzStop_);
-    
-    displayTolerancePanel.add(lockMxSelectionPanel ,new GridBagConstraints(0, 2, 6, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
-
-    
-    JButton quantTolUpdate = new JButton("Update");
-    quantTolUpdate.addActionListener(this);
-    quantTolUpdate.setFont(quantTolUpdate.getFont().deriveFont(10f));
-    quantTolUpdate.setMargin(new Insets(1,5,1,5));
-    quantTolUpdate.setActionCommand("updateQuantTolOfCurrentlySelected");
-    quantTolUpdate.setToolTipText(TooltipTexts.DISPLAY_UPDATE);
-    displayTolerancePanel.add(quantTolUpdate,new GridBagConstraints(5, 0, 1, 2, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JPanel showOptionsPanel = new JPanel();
-    displayTolerancePanel.add(showOptionsPanel,new GridBagConstraints(0, 3, 6, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 0, 5, 0), 0, 0));
-    
-    
-    JPanel showOptionsPanel2 = new JPanel();
-    displayTolerancePanel.add(showOptionsPanel2,new GridBagConstraints(0, 4, 6, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
-    
-    JPanel showOptionsPanel3 = new JPanel();
-    displayTolerancePanel.add(showOptionsPanel3,new GridBagConstraints(0, 5, 6, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
-    
-    showMSnEvidence_ = new JCheckBox("");
-    showMSnEvidence_.addItemListener(new LipidomicsItemListener("showMSnOnly"));
-    showOptionsPanel2.add(showMSnEvidence_);
-    JLabel showMSnEvidence = new JLabel("Show MSn Only");
-    showMSnEvidence.setToolTipText("Show only lipids with MSn headgroup evidence");
-    showOptionsPanel2.add(showMSnEvidence);
-  	
-    
-    showChainEvidence_ = new JCheckBox("");
-    showChainEvidence_.setEnabled(false);
-    showChainEvidence_.addItemListener(new LipidomicsItemListener("showChainOnly"));
-    showOptionsPanel3.add(showChainEvidence_);
-    JLabel showChainEvidence = new JLabel("Chain Evidence Only");
-    showChainEvidence.setToolTipText("Show only lipids with MSn headgroup- and chain evidence");
-    showOptionsPanel3.add(showChainEvidence);
-    
-    showMSnNames_ = new JCheckBox();
-    showMSnNames_.addItemListener(new LipidomicsItemListener("showMSnNames"));
-    showMSnNames_.setToolTipText(TooltipTexts.DISPLAY_SHOW_MSN);
-    showOptionsPanel.add(showMSnNames_);
-    JLabel showMSn = new JLabel("Show MSn");
-    showMSn.setToolTipText(TooltipTexts.DISPLAY_SHOW_MSN);
-    showOptionsPanel.add(showMSn);
-    
-    show2D_ = new JCheckBox();
-    show2D_.setSelected(true);
-    show2D_.addItemListener(new LipidomicsItemListener("show2dChanged"));
-    show2D_.setToolTipText(TooltipTexts.DISPLAY_SHOW_2D);
-    showOptionsPanel.add(show2D_);
-    JLabel show2d = new JLabel("Show 2D-View");
-    show2d.setToolTipText(TooltipTexts.DISPLAY_SHOW_2D);
-    showOptionsPanel.add(show2d);
-
     
     selectionPane = new JPanel();
     selectionPane.setLayout(new BoxLayout(selectionPane, BoxLayout.LINE_AXIS));
     Vector<LipidParameterSet> dummy = new Vector<LipidParameterSet>();
     
-
-    displayTable = new LipidomicsJTable(new LipidomicsTableModel(dummy,dummy,false,false),new LipidomicsTableCellRenderer(),false,0,true,this);
-    listSelectionModel = displayTable.getSelectionModel();
-    displayTable.setSelectionModel(listSelectionModel);
+    
+    displayTable_ = new LipidomicsJTable(new LipidomicsTableModel(dummy,dummy,false,false,false),new LipidomicsTableCellRenderer(),false,0,true,this);
+    listSelectionModel = displayTable_.getSelectionModel();
+    displayTable_.setSelectionModel(listSelectionModel);
     listSelectionModel.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
     
     JPanel listContainer = new JPanel(new GridLayout(1,1));
-    tablePane = new JScrollPane(displayTable);
+    tablePane = new JScrollPane(displayTable_);
 
     
     tablePanel_ = new JPanel();
@@ -699,7 +562,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     selectedSheet_ = new JComboBox<String>();
     tablePanel_.add(selectedSheet_,BorderLayout.NORTH);
     tablePanel_.add(tablePane,BorderLayout.CENTER);
-    tablePanel_.add(displayTolerancePanel,BorderLayout.SOUTH);
 
     
     tableContainer = new JPanel(new GridLayout(1,1));
@@ -733,11 +595,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     settingsPanel_ = new JPanel();
     initSettingsPanel();
     licensePanel_ = new JPanel();
+    targetFilePanel_ = new JTargetFileWizard();
     helpPanel_ = new JPanel();
     initHelpPanel();
     aboutPanel_ = new JPanel();
     initAboutPanel();
-
+    
     
     mainTabs.addTab("Quantitation", singleQuantificationPanel);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(singleQuantificationPanel), TooltipTexts.TABS_MAIN_QUANTITATION);
@@ -747,6 +610,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(resultsPanel_), TooltipTexts.TABS_MAIN_STATISTICS);
     mainTabs.addTab("Display Results", displayPanel_);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(displayPanel_), TooltipTexts.TABS_MAIN_DISPLAY);
+    mainTabs.addTab("C=C Target File", targetFilePanel_);
+    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(targetFilePanel_), TooltipTexts.TABS_MAIN_TARGET);
     mainTabs.addTab("Settings", settingsPanel_);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(settingsPanel_), TooltipTexts.TABS_MAIN_SETTINGS);
     if (LicenseChecker.isCheckLicense())
@@ -756,7 +621,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       LicenseChangeListener licenseListener = new LicenseChangeListener();
       mainTabs.addChangeListener(licenseListener);
     }
-    
     mainTabs.addTab("Help", helpPanel_);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(helpPanel_), TooltipTexts.TABS_MAIN_HELP);
     mainTabs.addTab("About", aboutPanel_);
@@ -1164,6 +1028,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));    
   }
   
+  //TODO: Add uni graz logo? put this in it's own singleton class? Add Uni Graz website?
   private void initAboutPanel(){
     aboutPanel_.setLayout(new BorderLayout());
     JPanel topPanel = new JPanel();
@@ -1203,7 +1068,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     text.setFont(new Font("Arial",Font.PLAIN, 18));
     headerPanel.add(text,new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
-    text = new JLabel("J\u00fcrgen Hartler, Alexander Triebl, Martin Tr\u00f6tzm\u00fcller, Andreas Ziegl");
+    text = new JLabel("J\u00fcrgen Hartler, Alexander Triebl, Martin Tr\u00f6tzm\u00fcller, Andreas Ziegl, Leonida M. Lamp");
     text.setFont(new Font("Arial",Font.PLAIN, 16));
     headerPanel.add(text,new GridBagConstraints(0, 4, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
@@ -1416,9 +1281,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private void createDisplayTopMenu(){
     this.displayTopMenu = new JPanel();
     this.displayTopMenu.setLayout(new GridBagLayout());
-
-
+    
     this.selectedChromFile = new JTextField(62);
+    selectedChromFile.setMinimumSize(selectedChromFile.getPreferredSize());
     selectedChromFile.setToolTipText(TooltipTexts.DISPLAY_OPEN_CHROM);
     displayTopMenu.add(selectedChromFile,new GridBagConstraints(0, 0, 6, 1, 0.0, 0.0
       ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
@@ -1427,8 +1292,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     jButtonChromOpen.setActionCommand("showChromFileChooser");
     jButtonChromOpen.setToolTipText(TooltipTexts.DISPLAY_OPEN_CHROM);
     displayTopMenu.add(jButtonChromOpen,new GridBagConstraints(7, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+        ,GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(0, 6, 0, 0), 0, 0));
     this.selectedResultFile = new JTextField(62);
+    selectedResultFile.setMinimumSize(selectedResultFile.getPreferredSize());
     selectedResultFile.setToolTipText(TooltipTexts.DISPLAY_OPEN_RESULT);
     displayTopMenu.add(selectedResultFile,new GridBagConstraints(0, 1, 6, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
@@ -1437,7 +1303,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     jButtonResultOpen.setActionCommand("showResultChooser");
     jButtonResultOpen.setToolTipText(TooltipTexts.DISPLAY_OPEN_RESULT);
     displayTopMenu.add(jButtonResultOpen,new GridBagConstraints(7, 1, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+        ,GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(0, 6, 0, 0), 0, 0));
     startDisplay = new JButton("Start Display");
     startDisplay.addActionListener(this);
     startDisplay.setActionCommand("startDisplay");
@@ -1460,6 +1326,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     selectionPanel.add(batchMzXMLLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     this.selectedMzxmlDirectory_ = new JTextField(62);
+    selectedMzxmlDirectory_.setMinimumSize(selectedMzxmlDirectory_.getPreferredSize());
     selectedMzxmlDirectory_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_RAW_FILE);
     selectionPanel.add(selectedMzxmlDirectory_,new GridBagConstraints(1, 0, 6, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
@@ -1480,6 +1347,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     selectionPanel.add(jBatchQuantOpen_,new GridBagConstraints(7, 1, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     this.selectedQuantDir_ = new JTextField(62);
+    selectedQuantDir_.setMinimumSize(selectedQuantDir_.getPreferredSize());
     selectedQuantDir_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_MASS_LIST);
     selectionPanel.add(selectedQuantDir_,new GridBagConstraints(1, 1, 6, 1, 0.0, 0.0
       ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
@@ -1502,6 +1370,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     settingsPanel.add(timeMinusTolLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     batchTimeMinusTol_ = new JTextField(4);
+    batchTimeMinusTol_.setMinimumSize(batchTimeMinusTol_.getPreferredSize());
     batchTimeMinusTol_.setText("5");
     batchTimeMinusTol_.setHorizontalAlignment(JTextField.RIGHT);
     batchTimeMinusTol_.setToolTipText(TooltipTexts.QUANTITATION_RET_BEFORE);
@@ -1516,6 +1385,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     settingsPanel.add(timePlusTolLabel,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     batchTimePlusTol_ = new JTextField(4);
+    batchTimePlusTol_.setMinimumSize(batchTimePlusTol_.getPreferredSize());
     batchTimePlusTol_.setText("5");
     batchTimePlusTol_.setHorizontalAlignment(JTextField.RIGHT);
     batchTimePlusTol_.setToolTipText(TooltipTexts.QUANTITATION_RET_AFTER);
@@ -1531,6 +1401,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     settingsPanel.add(cutoffLabel,new GridBagConstraints(6, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     batchCutoff_ = new JTextField(4);
+    batchCutoff_.setMinimumSize(batchCutoff_.getPreferredSize());
     batchCutoff_.setText(LipidomicsConstants.getBasePeakDefaultCutoff());
     batchCutoff_.setHorizontalAlignment(JTextField.RIGHT);
     batchCutoff_.setToolTipText(TooltipTexts.QUANTITATION_CUTOFF);
@@ -1545,6 +1416,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     settingsPanel.add(rtShiftLabel,new GridBagConstraints(9, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     batchRTShift_ = new JTextField(4);
+    batchRTShift_.setMinimumSize(batchRTShift_.getPreferredSize());
     batchRTShift_.setText("0.0");
     batchRTShift_.setHorizontalAlignment(JTextField.RIGHT);
     batchRTShift_.setToolTipText(TooltipTexts.QUANTIFICATION_RET_SHIFT);
@@ -1571,6 +1443,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     settingsPanel2.add(allowIsotopicValidation,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     amountOfBatchIsotopes_ = new JTextField(4);
+    amountOfBatchIsotopes_.setMinimumSize(amountOfBatchIsotopes_.getPreferredSize());
     amountOfBatchIsotopes_.setText("2");
     amountOfBatchIsotopes_.setHorizontalAlignment(JTextField.RIGHT);
     amountOfBatchIsotopes_.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
@@ -1581,6 +1454,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     settingsPanel2.add(isotopePeaks,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     amountOfMatchingBatchSearchIsotopes_ = new JTextField(4);
+    amountOfMatchingBatchSearchIsotopes_.setMinimumSize(amountOfMatchingBatchSearchIsotopes_.getPreferredSize());
     amountOfMatchingBatchSearchIsotopes_.setText("1");
     amountOfMatchingBatchSearchIsotopes_.setHorizontalAlignment(JTextField.RIGHT);
 //    amountOfMatchingBatchSearchIsotopes_.setEnabled(false);
@@ -1612,6 +1486,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     settingsPanel3.add(maxProcessors,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     nrProcessorsBatch_ = new JTextField(3);
+    nrProcessorsBatch_.setMinimumSize(nrProcessorsBatch_.getPreferredSize());
     nrProcessorsBatch_.setText(String.valueOf(this.getAmountOfProcessorsPreferred()));
     nrProcessorsBatch_.setHorizontalAlignment(JTextField.RIGHT);
     nrProcessorsBatch_.setToolTipText(TooltipTexts.QUANTITATION_PROCESSORS);
@@ -1693,44 +1568,79 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private void createResultsMenu(){
     resultsMenu_ = new JPanel();
     resultsMenu_.setLayout(new GridBagLayout());
+    
+    
+    JPanel buttonPanel = new JPanel();
+    buttonPanel.setLayout(new GridBagLayout()); 
+    
+    resultsMenu_.add(buttonPanel,new GridBagConstraints(0, 0, 5, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));    
+    
     jButtonResultFilesOpen_ = new JButton("Add Files", addFilesIcon_);
     jButtonResultFilesOpen_.addActionListener(this);
     jButtonResultFilesOpen_.setActionCommand("showResultsFilesChooser");
     jButtonResultFilesOpen_.setToolTipText(TooltipTexts.STATISTICS_ADD_RESULT_FILES);
-    resultsMenu_.add(jButtonResultFilesOpen_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    buttonPanel.add(jButtonResultFilesOpen_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 5, 2, 0), 0, 0));
     
     jButtonResultsDirOpen_ = new JButton("Add Dir",addFolderIcon_);
     jButtonResultsDirOpen_.addActionListener(this);
     jButtonResultsDirOpen_.setActionCommand("showResultsDirChooser");
     jButtonResultsDirOpen_.setToolTipText(TooltipTexts.STATISTICS_ADD_DIR);
-    resultsMenu_.add(jButtonResultsDirOpen_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    buttonPanel.add(jButtonResultsDirOpen_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 2, 2, 0), 0, 0));
+    
     jButtonResultFilesRemove_ = new JButton("Remove",removeFilesIcon_);
     jButtonResultFilesRemove_.addActionListener(this);
     jButtonResultFilesRemove_.setActionCommand("removeResultFiles");
     jButtonResultFilesRemove_.setToolTipText(TooltipTexts.STATISTICS_REMOVE_SELECTION);
-    resultsMenu_.add(jButtonResultFilesRemove_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));    
+    buttonPanel.add(jButtonResultFilesRemove_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 2, 2, 0), 0, 0));    
     
     jButtonResultFilesClean_ = new JButton("Remove all",removeFilesIcon_);
     jButtonResultFilesClean_.addActionListener(this);
     jButtonResultFilesClean_.setActionCommand("removeAllResultFiles");
     jButtonResultFilesClean_.setToolTipText(TooltipTexts.STATISTICS_REMOVE_ALL_SELECTION);
-    resultsMenu_.add(jButtonResultFilesClean_,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    buttonPanel.add(jButtonResultFilesClean_,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 2, 2, 0), 0, 0));
+    
     jButtonResultAddToGroup_ = new JButton("Add to group",addToGroupIcon_);
     jButtonResultAddToGroup_.addActionListener(this);
     jButtonResultAddToGroup_.setActionCommand("addToGroup");
     jButtonResultAddToGroup_.setToolTipText(TooltipTexts.STATISTICS_ADD_TO_GROUP);
-    resultsMenu_.add(jButtonResultAddToGroup_,new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    buttonPanel.add(jButtonResultAddToGroup_,new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 2, 2, 0), 0, 0));    
 
     analysisSelectionTablePanel_ = new JPanel();
     this.generateResultsAnalysisTablePane(new String[0][0]);
 //    resultsMenu_.add(analysisSelectionTablePanel_);
     resultsMenu_.add(analysisSelectionTablePanel_,new GridBagConstraints(0, 1, 5, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));  
+    
+    JPanel statisticalAnalysisSettingsPanel = new JPanel();
+    statisticalAnalysisSettingsPanel.setLayout(new GridBagLayout()); 
+    
+    //frameHeight_+5 is the resulting dimension when analysisTablePane is added to analysisSelectionTablePanel_
+    statisticalAnalysisSettingsPanel.setPreferredSize(new Dimension(FRAME_HEIGHT+5, 350));
+    TitledBorder title;
+    Border loweredEtched = BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
+    title = BorderFactory.createTitledBorder(loweredEtched,"Settings for Statistical Analysis");
+    statisticalAnalysisSettingsPanel.setBorder(title);
+    
+    groupsPanel_= new GroupsPanel();
+    resultsMenu_.add(groupsPanel_ ,new GridBagConstraints(0, 2, 5, 1, 0.0, 0.0
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    cutoffSettingsPanel_ = new CutoffSettingsPanel(TooltipTexts.STATISTICS_ADD_CUTOFF_SETTINGS);
+    resultsMenu_.add(cutoffSettingsPanel_ ,new GridBagConstraints(0, 3, 5, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));  
+    
+    quantSettingsPanel_ = new AbsoluteQuantSettingsPanel (groupsPanel_);
+    resultsMenu_.add(quantSettingsPanel_ ,new GridBagConstraints(0, 4, 5, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0)); 
+    
+    resultsMenu_.add(statisticalAnalysisSettingsPanel,new GridBagConstraints(0, 5, 5, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(30, 0, 0, 0), 0, 0));
     
     JPanel groupRtPanel = new JPanel();
     groupRtPanel.setLayout(new GridBagLayout());  
@@ -1738,6 +1648,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     sepRtLabel.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
     groupRtPanel.add(sepRtLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    
     separateHitsByRT_  = new JCheckBox();
     separateHitsByRT_.setSelected(true);
     separateHitsByRT_.setActionCommand(CHANGE_SEPARATE_RT_STATUS);
@@ -1745,18 +1656,22 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     separateHitsByRT_.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
     groupRtPanel.add(separateHitsByRT_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    
     rtGroupingTime_ = new JTextField(3);
+    rtGroupingTime_.setMinimumSize(rtGroupingTime_.getPreferredSize());
     rtGroupingTime_.setHorizontalAlignment(JTextField.RIGHT);
     rtGroupingTime_.setInputVerifier(new DoubleVerifier(true));
     rtGroupingTime_.setText("0.1");
     rtGroupingTime_.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
     groupRtPanel.add(rtGroupingTime_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    
     rtTimeUnit_ = new JLabel("min");
     rtTimeUnit_.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
     groupRtPanel.add(rtTimeUnit_,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     
+    //start: added via the oxidized lipids extension
     JSeparator js = new JSeparator(SwingConstants.VERTICAL);
     js.setPreferredSize(new Dimension(5,1));
     GridBagConstraints gbc = new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
@@ -1793,7 +1708,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     groupRtPanel.add(showChainEvidenceStat_ ,new GridBagConstraints(9, 0, 1, 1, 0.0, 0.0
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     
-    
     js = new JSeparator(SwingConstants.VERTICAL);
     js.setPreferredSize(new Dimension(5,1));
     gbc = new GridBagConstraints(10, 0, 1, 1, 0.0, 0.0
@@ -1810,10 +1724,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     combineWithOx_.addItemListener(new LipidomicsItemListener("combineWithOx"));
     groupRtPanel.add(combineWithOx_ ,new GridBagConstraints(12, 0, 1, 1, 0.0, 0.0
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    //end: added via the oxidized lipids extension   
     
-    
-    resultsMenu_.add(groupRtPanel,new GridBagConstraints(0, 2, 5, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 15, 0), 0, 0));    
+    statisticalAnalysisSettingsPanel.add(groupRtPanel,new GridBagConstraints(0, 1, 5, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(5, 0, 15, 0), 0, 0));   
     
     JPanel correctOrderPanel = new JPanel();
     correctOrderPanel.setLayout(new GridBagLayout());  
@@ -1821,16 +1735,20 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     quantLabel.setToolTipText(TooltipTexts.STATISTICS_CORRECT_ORDER_FILE);
     correctOrderPanel.add(quantLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    
     correctOrderFile_ = new JTextField(35);
+    correctOrderFile_.setMinimumSize(correctOrderFile_.getPreferredSize());
     correctOrderFile_.setToolTipText(TooltipTexts.STATISTICS_CORRECT_ORDER_FILE);
     correctOrderPanel.add(correctOrderFile_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
       ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    
     JButton correctOpen = new JButton("Select");
     correctOpen.addActionListener(this);
     correctOpen.setActionCommand("showCorrectOrderFileChooser");
     correctOpen.setToolTipText(TooltipTexts.STATISTICS_CORRECT_ORDER_FILE);
     correctOrderPanel.add(correctOpen,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
       ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    
     if (Settings.useAlex()){
       JPanel correctOrderAlexPanel = new JPanel();
       correctOrderAlexPanel.setLayout(new GridBagLayout());
@@ -1852,31 +1770,35 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       correctOrderAlexPanel.add(ionModeInfo,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     }
-    resultsMenu_.add(correctOrderPanel,new GridBagConstraints(0, 3, 5, 1, 0.0, 0.0
+    
+    statisticalAnalysisSettingsPanel.add(correctOrderPanel,new GridBagConstraints(0, 2, 5, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 15, 0), 0, 0));    
     
-    groupsPanel_= new GroupsPanel();
-    resultsMenu_.add(groupsPanel_ ,new GridBagConstraints(0, 4, 5, 1, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
     JLabel label = new JLabel("Internal-standard prefix: ");
     label.setToolTipText(TooltipTexts.STATISTICS_IS_PREFIX);
-    resultsMenu_.add(label ,new GridBagConstraints(0, 5, 2, 1, 0.0, 0.0
+    statisticalAnalysisSettingsPanel.add(label ,new GridBagConstraints(0, 3, 2, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    
     internalStandardSelection_ = new JTextField(3);
+    internalStandardSelection_.setMinimumSize(internalStandardSelection_.getPreferredSize());
     internalStandardSelection_.setText(Settings.getInternalStandardDefaultInput());
     internalStandardSelection_.setToolTipText(TooltipTexts.STATISTICS_IS_PREFIX);
-    resultsMenu_.add(internalStandardSelection_ ,new GridBagConstraints(1, 5, 1, 1, 0.0, 0.0
+    statisticalAnalysisSettingsPanel.add(internalStandardSelection_ ,new GridBagConstraints(2, 3, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    
     label = new JLabel("External-standard prefix: ");
-    resultsMenu_.add(label ,new GridBagConstraints(0, 6, 2, 1, 0.0, 0.0
+    statisticalAnalysisSettingsPanel.add(label ,new GridBagConstraints(0, 4, 2, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    
     label.setToolTipText(TooltipTexts.STATISTICS_ES_PREFIX);
     externalStandardSelection_ = new JTextField(3);
+    externalStandardSelection_.setMinimumSize(externalStandardSelection_.getPreferredSize());
     externalStandardSelection_.setText(Settings.getExternalStandardDefaultInput());
     externalStandardSelection_.setToolTipText(TooltipTexts.STATISTICS_ES_PREFIX);
-    resultsMenu_.add(externalStandardSelection_ ,new GridBagConstraints(1, 6, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    statisticalAnalysisSettingsPanel.add(externalStandardSelection_ ,new GridBagConstraints(2, 4, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));    
 //    externalStandardSelection_.setToolTipText();
+    
     JPanel cutoffPanel = new JPanel();
     cutoffLoadButton_ = new JButton("Load settings");
     cutoffLoadButton_.addActionListener(this);
@@ -1904,8 +1826,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     cutoffWarningLabel_ = new JLabel("(Please specify result-files before)");
     cutoffWarningLabel_.setToolTipText(TooltipTexts.STATISTICS_ADD_CUTOFF_SETTINGS);
     cutoffPanel.add(cutoffWarningLabel_); 
-    resultsMenu_.add(cutoffPanel,new GridBagConstraints(3, 5, 2, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    statisticalAnalysisSettingsPanel.add(cutoffPanel,new GridBagConstraints(3, 3, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
 
     JPanel absQuantSetPanel = new JPanel();
     resultLoadButton_ = new JButton("Load settings");
@@ -1934,20 +1856,39 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     resultWarningLabel_ = new JLabel("(Please specify result-files before)");
     resultWarningLabel_.setToolTipText(TooltipTexts.STATISTICS_ADD_ABS_SETTINGS);
     absQuantSetPanel.add(resultWarningLabel_); 
-    resultsMenu_.add(absQuantSetPanel,new GridBagConstraints(3, 6, 2, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
-    cutoffSettingsPanel_ = new CutoffSettingsPanel(TooltipTexts.STATISTICS_ADD_CUTOFF_SETTINGS);
-    resultsMenu_.add(cutoffSettingsPanel_ ,new GridBagConstraints(0, 7, 5, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));  
-    quantSettingsPanel_ = new AbsoluteQuantSettingsPanel (groupsPanel_);
-    resultsMenu_.add(quantSettingsPanel_ ,new GridBagConstraints(0, 8, 5, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));  
+    statisticalAnalysisSettingsPanel.add(absQuantSetPanel,new GridBagConstraints(3, 4, 2, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    
+    JButton maxSize = new JButton("Remove absolute settings"); //longest text size the following two buttons need to be adjusted to
+    jButtonResultCutoff_.setPreferredSize(maxSize.getPreferredSize());
+    jButtonResultAbsQuant_.setPreferredSize(maxSize.getPreferredSize());
+    maxSize = null; //for garbage collection
+    
     jButtonResultFilesAccept_ = new JButton("Accept");
     jButtonResultFilesAccept_.addActionListener(this);
     jButtonResultFilesAccept_.setActionCommand("acceptSelectedResultFiles");
     jButtonResultFilesAccept_.setToolTipText(TooltipTexts.STATISTICS_ACCEPT_SELECTION);
-    resultsMenu_.add(jButtonResultFilesAccept_,new GridBagConstraints(0, 9, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    statisticalAnalysisSettingsPanel.add(jButtonResultFilesAccept_,new GridBagConstraints(4, 7, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(40, 0, 0, 0), 0, 0));
+    
+//    JPanel omegaMassListPanel = new JPanel();
+//    omegaMassListPanel.setLayout(new GridBagLayout()); 
+//    
+//    //x-Dimension of analysisTablePane + 5 as that's the resulting dimension when analysisTablePane is added to analysisSelectionTablePanel_
+//    omegaMassListPanel.setPreferredSize(new Dimension(frameHeight_+5, 100));
+//    title = BorderFactory.createTitledBorder(loweredEtched,"Create a MassList with retention times specific to \u03C9- double bond positions");
+//    omegaMassListPanel.setBorder(title);
+//    
+//    resultsMenu_.add(omegaMassListPanel,new GridBagConstraints(0, 6, 5, 1, 0.0, 0.0
+//        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+//    
+//    jButtonOmegaMassList_ = new JButton("Create \u03C9-MassList");
+//    jButtonOmegaMassList_.addActionListener(this);
+//    jButtonOmegaMassList_.setActionCommand("createOmegaMassList");
+//    jButtonOmegaMassList_.setToolTipText(TooltipTexts.STATISTICS_CREATE_MASSLIST);
+//    omegaMassListPanel.add(jButtonOmegaMassList_,new GridBagConstraints(0, 0, 0, 0, 0.0, 0.0
+//        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(10, 0, 0, 0), 0, 0));
     
   }
   
@@ -1964,6 +1905,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     selectionPanel.add(mzXMLLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     this.selectedMzxmlFile = new JTextField(62);
+    selectedMzxmlFile.setMinimumSize(selectedMzxmlFile.getPreferredSize());
     selectedMzxmlFile.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_RAW_FILE);
 //    selectedFile.setEnabled(false);
     
@@ -1979,6 +1921,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     chromLabel = new JLabel("Quantitation: ");
     chromLabel.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_MASS_LIST);
     this.selectedQuantFile = new JTextField(62);
+    selectedQuantFile.setMinimumSize(selectedQuantFile.getPreferredSize());
     selectedQuantFile.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_MASS_LIST);
     selectionPanel.add(selectedQuantFile,new GridBagConstraints(1, 1, 6, 1, 0.0, 0.0
       ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
@@ -2010,6 +1953,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     settingsPanel.add(timeMinusTolLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     singleTimeMinusTol_ = new JTextField(4);
+    singleTimeMinusTol_.setMinimumSize(singleTimeMinusTol_.getPreferredSize());
     singleTimeMinusTol_.setText("5");
     singleTimeMinusTol_.setHorizontalAlignment(JTextField.RIGHT);
     singleTimeMinusTol_.setToolTipText(TooltipTexts.QUANTITATION_RET_BEFORE);
@@ -2024,6 +1968,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     settingsPanel.add(timePlusTolLabel,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     singleTimePlusTol_ = new JTextField(4);
+    singleTimePlusTol_.setMinimumSize(singleTimePlusTol_.getPreferredSize());
     singleTimePlusTol_.setText("5");
     singleTimePlusTol_.setHorizontalAlignment(JTextField.RIGHT);
     singleTimePlusTol_.setToolTipText(TooltipTexts.QUANTITATION_RET_AFTER);
@@ -2038,6 +1983,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     settingsPanel.add(cutoffLabel,new GridBagConstraints(6, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     singleCutoff_ = new JTextField(4);
+    singleCutoff_.setMinimumSize(singleCutoff_.getPreferredSize());
     singleCutoff_.setText(LipidomicsConstants.getBasePeakDefaultCutoff());
     singleCutoff_.setHorizontalAlignment(JTextField.RIGHT);
     singleCutoff_.setToolTipText(TooltipTexts.QUANTITATION_CUTOFF);
@@ -2052,6 +1998,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     settingsPanel.add(rtShiftLabel,new GridBagConstraints(9, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     singleRTShift_ = new JTextField(4);
+    singleRTShift_.setMinimumSize(singleRTShift_.getPreferredSize());
     singleRTShift_.setText("0.0");
     singleRTShift_.setHorizontalAlignment(JTextField.RIGHT);
     singleRTShift_.setToolTipText(TooltipTexts.QUANTIFICATION_RET_SHIFT);
@@ -2078,6 +2025,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     settingsPanel2.add(allowIsotopicValidation,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     amountOfIsotopes_ = new JTextField(4);
+    amountOfIsotopes_.setMinimumSize(amountOfIsotopes_.getPreferredSize());
     amountOfIsotopes_.setText("2");
     amountOfIsotopes_.setHorizontalAlignment(JTextField.RIGHT);
     amountOfIsotopes_.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
@@ -2088,6 +2036,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     settingsPanel2.add(isotopePeaks,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     amountOfMatchingSearchIsotopes_ = new JTextField(4);
+    amountOfMatchingSearchIsotopes_.setMinimumSize(amountOfMatchingSearchIsotopes_.getPreferredSize());
     amountOfMatchingSearchIsotopes_.setText("1");
     amountOfMatchingSearchIsotopes_.setHorizontalAlignment(JTextField.RIGHT);
     amountOfMatchingSearchIsotopes_.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
@@ -2118,6 +2067,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     settingsPanel3.add(maxProcessors,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     nrProcessors_ = new JTextField(3);
+    nrProcessors_.setMinimumSize(nrProcessors_.getPreferredSize());
     nrProcessors_.setText(String.valueOf(this.getAmountOfProcessorsPreferred()));
     nrProcessors_.setHorizontalAlignment(JTextField.RIGHT);
     nrProcessors_.setToolTipText(TooltipTexts.QUANTITATION_PROCESSORS);
@@ -2242,7 +2192,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
          if (avoidDuplicates.size()>0){
            this.updateAnalysisSelectionTable();
          }
-         if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove abs settings")||jButtonResultCutoff_.getText().equalsIgnoreCase("Remove cutoff settings"))
+         if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove absolute settings")||jButtonResultCutoff_.getText().equalsIgnoreCase("Remove cutoff settings"))
            subCommand = "removeSettings";
          
       } else return;
@@ -2273,7 +2223,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         if (avoidDuplicates.size()>0){
           this.updateAnalysisSelectionTable();
         }
-        if (resultFileCandidates.length>0 && jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove abs settings")||jButtonResultCutoff_.getText().equalsIgnoreCase("Remove cutoff settings"))
+        if (resultFileCandidates.length>0 && jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove absolute settings")||jButtonResultCutoff_.getText().equalsIgnoreCase("Remove cutoff settings"))
           subCommand = "removeSettings";
       } else return;
     }
@@ -2296,7 +2246,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       } else return;
     }
     if (this.resultFiles_!=null && command.equalsIgnoreCase("removeResultFiles")){
-      int[] selectedColumns = resultFilesDisplayTable.getSelectedRows();
+      int[] selectedColumns = resultFilesDisplayTable_.getSelectedRows();
       if (selectedColumns!=null && selectedColumns.length>0){
         List<Integer> selectedList = new ArrayList<Integer>();
         for (int i=0;i!=selectedColumns.length;i++){
@@ -2310,7 +2260,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         }
         groupsPanel_.removeFiles(filesToRemove);
         this.updateAnalysisSelectionTable();
-        if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove abs settings")||jButtonResultCutoff_.getText().equalsIgnoreCase("Remove cutoff settings"))
+        if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove absolute settings")||jButtonResultCutoff_.getText().equalsIgnoreCase("Remove cutoff settings"))
           subCommand = "removeSettings";
       }
     }
@@ -2318,24 +2268,24 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       this.resultFiles_ = new Vector<File>();
       this.groupsPanel_.removeAllGroups();
       this.updateAnalysisSelectionTable();
-      if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove abs settings")||jButtonResultCutoff_.getText().equalsIgnoreCase("Remove cutoff settings"))
+      if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove absolute settings")||jButtonResultCutoff_.getText().equalsIgnoreCase("Remove cutoff settings"))
         subCommand = "removeSettings";
     }
     if (command.equalsIgnoreCase("addToGroup")){
       if (resultFiles_!=null){
-        int[] selectedColumns = resultFilesDisplayTable.getSelectedRows();
+        int[] selectedColumns = resultFilesDisplayTable_.getSelectedRows();
         if (selectedColumns!=null && selectedColumns.length>0){
           Vector<File> selectedFiles = new Vector<File>();
           for (int selectedColumn : selectedColumns){
             selectedFiles.add(resultFiles_.get(selectedColumn));
           }
-          resultFilesDisplayTable.getSelectionModel().clearSelection();
+          resultFilesDisplayTable_.getSelectionModel().clearSelection();
           int amountGroups = groupsPanel_.getGroups().size();
           InputDialog dlg = new InputDialog(new JFrame(), "Add to group", "Enter the group name", "Group "+String.valueOf(amountGroups+1));
           String groupName = dlg.getEnteredText();
           if (groupName!=null&&groupName.length()>0){
             groupName = groupName.trim();
-            groupsPanel_.addGroup(groupName,selectedFiles,getWidth());
+            groupsPanel_.addGroup(groupName,selectedFiles,FRAME_HEIGHT);
           }else{
             new WarningMessage(new JFrame(), "Warning", "You have to specifiy a name for the group!");
           }
@@ -2596,7 +2546,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 //        boolean wasWarningMessage=false;
         if (selectedMzxmlDirectory_.getText()==null||selectedMzxmlDirectory_.getText().length()<1){
           @SuppressWarnings("unused")
-          WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a raw, mzXML or chrom file directory");
+          WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a raw, mzXML, mzML or chrom file directory");
 //          wasWarningMessage=true;
         }else if (selectedQuantDir_.getText()==null||selectedQuantDir_.getText().length()<1){
           @SuppressWarnings("unused")
@@ -2850,7 +2800,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 //        boolean wasWarningMessage=false;
         if (selectedMzxmlFile.getText()==null||selectedMzxmlFile.getText().length()<1){
           @SuppressWarnings("unused")
-          WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a raw, mzXML or chrom file");
+          WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a raw, mzXML, mzML or chrom file");
 //          wasWarningMessage=true;
         }else if (selectedQuantFile.getText()==null||selectedQuantFile.getText().length()<1){
           @SuppressWarnings("unused")
@@ -2912,6 +2862,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
             QuantificationThread.setAnalyzerProperties(analyzer_);
             analyzer_.setGeneralBasePeakCutoff(0f);
             this.readResultFile(selectedResultFile.getText());
+            
+            Component[] components = tablePanel_.getComponents();
+            for (Component component : components) {
+              if (component.equals(displayTolerancePanel_)) {
+                tablePanel_.remove(component);
+              }
+            }
+            boolean showOmegaEditingTools = LipidParameterSet.isOmegaInformationAvailable() || Settings.getAlwaysEditOmega();
+            displayTolerancePanel_ = defineDisplayTolerancePanel(showOmegaEditingTools);
+            tablePanel_.add(displayTolerancePanel_,BorderLayout.SOUTH);
             this.updateSheetSelectionList();
             this.params_ = null;
             RuleDefinitionInterface.clearCacheDir();
@@ -3065,7 +3025,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           
           try {
             extractor.parseInput();
-            jButtonResultAbsQuant_.setText("Remove abs settings");
+            jButtonResultAbsQuant_.setText("Remove absolute settings");
             jButtonResultAbsQuant_.setToolTipText(TooltipTexts.STATISTICS_REMOVE_ABS_SETTINGS);
             resultWarningLabel_.setVisible(false);
             resultLoadButton_.setVisible(true); 
@@ -3344,44 +3304,23 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       recalcDialog_ = null;
     }else if (command.equalsIgnoreCase("AcceptChangedRT")){
       LipidParameterSet set = getAnalyteInTableAtPosition(currentSelected_);
-      set.setRt(editRtDialog_.getRt());
-      storeResultsToExcel();
+      LipidParameterSet originalSet = new LipidParameterSet(set);
+      set.setPreciseRt(editRtDialog_.getRt());
+      try {
+        storeResultsToExcel(currentSelected_);
+      } catch (ExportException ex) {
+        set = originalSet;
+      }
       editRtDialog_ = null;
     }else if (command.equalsIgnoreCase("DeclineChangedRT")){
       editRtDialog_ = null;
+    } else if (command.equals(EditOmegaAssignmentJTable.getSaveChangesCommand())) {
+      storeOmegaResultsToExcel(currentSelected_);
     } else if (command.equalsIgnoreCase("AcceptExportSettings")){
       exportSettings_.setVisible(false);
       if (exportSettingsGroup_!=null)
         exportSettingsGroup_.setVisible(false);
-    } 
-    
-    //TODO: remove when alternative isoLabel algo is finalized
-//    else if (command.equalsIgnoreCase("AcceptOmegaExport")) {
-//      Vector<IsotopicLabelVO> labelInfo = omegaExport_.getEnteredLabelInformation();
-//      //TODO: this is only for debugging
-//      for (IsotopicLabelVO label : labelInfo)
-//        System.out.println(label);
-//      
-//      // get the directory where to store the omega mass list file
-//      exportFileChooser_.setFileSelectionMode(JFileChooser.FILES_ONLY);
-//      String fileName = "n-Masslist.xlsx";
-//      String confirmDialogTitle = "\u03C9-RT export";
-//      FileNameExtensionFilter filter = new FileNameExtensionFilter("Microsoft Office Excel Woorkbook (*.xlsx)","xlsx");
-//      exportFileChooser_.setSelectedFile(new File(fileName));
-//      exportFileChooser_.setFileFilter(filter);
-//      if (JOptionPane.showConfirmDialog(this, "Only selected analytes with the current isotopes selected will be exported! Continue?",confirmDialogTitle,JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){
-//        int returnVal = exportFileChooser_.showSaveDialog(new JFrame());
-//        if (returnVal != JFileChooser.APPROVE_OPTION)
-//          return;
-//        File fileToStore = exportFileChooser_.getSelectedFile();
-//        @SuppressWarnings("rawtypes")
-//        Vector results = HeatMapDrawing.checkFileStorage(fileToStore,"txt",resultsPanel_);
-//        fileToStore = (File)results.get(0);
-//        if ((Boolean)results.get(1))
-//          exportOmegaMasslist(fileToStore,labelInfo);
-//      }
-//      exportFileChooser_.setSelectedFile(new File(""));
-//    }
+    }
   }
   
   public void showExportSettingsDialog(boolean grouped){
@@ -3397,25 +3336,46 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
    * @param position the position in the table where the object shall be updated
    */
   private void updateLipidParameterSet(LipidParameterSet newOne, int position){
+    QuantificationResult originalResult = new QuantificationResult(result_);
     int originalPosition = resultPositionToOriginalLoopkup_.get(currentSelected_);
     result_.getIdentifications().get(currentSelectedSheet_).remove(originalPosition);
     result_.getIdentifications().get(currentSelectedSheet_).add(originalPosition,newOne);
-    storeResultsToExcel();
+    try {
+      storeResultsToExcel(currentSelected_);
+    } catch (ExportException ex) {
+      result_ = originalResult;
+    }
   }
   
   /**
-   * stores the current results back to the Excel file
+   * stores the current results back to the Excel file, only if successful the selection table is updated
+   * @param position position to change the selection to
    */
-  private void storeResultsToExcel(){
+  private void storeResultsToExcel(int position) throws ExportException {
     try {
       QuantificationResultExporter.writeResultsToExcel(selectedResultFile.getText(), result_);
-      this.readResultFile(selectedResultFile.getText(),true);
       this.updateResultListSelectionTable();
-      this.displayTable.changeSelection(this.currentSelected_, 1, false, false);
-      listSelectionChanged(this.currentSelected_);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }    
+      this.displayTable_.changeSelection(position, 1, false, false);
+      listSelectionChanged(position);
+    } catch (ExportException ex) {
+      new WarningMessage(new JFrame(), "Error", ex.getMessage());
+      ex.printStackTrace();
+      throw new ExportException(ex);
+    }   
+  }
+  
+  private void storeOmegaResultsToExcel(int position) {
+    try {
+      QuantificationResultExporter.writeResultsToExcel(selectedResultFile.getText(), result_);
+      EditOmegaAssignmentJTable.setSaveLipidParameterSet(true);
+      updateResultListSelectionTable();
+      displayTable_.changeSelection(position, 1, false, false);
+      listSelectionChanged(position);
+    } catch (ExportException ex) {
+      EditOmegaAssignmentJTable.setSaveLipidParameterSet(false);
+      new WarningMessage(new JFrame(), "Error", ex.getMessage());
+      ex.printStackTrace();
+    }
   }
   
   private void selectCorrespondingSpectrum(boolean next){
@@ -3429,7 +3389,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       else specNumber--;
       try {
        param = rdi.testForMSnDetection(spectrumPainter_.getMs2LevelSpectrumSelected(specNumber));
-       rangeColors = StaticUtils.createRangeColorVOs(param, ((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentSelected_),
+       rangeColors = StaticUtils.createRangeColorVOs(param, ((LipidomicsTableModel)displayTable_.getModel()).getMSnIdentificationName(currentSelected_),
            result_.getFaHydroxyEncoding(), result_.getLcbHydroxyEncoding(), areTheseAlex123MsnFragments());
       }
       catch (NoRuleException | IOException
@@ -3460,13 +3420,15 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   
   @SuppressWarnings("unchecked")
   private void acceptResultFiles(){
+    long timeMillis_0 = System.currentTimeMillis();
+    System.out.println("fastExcel Start!");
     this.cleanupResultView();
     expDisplayNamesLookup_ = new Hashtable<String,String>();
     if (this.resultFiles_!=null&&this.resultFiles_.size()>0){
       AbsoluteSettingsVO absSettingVO = null;
       Hashtable<String,Double> cutoffValues = null;
       int maxCutoffIsotope = -1;
-      if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove abs settings")){
+      if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove absolute settings")){
         try {
           absSettingVO = quantSettingsPanel_.getSettingsVO();
         }
@@ -3520,7 +3482,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
             classSequence,correctAnalyteSequence,quantObjects,expRtGroupingTime);
       }
       try {
+        long before = System.currentTimeMillis();
         analysisModule_.parseInput(statisticsViewMode_,combineOxWithNonOx_);
+        System.out.println(String.format("Total time required by the reading: %s !", 
+            (System.currentTimeMillis()-before)/1000.0));
         analysisModule_.calculateStatistics();
         analysisModule_.getNrOfChainsOfClass();
         this.expDisplayNamesLookup_ = analysisModule_.getExpNames();
@@ -3541,15 +3506,18 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       }
         this.generateHeatMaps();
     }else{
-      @SuppressWarnings("unused")
-      WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "Please specify the files to analyze! There have to be at least two!!");
+      new WarningMessage(new JFrame(), "Error", "Please specify the files to analyze!");
     }
+    long timeMillis_1 = System.currentTimeMillis();
+    
+    System.out.println(String.format("Total time required by fastExcel: %s !", 
+        (timeMillis_1-timeMillis_0)/1000.0));
   }
+  
   
   private void generateHeatMaps(){
     heatmaps_ = new Hashtable<String,HeatMapDrawing>();
     Hashtable<String,Hashtable<String,Hashtable<String,ResultCompVO>>> analysisResults = analysisModule_.getResults();
-    Hashtable<String,Vector<String>> moleculeNames =  analysisModule_.getAllMoleculeNames();
     Hashtable<String,Hashtable<String,Integer>> corrTypeISLookup = analysisModule_.getCorrectionTypeISLookup();
     Hashtable<String,Hashtable<String,Integer>> corrTypeESLookup = analysisModule_.getCorrectionTypeESLookup();
     Vector<String> expNames = analysisModule_.getExpNamesInSequence();
@@ -3564,122 +3532,40 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     Hashtable<String,ResultDisplaySettings> displaySettingHash = new Hashtable<String,ResultDisplaySettings>();
     
     colorChooserDialog_ = new ColorChooserDialog(new JFrame(),"",expNames,groupsPanel_.getGroups(),this);
-    int groupCount = 0;
     exportSettings_ = new ExportSettingsPanel(false,this);
     exportSettingsGroup_ = null;
     if (this.groupsPanel_.getGroups().size()>0)
       exportSettingsGroup_ = new ExportSettingsPanel(true,this);
     
-    	//TODO: remove when alternative isoLabel algo is finalized
-//    omegaExport_ = new OmegaExportDialog("\u03C9-RT export",analysisModule_.getIsoLabels(),this);
-//    omegaExport_.setVisible(false);
-    
-    for (String molGroup : analysisResults.keySet()){
-      JPanel aResultsViewPanel = new JPanel(new BorderLayout());
-      JTabbedPane resultsViewTabs= new JTabbedPane();
-      groupCount++;
-      aResultsViewPanel.add(resultsViewTabs,BorderLayout.CENTER);
-      Hashtable<String,Hashtable<String,ResultCompVO>> resultsOfOneGroup = analysisResults.get(molGroup);
-      Vector<String> molNames = moleculeNames.get(molGroup);
-      Hashtable<String,Integer> isLookup = new Hashtable<String,Integer> ();
-      Hashtable<String,Integer> esLookup = new Hashtable<String,Integer> ();
-      if (corrTypeISLookup.containsKey(molGroup))
-        isLookup = corrTypeISLookup.get(molGroup);
-      if (corrTypeESLookup.containsKey(molGroup))
-        esLookup = corrTypeESLookup.get(molGroup);
-      
-      JPanel aPanel = new JPanel();
-      aPanel.setLayout(new BorderLayout());
-      boolean hasAbs = false;
-      boolean hasProtein = false;
-      boolean hasSampleWeight = false;
-      boolean hasNeutralLipid = false;
-      if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove abs settings")){
-        hasAbs = true;
-        try {
-          if (this.quantSettingsPanel_.getSettingsVO().getVolumeSettings().size()>0 &&
-              this.quantSettingsPanel_.getSettingsVO().getVolumeSettings().values().iterator().next().getProteinConc()!=null)
-            hasProtein = true;
-          if (this.quantSettingsPanel_.getSettingsVO().getVolumeSettings().size()>0 &&
-              this.quantSettingsPanel_.getSettingsVO().getVolumeSettings().values().iterator().next().getNeutralLipidConc()!=null)
-            hasNeutralLipid = true;
-          if (this.quantSettingsPanel_.getSettingsVO().getVolumeSettings().size()>0 &&
-              this.quantSettingsPanel_.getSettingsVO().getVolumeSettings().values().iterator().next().getSampleWeight()!=null)
-            hasSampleWeight = true;
-
-        }
-        catch (AbsoluteSettingsInputException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        }
-      }
-      ResultDisplaySettings displaySettings = new ResultDisplaySettings(analysisModule_.getISAvailability().get(molGroup),analysisModule_.getESAvailability().get(molGroup),isLookup,esLookup,hasAbs,
-          hasSampleWeight,hasProtein,hasNeutralLipid);
-      ResultSelectionSettings selectionSettings = new ResultSelectionSettings(null,molNames,true);
-      ResultSelectionSettings combinedChartSettings = new ResultSelectionSettings(null,molNames,false);
-      HeatMapDrawing drawing = new HeatMapDrawing(molGroup,resultsOfOneGroup, expNames,molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,null,
-          displaySettings,selectionSettings,combinedChartSettings,exportSettings_,analysisModule_.getRtTolerance());
-      
-      //TODO: remove when alternative isoLabel algo is finalized
-//      HeatMapDrawing drawing = new HeatMapDrawing(molGroup,resultsOfOneGroup, expNames,molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,null,
-//          displaySettings,selectionSettings,combinedChartSettings,exportSettings_,omegaExport_, analysisModule_.getRtTolerance());
-      displaySettings.addActionListener(drawing);
-      selectionSettings.addActionListener(drawing);
-      combinedChartSettings.addActionListener(drawing);
-      JScrollPane scrollPane = new JScrollPane(drawing);
-      int[] widthAndHeight = getScrollPaneWidthAndHeight(drawing);
-      scrollPane.setPreferredSize(new Dimension(widthAndHeight[0], widthAndHeight[1]));
-      heatmaps_.put(molGroup, drawing);
-      if (expNames.size()>25)
-        aPanel.add(scrollPane,BorderLayout.CENTER);
-      else
-        aPanel.add(scrollPane,BorderLayout.WEST);
-      resultsViewTabs.addTab("Heatmap", aPanel);
-      resultsViewTabs.setToolTipTextAt(0, TooltipTexts.TABS_RESULTS_HEATMAP+molGroup+"</html>");
-      JPanel barChartPanel = new JPanel();
-      resultsViewTabs.addTab("Bar-chart", barChartPanel);
-      resultsViewTabs.setToolTipTextAt(1, TooltipTexts.TABS_RESULTS_BARCHART+molGroup+"</html>");
-      if (this.groupsPanel_.getGroups().size()>0){
-        Hashtable<String,Hashtable<String,ResultCompVO>> groupedResultsOfOneGroup = groupedAnalysisResults.get(molGroup);
-        JPanel groupPanel = new JPanel();
-        groupPanel.setLayout(new BorderLayout());
-        HeatMapDrawing groupDrawing = new HeatMapDrawing(molGroup,groupedResultsOfOneGroup, this.groupsPanel_.getGroups(),molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,
-            drawing, displaySettings,selectionSettings,combinedChartSettings,exportSettingsGroup_,analysisModule_.getRtTolerance());
-        //TODO: remove when alternative isoLabel algo is finalized
-//        HeatMapDrawing groupDrawing = new HeatMapDrawing(molGroup,groupedResultsOfOneGroup, this.groupsPanel_.getGroups(),molNames, isLookup,esLookup,analysisModule_.getMaxIsotopesOfGroup(molGroup),analysisModule_.getModifications().get(molGroup), resultStatus_,this,molGroup,
-//            drawing, displaySettings,selectionSettings,combinedChartSettings,exportSettingsGroup_,omegaExport_,analysisModule_.getRtTolerance());
-        displaySettings.addActionListener(groupDrawing);
-        selectionSettings.addActionListener(groupDrawing);
-        combinedChartSettings.addActionListener(groupDrawing);
-        JScrollPane groupScrollPane = new JScrollPane(groupDrawing);
-        int[] groupWidthAndHeight = getScrollPaneWidthAndHeight(groupDrawing);
-        scrollPane.setPreferredSize(new Dimension(groupWidthAndHeight[0], groupWidthAndHeight[1]));
-        groupHeatmaps_.put(molGroup, groupDrawing);
-        groupPanel.add(groupScrollPane,BorderLayout.WEST);
-        resultsViewTabs.addTab("Group-Heatmap", groupPanel);
-        resultsViewTabs.setToolTipTextAt(2, TooltipTexts.TABS_RESULTS_HEATMAP_GROUP+molGroup+"</html>");
-        JPanel groupBarChartPanel = new JPanel();
-        resultsViewTabs.addTab("Group bar-chart", groupBarChartPanel);
-        resultsViewTabs.setToolTipTextAt(3, TooltipTexts.TABS_RESULTS_BARCHART_GROUP+molGroup+"</html>");
-      }
-      displaySettingHash.put(molGroup, displaySettings);
-      molBarCharts_.put(molGroup, resultsViewTabs);
-//        resultTabs_.addTab(molGroup,aPanel);
-      resultTabs_.addTab(molGroup,aResultsViewPanel);
-      resultTabs_.setToolTipTextAt(groupCount, TooltipTexts.TABS_RESULTS_GROUP+molGroup+"</html>");      
+    long before = System.currentTimeMillis();
+    ExecutorService threadpool = Executors.newFixedThreadPool(getAmountOfProcessorsPreferred());
+    for (String molGroup : analysisResults.keySet())
+    {
+//    	HeatMapBuilder builder = new HeatMapBuilder(displaySettingHash, molGroup);
+//    	builder.run();
+    	threadpool.execute(new HeatMapBuilder(displaySettingHash, molGroup));
     }
+    threadpool.shutdown();
+    try { threadpool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); } catch (InterruptedException e) {}
+    
+    System.out.println(String.format("Time required by the heatmap gen in total: %s !", 
+    		(System.currentTimeMillis()-before)/1000.0));
+    
     if (analysisResults.size()>0)
       resultTabs_.setSelectedIndex(1);
     if (analysisResults.size()>1){
+    	String overview = "Overview";
       classOverviewPanel_ = new ClassesOverviewPanel(expNames,this,analysisModule_,displaySettingHash,heatmaps_,corrTypeISLookup,corrTypeESLookup,analysisResults,colorChooserDialog_);
-      resultTabs_.addTab("Overview", classOverviewPanel_);
-      resultTabs_.setToolTipTextAt(groupCount+1, TooltipTexts.TABS_RESULTS_OVERVIEW);
+      resultTabs_.addTab(overview, classOverviewPanel_);
+      resultTabs_.setToolTipTextAt(resultTabs_.indexOfTab(overview), TooltipTexts.TABS_RESULTS_OVERVIEW);
       if (this.groupsPanel_.getGroups().size()>0){
+      	String overviewGroup = "O.view-Group";
         classOverviewGroupPanel_ = new ClassesOverviewPanel(groupsPanel_.getGroups(),this,analysisModule_,displaySettingHash,heatmaps_,corrTypeISLookup,corrTypeESLookup,groupedAnalysisResults,colorChooserDialog_);
-        resultTabs_.addTab("O.view-Group", classOverviewGroupPanel_);
-        resultTabs_.setToolTipTextAt(groupCount+2, TooltipTexts.TABS_RESULTS_OVERVIEW_GROUPS);
+        resultTabs_.addTab(overviewGroup, classOverviewGroupPanel_);
+        resultTabs_.setToolTipTextAt(resultTabs_.indexOfTab(overviewGroup), TooltipTexts.TABS_RESULTS_OVERVIEW_GROUPS);
       }
     }
+
   }
   
   private void readResultFile(String filePath) throws ExcelInputFileException{
@@ -3690,7 +3576,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     resultsShowModification_ = new Hashtable<String,Boolean>();
     if (!keepOrder) orderResultsType_ = new Hashtable<String,Integer>();
     result_ = LDAResultReader.readResultFile(filePath,  resultsShowModification_);
-    originalResult_ = LDAResultReader.readResultFile(filePath,  resultsShowModification_);
+    
+    //start: added via the oxidized lipids extension
+    originalResult_ = new QuantificationResult(result_); //changed to deep copy instead of reading the file again => TODO: make sure this is fine
     
     MSnResult_ = LDAResultReader.readResultFile(filePath,  resultsShowModification_);
     chainResult_ = LDAResultReader.readResultFile(filePath,  resultsShowModification_);
@@ -3716,6 +3604,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     }
     MSnResult_.setIdentifications(MSnHash);
     chainResult_.setIdentifications(chainHash);
+    //end: added via the oxidized lipids extension
     
     if (result_.getConstants()!=null && result_.getConstants().getShotgun()>LipidomicsConstants.SHOTGUN_FALSE)
       disableChromatographyFeatures();
@@ -3965,8 +3854,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         ; // Ignore exception because we can't do anything.  Will use default.
       }      
     }
-
-    frame_ = new MainFrame(new LipidDataAnalyzer(), 1050, 950);
+    
+    frame_ = new MainFrame(new LipidDataAnalyzer(), FRAME_WIDTH, FRAME_HEIGHT);
     frame_.setTitle(getFrameTitleString());
   }
   
@@ -4199,6 +4088,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     if (orderResultsType_.containsKey(selectedSheet_.getSelectedItem()))
       orderType = orderResultsType_.get(selectedSheet_.getSelectedItem());
     resultPositionToOriginalLoopkup_ = new Hashtable<Integer,Integer>();
+    resultPositionToMolecularSpeciesLookup_ = new Hashtable<Integer,String>();
     Vector<LipidParameterSet> lipids = result_.getIdentifications().get(selectedSheet_.getSelectedItem());
     Vector<LipidParameterSet> lipidsOrdered = new Vector<LipidParameterSet>();
     if (orderType==LipidomicsJTable.ORDER_TYPE_MZ || orderType==LipidomicsJTable.ORDER_TYPE_INTENSITY){
@@ -4215,15 +4105,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         lipidsOrdered.add(count,analyte);
       }
     } else lipidsOrdered = new Vector<LipidParameterSet>(lipids);
-    LipidomicsTableModel model = new LipidomicsTableModel(lipidsOrdered,lipids,showMSnNames_.isSelected(),resultsShowModification_.get(selectedSheet_.getSelectedItem()));
+    LipidomicsTableModel model = new LipidomicsTableModel(lipidsOrdered,lipids,showMSnNames_.isSelected(),showOmegaNames_.isSelected(),resultsShowModification_.get(selectedSheet_.getSelectedItem()));
     resultPositionToOriginalLoopkup_ = model.getPositionToOriginal(); 
-    displayTable = new LipidomicsJTable(model, new LipidomicsTableCellRenderer(),
+    resultPositionToMolecularSpeciesLookup_ = model.getRowToMolecularSpeciesHumanReadable();
+    displayTable_ = new LipidomicsJTable(model, new LipidomicsTableCellRenderer(),
         reader_.getHighestMsLevel()>1&&reader_.getMsmsType().equalsIgnoreCase(ChromatogramReader.CHROMATOGRAM_HEADER_FILE_MSMS_TYPE_PRECURSOR), orderType,
         QuantificationThread.hasRtInfo(result_.getIdentifications()),this);
-    listSelectionModel = displayTable.getSelectionModel();
-    displayTable.setSelectionModel(listSelectionModel);
+    listSelectionModel = displayTable_.getSelectionModel();
+    displayTable_.setSelectionModel(listSelectionModel);
     listSelectionModel.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-    tablePane = new JScrollPane(displayTable);
+    tablePane = new JScrollPane(displayTable_);
     tablePane.setPreferredSize(new Dimension(420, 130));
     tablePanel_.add(tablePane,BorderLayout.CENTER);
     tablePanel_.invalidate();
@@ -4232,7 +4123,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   }
   
   private void updateAnalysisSelectionTable(){
-    analysisSelectionTablePanel_.remove(analysisTablePane);
+    analysisSelectionTablePanel_.remove(analysisTablePane_);
     String[][] tableData = new String[resultFiles_.size()][2];
     int count=0;
     for (File file : resultFiles_){
@@ -4248,17 +4139,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   }
   
   private void generateResultsAnalysisTablePane(String[][] tableData){
-    int columnWidth = 950;
-    int tableWidth = columnWidth-3;
-    if (tableData.length>24)
-      tableWidth = columnWidth-18;
-    String[] columnNames = { "file name", "directory" };
-    resultFilesDisplayTable = new JTable(tableData, columnNames);
-    resultListSelectionModel = resultFilesDisplayTable.getSelectionModel();
-    resultFilesDisplayTable.setSelectionModel(resultListSelectionModel);
-    resultListSelectionModel.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);  
-    analysisTablePane = new JScrollPane(resultFilesDisplayTable);
-    analysisTablePane.setPreferredSize(new Dimension(columnWidth, 300));
+    int tableWidth = RESULTS_TABLE_WIDTH;
+    //18 is the width of the scrollbar and needs to be subtracted from tableWidth to get the space available for the columns
+    int columnWidth = tableWidth-18;
+    String[] columnNames = { "File Name", "Directory" };
+    resultFilesDisplayTable_ = new JTable(tableData, columnNames);
+    resultListSelectionModel_ = resultFilesDisplayTable_.getSelectionModel();
+    resultFilesDisplayTable_.setSelectionModel(resultListSelectionModel_);
+    resultListSelectionModel_.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);  
+    analysisTablePane_ = new JScrollPane(resultFilesDisplayTable_);
+    analysisTablePane_.setPreferredSize(new Dimension(tableWidth, 300));
     if (tableData!=null && tableData.length>0){
       int longestFirstColumnElement = 0;
       int longestSecondColumnElement = 0;
@@ -4273,18 +4163,18 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         percentOne = 0.25;
       if (percentOne>0.75)
         percentOne = 0.75;
-      int columnWidthOne = (int)((double)tableWidth*percentOne);
-      int columnWidthTwo = tableWidth-columnWidthOne;
-      resultFilesDisplayTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-      resultFilesDisplayTable.getColumnModel().getColumn(0).setPreferredWidth(columnWidthOne);
-      resultFilesDisplayTable.getColumnModel().getColumn(1).setPreferredWidth(columnWidthTwo);
+      int columnWidthOne = (int)((double)columnWidth*percentOne);
+      int columnWidthTwo = columnWidth-columnWidthOne;
+      resultFilesDisplayTable_.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+      resultFilesDisplayTable_.getColumnModel().getColumn(0).setPreferredWidth(columnWidthOne);
+      resultFilesDisplayTable_.getColumnModel().getColumn(1).setPreferredWidth(columnWidthTwo);
     }
-    analysisSelectionTablePanel_.add(analysisTablePane);
+    analysisSelectionTablePanel_.add(analysisTablePane_);
     
   }
    
   
-  private void change2DTypeState(ItemEvent e, String command){
+  protected void change2DTypeState(ItemEvent e, String command){
     if (command.equalsIgnoreCase("DisplayModeRaw") && this.l2DPainter_!=null){
       this.l2DPainter_.setRaw(true);
       this.l2DPainter_.repaint();
@@ -4312,10 +4202,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     		showChainEvidence_.setSelected(false);
     		showChainEvidence_.setEnabled(false);
     		result_ = originalResult_;
-    	
     	}
-        this.updateResultListSelectionTable();
-      }
+      this.updateResultListSelectionTable();
+    }
     if (command.equalsIgnoreCase("showChainOnly")){
     	if(this.showChainEvidence_.isSelected())
     	{
@@ -4324,9 +4213,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     	else {
     		result_ = MSnResult_;
     	}
-        this.updateResultListSelectionTable();
-     }
-    
+      this.updateResultListSelectionTable();
+    }
     if (command.equalsIgnoreCase("showMSnOnlyStat")){
     	if(this.showMSnEvidenceStat_.isSelected())
     	{
@@ -4338,7 +4226,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     		showChainEvidenceStat_.setSelected(false);
     		showChainEvidenceStat_.setEnabled(false);
     	}
-      }
+    }
     if (command.equalsIgnoreCase("showChainOnlyStat")){
     	if(this.showChainEvidenceStat_.isSelected())
     	{
@@ -4347,7 +4235,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     	else {
     		statisticsViewMode_ = 0;
     	}
-     }
+    }
     if (command.equalsIgnoreCase("combineWithOx")){
     	if(this.combineWithOx_.isSelected())
     	{
@@ -4356,9 +4244,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     	else {
     		combineOxWithNonOx_ = false;
     	}
-     }
-    
-    
+    }
     if (command.equalsIgnoreCase("DisplayModeAbundance")){
       this.spectrumPainter_.setRelativeValues(relAbund_.isSelected());
       this.spectrumPainter_.repaint();
@@ -4405,6 +4291,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         }
       }
     } else if (command.equalsIgnoreCase("showMSnNames")){
+      updateResultListSelectionTable();
+    } else if (command.equalsIgnoreCase("showOmegaNames")) {
       updateResultListSelectionTable();
     } else if (command.equalsIgnoreCase(CHANGE_LOCK_MZ_RANGE)) {
       changeLockMzRange();
@@ -4627,7 +4515,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         QuantificationResultExporter.writeResultsToExcel(selectedResultFile.getText(), result_);
         this.readResultFile(selectedResultFile.getText(),true);
         this.updateResultListSelectionTable();
-        this.displayTable.changeSelection(this.currentSelected_, 1, false, false);
+        this.displayTable_.changeSelection(this.currentSelected_, 1, false, false);
         listSelectionChanged(this.currentSelected_);
         this.l2DPainter_.setStoredProbes(probesToStore);
         allProbes = new Vector<Vector<CgProbe>>();
@@ -4663,13 +4551,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     Collections.sort(sortedSheets);
     
     for (String sheetName : sortedSheets) {
-        selectedSheet_.addItem(sheetName);
-    }	
-    
-    /*
-    for (String sheetName : result_.getIdentifications().keySet()){ 
       selectedSheet_.addItem(sheetName);
-    }*/
+    }
+    
+//    for (String sheetName : result_.getIdentifications().keySet()){ 
+//      selectedSheet_.addItem(sheetName);
+//    }
     selectedSheet_.setToolTipText(TooltipTexts.DISPLAY_SELECT_CLASS);
     tablePanel_.add(selectedSheet_,BorderLayout.NORTH);
     tablePanel_.invalidate();
@@ -4704,8 +4591,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         String[] molRtAndMod = StaticUtils.extractMoleculeRtAndModFromMoleculeName(moleculeName);
         moleculeName = molRtAndMod[0];
         String rt = molRtAndMod[1];
-        for (int i=0;i!=this.displayTable.getRowCount();i++){
-          String moleculeInTable = (String)this.displayTable.getSumLipidNameAt(i);
+        for (int i=0;i!=this.displayTable_.getRowCount();i++){
+          String moleculeInTable = (String)this.displayTable_.getSumLipidNameAt(i);
           if (moleculeInTable.startsWith(moleculeName)){
             boolean found = false;
             if (rt==null) found = true;
@@ -4724,9 +4611,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
               if (this.displaysMs2_){
                 int j=i;
                 boolean foundMsn = false;
-                while (j<displayTable.getRowCount() && ((String)this.displayTable.getSumLipidNameAt(j)).startsWith(moleculeName)){
-                  if (((LipidomicsTableModel)displayTable.getModel()).hasMS2Evidence(j)){
-                    String moleculeInTableMsn = (String)this.displayTable.getSumLipidNameAt(j);
+                while (j<displayTable_.getRowCount() && ((String)this.displayTable_.getSumLipidNameAt(j)).startsWith(moleculeName)){
+                  if (((LipidomicsTableModel)displayTable_.getModel()).hasMS2Evidence(j)){
+                    String moleculeInTableMsn = (String)this.displayTable_.getSumLipidNameAt(j);
                     if (rt==null) foundMsn = true;
                     else{
                       String rtInTableString = moleculeInTableMsn.substring(moleculeName.length()+1);
@@ -4744,7 +4631,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                 }
                 if (foundMsn && i!=j){
                   i = j;
-                  moleculeInTable = (String)this.displayTable.getSumLipidNameAt(i);
+                  moleculeInTable = (String)this.displayTable_.getSumLipidNameAt(i);
                 }
               }
               moelculeTableName = moleculeInTable;
@@ -4754,7 +4641,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           }
         }
         if (moelculeTableName!=null){
-          mainTabs.setSelectedIndex(mainTabs.indexOfComponent(displayPanel_));
+        	mainTabs.setSelectedIndex(mainTabs.indexOfComponent(displayPanel_));
 //          try {
 //            Thread.sleep(100);
 //          }
@@ -4767,7 +4654,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 //          System.out.println("Handlers: "+handler.length);
 //          .valueChanged(event2);
           this.makeDisplayRemoveOperations();
-          this.displayTable.changeSelection(selection, 1, false, false);
+          this.displayTable_.changeSelection(selection, 1, false, false);
           listSelectionChanged(selection);
         }else
           return false;
@@ -4817,8 +4704,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   
   public static int getMaxIsotopeForSetting(ResultDisplaySettingsVO settingVO, int maxIsotope,Hashtable<String,ResultCompVO> analysisResults){
     int maxAppliIsotope = maxIsotope+1;
-    if (!settingVO.getType().equalsIgnoreCase("relative to measured class amount") && 
-        !settingVO.getType().equalsIgnoreCase("relative to total amount"))
+    if (!settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT) && 
+        !settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT))
       maxAppliIsotope = StaticUtils.getMaxApplicableIsotope(analysisResults, maxIsotope);
     return maxAppliIsotope;
   }
@@ -5090,7 +4977,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                     newIsotopicProbes.add(remainingParam.getIsotopicProbes().get(i));
                   }
                 }
-                if (i==0)remainingParam.setRt(Calculator.FormatNumberToString(newIsotopicProbes.get(0).get(0).Peak/60f,2));
+                if (i==0)remainingParam.setPreciseRt(newIsotopicProbes.get(0).get(0).Peak/60d);
               }
               float totalArea = 0f;
               Vector<CgProbe> probesVect = new Vector<CgProbe>();
@@ -5232,7 +5119,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                   probes = analyzer.calculatePeakAtExactTimePosition(templateParam,maxIsotopes.get(i),charge,uniqueExampleExps.get(absFilePathStartExps.get(i)));
                 // to calculate the total area
                   float totalArea = 0;
-                  String rt = "";
+                  double rt = 0.0;
                   for (int k=0;k!=probes.size();k++){
                     Vector<CgProbe> isoProbes = probes.get(k);
                     Vector<Double> rts = new Vector<Double>();
@@ -5240,21 +5127,22 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                       totalArea+=probe.Area;
                       rts.add((double)probe.Peak);
                     }
-                    if (k==0 && hasRtInfo) rt = Calculator.FormatNumberToString(Calculator.mean(rts)/60d,2d);
+                    if (k==0 && hasRtInfo) rt = Calculator.mean(rts)/60d;
                   }
-                  if (probes.size()==0 && hasRtInfo) rt = templateParam.getRt();
-// INFO: Settings.emptyEntriesForQuantAnalNotFound() is responsible for creating empty entries if the analyte cannot be quantified                  
+                  if (probes.size()==0 && hasRtInfo) rt = templateParam.getPreciseRT();
+                  // INFO: Settings.emptyEntriesForQuantAnalNotFound() is responsible for creating empty entries if the analyte cannot be quantified                  
                   if (totalArea>0 || Settings.emptyEntriesForQuantAnalNotFound()){
                     LipidParameterSet paramToQuantify = new LipidParameterSet(templateParam.Mz[0], templateParam.getName(),
-                      templateParam.getDoubleBonds(), templateParam.getOhNumber(), templateParam.getModificationName(), rt, templateParam.getAnalyteFormula(),
-                      templateParam.getModificationFormula(),templateParam.getCharge());
-                      paramToQuantify.LowerMzBand = templateParam.LowerMzBand;
+                      templateParam.getDoubleBonds(), templateParam.getModificationName(), rt, templateParam.getAnalyteFormula(),
+                      templateParam.getModificationFormula(),templateParam.getCharge(), templateParam.getOhNumber());
+                    
+                    paramToQuantify.LowerMzBand = templateParam.LowerMzBand;
                     paramToQuantify.UpperMzBand = templateParam.UpperMzBand;
                     paramToQuantify.Area = totalArea;
                     paramToQuantify.setIsotopicProbes(probes);
                     String[] paramNameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(paramToQuantify.getNameString());
                     boolean existsSameOne = false;
-                    if (rt.length()>0){
+                    if (rt>0.0){
                       // check if the identified peak is already there
                       if ((positionToAdd-1)>-1){
                         String[] currentNameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(updateParams.get(positionToAdd-1).getNameString());
@@ -5279,7 +5167,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                       }
                     }
                     updateParams.add(positionToAdd, paramToQuantify);
-                    if (rt.length()>0)
+                    if (rt>0.0)
                       positionToAdd++;
                     if (!existsSameOne)
                       isEmptyThere = false;
@@ -5362,44 +5250,87 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   }
   
   public void addAnalyte(int position, AddAnalyteVO analyteDescrVO){
+    QuantificationResult originalResult = new QuantificationResult(result_);
+    this.currentSelected_ = position;
     Float exactMass = new Float(analyteDescrVO.getExactMass());
     LipidParameterSet set = new LipidParameterSet(exactMass, analyteDescrVO.getName(), 
-        analyteDescrVO.getDoubleBonds(), analyteDescrVO.getOh(), analyteDescrVO.getModName(),
-        analyteDescrVO.getRt(), analyteDescrVO.getFormula(), analyteDescrVO.getModFormula(),
-        new Integer(analyteDescrVO.getCharge()) );
+        analyteDescrVO.getDoubleBonds(), analyteDescrVO.getModName(),
+        Double.parseDouble(analyteDescrVO.getRt()), analyteDescrVO.getFormula(), analyteDescrVO.getModFormula(),
+        new Integer(analyteDescrVO.getCharge()), analyteDescrVO.getOh());
       set.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance(exactMass);
       set.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance(exactMass);
       set.Area = 0;
       result_.getIdentifications().get(this.currentSelectedSheet_).add(position, set);
-      try {
-       QuantificationResultExporter.writeResultsToExcel(selectedResultFile.getText(), result_);
-       readResultFile(selectedResultFile.getText(),true);
-       updateResultListSelectionTable();
-       // this is that the selection gets updated in any case
-       currentSelected_ = -1;
-       displayTable.changeSelection(position, 1, false, false);
-       listSelectionChanged(position);
-    } catch (Exception e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+    try {
+       storeResultsToExcel(position); 
+    } catch (ExportException ex) {
+      result_ = originalResult;
     }
   }
   
   public void removeAnalyte(int[] indices){
+    QuantificationResult originalResult = new QuantificationResult(result_);
     List<Integer> inds = new ArrayList<Integer>();
     for (int ind:indices)inds.add(resultPositionToOriginalLoopkup_.get(ind));
     Collections.sort(inds);
     this.currentSelectedSheet_ =  (String)selectedSheet_.getSelectedItem();
     for (int i=(inds.size()-1); i>-1; i--){
       result_.getIdentifications().get(this.currentSelectedSheet_).remove(inds.get(i).intValue());
-      try {
-        QuantificationResultExporter.writeResultsToExcel(selectedResultFile.getText(), result_);
-        readResultFile(selectedResultFile.getText(),true);
-        updateResultListSelectionTable();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
     }
+    try {
+      storeResultsToExcel(indices[0]);
+    } catch (ExportException ex) {
+      result_ = originalResult;
+    }
+  }
+  
+  public void removeMolecularSpecies(ArrayList<Integer> indices)
+  {
+  	Hashtable<Integer,LipidParameterSet> originalParams = new Hashtable<Integer,LipidParameterSet>();
+  	for (int ind : indices)
+  	{
+  		LipidParameterSet param = getAnalyteInTableAtPosition(ind);
+  		if (param instanceof LipidomicsMSnSet)
+  		{
+  			String molSpecies = ((LipidomicsTableModel)displayTable_.getModel()).getMSnIdentificationName(currentSelected_);
+  			LipidomicsMSnSet paramMSn = (LipidomicsMSnSet)param;
+  			try
+  			{
+  				LipidomicsMSnSet originalParam = new LipidomicsMSnSet(paramMSn);
+  				originalParams.put(ind, originalParam); //storing a deep copy in case an ExportException occurs.
+  				paramMSn.removeMolecularSpecies(molSpecies);
+  			} 
+  			catch (LipidCombinameEncodingException ex)
+  			{
+  				new WarningMessage(new JFrame(), "Error", 
+  						String.format("The molecular species '%s' could not be deleted due to an internal error. Please contact the developers of the application if the problem persists.", molSpecies));
+  				ex.printStackTrace();
+  			}
+  		}
+  	}
+  	if (!originalParams.isEmpty())
+  	{
+  		try
+    	{
+    		storeResultsToExcel(currentSelected_ > 0 ? (currentSelected_-1) : currentSelected_);
+    	}
+    	catch (ExportException ex) 
+    	{
+        for (int ind : indices) //resetting result_ to its original state.
+        {
+        	replaceResultParam(getAnalyteInTableAtPosition(ind), originalParams.get(ind));
+        }
+        new WarningMessage(new JFrame(), "Error", 
+        		String.format("The following error occurred during the export: %s", ex.getMessage()));
+      }
+  	}
+  }
+  
+  private void replaceResultParam(LipidParameterSet paramBefore, LipidParameterSet paramNew)
+  {
+  	int index = result_.getIdentifications().get(this.currentSelectedSheet_).indexOf(paramBefore);
+  	result_.getIdentifications().get(currentSelectedSheet_).remove(index);
+  	result_.getIdentifications().get(currentSelectedSheet_).add(index, paramNew);
   }
 
   public void updateColorChange()
@@ -5420,8 +5351,13 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   }
   
   public LipidParameterSet getAnalyteInTableAtPosition(int position){
-    this.currentSelectedSheet_ =  (String)selectedSheet_.getSelectedItem();
+    this.currentSelectedSheet_ = (String)selectedSheet_.getSelectedItem();
     return result_.getIdentifications().get(currentSelectedSheet_).get(resultPositionToOriginalLoopkup_.get(position));
+  }
+  
+  public String getNameInTableAtPosition(int position)
+  {
+  	return ((LipidomicsTableModel)displayTable_.getModel()).getRowToName().get(currentSelected_);
   }
   
   private boolean checkIsOneThere(String analyteName, LipidParameterSet templateParam,Vector<LipidParameterSet> updateParams){
@@ -5443,6 +5379,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   {
   	new LicenseChecker().checkLicense();
   }
+  
   
   private class LicenseChangeListener implements ChangeListener{
 
@@ -5504,7 +5441,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     float currentIsotopicMass = params.Mz[0];
 
     try {
-      Hashtable<Integer,Vector<RangeColor>> rangeColors = StaticUtils.createRangeColorVOs(params,((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentSelected_),
+      Hashtable<Integer,Vector<RangeColor>> rangeColors = StaticUtils.createRangeColorVOs(params,((LipidomicsTableModel)displayTable_.getModel()).getMSnIdentificationName(currentSelected_),
           result_.getFaHydroxyEncoding(), result_.getLcbHydroxyEncoding(), areTheseAlex123MsnFragments());
       int threeDMsLevel = 2;
       Hashtable<Integer,Vector<String>> spectraRaw = reader_.getMsMsSpectra(params.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), params.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance(),-1f,-1f);
@@ -5683,7 +5620,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     return allProbes;
   }
   
-  public void exportMzTab(File exportFile, short speciesType)
+  public void exportMzTab(File exportFile, short speciesTypeParam, boolean exportDoubleBondPositions)
   {
     
 	    Metadata metadata = new Metadata();
@@ -5812,7 +5749,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	        software.addSettingItem("isotope_pattern_checked");
 	      
 	      Hashtable<String,LinkedHashMap<String,Boolean>> adductsSortedByAbundance = LDAExporter.extractAdductsSortedByAbundance(this.heatmaps_.keySet(),originalExcelResults);
-      //check if the settings type is everywhere the same, otherwise, use "relative value"
+      //check if the settings type is everywhere the same, otherwise, use ResultDisplaySettingsVO.REL_VALUE
 	      String valueType = null;
 	      boolean allTheSame = true;
 	      for (String molGroup : heatmaps_.keySet()){
@@ -5823,7 +5760,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	          allTheSame = false;
       }
 	      if (!allTheSame)
-	        valueType = "relative value";
+	        valueType = ResultDisplaySettingsVO.REL_VALUE;
 	      LinkedHashMap<String,Vector<String>> expsOfGroup = getSamplesOfGroups();
 	      int count = 0;
 	      for (String group : expsOfGroup.keySet()){
@@ -5854,6 +5791,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       short polarity;
       boolean containsSMESection = false;
 	      for (String molGroup:this.heatmaps_.keySet()) {
+	        boolean exportDoubleBondPositionsForClass = exportDoubleBondPositions; 
+	        short speciesType = speciesTypeParam;
+	        //when lipid species level is selected, export double bond positions only for lipid species consisting of one FA chain
+	        if (exportDoubleBondPositions) {
+	          if (analysisModule_.getNrOfChainsOfClass().get(molGroup) > 1 && speciesType == LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES) {
+	            exportDoubleBondPositionsForClass = false;
+	          } else if (analysisModule_.getNrOfChainsOfClass().get(molGroup) == 1 && speciesType != LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES) {
+	            speciesType = LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES;
+	          }
+	        }
 	        Hashtable<String,String> selectedMolHash = new Hashtable<String,String>();
 	        HeatMapDrawing heatmap = this.heatmaps_.get(molGroup);
 	//        HeatMapDrawing groupHeatmap = null;
@@ -5868,7 +5815,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         LinkedHashMap<String,Boolean> adductsSorted = adductsSortedByAbundance.get(molGroup);
         for (String molName: correctAnalyteSequence.get(molGroup)){
           if (selectedMolHash.containsKey(molName)){
-            Hashtable<String,Vector<Double>> resultsMol = results.get(molName);
+            Hashtable<String,Vector<Double>> resultsMol = results.get(molName); 
 //            Hashtable<String,Vector<Double>> resultsGroupMol = null;
 //	            if (resultsGroup != null) resultsGroupMol = resultsGroup.get(molName);
 //	            
@@ -5878,9 +5825,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	 //             identifier = "ES_" + molGroup + molName.substring(externalStandardPref.length());
 	//            else
 	//              identifier = molGroup + molName;
-            SmallMztabMolecule molecule = MztabUtils.createSmallMztabMolecule(speciesType, summaryId, featureId, evidenceId,
-	                evidenceGroupingId, maxIsotopes,analysisModule_, msRuns, originalExcelResults, molGroup, molName, resultsMol,
-	                adductsSorted, expsOfGroup, faEncoding, lcbEncoding);
+            SmallMztabMolecule molecule = MztabUtils.createSmallMztabMolecule(speciesType, exportDoubleBondPositionsForClass, 
+                summaryId, featureId, evidenceId,evidenceGroupingId, maxIsotopes,analysisModule_, msRuns, originalExcelResults, 
+                molGroup, molName, resultsMol,adductsSorted, expsOfGroup, faEncoding, lcbEncoding);
 	            if (molecule==null)
 	              continue;
 	            summaryId = molecule.getCurrentSummaryId();
@@ -5948,165 +5895,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 	      e.printStackTrace();
 	    }
     catch (ExportException | LipidCombinameEncodingException e ) {
-        e.printStackTrace();
+      e.printStackTrace();
     }
-      catch (SpectrummillParserException e) {
+    catch (SpectrummillParserException e) {
       e.printStackTrace();
       new WarningMessage(new JFrame(), "Error", e.getMessage());
     }
-	  }
-  
-  /**
-   * exports the mass list with the omega position information
-   * @param exportFile the file to export the omega mass lists
-   * @param labelInfo the information about the isotopic labels
-   */
-  @SuppressWarnings("unchecked")
-  public void exportOmegaMasslist(File exportFile, Vector<IsotopicLabelVO> labelInfo){
-    System.out.println("omega export");
-    long time = System.currentTimeMillis();
-    LinkedHashMap<String,Integer> classSequence = null;
-    Hashtable<String,Vector<String>> correctAnalyteSequence = null;
-    Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = null;
-    boolean throwError = false;
-    //Hashtable<String,Hashtable<String,Hashtable<String,Vector<Double>>>> resultsStatsSection = new Hashtable<String,Hashtable<String,Hashtable<String,Vector<Double>>>>();
-    if (correctOrderFile_.getText()!=null && correctOrderFile_.getText().length()>0){
-      try {
-        boolean ionMode = false;
-        if (this.ionModeOrder_!=null && ((String)ionModeOrder_.getSelectedItem()).equalsIgnoreCase("+"))
-          ionMode = true;
-        @SuppressWarnings("rawtypes")
-        Vector quantInfo = QuantificationThread.getCorrectAnalyteSequence(correctOrderFile_.getText(),ionMode);
-        classSequence = (LinkedHashMap<String,Integer>)quantInfo.get(0);
-        correctAnalyteSequence = (Hashtable<String,Vector<String>>)quantInfo.get(1);
-        quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(3);
-        
-//        for (String molGroup:this.heatmaps_.keySet()) {
-//          HeatMapDrawing heatmap = this.heatmaps_.get(molGroup);
-//          Hashtable<String,Hashtable<String,Vector<Double>>> results = heatmap.getResultValues("relative value");
-//          resultsStatsSection.put(molGroup, results);
-//        }
-
-      }
-      catch (Exception e) {
-        throwError = true;
-      }
-    }else
-      throwError = true;
-    if (throwError) {
-      new WarningMessage(new JFrame(), "Error", "For an \u03C9-RT export, you have to provide a conventional quantification file at \"\"Quant file (for correct analyte order):\"");
-      return;      
+    catch (RetentionTimeGroupingException e) {
+      new WarningMessage(new JFrame(), "Error", e.getMessage());
     }
-    try {
-      Hashtable<String,Hashtable<String,Hashtable<String,Vector<AnalyteOmegaInfoVO>>>> acceptedMolecules = new Hashtable<String,Hashtable<String,Hashtable<String,Vector<AnalyteOmegaInfoVO>>>>();
-      Hashtable<String,Integer> maxIsotopes = new Hashtable<String,Integer>();
-      Hashtable<String,String> usedLabels = null;
-      for (String molGroup:this.heatmaps_.keySet()) {
-        Hashtable<String,Hashtable<String,Vector<AnalyteOmegaInfoVO>>> molsOfClass = new Hashtable<String,Hashtable<String,Vector<AnalyteOmegaInfoVO>>>();
-        HeatMapDrawing heatmap = this.heatmaps_.get(molGroup);
-        for (String molName: heatmap.getSelectedMoleculeNames()){
-          AnalyteOmegaInfoVO omegaInfo = ifOmegaLabelExtractInfo(molGroup,molName,labelInfo);
-          if (omegaInfo!=null) {
-            if (!molsOfClass.containsKey(omegaInfo.getAnalyteName())) {
-              molsOfClass.put(omegaInfo.getAnalyteName(), new Hashtable<String,Vector<AnalyteOmegaInfoVO>>());
-            }
-            usedLabels = new Hashtable<String,String>();
-            for (IsotopicLabelVO label : omegaInfo.getLabels()) {
-              if (usedLabels.containsKey(label.getLabelId()))
-                continue;
-              if (!molsOfClass.get(omegaInfo.getAnalyteName()).containsKey(label.getLabelId()))
-                molsOfClass.get(omegaInfo.getAnalyteName()).put(label.getLabelId(), new Vector<AnalyteOmegaInfoVO>());
-              molsOfClass.get(omegaInfo.getAnalyteName()).get(label.getLabelId()).add(omegaInfo);
-              usedLabels.put(label.getLabelId(), label.getLabelId());
-            }
-          }
-        }
-        acceptedMolecules.put(molGroup, molsOfClass);
-        maxIsotopes.put(molGroup, heatmap.getSelectedIsotope());
-      }
-      
-      Hashtable<Integer,Hashtable<String,IsotopicLabelVO>> sameOmegaLabels = new  Hashtable<Integer,Hashtable<String,IsotopicLabelVO>>();
-      for (IsotopicLabelVO label : labelInfo) {
-        if (!sameOmegaLabels.containsKey(label.getOmegaPosition()))
-          sameOmegaLabels.put(label.getOmegaPosition(), new Hashtable<String,IsotopicLabelVO>());
-        sameOmegaLabels.get(label.getOmegaPosition()).put(label.getLabelId(), label);
-      }
-
-      OmegaMasslistExporter omegaExporter = new OmegaMasslistExporter(exportFile.getAbsolutePath());
-      omegaExporter.export(classSequence, correctAnalyteSequence, quantObjects, acceptedMolecules, analysisModule_,sameOmegaLabels);
-    }
-    catch (ExportException | LipidCombinameEncodingException e) {
-      e.printStackTrace();
-      new WarningMessage(new JFrame(), "Error", "The \u03C9-RT mass list cannot be written: "+e.getMessage());
-    }
-    long usedTime = (System.currentTimeMillis()-time)/1000l;
-    System.out.println("Used time: "+(usedTime/60l)+" minutes "+usedTime%60l+" seconds");
-  }
-  
-  
-  /**
-   * extracts information on whether a detection is an isotopically labeled species and which labels have been applied
-   * @param className name of the lipid class
-   * @param name the name of the molecule
-   * @param labelInfo the value objects containg information about a label
-   * @return an AnalyteOmegaInfoVO if the detection is an isotopically labeled species, null otherwise
-   */
-  private AnalyteOmegaInfoVO ifOmegaLabelExtractInfo(String className, String name, Vector<IsotopicLabelVO> labelInfo) {
-    boolean isLabel = false;
-    //if it does not start with a label indicator, we can immediately return false;
-    for (IsotopicLabelVO info : labelInfo) {
-      if (name.startsWith(info.getLabelId())) {
-        isLabel = true;
-        break;
-      }
-    }
-    if (!isLabel)
-      return null; 
-    //the avoid false positive label identifications by molecules whose name simply starts with the same letter as a label, we have to make a further check
-    String analyze = new String(name);
-    boolean isALabel = true;
-    boolean foundLabel;
-    Vector<IsotopicLabelVO> detectedLabels = new Vector<IsotopicLabelVO>();
-    while (isALabel) {
-      foundLabel = false;
-      for (IsotopicLabelVO info : labelInfo) {
-        if (analyze.startsWith(info.getLabelId())) {
-          foundLabel = true;
-          analyze = analyze.substring(info.getLabelId().length());
-          detectedLabels.add(info);
-          break;
-        }
-      }
-      if (!foundLabel)
-        isALabel = false;
-    }
-    //TODO: this does not work if no RT-grouping is set
-    String analyteName = analyze.substring(0,analyze.lastIndexOf("_"));
-    //this is for sphingolipids
-    if (analyze.length()>0 && analysisModule_.getLcbHydroxyEncoding()!=null && analysisModule_.getLcbHydroxyEncoding().containsValue(analyze.substring(0,1)))
-      analyze = analyze.substring(1);
-    if (analyze.length()==0)
-      return null;
-    if (Character.isDigit(analyze.toCharArray()[0])) {
-      boolean isMSnEvidence = false;
-      ResultAreaVO resultVO = null;
-      for (String exp : this.analysisModule_.getExpNamesInSequence()) {
-        resultVO = analysisModule_.getResultAreaVO(className,name,exp);
-        if (resultVO!=null && resultVO.isMsnEvidenceThere()) {
-          isMSnEvidence = true;
-          break;
-        }
-      }
-      if (!isMSnEvidence)
-        return null;
-      boolean oneDoubleBond = false;
-      if (analyteName.indexOf(":")!=-1 && analyteName.substring(analyteName.indexOf(":")+1).equalsIgnoreCase("1"))
-        oneDoubleBond = true;
-      return new AnalyteOmegaInfoVO(analyteName,name,detectedLabels,oneDoubleBond);
-    }else
-      return null;
-  }
-  
+	}
   
   public void exportRdb(File exportFile){
     System.out.println("RDB export");
@@ -6643,7 +6441,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   
   private LipidParameterSet refreshSpectrumPainterRDI() throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException{
     LipidParameterSet param = msnUserInterfaceObject_.testForMSnDetection(getMs2LevelSpectrumSelected());
-    Hashtable<Integer,Vector<RangeColor>> rangeColors = StaticUtils.createRangeColorVOs(param, ((LipidomicsTableModel)displayTable.getModel()).getMSnIdentificationName(currentSelected_),
+    Hashtable<Integer,Vector<RangeColor>> rangeColors = StaticUtils.createRangeColorVOs(param, ((LipidomicsTableModel)displayTable_.getModel()).getMSnIdentificationName(currentSelected_),
         result_.getFaHydroxyEncoding(), result_.getLcbHydroxyEncoding(), areTheseAlex123MsnFragments());
     if (rangeColors!=null) spectrumPainter_.refresh(param,rangeColors);
     else spectrumPainter_.clearRangeColors();
@@ -7144,6 +6942,99 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     editRtDialog_ = new EditRtDialog(rt,this);
   }
   
+  public void editOmegaAssignment(int position) {
+    currentSelected_ = position;
+    String molecularSpecies = resultPositionToMolecularSpeciesLookup_.get(position);
+    LipidParameterSet param = getAnalyteInTableAtPosition(position);
+    try {
+      if (Integer.parseInt(RulesContainer.getAmountOfChains(StaticUtils.getRuleName(currentSelectedSheet_, param.getModificationName()))) < 2) {
+        molecularSpecies = param.getNameStringWithoutRt();
+      } 
+    } catch (RulesException | NoRuleException | IOException | SpectrummillParserException ex) {
+      System.out.println(ex.getMessage());
+    }
+    
+    Vector<FattyAcidVO> chainCombination = new Vector<FattyAcidVO>();
+    if (molecularSpecies == null) {
+      if (param instanceof LipidomicsMSnSet) {
+        LipidomicsMSnSet lipidomicsMSnSet = (LipidomicsMSnSet)param;
+        Set<String> unlabeledAssignmentsSet = lipidomicsMSnSet.getHumanReadableNameSet();
+        if (!unlabeledAssignmentsSet.isEmpty()) {
+          Object[] molecularSpeciesArray = unlabeledAssignmentsSet.toArray();
+          if (unlabeledAssignmentsSet.size() == 1) {
+            molecularSpecies = (String)molecularSpeciesArray[0];
+          } else {
+            JFrame frame = new JFrame();
+            frame.setLocationRelativeTo(frame_);
+            molecularSpecies = (String) JOptionPane.showInputDialog(frame, 
+                "Select a molecular species!",
+                "\u03C9 - double bond assignment.",
+                JOptionPane.QUESTION_MESSAGE, 
+                null, 
+                molecularSpeciesArray, 
+                molecularSpeciesArray[0]);
+          }
+        } 
+      } else {
+        new WarningMessage(new JFrame(), "Error", "This analyte lacks required MSn information for \u03C9 - double bond assignment.");
+      } 
+    } 
+    if (molecularSpecies != null) {
+      try {
+      	//TODO: the chain mod separator should be known here => give it lipidomicsConstants? change the staticutils method?
+        chainCombination = StaticUtils.decodeFAsFromHumanReadableName(molecularSpecies,result_.getFaHydroxyEncoding(), result_.getLcbHydroxyEncoding(), areTheseAlex123MsnFragments(),null);
+      } catch (LipidCombinameEncodingException ex) { 
+        ex.printStackTrace();
+      }
+      boolean doubleBondPresent = false;
+      for (FattyAcidVO fattyAcid : chainCombination) {
+        if (fattyAcid.getDoubleBonds() > 0) {
+          doubleBondPresent = true;
+        }
+      }
+      if (doubleBondPresent) {
+        new EditOmegaAssignmentJTable(param, molecularSpecies, chainCombination, this, frame_);
+      } else {
+        new WarningMessage(new JFrame(), "Error", "This molecular species does not have any double bonds!");
+      }
+    } 
+  }
+  
+  //TODO: rename if it is fine
+  public void editOmegaAssignmentOld(int position) {
+    currentSelected_ = position;
+    LipidParameterSet param = getAnalyteInTableAtPosition(position);
+    String rowToMolecularSpecies = resultPositionToMolecularSpeciesLookup_.get(position);
+    Vector<FattyAcidVO> chainCombination = new Vector<FattyAcidVO>();
+    if (rowToMolecularSpecies == null) {
+      Set<String> molecularSpeciesSet = StaticUtils.getMolecularSpeciesSet(param.getOmegaInformation());
+      if (molecularSpeciesSet.size() == 1) {
+        rowToMolecularSpecies = molecularSpeciesSet.toString().replace("[", "").replace("]", "");
+      } else if (!showMSnNames_.isSelected()){
+        new WarningMessage(new JFrame(), "Warning", "Multiple MSn assignments for this analyte may exist. Check the box 'Show MSn' to edit the \u03C9 - double bond assignment for each.");
+      }
+    }
+    if (rowToMolecularSpecies != null) {
+      try {
+      	//TODO: the chain mod separator should be known here => give it lipidomicsConstants? change the staticutils method?
+        chainCombination = StaticUtils.decodeFAsFromHumanReadableName(rowToMolecularSpecies,result_.getFaHydroxyEncoding(), result_.getLcbHydroxyEncoding(), areTheseAlex123MsnFragments(),null);
+      } catch (LipidCombinameEncodingException ex) { 
+        ex.printStackTrace();
+      }
+      boolean doubleBondPresent = false;
+      for (FattyAcidVO fattyAcid : chainCombination) {
+        if (fattyAcid.getDoubleBonds() > 0) {
+          doubleBondPresent = true;
+        }
+      }
+      if (doubleBondPresent) {
+        new EditOmegaAssignmentJTable(param, rowToMolecularSpecies, chainCombination, this, frame_);
+      } else {
+        new WarningMessage(new JFrame(), "Error", "This molecular species does not have any double bonds!");
+      }
+    }
+  }
+  
   /**
    * disables input fields specific for chromatography based data
    */
@@ -7161,47 +7052,47 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   /**
    * copy content to clipboard
    */
-public void copyToClipboard() {
+  public void copyToClipboard() {
 	  StringBuffer strBuf = new StringBuffer();
 	  int sheets = selectedSheet_.getItemCount();
 	  int selection = selectedSheet_.getSelectedIndex();
 	
-	ArrayList<String> al = new ArrayList<String>();
-	for(int i = 0; i < sheets; i++) {
-		selectedSheet_.setSelectedIndex(i);
-		updateResultListSelectionTable();
-		al.add((String) selectedSheet_.getSelectedItem());
-	}
-	Collections.sort(al);
-	
-  for (int h = 0; h < al.size(); h++) {
-	  
-		selectedSheet_.setSelectedItem(al.get(h));
-		updateResultListSelectionTable();
-	  
-	  int rowCount = displayTable.getRowCount();
-	  int columnCount = displayTable.getColumnCount();
-	  
-	  strBuf.append(al.get(h) + "\n");
-	  
-	  for (int i = 0; i < rowCount; i++){
-		for (int j = 0; j < columnCount; j++) {
-			strBuf.append(displayTable.getValueAt(i, j));
-			strBuf.append("\t");
+		ArrayList<String> al = new ArrayList<String>();
+		for(int i = 0; i < sheets; i++) {
+			selectedSheet_.setSelectedIndex(i);
+			updateResultListSelectionTable();
+			al.add((String) selectedSheet_.getSelectedItem());
 		}
-	    
-		strBuf.append("\n");
+		Collections.sort(al);
+		
+	  for (int h = 0; h < al.size(); h++) {
+		  
+			selectedSheet_.setSelectedItem(al.get(h));
+			updateResultListSelectionTable();
+		  
+		  int rowCount = displayTable_.getRowCount();
+		  int columnCount = displayTable_.getColumnCount();
+		  
+		  strBuf.append(al.get(h) + "\n");
+		  
+		  for (int i = 0; i < rowCount; i++){
+			for (int j = 0; j < columnCount; j++) {
+				strBuf.append(displayTable_.getValueAt(i, j));
+				strBuf.append("\t");
+			}
+		    
+			strBuf.append("\n");
+		  }
+		  strBuf.append("\n");
 	  }
-	  strBuf.append("\n");
-  }
-  selectedSheet_.setSelectedIndex(selection);
-	
-  Toolkit toolkit = Toolkit.getDefaultToolkit();
-  Clipboard clipboard = toolkit.getSystemClipboard();
-  StringSelection strSel = new StringSelection(strBuf.toString());
-  clipboard.setContents(strSel, null);
-}
-
+	  selectedSheet_.setSelectedIndex(selection);
+		
+	  Toolkit toolkit = Toolkit.getDefaultToolkit();
+	  Clipboard clipboard = toolkit.getSystemClipboard();
+	  StringSelection strSel = new StringSelection(strBuf.toString());
+	  clipboard.setContents(strSel, null);
+	}
+  
   /**
    * enables/disables input fields specific for chromatography based data
    * @param enable enabling when true, otherwise disabling
@@ -7326,6 +7217,288 @@ public void copyToClipboard() {
     if (lockMzRange_.isSelected())
       lockRangeUpdateRequired_ = true;
   }
+  
+  private JPanel defineDisplayTolerancePanel(boolean showOmegaEditingTools) {
+    JPanel displayTolerancePanel = new JPanel();
+    displayTolerancePanel.setLayout(new GridBagLayout());
+    JLabel diplayTolMinus = new JLabel("- m/z: ");
+    diplayTolMinus.setFont(SMALL_FONT);
+    diplayTolMinus.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
+    displayTolerancePanel.add(diplayTolMinus,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+    JLabel diplayTolPlus = new JLabel("+ m/z: ");
+    diplayTolPlus.setFont(SMALL_FONT);
+    diplayTolPlus.setToolTipText(TooltipTexts.DISPLAY_MZ_PLUS);
+    displayTolerancePanel.add(diplayTolPlus,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+    
+    displayMinusTolerance_ = new JTextField(2);
+    displayMinusTolerance_.setFont(SMALL_FONT);
+    displayMinusTolerance_.setText("1.5");
+    displayMinusTolerance_.setHorizontalAlignment(JTextField.RIGHT);
+    displayMinusTolerance_.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
+    displayMinusTolerance_.setInputVerifier(new DoubleVerifier());
+    displayTolerancePanel.add(displayMinusTolerance_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));   
+    
+    displayPlusTolerance_ = new JTextField(2);
+    displayPlusTolerance_.setFont(SMALL_FONT);
+    displayPlusTolerance_.setText("2.5");
+    displayPlusTolerance_.setHorizontalAlignment(JTextField.RIGHT);
+    displayPlusTolerance_.setToolTipText(TooltipTexts.DISPLAY_MZ_PLUS);
+    displayPlusTolerance_.setInputVerifier(new DoubleVerifier());
+    displayTolerancePanel.add(displayPlusTolerance_,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+    JLabel diplayTolUnit1 = new JLabel("[Da]");
+    diplayTolUnit1.setFont(SMALL_FONT);
+    displayTolerancePanel.add(diplayTolUnit1,new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+    JLabel rtTolMinusText = new JLabel("Start: ");
+    rtTolMinusText.setFont(SMALL_FONT);
+    rtTolMinusText.setToolTipText(TooltipTexts.DISPLAY_RT_START);
+    displayTolerancePanel.add(rtTolMinusText,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+    JLabel rtTolPlusText = new JLabel("Stop: ");
+    rtTolPlusText.setFont(SMALL_FONT);
+    rtTolPlusText.setToolTipText(TooltipTexts.DISPLAY_RT_STOP);
+    displayTolerancePanel.add(rtTolPlusText,new GridBagConstraints(2, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+    
+    displayRtStart_ = new JTextField(2);
+    displayRtStart_.setFont(SMALL_FONT);
+    displayRtStart_.setText("");
+    displayRtStart_.setHorizontalAlignment(JTextField.RIGHT);
+    displayRtStart_.setToolTipText(TooltipTexts.DISPLAY_RT_START);
+    displayRtStart_.setInputVerifier(new DoubleVerifier());
+    displayTolerancePanel.add(displayRtStart_,new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+    
+    displayRtStop_ = new JTextField(2);
+    displayRtStop_.setFont(SMALL_FONT);
+    displayRtStop_.setText("");
+    displayRtStop_.setHorizontalAlignment(JTextField.RIGHT);
+    displayRtStop_.setToolTipText(TooltipTexts.DISPLAY_RT_STOP);
+    displayRtStop_.setInputVerifier(new DoubleVerifier());
+    displayTolerancePanel.add(displayRtStop_,new GridBagConstraints(3, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+    JLabel diplayTolUnit2 = new JLabel("[min]");
+    diplayTolUnit2.setFont(SMALL_FONT);
+//    diplayTolUnit1.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
+    displayTolerancePanel.add(diplayTolUnit2,new GridBagConstraints(4, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+    
+    JPanel lockMxSelectionPanel = new JPanel();
+    
+    lockMzRange_ = new JCheckBox();
+    lockMzRange_.setFont(SMALL_FONT);
+    lockMzRange_.addItemListener(new LipidomicsItemListener(CHANGE_LOCK_MZ_RANGE));
+    lockMzRange_.setToolTipText(TooltipTexts.DISPLAY_LOCK_MZ);
+    lockMxSelectionPanel.add(lockMzRange_);
+    JLabel lockMz = new JLabel(DISPLAY_LOCK_MZ_TEXT);
+    lockMz.setToolTipText(TooltipTexts.DISPLAY_LOCK_MZ);
+    lockMz.setFont(SMALL_FONT);
+    lockMxSelectionPanel.add(lockMz);
+    
+    displayMzStart_ = new JTextField(4);
+    displayMzStart_.setFont(SMALL_FONT);
+    displayMzStart_.setText("");
+    displayMzStart_.setHorizontalAlignment(JTextField.RIGHT);
+    displayMzStart_.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
+    displayMzStart_.setInputVerifier(new DoubleVerifier());
+    displayMzStart_.setEnabled(false);
+    lockMxSelectionPanel.add(displayMzStart_);
+    JLabel mzRangeSign = new JLabel("-");
+    lockMxSelectionPanel.add(mzRangeSign);
+    
+    displayMzStop_ = new JTextField(4);
+    displayMzStop_.setFont(SMALL_FONT);
+    displayMzStop_.setText("");
+    displayMzStop_.setHorizontalAlignment(JTextField.RIGHT);
+    displayMzStop_.setToolTipText(TooltipTexts.DISPLAY_MZ_MINUS);
+    displayMzStop_.setInputVerifier(new DoubleVerifier());
+    displayMzStop_.setEnabled(false);
+    lockMxSelectionPanel.add(displayMzStop_);
+    
+    displayTolerancePanel.add(lockMxSelectionPanel ,new GridBagConstraints(0, 2, 6, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 1, 0, 0), 0, 0));
+
+    JButton quantTolUpdate = new JButton("Update");
+    quantTolUpdate.addActionListener(this);
+    quantTolUpdate.setFont(quantTolUpdate.getFont().deriveFont(10f));
+    quantTolUpdate.setMargin(new Insets(1,5,1,5));
+    quantTolUpdate.setActionCommand("updateQuantTolOfCurrentlySelected");
+    quantTolUpdate.setToolTipText(TooltipTexts.DISPLAY_UPDATE);
+    displayTolerancePanel.add(quantTolUpdate,new GridBagConstraints(5, 0, 1, 2, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    JPanel showOptionsPanel = new JPanel();
+    displayTolerancePanel.add(showOptionsPanel,new GridBagConstraints(0, 3, 6, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    //start: added with the oxidized lipids extension
+    JPanel showOptionsPanel2 = new JPanel();
+    displayTolerancePanel.add(showOptionsPanel2,new GridBagConstraints(0, 4, 6, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    JPanel showOptionsPanel3 = new JPanel();
+    displayTolerancePanel.add(showOptionsPanel3,new GridBagConstraints(0, 5, 6, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    
+    showMSnEvidence_ = new JCheckBox("");
+    showMSnEvidence_.addItemListener(new LipidomicsItemListener("showMSnOnly"));
+    showOptionsPanel2.add(showMSnEvidence_);
+    JLabel showMSnEvidence = new JLabel("Show MSn Only");
+    showMSnEvidence.setToolTipText("Show only lipids with MSn headgroup evidence");
+    showOptionsPanel2.add(showMSnEvidence);
+  	
+    showChainEvidence_ = new JCheckBox("");
+    showChainEvidence_.setEnabled(false);
+    showChainEvidence_.addItemListener(new LipidomicsItemListener("showChainOnly"));
+    showOptionsPanel3.add(showChainEvidence_);
+    JLabel showChainEvidence = new JLabel("Chain Evidence Only");
+    showChainEvidence.setToolTipText("Show only lipids with MSn headgroup- and chain evidence");
+    showOptionsPanel3.add(showChainEvidence);
+    //end: added with the oxidized lipids extension
+    
+    showMSnNames_ = new JCheckBox();
+    showMSnNames_.addItemListener(new LipidomicsItemListener("showMSnNames"));
+    showMSnNames_.setToolTipText(TooltipTexts.DISPLAY_SHOW_MSN);
+    showOptionsPanel.add(showMSnNames_);
+    JLabel showMSn = new JLabel("Show MSn");
+    showMSn.setToolTipText(TooltipTexts.DISPLAY_SHOW_MSN);
+    showOptionsPanel.add(showMSn);
+    
+    show2D_ = new JCheckBox();
+    show2D_.setSelected(true);
+    show2D_.addItemListener(new LipidomicsItemListener("show2dChanged"));
+    show2D_.setToolTipText(TooltipTexts.DISPLAY_SHOW_2D);
+    showOptionsPanel.add(show2D_);
+    JLabel show2d = new JLabel("Show 2D-View");
+    show2d.setToolTipText(TooltipTexts.DISPLAY_SHOW_2D);
+    showOptionsPanel.add(show2d);
+    
+    showOmegaNames_ = new JCheckBox();
+    if (showOmegaEditingTools) {
+      showOmegaNames_.addItemListener(new LipidomicsItemListener("showOmegaNames"));
+      showOmegaNames_.setToolTipText(TooltipTexts.DISPLAY_SHOW_OMEGA);
+      JPanel showOmegaOptionPanel = new JPanel();
+      showOmegaOptionPanel.add(showOmegaNames_);
+      JLabel showOmega = new JLabel("Show assigned \u03C9-DB");
+      showOmegaOptionPanel.add(showOmega);
+      displayTolerancePanel.add(showOmegaOptionPanel,new GridBagConstraints(0, 6, 6, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    }
+    
+    return displayTolerancePanel;
+  }
+  
+  private class HeatMapBuilder implements Runnable
+  {
+  	private Hashtable<String,ResultDisplaySettings> displaySettingHash_;
+    private String molGroup_;
+    
+    private HeatMapBuilder(Hashtable<String,ResultDisplaySettings> displaySettingHash, String molGroup)
+    {
+    	this.displaySettingHash_ = displaySettingHash;
+    	this.molGroup_ = molGroup;
+    }
+
+		@Override
+		public void run()
+		{
+			Hashtable<String,Hashtable<String,Integer>> corrTypeISLookup = analysisModule_.getCorrectionTypeISLookup();
+			Hashtable<String,Hashtable<String,Integer>> corrTypeESLookup = analysisModule_.getCorrectionTypeESLookup();
+			
+			JPanel aResultsViewPanel = new JPanel(new BorderLayout());
+      JTabbedPane resultsViewTabs= new JTabbedPane();
+      aResultsViewPanel.add(resultsViewTabs,BorderLayout.CENTER);
+      Hashtable<String,Hashtable<String,ResultCompVO>> resultsOfOneGroup = analysisModule_.getResults().get(molGroup_);
+      Vector<String> molNames = analysisModule_.getAllMoleculeNames().get(molGroup_);
+      Hashtable<String,Integer> isLookup = new Hashtable<String,Integer> ();
+      Hashtable<String,Integer> esLookup = new Hashtable<String,Integer> ();
+      if (corrTypeISLookup.containsKey(molGroup_))
+        isLookup = corrTypeISLookup.get(molGroup_);
+      if (corrTypeESLookup.containsKey(molGroup_))
+        esLookup = corrTypeESLookup.get(molGroup_);
+      
+      JPanel aPanel = new JPanel();
+      aPanel.setLayout(new BorderLayout());
+      boolean hasAbs = false;
+      boolean hasProtein = false;
+      boolean hasSampleWeight = false;
+      boolean hasNeutralLipid = false;
+      if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove absolute settings")){
+        hasAbs = true;
+        try {
+          if (quantSettingsPanel_.getSettingsVO().getVolumeSettings().size()>0 &&
+              quantSettingsPanel_.getSettingsVO().getVolumeSettings().values().iterator().next().getProteinConc()!=null)
+            hasProtein = true;
+          if (quantSettingsPanel_.getSettingsVO().getVolumeSettings().size()>0 &&
+              quantSettingsPanel_.getSettingsVO().getVolumeSettings().values().iterator().next().getNeutralLipidConc()!=null)
+            hasNeutralLipid = true;
+          if (quantSettingsPanel_.getSettingsVO().getVolumeSettings().size()>0 &&
+              quantSettingsPanel_.getSettingsVO().getVolumeSettings().values().iterator().next().getSampleWeight()!=null)
+            hasSampleWeight = true;
+
+        }
+        catch (AbsoluteSettingsInputException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+      }
+      ResultDisplaySettings displaySettings = new ResultDisplaySettings(analysisModule_.getISAvailability().get(molGroup_),analysisModule_.getESAvailability().get(molGroup_),isLookup,esLookup,hasAbs,
+          hasSampleWeight,hasProtein,hasNeutralLipid);
+      ResultSelectionSettings selectionSettings = new ResultSelectionSettings(null,molNames,true);
+      ResultSelectionSettings combinedChartSettings = new ResultSelectionSettings(null,molNames,false);
+      
+      HeatMapDrawing drawing = new HeatMapDrawing(resultsOfOneGroup,analysisModule_.getExpNamesInSequence(),molNames, isLookup,esLookup, resultStatus_,LipidDataAnalyzer.this,molGroup_,null,
+          displaySettings,selectionSettings,combinedChartSettings,exportSettings_,analysisModule_);
+      
+      displaySettings.addActionListener(drawing);
+      selectionSettings.addActionListener(drawing);
+      combinedChartSettings.addActionListener(drawing);
+      JScrollPane scrollPane = new JScrollPane(drawing);
+      int[] widthAndHeight = getScrollPaneWidthAndHeight(drawing);
+      scrollPane.setPreferredSize(new Dimension(widthAndHeight[0], widthAndHeight[1]));
+      heatmaps_.put(molGroup_, drawing);
+      if (analysisModule_.getExpNamesInSequence().size()>25)
+        aPanel.add(scrollPane,BorderLayout.CENTER);
+      else
+        aPanel.add(scrollPane,BorderLayout.WEST);
+      resultsViewTabs.addTab("Heatmap", aPanel);
+      resultsViewTabs.setToolTipTextAt(0, TooltipTexts.TABS_RESULTS_HEATMAP+molGroup_+"</html>");
+      JPanel barChartPanel = new JPanel();
+      resultsViewTabs.addTab("Bar-chart", barChartPanel);
+      resultsViewTabs.setToolTipTextAt(1, TooltipTexts.TABS_RESULTS_BARCHART+molGroup_+"</html>");
+      if (groupsPanel_.getGroups().size()>0){
+        Hashtable<String,Hashtable<String,ResultCompVO>> groupedResultsOfOneGroup = analysisModule_.getGroupedResults().get(molGroup_);
+        JPanel groupPanel = new JPanel();
+        groupPanel.setLayout(new BorderLayout());
+        
+        HeatMapDrawing groupDrawing = new HeatMapDrawing(groupedResultsOfOneGroup, groupsPanel_.getGroups(),molNames, isLookup,esLookup, resultStatus_,LipidDataAnalyzer.this,molGroup_,drawing, 
+        		displaySettings,selectionSettings,combinedChartSettings,exportSettingsGroup_,analysisModule_);
+        
+        displaySettings.addActionListener(groupDrawing);
+        selectionSettings.addActionListener(groupDrawing);
+        combinedChartSettings.addActionListener(groupDrawing);
+        JScrollPane groupScrollPane = new JScrollPane(groupDrawing);
+        int[] groupWidthAndHeight = getScrollPaneWidthAndHeight(groupDrawing);
+        scrollPane.setPreferredSize(new Dimension(groupWidthAndHeight[0], groupWidthAndHeight[1]));
+        groupHeatmaps_.put(molGroup_, groupDrawing);
+        groupPanel.add(groupScrollPane,BorderLayout.WEST);
+        resultsViewTabs.addTab("Group-Heatmap", groupPanel);
+        resultsViewTabs.setToolTipTextAt(2, TooltipTexts.TABS_RESULTS_HEATMAP_GROUP+molGroup_+"</html>");
+        JPanel groupBarChartPanel = new JPanel();
+        resultsViewTabs.addTab("Group bar-chart", groupBarChartPanel);
+        resultsViewTabs.setToolTipTextAt(3, TooltipTexts.TABS_RESULTS_BARCHART_GROUP+molGroup_+"</html>");
+      }
+      displaySettingHash_.put(molGroup_, displaySettings);
+      molBarCharts_.put(molGroup_, resultsViewTabs);
+      resultTabs_.addTab(molGroup_,aResultsViewPanel);
+      resultTabs_.setToolTipTextAt(resultTabs_.indexOfTab(molGroup_), TooltipTexts.TABS_RESULTS_GROUP+molGroup_+"</html>");
+		}
+  }
+  
+  
 }
   
  

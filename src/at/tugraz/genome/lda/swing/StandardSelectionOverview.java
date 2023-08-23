@@ -70,7 +70,7 @@ public class StandardSelectionOverview extends JDialog
     initOverview();
     initButtonPanel();
     this.setVisible(false);
-    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     pack(); 
   }
   

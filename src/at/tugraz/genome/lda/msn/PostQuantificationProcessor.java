@@ -178,8 +178,8 @@ public class PostQuantificationProcessor
             if (!analytesMod.containsKey(mod) || unprocResult.containsKey(analyteName)) continue;
             QuantVO quantVO = analytesMod.get(mod);
             LipidParameterSet setForPred = new LipidParameterSet((float)quantVO.getAnalyteMass(), quantVO.getAnalyteName(),
-                quantVO.getDbs(), quantVO.getOhNumber(), quantVO.getModName(), "-1.0", quantVO.getAnalyteFormula(), quantVO.getModFormula(),
-                quantVO.getCharge());
+                quantVO.getDbs(), quantVO.getModName(), -1.0, quantVO.getAnalyteFormula(), quantVO.getModFormula(),
+                quantVO.getCharge(), quantVO.getOhNumber());
             Hashtable<String,LipidParameterSet> forPred = new Hashtable<String,LipidParameterSet>();
             forPred.put(setForPred.getRt(), setForPred);
             unprocResult.put(analyteName, forPred);

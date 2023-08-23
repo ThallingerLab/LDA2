@@ -132,7 +132,7 @@ public class ResultCompGroupVO extends ResultCompVO
   
   public double getRelativeValue(int maxIsotope, ResultDisplaySettingsVO settingVO)
   {
-    if (settingVO.getType().equalsIgnoreCase("relative to measured class amount")||settingVO.getType().equalsIgnoreCase("relative to total amount")){
+    if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT)||settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT)){
       return super.getRelativeValue(maxIsotope, settingVO);
     }else{
       return getMeanValue(this.extractRelativeValues(maxIsotope, settingVO));
@@ -566,15 +566,15 @@ public class ResultCompGroupVO extends ResultCompVO
     double area = 0;
     if (settingVO.isPercent()){
       area = getRatioToPercentualValueSD(maxIsotope,settingVO);
-    } else if (settingVO.getType().equalsIgnoreCase("relative value")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_VALUE)){
       area = getStandardizedAreaSD(maxIsotope, settingVO.getISStandMethod(), settingVO.getESStandMethod(), settingVO.considerDilution());
-    } else if (settingVO.getType().equalsIgnoreCase("relative to base peak")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_BASE_PEAK)){
       area = getRatioToHighestPeakSD(maxIsotope);
-    } else if (settingVO.getType().equalsIgnoreCase("relative to measured class amount")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT)){
       area = getRatioToTotalIntensitySD(maxIsotope);
-    } else if (settingVO.getType().equalsIgnoreCase("relative to highest total peak")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_HIGHEST_TOTAL_PEAK)){
       area = getRatioToHighestFoundPeakSD(maxIsotope);
-    } else if (settingVO.getType().equalsIgnoreCase("relative to total amount")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT)){
       area = this.getRatioToOverallGroupsIntensitySD(maxIsotope);
     } else if (settingVO.getType().equalsIgnoreCase("amount end-volume")){
       area = getAmountInEndVolumeSD(maxIsotope, settingVO.getISStandMethod());
@@ -613,15 +613,15 @@ public class ResultCompGroupVO extends ResultCompVO
     double area = 0;
     if (settingVO.isPercent()){
       area = getRatioToPercentualValueSE(maxIsotope,settingVO);
-    } else if (settingVO.getType().equalsIgnoreCase("relative value")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_VALUE)){
       area = getStandardizedAreaSE(maxIsotope, settingVO.getISStandMethod(), settingVO.getESStandMethod(), settingVO.considerDilution());
-    } else if (settingVO.getType().equalsIgnoreCase("relative to base peak")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_BASE_PEAK)){
       area = getRatioToHighestPeakSE(maxIsotope);
-    } else if (settingVO.getType().equalsIgnoreCase("relative to measured class amount")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT)){
       area = getRatioToTotalIntensitySE(maxIsotope);
-    } else if (settingVO.getType().equalsIgnoreCase("relative to highest total peak")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_HIGHEST_TOTAL_PEAK)){
       area = getRatioToHighestFoundPeakSE(maxIsotope);
-    } else if (settingVO.getType().equalsIgnoreCase("relative to total amount")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT)){
       area = this.getRatioToOverallGroupsIntensitySE(maxIsotope);
     } else if (settingVO.getType().equalsIgnoreCase("amount end-volume")){
       area = getAmountInEndVolumeSE(maxIsotope, settingVO.getISStandMethod());

@@ -41,7 +41,6 @@ import javax.swing.JPanel;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.TooltipTexts;
-import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.MSnAnalyzer;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
@@ -131,24 +130,35 @@ public class RecalculateMSnDialog extends JDialog implements ActionListener
       float area = result_.getArea();
       LipidomicsMSnSet msn = (LipidomicsMSnSet)result_;
       List<DoubleStringVO> nameAreaVO = new ArrayList<DoubleStringVO>();
-      Vector<String> detected = null;
-      try {detected = msn.getMSnIdentificationNamesWithSNPositions();
-      }catch (LipidCombinameEncodingException lcx) {
-        detected = new Vector<String>();
-        lcx.printStackTrace();
-      }
-      for (Object names : detected){
-        String name = "";
+      Vector<String> detected = msn.getMSnIdentificationNamesWithSNPositions();
+      
+      for (String name : detected) {
         String extract = "";
         double relArea = 0d;
+        if(name.contains(LipidomicsConstants.SN_POSITION_START))
+      	  extract = StaticUtils.removeSNPositions(name).replaceAll(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS, LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS);
+        else
+      	  extract = name;
+      	  
+        relArea =msn.getRelativeIntensity(extract);
+      
+        nameAreaVO.add(new DoubleStringVO(name,relArea));
+      }
+      
+      for (Object names : detected){
+        String name = "";
+        double relArea = 0d;
+        if (names instanceof Vector){
+          Vector<String> nameSuggestions = (Vector<String>)names;
+          relArea =msn.getRelativeIntensity(nameSuggestions.get(0));
+          for (String nameSuggestion : nameSuggestions){
+            if (name.length()>0) name+=";";
+            name += nameSuggestion;
+          }
+        } else if (names instanceof String){
           name = (String)names;
-          if(name.contains(LipidomicsConstants.SN_POSITION_START))
-        	  extract = StaticUtils.removeSNPositions(name).replaceAll(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS, LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS);
-          else
-        	  extract = name;
-        	  
-          relArea =msn.getRelativeIntensity(extract);
-        
+          relArea =msn.getRelativeIntensity(name);
+        }
         nameAreaVO.add(new DoubleStringVO(name,relArea));
       }
       Collections.sort(nameAreaVO,new GeneralComparator("at.tugraz.genome.lda.vos.DoubleStringVO", "getValue", "java.lang.Double"));
@@ -200,7 +210,7 @@ public class RecalculateMSnDialog extends JDialog implements ActionListener
     buttonPanel.add(cancelButton);
     cancelButton.addActionListener(this);
     cancelButton.addActionListener(parent_);
-    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    setDefaultCloseOperation(DISPOSE_ON_CLOSE );
     this.add(buttonPanel,BorderLayout.SOUTH);
     
   }

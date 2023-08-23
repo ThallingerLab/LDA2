@@ -243,16 +243,15 @@ public class MSnAnalyzer
         }
         this.checkMSnByAlexFragments((TargetlistEntry)quantVO,msLevels_);
       }else{
-    	
-    	String oxState = "";  
-    	if(quantVO != null)
-    		oxState = quantVO.getOxState();
-    	else
-    		oxState = set.getOxState();
-
-    	fragCalc_ = new FragmentCalculator(rulesDir_,className_,modName_,set_.getNameStringWithoutRt(),set_.getChemicalFormula(),
-            set_.getChemicalFormulaWODeducts(),set_.Mz[0],set_.getCharge(),set_.getOhNumber(),oxState);
-        this.checkMSnEvidence(msLevels_);
+	    	String oxState = "";  
+	    	if(quantVO != null)
+	    		oxState = quantVO.getOxState();
+	    	else
+	    		oxState = set.getOxState();
+	
+	    	fragCalc_ = new FragmentCalculator(rulesDir_,className_,modName_,set_.getNameStringWithoutRt(),set_.getChemicalFormula(),
+	            set_.getChemicalFormulaWODeducts(),set_.Mz[0],set_.getCharge(),set_.getOhNumber(),oxState);
+	        this.checkMSnEvidence(msLevels_);
       }
       transferResultsToLipidParameterSet();
     } catch (NoRuleException nrx){
@@ -313,7 +312,7 @@ public class MSnAnalyzer
   public MSnAnalyzer(String className, String modName, double precursorMz, double precursorTolerance, String name, int doubleBonds, int ohNumber, String analyteFormula,
       String modificationFormula, int charge, LipidomicsAnalyzer analyzer, boolean debug, boolean ignoreAbsolute) throws RulesException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException {
     this(className,modName,analyzer,debug,ignoreAbsolute);
-    set_ =  new LipidParameterSet((float)precursorMz, name, new Integer(doubleBonds), ohNumber, modName, "not appropriate", analyteFormula, modificationFormula, new Integer(charge));
+    set_ =  new LipidParameterSet((float)precursorMz, name, new Integer(doubleBonds), modName, 0.0, analyteFormula, modificationFormula, new Integer(charge), ohNumber);
     this.rulesDir_  = null;
     msnSpectraPresent_ = false;
     scanAllSpectraForCandidates(precursorMz, precursorTolerance);

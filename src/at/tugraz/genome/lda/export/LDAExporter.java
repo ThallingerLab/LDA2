@@ -39,6 +39,7 @@ import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExportException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
+import at.tugraz.genome.lda.exception.RetentionTimeGroupingException;
 import at.tugraz.genome.lda.export.vos.EvidenceBase;
 import at.tugraz.genome.lda.export.vos.EvidenceVO;
 import at.tugraz.genome.lda.export.vos.FeatureVO;
@@ -50,6 +51,7 @@ import at.tugraz.genome.lda.msn.vos.IntensityPositionVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.lda.vos.DoubleStringVO;
 import at.tugraz.genome.lda.vos.ResultAreaVO;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
@@ -57,7 +59,7 @@ import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.voutils.GeneralComparator;
 
 /**
- * This class is the base for exporting information based on selctions in the heat maps plus extracting detailed
+ * This class is the base for exporting information based on selections in the heat maps plus extracting detailed
  * information stored in the referenced LDA result files
  * 
  * @author Juergen Hartler
@@ -166,7 +168,7 @@ public abstract class LDAExporter
         //use a position when it was found more than once, and at least more than half of the times of the
         //detected cases
         ////TODO: the next line is only excluded for JOE - I am not sure whether I actually need this removal!!!!!
-        if (detections>1 && detections>(totalCount/2))
+//        if (detections>1 && detections>(totalCount/2))
         //the line before, is the last line for the removal, for sphingolipid export  
           usePositionIdentification = true;
       }
@@ -187,19 +189,20 @@ public abstract class LDAExporter
   /**
    * extracts the combined information of several experiments according to selections in the heat maps plus detailed data from LDA result files
    * @param speciesType structural level of data export (lipid species, chain level, position level - for details see LipidomicsConstants.EXPORT_ANALYTE_TYPE)
+   * @param exportDoubleBondPositionsForClass true when double bond positions shall be exported for the lipid class of this analyte
    * @param extractFeatures should the features information be included in the exported data
    * @param currentSummaryId a running unique identifier
    * @param currentFeatureId a running unique identifier
    * @param extractEvidence should the evidence information information be included in the exported data (only possible when features are included)
    * @param currentEvidenceId a running unique identifier
    * @param currentEvGroupingId a running identifier for evidence originating from the same spectra
-   * @param isRtGrouped is there only one entry for each species, or are the species grouped be retention time
+   * @param isRtGrouped is there only one entry for each species, or are the species grouped by retention time
    * @param adductsSorted key: the adducts sorted in consecutive manner starting with the strongest representative; value: contains this adduct position information 
    * @param expNames the sorted experiment names
    * @param expsOfGroup key: group name; value: experiments belonging to this group
    * @param molName the name of the molecule (inclusively an RT grouping parameter)
    * @param resultsMol the values according to the heat map selection
-   * @param relevantOriginals the relevant results from the LDA Excel file - when these values are null, the speciesType must be LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES, and extractFeatures and extractEvidence must be false 
+   * @param relevantOriginals the relevant results from the LDA Excel file - when these values are null, the speciesType must be LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES, and extractFeatures, extractEvidence and exportDoubleBondPositionsForClass must be false 
    * @param maxIsotope the maximum isotope that will be used for the export
    * @param faHydroxyEncoding the OH encodings of the FA moiety
    * @param lcbHydroxyEncoding the OH encodings of the LCB moiety
@@ -209,16 +212,17 @@ public abstract class LDAExporter
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   @SuppressWarnings("unchecked")
-  protected static SpeciesExportVO extractExportableSummaryInformation(short speciesType, boolean extractFeatures, int currentSummaryId,
+  protected static SpeciesExportVO extractExportableSummaryInformation(short speciesType, boolean exportDoubleBondPositionsForClass, boolean extractFeatures, int currentSummaryId,
       int currentFeatureId, boolean extractEvidence, int currentEvidenceId, int currentEvGroupingId, boolean isRtGrouped,
       LinkedHashMap<String,Boolean> adductsSorted, Vector<String> expNames, LinkedHashMap<String,Vector<String>> expsOfGroup,
       String molName, Hashtable<String,Vector<Double>> resultsMol, Hashtable<String,Hashtable<String,Vector<LipidParameterSet>>> relevantOriginals,
       int maxIsotope, HydroxyEncoding faHydroxyEncoding, HydroxyEncoding lcbHydroxyEncoding)
-          throws ExportException, SpectrummillParserException, LipidCombinameEncodingException{
+          throws ExportException, SpectrummillParserException, LipidCombinameEncodingException,RetentionTimeGroupingException{
     if (extractEvidence && !extractFeatures)
       throw new ExportException("It is not possible to extract the evidence without extracting the features");
     String chemFormula = "";
     Double neutralMassTheoretical = null;
+    Vector<DoubleBondPositionVO> allAssignedDoubleBondPositions = new Vector<DoubleBondPositionVO>();
     //reading information that is equal for all the identifications of one analyte
     if (relevantOriginals!=null){
       for (Hashtable<String,Vector<LipidParameterSet>> origs : relevantOriginals.values()){
@@ -343,6 +347,17 @@ public abstract class LDAExporter
         short otherEvidence;
         for (String exp : relevantOriginals.keySet()){
           Hashtable<String,Vector<LipidParameterSet>> modParams = relevantOriginals.get(exp);
+          
+          if (exportDoubleBondPositionsForClass) {
+            for (Vector<LipidParameterSet> sets : modParams.values()) {
+              for (LipidParameterSet set : sets) {
+                if (set.hasOmegaInformation()) {
+                  allAssignedDoubleBondPositions.addAll(StaticUtils.getAssignedDoubleBondPositions(set.getOmegaInformation()));
+                }
+              }
+            }
+          }
+          
           for (String mod : modParams.keySet()){
             foundMods.put(mod, mod);
             evidence = SummaryVO.EVIDENCE_MS1_ONLY;
@@ -353,7 +368,7 @@ public abstract class LDAExporter
               }
               otherEvidence = StaticUtils.determineEvidenceStateOfHit(set);
               if (otherEvidence>evidence)
-            	evidence = otherEvidence;
+                evidence = otherEvidence;
             }
             storeEvidenceToHash(evidence, evidenceReliabilityOfMods, molName, mod, exp);
             @SuppressWarnings("rawtypes")
@@ -376,7 +391,23 @@ public abstract class LDAExporter
         adducts = getSortedModifications(adductsSorted,foundMods);
       }
       Vector<Integer> featureRefs = getFeatureRefs(molName,adducts,features);
-      SummaryVO sumVO = new SummaryVO(currentSummaryId,molName,null,featureRefs,chemFormula,neutralMassTheoretical,rTime,
+      String displayString = null;
+      if (exportDoubleBondPositionsForClass) {
+        for (DoubleBondPositionVO assignedDoubleBondPosition : allAssignedDoubleBondPositions) {
+          String assignedSpecies = assignedDoubleBondPosition.getDoubleBondPositionsHumanReadable(speciesType);
+          if (displayString != null && !displayString.equals(assignedSpecies)) {
+            System.out.println(String.format("Analytes with differing assigned double bond positions have been grouped together (%s and %s)."
+                + "Consider lowering the setting for 'Show hits with different RT separately' in the 'Selection' tab.", displayString, assignedSpecies));
+            displayString = null;
+            break;    
+//            throw new RetentionTimeGroupingException(
+//                "<html>Analytes with differing assigned double bond positions have been falsely grouped together.<br/>"
+//                + "Consider lowering the setting for 'Show hits with different RT separately' in the 'Selection' tab.</html>");
+          }
+          displayString = assignedSpecies;
+        }
+      }
+      SummaryVO sumVO = new SummaryVO(currentSummaryId,molName,displayString,featureRefs,chemFormula,neutralMassTheoretical,rTime,
           adducts,mzTabReliability,areas,rtsOfMods,evidenceReliabilityOfMods.get(molName),expsOfGroup);
       currentSummaryId++;
       speciesSummaries.add(sumVO);
@@ -406,18 +437,25 @@ public abstract class LDAExporter
 
       //the reliability of the evidence of every modification; evidenceReliabilityOfMods: first key: species second key modification; third key: experiment
       Hashtable<String,Hashtable<String,Hashtable<String,Short>>> evidenceReliabilityOfMods = new Hashtable<String,Hashtable<String,Hashtable<String,Short>>>();
-            
+      
       //this is for the summary information
       for (String expName : expNames){
         if (!relevantOriginals.containsKey(expName))
           continue;
         Hashtable<String,Vector<LipidParameterSet>> allMods = relevantOriginals.get(expName);
         Vector<LipidParameterSet> allSets = new Vector<LipidParameterSet>();
-        for ( Vector<LipidParameterSet> sets : allMods.values())
+        for ( Vector<LipidParameterSet> sets : allMods.values()) {
           allSets.addAll(sets);
+        } 
+        if (exportDoubleBondPositionsForClass) {
+          for (LipidParameterSet set : allSets) {
+            if (set.hasOmegaInformation()) {
+              allAssignedDoubleBondPositions.addAll(StaticUtils.getAssignedDoubleBondPositions(set.getOmegaInformation()));
+            }
+          }
+        }
         Hashtable<String,Float> highestPeakArea = new Hashtable<String,Float>();
         Hashtable<String,Float> rtOfHighestArea = new Hashtable<String,Float>();
-        
         
         //when there are hits where there is no chain information available, the "analyte species" has to be added;
         if (StaticUtils.isThereChainInformationAvailable(molNameWORt,allSets)){
@@ -634,6 +672,7 @@ public abstract class LDAExporter
         }
         highestRts.put(expName, rtOfHighestArea);
       }
+      
       if (speciesType==LipidomicsConstants.EXPORT_ANALYTE_TYPE_POSITION){
         positionToWithoutHash = replaceSpeciesByPositionAccordingToEvidence(molecularSpecies, molSpeciesCount,
             positionCount, ambiguousOnes);
@@ -641,6 +680,7 @@ public abstract class LDAExporter
         for (String molSpecies : positionToWithoutHash.keySet())
           molecularSpecies.add(molSpecies); 
       }
+      
       for (String aSpecies : species){
         //the next line is for the export of MSn data only
 //        if (rtsOfMods.get(molName)==null)
@@ -663,7 +703,11 @@ public abstract class LDAExporter
         Float rTime = getRtOfHighestPeak(speciesInHash,areas,highestRts);
         Vector<String> adducts = getSortedModifications(adductsSorted,modsOfSpecies.get(speciesInHash));
         Vector<Integer> featureRefs = getFeatureRefs(aSpecies,adducts,features);
-        SummaryVO sumVO = new SummaryVO(molName,aSpecies,featureRefs,chemFormula,neutralMassTheoretical,rTime,
+        String displayString = aSpecies;
+        if (exportDoubleBondPositionsForClass) {
+          displayString = getDoubleBondPositionDisplayString(aSpecies, allAssignedDoubleBondPositions);
+        }
+        SummaryVO sumVO = new SummaryVO(molName,displayString,featureRefs,chemFormula,neutralMassTheoretical,rTime,
             adducts,2,areas,rtsOfMods.get(speciesInHash),evidenceReliabilityOfMods.get(speciesInHash),expsOfGroup);
         summariesMolSpecies.put(aSpecies, sumVO);
         double totalArea = 0d;
@@ -874,6 +918,42 @@ public abstract class LDAExporter
     SpeciesExportVO exportVO = new SpeciesExportVO(currentSummaryId,speciesSummaries,currentFeatureId,
         features!=null ? new Vector<FeatureVO>(features.values()) : new Vector<FeatureVO>(),currentEvidenceId,currentEvGroupingId,evidence);
     return exportVO;
+  }
+  
+  /**
+   * @param aSpecies human readable molecular species of this analyte without double bond position information
+   * @param allAssignedDoubleBondPositions assigned double bond positions of this analyte
+   * @return Human readable molecular species with double bond position information and the sn position of 'aSpecies'
+   */
+  public static String getDoubleBondPositionDisplayString(String aSpecies, Vector<DoubleBondPositionVO> allAssignedDoubleBondPositions) {
+    String displayString = aSpecies;
+    //snPositionLevel adjusts sn position information of the double bond positions display String to the result of replaceSpeciesByPositionAccordingToEvidence
+    int snPositionLevel = (aSpecies.contains(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS)) ?
+        LipidomicsConstants.EXPORT_ANALYTE_TYPE_POSITION : LipidomicsConstants.EXPORT_ANALYTE_TYPE_CHAIN;
+    String previousAssignedSpecies = null;
+    for (DoubleBondPositionVO assignedDoubleBondPosition : allAssignedDoubleBondPositions) {
+      String assignedSpecies = assignedDoubleBondPosition.getDoubleBondPositionsHumanReadable(0);
+      if (StaticUtils.isChainCombinationEquivalent(assignedSpecies, aSpecies)) {
+        if (previousAssignedSpecies != null && !previousAssignedSpecies.equals(assignedSpecies)) {
+          System.out.println(String.format("Analytes with differing assigned double bond positions have been grouped together. (%s and %s) "
+              + "Consider lowering the setting for 'Show hits with different RT separately' in the 'Selection' tab.", previousAssignedSpecies, assignedSpecies));
+          displayString = aSpecies;
+          break;                
+//          throw new RetentionTimeGroupingException(
+//              "<html>Analytes with differing assigned double bond positions have been falsely grouped together.<br/>"
+//              + "Consider lowering the setting for 'Show hits with different RT separately' in the 'Selection' tab.</html>");
+        }
+        if (snPositionLevel == LipidomicsConstants.EXPORT_ANALYTE_TYPE_CHAIN) {
+          displayString = assignedSpecies;
+        } else if (snPositionLevel == LipidomicsConstants.EXPORT_ANALYTE_TYPE_POSITION && assignedDoubleBondPosition.areChainPositionsFixed()) {
+          displayString = assignedDoubleBondPosition.getDoubleBondPositionsHumanReadable(snPositionLevel);
+        } else if (snPositionLevel == LipidomicsConstants.EXPORT_ANALYTE_TYPE_POSITION && assignedDoubleBondPosition.getMolecularSpecies().contains(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS)) {
+          displayString = assignedSpecies;
+        }
+        previousAssignedSpecies = assignedSpecies;
+      }
+    }
+    return displayString;
   }
 
   /**

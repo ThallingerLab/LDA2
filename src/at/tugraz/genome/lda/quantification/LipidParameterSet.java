@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -34,7 +34,9 @@ import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.RulesContainer;
+import at.tugraz.genome.lda.utils.PreciseRTFormatter;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.quantification.CgParameterSet;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
@@ -42,6 +44,7 @@ import at.tugraz.genome.maspectras.quantification.CgProbe;
 /**
  * class containing information about an analyte identification
  * @author Juergen Hartler
+ * @author Leonida M. Lamp
  *
  */
 public class LipidParameterSet extends CgParameterSet
@@ -53,6 +56,7 @@ public class LipidParameterSet extends CgParameterSet
   private String chemicalFormula_;
   private String chemicalFormulaWODeducts_;
   private Integer charge_;
+  private double preciseRetentionTime_;
   private String rt_;
   /** (total) number of hydroxylation sites present on the molecule*/
   private Integer ohNumber_;
@@ -62,6 +66,10 @@ public class LipidParameterSet extends CgParameterSet
   public final static String MOD_SEPARATOR = "_-_";
   public final static String MOD_SEPARATOR_HR = "_";
   
+  /** whether any instance of the class has omega information */
+  private static boolean isOmegaInformationAvailable_ = false;
+  /** Vector of value objects of assigned omega positions */
+  private Vector<DoubleBondPositionVO> omegaInformation_;
   /** if there is an isobaric peak split, a hard limit is set on one side of the peak*/
   private float lowerRtHardLimit_;
   /** if there is an isobaric peak split, a hard limit is set on one side of the peak*/
@@ -76,8 +84,8 @@ public class LipidParameterSet extends CgParameterSet
    * @param set the set to be cloned
    */
   public LipidParameterSet(LipidParameterSet set){
-    this(set.Mz[0],set.Peptide,set.doubleBonds_,set.ohNumber_,set.modificationName_,set.rt_,set.analyteFormula_,
-        set.modificationFormula_,set.charge_);
+    this(set.Mz[0],set.Peptide,set.doubleBonds_,set.modificationName_,set.preciseRetentionTime_,set.analyteFormula_,
+        set.modificationFormula_,set.charge_,set.ohNumber_);
     this.Mz = set.Mz;
     this.Area = set.Area;
     this.LowerMzBand = set.LowerMzBand;
@@ -89,27 +97,13 @@ public class LipidParameterSet extends CgParameterSet
     this.upperRtHardLimit_ = set.getUpperRtHardLimit();
     this.percentalSplit_ = set.getPercentalSplit();
     this.oxState_ = set.getOxState();
-  }
-  
-  /**
-   * this constructor is kept for backward compatibility - might be deprecated in future
-   * @param mz the anticipated m/z value
-   * @param name the name of the analyte class
-   * @param doubleBonds the number of double bonds - if any
-   * @param ohNumber the number of hydroxylation sites
-   * @param modificationName the name of the adduct/modification for ionization
-   * @param rt retention time
-   * @param analyteFormula the chemical formula of the neutral analyte
-   * @param modificationFormula the chemical formula of the modification
-   * @param charge the charge
-   */
-  public LipidParameterSet(float mz, String name,
-      Integer doubleBonds, Integer ohNumber, String modificationName, String rt, String analyteFormula,
-      String modificationFormula, Integer charge)
-  {
-    //TODO: the information about the hydroxylation sites has to come from somewhere else!!!!!!!
-    //this(mz, name, doubleBonds, modificationName, rt, analyteFormula, modificationFormula, charge, 0);
-    this(mz, name, doubleBonds, modificationName, rt, analyteFormula, modificationFormula, charge, ohNumber);
+    
+    // deep copy omega information
+    for (DoubleBondPositionVO labeledChainCombiVO : set.getOmegaInformation()) 
+    {
+      DoubleBondPositionVO deepCopyOfLabeledChainCombiVO = new DoubleBondPositionVO(labeledChainCombiVO);
+      this.omegaInformation_.add(deepCopyOfLabeledChainCombiVO);
+    }
   }
   
   /**
@@ -118,18 +112,20 @@ public class LipidParameterSet extends CgParameterSet
    * @param name the name of the analyte class
    * @param doubleBonds the number of double bonds - if any
    * @param modificationName the name of the adduct/modification for ionization
-   * @param rt retention time
+   * @param preciseRetentionTime retention time
    * @param analyteFormula the chemical formula of the neutral analyte
    * @param modificationFormula the chemical formula of the modification
    * @param charge the charge
    * @param ohNumber the number of hydroxylation sites (total)
    */
   public LipidParameterSet(float mz, String name,
-      Integer doubleBonds, String modificationName, String rt, String analyteFormula,
+      Integer doubleBonds, String modificationName, double preciseRetentionTime, String analyteFormula,
       String modificationFormula, Integer charge, Integer ohNumber)
   {
     super(mz, name,mz,-1,-1, -1,-1, -1, -1, -1, -1, -1,
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+    this.preciseRetentionTime_ = preciseRetentionTime;
+  	this.rt_ = PreciseRTFormatter.FormatNumberToString(preciseRetentionTime,2);
     this.doubleBonds_ = doubleBonds;
     this.modificationName_ = modificationName;
     this.analyteFormula_ = analyteFormula;
@@ -172,22 +168,63 @@ public class LipidParameterSet extends CgParameterSet
       chemicalFormulaWODeducts_ = analyteFormula_;
     }
     charge_ = charge;
-    this.rt_ = rt;
     this.lowerRtHardLimit_ = -1f;
     this.upperRtHardLimit_ = -1f;
     this.percentalSplit_ = -1;
     this.ohNumber_ = ohNumber;
     this.choseMoreLikelyRtWhenEqualMSn_ = false;
+    this.omegaInformation_ = new Vector<DoubleBondPositionVO>();
+  }
+  
+  /**
+   * Adds a value object of an assigned omega position
+   * 
+   * @param labeledMolecularSpecies Value object of the molecular species with omega assignment
+   * @param retTime float of the retention time taken from the mass list in minutes
+   */
+  public void addOmegaInformation(DoubleBondPositionVO labeledSpeciesVO) {
+    this.omegaInformation_.add(labeledSpeciesVO);
+  }
+  
+  public void setOmegaInformation(Vector<DoubleBondPositionVO> omegaInfo) {
+    this.omegaInformation_ = omegaInfo;
+  }
+  
+  /**
+   * @return boolean informing the caller whether assigned omega positions are available in this instance
+   */
+  public boolean hasOmegaInformation() {
+    if (!this.omegaInformation_.isEmpty()) return true;
+    return false;
+  }
+  
+  /**
+   * @return boolean informing the caller whether assigned omega positions are available in any instance of this class
+   */
+  public static boolean isOmegaInformationAvailable() {
+    return isOmegaInformationAvailable_;
+  }
+  
+  /**
+   * @param hasOmegaInformation boolean informing the class whether omega positions are available in any of its instances
+   */
+  public static void setOmegaInformationAvailable(boolean hasOmegaInformation) {
+    isOmegaInformationAvailable_ = hasOmegaInformation;
+  }
+  
+  /**
+   * @return Vector containing value objects of assigned omega positions
+   */
+  public Vector<DoubleBondPositionVO> getOmegaInformation() {
+    return this.omegaInformation_;
   }
   
   public String getNameString(){
     return StaticUtils.generateLipidNameString(Peptide, doubleBonds_,rt_,oxState_);
   }
   
-  public String getNameStringWithoutRt(){
-	
-    return StaticUtils.generateLipidNameString(Peptide, doubleBonds_,-1,oxState_);
-    
+  public String getNameStringWithoutRt(){	
+    return StaticUtils.generateLipidNameString(Peptide, doubleBonds_,-1,oxState_);   
   }
  
   public String getName(){
@@ -258,6 +295,16 @@ public class LipidParameterSet extends CgParameterSet
     return rt_;
   }
   
+  public double getPreciseRT()
+  {
+  	return preciseRetentionTime_;
+  }
+  
+  public void setPreciseRt(Double rt)
+  {
+  	this.preciseRetentionTime_ = rt;
+  	this.rt_ = PreciseRTFormatter.FormatNumberToString(rt,2);
+  }
 
   public String getChemicalFormula()
   {
@@ -271,11 +318,6 @@ public class LipidParameterSet extends CgParameterSet
   public String getChemicalFormulaWODeducts()
   {
     return chemicalFormulaWODeducts_;
-  }
-
-  public void setRt(String rt)
-  {
-    this.rt_ = rt;
   }
 
   public int getMinIsotope(){
@@ -495,7 +537,7 @@ public void setCoverage(float coverage) {
         && Objects.equals(modificationFormula_, other.modificationFormula_)
         && Objects.equals(modificationName_, other.modificationName_)
         && Objects.equals(ohNumber_, other.ohNumber_)
-//        && Objects.equals(omegaInformation_, other.omegaInformation_)
+        && Objects.equals(omegaInformation_, other.omegaInformation_)
         && Float.floatToIntBits(percentalSplit_) == Float
             .floatToIntBits(other.percentalSplit_)
         && Objects.equals(rt_, other.rt_)

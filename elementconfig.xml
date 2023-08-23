@@ -12,6 +12,9 @@
 			<isotope mass="12.0" abund="0.989" />
 			<isotope mass="13.003354826" abund="0.011" />
 		</element>
+		<element symbol="Cc" valency="4">
+			<isotope mass="13.003354826" abund="1.0" />
+		</element>
 		<element symbol="H" valency="1" >
 			<isotope mass="1.007825035" abund="0.99985" />
 			<isotope mass="2.014101779" abund="0.00015" />

@@ -140,8 +140,9 @@ public interface HeatMapClickListener extends SampleLookup
    * exports the contents of the heat map to mzTab
    * @param exportFile the file where mzTab shall be written
    * @param speciesType which species shall be exported - for details see LipidomicsConstants.EXPORT_ANALYTE_TYPE
+   * @param exportDoubleBondPositions true when double bond positions shall be exported
    */
-  public void exportMzTab(File exportFile, short speciesType);
+  public void exportMzTab(File exportFile, short speciesType, boolean exportDoubleBondPositions);
   public void exportRdb(File exportFile);
   public void exportMaf(File exportFile);
   

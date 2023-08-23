@@ -15,6 +15,12 @@
 		<fileset dir="${excel.lib.dir}">
 			<include name="*.jar" />
 		</fileset>
+		<fileset dir="${plotting.lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${math.lib.dir}">
+			<include name="*.jar" />
+		</fileset>
 		<fileset dir="${xml.lib.dir}">
 			<include name="*.jar" />
 		</fileset>
@@ -28,7 +34,7 @@
 			<include name="*.jar" />
 		</fileset>
 	</path>
-
+	
 	<path id="compile.class.path">
 		<path refid="base.class.path" />
 	</path>
@@ -89,7 +95,7 @@
 		<jar jarfile="${dist.dir}/LipidDataAnalyzer.jar" index="no">
 			<manifest>
 				<attribute name="Main-Class" value="at.tugraz.genome.lda.LipidDataAnalyzer" />
-				<attribute name="Class-Path" value="tuLibs/jlk.jar tuLibs/maspectras-lipidomics.jar thirdParty/j3dcore.jar thirdParty/j3dutils.jar thirdParty/vecmath.jar thirdParty/batik-awt-util.jar thirdParty/batik-dom.jar thirdParty/batik-ext.jar thirdParty/batik-svggen.jar thirdParty/batik-util.jar thirdParty/batik-xml.jar thirdParty/jh.jar thirdParty/jackson-annotations-2.9.5.jar thirdParty/jackson-core-2.9.5.jar thirdParty/jackson-databind-2.9.5.jar thirdParty/jackson-dataformat-csv-2.9.5.jar thirdParty/jackson-dataformat-xml-2.9.5.jar thirdParty/jackson-datatype-joda-2.9.5.jar thirdParty/jackson-module-jaxb-annotations-2.9.5.jar thirdParty/jmztabm-api.jar thirdParty/jmztabm-io.jar thirdParty/joda-time-2.9.9.jar thirdParty/migbase64-2.2.jar thirdParty/slf4j-api-1.7.25.jar thirdParty/slf4j-simple-1.7.25.jar thirdParty/stax2-api-3.1.4.jar thirdParty/swagger-annotations-1.5.16.jar thirdParty/validation-api-2.0.0.Final.jar thirdParty/woodstox-core-5.0.3.jar thirdParty/poi.jar thirdParty/poi-ooxml.jar thirdParty/poi-ooxml-schemas.jar thirdParty/xmlbeans.jar thirdParty/xpp.jar thirdParty/gluegen-rt.jar thirdParty/joal.jar thirdParty/jogl-all.jar thirdParty/commons-cli-1.4.jar thirdParty/aalto-xml-1.3.1.jar thirdParty/commons-compress-1.21.jar thirdParty/fastexcel-0.12.14.jar thirdParty/fastexcel-reader-0.12.14.jar thirdParty/opczip-1.2.0.jar thirdParty/stax2-api-4.2.jar"/>
+				<attribute name="Class-Path" value="tuLibs/jlk.jar tuLibs/maspectras-lipidomics.jar thirdParty/j3dcore.jar thirdParty/j3dutils.jar thirdParty/vecmath.jar thirdParty/batik-awt-util.jar thirdParty/batik-dom.jar thirdParty/batik-ext.jar thirdParty/batik-svggen.jar thirdParty/batik-util.jar thirdParty/batik-xml.jar thirdParty/jh.jar thirdParty/jackson-annotations-2.9.5.jar thirdParty/jackson-core-2.9.5.jar thirdParty/jackson-databind-2.9.5.jar thirdParty/jackson-dataformat-csv-2.9.5.jar thirdParty/jackson-dataformat-xml-2.9.5.jar thirdParty/jackson-datatype-joda-2.9.5.jar thirdParty/jackson-module-jaxb-annotations-2.9.5.jar thirdParty/jmztabm-api.jar thirdParty/jmztabm-io.jar thirdParty/joda-time-2.9.9.jar thirdParty/migbase64-2.2.jar thirdParty/slf4j-api-1.7.25.jar thirdParty/slf4j-simple-1.7.25.jar thirdParty/stax2-api-3.1.4.jar thirdParty/swagger-annotations-1.5.16.jar thirdParty/validation-api-2.0.0.Final.jar thirdParty/woodstox-core-5.0.3.jar thirdParty/poi.jar thirdParty/poi-ooxml.jar thirdParty/poi-ooxml-schemas.jar thirdParty/xmlbeans.jar thirdParty/xpp.jar thirdParty/gluegen-rt.jar thirdParty/joal.jar thirdParty/jogl-all.jar thirdParty/commons-cli-1.4.jar thirdParty/aalto-xml-1.3.1.jar thirdParty/commons-compress-1.21.jar thirdParty/fastexcel-0.12.14.jar thirdParty/fastexcel-reader-0.12.14.jar thirdParty/opczip-1.2.0.jar thirdParty/stax2-api-4.2.jar thirdParty/jfreechart-1.5.3.jar"/>
 				<!--attribute name="Class-Path" value="${dist.dir}/tuLibs/jlk.jar ${dist.dir}/tuLibs/maspectras-lipidomics.jar ${dist.dir}/thirdParty/j3dcore.jar ${dist.dir}/thirdParty/j3dutils.jar ${dist.dir}/thirdParty/vecmath.jar ${dist.dir}/thirdParty/batik-awt-util.jar ${dist.dir}/thirdParty/batik-dom.jar ${dist.dir}/thirdParty/batik-ext.jar ${dist.dir}/thirdParty/batik-svggen.jar ${dist.dir}/thirdParty/batik-util.jar ${dist.dir}/thirdParty/batik-xml.jar ${dist.dir}/thirdParty/jh.jar ${dist.dir}/thirdParty/jackson-annotations-2.9.5.jar ${dist.dir}/thirdParty/jackson-core-2.9.5.jar ${dist.dir}/thirdParty/jackson-databind-2.9.5.jar ${dist.dir}/thirdParty/jackson-dataformat-csv-2.9.5.jar ${dist.dir}/thirdParty/jackson-dataformat-xml-2.9.5.jar ${dist.dir}/thirdParty/jackson-datatype-joda-2.9.5.jar ${dist.dir}/thirdParty/jackson-module-jaxb-annotations-2.9.5.jar ${dist.dir}/thirdParty/jmztabm-api.jar ${dist.dir}/thirdParty/jmztabm-io.jar ${dist.dir}/thirdParty/joda-time-2.9.9.jar ${dist.dir}/thirdParty/migbase64-2.2.jar ${dist.dir}/thirdParty/slf4j-api-1.7.25.jar ${dist.dir}/thirdParty/slf4j-simple-1.7.25.jar ${dist.dir}/thirdParty/stax2-api-3.1.4.jar ${dist.dir}/thirdParty/swagger-annotations-1.5.16.jar ${dist.dir}/thirdParty/validation-api-2.0.0.Final.jar ${dist.dir}/thirdParty/woodstox-core-5.0.3.jar ${dist.dir}/thirdParty/poi.jar ${dist.dir}/thirdParty/poi-ooxml.jar ${dist.dir}/thirdParty/poi-ooxml-schemas.jar ${dist.dir}/thirdParty/xmlbeans.jar ${dist.dir}/thirdParty/xpp.jar ${dist.dir}/thirdParty/gluegen-rt.jar ${dist.dir}/thirdParty/joal.jar ${dist.dir}/thirdParty/jogl-all.jar ${dist.dir}/thirdParty/commons-cli-1.4.jar"/-->
 			</manifest>
 			<fileset dir="${classes.dir}" includes="**/*" excludes="**/*.pdf" />
@@ -120,13 +126,6 @@
 			<fileset dir="${classes.combiExtractor.dir}" />
 		</delete>
 	</target>
-	
-	<!-- TODO add something like: <target name="unitTests" depends="compile">... -->
-	<path id="junit.class.path">
-		<fileset dir="${junit.lib.dir}">
-			<include name="*.jar" />
-		</fileset>
-	</path>	
 	
 	<path id="ttest.class.path">
 		<fileset dir="${ttest.lib.dir}">

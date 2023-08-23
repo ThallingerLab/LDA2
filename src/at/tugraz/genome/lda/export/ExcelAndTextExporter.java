@@ -42,6 +42,7 @@ import at.tugraz.genome.lda.analysis.ComparativeResultsLookup;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.ExportException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
+import at.tugraz.genome.lda.exception.RetentionTimeGroupingException;
 import at.tugraz.genome.lda.export.vos.SpeciesExportVO;
 import at.tugraz.genome.lda.export.vos.SummaryVO;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
@@ -68,6 +69,7 @@ public class ExcelAndTextExporter extends LDAExporter
    * central static method for executing the export
    * @param includeResultFiles true when the original result files shall be read (in some cases not possible, e.g. in the classes overview)
    * @param speciesType structural level of data export (lipid species, chain level, position level - for details see LipidomicsConstants.EXPORT_ANALYTE_TYPE)
+   * @param exportDoubleBondPositionsForClass true when double bond positions shall be exported for the lipid class of this analyte
    * @param sheetName analyte class
    * @param out the output stream for writing the results
    * @param excelFile true in case of an Excel file; false for a tab-delimited file
@@ -91,12 +93,12 @@ public class ExcelAndTextExporter extends LDAExporter
    * @throws IOException when there is a general IO problem
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  public static void exportToFile(boolean includeResultFiles, short speciesType, String sheetName, OutputStream out, boolean excelFile, int maxIsotope, Vector<String> molNames, 
+  public static void exportToFile(boolean includeResultFiles, short speciesType, boolean exportDoubleBondPositionsForClass, String sheetName, OutputStream out, boolean excelFile, int maxIsotope, Vector<String> molNames, 
       boolean isRtGrouped, boolean isGrouped, Vector<String> expIdNames, Hashtable<String,String> expNames, LinkedHashMap<String,String> expFullPaths,
       LinkedHashMap<String,Vector<String>> expsOfGroup, Hashtable<String,Hashtable<String,Vector<Double>>> results,
       String preferredUnit, String headerText, ExportOptionsVO expVO, ComparativeResultsLookup compLookup, Vector<String> modifications)
           throws ExportException,
-      SpectrummillParserException, ExcelInputFileException, IOException, LipidCombinameEncodingException{
+      SpectrummillParserException, ExcelInputFileException, IOException, LipidCombinameEncodingException, RetentionTimeGroupingException{
     
     //first read the original Excel results of this analyte class
     Hashtable<String,QuantificationResult> originalExcelResults = new Hashtable<String,QuantificationResult>();
@@ -130,7 +132,7 @@ public class ExcelAndTextExporter extends LDAExporter
           }
         }
       }
-      SpeciesExportVO exportVO = extractExportableSummaryInformation(speciesType, false, 0, 0, false, 0, 0, rtGroupingUsed, adductsSorted, new Vector<String>(expFullPaths.keySet()),
+      SpeciesExportVO exportVO = LDAExporter.extractExportableSummaryInformation(speciesType, exportDoubleBondPositionsForClass, false, 0, 0, false, 0, 0, rtGroupingUsed, adductsSorted, new Vector<String>(expFullPaths.keySet()),
         expsOfGroup,  molName, results.get(molName), relevantOriginals, maxIsotope, faEncoding, lcbEncoding);
       for (SummaryVO sumVO : exportVO.getSummaries()){
         String id = "";

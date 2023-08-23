@@ -61,7 +61,7 @@ import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.utils.StaticUtils;
-//import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
+import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.maspectras.quantification.CgAreaStatus;
 import at.tugraz.genome.maspectras.quantification.CgException;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
@@ -73,7 +73,6 @@ import at.tugraz.genome.maspectras.quantification.Probe3D;
  * @author Juergen Hartler
  *
  */
-//TODO: features for omega assingment have been commented out / not added
 public class LDAResultReader
 {  
   
@@ -113,11 +112,7 @@ public class LDAResultReader
     String suffix = "";
     if (filePath!=null && filePath.length()>3)
       suffix = filePath.substring(filePath.lastIndexOf("."));
-    //for backwards compatibility, in case there are files in the old excel format
-  /*  if (suffix.equalsIgnoreCase(".xls")) {
-    	//TODO: remove completely after an adequate transition period *note written: 25.05.2022*
-      return LDAResultReaderApachePOI.readResultFile(filePath, showModifications, specificClass);
-    } else*/ if (!(suffix.equalsIgnoreCase(".xlsx"))){
+    if (!(suffix.equalsIgnoreCase(".xlsx"))){
       new WarningMessage(new JFrame(), "ERROR", "The specified file format is not supported!");
       throw new ExcelInputFileException("The specified file format is not supported!");
     } 
@@ -177,13 +172,11 @@ public class LDAResultReader
         throw new LipidCombinameEncodingException(ex);
       }
       
-    } 
-//    else if (name.endsWith(QuantificationResultExporter.ADDUCT_OMEGA_SHEET)) {
-//      readOmegaSheet(sheet);
-//      LipidParameterSet.setOmegaInformationAvailable(true);
-//      
-//    } 
-    else {
+    } else if (name.endsWith(QuantificationResultExporter.ADDUCT_OMEGA_SHEET)) {
+      readOmegaSheet(sheet);
+      LipidParameterSet.setOmegaInformationAvailable(true);
+      
+    } else {
       readMS1Sheet(sheet, showModifications);
       
     }
@@ -294,7 +287,7 @@ public class LDAResultReader
     // the intensity header row has to be read
     boolean readIntensityHeaderRow = false;
     
- // column indices for the fragment information rows
+    // column indices for the fragment information rows
     int nameColumn = -1;
     int ohColumn = -1;
     int chainTypeColumn = -1;
@@ -782,8 +775,8 @@ public class LDAResultReader
             String token = tokenizer.nextToken();
             //this is necessary for position rules
             if (token.indexOf("[")!=-1) {
-                if (positionRules)
-                    missedPosition.put(token, LipidomicsConstants.CHAIN_TYPE_NO_CHAIN);
+              if (positionRules)
+                missedPosition.put(token, LipidomicsConstants.CHAIN_TYPE_NO_CHAIN);
               token = token.substring(0, token.indexOf("["));
             }
             short type = LipidomicsConstants.CHAIN_TYPE_NO_CHAIN;
@@ -971,63 +964,72 @@ public class LDAResultReader
    * Reads double bond position evidence from an Excel sheet. The results are stored in a Vector of DoubleBondPositionVOs for each LipidParameterSet.
    * @param sheet Omega Excel sheet
    */
-//  private static void readOmegaSheet(Sheet sheet) {
-//    String lipidClass = sheet.getName().replace(QuantificationResultExporter.ADDUCT_OMEGA_SHEET, "");
-//    Hashtable<String,LipidParameterSet> msHash = new Hashtable<String,LipidParameterSet>();
-//    for (LipidParameterSet param : resultParameterSets_.get(lipidClass)){
-//      msHash.put(param.getNamePlusModHumanReadable(), param);
-//    }
-//    
-//    List<Row> rows = null;
-//    try {
-//      rows = sheet.read();
-//    } catch (IOException ex) {}
-//    Row headerRow = rows.get(QuantificationResultExporter.HEADER_ROW);
-//    List<String> headerTitles = readSheetHeaderTitles(headerRow);
-//    List<Row> contentRows = rows.subList(QuantificationResultExporter.HEADER_ROW+1, rows.size());
-//    
-//    String identifier = null;
-//    String molecularSpecies = null;
-//    String doubleBondPosition = null;
-//    float expectedRetentionTime = 0f;
-//    int accuracy = 0;
-//    boolean isAssigned = false;
-//    int index;
-//    String rawValue;
-//    
-//    for (Row row : contentRows) {
-//      List<Cell> cells = row.stream().filter((c) -> !(c==null || c.getType().equals(CellType.ERROR))).collect(Collectors.toList());
-//      for (Cell cell : cells) {
-//        index = cell.getColumnIndex();
-//        rawValue = cell.getRawValue();
-//        
-//        if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_IDENTIFIER)) {
-//          identifier = rawValue;
-//        } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_MOLECULAR_SPECIES)) {
-//          molecularSpecies = rawValue;
-//        } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_DOUBLE_BOND_POSITION_LEVEL)) {
-//          doubleBondPosition = rawValue;
-//        } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_EXPECTED_RT)) {
-//          expectedRetentionTime = Float.parseFloat(rawValue);
-//        } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_ACCURACY)) {
-//          accuracy = Integer.parseInt(rawValue);
-//        } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_ASSIGNED)) {
-//          isAssigned = Boolean.parseBoolean(rawValue);
-//        } 
-//      }
-//      try {
-//        Vector<FattyAcidVO> chainCombination = StaticUtils.decodeFAsFromHumanReadableName(
-//            doubleBondPosition, Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), false);
-//        
-//        DoubleBondPositionVO doubleBondPositionVO = new DoubleBondPositionVO(
-//            chainCombination, expectedRetentionTime, accuracy, molecularSpecies, isAssigned);
-//        
-//        msHash.get(identifier).addOmegaInformation(doubleBondPositionVO);
-//      } catch (LipidCombinameEncodingException ex) {
+  private static void readOmegaSheet(Sheet sheet) {
+    String lipidClass = sheet.getName().replace(QuantificationResultExporter.ADDUCT_OMEGA_SHEET, "");
+    Hashtable<String,LipidParameterSet> msHash = new Hashtable<String,LipidParameterSet>();
+    for (LipidParameterSet param : resultParameterSets_.get(lipidClass)){
+      msHash.put(param.getNamePlusModHumanReadable(), param);
+    }
+    
+    List<Row> rows = null;
+    try {
+      rows = sheet.read();
+    } catch (IOException ex) {}
+    Row headerRow = rows.get(QuantificationResultExporter.HEADER_ROW);
+    List<String> headerTitles = readSheetHeaderTitles(headerRow);
+    List<Row> contentRows = rows.subList(QuantificationResultExporter.HEADER_ROW+1, rows.size());
+    
+    String identifier = null;
+    String molecularSpecies = null;
+    String doubleBondPosition = null;
+    float expectedRetentionTime = 0f;
+    int accuracy = 0;
+    boolean isAssigned = false;
+    int index;
+    String rawValue;
+    
+    for (Row row : contentRows) {
+      List<Cell> cells = row.stream().filter((c) -> !(c==null || c.getType().equals(CellType.ERROR))).collect(Collectors.toList());
+      for (Cell cell : cells) {
+        index = cell.getColumnIndex();
+        rawValue = cell.getRawValue();
+        
+        if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_IDENTIFIER)) {
+          identifier = rawValue;
+        } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_MOLECULAR_SPECIES)) {
+          molecularSpecies = rawValue;
+        } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_DOUBLE_BOND_POSITION_LEVEL)) {
+          doubleBondPosition = rawValue;
+        } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_EXPECTED_RT)) {
+          expectedRetentionTime = Float.parseFloat(rawValue);
+        } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_ACCURACY)) {
+          accuracy = Integer.parseInt(rawValue);
+        } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_ASSIGNED)) {
+          isAssigned = Boolean.parseBoolean(rawValue);
+        } 
+      }
+      try {
+        Vector<FattyAcidVO> chainCombination = StaticUtils.decodeFAsFromHumanReadableName(
+            doubleBondPosition, Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), false, lipidomicsConstants_);
+        
+        DoubleBondPositionVO doubleBondPositionVO = new DoubleBondPositionVO(
+            chainCombination, expectedRetentionTime, accuracy, molecularSpecies, isAssigned);
+        
+        msHash.get(identifier).addOmegaInformation(doubleBondPositionVO);
+      } 
+      catch (Exception ex)
+      {
+      	for (String test : msHash.keySet())
+      	{
+      		System.out.println(test);
+      	}
+      	System.out.println(ex.getMessage());
+      }
+//      catch (LipidCombinameEncodingException ex) {
 //        System.out.println(ex.getMessage());
 //      }
-//    }
-//  }
+    }
+  }
   
   
   /**
@@ -1065,7 +1067,7 @@ public class LDAResultReader
       String modification = null;
       String formula = null;
       String modFormula = null;
-      String rtString = "";
+      double preciseRT = 0.0;
       float area = 0f;
       float areaError = 0f;
       float background = 0f; 
@@ -1115,7 +1117,7 @@ public class LDAResultReader
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_MOD_FORMULA)) {
           modFormula = rawValue;
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_RT)) {
-          rtString = rawValue;
+          preciseRT = Double.parseDouble(rawValue);
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_ISOTOPE)) {
           isotope = (int)Float.parseFloat(rawValue);
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_AREA)) {
@@ -1189,7 +1191,7 @@ public class LDAResultReader
           if (analyteNames.containsKey(params.getNameString())) showModification = true;
           analyteNames.put(params.getNameString(), params.getNameString());
         }
-        //this is for backward compatibility
+        //this is for backward compatibility TODO: remove after a suitable transition period, written 22.08.2023
         if (headerTitles.indexOf(QuantificationResultExporter.HEADER_MODIFICATION) == -1 ||
             headerTitles.indexOf(QuantificationResultExporter.HEADER_FORMULA) == -1 || 
             headerTitles.indexOf(QuantificationResultExporter.HEADER_MOD_FORMULA) == -1){
@@ -1200,7 +1202,7 @@ public class LDAResultReader
           modification = "";
           modFormula = "";
         }
-        params = new LipidParameterSet(mz, name, dbs, oh, modification, rtString, formula, modFormula,paramCharge);
+        params = new LipidParameterSet(mz, name, dbs, modification, preciseRT, formula, modFormula, paramCharge, oh);
         if (lowerRtHardLimit>=0) params.setLowerRtHardLimit(lowerRtHardLimit);
         if (upperRtHardLimit>=0) params.setUpperRtHardLimit(upperRtHardLimit);
         if (percentalSplit>=0) params.setPercentalSplit(percentalSplit);
@@ -1425,9 +1427,8 @@ public class LDAResultReader
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   private static String getPermutationThatIsInValidChainCombinations(String combiKey, Vector<String> validChainCombinations) throws LipidCombinameEncodingException {
-	Vector<String> chains = StaticUtils.splitChainCombiToEncodedStrings(combiKey,LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
+    Vector<String> chains = StaticUtils.splitChainCombiToEncodedStrings(combiKey,LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
     Vector<String> permuts = StaticUtils.getPermutedChainNames(chains, LipidomicsConstants.CHAIN_COMBI_SEPARATOR);
-    
     for (String permut : permuts) {
       if (validChainCombinations.contains(permut))
         return permut;

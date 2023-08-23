@@ -1689,7 +1689,7 @@ public class FragmentCalculator
         String[] cAndDbs;
         try {
           cAndDbs = StaticUtils.parseCAndDbsFromChainId(chain);
-          encoded.append(values.get(Integer.parseInt(cAndDbs[0])).get(Integer.parseInt(cAndDbs[1])).get("").get(cAndDbs[2]).getChainIdWOPrefix());
+          encoded.append(values.get(Integer.parseInt(cAndDbs[0])).get(Integer.parseInt(cAndDbs[1])).get("").get(cAndDbs[2]).getChainIdDetailed(false,true));
         }
         catch (Exception e) {
           throw new RulesException(e);

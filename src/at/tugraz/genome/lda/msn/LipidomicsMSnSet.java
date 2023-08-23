@@ -24,6 +24,7 @@
 package at.tugraz.genome.lda.msn;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -34,6 +35,7 @@ import java.util.Set;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
@@ -41,11 +43,15 @@ import at.tugraz.genome.lda.msn.vos.IntensityChainVO;
 import at.tugraz.genome.lda.msn.vos.IntensityPositionVO;
 import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
+import at.tugraz.genome.lda.utils.Pair;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleStringVO;
+import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.voutils.GeneralComparator;
+
 /**
+ *TODO: remove ambig pos.
  * VO inheriting from LipidParameterSet which contains information about MS1 evidence
  * the additional information of this VO reflects MSn evidence
  * @author Juergen Hartler
@@ -113,6 +119,10 @@ public class LipidomicsMSnSet extends LipidParameterSet
   private Hashtable<String,String> chainNameLookupHumanReadable_;
   /** a list of the involved FA objects for this identification*/
   private Hashtable<String,FattyAcidVO> involvedFAs_;
+  /** the FA encoding */
+  private HydroxyEncoding faEncoding_;
+  /** the LCB encoding */
+  private HydroxyEncoding lcbEncoding_;
   
   
   /**
@@ -230,7 +240,8 @@ public class LipidomicsMSnSet extends LipidParameterSet
     nameLookupPositionInsensitve_ = new LinkedHashMap<String,String>();
     ambiguousPositionIdentifications_ = new Hashtable<String,Vector<String>>();
     chainNameLookupHumanReadable_ = new Hashtable<String,String>();
-    
+    faEncoding_ = faEncoding;
+    lcbEncoding_ = lcbEncoding;
     
     Hashtable<String,Integer> faChainOccurrences = new Hashtable<String,Integer>();
     if (status_==NO_MSN_PRESENT || status_==HEAD_GROUP_DETECTED){
@@ -265,7 +276,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
     //now the names are sorted by area -> I can buiild my lookyp hashes
     if (status_==FRAGMENTS_DETECTED || status_==POSITION_DETECTED){
       for (String combiName : validChainCombinations_){
-        nameLookupPositionInsensitve_.put(combiName, StaticUtils.getHumanReadableCombiName(combiName,faEncoding,lcbEncoding));
+      	nameLookupPositionInsensitve_.put(combiName, StaticUtils.getHumanReadableCombiName(combiName,faEncoding,lcbEncoding,false));
         if (status_==POSITION_DETECTED && positionDefinition_.containsKey(combiName)){
           Vector<String> posNames = getPositionSpecificCombiNames(combiName,positionDefinition_.get(combiName),faEncoding,lcbEncoding);
           Vector<String> snPosNames = getPositionSpecificCombiName(combiName,positionDefinition_.get(combiName),faEncoding,lcbEncoding);
@@ -316,6 +327,67 @@ public class LipidomicsMSnSet extends LipidParameterSet
     this.chainNameLookupHumanReadable_ = set.chainNameLookupHumanReadable_;
     this.involvedFAs_ = set.involvedFAs_;
     this.msLevels_ = set.msLevels_;    
+  }
+  
+  /**
+   * Removes a molecular species identified by the human readable name from the object.
+   * @param humanReadable
+   */
+  public void removeMolecularSpecies(String humanReadable)
+  {
+  	String positionInsensitive = nameLookupHumReadableToPositionInsensitve_.get(humanReadable);
+  	nameLookupHumReadableToPositionInsensitve_.remove(humanReadable);
+  	nameLookupPositionInsensitve_.remove(positionInsensitive);
+  	positionDefinition_.remove(positionInsensitive);
+  	positionEvidence_.remove(positionInsensitive);
+  	ambiguousPositionIdentifications_.remove(positionInsensitive);
+  	validChainCombinations_.remove(positionInsensitive);
+  	Double remainingRel = 1.0 - relativeIntensityOfCombination_.get(positionInsensitive);
+  	relativeIntensityOfCombination_.remove(positionInsensitive);
+  	for (String key : relativeIntensityOfCombination_.keySet()) //recalculating the relative area contributions
+  	{
+  		Double rel = relativeIntensityOfCombination_.get(key);
+  		Double newRel = remainingRel / rel;
+  		relativeIntensityOfCombination_.put(key, newRel);
+  	}
+  	
+  	//adjusting the omega C=C information
+  	Vector<DoubleBondPositionVO> omegaVOs = getOmegaInformation();
+  	Vector<DoubleBondPositionVO> newOmegaVOs = new Vector<DoubleBondPositionVO>();
+  	for (DoubleBondPositionVO omegaVO : omegaVOs)
+  	{
+  		String noOmegaPos = omegaVO.getEncodedDetailed(true, false);
+  		if (!noOmegaPos.equals(positionInsensitive))
+  		{
+  			newOmegaVOs.add(omegaVO);
+  		}
+  	}
+  	setOmegaInformation(newOmegaVOs);
+  	
+  	//starting here fatty acid chains are removed
+  	HashSet<String> potentiallyRemovedFA = new HashSet<String>(Arrays.asList(positionInsensitive.split(LipidomicsConstants.CHAIN_COMBI_SEPARATOR)));
+  	HashSet<String> remainingFA = new HashSet<String>();
+  	for (String validChainCombi : validChainCombinations_) //find still valid fatty acids
+  	{
+  		remainingFA.addAll(Arrays.asList(validChainCombi.split(LipidomicsConstants.CHAIN_COMBI_SEPARATOR)));
+  	}
+  	for (String valid : remainingFA) //remove all still valid fatty acids from the ones to be removed
+  	{
+  		potentiallyRemovedFA.remove(valid);
+  	}
+  	for (String removed : potentiallyRemovedFA) //remove invalid fatty acids
+  	{
+  		chainFragments_.remove(removed);
+  		chainIntensityRules_.remove(removed);
+  		involvedFAs_.remove(removed);
+  		chainNameLookupHumanReadable_.remove(removed);
+  	}
+  	
+  	//updating status if needed
+  	if (chainFragments_.isEmpty())
+  	{
+  		status_ = headGroupFragments_.isEmpty() ? NO_MSN_PRESENT : HEAD_GROUP_DETECTED;
+  	}
   }
 
   /**
@@ -371,10 +443,10 @@ public class LipidomicsMSnSet extends LipidParameterSet
 
   
   /**
+   * TODO: this can be completely replaced with the SN position one.
    * @return the lipid names for the identified lipid species based on MSn evidence - the entry may be a String, or a Vector<String> if several position specific assignments are possible
-   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  public Vector<Object> getMSnIdentificationNames() throws LipidCombinameEncodingException{
+  public Vector<Object> getMSnIdentificationNames() {
     Vector<Object> names = new Vector<Object>();
     Set<String> usedCombis = new HashSet<String>();
     for (String humanReadable : nameLookupHumReadableToPositionInsensitve_.keySet()) {
@@ -393,9 +465,8 @@ public class LipidomicsMSnSet extends LipidParameterSet
   
   /**
    * @return the lipid names for the identified lipid species based on MSn evidence according to new nomenclature (sn positions in brackets)
-   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  public Vector<String> getMSnIdentificationNamesWithSNPositions() throws LipidCombinameEncodingException{
+  public Vector<String> getMSnIdentificationNamesWithSNPositions() {
     Vector<String> names = new Vector<String>();
     for (String humanReadable : nameLookupPositionSnNomenclature_.keySet()) {
         names.add(humanReadable);
@@ -589,12 +660,17 @@ public class LipidomicsMSnSet extends LipidParameterSet
   }
   
   /**
+   * TODO: changed from the original oneliner, is this needed? : return relativeIntensityOfCombination_.get(nameLookupHumReadableToPositionInsensitve_.get(fullName));
    * for splitting of quantified area - returns relative contribution of identification [0...1] 
    * @param fullName the name of the identified lipid species
    * @return relative contribution of this species [0...1]
    */
   public double getRelativeIntensity(String fullName){
-    return relativeIntensityOfCombination_.get(nameLookupHumReadableToPositionInsensitve_.get(fullName));
+    double relativeIntensity = 0.0;
+    if (nameLookupHumReadableToPositionInsensitve_.get(fullName) != null) {
+      relativeIntensity = relativeIntensityOfCombination_.get(nameLookupHumReadableToPositionInsensitve_.get(fullName));
+    }
+    return relativeIntensity;
   }
   
   /**
@@ -841,6 +917,121 @@ public class LipidomicsMSnSet extends LipidParameterSet
 //            other.relativeIntensityOfCombination_)
         && status_ == other.status_ && Objects.equals(validChainCombinations_,
             other.validChainCombinations_);
+  }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  //TODO: from here on the methods for omega
+  
+  public LinkedHashMap<String,String> getNameLookupHumReadableToPositionInsensitive() {
+  	return nameLookupHumReadableToPositionInsensitve_;
+  }
+  
+  /**
+   * @return the lipid names for the identified lipid species based on MSn evidence as a Set of Strings
+   */
+  public Set<String> getHumanReadableNameSet(){
+    return new HashSet<String>(getMSnIdentificationNamesWithSNPositions());  
+  }
+  
+  public Vector<Pair<String,String>> getLabeledUnlabeledPairs()
+  {
+  	Vector<Pair<String,String>> labeledUnlabeledPairs = new Vector<Pair<String,String>>();
+  	try
+  	{
+  		Set<String> humanReadableNames = getHumanReadableNameSet();
+    	for (String name : humanReadableNames)
+    	{
+    		Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
+    		Vector<String> chainNames = new Vector<String>();
+    		String[] splitName = StaticUtils.splitChainCombinationsAtChainSeparators(name);
+    		for (int i=0; i<splitName.length;i++)
+    		{
+    			FattyAcidVO fa = StaticUtils.decodeHumanReadableChain(splitName[i],Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),false,null);
+    			chains.add(fa);
+    			chainNames.add(splitName[i]);
+    		}
+    		boolean ohPresent = StaticUtils.areThereOhInCombi(chains);
+    		
+    		Vector<String> sortedChainNamesWithPrefix = StaticUtils.sortChainNames(chainNames,ohPresent,false);
+    		Vector<String> sortedChainNamesWithoutPrefix = StaticUtils.sortChainNames(chainNames,ohPresent,true);
+    		
+    		StringBuilder nameStringWithPrefix = new StringBuilder();
+    		StringBuilder nameStringWithoutPrefix = new StringBuilder();
+    		for (int i=0; i<splitName.length;i++)
+    		{
+    			if (i>0)
+    			{
+    				nameStringWithPrefix.append(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
+    				nameStringWithoutPrefix.append(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
+    			}
+    			nameStringWithPrefix.append(sortedChainNamesWithPrefix.get(i));
+  				nameStringWithoutPrefix.append(sortedChainNamesWithoutPrefix.get(i));
+    		}
+    		labeledUnlabeledPairs.add(new Pair<String,String>(nameStringWithoutPrefix.toString(),nameStringWithPrefix.toString()));
+    	}
+  	}
+  	catch (LipidCombinameEncodingException ex)
+		{
+			ex.printStackTrace();
+		}
+  	return labeledUnlabeledPairs;
+  }
+  
+  public Set<String> getPositionInsensitiveHumanReadableNameSet(boolean excludePrefix) 
+  {
+  	Set<String> positionInsensitive = new HashSet<String>();
+  	//INFO: nameLookupPositionInsensitive_ does not contain validChainCombinations without detected fragments, relevant for LPC etc. therefore I cannot work with that.
+  	for (String combiName : validChainCombinations_)
+  	{
+  		try
+  		{
+  			Vector<FattyAcidVO> chains = StaticUtils.decodeLipidNamesFromChainCombi(combiName);
+  			boolean ohPresent = StaticUtils.areThereOhInCombi(chains);
+  			Vector<String> chainNames = new Vector<String>();
+  			for (FattyAcidVO chain : chains)
+  			{
+  				chainNames.add(StaticUtils.getHumanReadableChainName(
+  						chain,Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),ohPresent));
+  			}
+    		Vector<String> sortedChainNames = StaticUtils.sortChainNames(chainNames,ohPresent,excludePrefix);
+    		String nameString = "";
+    		for (String name : sortedChainNames)
+    		{
+    			if (nameString.length()>0) nameString+=LipidomicsConstants.CHAIN_SEPARATOR_NO_POS;
+    			nameString+=name;
+    		}
+    		positionInsensitive.add(nameString);
+  		}
+  		catch (LipidCombinameEncodingException ex)
+  		{
+  			ex.printStackTrace();
+  		}
+  	}	
+  	return positionInsensitive;
+  }
+  
+  public String getHumanReadableChainCombi(String internalRepresentation, boolean isPositionWanted) throws LipidCombinameEncodingException
+  {
+  	if (status_==FRAGMENTS_DETECTED || status_==POSITION_DETECTED)
+  	{
+  		if (isPositionWanted && status_==POSITION_DETECTED && positionDefinition_.containsKey(internalRepresentation)){
+  			Vector<String> posNames = getPositionSpecificCombiNames(internalRepresentation,positionDefinition_.get(internalRepresentation),faEncoding_,lcbEncoding_);
+  			if (posNames.size()==1) return posNames.get(0);
+  		}
+  	}
+  	return StaticUtils.getHumanReadableCombiName(internalRepresentation,faEncoding_,lcbEncoding_,false);
+  }
+  
+  public Vector<String> getValidChainCombinations()
+  {
+  	return this.validChainCombinations_;
   }
   
   

@@ -54,6 +54,7 @@ import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.export.QuantificationResultExporter;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleStringVO;
+import at.tugraz.genome.lda.vos.ResultFileVO;
 import at.tugraz.genome.voutils.GeneralComparator;
 import at.tugraz.genome.lda.parser.LDAResultReader;
 
@@ -75,6 +76,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
   protected Hashtable<String,Hashtable<String,String>> allISNames_;
   protected Hashtable<String,Hashtable<String,String>> allESNames_;
   protected Hashtable<String,Vector<File>> filesOfGroup_;
+  protected Vector<ResultFileVO> resultFileVO_;
   protected Hashtable<String,File> expNameToFile_ = new Hashtable<String,File>();
   
   private Hashtable<String,Vector<String>> sortedISNames_;
@@ -129,6 +131,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
     sortedESNames_ = new Hashtable<String,Vector<String>>();
     lipidClassesHash_ = new Hashtable<String,String>();
     lipidClasses_ = new Vector<String>();
+    resultFileVO_ = new Vector<ResultFileVO>();
     for (int i=0; i!=resultFiles_.size();i++){
       File resultFile = resultFiles_.get(i);
       String fileName = StaticUtils.extractFileName(resultFile.getAbsolutePath());
@@ -606,6 +609,10 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
   
   public File getFullFilePath(String expName){
     return this.expNameToFile_.get(expName);
+  }
+  
+  public Vector<ResultFileVO> getResultFileVOs() {
+    return this.resultFileVO_;
   }
   
   /**

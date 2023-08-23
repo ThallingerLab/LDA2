@@ -335,4 +335,5 @@ public class IntensityPositionVO extends IntensityRuleVO
     }
     return filteredNames;
   }  
+  
 }

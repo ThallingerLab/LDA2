@@ -527,8 +527,8 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
             
               Float mz = Float.parseFloat(precursorClassField.getText());
               if (StaticUtils.checkChemicalFormula(formulaField.getText())){
-                data_ = new LipidParameterSet(mz, data_.getName(), data_.getDoubleBonds(), data_.getOhNumber(), adductClassField.getText(),
-                  data_.getRt(), formulaField.getText(), "",1);
+                data_ = new LipidParameterSet(mz, data_.getName(), data_.getDoubleBonds(), adductClassField.getText(),
+                  data_.getPreciseRT(), formulaField.getText(), "",1,data_.getOhNumber());
                 data_.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance(mz);
                 data_.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance(mz);
             
@@ -3220,15 +3220,13 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       topSplitPane_.setBottomComponent(middleTabSection_);
     }
   }  
-
+  
   /**
    * Returns a sorted string of results
-   * @param result the obtained result
-   * @param positions
-   * @param rT
+   * @param result
+   * @param showRetentionTime
    * @return the sorted result string
    */
-  @SuppressWarnings("unchecked")
   public String getResultWriteString(LipidParameterSet result, boolean showRetentionTime)
   {
 //    try {
@@ -3243,32 +3241,11 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
 //    LipidParameterSet result = msnAnalyzer_.getResult();
 
     String resultString = "";
-    String chainString = "";
     LipidomicsMSnSet msnSet = (LipidomicsMSnSet) result;
-    if (showRetentionTime == true) {
-      Vector<String> detected = null;
-      try {detected = msnSet.getMSnIdentificationNamesWithSNPositions();
-      }catch (LipidCombinameEncodingException lcx) {
-        detected = new Vector<String>();
-        lcx.printStackTrace();
-      }
-      for (String nameObj:detected) {
-          chainString = nameObj;
-          resultString = resultString + chainString + "_" + result.getRt()
-              + "<br>";
-      }
-    } else {
-      Vector<String> detected = null;
-      try {detected = msnSet.getMSnIdentificationNamesWithSNPositions();
-      }catch (LipidCombinameEncodingException lcx) {
-        detected = new Vector<String>();
-        lcx.printStackTrace();
-      }
-      for (String nameObj:detected) {
-          chainString = nameObj;
-          resultString = resultString + chainString + "_" + result.getRt()
-              + "<br>";
-      }
+    Vector<String> detected = msnSet.getMSnIdentificationNamesWithSNPositions();
+    for (String name : detected) {
+        resultString = resultString + name + "_" + result.getRt()
+            + "<br>";
     }
     return resultString;
   }
@@ -3403,7 +3380,6 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
   private MSnAnalyzer updateMSnAnalyzerToCurrentSettings(int specNumber) throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException{
    FragmentCalculator fragCalc_ = new FragmentCalculator(CACHE_DIR,lipidClassName_,lipidAdduct_,data_.getNameStringWithoutRt(),data_.getChemicalFormula(),
         data_.getChemicalFormulaWODeducts(),data_.Mz[0],data_.getCharge(),data_.getOhNumber(),data_.getOxState());
-   
     analyzer_.prepareMSnSpectraCache(data_.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), data_.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance(),
         LipidomicsConstants.getMs2MinIntsForNoiseRemoval());
     Vector<Range> ranges = analyzer_.findSingleSpectraRanges(fragCalc_.getSpectrumLevelRange());     

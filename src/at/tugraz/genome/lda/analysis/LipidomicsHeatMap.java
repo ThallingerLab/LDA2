@@ -30,18 +30,24 @@ import java.awt.GradientPaint;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.util.Hashtable;
+import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.analysis.exception.CalculationNotPossibleException;
 import at.tugraz.genome.lda.utils.DoubleCalculator;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.vos.ResultAreaVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
-import at.tugraz.genome.lda.vos.VolumeConcVO;
-import at.tugraz.genome.maspectras.graphics.HeatMapGenerator;
 
 /**
+ * 
+ * TODO: so basically I want to turn the heatmap gen upside down: generate each row (plus the names), then now knowing min and max, we initiate the gradient, paint it and then paint the rest
+ * Rows should be their own objects that can be scrambled/sorted independently.
+ * Compute median values for mol. species (this has to be independent of sum comp unfortunately), but we can use sum comp areas.
+ * Same for C=C assigned stuff.
  * 
  * @author Juergen Hartler
  *
@@ -51,6 +57,9 @@ public class LipidomicsHeatMap extends HeatMapGenerator
   protected float lowerValue_ = 0.2f;
   protected float upperValue_ = 5f;
   protected SampleLookup lookup_;
+  private Hashtable<String,Hashtable<String,Color>> attentionProbes_;
+  private ResultCompVO[][] compVOs_;
+  private Hashtable<String,String> preferredUnit_;
   
   protected boolean ignorePlatformSettings_;
 
@@ -58,120 +67,184 @@ public class LipidomicsHeatMap extends HeatMapGenerator
   public final static Color ATTENTION_COLOR_NOT_ALL_MODS = new Color(51,153,255);
   public final static Color ATTENTION_DOUBLE_AND_NOT_ALL_MODS = new Color(204,153,255);
   
-  public LipidomicsHeatMap(float[][] data, Vector<String> experimentNames, SampleLookup lookup, Vector<String> moleculeNames,
-      Hashtable<String,Hashtable<String,Color>> attentionValues){
-    super (data,  experimentNames, moleculeNames, attentionValues);
+  public LipidomicsHeatMap(Hashtable<String,Hashtable<String,ResultCompVO>> resultsOfOneGroup, 
+  		Vector<String> experimentNames, SampleLookup lookup, Vector<String> moleculeNames,
+  		int maxIsotope, ResultDisplaySettingsVO settingVO, boolean isMarkDoublePeaks) throws CalculationNotPossibleException
+  {
+  	float[][] data = computeData(resultsOfOneGroup, experimentNames, moleculeNames, maxIsotope, settingVO);
+  	setInputValues(data, experimentNames, moleculeNames, isMarkDoublePeaks ? attentionProbes_ : new Hashtable<String,Hashtable<String,Color>>());
+    init();
     lookup_ = lookup;
     ignorePlatformSettings_ = false;
   }
   
   
-  @SuppressWarnings({ "unchecked", "rawtypes" })
-  public static Vector getDataObjectForConstructor(Hashtable<String,Hashtable<String,ResultCompVO>> resultsOfOneGroup, Vector<String> experimentNames,
-      Vector<String> moleculeNames, int maxIsotope, ResultDisplaySettingsVO settingVO) throws CalculationNotPossibleException{
-    Vector results = new Vector();
+  /**
+   * Computes the data to be displayed and sets the values for attentionProbes_, compVOs_ and preferredUnit_.
+   * @param resultsOfOneGroup
+   * @param experimentNames
+   * @param moleculeNames
+   * @param maxIsotope
+   * @param settingVO
+   * @return
+   * @throws CalculationNotPossibleException
+   */
+  private float[][] computeData(Hashtable<String,Hashtable<String,ResultCompVO>> resultsOfOneGroup, Vector<String> experimentNames,
+      Vector<String> moleculeNames, int maxIsotope, ResultDisplaySettingsVO settingVO) throws CalculationNotPossibleException
+  {
+  	float[][] data = new float[experimentNames.size()][moleculeNames.size()];
     Hashtable<String,Hashtable<String,Color>> attentionValues = new Hashtable<String,Hashtable<String,Color>>();
     Hashtable<String,String> preferredUnit = new Hashtable<String,String>();
-    float[][] data = new float[experimentNames.size()][moleculeNames.size()];
     ResultCompVO[][] dataVOs = new ResultCompVO[experimentNames.size()][moleculeNames.size()];
+    
     // this extracts the values for the median
-    for (int j=0; j!=moleculeNames.size();j++){
+    for (int j=0; j!=moleculeNames.size();j++)
+    {
       Vector<Double> valuesForMedian = new Vector<Double>();
-//      Vector<Double> valuesForStd = new Vector<Double>();
-      int maxApplicableIso = maxIsotope+1;
-      if (!settingVO.getType().equalsIgnoreCase("relative to measured class amount") && 
-          !settingVO.getType().equalsIgnoreCase("relative to total amount"))
-        maxApplicableIso = StaticUtils.getMaxApplicableIsotope(resultsOfOneGroup.get(moleculeNames.get(j)), maxIsotope);
-      for (int k=0;k!=maxApplicableIso;k++){
-        Vector<Double> values = new Vector<Double>();
-//        Vector<Double> stds = new Vector<Double>();
-//        boolean isGroup = false;
-        for (int i=0;i!=experimentNames.size();i++){
-          if (resultsOfOneGroup.containsKey(moleculeNames.get(j))&&
-            resultsOfOneGroup.get(moleculeNames.get(j)).containsKey(experimentNames.get(i))){
-            ResultCompVO compVO = resultsOfOneGroup.get(moleculeNames.get(j)).get(experimentNames.get(i));
-            double standValue = compVO.getArea(k, settingVO);
-            if (standValue>0){
-              values.add(standValue);
-//              if (compVO instanceof ResultCompGroupVO){
-//                stds.add(((ResultCompGroupVO)compVO).getAreaSD(maxIsotope, settingVO));
-//                isGroup = true;
-//              }  
-            }  
-          }
-        }
-        double median = DoubleCalculator.median(values);
+      if (moleculeNames.get(j).equals("32:2_14.41"))
+      {
+      	System.out.println("32:2_14.41");
+      }
+      Set<String> molecularSpeciesNames = findMolecularSpeciesNames(resultsOfOneGroup.get(moleculeNames.get(j)), experimentNames);
+      //TODO: somewhere here I need to extract the mol. species names
+      for (int k=0;k!=computeMaxApplicableIso(maxIsotope, settingVO, resultsOfOneGroup.get(moleculeNames.get(j)));k++)
+      {
+      	//TODO: here we gotta compute the median for molecular species as well
+        double median = computeMedianOfResult(experimentNames, resultsOfOneGroup.get(moleculeNames.get(j)),settingVO, k);
         valuesForMedian.add(median);
-//        if (isGroup){
-//          valuesForStd.add(Calculator.calculateSumStdevErrorPropagated(stds));          
-//        }
-        String unit = "";
-        if (!(Double.isInfinite(median)||Double.isNaN(median))){
-          if (!(settingVO.getType().equalsIgnoreCase("relative value") ||
-              settingVO.getType().equalsIgnoreCase("relative to base peak")||
-              settingVO.getType().equalsIgnoreCase("relative to measured class amount")||
-              settingVO.getType().equalsIgnoreCase("relative to highest total peak")||
-              settingVO.getType().equalsIgnoreCase("relative to total amount")))
-            unit = StaticUtils.extractPreferredUnit(median);
-          else if (settingVO.getType().equalsIgnoreCase("relative to base peak")||
-              settingVO.getType().equalsIgnoreCase("relative to measured class amount")||
-              settingVO.getType().equalsIgnoreCase("relative to highest total peak")||
-              settingVO.getType().equalsIgnoreCase("relative to total amount"))
-            unit =  extractPercentUnit(median);
-        }
-        if (unit!=null)
-          preferredUnit.put(moleculeNames.get(j), unit);
+        //TODO: this is fine if it applies to each sum. composition
+        preferredUnit.put(moleculeNames.get(j), computePreferredUnit(median, settingVO));
       }
       
-      for (int i=0;i!=experimentNames.size();i++){
+      for (int i=0;i!=experimentNames.size();i++)
+      {
         double relativeValue = -1d;
         if (resultsOfOneGroup.containsKey(moleculeNames.get(j))&&
-            resultsOfOneGroup.get(moleculeNames.get(j)).containsKey(experimentNames.get(i))){
+            resultsOfOneGroup.get(moleculeNames.get(j)).containsKey(experimentNames.get(i)))
+        {
           ResultCompVO compVO = resultsOfOneGroup.get(moleculeNames.get(j)).get(experimentNames.get(i));
-          if (compVO.getMoreThanOnePeak(compVO.getAvailableIsotopeNr(maxIsotope)) || !compVO.hasAllModsFound()){
-            Hashtable<String,Color> attention = new Hashtable<String,Color>();
-            if (attentionValues.containsKey(experimentNames.get(i)))
-              attention = attentionValues.get(experimentNames.get(i));
-            Color color = null;
-            if (compVO.getMoreThanOnePeak(compVO.getAvailableIsotopeNr(maxIsotope)) && !compVO.hasAllModsFound())
-              color = ATTENTION_DOUBLE_AND_NOT_ALL_MODS;
-            else if (compVO.getMoreThanOnePeak(compVO.getAvailableIsotopeNr(maxIsotope)))
-              color = ATTENTION_COLOR_DOUBLE_PEAK;
-            else if (!compVO.hasAllModsFound())
-              color = ATTENTION_COLOR_NOT_ALL_MODS;
-            attention.put(moleculeNames.get(j), color);
-            attentionValues.put(experimentNames.get(i), attention);
+          if (compVO.getMoreThanOnePeak(compVO.getAvailableIsotopeNr(maxIsotope)) || !compVO.hasAllModsFound())
+          {
+          	computeAttentionValues(attentionValues, experimentNames.get(i), compVO, maxIsotope, moleculeNames.get(j));
           }
+          //TODO: valuesForMedian needs to be added to compVO for each mol species
           compVO.setRelativeMedianArea(valuesForMedian);
-//          if (compVO instanceof ResultCompGroupVO)
-//            ((ResultCompGroupVO)compVO).setRelativeMedianAreaSD(valuesForStd);
-          relativeValue = compVO.getRelativeValue(compVO.getAvailableIsotopeNr(maxIsotope), settingVO);
-          if (Double.isInfinite(relativeValue)||Double.isNaN(relativeValue))
-            relativeValue = -1d;
+          //TODO: the relativeValue needs to be computed for each mol. species as well
+          relativeValue = computeRelativeValue(compVO, maxIsotope, settingVO);
           dataVOs[i][j] = compVO;
-        }else{
-          
-          dataVOs[i][j] = new ResultCompVO(false,false,ResultCompVO.ANALYTE_TYPE, null, new Hashtable<String,Double>(),"", 0, false, new Vector<Double>(), 
-              new Vector<Double>(), new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(), 
-              new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(),
-              new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(), new Vector<Double>(), 
-              new Hashtable<Integer,Vector<Double>>(),new Vector<Double>(), new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(),
-              new Hashtable<Integer,Vector<Double>>(), new Hashtable<Integer,Vector<Double>>(), new Hashtable<Integer,Hashtable<Integer,Vector<Double>>>(),
-              new Vector<Double>(), new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(), new Vector<Double>(), 
-              new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(), new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(),
-              new Hashtable<Integer,Vector<Double>>(), new Hashtable<Integer,Vector<Double>>(),new Hashtable<Integer,Hashtable<Integer,Vector<Double>>>(),
-              new Hashtable<Integer,VolumeConcVO>(), null, new Hashtable<Integer,VolumeConcVO>(), null, null, null, null, null, null, null, null, null, null,null,new Vector<Hashtable<String,Boolean>>(),false);
+        }
+        else
+        {
+          dataVOs[i][j] = new ResultCompVO();
           dataVOs[i][j].setRelativeMedianArea(valuesForMedian);
         }
         data[i][j] = (float)relativeValue;
       }
     }
-    results.add(data);
-    results.add(dataVOs);
-    results.add(preferredUnit);
-    results.add(attentionValues);
-    return results;
+    
+    compVOs_ = dataVOs;
+  	preferredUnit_ = preferredUnit;
+  	attentionProbes_ = attentionValues;
+    return data;
   }
+  
+  private Set<String> findMolecularSpeciesNames(Hashtable<String,ResultCompVO> result, Vector<String> experimentNames)
+  {
+  	Set<String> names = ConcurrentHashMap.newKeySet();
+  	if (result != null)
+  	{
+  		for (int i=0;i!=experimentNames.size();i++)
+      {
+        if (result.containsKey(experimentNames.get(i)))
+        {
+          ResultCompVO compVO = result.get(experimentNames.get(i));
+          ResultAreaVO areaVO = compVO.getResultMolecule();
+          if (areaVO != null)
+          {
+          	Hashtable<String,Vector<Double>> rel = areaVO.computeMolecularSpeciesContributions();
+          }
+        }
+      }
+  	}
+  	return names;
+  }
+  
+  private Double computeRelativeValue(ResultCompVO compVO, int maxIsotope, ResultDisplaySettingsVO settingVO)
+  {
+  	double relativeValue = compVO.getRelativeValue(compVO.getAvailableIsotopeNr(maxIsotope), settingVO);
+    if (Double.isInfinite(relativeValue)||Double.isNaN(relativeValue))
+      relativeValue = -1d;
+  	return relativeValue;
+  }
+  
+  private void computeAttentionValues(Hashtable<String,Hashtable<String,Color>> attentionValues, String experimentName, ResultCompVO compVO, int maxIsotope, String moleculeName)
+  {
+  	Hashtable<String,Color> attention = new Hashtable<String,Color>();
+    if (attentionValues.containsKey(experimentName))
+      attention = attentionValues.get(experimentName);
+    Color color = null;
+    if (compVO.getMoreThanOnePeak(compVO.getAvailableIsotopeNr(maxIsotope)) && !compVO.hasAllModsFound())
+      color = ATTENTION_DOUBLE_AND_NOT_ALL_MODS;
+    else if (compVO.getMoreThanOnePeak(compVO.getAvailableIsotopeNr(maxIsotope)))
+      color = ATTENTION_COLOR_DOUBLE_PEAK;
+    else if (!compVO.hasAllModsFound())
+      color = ATTENTION_COLOR_NOT_ALL_MODS;
+    attention.put(moleculeName, color);
+    attentionValues.put(experimentName, attention);
+  }
+  
+  private Double computeMedianOfResult(Vector<String> experimentNames, Hashtable<String,ResultCompVO> result, 
+  		ResultDisplaySettingsVO settingVO, int k) throws CalculationNotPossibleException
+  {
+  	Vector<Double> values = new Vector<Double>();
+  	if (result != null)
+  	{
+  		for (int i=0;i!=experimentNames.size();i++)
+      {
+        if (result.containsKey(experimentNames.get(i)))
+        {
+        	//TODO: here, I could use a hashtable for the values - key sum.comp or mol.species name, values could then be added to each and returned
+          ResultCompVO compVO = result.get(experimentNames.get(i));
+          double standValue = compVO.getArea(k, settingVO);
+          if (standValue>0)
+          {
+            values.add(standValue);
+          }  
+        }
+      }
+  	}
+    return DoubleCalculator.median(values);
+  }
+  
+  private int computeMaxApplicableIso(int maxIsotope, ResultDisplaySettingsVO settingVO, Hashtable<String,ResultCompVO> result)
+  {
+  	int maxApplicableIso = maxIsotope+1;
+    if (!settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT) && 
+        !settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT))
+      maxApplicableIso = StaticUtils.getMaxApplicableIsotope(result, maxIsotope);
+    return maxApplicableIso;
+  }
+  
+  private String computePreferredUnit(double median, ResultDisplaySettingsVO settingVO)
+  {
+  	String unit = "";
+    if (!(Double.isInfinite(median)||Double.isNaN(median)))
+    {
+      if (!(settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_VALUE) ||
+          settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_BASE_PEAK)||
+          settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT)||
+          settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_HIGHEST_TOTAL_PEAK)||
+          settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT)))
+        unit = StaticUtils.extractPreferredUnit(median);
+      else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_BASE_PEAK)||
+          settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT)||
+          settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_HIGHEST_TOTAL_PEAK)||
+          settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT))
+        unit =  extractPercentUnit(median);
+    }
+    return unit;
+  }
+  
   
   protected BufferedImage createThreeColGradientImage(int sizeX) {
     
@@ -292,7 +365,7 @@ public class LipidomicsHeatMap extends HeatMapGenerator
   }
   
   public BufferedImage createImage(Graphics2D extGraphics, boolean ignorePlatformSpecificSettings) {
-    if  (ignorePlatformSpecificSettings) ignorePlatformSettings_ = true;
+    if  (ignorePlatformSpecificSettings) ignorePlatformSettings_ = true; //TODO: does this do anything at all!?
     BufferedImage image = createImage(extGraphics);
     if  (ignorePlatformSpecificSettings) ignorePlatformSettings_ = false;
     return image;
@@ -311,12 +384,27 @@ public class LipidomicsHeatMap extends HeatMapGenerator
     return Color.BLACK;
   }
   
-  public void cleanup(){
+  public Hashtable<String,Hashtable<String,Color>> getAttentionProbes()
+	{
+		return attentionProbes_;
+	}
+
+	public ResultCompVO[][] getCompVOs()
+	{
+		return compVOs_;
+	}
+
+	public Hashtable<String,String> getPreferredUnit()
+	{
+		return preferredUnit_;
+	}
+
+	public void cleanup(){
     if (expressionImage!=null)expressionImage.flush();
     expressionImage = null;
     if (sampleNames_!=null)sampleNames_.clear();
     sampleNames_ = null;
-    if (proteinNames_!=null)proteinNames_.clear();
+    if (analyteNames_!=null)analyteNames_.clear();
     if (gradient_!=null)gradient_.flush();
     gradient_ = null;
     if (attentionValues_!=null)attentionValues_.clear();

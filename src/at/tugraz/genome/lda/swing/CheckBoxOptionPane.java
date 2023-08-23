@@ -122,7 +122,7 @@ public class CheckBoxOptionPane extends JDialog implements ActionListener
     cancelButton.setToolTipText(TooltipTexts.CANCEL_GENERAL);
     buttonPanel.add(cancelButton);
     cancelButton.addActionListener(this);
-    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     pack(); 
     setVisible(true);
   }

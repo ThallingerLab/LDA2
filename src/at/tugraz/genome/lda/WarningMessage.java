@@ -40,7 +40,12 @@ import javax.swing.JPanel;
 public class WarningMessage extends JDialog implements ActionListener{
 
   private static final long serialVersionUID = -9099849192973485912L;
-
+  
+  /**
+   * @param parent
+   * @param title
+   * @param message
+   */
   public WarningMessage(JFrame parent, String title, String message) {
     super(parent, title, true);
 /*    if (parent != null) {

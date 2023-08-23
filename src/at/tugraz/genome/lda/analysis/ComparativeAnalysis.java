@@ -33,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
@@ -57,6 +58,7 @@ import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.lda.vos.ResultAreaVO;
 import at.tugraz.genome.lda.vos.ResultCompGroupVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
+import at.tugraz.genome.lda.vos.ResultFileVO;
 import at.tugraz.genome.lda.vos.VolumeConcVO;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
@@ -981,7 +983,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
       disableRtGrouping();
     }
     
-    int nrChains;
+    resultFileVO_.add(new ResultFileVO(fileName, resultFile, quantRes));
+    
     if (quantRes.getLcbHydroxyEncoding()!=null)
       this.lcbHydroxyEncoding_ = quantRes.getLcbHydroxyEncoding();
     if (quantRes.getFaHydroxyEncoding()!=null)
@@ -1078,8 +1081,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
               areaVO = sameMoleculeDiffRet.values().iterator().next();
             else if (rtDef!=null&&rtDef.length()>0){
               areaVO = hasAreaSameRt(rtDef,sameMoleculeDiffRet);
-              if (areaVO==null) areaVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass,
-                  isInternalStandard,isExternalStandard,param.getOxState());
+              if (areaVO==null) areaVO = new ResultAreaVO(param,rtDef,fileName,formula,neutralMass,
+                  isInternalStandard,isExternalStandard);
               // Juergen: I am not sure if this "if" and the setting of the retention time is required; for various charge states it seems to be counterproductive
               else /*if (areaVO.hasModification(param.getModificationName()))*/{
                 sameMoleculeDiffRet.remove(areaVO.getRt());
@@ -1087,8 +1090,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
             }  
           }else{
             if (param.getArea()>0f){
-              areaVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass,
-                  isInternalStandard,isExternalStandard,param.getOxState());
+              areaVO = new ResultAreaVO(param,rtDef,fileName,formula,neutralMass,
+                  isInternalStandard,isExternalStandard);
               if (orderedAnalytes.size()==0||!orderedAnalytes.get(orderedAnalytes.size()-1).equalsIgnoreCase(analId))
                 orderedAnalytes.add(analId);
             }else{
@@ -1096,8 +1099,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
               if (this.isNullResult_.containsKey(fileName)) fileHash = isNullResult_.get(fileName);
               Hashtable<String,Boolean> sheetHash = new Hashtable<String,Boolean>();
               if (fileHash.containsKey(sheetName)) sheetHash = fileHash.get(sheetName);
-              ResultAreaVO dummyVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass,
-                  isInternalStandard,isExternalStandard,param.getOxState());
+              ResultAreaVO dummyVO = new ResultAreaVO(param,rtDef,fileName,formula,neutralMass,
+                  isInternalStandard,isExternalStandard);
               sheetHash.put(dummyVO.getMoleculeName(), true);
               fileHash.put(sheetName, sheetHash);
               isNullResult_.put(fileName,fileHash);
@@ -1113,7 +1116,9 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
             for (CgProbe probe : zeroIsos){
               sumMass += probe.Mz;
             }
-            areaVO.addResultPart(recentModification, param.getModificationFormula(), param.Mz[0], sumMass/((double)zeroIsos.size()),
+            Set<LipidParameterSet> lipidParameterSets = ConcurrentHashMap.newKeySet();
+            lipidParameterSets.add(param);
+            areaVO.addResultPart(lipidParameterSets,recentModification, param.getModificationFormula(), param.Mz[0], sumMass/((double)zeroIsos.size()),
                 param.getCharge(),param.getRt());
             Hashtable<Integer,Boolean> moreThanOnePeak = new Hashtable<Integer,Boolean>();
             modifications.put(recentModification, recentModification);
@@ -1122,12 +1127,12 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
               int isotope = 0;
               if (probes.size()>0) isotope = probes.get(0).isotopeNumber;
               for (CgProbe probe : probes){
-                Hashtable<Integer,Boolean> mtp = areaVO.addArea(recentModification,isotope,probe.Area);
+                Hashtable<Integer,Boolean> mtp = areaVO.addArea(lipidParameterSets,recentModification,isotope,probe.Area);
                 if (mtp!=null) moreThanOnePeak = mtp;
                 if (isotope==0 && probe.Area>highestZeroIsoArea){
                   retentionTime = probe.Peak/60f;
                   highestZeroIsoArea = probe.Area;
-                  areaVO.setRtOriginal(rtDef);
+                  areaVO.setRt(rtDef);
                 }
                 int iso = isotope;
                 if (iso<0) iso = iso*-1;
@@ -1140,22 +1145,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
             }
             areaVO.setRetentionTime(recentModification,retentionTime);
             areaVO.setMoreThanOnePeak(recentModification,moreThanOnePeak);
-            //add the MSn information
-            if (param instanceof LipidomicsMSnSet) {
-              LipidomicsMSnSet msn = (LipidomicsMSnSet)param;
-              areaVO.setMsnEvidence(true);
-              //TODO: here I use only the ones where I find chain information!!!!
-              if (msn.getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED) {
-                Hashtable<String,Double> fullAreas = new Hashtable<String,Double>();
-                for (String combi : msn.getChainCombinationRelativeAreas().keySet()) {
-                  fullAreas.put(combi, msn.getChainCombinationRelativeAreas().get(combi)*((double)param.Area));
-                }
-                nrChains = areaVO.addChainInformation(recentModification,fullAreas);
-                if (nrChains>this.chainsOfClass_.get(sheetName))
-                  this.chainsOfClass_.put(sheetName, nrChains);
-              }
-               
-            }
+            
             Hashtable<String,ResultAreaVO> sameMoleculeDiffRet = new Hashtable<String,ResultAreaVO>();      
             if (areaVOs.containsKey(areaVO.getMoleculeNameWoRT())) sameMoleculeDiffRet = areaVOs.get(areaVO.getMoleculeNameWoRT());
             sameMoleculeDiffRet.put(areaVO.getRt(),areaVO);
@@ -2027,7 +2017,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
             }
             boolean isNullInFile = false;
             if (!existsInFile && isNullResult_.containsKey(expName) && isNullResult_.get(expName).containsKey(groupName) && isNullResult_.get(expName).get(groupName).containsKey(molecule)) isNullInFile = true;
-            relativeValues.put(expName, new ResultCompVO(existsInFile,isNullInFile,resultType,moleculeMass,retentionTimes.get(expName),expNameToFile_.get(expName).getAbsolutePath(), isoNr,modsFound.get(expName), originalAreas, 
+            relativeValues.put(expName, new ResultCompVO(resultsMolecule.get(expName),existsInFile,isNullInFile,resultType,moleculeMass,retentionTimes.get(expName),expNameToFile_.get(expName).getAbsolutePath(), isoNr,modsFound.get(expName), originalAreas, 
                 correctionInternalISHash.get(expName), correctionMedianISHash.get(expName),  isSingleCorrection,
                 bestISAreasHash.get(expName), medianAreasHash.get(expName), isSingleRefAreas, 
                 correctionInternalESNoISCorrHash.get(expName), correctionMedianESNoISCorrHash.get(expName),esSingleNoCorr,
@@ -2045,7 +2035,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
           }
         }else{
           for (String expName : this.expNamesInSequence_)
-            relativeValues.put(expName, new ResultCompVO(false,false,resultType,new Vector<Double>(), new Hashtable<String,Double>(),expNameToFile_.get(expName).getAbsolutePath(), isoNr, false, new Vector<Double>(), 
+            relativeValues.put(expName, new ResultCompVO(null, false,false,resultType,new Vector<Double>(), new Hashtable<String,Double>(),expNameToFile_.get(expName).getAbsolutePath(), isoNr, false, new Vector<Double>(), 
                 new Vector<Double>(), new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(),
                 new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(), new Vector<Double>(), 
                 new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(), new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(),

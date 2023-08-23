@@ -2671,7 +2671,7 @@ public class TestClass extends JApplet implements AddScan
 //      probe1.isotopeNumber = 0;
 //      param.AddProbe(probe1);
       
-      LipidParameterSet param = new LipidParameterSet(874.785827636718f, "52", 3, 0, "HH4", "", "H100 O6 C55", "+NH4",1);
+    	LipidParameterSet param = new LipidParameterSet(874.785827636718f, "52", 3, "HH4", 0.0, "H100 O6 C55", "+NH4",1, 0);
 
       CgProbe probe1 = new CgProbe(0,1);
       probe1.AreaStatus = CgAreaStatus.OK;
@@ -2901,7 +2901,7 @@ public class TestClass extends JApplet implements AddScan
     probe1.UpperMzBand = 0.015f;
     probe1.isotopeNumber = 0;*/
     
-    LipidParameterSet param = new LipidParameterSet(728.559387207031f, "36", 2, 0, "-H", "", "C41 H80 O7 P1 N1", "-H",1);
+  	LipidParameterSet param = new LipidParameterSet(728.559387207031f, "36", 2, "-H", 0.0, "C41 H80 O7 P1 N1", "-H",1, 0);
     CgProbe probe1 = new CgProbe(0,1);
     probe1.AreaStatus = CgAreaStatus.OK;
     probe1.Area = 383439840f;
@@ -2982,8 +2982,8 @@ public class TestClass extends JApplet implements AddScan
         LipidomicsConstants.getIsotopeInBetweenTime(),LipidomicsConstants.getIsoInBetweenAreaFactor(),LipidomicsConstants.getIsoInBetweenMaxTimeDistance(),
         LipidomicsConstants.getIsoNearNormalProbeTime(),LipidomicsConstants.getRelativeAreaCutoff(),
         LipidomicsConstants.getRelativeFarAreaCutoff(),LipidomicsConstants.getRelativeFarAreaTimeSpace(),
-        LipidomicsConstants.getRelativeIsoInBetweenCutoff(),LipidomicsConstants.getTwinPeakMzTolerance(),
-        LipidomicsConstants.getClosePeakTimeTolerance(),LipidomicsConstants.getTwinInBetweenCutoff(), LipidomicsConstants.getUnionInBetweenCutoff(),
+        LipidomicsConstants.getRelativeIsoInBetweenCutoff(),LipidomicsConstants.getClosePeakTimeTolerance(),
+        LipidomicsConstants.getTwinInBetweenCutoff(), LipidomicsConstants.getUnionInBetweenCutoff(),
         LipidomicsConstants.getMs2MzTolerance());
   }
   
@@ -17062,7 +17062,7 @@ public void testTabFile() throws Exception {
 //      param.AddProbe(probe1);
 //      String[] chromPaths = StringUtils.getChromFilePaths("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\Mix1\\Mix1_neg_1.chrom");
       
-      LipidParameterSet param = new LipidParameterSet(682.59912109375f, "40", 1, "HCOO", "", "C40 H79 N O4", "C1 H1 O2",1,3);
+      LipidParameterSet param = new LipidParameterSet(682.59912109375f, "40", 1, "HCOO", 0.0, "C40 H79 N O4", "C1 H1 O2",1,3);
 
 
       CgProbe probe1 = new CgProbe(0,1);
@@ -20591,7 +20591,7 @@ public void testTabFile() throws Exception {
         }
       }
       lookup.put(lClass, mixLookup);
-      lipidNames = StaticUtils.sortChainNames(lipidNames,true);
+      lipidNames = StaticUtils.sortChainNames(lipidNames,true,false);
       LinkedHashMap<String,LinkedHashMap<String,String>> positivesClass = new LinkedHashMap<String,LinkedHashMap<String,String>>();
       for (String name : lipidNames) {
         LinkedHashMap<String,String> molNames = new LinkedHashMap<String,String>();

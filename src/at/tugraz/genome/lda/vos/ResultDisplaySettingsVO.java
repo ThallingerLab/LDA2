@@ -37,6 +37,12 @@ public class ResultDisplaySettingsVO
   private boolean au_;
   private boolean percent_;
   private String divisorMagnitude_;
+  
+  public final static String REL_MEASURED_CLASS_AMOUNT = "relative to measured class amount";
+  public final static String REL_TOTAL_AMOUNT = "relative to total amount";
+  public final static String REL_VALUE = "relative value";
+  public final static String REL_BASE_PEAK = "relative to base peak";
+  public final static String REL_HIGHEST_TOTAL_PEAK = "relative to highest total peak";
  
   public ResultDisplaySettingsVO(String type, int isStand, int esStand,
       boolean dilution, boolean au)

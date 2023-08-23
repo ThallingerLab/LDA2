@@ -114,7 +114,12 @@ public class GroupPanel extends JPanel
     delete.setToolTipText(TooltipTexts.STATISTICS_GROUP_SELECTION_DELETE);
     topMenuPanel.add(delete ,new GridBagConstraints(2, 1, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
-
+    
+    rename.setPreferredSize(new Dimension(maxWidth_/3, rename.getPreferredSize().height));
+    remove.setPreferredSize(new Dimension(maxWidth_/3, remove.getPreferredSize().height));
+    delete.setPreferredSize(new Dimension(maxWidth_/3, delete.getPreferredSize().height));
+    
+    
     
     this.add(topMenuPanel,BorderLayout.NORTH);
   }
@@ -127,7 +132,7 @@ public class GroupPanel extends JPanel
       tableData[i][0] = fileName;
 //      if (fileName.length()>longestFirstColumnElement)longestFirstColumnElement = fileName.length();
     }
-    String[] columnNames = { "file name"};
+    String[] columnNames = { "File Name"};
     selectedTable_ = new JTable(tableData, columnNames);
     ListSelectionModel selectionModel = selectedTable_.getSelectionModel();
     selectedTable_.setSelectionModel(selectionModel);

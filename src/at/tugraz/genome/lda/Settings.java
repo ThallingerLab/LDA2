@@ -97,8 +97,10 @@ public class Settings
   private static boolean useAlex_;
   /** create empty entries when there is nothing found by "Quant. anal. at not found" or "Take exact peak for others"*/
   private static boolean emptyEntriesForQuantAnalNotFound_;
-  /** the peak selection type for the omega export"*/
-  private static short omegaExportPeakSelection_;
+  /** allow the user to always access features to edit omega double bond assignments, even if none are available in the results file */
+  private static boolean alwaysEditOmega_;
+  /** property label: allow the user to always access features to edit omega double bond assignments, even if none are available in the results file */
+  private static String PROPERTY_ALWAYS_EDIT_OMEGA = "AlwaysEditOmega";
    
   /** the lookup of isotopes from the Alex format to the LDA format*/
   private static Hashtable<String,String> alexIsoLookup_ = new Hashtable<String,String>();
@@ -123,11 +125,6 @@ public class Settings
   public final static String FRAG_SELECTION_NO_INTENSITY = "noIntensity";
   
   public final static String FRAG_SETTINGS_FILE = ".selected";
-  
-  private final static String SETTING_OMEGA_PEAK_SELECTION = "OmegaExportPeakSelection";
-  
-  private final static String OMEGA_SETTING_STRONGEST = "strongest";
-  private final static String OMEGA_SETTING_RTDIFF = "rtDiff";
   
   public final static short OMEGA_PEAK_STRONGEST = 0;
   public final static short OMEGA_PEAK_RTDIFF = 1;
@@ -231,14 +228,10 @@ public class Settings
           emptyEntriesForQuantAnalNotFoundString.equalsIgnoreCase("yes"))){
         emptyEntriesForQuantAnalNotFound_ = true;
       }
-      //the default value for the peak selection of the omega export
-      omegaExportPeakSelection_ = OMEGA_PEAK_STRONGEST;
-      String omegaExportPeakSelectionString = properties.getProperty(SETTING_OMEGA_PEAK_SELECTION, OMEGA_SETTING_STRONGEST);
-      if (omegaExportPeakSelectionString!=null){
-        if (omegaExportPeakSelectionString.equalsIgnoreCase(OMEGA_SETTING_STRONGEST))
-          omegaExportPeakSelection_ = OMEGA_PEAK_STRONGEST;
-        else if (omegaExportPeakSelectionString.equalsIgnoreCase(OMEGA_SETTING_RTDIFF))
-          omegaExportPeakSelection_ = OMEGA_PEAK_RTDIFF;
+      alwaysEditOmega_ = false;
+      String property = properties.getProperty(PROPERTY_ALWAYS_EDIT_OMEGA, null);
+      if (property!=null&&(property.equalsIgnoreCase("true")||property.equalsIgnoreCase("yes"))){
+        alwaysEditOmega_ = true;
       }
       
       isDefaultInput_ = properties.getProperty("ISDefaultInput", "IS");
@@ -449,14 +442,10 @@ public class Settings
     Settings.getInstance();
     return Settings.emptyEntriesForQuantAnalNotFound_;
   }
-
-  /**
-   * 
-   * @return the peak selection method; possible options can be found in this class starting with 'OMEGA_PEAK_'
-   */
-  public static short getOmegaExportPeakSelection(){
+  
+  public static boolean getAlwaysEditOmega() {
     Settings.getInstance();
-    return Settings.omegaExportPeakSelection_;
+    return Settings.alwaysEditOmega_;
   }
   
   public static String getInternalStandardDefaultInput()
@@ -563,6 +552,7 @@ public class Settings
   }
 
   public static void saveMachineSettings(String machine) throws SettingsException{
+  	if (instance_ == null) Settings.getInstance();
     if (instance_.propertiesFiles_.containsKey(machine)){
       try{
         LipidomicsConstants.switchToOtherDefaultConfFile(instance_.propertiesFiles_.get(machine));
@@ -729,13 +719,19 @@ public class Settings
   private static void copyFragSettingsFiles(String fromPath, String toPath) throws SettingsException, IOException{
     File fromDir = new File(fromPath);
     File toDir = new File (toPath);
+    boolean settingsFileFound = false;
+    
     if (!fromDir.exists())  throw new SettingsException("The path \""+fromPath+"\" does not exist!");
     if (!toDir.exists())  throw new SettingsException("The path \""+toPath+"\" does not exist!");
     if (!fromDir.isDirectory()) throw new SettingsException("The path \""+fromPath+"\" does not point to a directory!");
     if (!toDir.isDirectory()) throw new SettingsException("The path \""+toPath+"\" does not point to a directory!");
     
     for (File file: fromDir.listFiles()){
-      if (!file.isFile() || !file.getName().endsWith(StaticUtils.RULE_FILE_SUFFIX)) continue;
+    	if (file.isFile() && file.getName().endsWith(StaticUtils.RULE_FILE_SUFFIX)) {
+        settingsFileFound = true;
+      } else {
+        continue;
+      }
       String outPath = getActiveRulesFilename(file.getName());
       int chunkSize = 1024;
       InputStream in = new BufferedInputStream(new FileInputStream(file));
@@ -748,6 +744,14 @@ public class Settings
       in.close();
       out.close();
     }
+    if (!settingsFileFound) {
+      new WarningMessage(new JFrame(), "Warning", 
+          String.format("<html><body>Your selected Fragmentation Rule Folder '%s' does not contain any fragmentation files! <br>"
+              + "Defaulting to '%s' <br>"
+              + "Make sure your selected folder contains files with the required suffix '%s'</body></html>", 
+              fromPath, FRAG_SELECTION_NONE, StaticUtils.RULE_FILE_SUFFIX));
+    }
+    
     RulesContainer.clearCache();
     RuleDefinitionInterface.clearCacheDir();
     RulesContainer.clearCache(RuleDefinitionInterface.CACHE_DIR);

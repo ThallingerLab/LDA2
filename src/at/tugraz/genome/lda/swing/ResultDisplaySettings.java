@@ -217,7 +217,7 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
     button.addActionListener(this);
     setVisible(false);
-    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    setDefaultCloseOperation(DISPOSE_ON_CLOSE );
     pack(); 
   }
   
@@ -268,11 +268,11 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
   
   private void addJustRelative(){
     displayType_.removeAllItems();
-    displayType_.addItem("relative value");
-    displayType_.addItem("relative to base peak");
-    displayType_.addItem("relative to measured class amount");
-    displayType_.addItem("relative to highest total peak");
-    displayType_.addItem("relative to total amount");
+    displayType_.addItem(ResultDisplaySettingsVO.REL_VALUE);
+    displayType_.addItem(ResultDisplaySettingsVO.REL_BASE_PEAK);
+    displayType_.addItem(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT);
+    displayType_.addItem(ResultDisplaySettingsVO.REL_HIGHEST_TOTAL_PEAK);
+    displayType_.addItem(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT);
   }
   
   private void addAllDisplayTypes(){
@@ -300,14 +300,14 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
 
     public void itemStateChanged(ItemEvent e)  {
       if (e.getStateChange()==ItemEvent.SELECTED){
-        if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("relative value")){
+        if (((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_VALUE)){
           enableSettings();
           enableMagnitudeSetting(false);
           disableAUSettings(true);
-        } else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("relative to base peak")||
-            ((String)displayType_.getSelectedItem()).equalsIgnoreCase("relative to measured class amount")||
-            ((String)displayType_.getSelectedItem()).equalsIgnoreCase("relative to highest total peak")||
-            ((String)displayType_.getSelectedItem()).equalsIgnoreCase("relative to total amount")){
+        } else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_BASE_PEAK)||
+            ((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT)||
+            ((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_HIGHEST_TOTAL_PEAK)||
+            ((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT)){
           disableSettings();         
         }else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("amount end-volume")||
             ((String)displayType_.getSelectedItem()).equalsIgnoreCase("conc. end-volume") ||

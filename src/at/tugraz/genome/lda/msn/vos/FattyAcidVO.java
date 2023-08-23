@@ -75,8 +75,11 @@ public class FattyAcidVO
     this.oxState_ = oxState;
   }
   
- 
- 
+  public FattyAcidVO(FattyAcidVO other) {
+    this(other.getChainType(), other.getPrefix(), other.getcAtoms(), other.getDoubleBonds(), other.getOhNumber(), other.getMass(), other.getFormula(), other.getOxState());
+    this.setOmegaPosition(other.getOmegaPosition());
+  }
+  
   /**
    * 
    * @return the type of chain: LipidomicsConstants.CHAIN_TYPE_FA or LipidomicsConstants.CHAIN_TYPE_LCB
@@ -165,7 +168,15 @@ public class FattyAcidVO
   {
     return formula_;
   }
-
+  
+  /**
+   * 
+   * @param formula the chemical formula
+   */
+  public void setFormula(String formula)
+  {
+    this.formula_ = formula;
+  }
   
   /**
    * 
@@ -196,28 +207,28 @@ public class FattyAcidVO
   }
 
   /**
-   * @return name consisting of number of C atoms : number of double bonds
+   * @return name consisting of number of C atoms : number of double bonds ;oxState (n- C=C position)
    */
-  public String getCarbonDbsId(){
-	
+  public String getCarbonDbsId()
+  {
     return StaticUtils.generateLipidNameString(prefix_+String.valueOf(cAtoms_),doubleBonds_,omegaPosition_,oxState_);
-    
   }
   
   /**
-   * 
-   * @return an unique identifier for the chain that includes the chain type, the number of OHs, the #C-atoms, the #double bonds, and the isotope prefix
+   * @return an unique identifier for the chain that includes the chain type, the number of OHs, the #C-atoms, the #double bonds, omega position and the isotope prefix
    */
   public String getChainId() {
-    return StaticUtils.encodeLipidNameForCreatingCombis(this,true);
+  	return getChainIdDetailed(true, true);
   }
   
   /**
-   * 
-   * @return the sames as getChainId(), but without the isotope prefix
+   * Get a chainId specifying the level of detail the id should include.
+   * @param includePrefix
+   * @param includeOmegaPosition
+   * @return
    */
-  public String getChainIdWOPrefix() {
-    return StaticUtils.encodeLipidNameForCreatingCombis(this,false);    
+  public String getChainIdDetailed(boolean includePrefix, boolean includeOmegaPosition) {
+    return StaticUtils.encodeLipidNameForCreatingCombis(this,includePrefix,includeOmegaPosition);    
   }
   
   /**

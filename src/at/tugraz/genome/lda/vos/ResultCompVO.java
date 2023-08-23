@@ -45,6 +45,8 @@ public class ResultCompVO
   public final static int EXTERNAL_STANDARD_TYPE = 2;
   public final static int CLASS_TYPE = 3;
   
+  private ResultAreaVO resultMolecule_;
+  
   protected int type_;
   protected Vector<Double> mass_;
   protected Hashtable<String,Double> retentionTime_;
@@ -122,12 +124,13 @@ public class ResultCompVO
   protected boolean existsInFile_;
   protected boolean isNullInFile_;
   
+  
   // this should be just for CLASS_TYPE only
   public ResultCompVO (int type, int usedIsotopes, Vector<Double> originalArea){
     this.setConstructorValues(true,false,type, usedIsotopes, originalArea);
   }
   
-  public ResultCompVO(boolean existsInFile, boolean isNullInFile, int type,Vector<Double> mass,Hashtable<String,Double> retentionTime, String absoluteFilePath, int usedIsotopes, boolean allModsFound, Vector<Double> originalArea, Vector<Double> correctionFactorInternalIS, Vector<Double> correctionFactorMedianIS,
+  public ResultCompVO(ResultAreaVO resultMolecule, boolean existsInFile, boolean isNullInFile, int type,Vector<Double> mass,Hashtable<String,Double> retentionTime, String absoluteFilePath, int usedIsotopes, boolean allModsFound, Vector<Double> originalArea, Vector<Double> correctionFactorInternalIS, Vector<Double> correctionFactorMedianIS,
       Hashtable<Integer,Vector<Double>> correctionFactorSingleIS, Vector<Double> areaISInternalComparision,
       Vector<Double> areaISMedianComparison, Hashtable<Integer,Vector<Double>> areaISSingleComparison,
       Vector<Double> correctionFactorESNoISCorrInternal,Vector<Double> correctionFactorESNoISCorrMedian, Hashtable<Integer,Vector<Double>> correctionFactorESNoISCorrSingle,
@@ -148,7 +151,7 @@ public class ResultCompVO
       Vector<Hashtable<String,Boolean>> moreThanOnePeak,
       boolean hasAbs){    
     super();
-    this.setConstructorValues(existsInFile,isNullInFile,type,mass,retentionTime,absoluteFilePath,usedIsotopes, allModsFound, originalArea, correctionFactorInternalIS, correctionFactorMedianIS, correctionFactorSingleIS,
+    this.setConstructorValues(resultMolecule,existsInFile,isNullInFile,type,mass,retentionTime,absoluteFilePath,usedIsotopes, allModsFound, originalArea, correctionFactorInternalIS, correctionFactorMedianIS, correctionFactorSingleIS,
         areaISInternalComparision, areaISMedianComparison, areaISSingleComparison,
         correctionFactorESNoISCorrInternal, correctionFactorESNoISCorrMedian, correctionFactorESNoISCorrSingle, correctionFactorESISInternalCorrInternal,
         correctionFactorESISInternalCorrMedian, correctionFactorESISInternalCorrSingle, correctionFactorESISMedianCorrInternal, correctionFactorESISMedianCorrMedian,
@@ -170,7 +173,7 @@ public class ResultCompVO
     this.originalArea_ = originalArea;
   }
   
-  protected void setConstructorValues(boolean existsInFile, boolean isNullInFile, int type, Vector<Double> mass, Hashtable<String,Double> retentionTime,String absoluteFilePath, int usedIsotopes, boolean allModsFound, Vector<Double> originalArea, Vector<Double> correctionFactorInternalIS, Vector<Double> correctionFactorMedianIS,
+  protected void setConstructorValues(ResultAreaVO resultMolecule, boolean existsInFile, boolean isNullInFile, int type, Vector<Double> mass, Hashtable<String,Double> retentionTime,String absoluteFilePath, int usedIsotopes, boolean allModsFound, Vector<Double> originalArea, Vector<Double> correctionFactorInternalIS, Vector<Double> correctionFactorMedianIS,
       Hashtable<Integer,Vector<Double>> correctionFactorSingleIS,
       Vector<Double> areaISInternalComparision, Vector<Double> areaISMedianComparison, Hashtable<Integer,Vector<Double>> areaISSingleComparison,
       Vector<Double> correctionFactorESNoISCorrInternal,Vector<Double> correctionFactorESNoISCorrMedian, Hashtable<Integer,Vector<Double>> correctionFactorESNoISCorrSingle,
@@ -189,6 +192,7 @@ public class ResultCompVO
       Hashtable<Integer,Double> esStandardVolumeSingleCorr, Hashtable<Integer,Double> esStandardConcentrationSingleCorr,
       Double endVolume, Double probeVolume, Double sampleWeight, Double proteinConcentration, Double neutralLipidConcentration, Vector<Hashtable<String,Boolean>> moreThanOnePeak, boolean hasAbs){
     this.setConstructorValues(existsInFile, isNullInFile,type, usedIsotopes, originalArea);
+    this.resultMolecule_ = resultMolecule;
     this.mass_ = mass;
     if (mass_==null){
       mass_ = new Vector<Double>();
@@ -261,8 +265,24 @@ public class ResultCompVO
     this.hasAbs_ = hasAbs;
   }
   
-  protected ResultCompVO(){
-    
+  public ResultCompVO()
+  {
+    this(null, false,false,ResultCompVO.ANALYTE_TYPE, null, new Hashtable<String,Double>(),"", 0, false, new Vector<Double>(), 
+        new Vector<Double>(), new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(), 
+        new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(),
+        new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(), new Vector<Double>(), 
+        new Hashtable<Integer,Vector<Double>>(),new Vector<Double>(), new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(),
+        new Hashtable<Integer,Vector<Double>>(), new Hashtable<Integer,Vector<Double>>(), new Hashtable<Integer,Hashtable<Integer,Vector<Double>>>(),
+        new Vector<Double>(), new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(), new Vector<Double>(), 
+        new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(), new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(),
+        new Hashtable<Integer,Vector<Double>>(), new Hashtable<Integer,Vector<Double>>(),new Hashtable<Integer,Hashtable<Integer,Vector<Double>>>(),
+        new Hashtable<Integer,VolumeConcVO>(), null, new Hashtable<Integer,VolumeConcVO>(), null, null, null, null, null, null, null, null, null, null,null,
+        new Vector<Hashtable<String,Boolean>>(),false);
+  }
+  
+  public ResultAreaVO getResultMolecule()
+  {
+  	return this.resultMolecule_;
   }
   
   public int getType()
@@ -725,19 +745,20 @@ public class ResultCompVO
 //    return (esStandardVolume_*esStandardConcentration_)/this.dilutionFactor_;
 //  }
   
+  //TODO: result comp is composed of one result area, which is composed of multiple params - we need to compute rel. contribution of each mol. species to a result area!
   public double getArea(int maxIsotope, ResultDisplaySettingsVO settingVO) throws CalculationNotPossibleException{
     double area = 0;
     if (settingVO.isPercent()){
       area = getRatioToPercentualValue(maxIsotope,settingVO);
-    } else if (settingVO.getType().equalsIgnoreCase("relative value")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_VALUE)){
       area = getStandardizedArea(maxIsotope, settingVO.getISStandMethod(), settingVO.getESStandMethod(), settingVO.considerDilution());
-    } else if (settingVO.getType().equalsIgnoreCase("relative to base peak")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_BASE_PEAK)){
       area = getRatioToHighestPeak(maxIsotope);
-    } else if (settingVO.getType().equalsIgnoreCase("relative to measured class amount")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT)){
       area = getRatioToTotalIntensity(maxIsotope);
-    } else if (settingVO.getType().equalsIgnoreCase("relative to highest total peak")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_HIGHEST_TOTAL_PEAK)){
       area = getRatioToHighestFoundPeak(maxIsotope);
-    } else if (settingVO.getType().equalsIgnoreCase("relative to total amount")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT)){
       area = this.getRatioToOverallGroupsIntensity(maxIsotope);
     } else if (settingVO.getType().equalsIgnoreCase("amount end-volume")){
       area = getAmountInEndVolume(maxIsotope, settingVO.getISStandMethod());

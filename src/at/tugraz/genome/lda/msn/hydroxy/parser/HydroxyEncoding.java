@@ -159,6 +159,7 @@ public class HydroxyEncoding extends Properties{
     sortedOHs_.add(hydroxyNumber);
     Collections.sort(sortedOHs_);
   }
+
   
   /**
    * Compares all dynamic fields of this class with another Object.

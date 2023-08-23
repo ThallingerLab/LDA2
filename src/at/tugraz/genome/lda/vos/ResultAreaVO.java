@@ -25,18 +25,20 @@ package at.tugraz.genome.lda.vos;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Hashtable;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
-import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
+import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
+import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
-import at.tugraz.genome.voutils.GeneralComparator;
+import at.tugraz.genome.lda.quantification.LipidParameterSet;
 
 /**
  * 
@@ -45,12 +47,16 @@ import at.tugraz.genome.voutils.GeneralComparator;
  */
 public class ResultAreaVO
 {
+	/** 
+	 * If thread safety is a concern, make sure to replace the HashSet with a thread safe Set. 
+	 */
+	private Set<LipidParameterSet> lipidParameterSets_ = ConcurrentHashMap.newKeySet();
   private String name_;
   private Integer dbs_;
   private String expName_;
-  private String rtOriginal_;
   /** the original retention time values to have a lookup to the objects in the result files*/
-  private Hashtable<String,Hashtable<String,String>> allOriginalRts_ = new Hashtable<String,Hashtable<String,String>>();
+  //TODO: this is probably not needed anymore since we have the params...
+//  private Hashtable<String,Hashtable<String,String>> allOriginalRts_ = new Hashtable<String,Hashtable<String,String>>();
   private String rt_;
   private Hashtable<String,Integer> chemicalFormula_;
   private Hashtable <String,Hashtable<String,Integer>> modFormulas_; 
@@ -67,57 +73,29 @@ public class ResultAreaVO
   private boolean internalStandard_;
   /** true when this value is an external standard*/
   private boolean externalStandard_;
-  /** sum chain information over all adducts*/
-  private LinkedHashMap<String,Double> chainInformationTotal_;
-  /** chain information for each adduct*/
-  private Hashtable<String,LinkedHashMap<String,Double>> chainInformationForEachModification_;
-  /** is MSn evidence available*/
-  private boolean msnEvidence_;
   
   private String oxState_;
+  
+  private MolecularSpeciesAreaVO molecularSpeciesContributions_;
   
   
   /**
    * public constructor for creating a ResultAreaVO
-   * @param name the name of the analyte
-   * @param dbs the amount of double bonds
-   * @param rt an identifier String for the retention time
-   * @param expName the abbreviated name of the experiment 
-   * @param chemicalFormula the chemical formula of the analyte
-   * @param percentalSplit the percentual split if present
-   * @param neutralMass the neutral mass of the analyte
-   * @param internalStandard true when this value is an internal standard
-   * @param externalStandard true when this value is an external standard
-   * @throws ChemicalFormulaException thrown when an element is missing in the elementconfig.xml
+   * @param lipidParameterSet 					the lipidParameterSet informing about the name, the amount of double bonds and the oxidation state of the analyte as well as the percental split if present
+   * @param rt 													an identifier String for the retention time
+   * @param expName 										the abbreviated name of the experiment 
+   * @param chemicalFormula 						the chemical formula of the analyte
+   * @param neutralMass 								the neutral mass of the analyte
+   * @param internalStandard 						true when this value is an internal standard
+   * @param externalStandard 						true when this value is an external standard
+   * @throws ChemicalFormulaException 	thrown when an element is missing in the elementconfig.xml
    */
-  public ResultAreaVO(String name, Integer dbs, String rt, String expName, String chemicalFormula, float percentalSplit,double neutralMass,
-      boolean internalStandard, boolean externalStandard, String oxState) throws ChemicalFormulaException
+  public ResultAreaVO(LipidParameterSet lipidParameterSet, String rt, String expName, String chemicalFormula, double neutralMass,
+      boolean internalStandard, boolean externalStandard) throws ChemicalFormulaException
   {
-    this(name,dbs,expName,chemicalFormula,percentalSplit,neutralMass,internalStandard,externalStandard, oxState);
-    this.rtOriginal_ = rt;
-    this.rt_ = rt;
-    allOriginalRts_ = new Hashtable<String,Hashtable<String,String>>();
-    chainInformationForEachModification_ = new Hashtable<String,LinkedHashMap<String,Double>>(); 
-  }
-  
-  /**
-   * private constructor for creating a ResultAreaVO
-   * @param name the name of the analyte
-   * @param dbs the amount of double bonds
-   * @param expName the abbreviated name of the experiment 
-   * @param chemicalFormula the chemical formula of the analyte
-   * @param percentalSplit the percentual split if present
-   * @param neutralMass the neutral mass of the analyte
-   * @param internalStandard true when this value is an internal standard
-   * @param externalStandard true when this value is an external standard
-   * @throws ChemicalFormulaException thrown when an element is missing in the elementconfig.xml
-   */
-  private ResultAreaVO(String name, Integer dbs, String expName, String chemicalFormula, float percentalSplit,double neutralMass,
-      boolean internalStandard, boolean externalStandard, String oxState) throws ChemicalFormulaException
-  {
-    super();
-    name_ = name;
-    dbs_ = dbs;
+  	lipidParameterSets_.add(lipidParameterSet);
+    name_ = lipidParameterSet.getName();
+    dbs_ = lipidParameterSet.getDoubleBonds();
     expName_ = expName;
     chemicalFormula_ = StaticUtils.categorizeFormula(chemicalFormula);
     modFormulas_ = new Hashtable <String,Hashtable<String,Integer>>();
@@ -128,109 +106,37 @@ public class ResultAreaVO
     retentionTime_ = new Hashtable<String,Double>();
     areas_ = new Hashtable<String,Vector<Double>>();
     moreThanOnePeak_ = new Hashtable<String,Vector<Boolean>>();
-    rtOriginal_ = null;
-    rt_ = null;
     percentalSplit_ = 1f;
-    if(percentalSplit>=1) percentalSplit_ = percentalSplit/100f;
+    if(lipidParameterSet.getPercentalSplit()>=1) percentalSplit_ = lipidParameterSet.getPercentalSplit()/100f;
     internalStandard_ = internalStandard;
     externalStandard_ = externalStandard;
-    chainInformationTotal_ = new LinkedHashMap<String,Double>();
-    msnEvidence_ = false;
+    rt_ = rt;
+    oxState_ = lipidParameterSet.getOxState();
   }
-  
   
   /**
    * adds a result belonging to the same analyte species (e.g. another adduct/modification)
-   * @param modName the modification/adduct name
-   * @param modFormula the chemical formula of the modification/adduct
-   * @param mass the theoretical m/z value
-   * @param expMass the measured m/z value
-   * @param charge the presumed charge
-   * @param rt the retention time
+   * @param lipidParameterSets 					the lipidParameterSets this result belongs to
+   * @param modName 										the modification/adduct name
+   * @param modFormula 									the chemical formula of the modification/adduct
+   * @param mass 												the theoretical m/z value
+   * @param expMass 										the measured m/z value
+   * @param charge 											the presumed charge
+   * @param rt 													the retention time
    * @throws ChemicalFormulaException
    */
-  public void addResultPart(String modName, String modFormula,double mass,double expMass,int charge, String rt) throws ChemicalFormulaException{
-    String modToAdd = getNotNullName(modName);
+  public void addResultPart(Set<LipidParameterSet> lipidParameterSets, String modName, String modFormula,double mass,double expMass,int charge, String rt) throws ChemicalFormulaException{
+  	lipidParameterSets_.addAll(lipidParameterSets);
+  	String modToAdd = getNotNullName(modName);
     // this is truly a new modification, otherwise this hit is just a peak with a different retention time; no new modification
-    Hashtable<String,String> rts = new Hashtable<String,String>();
     if (!modFormulas_.containsKey(modToAdd)){
-      String modFormToAdd = getNotNullName(modFormula);
-      modFormulas_.put(modToAdd, StaticUtils.categorizeFormula(modFormToAdd));
+      modFormulas_.put(modToAdd, StaticUtils.categorizeFormula(getNotNullName(modFormula)));
       mass_.put(modToAdd, mass);
       expMass_.put(modToAdd, expMass);
       charge_.put(modToAdd, charge);
-      Vector<Double> isoAreas = new Vector<Double>();
-      areas_.put(modToAdd, isoAreas);
-      Vector<Boolean> isoMoreThanOne = new Vector<Boolean>();
-      moreThanOnePeak_.put(modToAdd, isoMoreThanOne);
-    }else if (rt!=null) {
-      rts = allOriginalRts_.get(modName);
+      areas_.put(modToAdd, new Vector<Double>());
+      moreThanOnePeak_.put(modToAdd, new Vector<Boolean>());
     }
-    if (rt!=null){
-      rts.put(rt, rt);
-      allOriginalRts_.put(modToAdd, rts);
-    }
-  }
-
-  /**
-   * adds information about detected chains
-   * @param modName the modification name the chains were detected for
-   * @param areas a hash table of the areas for each coeluting species
-   * @param returns the nr of chains detected for this species
-   * @throws LipidCombinameEncodingException thrown if there is something wrong with the lipid name encoding
-   */
-  public int addChainInformation(String modName, Hashtable<String,Double> areas) throws LipidCombinameEncodingException {
-    double area;
-    int nrChains = 0;
-    int nrChainsDecoded;
-    LinkedHashMap<String,Double> chainInformation = new LinkedHashMap<String,Double>();
-    if (chainInformationForEachModification_.containsKey(modName))
-      chainInformation = chainInformationForEachModification_.get(modName);
-    List<DoubleStringVO> modValues = new ArrayList<DoubleStringVO>();
-    List<DoubleStringVO> totalValues = new ArrayList<DoubleStringVO>();
-    for (String combiName : areas.keySet()) {
-      area = 0d;
-      String name = StaticUtils.encodeLipidCombi(StaticUtils.sortChainVOs(StaticUtils.decodeLipidNamesFromChainCombi(combiName)));
-      //String name = combiName;
-      //find out if there is already a combination with this name
-      if (chainInformation.containsKey(name)) 
-        area = chainInformation.get(name);
-//      }else {
-//        for (String otherCombi : chainInformation.keySet()) {
-//          if (StaticUtils.isAPermutedVersion(name, otherCombi, LipidomicsConstants.CHAIN_COMBI_SEPARATOR)) {
-//            name = otherCombi;
-//            area = chainInformation.get(name);
-//            break;
-//          }
-//        }
-//      }
-      area+=areas.get(combiName);
-      nrChainsDecoded = StaticUtils.decodeLipidNamesFromChainCombi(combiName).size();
-      if (nrChainsDecoded>nrChains)
-        nrChains = nrChainsDecoded;
-      modValues.add(new DoubleStringVO(name,area));
-      //do the same for the total areas
-//      String totalName = name;
-      area=0;
-      if (chainInformationTotal_.containsKey(name))
-        area = chainInformationTotal_.get(name);
-//      if (chainInformationTotal_.containsKey(totalName)) {
-//        area = chainInformationTotal_.get(totalName);
-//      } else {
-//        for (String otherCombi : chainInformation.keySet()) {
-//          if (StaticUtils.isAPermutedVersion(totalName, otherCombi, LipidomicsConstants.CHAIN_COMBI_SEPARATOR)) {
-//            totalName = otherCombi;
-//            area = chainInformation.get(totalName);
-//            break;
-//          }
-//        }       
-//      }
-      area+=areas.get(combiName);
-      totalValues.add(new DoubleStringVO(name,area));      
-    }
-    chainInformationForEachModification_.put(modName, getAreaSortedLinkedHashMap(modValues));
-    chainInformationTotal_ = getAreaSortedLinkedHashMap(totalValues);
-    return nrChains;
   }
   
   
@@ -241,14 +147,12 @@ public class ResultAreaVO
   
   public String getMoleculeName()
   {
-    return StaticUtils.generateLipidNameString(name_, dbs_, rt_,oxState_);
+    return StaticUtils.generateLipidNameString(name_, dbs_, rt_, oxState_);
   } 
   
   public String getMoleculeNameWoRT()
   {
-
-    return StaticUtils.generateLipidNameString(name_, dbs_,-1,oxState_);
-    
+    return StaticUtils.generateLipidNameString(name_, dbs_,-1, oxState_);
   }
   
   public String getExpName()
@@ -352,9 +256,28 @@ public class ResultAreaVO
 //    return areas;
 //  }
   
-  public Hashtable<Integer,Boolean> addArea(String modificationName, int iso, double area){
+  /**
+   * Adds an area. Make sure the lipidParameterSet this area is taken from is already part of this object, 
+   * either via the constructor, the method 'addResultPart', or combineVOs
+   * @param lipidParameterSets
+   * @param modificationName
+   * @param iso
+   * @param area
+   * @return
+   */
+  public Hashtable<Integer,Boolean> addArea(Set<LipidParameterSet> lipidParameterSets, String modificationName, int iso, double area){
+  	for (LipidParameterSet param : lipidParameterSets)
+  	{
+  		
+  	}
+  	lipidParameterSets_.addAll(lipidParameterSets);
+  	
+  	//TODO: this is the only part, where Areas are actually added, thus, ensure we also get the molecular species and their rel. contributions here. 
+  	//TODO: what do we do about different modifications?? C=C??? like... I guess I need modification, human readable, pos insensitive and area all in one object?
+  	
     String modName = getNotNullName(modificationName);
     Vector<Double> areas = areas_.get(modName);
+    Double totalAreaBefore = getTotalArea(areas.size());
     Vector<Boolean> moreThanOnePeak = moreThanOnePeak_.get(modName);
     boolean isAdditionalPeak = false;
     int isotope = iso;
@@ -371,6 +294,7 @@ public class ResultAreaVO
       isAdditionalPeak = true;
     }
     areas_.put(modName, areas);
+    getMolecularSpeciesContributions();
     moreThanOnePeak_.put(modName, moreThanOnePeak);
     if (isAdditionalPeak){
       Hashtable<Integer,Boolean> mtp = new Hashtable<Integer,Boolean>();
@@ -467,16 +391,6 @@ public class ResultAreaVO
   {
     return rt_;
   }
-
-  public String getRtOriginal()
-  {
-    return rtOriginal_;
-  }
-  
-  public void setRtOriginal(String rt){
-    this.rtOriginal_ = rt;
-    this.rt_ = rt;
-  }
   
   public float getHighestZeroIsoArea(String modification){
     if (areas_.get(modification)!=null && areas_.get(modification).get(0)!=null)
@@ -507,6 +421,14 @@ public class ResultAreaVO
   }
   
   public void combineVOs(ResultAreaVO other){
+  	LipidParameterSet param = lipidParameterSets_.iterator().next();
+  	if (param.getNameStringWithoutRt().equals("32:2") 
+  			&& param.getChemicalFormula().contains("C41")
+  			)
+  	{
+  		System.out.println(param.getChemicalFormula());
+  		System.out.println("hi");
+  	}
     double highestArea = 0;
     for (String mod : areas_.keySet()){
       if (areas_.get(mod).size()>0 && areas_.get(mod).get(0)>highestArea){
@@ -518,7 +440,7 @@ public class ResultAreaVO
       float highestZeroArea = getHighestZeroIsoArea(mod);
       if (!this.mass_.containsKey(mod)){
         try {
-          this.addResultPart(mod, other.getChemicalFormula(mod), other.mass_.get(mod), other.expMass_.get(mod), other.charge_.get(mod), null);
+          this.addResultPart(other.getLipidParameterSets(), mod, other.getChemicalFormula(mod), other.mass_.get(mod), other.expMass_.get(mod), other.charge_.get(mod), null);
         }
         catch (ChemicalFormulaException e) {
           e.printStackTrace();
@@ -527,25 +449,15 @@ public class ResultAreaVO
       Vector<Double> areas = other.areas_.get(mod);
       Hashtable<Integer,Boolean> moreThanOnePeak = new Hashtable<Integer,Boolean>();
       for (int i=0; i!=areas.size(); i++){
-        Hashtable<Integer,Boolean> mtp = addArea(mod,i,areas.get(i));
+        Hashtable<Integer,Boolean> mtp = addArea(other.getLipidParameterSets(),mod,i,areas.get(i));
         if (mtp!=null) moreThanOnePeak = mtp;
         if (moreThanOnePeak.containsKey(i))mtp.put(i, true);
         else moreThanOnePeak.put(i, false);
         if (i==0 && areas.get(i)>highestZeroArea){
           setRetentionTime(mod,other.getRetentionTime(mod));
         }
-        if (i==0 && areas.get(i)>highestArea){
-          setRtOriginal(other.rtOriginal_);
-        }
       }
       setMoreThanOnePeak(mod,moreThanOnePeak);
-      
-      Hashtable<String,String> rts = new Hashtable<String,String>();
-      if (allOriginalRts_.containsKey(mod))
-        rts = allOriginalRts_.get(mod);
-      for (String rt : other.allOriginalRts_.get(mod).values())
-        rts.put(rt, rt);
-      allOriginalRts_.put(mod, rts);
     }
   }
 
@@ -587,12 +499,18 @@ public class ResultAreaVO
    * @param mod the modification belonging to this retention time
    * @return true when this retention time belongs to this ResultAreaVO
    */
-  public boolean belongsRtToThisAreaVO(String rt, String mod){
-    if (allOriginalRts_.containsKey(mod) && allOriginalRts_.get(mod).containsKey(rt))
-      return true;
-    else
-      return false;
+  public boolean belongsRtToThisAreaVO(String rt, String mod)
+  {
+  	for (LipidParameterSet param : lipidParameterSets_)
+  	{
+  		if (param.getModificationName().equals(mod) && param.getRt().equals(rt))
+  		{
+  			return true;
+  		}
+  	}
+  	return false;
   }
+  
   
   /**
    * 
@@ -602,60 +520,78 @@ public class ResultAreaVO
     return (internalStandard_ || this.externalStandard_);
   }
   
-  
-  /**
-   * returns a list of the chain information sorted by the area (strongest one first)
-   * @param areasInput the unsorted list of areas
-   * @return a list of the chain information sorted by the area (strongest one first)
-   */
-  @SuppressWarnings("unchecked")
-  private LinkedHashMap<String,Double> getAreaSortedLinkedHashMap(List<DoubleStringVO> areasInput) {
-    List<DoubleStringVO> areas = new ArrayList<DoubleStringVO>(areasInput);
-    Collections.sort(areas,new GeneralComparator("at.tugraz.genome.lda.vos.DoubleStringVO", "getValue", "java.lang.Double"));
-    LinkedHashMap<String,Double> sorted = new LinkedHashMap<String,Double>();
-    for (int i=(areas.size()-1); i!=-1; i--) {
-      sorted.put(areas.get(i).getKey(), areas.get(i).getValue());
-    }
-    return sorted;
+  protected Set<LipidParameterSet> getLipidParameterSets()
+  {
+  	return lipidParameterSets_;
   }
   
+  private MolecularSpeciesAreaVO getMolecularSpeciesContributions()
+  {
+  	for (LipidParameterSet param : lipidParameterSets_)
+  	{
+  		if (param instanceof LipidomicsMSnSet)
+  		{
+  			LipidomicsMSnSet paramMSn = (LipidomicsMSnSet) param;
+  			if (paramMSn.getStatus() > LipidomicsMSnSet.HEAD_GROUP_DETECTED)
+  			{
+  				Set<String> names = paramMSn.getHumanReadableNameSet();
+  				if (names.size() > 1)
+  				{
+  					Vector<String> chains = paramMSn.getValidChainCombinations();
+  					System.out.println("hi");
+  					paramMSn.getHumanReadableNameSet();
+  				}
+  				String mod = paramMSn.getModificationName();
+  			}
+  		}
+  	}
+  	return new MolecularSpeciesAreaVO(expName_, expName_, expName_, neutralMass_);
+  }
   
   /**
-   * 
-   * @return the strongest chain identification
+   * Computes a table of position insensitive molecular species names and their relative contribution 
+   * to the overall isotope areas of the params that contributed to this object.
+   * @return
    */
-  public String getStrongestChainIdentification() {
-    if (chainInformationTotal_!=null&&chainInformationTotal_.size()>0)
-      return this.chainInformationTotal_.keySet().iterator().next();
-    else
-      return null;
-  }
-
-  /**
-   * 
-   * @return whether MSn evidence is present
-   */
-  public boolean isMsnEvidenceThere()
+  public Hashtable<String,Vector<Double>> computeMolecularSpeciesContributions()
   {
-    return msnEvidence_;
+  	Hashtable<String,Vector<Double>> contributions = new Hashtable<String,Vector<Double>>();
+  	Set<String> names = ConcurrentHashMap.newKeySet();
+  	for (LipidParameterSet param : lipidParameterSets_)
+  	{
+  		if (param instanceof LipidomicsMSnSet)
+  		{
+  			LipidomicsMSnSet paramMSn = (LipidomicsMSnSet) param;
+  			if (paramMSn.getStatus() > LipidomicsMSnSet.HEAD_GROUP_DETECTED)
+  			{
+  				//in the algorithm, the areas of one modification are only contributed to by one LipidParameterSet 
+  				Vector<Double> isoAreas = areas_.get(param.getModificationName());
+  				//TODO: get valid chain combinations.
+  				Hashtable<String,Vector<Double>> areas = areas_;
+  				Vector<Vector<CgProbe>> probes = param.getIsotopicProbes();
+  				System.out.println("yo!");
+  			}
+  		}
+  	}
+  	return contributions;
   }
-
-  /**
-   * set whether MSn evidence is present
-   * @param msnEvidence is MSn evidence present
-   */
-  public void setMsnEvidence(boolean msnEvidence)
+  
+  private class MolecularSpeciesAreaVO
   {
-    this.msnEvidence_ = msnEvidence;
-  }
-
-  /**
-   * 
-   * @return sum chain information over all adducts
-   */
-  public LinkedHashMap<String,Double> getChainInformationTotal()
-  {
-    return chainInformationTotal_;
+  	private String humanReadable_;
+  	private String positionAndCCInsensitive_;
+  	private String modification_;
+  	private Double areaContribution_;
+  	
+  	private MolecularSpeciesAreaVO(String humanReadable, String positionAndCCInsensitive, String modification, Double areaContribution)
+  	{
+  		this.humanReadable_ = humanReadable;
+  		this.positionAndCCInsensitive_ = positionAndCCInsensitive;
+  		this.modification_ = modification;
+  		this.areaContribution_ = areaContribution;
+  	}
+  	
+  	
   }
   
 }

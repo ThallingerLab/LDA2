@@ -1,1 +1,1 @@
-c:\java\jdk1.8.0_202\bin\java -Djava.library.path="E:\Development\LipidDataAnalyzer\lib\cuda"; -Djava.ext.dirs=toInstall -Xms256m -Xmx4096m -jar LipidDataAnalyzer.jar
+java  -Xms256m -Xmx4096m -Djava.ext.dirs=toInstall -jar toInstall/LipidDataAnalyzer.jar
