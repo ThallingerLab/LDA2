@@ -422,7 +422,7 @@ public class QuantificationResultExporter
         
         for (LipidParameterSet param : params){
         	if (param==null)
-        		continue; //TODO: @Lorenz: why can the LipidParameterSet be null here?
+        		continue;
        	
         	ms1RowCount = writeEvidenceMS1(ms1RowCount, resultCount, resultSheet, param, mS1HeaderTitles);
 
@@ -465,7 +465,7 @@ public class QuantificationResultExporter
     hasOhInformation_ = false;
     for (LipidParameterSet param : params){
     	if (param==null){
-    		continue; //TODO: @Lorenz: why can the LipidParameterSet be null here?
+    		continue;
     	}
       int maxIso = param.getIsotopicProbes().size();
       if (maxIso>amountOfIsotopes_) amountOfIsotopes_ = maxIso;
@@ -732,6 +732,7 @@ public class QuantificationResultExporter
     ws.value(rowFirst, headerTitles.indexOf(HEADER_MOD_FORMULA), param.getModificationFormula());
     
     if (headerTitles.indexOf(HEADER_RT) >= 0) {
+    	ws.style(rowFirst, headerTitles.indexOf(HEADER_RT)).format("0.00").set();
       ws.value(rowFirst, headerTitles.indexOf(HEADER_RT), param.getPreciseRT());
     }
       
