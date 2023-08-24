@@ -991,31 +991,31 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
       this.faHydroxyEncoding_ = quantRes.getFaHydroxyEncoding();  
     results = quantRes.getIdentifications();
 
-    Hashtable<String,Vector<LipidParameterSet>> MSnHash = new Hashtable<String,Vector<LipidParameterSet>>();
+    Hashtable<String,Vector<LipidParameterSet>> mSnHash = new Hashtable<String,Vector<LipidParameterSet>>();
     Hashtable<String,Vector<LipidParameterSet>> chainHash = new Hashtable<String,Vector<LipidParameterSet>>(); 
     if(statisticsViewMode != 0)
     {
-        for (String lipidClass : results.keySet()) {
-        	Vector<LipidParameterSet> params = results.get(lipidClass);
-        	Vector<LipidParameterSet> MSnSets = new Vector<LipidParameterSet>();
-        	Vector<LipidParameterSet> chainSets = new Vector<LipidParameterSet>();
-        	for (LipidParameterSet param  : params){
-      			if (param instanceof LipidomicsMSnSet) {
-      				MSnSets.add(param);
-      				LipidomicsMSnSet msn_param = (LipidomicsMSnSet) param;
-      				if(!msn_param.getChainFragments().isEmpty())
-      				{
-      					chainSets.add(param);
-      				}
-      			}
-      		}
-        	MSnHash.put(lipidClass, MSnSets);
-        	chainHash.put(lipidClass, chainSets);
-        }
+      for (String lipidClass : results.keySet()) {
+      	Vector<LipidParameterSet> params = results.get(lipidClass);
+      	Vector<LipidParameterSet> mSnSets = new Vector<LipidParameterSet>();
+      	Vector<LipidParameterSet> chainSets = new Vector<LipidParameterSet>();
+      	for (LipidParameterSet param  : params){
+    			if (param instanceof LipidomicsMSnSet) {
+    				mSnSets.add(param);
+    				LipidomicsMSnSet msn_param = (LipidomicsMSnSet) param;
+    				if(!msn_param.getChainFragments().isEmpty())
+    				{
+    					chainSets.add(param);
+    				}
+    			}
+    		}
+      	mSnHash.put(lipidClass, mSnSets);
+      	chainHash.put(lipidClass, chainSets);
+      }
     }
     if(statisticsViewMode == 1)
     {
-    	results = MSnHash;
+    	results = mSnHash;
     }
     if(statisticsViewMode == 2)
     {

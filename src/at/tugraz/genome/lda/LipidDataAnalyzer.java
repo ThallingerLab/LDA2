@@ -373,7 +373,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JScrollPane tablePane;
   private QuantificationResult result_;
   private QuantificationResult originalResult_;
-  private QuantificationResult MSnResult_; //TODO: rename to start small
+  private QuantificationResult mSnResult_;
   private QuantificationResult chainResult_;
   private Hashtable<Integer,Integer> resultPositionToOriginalLoopkup_ = new Hashtable<Integer,Integer>();
   private Hashtable<Integer,String> resultPositionToMolecularSpeciesLookup_;
@@ -530,7 +530,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     JPanel listContainer = new JPanel(new GridLayout(1,1));
     tablePane = new JScrollPane(displayTable_);
 
-    displayTolerancePanel_ = new DisplayTolerancePanel(this,true); //TODO: is this needed here?
+    displayTolerancePanel_ = new DisplayTolerancePanel(this,true);
     
     tablePanel_ = new JPanel();
     tablePanel_.setLayout(new BorderLayout());
@@ -3555,7 +3555,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     //start: added via the oxidized lipids extension
     originalResult_ = new QuantificationResult(result_); //changed to deep copy instead of reading the file again => TODO: make sure this is fine
     
-    MSnResult_ = LDAResultReader.readResultFile(filePath,  resultsShowModification_);
+    mSnResult_ = LDAResultReader.readResultFile(filePath,  resultsShowModification_);
     chainResult_ = LDAResultReader.readResultFile(filePath,  resultsShowModification_);
     Hashtable<String,Vector<LipidParameterSet>> MSnHash = new Hashtable<String,Vector<LipidParameterSet>>();
     Hashtable<String,Vector<LipidParameterSet>> chainHash = new Hashtable<String,Vector<LipidParameterSet>>();
@@ -3577,7 +3577,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     	MSnHash.put(lipidClass, MSnSets);
     	chainHash.put(lipidClass, chainSets);
     }
-    MSnResult_.setIdentifications(MSnHash);
+    mSnResult_.setIdentifications(MSnHash);
     chainResult_.setIdentifications(chainHash);
     //end: added via the oxidized lipids extension
     
@@ -4170,7 +4170,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     if (command.equalsIgnoreCase(DisplayTolerancePanel.SHOW_MSN_ONLY)){
     	if(this.displayTolerancePanel_.getShowMSnEvidence().isSelected())
     	{
-    		result_ = MSnResult_;
+    		result_ = mSnResult_;
     		displayTolerancePanel_.getShowChainEvidence().setEnabled(true);
     	}
     	else {
@@ -4186,7 +4186,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     		result_ = chainResult_;
     	}
     	else {
-    		result_ = MSnResult_;
+    		result_ = mSnResult_;
     	}
       this.updateResultListSelectionTable();
     }
@@ -4197,8 +4197,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     		showChainEvidenceStat_.setEnabled(true);
     	}
     	else {
-    		statisticsViewMode_ = 0;
     		showChainEvidenceStat_.setSelected(false);
+    		statisticsViewMode_ = 0; //this must be after deselecting showing chain evidence, as this has a side effect on the statistics view mode.
     		showChainEvidenceStat_.setEnabled(false);
     	}
     }
@@ -4208,7 +4208,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     		statisticsViewMode_ = 2;
     	}
     	else {
-    		statisticsViewMode_ = 0;
+    		statisticsViewMode_ = 1; //if this option is not selected, the default is that MSn only is selected.
     	}
     }
     if (command.equalsIgnoreCase("combineWithOx")){
