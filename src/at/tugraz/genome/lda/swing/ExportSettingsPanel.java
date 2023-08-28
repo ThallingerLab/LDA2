@@ -75,6 +75,7 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
   private JRadioButton chainLevel_;
   /** radio button indicating that the analytes shall be exported on the position level*/
   private JRadioButton positionLevel_;
+  private JButton okButton_;
 
   
   private final static String CHANGE_SELECTION_STATUS = "changeSelectionStatus";
@@ -218,12 +219,12 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
     this.add(new JSeparator(SwingConstants.HORIZONTAL), new GridBagConstraints(0, 14, 0, 1, 1, 0.0, 
         GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0));
     
-    JButton button = new JButton("OK");
-    button.setActionCommand("AcceptExportSettings");
-    button.setToolTipText(TooltipTexts.ACCEPT_GENERAL);
-    this.add(button,new GridBagConstraints(0, 15, 3, 1, 0.0, 0.0
+    okButton_ = new JButton("OK");
+    okButton_.setActionCommand("AcceptExportSettings");
+    okButton_.setToolTipText(TooltipTexts.ACCEPT_GENERAL);
+    this.add(okButton_,new GridBagConstraints(0, 15, 3, 1, 0.0, 0.0
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
-    button.addActionListener(parent_);
+    okButton_.addActionListener(parent_);
     setVisible(false);
     setDefaultCloseOperation(DISPOSE_ON_CLOSE );
     pack(); 
@@ -323,5 +324,14 @@ public class ExportSettingsPanel extends JDialog implements ActionListener
     else if (positionLevel_.isSelected())
       speciesType = LipidomicsConstants.EXPORT_ANALYTE_TYPE_POSITION;    
     return new ExportOptionsVO(exportType,variationValue,columnAnalyte_.isSelected(),exportRT_.isSelected(),exportRTDev,exportDoubleBondPositions,6,speciesType);
+  }
+  
+  /**
+   * Disconnects parent action listener.
+   */
+  public void cleanup()
+  {
+  	okButton_.removeActionListener(parent_);
+  	parent_ = null;
   }
 }

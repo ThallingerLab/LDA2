@@ -42,6 +42,7 @@ import javax.swing.JLabel;
 
 import at.tugraz.genome.lda.TooltipTexts;
 import at.tugraz.genome.lda.WarningMessage;
+import at.tugraz.genome.lda.exception.AbsoluteSettingsInputException;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
@@ -87,17 +88,18 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
   
 
   public ResultDisplaySettings(boolean isAvailability, boolean esAvailability, Hashtable<String,Integer>isLookup,Hashtable<String,Integer>esLookup,
-      boolean absoluteSettings, boolean hasSampleWeight, boolean hasProtein,
-      boolean hasNeutralLipid/*, ActionListener parent*/){
+      boolean absoluteSettings, AbsoluteQuantSettingsPanel panel
+      /*, ActionListener parent*/){
     this.setLayout(new GridBagLayout());
     this.isAvailability_ = isAvailability;
     this.esAvailability_ = esAvailability;
     this.isLookup_ = isLookup;
     this.esLookup_ = esLookup;
+    if (absoluteSettings)
+    {
+    	initRemoveAbsSettings(panel);
+    }
     this.absoluteSettings_ = absoluteSettings;
-    hasSampleWeight_ = hasSampleWeight;
-    this.hasProtein_ = hasProtein;
-    this.hasNeutralLipid_ = hasNeutralLipid;
     parents_ = new Vector<ActionListener>();
 ////    parent_ = parent;
     
@@ -221,7 +223,29 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
     pack(); 
   }
   
-  
+  private void initRemoveAbsSettings(AbsoluteQuantSettingsPanel panel)
+  {
+    this.hasProtein_ = false;
+    this.hasNeutralLipid_ = false;
+    this.hasSampleWeight_ = false;
+    
+    try {
+      if (panel.getSettingsVO().getVolumeSettings().size()>0 &&
+      		panel.getSettingsVO().getVolumeSettings().values().iterator().next().getProteinConc()!=null)
+      	this.hasProtein_ = true;
+      if (panel.getSettingsVO().getVolumeSettings().size()>0 &&
+      		panel.getSettingsVO().getVolumeSettings().values().iterator().next().getNeutralLipidConc()!=null)
+      	this.hasNeutralLipid_ = true;
+      if (panel.getSettingsVO().getVolumeSettings().size()>0 &&
+      		panel.getSettingsVO().getVolumeSettings().values().iterator().next().getSampleWeight()!=null)
+      	this.hasSampleWeight_ = true;
+
+    }
+    catch (AbsoluteSettingsInputException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
   
   public void actionPerformed(ActionEvent e) {
     if (e.getActionCommand().equalsIgnoreCase(CHANGE_IS_STATUS)){
@@ -492,5 +516,9 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
   
   public void addActionListener(ActionListener parent){
     this.parents_.add(parent);
+  }
+  
+  public void removeActionListener(ActionListener parent) {
+  	this.parents_.remove(parent);
   }
 }

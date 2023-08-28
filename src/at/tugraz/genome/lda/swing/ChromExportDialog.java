@@ -78,6 +78,7 @@ public class ChromExportDialog extends JDialog implements ActionListener
   private ActionListener parent_;
   private JTextField width_;
   private JTextField height_;
+  private JButton okButton_;
 
   public ChromExportDialog(String title, Vector<String> experiments, Vector<String> analytes, Vector<String> modifications, ActionListener parent){
     super(new JFrame(), title, true);
@@ -190,12 +191,12 @@ public class ChromExportDialog extends JDialog implements ActionListener
     
     JLabel emptyLabel = new JLabel("   ");
     buttonPanel.add(emptyLabel);
-    JButton okButton = new JButton("OK");
-    okButton.setActionCommand("AcceptChromExport");
-    okButton.setToolTipText(TooltipTexts.ACCEPT_GENERAL);
-    buttonPanel.add(okButton);
-    okButton.addActionListener(this);
-    okButton.addActionListener(parent_);
+    okButton_ = new JButton("OK");
+    okButton_.setActionCommand("AcceptChromExport");
+    okButton_.setToolTipText(TooltipTexts.ACCEPT_GENERAL);
+    buttonPanel.add(okButton_);
+    okButton_.addActionListener(this);
+    okButton_.addActionListener(parent_);
     JButton cancelButton = new JButton("Cancel");
     cancelButton.setActionCommand("DeclineSelection");
     cancelButton.setToolTipText(TooltipTexts.CANCEL_GENERAL);
@@ -320,5 +321,14 @@ public class ChromExportDialog extends JDialog implements ActionListener
   
   public Dimension getPictureDimension(){
     return new Dimension(Integer.parseInt(this.width_.getText()),Integer.parseInt(this.height_.getText()));
+  }
+  
+  /**
+   * Removes parent action listener.
+   */
+  public void cleanup()
+  {
+  	okButton_.removeActionListener(parent_);
+  	parent_ = null;
   }
 }

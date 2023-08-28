@@ -229,8 +229,11 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     this.isGrouped_ = ungroupedPartner!=null ? true : false;
     this.ungroupedPartner_ = ungroupedPartner;
     this.displaySettings_ = displaySettings;
+    this.displaySettings_.addActionListener(this);
     this.selectionSettings_ = selectionSettings;
+    this.selectionSettings_.addActionListener(this);
     this.combinedChartSettings_ = combinedChartSettings;
+    this.combinedChartSettings_.addActionListener(this);
     this.exportSettings_ = exportSettings;
     this.maxIsotopes_ = generateMaxIsotopesJComboBox(analysisModule.getMaxIsotopesOfGroup(groupName));
     this.modifications_ = analysisModule.getModifications().get(groupName);
@@ -314,7 +317,6 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     exportButton.addActionListener(this);
     exportButton.setMargin(new Insets(1,5,1,5));
     exportButton.setActionCommand("exportSelectionDialog");
-    
     exportButton.setToolTipText(TooltipTexts.HEATMAP_EXPORT_OPTIONS);
     buttonsPanel2.add(exportButton);
       
@@ -1524,104 +1526,6 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     return StaticUtils.getMaxApplicableIsotope(resultsOfOneGroup_.get(molecule),maxIsotope);
   }
   
-  public void cleanup(){
-  	if (heatmap_ != null)
-  	{
-  		if (heatmap_.getCompVOs()!=null)
-  		{
-        for (int i=0;i!=heatmap_.getCompVOs().length;i++)
-        {
-          for (int j=0;j!=heatmap_.getCompVOs()[i].length;j++)
-          {
-            heatmap_.getCompVOs()[i][j].cleanup();
-            heatmap_.getCompVOs()[i][j] = null;
-          }
-        }
-      }
-  		heatmap_.cleanup();
-  		heatmap_ = null;
-  	}
-    if (renderedImage_!=null) renderedImage_.flush();
-    renderedImage_ = null;
-    rectToDraw_=null;
-    if (label_!= null)label_.getGraphics().dispose();
-    label_ = null;
-    if (heatMapPanel_!=null) heatMapPanel_.getGraphics().dispose();
-    heatMapPanel_ = null;
-    if (statusText_!=null) statusText_.getGraphics().dispose();
-    statusText_ = null;
-    if (exportProgressPanel_!=null) exportProgressPanel_.getGraphics().dispose();
-    exportProgressPanel_ = null;
-    heatMapListener_ = null;
-    groupName_ = null;
-    if (showInternalStandards_!=null) showInternalStandards_.getGraphics().dispose();
-    showInternalStandards_ = null;
-    if (showInternalStandards_!=null) showInternalStandards_.getGraphics().dispose();    
-    showExternalStandards_ = null;
-    if (markDoublePeaks_!=null) markDoublePeaks_.getGraphics().dispose();
-    markDoublePeaks_ = null;
-    if (maxIsotopes_!=null) maxIsotopes_.getGraphics().dispose();
-    maxIsotopes_ = null;
-    if (resultsOfOneGroup_!=null){
-      for (Hashtable<String,ResultCompVO> results : resultsOfOneGroup_.values()){
-        for (ResultCompVO vo : results.values()){
-          vo.cleanup();
-          vo = null;
-        }
-      }
-    }
-    resultsOfOneGroup_ = null;
-    if (experimentNames_!=null) experimentNames_.clear();
-    experimentNames_ = null;
-    if (moleculeNames_!=null) moleculeNames_.clear();
-    moleculeNames_ = null;
-    if (isLookup_!=null) isLookup_.clear();
-    isLookup_ = null;
-    if (esLookup_!=null) esLookup_.clear();
-    esLookup_ = null;
-    settingsVO_ = null;
-    displaySettings_ = null;
-    selectionSettings_ = null;
-    exportSettings_ = null;
-    combinedChartSettings_ = null;
-    if (exportFileChooser_!=null && exportFileChooser_.getGraphics()!=null) exportFileChooser_.getGraphics().dispose();
-    exportFileChooser_ = null;
-    if (exportLabel_!=null) exportLabel_.getGraphics().dispose();
-    exportLabel_ = null;
-    if (exportProgress_!=null) exportProgress_.getGraphics().dispose();
-    exportProgress_ = null;
-    if (spinnerLabel_!=null) spinnerLabel_.getGraphics().dispose();
-    spinnerLabel_ = null;
-    if (cancelExport_!=null) cancelExport_.getGraphics().dispose();
-    cancelExport_ = null;
-    if (selectedMolecules_!=null) selectedMolecules_.clear();
-    selectedMolecules_ = null;
-    if (applySettingsPopup_!=null) applySettingsPopup_.removeAll();
-    applySettingsPopup_ = null;
-    if (removeAnalytePopup_!=null) removeAnalytePopup_.removeAll();
-    removeAnalytePopup_ = null;
-    selectItem_ = null;
-    deselectItem_ = null;
-    selectSingleItem_ = null;
-    deselectSingleItem_ = null;
-    applyToAllDoubles_ = null;
-    lastClickedAnalyte_ = null;
-    if (modifications_!=null) modifications_.clear();
-    modifications_ = null;
-    if (chromExport_!=null && chromExport_.getGraphics()!=null) chromExport_.getGraphics().dispose();
-    chromExport_ = null;
-    if (fromShortToExpName_!=null) fromShortToExpName_.clear();
-    fromShortToExpName_ = null;
-    rtTolerance_ = null;
-    if (chromExportThread_!=null) chromExportThread_.cleanup();
-    chromExportThread_ = null;
-    if (timer_!=null){
-      timer_.cancel();
-      timer_.purge();
-    }
-    timer_ = null;
-  }
-  
   public Hashtable<String,Hashtable<String,Vector<Double>>> getResultValues(String valueType) throws NumberFormatException, CalculationNotPossibleException{
     int exportType = ExportOptionsVO.EXPORT_NO_DEVIATION;
     if (isGrouped_) exportType = ExportOptionsVO.EXPORT_SD_DEV_AND_ERROR;
@@ -1735,6 +1639,46 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       results.put(set.getModificationName(), ofOneMod);
     }
     return results;
+  }
+  
+  
+  public void cleanup(){
+  	ungroupedPartner_ = null;
+    if (displaySettings_ != null)
+    {
+    	displaySettings_.removeActionListener(this);
+    	displaySettings_.dispose();
+      displaySettings_ = null;
+    }
+    if (selectionSettings_ != null) 
+    {
+    	selectionSettings_.removeActionListener(this);
+    	selectionSettings_.dispose();
+      selectionSettings_ = null;
+    }
+    if (combinedChartSettings_ != null)
+    {
+    	combinedChartSettings_.removeActionListener(this);
+    	combinedChartSettings_.dispose();
+      combinedChartSettings_ = null;
+    }
+    if (exportSettings_ != null) 
+    {
+    	exportSettings_.cleanup();
+    	exportSettings_.dispose();
+      exportSettings_ = null;
+    }
+    if (chromExport_ != null) 
+    {
+    	chromExport_.cleanup();
+    	chromExport_.dispose();
+      chromExport_ = null;
+    }
+    if (timer_!=null){
+      timer_.cancel();
+      timer_.purge();
+    }
+    timer_ = null;
   }
   
 }

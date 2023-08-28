@@ -130,6 +130,10 @@ public class ResultSelectionSettings extends JDialog implements ActionListener
   public void addActionListener(ActionListener parent){
     button_.addActionListener(parent);
   }
+  
+  public void removeActionListener(ActionListener parent) {
+  	button_.removeActionListener(parent);
+  }
 
   public boolean isSelected(String moleculeName){
     boolean isSelected = false;

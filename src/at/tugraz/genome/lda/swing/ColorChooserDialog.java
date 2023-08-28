@@ -174,5 +174,13 @@ public class ColorChooserDialog extends JDialog implements ActionListener
     else return Color.BLACK;
   }
   
+  /**
+   * Disconnects the parent listener.
+   */
+  public void cleanup()
+  {
+  	changeListener_ = null;
+  }
+  
   
 }

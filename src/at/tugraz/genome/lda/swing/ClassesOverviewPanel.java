@@ -410,4 +410,19 @@ public class ClassesOverviewPanel extends JPanel implements ActionListener
     }  
     return area;
   }
+  
+  public void cleanup()
+  {
+  	if (selectionSettings_!=null) 
+  	{
+  		selectionSettings_.removeActionListener(this);
+  		selectionSettings_.dispose();
+    	selectionSettings_ = null;
+  	}
+  	if (standardSelection_!=null) 
+  	{
+  		standardSelection_.cleanup();
+    	standardSelection_ = null;
+  	}	
+  }
 }

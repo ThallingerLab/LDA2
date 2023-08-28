@@ -164,6 +164,7 @@ import at.tugraz.genome.lda.swing.ResultSelectionSettings;
 import at.tugraz.genome.lda.swing.RuleDefinitionInterface;
 import at.tugraz.genome.lda.swing.SpectrumUpdateListener;
 import at.tugraz.genome.lda.target.JTargetFileWizard;
+import at.tugraz.genome.lda.target.LoadingPanel;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.verifier.DoubleVerifier;
 import at.tugraz.genome.lda.verifier.IntegerMaxVerifier;
@@ -2281,7 +2282,17 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       }
     }
     if (command.equalsIgnoreCase("acceptSelectedResultFiles")){
-      this.acceptResultFiles();
+    	cleanupResultView();
+    	resultTabs_.setComponentAt(0, new LoadingPanel("Processing data, please wait..."));
+    	Thread thread = new Thread(new Runnable()
+  		{
+  			public void run()
+  			{
+  				acceptResultFiles();
+  				resultTabs_.setComponentAt(0, resultsSelectionPanel_);
+  			}
+  		});
+    	thread.start();
     }
     if (command.equalsIgnoreCase("showChromFileChooser")){
       if (chromFileChooser_==null)
@@ -3397,7 +3408,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private void acceptResultFiles(){
     long timeMillis_0 = System.currentTimeMillis();
     System.out.println("fastExcel Start!");
-    this.cleanupResultView();
     expDisplayNamesLookup_ = new Hashtable<String,String>();
     if (this.resultFiles_!=null&&this.resultFiles_.size()>0){
       AbsoluteSettingsVO absSettingVO = null;
@@ -3479,7 +3489,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         e.printStackTrace();
         new WarningMessage(new JFrame(), "Error", "The Excel returns the following failure: "+e.getMessage());
       }
-        this.generateHeatMaps();
+      this.generateHeatMaps();
     }else{
       new WarningMessage(new JFrame(), "Error", "Please specify the files to analyze!");
     }
@@ -3489,6 +3499,13 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         (timeMillis_1-timeMillis_0)/1000.0));
   }
   
+  private void removeResultTabComponentsExceptFirst()
+  {
+  	while (resultTabs_.getTabCount() > 1) 
+  	{
+  		resultTabs_.remove(1);
+  	}
+  }
   
   private void generateHeatMaps(){
     heatmaps_ = new Hashtable<String,HeatMapDrawing>();
@@ -3496,9 +3513,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     Hashtable<String,Hashtable<String,Integer>> corrTypeISLookup = analysisModule_.getCorrectionTypeISLookup();
     Hashtable<String,Hashtable<String,Integer>> corrTypeESLookup = analysisModule_.getCorrectionTypeESLookup();
     Vector<String> expNames = analysisModule_.getExpNamesInSequence();
-    resultTabs_.removeAll();
-    resultTabs_.addTab("Selection",resultsSelectionPanel_);
-    resultTabs_.setToolTipTextAt(0, TooltipTexts.TABS_RESULTS_SELECTION);
     molBarCharts_ = new Hashtable<String,JTabbedPane>();
     
     // for the groupedValues
@@ -3513,7 +3527,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       exportSettingsGroup_ = new ExportSettingsPanel(true,this);
     
     long before = System.currentTimeMillis();
-    ExecutorService threadpool = Executors.newFixedThreadPool(getAmountOfProcessorsPreferred());
+    ExecutorService threadpool = Executors.newFixedThreadPool(Math.min(analysisResults.keySet().size(), getAmountOfProcessorsPreferred()));
     for (String molGroup : analysisResults.keySet())
     {
 //    	HeatMapBuilder builder = new HeatMapBuilder(displaySettingHash, molGroup);
@@ -4982,6 +4996,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
             //Comment: the graphical Warning message is shown in the readResultFile itself
           }
         }
+        cleanupResultView();
         acceptResultFiles();
         for (int i=0; i!=resultTabs_.getTabCount();i++){
           if (resultTabs_.getTitleAt(i).equalsIgnoreCase(groupName))
@@ -5163,6 +5178,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           new WarningMessage(new JFrame(), "Error", e.getMessage());
         }
       }
+      cleanupResultView();
       acceptResultFiles();
       for (int i=0; i!=resultTabs_.getTabCount();i++){
         if (resultTabs_.getTitleAt(i).equalsIgnoreCase(groupName))
@@ -5217,6 +5233,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         //Comment: the graphical Warning message is shown in the readResultFile itself
       }
     }
+    cleanupResultView();
     acceptResultFiles();
     for (int i=0; i!=resultTabs_.getTabCount();i++){
       if (resultTabs_.getTitleAt(i).equalsIgnoreCase(groupName))
@@ -6355,26 +6372,31 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     return paramOfInterest;
   }
   
-  
+  /**
+   * Cleans up fields related to results loaded by the statistical analysis.
+   */
   private void cleanupResultView(){
-    if (analysisModule_!=null){
-      analysisModule_.cleanup();
-      if (groupDisplayNamesLookup_!=null)groupDisplayNamesLookup_.clear();
-      groupDisplayNamesLookup_ = null;
-      if (expDisplayNamesLookup_!=null)expDisplayNamesLookup_.clear();
-      expDisplayNamesLookup_ = null;
-      if (heatmaps_!=null){
-        for (HeatMapDrawing map : heatmaps_.values())map.cleanup();
-        heatmaps_.clear();
-        heatmaps_ = null;
-      }
-      if (groupHeatmaps_!=null){
-        for (HeatMapDrawing map : groupHeatmaps_.values())map.cleanup();
-        groupHeatmaps_.clear();
-        groupHeatmaps_ = null;
-      }
-      System.gc();
+  	if (analysisModule_!=null) analysisModule_.cleanup();
+  	groupDisplayNamesLookup_ = null;
+  	expDisplayNamesLookup_ = null;
+  	if (heatmaps_!=null){
+      for (HeatMapDrawing map : heatmaps_.values()) map.cleanup();
+      heatmaps_ = null;
     }
+  	if (groupHeatmaps_!=null){
+      for (HeatMapDrawing map : groupHeatmaps_.values()) map.cleanup();
+      groupHeatmaps_ = null;
+    }
+  	molBarCharts_ = null;
+  	if (colorChooserDialog_ != null) colorChooserDialog_.cleanup();
+  	colorChooserDialog_ = null;
+  	exportSettings_ = null;
+  	exportSettingsGroup_ = null;
+  	if (classOverviewPanel_ != null) classOverviewPanel_.cleanup();
+  	classOverviewPanel_ = null;
+  	if (classOverviewGroupPanel_ != null) classOverviewGroupPanel_.cleanup();
+  	classOverviewGroupPanel_ = null;
+    removeResultTabComponentsExceptFirst();
   }
   
   /**
@@ -7225,40 +7247,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       
       JPanel aPanel = new JPanel();
       aPanel.setLayout(new BorderLayout());
-      boolean hasAbs = false;
-      boolean hasProtein = false;
-      boolean hasSampleWeight = false;
-      boolean hasNeutralLipid = false;
-      if (jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove absolute settings")){
-        hasAbs = true;
-        try {
-          if (quantSettingsPanel_.getSettingsVO().getVolumeSettings().size()>0 &&
-              quantSettingsPanel_.getSettingsVO().getVolumeSettings().values().iterator().next().getProteinConc()!=null)
-            hasProtein = true;
-          if (quantSettingsPanel_.getSettingsVO().getVolumeSettings().size()>0 &&
-              quantSettingsPanel_.getSettingsVO().getVolumeSettings().values().iterator().next().getNeutralLipidConc()!=null)
-            hasNeutralLipid = true;
-          if (quantSettingsPanel_.getSettingsVO().getVolumeSettings().size()>0 &&
-              quantSettingsPanel_.getSettingsVO().getVolumeSettings().values().iterator().next().getSampleWeight()!=null)
-            hasSampleWeight = true;
-
-        }
-        catch (AbsoluteSettingsInputException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        }
-      }
+      boolean hasAbs = jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove absolute settings");
+      
       ResultDisplaySettings displaySettings = new ResultDisplaySettings(analysisModule_.getISAvailability().get(molGroup_),analysisModule_.getESAvailability().get(molGroup_),isLookup,esLookup,hasAbs,
-          hasSampleWeight,hasProtein,hasNeutralLipid);
+          quantSettingsPanel_);
       ResultSelectionSettings selectionSettings = new ResultSelectionSettings(null,molNames,true);
       ResultSelectionSettings combinedChartSettings = new ResultSelectionSettings(null,molNames,false);
       
       HeatMapDrawing drawing = new HeatMapDrawing(resultsOfOneGroup,analysisModule_.getExpNamesInSequence(),molNames, isLookup,esLookup, resultStatus_,LipidDataAnalyzer.this,molGroup_,null,
           displaySettings,selectionSettings,combinedChartSettings,exportSettings_,analysisModule_);
       
-      displaySettings.addActionListener(drawing);
-      selectionSettings.addActionListener(drawing);
-      combinedChartSettings.addActionListener(drawing);
       JScrollPane scrollPane = new JScrollPane(drawing);
       int[] widthAndHeight = getScrollPaneWidthAndHeight(drawing);
       scrollPane.setPreferredSize(new Dimension(widthAndHeight[0], widthAndHeight[1]));
@@ -7280,9 +7278,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         HeatMapDrawing groupDrawing = new HeatMapDrawing(groupedResultsOfOneGroup, groupsPanel_.getGroups(),molNames, isLookup,esLookup, resultStatus_,LipidDataAnalyzer.this,molGroup_,drawing, 
         		displaySettings,selectionSettings,combinedChartSettings,exportSettingsGroup_,analysisModule_);
         
-        displaySettings.addActionListener(groupDrawing);
-        selectionSettings.addActionListener(groupDrawing);
-        combinedChartSettings.addActionListener(groupDrawing);
         JScrollPane groupScrollPane = new JScrollPane(groupDrawing);
         int[] groupWidthAndHeight = getScrollPaneWidthAndHeight(groupDrawing);
         scrollPane.setPreferredSize(new Dimension(groupWidthAndHeight[0], groupWidthAndHeight[1]));
