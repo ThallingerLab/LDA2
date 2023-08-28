@@ -399,17 +399,4 @@ public class LipidomicsHeatMap extends HeatMapGenerator
 		return preferredUnit_;
 	}
 
-	public void cleanup(){
-    if (expressionImage!=null)expressionImage.flush();
-    expressionImage = null;
-    if (sampleNames_!=null)sampleNames_.clear();
-    sampleNames_ = null;
-    if (analyteNames_!=null)analyteNames_.clear();
-    if (gradient_!=null)gradient_.flush();
-    gradient_ = null;
-    if (attentionValues_!=null)attentionValues_.clear();
-    attentionValues_ = null;
-    lookup_ = null;
-  }
-
 }

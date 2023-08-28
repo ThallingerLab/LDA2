@@ -397,22 +397,4 @@ public class ChromExportThread extends Thread
     this.interrupt_ = true;
   }
   
-  public void cleanup() {
-    lipidClass_ = null;
-    fileToStore_ = null;
-    dim_ = null; 
-    if (expsToExport_!=null)expsToExport_.clear(); 
-    expsToExport_ = null;
-    if (resultsToUse_!=null)resultsToUse_.clear(); 
-    resultsToUse_ = null;
-    if (chromsToUse_!=null)chromsToUse_.clear(); 
-    chromsToUse_ = null;
-    if (analsToExport_!=null)analsToExport_.clear(); 
-    analsToExport_ = null;
-    picType_ = null;
-    errorString_ = null;
-    currentLipid_ = null;
-    currentExperiment_ = null;
-    rtTolerance_ = null;
-  }
 }
