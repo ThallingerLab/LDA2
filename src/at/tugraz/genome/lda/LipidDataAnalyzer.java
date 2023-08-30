@@ -4674,7 +4674,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 
     molBarCharts_.get(groupName).insertTab("Bar-chart", null, new BarChartPainter(BarChartPainter.TYPE_MOLECULE,groupName,moleculeName,analysisResults,analysisModule_.getExpNamesInSequence(),this,true,false,
         getMaxIsotopeForSetting(settingVO, maxIsotope,analysisResults), rtGrouped, false, settingVO, prefUnit, unit,
-        analysisModule_.getCorrectionTypeISLookup().get(groupName), analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_),null,1);
+        analysisModule_.getCorrectionTypeISLookup().get(groupName), analysisModule_.getCorrectionTypeESLookup().get(groupName),new ArrayList<String>(analysisModule_.getModifications().get(groupName)),colorChooserDialog_),null,1);
     molBarCharts_.get(groupName).setSelectedIndex(1);
     return true; 
   }
@@ -4685,7 +4685,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     Vector<String> groupNames = new Vector<String>(analysisModule_.getGroupNames());
     molBarCharts_.get(groupName).insertTab("Group bar-chart", null, new BarChartPainter(BarChartPainter.TYPE_MOLECULE,groupName,moleculeName,analysisResults,groupNames,this,false,true,
         getMaxIsotopeForSetting(settingVO, maxIsotope,analysisResults),rtGrouped, true, settingVO, prefUnit, unit,analysisModule_.getCorrectionTypeISLookup().get(groupName),
-        analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
+        analysisModule_.getCorrectionTypeESLookup().get(groupName),new ArrayList<String>(analysisModule_.getModifications().get(groupName)),colorChooserDialog_)
     ,null,3);
     molBarCharts_.get(groupName).setSelectedIndex(3);
     return true; 
@@ -4727,7 +4727,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     }
     molBarCharts_.get(groupName).insertTab("Bar-chart", null, new BarChartPainter(BarChartPainter.TYPE_MOLECULE,groupName,moleculeNames,analysisResults,expNames,this,true,false,
         StaticUtils.getMaxApplicableIsotopeHash(analysisResults, maxIsotope),rtGrouped,false,settingVO, prefUnit, unit, analysisModule_.getCorrectionTypeISLookup().get(groupName),
-        analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
+        analysisModule_.getCorrectionTypeESLookup().get(groupName),new ArrayList<String>(analysisModule_.getModifications().get(groupName)),colorChooserDialog_)
     ,null,1);
     molBarCharts_.get(groupName).setSelectedIndex(1);
     return true;
@@ -4751,7 +4751,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     }
     molBarCharts_.get(groupName).insertTab("Group bar-chart", null, new BarChartPainter(BarChartPainter.TYPE_MOLECULE,groupName,moleculeNames,analysisResults,groupNames,this,false,true,
         StaticUtils.getMaxApplicableIsotopeHash(analysisResults, maxIsotope),rtGrouped,true,settingVO, prefUnit, unit, analysisModule_.getCorrectionTypeISLookup().get(groupName),
-        analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
+        analysisModule_.getCorrectionTypeESLookup().get(groupName),new ArrayList<String>(analysisModule_.getModifications().get(groupName)),colorChooserDialog_)
     ,null,3);
     molBarCharts_.get(groupName).setSelectedIndex(3);
     return true;    
@@ -4780,7 +4780,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 //    }
     molBarCharts_.get(groupName).insertTab("Bar chart", null,new BarChartPainter(BarChartPainter.TYPE_EXPERIMENT,groupName,getDisplayName(experimentName),resultsForChart,namesVector,this,false,false,
         getMaxIsotopeForSetting(settingVO, maxIsotope,resultsForChart),rtGrouped,false,settingVO, prefUnit, unit,analysisModule_.getCorrectionTypeISLookup().get(groupName),
-        analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
+        analysisModule_.getCorrectionTypeESLookup().get(groupName),new ArrayList<String>(analysisModule_.getModifications().get(groupName)),colorChooserDialog_)
     ,null,1);
     molBarCharts_.get(groupName).setSelectedIndex(1);
     return true;
@@ -4809,7 +4809,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 //    }
     molBarCharts_.get(groupName).insertTab("Group bar-chart", null,new BarChartPainter(BarChartPainter.TYPE_EXPERIMENT,groupName,getDisplayName(experimentGroupName),resultsForChart,namesVector,this,false,true,
         getMaxIsotopeForSetting(settingVO, maxIsotope,resultsForChart), rtGrouped,true,settingVO, prefUnit, unit, analysisModule_.getCorrectionTypeISLookup().get(groupName),
-        analysisModule_.getCorrectionTypeESLookup().get(groupName),analysisModule_.getModifications().get(groupName),colorChooserDialog_)
+        analysisModule_.getCorrectionTypeESLookup().get(groupName),new ArrayList<String>(analysisModule_.getModifications().get(groupName)),colorChooserDialog_)
     ,null,3);
     molBarCharts_.get(groupName).setSelectedIndex(3);
     return true;

@@ -7,11 +7,9 @@ import java.awt.GradientPaint;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.math.BigDecimal;
 import java.util.Hashtable;
 import java.util.Vector;
 
-import at.tugraz.genome.maspectras.utils.Calculator;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.maspectras.graphics.MacOSResizer;
 
@@ -40,8 +38,6 @@ public abstract class HeatMapGenerator {
   private final static String LABEL_DB_CONFLICT = "\u03C9-DB assignment conflict";
   private final static String LABEL_DB_ASSIGNED = "\u03C9-DB assigned";
   
-  protected float minValue_;
-  protected float maxValue_;
   protected BufferedImage gradient_;
   
   protected int heatRectWidth_ = 20;
@@ -72,8 +68,6 @@ public abstract class HeatMapGenerator {
   
   protected abstract int getColorForValue(float value);
   
-  protected abstract float getColorScale();
-  
   protected abstract String getSampleNameToDisplay(String sampleName);
   
   protected abstract boolean isOSMacAndJavaLookAndFeel();
@@ -83,38 +77,23 @@ public abstract class HeatMapGenerator {
   protected abstract Color getBackgroundColor();
   
   
-  protected void setInputValues(float[][] data, Vector<String> sampleNames, Vector<String> analyteNames, Hashtable<String,Hashtable<String,Color>> attentionValues){
-    this.data_ = data;
-    this.sampleNames_ = sampleNames;
-    this.analyteNames_ = analyteNames;  
-    this.attentionValues_ = attentionValues;
-  }
-  
-  public void init() {
-    this.initGradient();
- }
-  
-  private void initGradient(){
-    this.calculateMinMax();
-    //gradient_ = HeatMapGenerator.createDefaultGradientImage(this.defaultNrOfGradientPixels_);
-    gradient_ = this.createThreeColGradientImage(this.defaultNrOfGradientPixels_);
-    
-  }
-  
-  private void calculateMinMax(){
-    minValue_ = Float.MAX_VALUE;
-    maxValue_ = Float.MIN_VALUE;
-    for (int i=0; i!=data_.length;i++){
-      for (int j=0; j!=data_[0].length;j++){
-        if (data_[i][j]<minValue_)
-          minValue_ = data_[i][j];
-        if (data_[i][j]>maxValue_)
-          maxValue_ = data_[i][j];
-      }
-    }
-    minValue_ = Calculator.roundFloat(minValue_,0,BigDecimal.ROUND_DOWN);
-    maxValue_ = Calculator.roundFloat(maxValue_,0,BigDecimal.ROUND_UP);
-  }
+//  protected void setInputValues(float[][] data, Vector<String> sampleNames, Vector<String> analyteNames, Hashtable<String,Hashtable<String,Color>> attentionValues){
+//    this.data_ = data;
+//    this.sampleNames_ = sampleNames;
+//    this.analyteNames_ = analyteNames;  
+//    this.attentionValues_ = attentionValues;
+//  }
+//  
+//  public void init() {
+//    this.initGradient();
+//  }
+//  
+//  private void initGradient(){
+//    this.calculateMinMax();
+//    //gradient_ = HeatMapGenerator.createDefaultGradientImage(this.defaultNrOfGradientPixels_);
+//    gradient_ = this.createThreeColGradientImage(this.defaultNrOfGradientPixels_);
+//    
+//  }
   
   public BufferedImage createImage() {
     return this.createImage(null);

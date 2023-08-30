@@ -28,6 +28,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Vector;
 
@@ -53,7 +54,7 @@ public class CheckBoxOptionPane extends JDialog implements ActionListener
   
   private final int NR_OF_ROWS = 5;
   private int value_ = JOptionPane.NO_OPTION;
-  private Vector<String> checkBoxStrings_;
+  private ArrayList<String> checkBoxStrings_;
   private Hashtable<String,JCheckBox> checkBoxHash_;
   private boolean showOne_;
 
@@ -65,7 +66,7 @@ public class CheckBoxOptionPane extends JDialog implements ActionListener
    * @param chechboxStrings a list of strings displayed next to the check boxes (each string is an individual check box)
    * @param showOne is false when a single check box should not be displayed
    */
-  private CheckBoxOptionPane(JFrame parent, String title, Vector<String> messages, Vector<String> chechboxStrings, boolean showOne){
+  private CheckBoxOptionPane(JFrame parent, String title, Vector<String> messages, ArrayList<String> chechboxStrings, boolean showOne){
     super(parent, title, true);
     checkBoxStrings_ = chechboxStrings;
     showOne_ = showOne;
@@ -138,7 +139,7 @@ public class CheckBoxOptionPane extends JDialog implements ActionListener
    * @return the checked checkboxes, if cancel is pressed the returned Vector is empty
    */
   
-  public static Vector<String> showConfirmDialog(JFrame parent, String title, Vector<String> messages, Vector<String> chechboxStrings, boolean showOne){  
+  public static Vector<String> showConfirmDialog(JFrame parent, String title, Vector<String> messages, ArrayList<String> chechboxStrings, boolean showOne){  
     CheckBoxOptionPane dialog = new CheckBoxOptionPane(parent, title, messages, chechboxStrings, showOne);
     return dialog.getSelected();
   }

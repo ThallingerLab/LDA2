@@ -23,6 +23,7 @@
 
 package at.tugraz.genome.lda.vos;
 
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Vector;
 
@@ -58,6 +59,8 @@ public class ResultCompVO
   private Vector<Double> correctionFactorMedianIS_;
   private Hashtable<Integer,Vector<Double>> correctionFactorSingleIS_;
   protected Vector<Double> relativeMedianArea_;
+  protected Hashtable<String,ArrayList<Double>> relativeMedianAreas_ = new Hashtable<String,ArrayList<Double>>();
+  public final static String SUM_COMPOSITION = "Sum composition";
   private Vector<Double> areaISInternalComparison_;
   private Vector<Double> areaISMedianComparison_;
   private Hashtable<Integer,Vector<Double>> areaISSingleComparison_;
@@ -359,19 +362,24 @@ public class ResultCompVO
         return 0;
     }
   }
-
-  /**
-   * Attention: the median areas have to be calculated before and set via setRelativeMedianArea(Vector<Double> relativeMedianArea),
-   * before the getRelativeValue can be called!!!
-   * @param maxIsotope
-   * @param standMethod
-   * @param esMethod
-   * @param dilutionFactor
-   * @return
-   */
+   
+  
   public double getRelativeValue(int maxIsotope, ResultDisplaySettingsVO settingVO)
   {
-    if (maxIsotope>=usedIsotpes_ || maxIsotope<0)
+  	return getRelativeValue(maxIsotope, settingVO, SUM_COMPOSITION);
+  }
+  
+  /**
+   * Attention: the median areas have to be calculated before and set via addRelativeMedianArea(ArrayList<Double> relativeMedianArea),
+   * before the getRelativeValue can be called!!!
+   * @param maxIsotope
+   * @param settingVO
+   * @param molecularSpecies
+   * @return
+   */
+  public double getRelativeValue(int maxIsotope, ResultDisplaySettingsVO settingVO, String molecularSpecies)
+  {
+  	if (maxIsotope>=usedIsotpes_ || maxIsotope<0)
       return -1;
     else{
       
@@ -383,16 +391,26 @@ public class ResultCompVO
         // TODO Auto-generated catch block
         e.printStackTrace();
       }
-      Double relativeMedianArea = relativeMedianArea_.get(maxIsotope);
+      Double relativeMedianArea = relativeMedianAreas_.get(molecularSpecies).get(maxIsotope);
 //      if (dilutionFactor && dilutionFactor_ != null)
 //        relativeMedianArea = relativeMedianArea/dilutionFactor_;
       return standardizedArea/relativeMedianArea;
     }
   }
-
-  public void setRelativeMedianArea(Vector<Double> relativeMedianArea)
+  
+  /**
+   * Adds a relative median area. 
+   * @param molecularSpecies				the molecular species this relativeMedianArea belongs to
+   * @param relativeMedianArea			the relative median area per isotope		
+   */
+  public void addRelativeMedianArea(String molecularSpecies, ArrayList<Double> relativeMedianArea)
   {
-    this.relativeMedianArea_ = relativeMedianArea;
+  	this.relativeMedianAreas_.put(molecularSpecies, relativeMedianArea);
+  }
+  
+  public void addRelativeMedianArea(ArrayList<Double> relativeMedianArea)
+  {
+  	addRelativeMedianArea(SUM_COMPOSITION, relativeMedianArea);
   }
 
   public int getUsedIsotpes()

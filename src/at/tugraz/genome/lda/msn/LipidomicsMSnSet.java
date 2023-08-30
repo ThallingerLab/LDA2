@@ -51,7 +51,7 @@ import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.voutils.GeneralComparator;
 
 /**
- *TODO: remove ambig pos.
+ * TODO: remove ambig pos.
  * VO inheriting from LipidParameterSet which contains information about MS1 evidence
  * the additional information of this VO reflects MSn evidence
  * @author Juergen Hartler
@@ -660,7 +660,6 @@ public class LipidomicsMSnSet extends LipidParameterSet
   }
   
   /**
-   * TODO: changed from the original oneliner, is this needed? : return relativeIntensityOfCombination_.get(nameLookupHumReadableToPositionInsensitve_.get(fullName));
    * for splitting of quantified area - returns relative contribution of identification [0...1] 
    * @param fullName the name of the identified lipid species
    * @return relative contribution of this species [0...1]

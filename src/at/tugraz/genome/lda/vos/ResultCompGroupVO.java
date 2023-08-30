@@ -23,6 +23,7 @@
 
 package at.tugraz.genome.lda.vos;
 
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Vector;
 
@@ -675,11 +676,11 @@ public class ResultCompGroupVO extends ResultCompVO
     return values;
   }
   
-  public void setRelativeMedianArea(Vector<Double> relativeMedianArea)
+  public void addRelativeMedianArea(ArrayList<Double> relativeMedianArea)
   {
-    this.relativeMedianArea_ = relativeMedianArea;    
-    for (ResultCompVO groupVO : oneGroup_.values()){
-      groupVO.setRelativeMedianArea(relativeMedianArea);
+  	super.addRelativeMedianArea(relativeMedianArea);
+  	for (ResultCompVO groupVO : oneGroup_.values()){
+      groupVO.addRelativeMedianArea(relativeMedianArea);
     }
   }
   

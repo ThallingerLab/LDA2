@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Vector;
 
@@ -146,7 +147,7 @@ public class BarChartPainter extends JPanel implements ActionListener
   private Hashtable<String,Hashtable<String,Double>> singleResultValues_ = new Hashtable<String,Hashtable<String,Double>>();
   private Hashtable<String,Integer> corrTypeISLookup_;
   private Hashtable<String,Integer> corrTypeESLookup_;
-  Vector<String> modifications_;
+  ArrayList<String> modifications_;
   private String yAxisText_;
   ColorChooserDialog colorChooser_;
   private boolean bigConstructor_ = false;
@@ -182,7 +183,7 @@ public class BarChartPainter extends JPanel implements ActionListener
    */
   public BarChartPainter(int type, String groupName, String moleculeName,Hashtable<String,ResultCompVO> analysisResults,Vector<String> sortedValueNames, SampleLookup lookup,
       boolean useSampleLookup, boolean showSDFields, int maxIsotopes, boolean rtGrouped, boolean isGroupedView, ResultDisplaySettingsVO settingVO, String preferredUnit, String unit,
-      Hashtable<String,Integer> corrTypeISLookup, Hashtable<String,Integer> corrTypeESLookup, Vector<String> modifications, ColorChooserDialog colorChooser){
+      Hashtable<String,Integer> corrTypeISLookup, Hashtable<String,Integer> corrTypeESLookup, ArrayList<String> modifications, ColorChooserDialog colorChooser){
     this(type, groupName, lookup, useSampleLookup, sortedValueNames, showSDFields, maxIsotopes, rtGrouped, isGroupedView, settingVO, preferredUnit,
         unit, corrTypeISLookup, corrTypeESLookup, modifications, colorChooser);
     moleculeNames_.add(moleculeName);
@@ -214,7 +215,7 @@ public class BarChartPainter extends JPanel implements ActionListener
    */
   public BarChartPainter(int type, String groupName, Vector<String> moleculeNames,Hashtable<String,Hashtable<String,ResultCompVO>> analysisResults,Vector<String> sortedValueNames,
       SampleLookup lookup, boolean useSampleLookup, boolean showSDFields, int maxIsotopes, boolean rtGrouped, boolean isGroupedView, ResultDisplaySettingsVO settingVO,
-      String preferredUnit, String unit,Hashtable<String,Integer> corrTypeISLookup, Hashtable<String,Integer> corrTypeESLookup, Vector<String> modifications,
+      String preferredUnit, String unit,Hashtable<String,Integer> corrTypeISLookup, Hashtable<String,Integer> corrTypeESLookup, ArrayList<String> modifications,
       ColorChooserDialog colorChooser){
     this(type, groupName, lookup, useSampleLookup, sortedValueNames, showSDFields, maxIsotopes, rtGrouped, isGroupedView, settingVO, preferredUnit,
         unit,corrTypeISLookup, corrTypeESLookup, modifications, colorChooser);
@@ -245,7 +246,7 @@ public class BarChartPainter extends JPanel implements ActionListener
    */
   private BarChartPainter(int type, String groupName, SampleLookup lookup, boolean useSampleLookup, Vector<String> sortedValueNames, boolean showSDFields,
       int maxIsotopes, boolean rtGrouped, boolean isGroupedView, ResultDisplaySettingsVO settingVO, String preferredUnit, String unit,
-      Hashtable<String,Integer> corrTypeISLookup,  Hashtable<String,Integer> corrTypeESLookup, Vector<String> modifications,
+      Hashtable<String,Integer> corrTypeISLookup,  Hashtable<String,Integer> corrTypeESLookup, ArrayList<String> modifications,
       ColorChooserDialog colorChooser){
     analysisResultsHash_ = new Hashtable<String,Hashtable<String,ResultCompVO>>();
     sampleLookup_ = lookup;
@@ -262,7 +263,7 @@ public class BarChartPainter extends JPanel implements ActionListener
     preferredUnit_ = preferredUnit;
     unit_ = unit;
     modifications_ = modifications;
-    if (modifications_==null) modifications_=new Vector<String>();
+    if (modifications_==null) modifications_=new ArrayList<String>();
     this.setLayout(new BorderLayout());
     barChartPanel_ = new JPanel();
     barChartPanel_.setLayout(new BorderLayout());

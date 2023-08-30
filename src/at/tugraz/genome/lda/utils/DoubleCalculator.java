@@ -23,6 +23,7 @@
 
 package at.tugraz.genome.lda.utils;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Vector;
 
@@ -36,7 +37,13 @@ public class DoubleCalculator
   
   public static Double median(Vector<Double> values)
   {
-    Collections.sort(values);
+  	ArrayList<Double> list = new ArrayList<Double>(values);
+  	return median(list);
+  }
+  
+  public static Double median(ArrayList<Double> values)
+  {
+  	Collections.sort(values);
     Double median;
     if (values.size() > 0) {
       if (values.size() % 2 == 0) {

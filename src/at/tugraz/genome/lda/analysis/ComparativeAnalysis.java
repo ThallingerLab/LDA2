@@ -33,7 +33,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
@@ -1116,18 +1115,19 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
             for (CgProbe probe : zeroIsos){
               sumMass += probe.Mz;
             }
-            Set<LipidParameterSet> lipidParameterSets = ConcurrentHashMap.newKeySet();
-            lipidParameterSets.add(param);
-            areaVO.addResultPart(lipidParameterSets,recentModification, param.getModificationFormula(), param.Mz[0], sumMass/((double)zeroIsos.size()),
+            areaVO.addResultPart(recentModification, param.getModificationFormula(), param.Mz[0], sumMass/((double)zeroIsos.size()),
                 param.getCharge(),param.getRt());
+            
             Hashtable<Integer,Boolean> moreThanOnePeak = new Hashtable<Integer,Boolean>();
             modifications.put(recentModification, recentModification);
+            
+            double totalAreaBefore = areaVO.getTotalArea(recentModification);
             
             for (Vector<CgProbe> probes : param.getIsotopicProbes()){
               int isotope = 0;
               if (probes.size()>0) isotope = probes.get(0).isotopeNumber;
               for (CgProbe probe : probes){
-                Hashtable<Integer,Boolean> mtp = areaVO.addArea(lipidParameterSets,recentModification,isotope,probe.Area);
+                Hashtable<Integer,Boolean> mtp = areaVO.addArea(recentModification,isotope,probe.Area);
                 if (mtp!=null) moreThanOnePeak = mtp;
                 if (isotope==0 && probe.Area>highestZeroIsoArea){
                   retentionTime = probe.Peak/60f;
@@ -1141,8 +1141,10 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
                 }else
                   moreThanOnePeak.put(iso, false);
               }
-              
             }
+            
+            areaVO.addMolecularSpeciesContribution(recentModification, totalAreaBefore, param);
+            areaVO.addLipidParameterSet(param);
             areaVO.setRetentionTime(recentModification,retentionTime);
             areaVO.setMoreThanOnePeak(recentModification,moreThanOnePeak);
             

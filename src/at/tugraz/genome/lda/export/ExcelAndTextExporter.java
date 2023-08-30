@@ -26,6 +26,7 @@ package at.tugraz.genome.lda.export;
 import java.awt.Color;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.Vector;
@@ -96,7 +97,7 @@ public class ExcelAndTextExporter extends LDAExporter
   public static void exportToFile(boolean includeResultFiles, short speciesType, boolean exportDoubleBondPositionsForClass, String sheetName, OutputStream out, boolean excelFile, int maxIsotope, Vector<String> molNames, 
       boolean isRtGrouped, boolean isGrouped, Vector<String> expIdNames, Hashtable<String,String> expNames, LinkedHashMap<String,String> expFullPaths,
       LinkedHashMap<String,Vector<String>> expsOfGroup, Hashtable<String,Hashtable<String,Vector<Double>>> results,
-      String preferredUnit, String headerText, ExportOptionsVO expVO, ComparativeResultsLookup compLookup, Vector<String> modifications)
+      String preferredUnit, String headerText, ExportOptionsVO expVO, ComparativeResultsLookup compLookup, ArrayList<String> modifications)
           throws ExportException,
       SpectrummillParserException, ExcelInputFileException, IOException, LipidCombinameEncodingException, RetentionTimeGroupingException{
     
@@ -170,7 +171,7 @@ public class ExcelAndTextExporter extends LDAExporter
    */
   private static void writeToFile(String sheetName, OutputStream out, boolean excelFile, LinkedHashMap<String,SummaryVO> molSpeciesDetails,
       boolean isGrouped, Vector<String> expIdNames, Hashtable<String,String> expNames, LinkedHashMap<String,Vector<String>> expsOfGroup,
-      String preferredUnit, ExportOptionsVO expVO, Vector<String> modifications) throws IOException{
+      String preferredUnit, ExportOptionsVO expVO, ArrayList<String> modifications) throws IOException{
     Workbook workbook = null;
     Sheet sheet = null;
     Row row = null;
