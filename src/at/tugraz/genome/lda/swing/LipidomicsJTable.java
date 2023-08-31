@@ -361,10 +361,15 @@ public class LipidomicsJTable extends JTable implements ActionListener
     }
   }
   
-  
-  public String getSumLipidNameAt(int rowIndex){
-    return ((LipidomicsTableModel)super.getModel()).getSumLipidNameAt(rowIndex);
+  public String getDisplayedNameAt(int rowIndex)
+  {
+  	return ((LipidomicsTableModel)super.getModel()).getDisplayedNameAt(rowIndex);
   }
+  
+  
+//  public String getSumLipidNameAt(int rowIndex){
+//    return ((LipidomicsTableModel)super.getModel()).getSumLipidNameAt(rowIndex);
+//  }
   
   /**
    * depending on the currently displayed view, activates or deactivates the corresponding buttons

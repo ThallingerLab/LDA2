@@ -811,6 +811,21 @@ public class LipidomicsHeatMap
 		return this.heatMapRows_.get(row).getMolecularSpeciesName();
 	}
 	
+	public String getSumCompositionName(int row)
+	{
+		return this.heatMapRows_.get(row).getSumCompositionName();
+	}
+	
+	public String getRetentionTime(int row)
+	{
+		return this.heatMapRows_.get(row).getRtGroup();
+	}
+	
+	public boolean isMolecularSpeciesLevel(int column, int row)
+	{
+		return !this.heatMapRows_.get(row).getMolecularSpeciesName().equals(ResultCompVO.SUM_COMPOSITION);
+	}
+	
 	public String extractPreferredUnitForExp()
 	{
     List<Integer> unitValues = new ArrayList<Integer>();
@@ -928,16 +943,12 @@ public class LipidomicsHeatMap
 	
 	public String getAnalyteName(int row)
 	{
-		String name = null;
-		if (row >= 0 && row < analyteNames_.size()) name = analyteNames_.get(row);
-		return name;
+		return analyteNames_.get(row);
 	}
 	
 	public String getOriginalAnalyteName(int row)
 	{
-		String name = null;
-		if (row >= 0 && row < heatMapRows_.size()) name = heatMapRows_.get(row).getOriginalAnalyteName();
-		return name;
+		return heatMapRows_.get(row).getOriginalAnalyteName();
 	}
 	
 	public String getExperimentName(int column)

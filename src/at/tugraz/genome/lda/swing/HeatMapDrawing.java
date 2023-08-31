@@ -1158,14 +1158,15 @@ public class HeatMapDrawing extends JPanel implements ActionListener
           {
           	int[] cellPos = heatmap_.getCellPosition(xInImage, yInImage);
             String experiment = heatmap_.getExperimentName(cellPos[0]);
-            String analyte = heatmap_.getAnalyteName(cellPos[1]);
+            boolean isMolecularSpeciesLevel = heatmap_.isMolecularSpeciesLevel(cellPos[0],cellPos[1]);
+            String analyte = isMolecularSpeciesLevel ? heatmap_.getMolecularSpeciesLevelName(cellPos[1]) : heatmap_.getSumCompositionName(cellPos[1]);
             if (experiment!=null && analyte!=null)
             {
               ResultCompVO compVO = heatmap_.getCompVO(cellPos[0],cellPos[1]);
               if (compVO.getOriginalArea(0)>0 && heatMapListener_!=null){
                 if (!isGrouped_){
                   if (e.getButton()==MouseEvent.BUTTON1){
-                    if (!heatMapListener_.heatMapClicked(experiment,compVO.getAbsoluteFilePath(),analyte))
+                    if (!heatMapListener_.heatMapClicked(experiment,compVO.getAbsoluteFilePath(),analyte,heatmap_.getRetentionTime(cellPos[1]),isMolecularSpeciesLevel));
                       this.mouseMoved(e);
                   }else if (e.getButton()==MouseEvent.BUTTON3 || e.isPopupTrigger()){
                   	Color attentionProbe = heatmap_.getAttentionProbe(cellPos[1], experiment);

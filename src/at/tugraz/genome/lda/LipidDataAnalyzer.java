@@ -4554,10 +4554,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     selectionPane.setVisible(true);
   }
 
-  public boolean heatMapClicked(String experimentName, String resultFilePath,  String moleculeNameIn)
+  public boolean heatMapClicked(String experimentName, String resultFilePath, String moleculeName, String rt, boolean showMSn)
   {
     File resultsFile = new File (resultFilePath);
-    String moleculeName = new String(moleculeNameIn);
     if (resultsFile.exists()&&resultsFile.isFile()){
       selectedResultFile.setText(resultFilePath);
       String chromFileBase = StaticUtils.extractChromBaseName(resultFilePath,experimentName);
@@ -4575,14 +4574,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         startDisplay.doClick();
         String sheetToSelect = resultTabs_.getTitleAt(resultTabs_.getSelectedIndex());
         selectedSheet_.setSelectedItem(sheetToSelect);
+        displayTolerancePanel_.getShowMSnNames().setSelected(showMSn);
         String moelculeTableName = null;
-//        String rtInTableName = null;
         int selection = -1;
-        String[] molRtAndMod = StaticUtils.extractMoleculeRtAndModFromMoleculeName(moleculeName);
-        moleculeName = molRtAndMod[0];
-        String rt = molRtAndMod[1];
         for (int i=0;i!=this.displayTable_.getRowCount();i++){
-          String moleculeInTable = (String)this.displayTable_.getSumLipidNameAt(i);
+          String moleculeInTable = (String)this.displayTable_.getDisplayedNameAt(i);
           if (moleculeInTable.startsWith(moleculeName)){
             boolean found = false;
             if (rt==null) found = true;
@@ -4592,7 +4588,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
               try{
                 if (analysisModule_.isWithinRtGroupingBoundaries(Double.valueOf(rtInTableString), Double.valueOf(rt))){
                   found=true;
-//                  rtInTableName = rtInTableString;
                 }
               }catch(NumberFormatException nfx){}
             }
@@ -4601,9 +4596,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
               if (this.displaysMs2_){
                 int j=i;
                 boolean foundMsn = false;
-                while (j<displayTable_.getRowCount() && ((String)this.displayTable_.getSumLipidNameAt(j)).startsWith(moleculeName)){
+                while (j<displayTable_.getRowCount() && ((String)this.displayTable_.getDisplayedNameAt(j)).startsWith(moleculeName)){
                   if (((LipidomicsTableModel)displayTable_.getModel()).hasMS2Evidence(j)){
-                    String moleculeInTableMsn = (String)this.displayTable_.getSumLipidNameAt(j);
+                    String moleculeInTableMsn = (String)this.displayTable_.getDisplayedNameAt(j);
                     if (rt==null) foundMsn = true;
                     else{
                       String rtInTableString = moleculeInTableMsn.substring(moleculeName.length()+1);
@@ -4621,7 +4616,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                 }
                 if (foundMsn && i!=j){
                   i = j;
-                  moleculeInTable = (String)this.displayTable_.getSumLipidNameAt(i);
+                  moleculeInTable = (String)this.displayTable_.getDisplayedNameAt(i);
                 }
               }
               moelculeTableName = moleculeInTable;

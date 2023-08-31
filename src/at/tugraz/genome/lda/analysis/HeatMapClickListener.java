@@ -37,7 +37,7 @@ import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
  */
 public interface HeatMapClickListener extends SampleLookup
 {
-  public boolean heatMapClicked(String experimentName, String resultFilePath,  String moleculeName);
+  public boolean heatMapClicked(String experimentName, String resultFilePath,  String moleculeName, String rt, boolean showMSn);
   
   /**
    * showing a bar chart when a specific analyte was clicked

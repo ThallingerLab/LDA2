@@ -236,9 +236,14 @@ public class LipidomicsTableModel extends DefaultTableModel implements TableMode
     return null;
   }
   
-  public String getSumLipidNameAt(int rowIndex){
-    LipidParameterSet param = rowToParam_.get(rowIndex);
-    return getLipidParamsDisplayString(param,param.getNameString());
+//  public String getSumLipidNameAt(int rowIndex){
+//    LipidParameterSet param = rowToParam_.get(rowIndex);
+//    return getLipidParamsDisplayString(param,param.getNameString());
+//  }
+  
+  public String getDisplayedNameAt(int rowIndex)
+  {
+  	return rowToName_.get(rowIndex);
   }
   
   /**
