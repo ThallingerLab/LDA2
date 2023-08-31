@@ -53,9 +53,11 @@ import java.util.Collections;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.imageio.ImageIO;
 import javax.swing.Icon;
@@ -150,8 +152,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   protected JLabel spinnerLabel_;
   protected JButton cancelExport_;
   
-  
-  private Hashtable<String,String> selectedMolecules_;
+  private Set<Integer> selectedMoleculeRows_;
   /** when single items in the heat map are selected; first key: analyte name; second key: experiment name*/
   private Hashtable<String,Hashtable<String,Color>> selectedSingleMolecules_;
   /** stores the possible modifications when single items in the heat map are selected; first key: analyte name; second key: modification; value: modification*/
@@ -184,7 +185,8 @@ public class HeatMapDrawing extends JPanel implements ActionListener
 //  private String lastClickedMol_;
 //  private ResultCompVO lastClickedResultVO_;
   private int[] lastClickedCellPos_;
-  private String lastClickedAnalyte_;
+//  private String lastClickedAnalyte_;
+  private int lastClickedRow_;
   private ArrayList<String> modifications_;
   private ChromExportDialog chromExport_;
   private Hashtable<String,String> fromShortToExpName_;
@@ -242,7 +244,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     
     settingsVO_ = displaySettings_.getSettingsVO();
     
-  	selectedMolecules_ = new Hashtable<String,String>();
+    selectedMoleculeRows_ = ConcurrentHashMap.newKeySet();
     selectedSingleMolecules_ = new Hashtable<String,Hashtable<String,Color>>();
     selectedSingleMoleculesMods_ = new Hashtable<String,Hashtable<String,String>>(); 
     selectedSingleMoleculesAbsPaths_ = new Hashtable<String,String>();
@@ -880,47 +882,47 @@ public class HeatMapDrawing extends JPanel implements ActionListener
           new WarningMessage(new JFrame(), "Error", "There are no  peaks to add for "+molName+"!");
       }
     } else if (actionCommand.equalsIgnoreCase("Remove analyte in all probes")){
-      Hashtable<String,String> selectedAnalytes = new Hashtable<String,String>(selectedMolecules_);
-      selectedAnalytes.put(lastClickedAnalyte_, lastClickedAnalyte_);
-      String analyteList = "";
-      for (String analName : selectedAnalytes.keySet()) analyteList += analName+", ";
-      Vector<String> messages = new Vector<String>();
-      messages.add("Do you really want to delete "+groupName_+" "+analyteList+" in all probes?");
-      Vector<String> selectedMods = CheckBoxOptionPane.showConfirmDialog(new JFrame(), "Confirmation", messages, modifications_,false);
-      if (selectedMods.size()>0){
-        Hashtable<String,String> foundUpdate = new Hashtable<String,String>();
-        Hashtable<Integer,Integer> rowsWhereFound = new Hashtable<Integer,Integer>();
-        for (int i=0;i!=this.moleculeNames_.size();i++){
-          if (selectedAnalytes.containsKey(moleculeNames_.get(i)))
-            rowsWhereFound.put(i, i);
-        }
-        
-        for (Integer rowWhereFound: rowsWhereFound.keySet()){
-          for (int i=0;i!=experimentNames_.size();i++){
-            ResultCompVO otherVO = heatmap_.getCompVO(i, rowWhereFound);
-            if (otherVO.getAbsoluteFilePath()!=null && otherVO.getAbsoluteFilePath().length()>0 && otherVO.existsInFile()){
-              boolean foundMod = false;
-              for (String modName : selectedMods){
-                if (otherVO.containsMod(modName))foundMod = true; 
-              }
-              if (foundMod)
-                foundUpdate.put(otherVO.getAbsoluteFilePath(),otherVO.getAbsoluteFilePath());
-            }  
-          }
-        }
-        heatMapListener_.eliminateAnalyteEverywhere(groupName_, selectedAnalytes, selectedMods, new Vector<String>(foundUpdate.values()));
-      }
+//      Hashtable<String,String> selectedAnalytes = new Hashtable<String,String>(selectedMolecules_);
+//      selectedAnalytes.put(lastClickedAnalyte_, lastClickedAnalyte_);
+//      String analyteList = "";
+//      for (String analName : selectedAnalytes.keySet()) analyteList += analName+", ";
+//      Vector<String> messages = new Vector<String>();
+//      messages.add("Do you really want to delete "+groupName_+" "+analyteList+" in all probes?");
+//      Vector<String> selectedMods = CheckBoxOptionPane.showConfirmDialog(new JFrame(), "Confirmation", messages, modifications_,false);
+//      if (selectedMods.size()>0){
+//        Hashtable<String,String> foundUpdate = new Hashtable<String,String>();
+//        Hashtable<Integer,Integer> rowsWhereFound = new Hashtable<Integer,Integer>();
+//        for (int i=0;i!=this.moleculeNames_.size();i++){
+//          if (selectedAnalytes.containsKey(moleculeNames_.get(i)))
+//            rowsWhereFound.put(i, i);
+//        }
+//        
+//        for (Integer rowWhereFound: rowsWhereFound.keySet()){
+//          for (int i=0;i!=experimentNames_.size();i++){
+//            ResultCompVO otherVO = heatmap_.getCompVO(i, rowWhereFound);
+//            if (otherVO.getAbsoluteFilePath()!=null && otherVO.getAbsoluteFilePath().length()>0 && otherVO.existsInFile()){
+//              boolean foundMod = false;
+//              for (String modName : selectedMods){
+//                if (otherVO.containsMod(modName))foundMod = true; 
+//              }
+//              if (foundMod)
+//                foundUpdate.put(otherVO.getAbsoluteFilePath(),otherVO.getAbsoluteFilePath());
+//            }  
+//          }
+//        }
+//        heatMapListener_.eliminateAnalyteEverywhere(groupName_, selectedAnalytes, selectedMods, new Vector<String>(foundUpdate.values()));
+//      }
     }else if (actionCommand.equalsIgnoreCase("Select analyte") || actionCommand.equalsIgnoreCase("Deselect analyte")){  
       Graphics2D g2 = (Graphics2D)renderedImage_.getGraphics();
-      this.selectAnalyte(lastClickedAnalyte_);
+      this.selectAnalyte(lastClickedRow_);
       if (actionCommand.equalsIgnoreCase("Select analyte")){
-        this.selectAnalyte(lastClickedAnalyte_);
+        this.selectAnalyte(lastClickedRow_);
         g2.setColor(Color.BLUE);
       }else if (actionCommand.equalsIgnoreCase("Deselect analyte")){
         g2.setColor(Color.BLACK);
-        this.deselectAnalyte(lastClickedAnalyte_);
+        this.deselectAnalyte(lastClickedRow_);
       }  
-      Rectangle rectForName = heatmap_.getRectangleForRowName(lastClickedAnalyte_);
+      Rectangle rectForName = heatmap_.getRectangleForRowNumber(lastClickedRow_);
       rectForName.setLocation(new Point(rectForName.getLocation().x+imagePositionX_,rectForName.getLocation().y+imagePositionY_));
       g2.fillRect(rectForName.x+1,rectForName.y+1, rectForName.width-2, rectForName.height-2);
       Font descriptionFont = new Font("Dialog",Font.PLAIN, 9);
@@ -928,7 +930,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       int textHeight = descriptionFontMetrics.getHeight();
       g2.setColor(Color.WHITE);
       g2.setFont(descriptionFont);
-      g2.drawString(lastClickedAnalyte_,rectForName.x+1,rectForName.y + textHeight/2);
+      g2.drawString(heatmap_.getAnalyteName(lastClickedRow_),rectForName.x+1,rectForName.y + textHeight/2);
       this.invalidate();
       this.updateUI();
     } else if (actionCommand.equalsIgnoreCase("stopChromExport")){
@@ -985,7 +987,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         g2.setColor(Color.BLUE);
       }else if (actionCommand.equalsIgnoreCase("Deselect")){
         g2.setColor(this.deselectAnalyte(moleculeNames_.get(lastClickedCellPos_[1]),experimentNames_.get(lastClickedCellPos_[0])));
-        if (isMarkDoublePeaks() && heatmap_.getAttentionProbe(moleculeNames_.get(lastClickedCellPos_[1]), experimentNames_.get(lastClickedCellPos_[0])) != null)
+        if (isMarkDoublePeaks() && heatmap_.getAttentionProbe(lastClickedCellPos_[1], experimentNames_.get(lastClickedCellPos_[0])) != null)
         {
           printAttentionRectangle = true;
         }
@@ -1108,13 +1110,15 @@ public class HeatMapDrawing extends JPanel implements ActionListener
             }
           } else if (heatmap_.getRowNameStart()<xInImage&& xInImage<heatmap_.getRowNameEnd() &&
               heatmap_.getExpressionImageYStart()<=yInImage&&yInImage<heatmap_.getExpressionImageYEnd()){
-            String analyteName = heatmap_.getRowName(x,y);
-              rectToDraw_ = heatmap_.getRectangleForRowName(analyteName);
-              this.drawARectangle(g2);
+          	int rowNumber = heatmap_.getRowNumber(x, y);
+            rectToDraw_ = heatmap_.getRectangleForRowNumber(rowNumber);
+            this.drawARectangle(g2);
           } else if (heatmap_.getExpressionImageXStart()<=xInImage&&xInImage<heatmap_.getExpressionImageXEnd()&&
-              heatmap_.getColumnNameStart()<=yInImage&&yInImage<heatmap_.getColumnNameEnd()){
+              heatmap_.getColumnNameStart()<=yInImage&&yInImage<heatmap_.getColumnNameEnd())
+          {
             String expName = heatmap_.getColumnName(x,y);
-            if (expName!=null&&expName.length()>0){
+            if (expName!=null&&expName.length()>0)
+            {
               rectToDraw_ = heatmap_.getRectangleForColumnName(expName);
               this.drawARectangle(g2);              
             }
@@ -1203,7 +1207,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
                 returnValue = heatMapListener_.analyteClicked(analyteName,groupName_,maxIsotopes,rtTolerance_!=null,
                     settingsVO_,heatmap_.getPreferredUnit(rowNumber),StaticUtils.getCorrespondingUnit(settingsVO_, heatmap_.getPreferredUnit(rowNumber),true));
               } else if (SwingUtilities.isRightMouseButton(e)){
-                if (isAnalyteSelected(analyteName)){
+                if (isAnalyteSelected(rowNumber)){
                   selectItem_.setEnabled(false);
                   deselectItem_.setEnabled(true);
                 }else{
@@ -1211,7 +1215,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
                   deselectItem_.setEnabled(false);                  
                 }                  
                 removeAnalytePopup_.show(e.getComponent(), e.getX(), e.getY());
-                lastClickedAnalyte_ = analyteName;
+                lastClickedRow_ = rowNumber;
               }
             } 
             if (!returnValue)
@@ -1311,20 +1315,19 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     parentAction_ = true;
   }
 
-  public void deselectAnalyte(String analyteName)
+  public void deselectAnalyte(int row)
   {
-    selectedMolecules_.remove(analyteName);
+  	selectedMoleculeRows_.remove(row);
   }
 
-  public boolean isAnalyteSelected(String analyteName)
+  public boolean isAnalyteSelected(int row)
   {
-    return selectedMolecules_.containsKey(analyteName);
+    return selectedMoleculeRows_.contains(row);
   }
 
-  public void selectAnalyte(String analyteName)
+  public void selectAnalyte(int row)
   {
-    selectedMolecules_.put(analyteName, analyteName);
-    
+  	selectedMoleculeRows_.add(row);
   }
 
   /**

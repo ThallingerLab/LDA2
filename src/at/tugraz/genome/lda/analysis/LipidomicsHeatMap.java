@@ -172,10 +172,6 @@ public class LipidomicsHeatMap
 		Hashtable<String,Color> attentionValues = new Hashtable<String,Color>();
 		for (int i=0;i!=this.sampleNames_.size();i++)
     {
-			if (row.getSumCompositionName().equals("28:0") && row.getRtGroup().equals("12.83"))
-			{
-				System.out.println(row.getAnalyteName());
-			}
 			String experiment = this.sampleNames_.get(i);
 			double relativeValue = -1d;
 			if (isReasonableIdentification(name, resultsOfOneSumComp, experiment))
@@ -663,19 +659,10 @@ public class LipidomicsHeatMap
     return this.getRowNameStart()+this.analyteTextWidthMax_;
   }
   
-  public Rectangle getRectangleForRowName(String rowName){
-    int rowPosition = -1;
-    int count = 0;
-    for (String name : this.analyteNames_){
-      if (rowName.equalsIgnoreCase(name)){
-        rowPosition = count;
-        break;
-      }
-      count++;
-    }
+  public Rectangle getRectangleForRowNumber(int row){
     Rectangle rect = null;
-    if (rowPosition>=0){
-      rect = new Rectangle(this.getRowNameStart(),this.heatRectHeight_ * rowPosition+getExpressionImageYStart(),
+    if (row>=0){
+      rect = new Rectangle(this.getRowNameStart(),this.heatRectHeight_ * row+getExpressionImageYStart(),
           this.analyteTextWidthMax_+this.analyteNameSpace_, this.heatRectHeight_);
     }
     return rect;
