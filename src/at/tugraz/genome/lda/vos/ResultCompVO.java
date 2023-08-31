@@ -366,7 +366,7 @@ public class ResultCompVO
   
   public double getRelativeValue(int maxIsotope, ResultDisplaySettingsVO settingVO)
   {
-  	return getRelativeValue(maxIsotope, settingVO, SUM_COMPOSITION);
+  	return getRelativeValue(maxIsotope, settingVO, SUM_COMPOSITION, 1.0);
   }
   
   /**
@@ -375,9 +375,10 @@ public class ResultCompVO
    * @param maxIsotope
    * @param settingVO
    * @param molecularSpecies
+   * @param molecularSpeciesContribution
    * @return
    */
-  public double getRelativeValue(int maxIsotope, ResultDisplaySettingsVO settingVO, String molecularSpecies)
+  public double getRelativeValue(int maxIsotope, ResultDisplaySettingsVO settingVO, String molecularSpecies, double molecularSpeciesContribution)
   {
   	if (maxIsotope>=usedIsotpes_ || maxIsotope<0)
       return -1;
@@ -385,7 +386,7 @@ public class ResultCompVO
       
       Double standardizedArea = null;
       try {
-        standardizedArea = getArea(maxIsotope, settingVO);
+        standardizedArea = getArea(maxIsotope, settingVO) * molecularSpeciesContribution;
       }
       catch (CalculationNotPossibleException e) {
         // TODO Auto-generated catch block

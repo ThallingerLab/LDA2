@@ -1081,7 +1081,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
                 int maxIsotope = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
                 String statusText = "";
                 try {
-                  double relativeValue = compVO.getRelativeValue(compVO.getAvailableIsotopeNr(maxIsotope),settingsVO_,molName);
+                  double relativeValue = compVO.getRelativeValue(compVO.getAvailableIsotopeNr(maxIsotope),settingsVO_,molName,heatmap_.getMolecularSpeciesContributionOfAllMods(experiment, cellPos[1]));
                   String sampleTypeText = "Sample";
                   if (isGrouped_) sampleTypeText = "Group";
                   statusText = "Lipid: "+analyte+"; "+sampleTypeText+": "+experiment+"; Relative: "+StaticUtils.extractDisplayValue(relativeValue);

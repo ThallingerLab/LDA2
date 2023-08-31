@@ -172,6 +172,10 @@ public class LipidomicsHeatMap
 		Hashtable<String,Color> attentionValues = new Hashtable<String,Color>();
 		for (int i=0;i!=this.sampleNames_.size();i++)
     {
+			if (row.getSumCompositionName().equals("28:0") && row.getRtGroup().equals("12.83"))
+			{
+				System.out.println(row.getAnalyteName());
+			}
 			String experiment = this.sampleNames_.get(i);
 			double relativeValue = -1d;
 			if (isReasonableIdentification(name, resultsOfOneSumComp, experiment))
@@ -179,8 +183,6 @@ public class LipidomicsHeatMap
       	ResultCompVO compVO = resultsOfOneSumComp.get(experiment);
       	compVO.addRelativeMedianArea(name, median);
       	row.addCompVO(experiment, compVO);
-      	relativeValue = computeRelativeValue(compVO, maxIsotope, settingVO, name);
-      	row.addRelativeValue(experiment, relativeValue);
       	if (name.equals(ResultCompVO.SUM_COMPOSITION) && this.isMarkDoublePeaks_)
       	{
       		computeAttentionValuesRow(attentionValues, experiment, compVO, maxIsotope, sumCompositionName);
@@ -189,6 +191,8 @@ public class LipidomicsHeatMap
       	{
       		row.addMolecularSpeciesContributionOfAllMods(experiment, compVO.getResultMolecule().getMolecularSpeciesContributionOfAllMods(name));
       	}
+      	relativeValue = computeRelativeValue(compVO, maxIsotope, settingVO, name, row.getMolecularSpeciesContribution(experiment));
+      	row.addRelativeValue(experiment, relativeValue);
       }
 			else
       {
@@ -269,9 +273,9 @@ public class LipidomicsHeatMap
   	return values;
   }
   
-  private Double computeRelativeValue(ResultCompVO compVO, int maxIsotope, ResultDisplaySettingsVO settingVO, String molecularSpecies)
+  private Double computeRelativeValue(ResultCompVO compVO, int maxIsotope, ResultDisplaySettingsVO settingVO, String molecularSpecies, double molecularSpeciesContribution)
   {
-  	double relativeValue = compVO.getRelativeValue(compVO.getAvailableIsotopeNr(maxIsotope), settingVO, molecularSpecies);
+  	double relativeValue = compVO.getRelativeValue(compVO.getAvailableIsotopeNr(maxIsotope), settingVO, molecularSpecies, molecularSpeciesContribution);
     if (Double.isInfinite(relativeValue)||Double.isNaN(relativeValue))
       relativeValue = -1d;
   	return relativeValue;
@@ -791,6 +795,12 @@ public class LipidomicsHeatMap
 		return this.heatMapRows_.get(row).getCompVO(this.sampleNames_.get(column));
 	}
 	
+	/**
+	 * 
+	 * @param name		the name of the experiment
+	 * @param row
+	 * @return
+	 */
 	public Double getMolecularSpeciesContributionOfAllMods(String name, int row)
 	{
 		return this.heatMapRows_.get(row).getMolecularSpeciesContribution(name);
@@ -1004,9 +1014,7 @@ public class LipidomicsHeatMap
 	  
 	  private String getAnalyteName()
 	  {
-	  	return getSumCompositionName()+"_"
-	  			+getMolecularSpeciesName()+"_"
-	  			+getRtGroup();
+	  	return String.format("%s ... %s min ... %s", getSumCompositionName(), getRtGroup(), getMolecularSpeciesName());
 	  }
 	  
 	  private String getOriginalAnalyteName()

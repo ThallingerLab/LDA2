@@ -3527,15 +3527,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       exportSettingsGroup_ = new ExportSettingsPanel(true,this);
     
     long before = System.currentTimeMillis();
-    ExecutorService threadpool = Executors.newFixedThreadPool(Math.min(analysisResults.keySet().size(), getAmountOfProcessorsPreferred()));
+    //TODO: for threadpool return the panels or put them in a hashtable to add them one after the other afterwards; JTabbedPane is not threadsafe.
+//    ExecutorService threadpool = Executors.newFixedThreadPool(Math.min(analysisResults.keySet().size(), getAmountOfProcessorsPreferred()));
     for (String molGroup : analysisResults.keySet())
     {
-//    	HeatMapBuilder builder = new HeatMapBuilder(displaySettingHash, molGroup);
-//    	builder.run();
-    	threadpool.execute(new HeatMapBuilder(displaySettingHash, molGroup));
+    	HeatMapBuilder builder = new HeatMapBuilder(displaySettingHash, molGroup);
+    	builder.run();
+//    	threadpool.execute(new HeatMapBuilder(displaySettingHash, molGroup));
     }
-    threadpool.shutdown();
-    try { threadpool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); } catch (InterruptedException e) {}
+//    threadpool.shutdown();
+//    try { threadpool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); } catch (InterruptedException e) {}
     
     System.out.println(String.format("Time required by the heatmap gen in total: %s !", 
     		(System.currentTimeMillis()-before)/1000.0));
