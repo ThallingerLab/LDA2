@@ -793,7 +793,18 @@ public class LipidomicsHeatMap
 		return this.heatMapRows_.get(row).getMolecularSpeciesContribution(name);
 	}
 	
+	/**
+	 * Returns sum composition level name if the row corresponds to this level of identification,
+	 * otherwise the molecular species name
+	 * @param row
+	 * @return
+	 */
 	public String getMolecularSpeciesLevelName(int row)
+	{
+		return isMolecularSpeciesLevel(row) ? getMolecularSpeciesName(row) : getSumCompositionName(row);
+	}
+	
+	public String getMolecularSpeciesName(int row)
 	{
 		return this.heatMapRows_.get(row).getMolecularSpeciesName();
 	}
@@ -808,7 +819,7 @@ public class LipidomicsHeatMap
 		return this.heatMapRows_.get(row).getRtGroup();
 	}
 	
-	public boolean isMolecularSpeciesLevel(int column, int row)
+	public boolean isMolecularSpeciesLevel(int row)
 	{
 		return !this.heatMapRows_.get(row).getMolecularSpeciesName().equals(ResultCompVO.SUM_COMPOSITION);
 	}
@@ -1048,11 +1059,6 @@ public class LipidomicsHeatMap
 		private String getPreferredUnit()
 		{
 			return preferredUnit_;
-		}
-
-		private Hashtable<String,ResultCompVO> getCompVOs()
-		{
-			return compVOs_;
 		}
 		
 		private void addCompVO(String experimentName, ResultCompVO compVO)

@@ -882,36 +882,39 @@ public class HeatMapDrawing extends JPanel implements ActionListener
           new WarningMessage(new JFrame(), "Error", "There are no  peaks to add for "+molName+"!");
       }
     } else if (actionCommand.equalsIgnoreCase("Remove analyte in all probes")){
-//      Hashtable<String,String> selectedAnalytes = new Hashtable<String,String>(selectedMolecules_);
-//      selectedAnalytes.put(lastClickedAnalyte_, lastClickedAnalyte_);
-//      String analyteList = "";
-//      for (String analName : selectedAnalytes.keySet()) analyteList += analName+", ";
-//      Vector<String> messages = new Vector<String>();
-//      messages.add("Do you really want to delete "+groupName_+" "+analyteList+" in all probes?");
-//      Vector<String> selectedMods = CheckBoxOptionPane.showConfirmDialog(new JFrame(), "Confirmation", messages, modifications_,false);
-//      if (selectedMods.size()>0){
-//        Hashtable<String,String> foundUpdate = new Hashtable<String,String>();
-//        Hashtable<Integer,Integer> rowsWhereFound = new Hashtable<Integer,Integer>();
-//        for (int i=0;i!=this.moleculeNames_.size();i++){
-//          if (selectedAnalytes.containsKey(moleculeNames_.get(i)))
-//            rowsWhereFound.put(i, i);
-//        }
-//        
-//        for (Integer rowWhereFound: rowsWhereFound.keySet()){
-//          for (int i=0;i!=experimentNames_.size();i++){
-//            ResultCompVO otherVO = heatmap_.getCompVO(i, rowWhereFound);
-//            if (otherVO.getAbsoluteFilePath()!=null && otherVO.getAbsoluteFilePath().length()>0 && otherVO.existsInFile()){
-//              boolean foundMod = false;
-//              for (String modName : selectedMods){
-//                if (otherVO.containsMod(modName))foundMod = true; 
-//              }
-//              if (foundMod)
-//                foundUpdate.put(otherVO.getAbsoluteFilePath(),otherVO.getAbsoluteFilePath());
-//            }  
-//          }
-//        }
-//        heatMapListener_.eliminateAnalyteEverywhere(groupName_, selectedAnalytes, selectedMods, new Vector<String>(foundUpdate.values()));
-//      }
+    	Set<Integer> analytesToRemove = ConcurrentHashMap.newKeySet();
+    	analytesToRemove.addAll(selectedMoleculeRows_);
+    	analytesToRemove.add(lastClickedRow_);
+    	Set<String> selectedAnalytes = ConcurrentHashMap.newKeySet();
+      String analyteList = "";
+      for (Integer analyteRow : analytesToRemove)
+      {
+      	analyteList += String.format("%s (RT=%s min), ", heatmap_.getMolecularSpeciesLevelName(analyteRow), heatmap_.getRetentionTime(analyteRow));
+      	selectedAnalytes.add(heatmap_.getOriginalAnalyteName(analyteRow));
+      }		
+      Vector<String> messages = new Vector<String>();
+      messages.add(String.format("Do you really want to delete %s %sin all probes?", groupName_, analyteList));
+      Vector<String> selectedMods = CheckBoxOptionPane.showConfirmDialog(new JFrame(), "Confirmation", messages, modifications_,false);
+      if (selectedMods.size()>0)
+      {
+      	Set<String> foundUpdate = ConcurrentHashMap.newKeySet();
+      	for (Integer rowWhereFound : analytesToRemove){
+      		for (int i=0;i!=experimentNames_.size();i++)
+          {
+            ResultCompVO otherVO = heatmap_.getCompVO(i, rowWhereFound);
+            if (otherVO.getAbsoluteFilePath()!=null && otherVO.getAbsoluteFilePath().length()>0 && otherVO.existsInFile()){
+              boolean foundMod = false;
+              for (String modName : selectedMods){
+                if (otherVO.containsMod(modName))foundMod = true; 
+              }
+              if (foundMod)
+              	foundUpdate.add(otherVO.getAbsoluteFilePath());
+            }  
+          }
+        }
+        
+        heatMapListener_.eliminateAnalyteEverywhere(groupName_, selectedAnalytes, selectedMods, foundUpdate);
+      }
     }else if (actionCommand.equalsIgnoreCase("Select analyte") || actionCommand.equalsIgnoreCase("Deselect analyte")){  
       Graphics2D g2 = (Graphics2D)renderedImage_.getGraphics();
       this.selectAnalyte(lastClickedRow_);
@@ -1077,7 +1080,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
             {
               if (statusText_!=null){
                 ResultCompVO compVO = heatmap_.getCompVO(cellPos[0],cellPos[1]);
-                String molName = heatmap_.getMolecularSpeciesLevelName(cellPos[1]);
+                String molName = heatmap_.getMolecularSpeciesName(cellPos[1]);
                 Double molContribution = heatmap_.getMolecularSpeciesContributionOfAllMods(experiment, cellPos[1]);
                 
                 int maxIsotope = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
@@ -1162,15 +1165,14 @@ public class HeatMapDrawing extends JPanel implements ActionListener
           {
           	int[] cellPos = heatmap_.getCellPosition(xInImage, yInImage);
             String experiment = heatmap_.getExperimentName(cellPos[0]);
-            boolean isMolecularSpeciesLevel = heatmap_.isMolecularSpeciesLevel(cellPos[0],cellPos[1]);
-            String analyte = isMolecularSpeciesLevel ? heatmap_.getMolecularSpeciesLevelName(cellPos[1]) : heatmap_.getSumCompositionName(cellPos[1]);
+            String analyte = heatmap_.getMolecularSpeciesLevelName(cellPos[1]);
             if (experiment!=null && analyte!=null)
             {
               ResultCompVO compVO = heatmap_.getCompVO(cellPos[0],cellPos[1]);
               if (compVO.getOriginalArea(0)>0 && heatMapListener_!=null){
                 if (!isGrouped_){
                   if (e.getButton()==MouseEvent.BUTTON1){
-                    if (!heatMapListener_.heatMapClicked(experiment,compVO.getAbsoluteFilePath(),analyte,heatmap_.getRetentionTime(cellPos[1]),isMolecularSpeciesLevel));
+                    if (!heatMapListener_.heatMapClicked(experiment,compVO.getAbsoluteFilePath(),analyte,heatmap_.getRetentionTime(cellPos[1]),heatmap_.isMolecularSpeciesLevel(cellPos[1])));
                       this.mouseMoved(e);
                   }else if (e.getButton()==MouseEvent.BUTTON3 || e.isPopupTrigger()){
                   	Color attentionProbe = heatmap_.getAttentionProbe(cellPos[1], experiment);

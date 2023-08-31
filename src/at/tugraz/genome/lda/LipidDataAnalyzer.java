@@ -5186,13 +5186,13 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   }
   
 
-  public void eliminateAnalyteEverywhere(String groupName, Hashtable<String,String> selectedAnalytes, Vector<String> selectedMods, Vector<String> foundUpdateables){
+  public void eliminateAnalyteEverywhere(String groupName, Set<String> selectedAnalytes, Vector<String> selectedMods, Set<String> foundUpdateables){
     for (String updateablePath : foundUpdateables){
       Hashtable<String,String> modHash = new Hashtable<String,String>();
       for (String modName : selectedMods)modHash.put(modName, modName);
       Hashtable<String,Boolean> showMods = new Hashtable<String,Boolean>();
       Hashtable<String,Hashtable<String,String>> nameRtHash = new Hashtable<String,Hashtable<String,String>>();
-      for (String selected : selectedAnalytes.keySet()){
+      for (String selected : selectedAnalytes){
         String[] nameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(selected);
         if (nameAndRt[1]==null) nameAndRt[1]="";
         Hashtable<String,String> rts = new Hashtable<String,String>();
