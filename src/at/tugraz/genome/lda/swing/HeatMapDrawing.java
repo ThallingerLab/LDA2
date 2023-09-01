@@ -49,10 +49,8 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -474,6 +472,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         update = false;
         if (combinedChartSettings_.getSelected().size()==0){
           new WarningMessage(new JFrame(), "Error", "You have to select at least one molecule!");
+          return;
         }else{
           combinedChartSettings_.setVisible(false);
           combinedDialogOpen_ = false;
@@ -558,7 +557,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
             svgGenerator.stream(out, useCSS);
 
           }catch (IOException e){ new WarningMessage(new JFrame(), "Error", e.getMessage());}
-        }  
+        }
       }      
     } else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_EXCEL)||
         actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_TEXT)){
@@ -799,24 +798,24 @@ public class HeatMapDrawing extends JPanel implements ActionListener
               spinnerLabel_.setVisible(true);
               exportProgressPanel_.setVisible(true);
             } else if (chromExportThread_!=null)
-              new WarningMessage(new JFrame(), "Error", "There is already a chromatogram export running! Wait until it is finished!");
+            {
+            	new WarningMessage(new JFrame(), "Error", "There is already a chromatogram export running! Wait until it is finished!");
+            	return;
+            }
           }
         }
       }
     } else if (actionCommand.equalsIgnoreCase("Choose just one peak for doubles") || actionCommand.equalsIgnoreCase("Quant. anal. at not found")||
-        actionCommand.equalsIgnoreCase("Take exact peak for others") || actionCommand.equalsIgnoreCase("Select")){
+        actionCommand.equalsIgnoreCase("Take exact peak for others") || actionCommand.equalsIgnoreCase("Select"))
+    {
       String expName = experimentNames_.get(lastClickedCellPos_[0]);
-      String molName = moleculeNames_.get(lastClickedCellPos_[1]);
+      String molName = heatmap_.getOriginalAnalyteName(lastClickedCellPos_[1]);
       if ((actionCommand.equalsIgnoreCase("Quant. anal. at not found")||actionCommand.equalsIgnoreCase("Take exact peak for others")) &&
-          selectedSingleMolecules_.containsKey(molName) && !selectedSingleMolecules_.get(molName).keySet().iterator().next().equalsIgnoreCase(expName)){
-        new WarningMessage(new JFrame(), "Error", "It is not allowed to select more than one from the same species");
+          selectedSingleMolecules_.containsKey(molName) && !selectedSingleMolecules_.get(molName).keySet().iterator().next().equalsIgnoreCase(expName))
+      {
+        new WarningMessage(new JFrame(), "Error", "It is not allowed to select more than one from the same lipid species");
         return;
       }
-//      for (String analName : this.selectedSingleMolecules_.keySet()){
-//        for (String exp : this.selectedSingleMolecules_.get(analName).keySet()){
-//          System.out.println("Other selected: "+analName+" ; "+exp);
-//        }
-//      }
       vo = heatmap_.getCompVO(lastClickedCellPos_[0],lastClickedCellPos_[1]);
       Hashtable<String,String> availableMods = new Hashtable<String,String>();
       for (String modName : modifications_){
@@ -876,10 +875,16 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         templateSpecies.add(new SimpleValueObject(molName,expName));
       }else{  
         if (actionCommand.equalsIgnoreCase("Choose just one peak for doubles"))
-          new WarningMessage(new JFrame(), "Error", "There are no double peaks to eliminate for "+molName+"!");
+        {
+        	new WarningMessage(new JFrame(), "Error", "There are no double peaks to eliminate for "+molName+"!");
+        	return;
+        }
         else if (actionCommand.equalsIgnoreCase("Quant. anal. at not found") || actionCommand.equalsIgnoreCase("Take exact peak for others") ||
             actionCommand.equalsIgnoreCase("Select"))
-          new WarningMessage(new JFrame(), "Error", "There are no  peaks to add for "+molName+"!");
+        {
+        	new WarningMessage(new JFrame(), "Error", "There are no peaks to add for "+molName+"!");
+        	return;
+        }
       }
     } else if (actionCommand.equalsIgnoreCase("Remove analyte in all probes")){
     	Set<Integer> analytesToRemove = ConcurrentHashMap.newKeySet();
