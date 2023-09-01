@@ -3527,16 +3527,24 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       exportSettingsGroup_ = new ExportSettingsPanel(true,this);
     
     long before = System.currentTimeMillis();
-    //TODO: for threadpool return the panels or put them in a hashtable to add them one after the other afterwards; JTabbedPane is not threadsafe.
-//    ExecutorService threadpool = Executors.newFixedThreadPool(Math.min(analysisResults.keySet().size(), getAmountOfProcessorsPreferred()));
+    
+    ExecutorService threadpool = Executors.newFixedThreadPool(Math.min(analysisResults.keySet().size(), getAmountOfProcessorsPreferred()));
+    //JTabbedPane is not threadsafe. Thus, the panels are stored in this collection to be added iteratively.
+    Hashtable<String,JPanel> jPanels = new Hashtable<String,JPanel>();
     for (String molGroup : analysisResults.keySet())
     {
-    	HeatMapBuilder builder = new HeatMapBuilder(displaySettingHash, molGroup);
-    	builder.run();
-//    	threadpool.execute(new HeatMapBuilder(displaySettingHash, molGroup));
+//    	HeatMapBuilder builder = new HeatMapBuilder(displaySettingHash, molGroup, jPanels);
+//    	builder.run();
+    	threadpool.execute(new HeatMapBuilder(displaySettingHash, molGroup, jPanels));
     }
-//    threadpool.shutdown();
-//    try { threadpool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); } catch (InterruptedException e) {}
+    threadpool.shutdown();
+    try { threadpool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); } catch (InterruptedException e) {}
+    
+    for (String molGroup : analysisResults.keySet())
+    {
+    	resultTabs_.addTab(molGroup,jPanels.get(molGroup));
+      resultTabs_.setToolTipTextAt(resultTabs_.indexOfTab(molGroup), TooltipTexts.TABS_RESULTS_GROUP+molGroup+"</html>");
+    }
     
     System.out.println(String.format("Time required by the heatmap gen in total: %s !", 
     		(System.currentTimeMillis()-before)/1000.0));
@@ -7216,11 +7224,13 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   {
   	private Hashtable<String,ResultDisplaySettings> displaySettingHash_;
     private String molGroup_;
+    private Hashtable<String,JPanel> jPanels_;
     
-    private HeatMapBuilder(Hashtable<String,ResultDisplaySettings> displaySettingHash, String molGroup)
+    private HeatMapBuilder(Hashtable<String,ResultDisplaySettings> displaySettingHash, String molGroup, Hashtable<String,JPanel> jPanels)
     {
     	this.displaySettingHash_ = displaySettingHash;
     	this.molGroup_ = molGroup;
+    	this.jPanels_ = jPanels;
     }
 
 		@Override
@@ -7287,8 +7297,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       }
       displaySettingHash_.put(molGroup_, displaySettings);
       molBarCharts_.put(molGroup_, resultsViewTabs);
-      resultTabs_.addTab(molGroup_,aResultsViewPanel);
-      resultTabs_.setToolTipTextAt(resultTabs_.indexOfTab(molGroup_), TooltipTexts.TABS_RESULTS_GROUP+molGroup_+"</html>");
+      jPanels_.put(molGroup_, aResultsViewPanel);
+//      resultTabs_.addTab(molGroup_,aResultsViewPanel);
+//      resultTabs_.setToolTipTextAt(resultTabs_.indexOfTab(molGroup_), TooltipTexts.TABS_RESULTS_GROUP+molGroup_+"</html>");
 		}
   }
   
