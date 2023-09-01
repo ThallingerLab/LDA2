@@ -20,7 +20,7 @@ Name=NL_serine_wrong	Formula=$PRECURSOR-C3H5NO2	Charge=1	MSLevel=2	mandatory=oth
 !INTENSITIES
 Equation=NL_serine_wrong*0.5<NL_PChead_60					mandatory=true
 Equation=Precursor<0.25*$BASEPEAK						mandatory=true
-Equation=PChead_168|PChead_224							mandatory=true
+Equation=PChead_168|PChead_229							mandatory=true
 
 
 [CHAINS]
