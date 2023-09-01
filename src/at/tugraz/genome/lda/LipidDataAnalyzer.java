@@ -3010,7 +3010,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           }
           
           try {
-            extractor.parseInput();
+            extractor.parseInput(statisticsViewMode_, combineOxWithNonOx_);
             jButtonResultAbsQuant_.setText("Remove absolute settings");
             jButtonResultAbsQuant_.setToolTipText(TooltipTexts.STATISTICS_REMOVE_ABS_SETTINGS);
             resultWarningLabel_.setVisible(false);
@@ -3043,7 +3043,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         if (this.resultFiles_!=null&&this.resultFiles_.size()>0){
           ClassNamesExtractor extractor = new ClassNamesExtractor(this.resultFiles_);          
           try {
-            extractor.parseInput();
+            extractor.parseInput(statisticsViewMode_, combineOxWithNonOx_);
             jButtonResultCutoff_.setText("Remove cutoff settings");
             jButtonResultCutoff_.setToolTipText(TooltipTexts.STATISTICS_REMOVE_CUTOFF_SETTINGS);
             cutoffWarningLabel_.setVisible(false);
