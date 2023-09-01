@@ -68,7 +68,7 @@ public class ExperimentFileChooserPanel extends JOptionPanel implements ActionLi
   	selectionTablePanel_ = new JPanel();
   	generateSelectionTablePanel(new String[0][0]);
   	
-  	JPanel inputPanel = instantiatePanel(buttonPanel, selectionTablePanel_, "Enter data of stable isotope labeled experiments here.");
+  	JPanel inputPanel = instantiatePanel(buttonPanel, selectionTablePanel_, frameTitle);
   	
     this.add(inputPanel, new GridBagConstraints(0, 0, 5, 1, 0.0, 0.0
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));

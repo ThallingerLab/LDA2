@@ -202,7 +202,7 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 	public void export()
 	{
 		//TODO: write a fully new masslist without requiring the template.
-		String templatePath = "D:\\Collaborator_Files\\SILDA\\massLists\\masslists_double_labels\\negative.xlsx";
+		String templatePath = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\masslists_all_labels\\negative.xlsx";
 		try
 		{
 			if (exporter_.getTemplatePath() != null)

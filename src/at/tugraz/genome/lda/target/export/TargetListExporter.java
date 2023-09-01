@@ -171,8 +171,8 @@ public class TargetListExporter
 		{
 			Vector<?> quantInfo = QuantificationThread.getCorrectAnalyteSequence(templatePath,false);
 			LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)quantInfo.get(0);
-			Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)quantInfo.get(1);
-			Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(3);
+			LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantInfo.get(1);
+			Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(4);
 		  
       new ElementConfigParser("elementconfig.xml").parse();
       
@@ -293,7 +293,6 @@ public class TargetListExporter
 	      			{
 	      				ex.printStackTrace();
 	      			}
-	      			
 	      		}
 		      }
 	      }
