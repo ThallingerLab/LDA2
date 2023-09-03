@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
@@ -2405,10 +2406,11 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     toWrite = toWrite + "<br><br>Unfulfilled rules: "+unfulfilledPosRules.size()+"<br/>";
     for (String combiName : unfulfilledPosRules.keySet())
     {
+    	String humanReadable = StaticUtils.getHumanReadableCombiName(combiName,Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding());
       Hashtable<String,IntensityRuleVO> unfulfilled = unfulfilledPosRules.get(combiName);
       for (IntensityRuleVO ruleVO : unfulfilled.values())
       {
-        toWrite = toWrite + combiName+":\tNOT "+ruleVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding())+"<br/>";
+        toWrite = toWrite + humanReadable+":\tNOT "+ruleVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding())+"<br/>";
       }
     }
     toWrite += "<br/>";
@@ -2480,29 +2482,28 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     }
     else
     {
-      Enumeration<String> chainEnumOverview = chainFragments.keys();
+      ArrayList<String> chainNamesInternalRepresentation = new ArrayList<String>(chainFragments.keySet());
       toWrite = toWrite + "<br>Detected Chains<br><br>";
-      while (chainEnumOverview.hasMoreElements()) 
-      {        
-        String currentKey = (String)chainEnumOverview.nextElement();         
-        toWrite = toWrite + "Chain " + currentKey + "<br>";        
+      for (String name : chainNamesInternalRepresentation)
+      {
+      	String humanReadable = StaticUtils.getHumanReadableCombiName(name,Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding());
+      	toWrite = toWrite + "Chain " + humanReadable + "<br>"; 
       }
-      toWrite = toWrite + "<br><br>";      
+      toWrite = toWrite + "<br><br>";  
       
-      Enumeration<String> chainEnum = chainFragments.keys();         
-      while (chainEnum.hasMoreElements()) 
-      {        
-        String currentKey = (String)chainEnum.nextElement();        
-        toWrite = toWrite + "Details Chain " + currentKey + "<br>";
-        Hashtable<String,CgProbe> chainFragment = (Hashtable<String,CgProbe>) chainFragments.get(currentKey);
-        toWrite = toWrite + showFragmentTabDetailsString(chainFragment) + "<br><br>";  
+      for (String name : chainNamesInternalRepresentation)
+      {
+      	String humanReadable = StaticUtils.getHumanReadableCombiName(name,Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding());
+      	toWrite = toWrite + "Details Chain " + humanReadable + "<br>";
+        Hashtable<String,CgProbe> chainFragment = (Hashtable<String,CgProbe>) chainFragments.get(name);
+        toWrite = toWrite + showFragmentTabDetailsString(chainFragment) + "<br><br>"; 
       }
             
       toWrite = toWrite + "<br><br>Intensity rules that were fulfilled by the chain fragments:<br><br>";
       Enumeration<String> chainIntensityEnum = chainIntensities.keys();         
       while (chainIntensityEnum.hasMoreElements()) 
       { 
-    	String currentKey = (String)chainIntensityEnum.nextElement();
+      	String currentKey = (String)chainIntensityEnum.nextElement();
         Hashtable<String,IntensityChainVO> fulfilledChainIntensityRules = (Hashtable<String,IntensityChainVO>) chainIntensities.get(currentKey);       
         toWrite = toWrite + showChainIntensityTabDetailsString(fulfilledChainIntensityRules) + "<br>";
       }
@@ -2512,6 +2513,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       toWrite = toWrite + "Violated chain intensity rules: " + violChainRules.size() + "<br>";
       for (String faName : violChainRules.keySet())
       {
+      	String humanReadable = StaticUtils.getHumanReadableCombiName(faName,Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding());
         Hashtable<String,Object> violRule = violChainRules.get(faName);
         for (String ruleName : violRule.keySet())
         {
@@ -2519,12 +2521,12 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
           if (rule instanceof Integer)
           {
             int status = (Integer)rule;
-            toWrite = toWrite + "<br>Chain Discarded: " + faName+"\t"+ruleName+"\t"+ "because "+ printStatus(status);
+            toWrite = toWrite + "<br>Chain Discarded: " + humanReadable+"\t"+ruleName+"\t"+ "because "+ printStatus(status);
           }
           else if (rule instanceof IntensityRuleVO)
           {
-          IntensityRuleVO ruleVO = (IntensityRuleVO)rule;
-          toWrite = toWrite + "<br>Violated chain rule: "+faName+"\t"+ruleVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding());
+	          IntensityRuleVO ruleVO = (IntensityRuleVO)rule;
+	          toWrite = toWrite + "<br>Violated chain rule: "+ humanReadable+"\t"+ruleVO.getReadableRuleInterpretation(Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding());
           }
         }
       }
@@ -2532,7 +2534,8 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       toWrite = toWrite + "<br><br>Violated combinations: "+violCombis.size() + "<br>";
       for (String combi : violCombis.keySet())
       {
-        toWrite = toWrite + "<br>Violated combi: "+combi+"\t"+violCombis.get(combi);
+      	String humanReadable = StaticUtils.getHumanReadableCombiName(combi,Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding());
+        toWrite = toWrite + "<br>Violated combi: "+humanReadable+"\t"+violCombis.get(combi);
       }
       toWrite = toWrite + "<br>Spectrum sufficiently covered: "+debugInfo.isSpectrumCoverageFulfilled();
     }  
