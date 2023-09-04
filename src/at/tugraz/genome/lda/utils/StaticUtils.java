@@ -949,7 +949,7 @@ public class StaticUtils
   }
   
   public static boolean isWithinTolerance(double tolerance, double ref, double value){
-    return ((ref-tolerance)<value && value<(ref+tolerance));
+    return ((ref-tolerance)<=value && value<=(ref+tolerance));
   }
 
   public static String[] extractMoleculeRtAndModFromMoleculeName(String moleculeName){

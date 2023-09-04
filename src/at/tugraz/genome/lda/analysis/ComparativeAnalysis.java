@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
+import org.apache.commons.math3.util.Precision;
+
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
@@ -1408,7 +1410,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
   }
   
   public boolean isWithinRtGroupingBoundaries(double rt, double refTime){
-    return StaticUtils.isWithinTolerance(expRtGroupingTime_, refTime, rt);
+    return StaticUtils.isWithinTolerance(Precision.round(expRtGroupingTime_,2), refTime, rt);
   }
   
   private String enterSpacesToFormula(String chemicalFormula){

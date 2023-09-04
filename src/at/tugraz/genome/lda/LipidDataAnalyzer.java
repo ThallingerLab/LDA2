@@ -102,6 +102,7 @@ import uk.ac.ebi.pride.jmztab2.utils.errors.MZTabErrorType.Level;
 
 import org.apache.batik.dom.GenericDOMImplementation;
 import org.apache.batik.svggen.SVGGraphics2D;
+import org.apache.commons.math3.util.Precision;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 
