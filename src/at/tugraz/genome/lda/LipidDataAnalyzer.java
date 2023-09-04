@@ -2288,11 +2288,20 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   		{
   			public void run()
   			{
-  				acceptResultFiles();
+  				try
+  				{
+  					acceptResultFiles();
+  				}
+  				catch (ExcelInputFileException ex)
+  				{
+  					ex.printStackTrace();
+  					new WarningMessage(new JFrame(), "Error", ex.getMessage());
+  				}
   				resultTabs_.setComponentAt(0, resultsSelectionPanel_);
+  				resultsSelectionPanel_.repaint(); //in case an error was thrown
   			}
   		});
-    	thread.start();
+    	thread.start(); 
     }
     if (command.equalsIgnoreCase("showChromFileChooser")){
       if (chromFileChooser_==null)
@@ -3405,7 +3414,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   }
   
   @SuppressWarnings("unchecked")
-  private void acceptResultFiles(){
+  private void acceptResultFiles() throws ExcelInputFileException
+  {
     long timeMillis_0 = System.currentTimeMillis();
     System.out.println("fastExcel Start!");
     expDisplayNamesLookup_ = new Hashtable<String,String>();
@@ -3482,12 +3492,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         }
       }
       catch (ExcelInputFileException e) {
-        e.printStackTrace();
-        new WarningMessage(new JFrame(), "Error", "Some of the input files contain invalid information!");
+      	throw new ExcelInputFileException("Some of the input files contain invalid information!");
       }
       catch (Exception e) {
-        e.printStackTrace();
-        new WarningMessage(new JFrame(), "Error", "The Excel returns the following failure: "+e.getMessage());
+      	throw new ExcelInputFileException("The Excel returns the following failure: "+e.getMessage());
       }
       this.generateHeatMaps();
     }else{
@@ -5001,7 +5009,15 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           }
         }
         cleanupResultView();
-        acceptResultFiles();
+        try
+        {
+        	acceptResultFiles();
+        }
+        catch (ExcelInputFileException ex)
+        {
+        	ex.printStackTrace();
+        	new WarningMessage(new JFrame(), "Error", ex.getMessage());
+        }
         for (int i=0; i!=resultTabs_.getTabCount();i++){
           if (resultTabs_.getTitleAt(i).equalsIgnoreCase(groupName))
             resultTabs_.setSelectedIndex(i);
@@ -5183,7 +5199,15 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         }
       }
       cleanupResultView();
-      acceptResultFiles();
+      try
+      {
+      	acceptResultFiles();
+      }
+      catch (ExcelInputFileException ex)
+      {
+      	ex.printStackTrace();
+      	new WarningMessage(new JFrame(), "Error", ex.getMessage());
+      }
       for (int i=0; i!=resultTabs_.getTabCount();i++){
         if (resultTabs_.getTitleAt(i).equalsIgnoreCase(groupName))
           resultTabs_.setSelectedIndex(i);
@@ -5238,7 +5262,15 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       }
     }
     cleanupResultView();
-    acceptResultFiles();
+    try
+    {
+    	acceptResultFiles();
+    }
+    catch (ExcelInputFileException ex)
+    {
+    	ex.printStackTrace();
+    	new WarningMessage(new JFrame(), "Error", ex.getMessage());
+    }
     for (int i=0; i!=resultTabs_.getTabCount();i++){
       if (resultTabs_.getTitleAt(i).equalsIgnoreCase(groupName))
         resultTabs_.setSelectedIndex(i);
