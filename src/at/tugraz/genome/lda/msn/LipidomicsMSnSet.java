@@ -337,10 +337,12 @@ public class LipidomicsMSnSet extends LipidParameterSet
   {
   	String positionInsensitive = nameLookupHumReadableToPositionInsensitve_.get(humanReadable);
   	nameLookupHumReadableToPositionInsensitve_.remove(humanReadable);
+  	nameLookupPositionSnNomenclature_.remove(humanReadable);
   	nameLookupPositionInsensitve_.remove(positionInsensitive);
   	positionDefinition_.remove(positionInsensitive);
   	positionEvidence_.remove(positionInsensitive);
   	ambiguousPositionIdentifications_.remove(positionInsensitive);
+  	chainIntensityRules_.remove(positionInsensitive);
   	validChainCombinations_.remove(positionInsensitive);
   	Double remainingRel = 1.0 - relativeIntensityOfCombination_.get(positionInsensitive);
   	relativeIntensityOfCombination_.remove(positionInsensitive);
@@ -378,7 +380,6 @@ public class LipidomicsMSnSet extends LipidParameterSet
   	for (String removed : potentiallyRemovedFA) //remove invalid fatty acids
   	{
   		chainFragments_.remove(removed);
-  		chainIntensityRules_.remove(removed);
   		involvedFAs_.remove(removed);
   		chainNameLookupHumanReadable_.remove(removed);
   	}
