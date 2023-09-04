@@ -203,7 +203,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
   /** the sequence of the classes as in the quantification file*/
   private LinkedHashMap<String,Integer> classSequence_;
   /** the sequence of the analytes as in the quantification file*/
-  private Hashtable<String,Vector<String>> correctAnalyteSequence_;
+  private LinkedHashMap<String,Vector<String>> correctAnalyteSequence_;
   /** the original quantification file objects*/
   private Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects_;
   
@@ -221,7 +221,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
   
   
   public ComparativeAnalysis(Vector<File> resultFiles, String isSelectionPrefix, String esSelectionPrefix, AbsoluteSettingsVO absSetting, Hashtable<String,Double> classCutoffs, int maxCutoffIsotope, 
-      LinkedHashMap<String,Integer> classSequence, Hashtable<String,Vector<String>> correctAnalyteSequence, Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects,
+      LinkedHashMap<String,Integer> classSequence, LinkedHashMap<String,Vector<String>> correctAnalyteSequence, Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects,
       double expRtGroupingTime){
     this(resultFiles, isSelectionPrefix, esSelectionPrefix,absSetting,classCutoffs,maxCutoffIsotope,null,null,classSequence,correctAnalyteSequence,
         quantObjects,expRtGroupingTime);
@@ -229,7 +229,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
   
   public ComparativeAnalysis(Vector<File> resultFiles, String isSelectionPrefix, String esSelectionPrefix,
       AbsoluteSettingsVO absSetting, Hashtable<String,Double> classCutoffs, int maxCutoffIsotope, Vector<String> groups, Hashtable<String,Vector<File>> filesOfGroup, 
-      LinkedHashMap<String,Integer> classSequence, Hashtable<String,Vector<String>> correctAnalyteSequence,
+      LinkedHashMap<String,Integer> classSequence, LinkedHashMap<String,Vector<String>> correctAnalyteSequence,
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects, double expRtGroupingTime){
     super(resultFiles, isSelectionPrefix, esSelectionPrefix,groups,filesOfGroup);
     absSetting_ = absSetting;

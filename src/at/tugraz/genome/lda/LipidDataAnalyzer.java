@@ -3445,7 +3445,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         
       }
       LinkedHashMap<String,Integer> classSequence = null;
-      Hashtable<String,Vector<String>> correctAnalyteSequence = null;
+      LinkedHashMap<String,Vector<String>> correctAnalyteSequence = null;
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = null;
       if (correctOrderFile_.getText()!=null && correctOrderFile_.getText().length()>0){
         try {
@@ -3455,8 +3455,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           @SuppressWarnings("rawtypes")
           Vector quantInfo = QuantificationThread.getCorrectAnalyteSequence(correctOrderFile_.getText(),ionMode);
           classSequence = (LinkedHashMap<String,Integer>)quantInfo.get(0);
-          correctAnalyteSequence = (Hashtable<String,Vector<String>>)quantInfo.get(1);
-          quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(3);
+          correctAnalyteSequence = (LinkedHashMap<String,Vector<String>>)quantInfo.get(1);
+          quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(4);
           
         }
         catch (Exception e) {
