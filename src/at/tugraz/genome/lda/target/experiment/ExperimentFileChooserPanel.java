@@ -150,10 +150,10 @@ public class ExperimentFileChooserPanel extends JOptionPanel implements ActionLi
 		{
 			case COMMAND_ADD_FILES:
 				FileNameExtensionFilter filter = new FileNameExtensionFilter("Only .xlsx", "xlsx");
-				selectPath(filter, "Select result files of isotope labeled experiments (.xlsx file)");
+				selectPath(filter, "Select a LDA result file (.xlsx file)");
 				break;
 			case COMMAND_ADD_FOLDER:
-				selectFolder("Select a folder containing result files of isotope labeled experiments (.xlsx files)");
+				selectFolder("Select a folder containing LDA result files (.xlsx files)");
 				break;
 			case COMMAND_REMOVE_FILE:
 				removeFiles();
