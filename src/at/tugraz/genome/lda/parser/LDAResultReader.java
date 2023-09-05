@@ -1005,7 +1005,7 @@ public class LDAResultReader
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_ACCURACY)) {
           accuracy = Integer.parseInt(rawValue);
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_ASSIGNED)) {
-          isAssigned = Boolean.parseBoolean(rawValue);
+          isAssigned = rawValue.equalsIgnoreCase("1");
         } 
       }
       try {
@@ -1014,16 +1014,11 @@ public class LDAResultReader
         
         DoubleBondPositionVO doubleBondPositionVO = new DoubleBondPositionVO(
             chainCombination, expectedRetentionTime, accuracy, molecularSpecies, isAssigned);
-        
         msHash.get(identifier).addOmegaInformation(doubleBondPositionVO);
       } 
       catch (Exception ex)
       {
-      	for (String test : msHash.keySet())
-      	{
-      		System.out.println(test);
-      	}
-      	System.out.println(ex.getMessage());
+      	ex.printStackTrace();
       }
 //      catch (LipidCombinameEncodingException ex) {
 //        System.out.println(ex.getMessage());

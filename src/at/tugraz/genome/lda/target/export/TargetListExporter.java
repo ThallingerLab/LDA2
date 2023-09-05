@@ -222,7 +222,7 @@ public class TargetListExporter
 	    Hashtable<String,Integer> modToCharge = (Hashtable<String,Integer>)elModCharge.get(2);
 	    
 	    List<String> headerTitles = createHeaderTitles(elements, mods, modToCharge);
-	    if (cName.equals("SM"))
+	    if (cName.equals("SM") || cName.equals("Cer"))
 	    {
 	    	int rowCount = 0;
     		Row outRow = sheet.createRow(rowCount);

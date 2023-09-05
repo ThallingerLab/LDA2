@@ -6413,7 +6413,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
    * Cleans up fields related to results loaded by the statistical analysis.
    */
   private void cleanupResultView(){
-  	if (analysisModule_!=null) analysisModule_.cleanup();
   	groupDisplayNamesLookup_ = null;
   	expDisplayNamesLookup_ = null;
   	if (heatmaps_!=null){
