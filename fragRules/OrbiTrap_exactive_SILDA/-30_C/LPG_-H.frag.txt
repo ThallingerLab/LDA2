@@ -25,10 +25,6 @@ Name=PEhead_196_WRONG		Formula=C5H11O5PN		Charge=1	MSLevel=2	mandatory=other
 
 !INTENSITIES
 Equation=NL_PChead_60_WRONG<3*Precursor			mandatory=true
-Equation=PL153<3*Precursor				mandatory=true
-Equation=PL171<1.5*Precursor				mandatory=true
-Equation=Diglycerolphosphate_227<1.2*Precursor		mandatory=true
-Equation=Diglycerolphosphate_209<1.2*Precursor		mandatory=true
 Equation=PL153*2>PChead_168_WRONG+PL171			mandatory=true
 Equation=PL153>PEhead_140_WRONG+PEhead_196_WRONG	mandatory=true
 
