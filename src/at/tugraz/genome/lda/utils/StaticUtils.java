@@ -1882,12 +1882,13 @@ public class StaticUtils
   
   /**
    * Removes all double bond position annotations from a human readable String denoting a lipid species
-   * Double bond positions need to be in brackets! '(' and ')'
+   * This method uses a regex pattern including LipidomicsConstants.OMEGA_POSITION_START and LipidomicsConstants.OMEGA_POSITION_END,
+   * ensure the pattern still works if these constants change!
    * @param doubleBondPositionsHumanReadable Human readable String
    * @return Human readable String without double bond position annotations
    */
   public static String getHumanReadableWODoubleBondPositions(String doubleBondPositionsHumanReadable) {
-    String regex = "\\(.*?\\)";
+    String regex = String.format("\\%s.*?\\%s", LipidomicsConstants.OMEGA_POSITION_START, LipidomicsConstants.OMEGA_POSITION_END);
     return doubleBondPositionsHumanReadable.replaceAll(regex, "");
   }
   

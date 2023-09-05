@@ -335,9 +335,10 @@ public class LipidomicsMSnSet extends LipidParameterSet
    */
   public void removeMolecularSpecies(String humanReadable)
   {
-  	String positionInsensitive = nameLookupHumReadableToPositionInsensitve_.get(humanReadable);
-  	nameLookupHumReadableToPositionInsensitve_.remove(humanReadable);
-  	nameLookupPositionSnNomenclature_.remove(humanReadable);
+  	String humanReadableWithoutDB = StaticUtils.getHumanReadableWODoubleBondPositions(humanReadable);
+  	String positionInsensitive = nameLookupHumReadableToPositionInsensitve_.get(humanReadableWithoutDB);
+  	nameLookupHumReadableToPositionInsensitve_.remove(humanReadableWithoutDB);
+  	nameLookupPositionSnNomenclature_.remove(humanReadableWithoutDB);
   	nameLookupPositionInsensitve_.remove(positionInsensitive);
   	positionDefinition_.remove(positionInsensitive);
   	positionEvidence_.remove(positionInsensitive);

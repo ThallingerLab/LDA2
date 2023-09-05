@@ -4594,6 +4594,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         String sheetToSelect = resultTabs_.getTitleAt(resultTabs_.getSelectedIndex());
         selectedSheet_.setSelectedItem(sheetToSelect);
         displayTolerancePanel_.getShowMSnNames().setSelected(showMSn);
+        displayTolerancePanel_.getShowOmegaNames().setSelected(moleculeName.contains(LipidomicsConstants.OMEGA_POSITION_START));
         String moelculeTableName = null;
         int selection = -1;
         for (int i=0;i!=this.displayTable_.getRowCount();i++){

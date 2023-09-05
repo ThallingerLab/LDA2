@@ -188,24 +188,43 @@ public class ResultAreaVO
    */
   public void addMolecularSpeciesContribution(String modificationName, double totalAreaBefore, LipidParameterSet set)
   {
+  	double totalArea = getTotalArea(modificationName);
+		double diff = getTotalArea(modificationName) - totalAreaBefore;
   	if (set instanceof LipidomicsMSnSet)
   	{
   		LipidomicsMSnSet setMSn = (LipidomicsMSnSet)set;
-  		double totalArea = getTotalArea(modificationName);
-  		double diff = getTotalArea(modificationName) - totalAreaBefore;
   		if (setMSn.getStatus() > LipidomicsMSnSet.HEAD_GROUP_DETECTED && diff > 0)
   		{
   			Vector<String> humanReadableNames = setMSn.getMSnIdentificationNamesWithSNPositions();
+  			
+  			Hashtable<String,DoubleBondPositionVO> assignedPositions = new Hashtable<String,DoubleBondPositionVO>();
+				for (DoubleBondPositionVO assigned : StaticUtils.getAssignedDoubleBondPositions(setMSn.getOmegaInformation()))
+				{
+					assignedPositions.put(assigned.getMolecularSpecies(), assigned);
+				}
     		for (String humanReadable : humanReadableNames)
     		{
-    			MolecularSpeciesAreaVO molSpeciesAreaVO = getVOOfHumanReadable(humanReadable, modificationName);
+    			String identifier = assignedPositions.containsKey(humanReadable) ? assignedPositions.get(humanReadable).getDoubleBondPositionsHumanReadable() : humanReadable;
+    			MolecularSpeciesAreaVO molSpeciesAreaVO = getVOOfHumanReadable(identifier, modificationName);
     			double absoluteIntensity = molSpeciesAreaVO.getAreaContribution()*totalAreaBefore + setMSn.getRelativeIntensity(humanReadable)*diff;
     			double relativeIntensity = totalArea / absoluteIntensity;
     			molSpeciesAreaVO.setAreaContribution(relativeIntensity);
     			areaContributions_.get(modificationName).add(molSpeciesAreaVO);
-    			allMolecularSpeciesNamesHumanReadable_.add(humanReadable);
+    			allMolecularSpeciesNamesHumanReadable_.add(identifier);
     		}
   		}
+  	}
+  	else if (set.hasOmegaInformation()) //this only possible for species with just a single chain
+  	{
+  		for (DoubleBondPositionVO assigned : StaticUtils.getAssignedDoubleBondPositions(set.getOmegaInformation()))
+			{
+  			MolecularSpeciesAreaVO molSpeciesAreaVO = getVOOfHumanReadable(assigned.getDoubleBondPositionsHumanReadable(), modificationName);
+  			double absoluteIntensity = molSpeciesAreaVO.getAreaContribution()*totalAreaBefore + 1.0*diff; //only one molecular species is possible
+  			double relativeIntensity = totalArea / absoluteIntensity;
+  			molSpeciesAreaVO.setAreaContribution(relativeIntensity);
+  			areaContributions_.get(modificationName).add(molSpeciesAreaVO);
+  			allMolecularSpeciesNamesHumanReadable_.add(assigned.getDoubleBondPositionsHumanReadable());
+			}
   	}
   }
   
@@ -609,39 +628,38 @@ public class ResultAreaVO
   private class MolecularSpeciesAreaVO
   {
   	private String humanReadable_;
-  	private String internalNameRepresentation_;
   	private String modification_;
+  	private String humanReadableOmega_;
   	private Double areaContribution_;
   	
-  	private MolecularSpeciesAreaVO(String humanReadable, String internalNameRepresentation, String modification, Double areaContribution)
+  	/**
+  	 * 
+  	 * @param humanReadable
+  	 * @param modification
+  	 * @param humanReadableOmega
+  	 * @param areaContribution
+  	 */
+  	private MolecularSpeciesAreaVO(String humanReadable, String modification, String humanReadableOmega, Double areaContribution)
   	{
   		this.humanReadable_ = humanReadable;
-  		this.internalNameRepresentation_ = internalNameRepresentation;
   		this.modification_ = modification;
+  		this.humanReadableOmega_ = humanReadableOmega;
   		this.areaContribution_ = areaContribution;
   	}
   	
   	/**
-  	 * 
   	 * @param humanReadable
   	 * @param modification
   	 * @param areaContribution
   	 */
   	private MolecularSpeciesAreaVO(String humanReadable, String modification, Double areaContribution)
   	{
-  		this.humanReadable_ = humanReadable;
-  		this.modification_ = modification;
-  		this.areaContribution_ = areaContribution;
+  		this(humanReadable, modification, "", areaContribution);
   	}
 
 		public String getHumanReadable()
 		{
 			return humanReadable_;
-		}
-
-		public String getInternalNameRepresentation()
-		{
-			return internalNameRepresentation_;
 		}
 
 		public String getModification()
@@ -664,8 +682,8 @@ public class ResultAreaVO
 		{
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + Objects.hash(humanReadable_,
-					internalNameRepresentation_, modification_);
+			result = prime * result + Objects.hash(areaContribution_,
+					humanReadableOmega_, humanReadable_, modification_);
 			return result;
 		}
 
@@ -679,9 +697,9 @@ public class ResultAreaVO
 			if (getClass() != obj.getClass())
 				return false;
 			MolecularSpeciesAreaVO other = (MolecularSpeciesAreaVO) obj;
-			return Objects.equals(humanReadable_, other.humanReadable_)
-					&& Objects.equals(internalNameRepresentation_,
-							other.internalNameRepresentation_)
+			return Objects.equals(areaContribution_, other.areaContribution_)
+					&& Objects.equals(humanReadableOmega_, other.humanReadableOmega_)
+					&& Objects.equals(humanReadable_, other.humanReadable_)
 					&& Objects.equals(modification_, other.modification_);
 		}
   }
