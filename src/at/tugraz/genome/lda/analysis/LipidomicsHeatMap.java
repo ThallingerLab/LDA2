@@ -1033,7 +1033,12 @@ public class LipidomicsHeatMap
 		
 		private String extractSumCompositionName(String name)
 		{
-			return name.substring(0, name.indexOf(RT_DELIMITER));
+			String nameString = name;
+			if (name.contains(RT_DELIMITER)) //if it is an internal or external standard, it won't contain a retention time
+			{
+				nameString = name.substring(0, name.indexOf(RT_DELIMITER));
+			}
+			return nameString;
 		}
 		
 		private String extractRetentionTime(String name)
