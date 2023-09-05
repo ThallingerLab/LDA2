@@ -475,6 +475,22 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
   }
   
   /**
+   * Returns the result file of the given file path or null if no match is present.
+   * @param filePath
+   * @return
+   */
+  public ResultFileVO getResultFileVO(String filePath) {
+  	for (ResultFileVO vo : getResultFileVOs())
+    {
+    	if (vo.getResultFile().getAbsolutePath().equals(filePath))
+    	{
+    		return vo;
+    	}
+    }
+  	return null;
+  }
+  
+  /**
    * disable the RT-grouping mechanism (for shotgun data)
    */
   protected void disableRtGrouping(){}

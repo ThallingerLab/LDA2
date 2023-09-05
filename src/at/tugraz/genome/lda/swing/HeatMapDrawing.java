@@ -887,38 +887,29 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         }
       }
     } else if (actionCommand.equalsIgnoreCase("Remove analyte in all probes")){
+    	Vector<String> messages = new Vector<String>();
     	Set<Integer> analytesToRemove = ConcurrentHashMap.newKeySet();
     	analytesToRemove.addAll(selectedMoleculeRows_);
     	analytesToRemove.add(lastClickedRow_);
-    	Set<String> selectedAnalytes = ConcurrentHashMap.newKeySet();
-      String analyteList = "";
-      for (Integer analyteRow : analytesToRemove)
-      {
-      	analyteList += String.format("%s (RT=%s min), ", heatmap_.getMolecularSpeciesLevelName(analyteRow), heatmap_.getRetentionTime(analyteRow));
-      	selectedAnalytes.add(heatmap_.getOriginalAnalyteName(analyteRow));
-      }		
-      Vector<String> messages = new Vector<String>();
-      messages.add(String.format("Do you really want to delete %s %sin all probes?", groupName_, analyteList));
+    	generateAnalyteRemovalDialogue(analytesToRemove, messages);
+    	
+    	Set<Integer> analytesToModify = ConcurrentHashMap.newKeySet();
+    	for (int row : analytesToRemove)
+    	{
+    		if (heatmap_.isMolecularSpeciesLevel(row))
+    		{
+    			analytesToModify.add(row);
+    		}
+    	}
+    	analytesToRemove.removeAll(analytesToModify);
+    	
       Vector<String> selectedMods = CheckBoxOptionPane.showConfirmDialog(new JFrame(), "Confirmation", messages, modifications_,false);
+      Set<String> filePaths = heatmap_.eliminateMolecularSpecies(analytesToModify, selectedMods);
+      
       if (selectedMods.size()>0)
       {
-      	Set<String> foundUpdate = ConcurrentHashMap.newKeySet();
-      	for (Integer rowWhereFound : analytesToRemove){
-      		for (int i=0;i!=experimentNames_.size();i++)
-          {
-            ResultCompVO otherVO = heatmap_.getCompVO(i, rowWhereFound);
-            if (otherVO.getAbsoluteFilePath()!=null && otherVO.getAbsoluteFilePath().length()>0 && otherVO.existsInFile()){
-              boolean foundMod = false;
-              for (String modName : selectedMods){
-                if (otherVO.containsMod(modName))foundMod = true; 
-              }
-              if (foundMod)
-              	foundUpdate.add(otherVO.getAbsoluteFilePath());
-            }  
-          }
-        }
-        
-        heatMapListener_.eliminateAnalyteEverywhere(groupName_, selectedAnalytes, selectedMods, foundUpdate);
+      	Set<ResultCompVO> toRemove = heatmap_.getPresentCompVOsWithMod(analytesToRemove, selectedMods);
+        heatMapListener_.eliminateAnalyteEverywhere(groupName_, toRemove, selectedMods, filePaths);
       }
     }else if (actionCommand.equalsIgnoreCase("Select analyte") || actionCommand.equalsIgnoreCase("Deselect analyte")){  
       Graphics2D g2 = (Graphics2D)renderedImage_.getGraphics();
@@ -1011,6 +1002,47 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       this.updateUI();
     }
 
+  }
+  
+  private void generateAnalyteRemovalDialogue(Set<Integer> analytesToRemove, Vector<String> messages)
+  {
+    String analyteList = "";
+    for (Integer analyteRow : analytesToRemove)
+    {
+    	if (heatmap_.isMolecularSpeciesLevel(analyteRow))
+    	{
+    		analyteList += String.format("%s (RT=%s min), <br>", heatmap_.getMolecularSpeciesLevelName(analyteRow), heatmap_.getRetentionTime(analyteRow));
+    	}
+    	else
+    	{
+    		ArrayList<Integer> rows = heatmap_.getAllRowsOfSameSumComposition(analyteRow);
+    		analyteList += String.format("%s (RT=%s min), this sum composition contains %s identifications at the molecular species level, which will be deleted as well", 
+    				heatmap_.getMolecularSpeciesLevelName(analyteRow), heatmap_.getRetentionTime(analyteRow), rows.size());
+    		if (rows.size() > 0)
+    		{
+    			analyteList += ": ";
+    		}
+    		else
+    		{
+    			analyteList += ". <br>";
+    		}
+    		for (int i=0; i<rows.size(); i++)
+    		{
+    			int row = rows.get(i);
+    			analyteList += String.format("%s", heatmap_.getMolecularSpeciesLevelName(row), heatmap_.getRetentionTime(row));
+    			if (i < rows.size()-1)
+    			{
+    				analyteList += ", ";
+    			}
+    			else
+    			{
+    				analyteList += ". <br>";
+    			}
+    		}
+    	}
+    }
+    messages.add(String.format("<html>Do you really want to delete the following identifications of the lipid class '%s' in all probes: <br>%s </html>", 
+    		groupName_, analyteList));
   }
   
   private static Hashtable<String,Hashtable<String,Vector<Double>>> extractValuesOfInterest(Hashtable<String,Hashtable<String,ResultCompVO>> vos, int maxIsotope, ResultDisplaySettingsVO settingVO, String preferredUnit, ExportOptionsVO expOptions, ArrayList<String> modifications) throws CalculationNotPossibleException{

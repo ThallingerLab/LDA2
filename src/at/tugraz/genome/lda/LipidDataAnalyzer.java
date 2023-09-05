@@ -57,6 +57,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -177,6 +178,7 @@ import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.lda.vos.RawQuantificationPairVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
+import at.tugraz.genome.lda.vos.ResultFileVO;
 import at.tugraz.genome.lda.xml.AbsoluteQuantSettingsWholeReader;
 import at.tugraz.genome.lda.xml.AbsoluteQuantSettingsWholeWriter;
 import at.tugraz.genome.lda.xml.AbstractXMLSpectraReader;
@@ -5219,49 +5221,34 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   }
   
 
-  public void eliminateAnalyteEverywhere(String groupName, Set<String> selectedAnalytes, Vector<String> selectedMods, Set<String> foundUpdateables){
-    for (String updateablePath : foundUpdateables){
-      Hashtable<String,String> modHash = new Hashtable<String,String>();
-      for (String modName : selectedMods)modHash.put(modName, modName);
-      Hashtable<String,Boolean> showMods = new Hashtable<String,Boolean>();
-      Hashtable<String,Hashtable<String,String>> nameRtHash = new Hashtable<String,Hashtable<String,String>>();
-      for (String selected : selectedAnalytes){
-        String[] nameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(selected);
-        if (nameAndRt[1]==null) nameAndRt[1]="";
-        Hashtable<String,String> rts = new Hashtable<String,String>();
-        if (nameRtHash.containsKey(nameAndRt[0])) rts = nameRtHash.get(nameAndRt[0]);
-        rts.put(nameAndRt[1], nameAndRt[1]);
-        nameRtHash.put(nameAndRt[0], rts);
+  public void eliminateAnalyteEverywhere(String groupName, Set<ResultCompVO> toRemove, Vector<String> selectedMods, Set<String> filePaths){
+  	for (ResultCompVO compVO : toRemove)
+  	{
+  		String filePath = compVO.getAbsoluteFilePath();
+  		filePaths.add(filePath);
+  		ResultFileVO vo = analysisModule_.getResultFileVO(filePath);
+  		if (vo == null) continue; //TODO: this should not happen, consider an error message.
+  		
+  		Vector<LipidParameterSet> currentParams = vo.getQuantificationResult().getIdentifications().get(groupName);
+  		for (String mod : selectedMods)
+  		{
+  			Set<LipidParameterSet> params = compVO.getResultMolecule().getLipidParameterSets(mod);
+  			currentParams.removeAll(params);
+  		}
+      vo.getQuantificationResult().getIdentifications().put(groupName, currentParams);
+  	}
+  	for (String filePath : filePaths)
+  	{
+  		try 
+      {
+        QuantificationResultExporter.writeResultsToExcel(filePath, analysisModule_.getResultFileVO(filePath).getQuantificationResult());
       }
-      try{
-        QuantificationResult result = LDAResultReader.readResultFile(updateablePath, showMods);
-        Vector<LipidParameterSet> oldParams = result.getIdentifications().get(groupName);
-        Vector<LipidParameterSet> newParams = new Vector<LipidParameterSet>();
-        for (LipidParameterSet param : oldParams){
-          String[] nameAndRt = StaticUtils.extractMoleculeRtAndModFromMoleculeName(param.getNameString());
-          if (nameAndRt[1]==null) nameAndRt[1]="";
-          boolean remove = false;
-          if (nameRtHash.containsKey(nameAndRt[0])){
-            Hashtable<String,String> rts = nameRtHash.get(nameAndRt[0]);
-            for (String rt : rts.keySet()){
-              if (analysisModule_.neglectRtInformation(nameAndRt[0]) || analysisModule_.isWithinRtGroupingBoundaries(Double.valueOf(nameAndRt[1]), Double.valueOf(rt))){
-                if (modHash.containsKey(param.getModificationName()))remove = true;
-              }
-            }
-          }
-          if (!remove) newParams.add(param);
-        }
-        result.getIdentifications().put(groupName, newParams);
-        try {
-          QuantificationResultExporter.writeResultsToExcel(updateablePath, result);
-        }
-        catch (Exception e) {
-          e.printStackTrace();
-        }
-      } catch (ExcelInputFileException eif){
-        //Comment: the graphical Warning message is shown in the readResultFile itself
+      catch (Exception e) 
+      {
+        e.printStackTrace();
       }
-    }
+  	}
+    //TODO: here we could easily skip reading the files yet again and instead just update the heatmap of the one changed 'groupName'
     cleanupResultView();
     try
     {

@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.vos.AutoAnalyteAddVO;
+import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
 
 /**
@@ -122,7 +123,7 @@ public interface HeatMapClickListener extends SampleLookup
   public void changeESStatus(String groupName, boolean isGrouped, boolean value);
   public void changeIsotopesUsed(String groupName, boolean isGrouped, int value);
   public void eliminateDoublePeaks(String groupName, String analyteName, String absFilePathStartExp, Vector<String> selectedMods, Vector<String> foundUpdateables);
-  public void eliminateAnalyteEverywhere(String groupName, Set<String> selectedAnalytes, Vector<String> selectedMods, Set<String> foundUpdateables);
+  public void eliminateAnalyteEverywhere(String groupName, Set<ResultCompVO> toRemove, Vector<String> selectedMods, Set<String> filePaths);
   
   /**
    * for automatically adding analytes by selecting template probes in the heat map

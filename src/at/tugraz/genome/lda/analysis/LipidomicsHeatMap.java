@@ -36,6 +36,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.analysis.exception.CalculationNotPossibleException;
@@ -782,6 +783,21 @@ public class LipidomicsHeatMap
 		return this.heatMapRows_.get(row).getCompVO(this.sampleNames_.get(column));
 	}
 	
+	public ArrayList<Integer> getAllRowsOfSameSumComposition(int row)
+  {
+  	ArrayList<Integer> rows = new ArrayList<Integer>();
+  	String sumComposition = this.heatMapRows_.get(row).getOriginalAnalyteName();
+  	for (int i=0; i<this.heatMapRows_.size(); i++)
+  	{
+  		if (i==row) continue;
+  		if (this.heatMapRows_.get(i).getOriginalAnalyteName().equals(sumComposition))
+  		{
+  			rows.add(i);
+  		}
+  	}
+  	return rows;
+  }
+	
 	/**
 	 * 
 	 * @param name		the name of the experiment
@@ -956,6 +972,65 @@ public class LipidomicsHeatMap
 		return name;
 	}
 	
+	/**
+	 * Finds all compVOs of the given rows that exist in the results file and contain the provided modifications.
+	 * @param rows
+	 * @param selectedMods
+	 * @return
+	 */
+	public Set<ResultCompVO> getPresentCompVOsWithMod(Set<Integer> rows, Vector<String> selectedMods)
+	{
+		Set<ResultCompVO> compVOs = ConcurrentHashMap.newKeySet();
+		for (Integer row : rows)
+		{
+			for (ResultCompVO compVO : this.heatMapRows_.get(row).getAllCompVO())
+			{
+				if (compVO.getAbsoluteFilePath()!=null && compVO.getAbsoluteFilePath().length()>0 && compVO.existsInFile())
+				{
+					for (String modName : selectedMods)
+					{
+		        if (compVO.containsMod(modName))
+		        {
+		        	compVOs.add(compVO);
+		        	continue;
+		        }
+		      }
+				}
+			}
+		}
+		return compVOs;
+	}
+	
+	/**
+	 * Eliminates a molecular species from a LipidomicsMSnSet. Ensure the results in comparativeAnalysis are in sync!
+	 * @param rows
+	 * @param selectedMods
+	 * @return the affected filePaths
+	 */
+	public Set<String> eliminateMolecularSpecies(Set<Integer> rows, Vector<String> selectedMods)
+	{
+		Set<String> filePaths = ConcurrentHashMap.newKeySet();
+		for (Integer row : rows)
+		{
+			for (ResultCompVO compVO : this.heatMapRows_.get(row).getAllCompVO())
+			{
+				if (compVO.getAbsoluteFilePath()!=null && compVO.getAbsoluteFilePath().length()>0 && compVO.existsInFile())
+				{
+					for (String modName : selectedMods)
+					{
+		        if (compVO.containsMod(modName))
+		        {
+		        	String humanReadable = this.heatMapRows_.get(row).getMolecularSpeciesName();
+		        	compVO.getResultMolecule().removeMolecularSpeciesFromParams(humanReadable, modName);
+		        	filePaths.add(compVO.getAbsoluteFilePath());
+		        }
+					}
+				}
+			}
+		}
+		return filePaths;
+	}
+	
 	private class HeatMapRow
 	{
 		private String sumCompositionName_;
@@ -1074,6 +1149,11 @@ public class LipidomicsHeatMap
 		private ResultCompVO getCompVO(String experimentName)
 		{
 			return this.compVOs_.get(experimentName);
+		}
+		
+		private ArrayList<ResultCompVO> getAllCompVO()
+		{
+			return new ArrayList<ResultCompVO>(this.compVOs_.values());
 		}
 		
 //		private ArrayList<ResultCompVO> getCompVOsOfRow()

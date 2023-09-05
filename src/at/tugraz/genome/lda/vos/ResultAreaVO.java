@@ -555,7 +555,7 @@ public class ResultAreaVO
     return (internalStandard_ || this.externalStandard_);
   }
   
-  protected Set<LipidParameterSet> getLipidParameterSets(String modification)
+  public Set<LipidParameterSet> getLipidParameterSets(String modification)
   {
   	Set<LipidParameterSet> sets = ConcurrentHashMap.newKeySet();
   	for (LipidParameterSet set : lipidParameterSets_)
@@ -566,6 +566,18 @@ public class ResultAreaVO
   		}
   	}
   	return sets;
+  }
+  
+  public void removeMolecularSpeciesFromParams(String humanReadable, String modification)
+  {
+  	for (LipidParameterSet set : lipidParameterSets_)
+  	{
+  		if (set.getModificationName().equals(modification) && set instanceof LipidomicsMSnSet)
+  		{
+  			LipidomicsMSnSet mSnSet = (LipidomicsMSnSet)set;
+  			mSnSet.removeMolecularSpecies(humanReadable);
+  		}
+  	}
   }
   
   public Set<String> getAllMolecularSpeciesNamesHumanReadable()
