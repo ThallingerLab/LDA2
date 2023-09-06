@@ -448,6 +448,7 @@ public class QuantificationResultExporter
     } catch (IOException ex) {
       throw new ExportException(ex.getMessage());
     } catch (Exception ex) {
+    	ex.printStackTrace();
       throw new ExportException(ex.getMessage());
     }
     

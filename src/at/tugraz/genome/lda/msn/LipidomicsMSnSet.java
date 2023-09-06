@@ -337,20 +337,25 @@ public class LipidomicsMSnSet extends LipidParameterSet
   {
   	String humanReadableWithoutDB = StaticUtils.getHumanReadableWODoubleBondPositions(humanReadable);
   	String positionInsensitive = nameLookupHumReadableToPositionInsensitve_.get(humanReadableWithoutDB);
+  	
   	nameLookupHumReadableToPositionInsensitve_.remove(humanReadableWithoutDB);
   	nameLookupPositionSnNomenclature_.remove(humanReadableWithoutDB);
   	nameLookupPositionInsensitve_.remove(positionInsensitive);
   	positionDefinition_.remove(positionInsensitive);
   	positionEvidence_.remove(positionInsensitive);
   	ambiguousPositionIdentifications_.remove(positionInsensitive);
-  	chainIntensityRules_.remove(positionInsensitive);
+  	chainIntensityRules_.remove(positionInsensitive); //chainIntensityRules may contain single fatty acids as well as combis
   	validChainCombinations_.remove(positionInsensitive);
-  	Double remainingRel = 1.0 - relativeIntensityOfCombination_.get(positionInsensitive);
+  	
+  	//recalculating the relative area contributions
+  	Double multiplier = 1.0 / (1.0 - relativeIntensityOfCombination_.get(positionInsensitive));
+  	System.out.println(multiplier);
   	relativeIntensityOfCombination_.remove(positionInsensitive);
-  	for (String key : relativeIntensityOfCombination_.keySet()) //recalculating the relative area contributions
+  	for (String key : relativeIntensityOfCombination_.keySet()) 
   	{
   		Double rel = relativeIntensityOfCombination_.get(key);
-  		Double newRel = remainingRel / rel;
+  		Double newRel = rel * multiplier;
+  		System.out.println(newRel);
   		relativeIntensityOfCombination_.put(key, newRel);
   	}
   	
@@ -383,6 +388,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
   		chainFragments_.remove(removed);
   		involvedFAs_.remove(removed);
   		chainNameLookupHumanReadable_.remove(removed);
+  		chainIntensityRules_.remove(removed); //chainIntensityRules may contain single fatty acids as well as combis
   	}
   	
   	//updating status if needed
@@ -765,6 +771,10 @@ public class LipidomicsMSnSet extends LipidParameterSet
   public float getBasePeak(IntensityRuleVO rule)
   {
     CgProbe probe = rule.getAnyNonBasepeakFragment(headGroupFragments_,chainFragments_); 
+    if (probe == null)
+    {
+    	System.out.println("hi!");
+    }
     return getBasePeak(probe.getMsLevel());
   }
 
