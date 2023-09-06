@@ -817,6 +817,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         return;
       }
       vo = heatmap_.getCompVO(lastClickedCellPos_[0],lastClickedCellPos_[1]);
+      int sumCompRow = heatmap_.getSumCompVORow(lastClickedCellPos_[1]);
       Hashtable<String,String> availableMods = new Hashtable<String,String>();
       for (String modName : modifications_){
         if (vo.containsMod(modName)) availableMods.put(modName, modName);
@@ -827,7 +828,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       modHash = new Hashtable<String,String>();
       maxIsotope = 0;
       for (int i=0;i!=experimentNames_.size();i++){
-        ResultCompVO otherVO = heatmap_.getCompVO(i, lastClickedCellPos_[1]);
+        ResultCompVO otherVO = heatmap_.getCompVO(i, sumCompRow);
         if (actionCommand.equalsIgnoreCase("Choose just one peak for doubles")){
           if (i!=lastClickedCellPos_[0] && otherVO.getMoreThanOnePeak(otherVO.getAvailableIsotopeNr(maxIsotopes))){
             boolean foundMod = false;
@@ -857,9 +858,9 @@ public class HeatMapDrawing extends JPanel implements ActionListener
           }
           if (modMissing){
             String previousElement = "";
-            for (int j=lastClickedCellPos_[1]-1;j>-1;j--){
-              if (heatmap_.getCompVO(i,j).existsInFile()){
-                previousElement = moleculeNames_.get(j);
+            for (int j=sumCompRow-1;j>-1;j--){
+              if (heatmap_.getSumCompVO(i,j).existsInFile()){
+                previousElement = heatmap_.getOriginalAnalyteName(j);
                 break;
               }
             }
@@ -1194,6 +1195,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
           }  
         }
         int maxIsotopes = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
+        //if click happened within heatmap boundaries
         if ((y>=imagePositionY_) && (y<imagePositionY_+renderedImage_.getHeight()) && (x>=imagePositionX_) && (x<(imagePositionX_+renderedImage_.getWidth()))) {
           int xInImage = x-imagePositionX_;
           int yInImage = y-imagePositionY_;
@@ -1216,7 +1218,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
                   	if (attentionProbe != null && attentionProbe == LipidomicsHeatMap.ATTENTION_COLOR_DOUBLE_PEAK || attentionProbe == LipidomicsHeatMap.ATTENTION_DOUBLE_AND_NOT_ALL_MODS)
                       this.mouseMoved(e);
                     else{
-                      if (isAnalyteSelected(moleculeNames_.get(cellPos[1]),experimentNames_.get(cellPos[0]))){
+                      if (isAnalyteSelected(heatmap_.getAnalyteName(cellPos[1]),experimentNames_.get(cellPos[0]))){
                         selectSingleItem_.setEnabled(false);
                         deselectSingleItem_.setEnabled(true);
                       }else{

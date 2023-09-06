@@ -89,7 +89,9 @@ public class LipidomicsHeatMap
   
   int partCorrection_ = 0;
 	
+  /** the experiment names */
 	protected Vector<String> sampleNames_;
+	/** the names of identifications in the heatmap */
   protected ArrayList<String> analyteNames_;
   
   protected BufferedImage gradient_;
@@ -783,6 +785,43 @@ public class LipidomicsHeatMap
 		return this.heatMapRows_.get(row).getCompVO(this.sampleNames_.get(column));
 	}
 	
+	/**
+	 * Returns the ResultCompVO of the sum composition, to e.g. not have a falsely missing comp vo for quantifying at analyte not found
+	 * @param column
+	 * @param row
+	 * @return
+	 */
+	public ResultCompVO getSumCompVO(int column, int row)
+	{
+		return this.heatMapRows_.get(getSumCompVORow(row)).getCompVO(this.sampleNames_.get(column));
+	}
+	
+	/**
+	 * Returns the heatmap row of the sum composition, to e.g. not have a falsely missing comp vo for quantifying at analyte not found
+	 * @param row
+	 * @return
+	 */
+	public Integer getSumCompVORow(int row)
+	{
+		if (isMolecularSpeciesLevel(row))
+		{
+			String sumComposition = this.heatMapRows_.get(row).getOriginalAnalyteName();
+			for (int i=0; i<this.heatMapRows_.size(); i++)
+	  	{
+	  		if (i==row) continue;
+	  		if (this.heatMapRows_.get(i).getOriginalAnalyteName().equals(sumComposition) && !isMolecularSpeciesLevel(i))
+	  		{
+	  			return i;
+	  		}
+	  	}
+		}
+		else
+		{
+			return row;
+		}
+		return -1; //this will never happen, as there is always a sum composition row.
+	}
+	
 	public ArrayList<Integer> getAllRowsOfSameSumComposition(int row)
   {
   	ArrayList<Integer> rows = new ArrayList<Integer>();
@@ -835,6 +874,11 @@ public class LipidomicsHeatMap
 		return this.heatMapRows_.get(row).getRtGroup();
 	}
 	
+	/**
+	 * True if this heatmap row shows results at the molecular species level
+	 * @param row
+	 * @return
+	 */
 	public boolean isMolecularSpeciesLevel(int row)
 	{
 		return !this.heatMapRows_.get(row).getMolecularSpeciesName().equals(ResultCompVO.SUM_COMPOSITION);
