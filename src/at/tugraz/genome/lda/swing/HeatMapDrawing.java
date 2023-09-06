@@ -1012,7 +1012,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     {
     	if (heatmap_.isMolecularSpeciesLevel(analyteRow))
     	{
-    		analyteList += String.format("%s (RT=%s min), <br>", heatmap_.getMolecularSpeciesLevelName(analyteRow), heatmap_.getRetentionTime(analyteRow));
+    		analyteList += String.format("%s (RT=%s min) <br>", heatmap_.getMolecularSpeciesLevelName(analyteRow), heatmap_.getRetentionTime(analyteRow));
     	}
     	else
     	{
@@ -1211,7 +1211,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
               if (compVO.getOriginalArea(0)>0 && heatMapListener_!=null){
                 if (!isGrouped_){
                   if (e.getButton()==MouseEvent.BUTTON1){
-                    if (!heatMapListener_.heatMapClicked(experiment,compVO.getAbsoluteFilePath(),analyte,heatmap_.getRetentionTime(cellPos[1]),heatmap_.isMolecularSpeciesLevel(cellPos[1])));
+                    if (!heatMapListener_.heatMapClicked(experiment,compVO,analyte,heatmap_.isMolecularSpeciesLevel(cellPos[1])));
                       this.mouseMoved(e);
                   }else if (e.getButton()==MouseEvent.BUTTON3 || e.isPopupTrigger()){
                   	Color attentionProbe = heatmap_.getAttentionProbe(cellPos[1], experiment);

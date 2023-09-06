@@ -548,7 +548,8 @@ public class ResultAreaVO
 
   
   /**
-   * checks whether this retention time belongs to this ResultAreaVO (one rectangle in the heat map)
+   * Checks whether this retention time belongs to this ResultAreaVO (one rectangle in the heat map)
+   * If mod is null, it will not be considered.
    * @param rt the retention time to check
    * @param mod the modification belonging to this retention time
    * @return true when this retention time belongs to this ResultAreaVO
@@ -557,7 +558,7 @@ public class ResultAreaVO
   {
   	for (LipidParameterSet param : lipidParameterSets_)
   	{
-  		if (param.getModificationName().equals(mod) && param.getRt().equals(rt))
+  		if (mod != null ? param.getModificationName().equals(mod) : true && param.getRt().equals(rt))
   		{
   			return true;
   		}
