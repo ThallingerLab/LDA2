@@ -141,7 +141,7 @@ public class ResultCompGroupVO extends ResultCompVO
   }
   public double getRelativeValueSD(int maxIsotope, ResultDisplaySettingsVO settingVO) throws CalculationNotPossibleException
   {
-      return getAreaSD(maxIsotope, settingVO)/relativeMedianArea_.get(maxIsotope);
+      return getAreaSD(maxIsotope, settingVO)/relativeMedianAreas_.get(SUM_COMPOSITION).get(maxIsotope);
   }
   public double getRelativeValueSE(int maxIsotope, ResultDisplaySettingsVO settingVO) throws CalculationNotPossibleException
   {

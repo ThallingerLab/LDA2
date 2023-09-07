@@ -58,7 +58,6 @@ public class ResultCompVO
   private Vector<Double> correctionFactorInternalIS_;
   private Vector<Double> correctionFactorMedianIS_;
   private Hashtable<Integer,Vector<Double>> correctionFactorSingleIS_;
-  protected Vector<Double> relativeMedianArea_;
   protected Hashtable<String,ArrayList<Double>> relativeMedianAreas_ = new Hashtable<String,ArrayList<Double>>();
   public final static String SUM_COMPOSITION = "Sum composition";
   private Vector<Double> areaISInternalComparison_;

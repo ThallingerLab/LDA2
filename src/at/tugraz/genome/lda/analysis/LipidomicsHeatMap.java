@@ -256,12 +256,15 @@ public class LipidomicsHeatMap
       {
         values.get(ResultCompVO.SUM_COMPOSITION).add(value);
         ResultAreaVO areaVO = compVO.getResultMolecule();
-  			Set<String> names = areaVO.getAllMolecularSpeciesNamesHumanReadable();
-  			for (String name : names)
-  			{
-  				if (!values.containsKey(name)) values.put(name, new ArrayList<Double>());
-  				values.get(name).add(value * areaVO.getMolecularSpeciesContributionOfAllMods(name));
-  			}
+        if (areaVO != null) //TODO: areaVO can be null for ResultGroupCompVOs, as molecular species are not yet implemented
+        {
+        	Set<String> names = areaVO.getAllMolecularSpeciesNamesHumanReadable();
+    			for (String name : names)
+    			{
+    				if (!values.containsKey(name)) values.put(name, new ArrayList<Double>());
+    				values.get(name).add(value * areaVO.getMolecularSpeciesContributionOfAllMods(name));
+    			}
+        }
       } 
     }
   	return values;
