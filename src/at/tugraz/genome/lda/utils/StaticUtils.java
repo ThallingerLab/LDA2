@@ -499,7 +499,7 @@ public class StaticUtils
     if (settingVO.getType().equalsIgnoreCase("amount end-volume")){
       resultString +="Amount end-volume";
     } else if (settingVO.getType().equalsIgnoreCase("relative to base peak")){
-        resultString +="Base peak";
+      resultString +="Base peak";
     } else if (settingVO.getType().equalsIgnoreCase("relative to measured class amount")){
       resultString +="Total class amount";
     } else if (settingVO.getType().equalsIgnoreCase("relative to highest total peak")){

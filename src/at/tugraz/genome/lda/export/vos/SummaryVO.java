@@ -50,8 +50,6 @@ public class SummaryVO
   private String chemFormula_;
   /** the theoretical mass of this object*/
   private Double neutralMass_;
-  /** the retention time of the strongest detection peak across all experiments*/
-  private float rt_;
   /** sorted (by abundance) vector of modifications/adducts*/
   private Vector<String> mods_;
   /** a reliability score specific to mzTab*/
@@ -107,7 +105,6 @@ public class SummaryVO
     this.molecularId_ = molecularId;
     this.chemFormula_ = chemFormula;
     this.neutralMass_ = neutralMass;
-    this.rt_ = rt;
     this.mods_ = mods;
     this.mzTabReliability_ = mzTabReliability;
     this.areas_ = areas;
@@ -250,16 +247,6 @@ public class SummaryVO
   public Double getNeutralMass()
   {
     return neutralMass_;
-  }
-  
-  
-  /**
-   * 
-   * @return the retention time of the strongest detection peak across all experiments
-   */
-  public float getRt()
-  {
-    return rt_;
   }
 
   

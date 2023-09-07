@@ -558,7 +558,7 @@ public class ResultAreaVO
   {
   	for (LipidParameterSet param : lipidParameterSets_)
   	{
-  		if (mod != null ? param.getModificationName().equals(mod) : true && param.getRt().equals(rt))
+  		if ((mod != null ? param.getModificationName().equals(mod) : true) && param.getRt().equals(rt))
   		{
   			return true;
   		}

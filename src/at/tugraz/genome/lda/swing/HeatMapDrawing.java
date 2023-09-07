@@ -591,7 +591,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
                   try {
                     numberOfChains = Integer.parseInt(RulesContainer.getAmountOfChains(StaticUtils.getRuleName(groupName_, modifications_.get(0))));
                   } catch (RulesException | NoRuleException | IOException | SpectrummillParserException ex) {
-                    System.out.println(ex.getMessage());
+                    ex.printStackTrace();
                   }
                   if (numberOfChains > 1 && speciesType == LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES) {
                     exportDoubleBondPositionsForClass = false;

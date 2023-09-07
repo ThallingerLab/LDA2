@@ -248,9 +248,7 @@ public abstract class LDAExporter
     }
     Vector<SummaryVO> speciesSummaries = new Vector<SummaryVO>();
     String molNameWORt = new String(molName);
-////    String rt = null;
     if (isRtGrouped){
-////      rt = molName.substring(molName.lastIndexOf("_")+1);
       molNameWORt = molName.substring(0,molName.lastIndexOf("_"));
     }
     
