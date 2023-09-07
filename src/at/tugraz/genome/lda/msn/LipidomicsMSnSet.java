@@ -675,7 +675,8 @@ public class LipidomicsMSnSet extends LipidParameterSet
   public double getRelativeIntensity(String fullName){
     double relativeIntensity = 0.0;
     if (nameLookupHumReadableToPositionInsensitve_.get(fullName) != null) {
-      relativeIntensity = relativeIntensityOfCombination_.get(nameLookupHumReadableToPositionInsensitve_.get(fullName));
+    	if (status_ < FRAGMENTS_DETECTED) return 1.0;
+    	relativeIntensity = relativeIntensityOfCombination_.get(nameLookupHumReadableToPositionInsensitve_.get(fullName));
     }
     return relativeIntensity;
   }

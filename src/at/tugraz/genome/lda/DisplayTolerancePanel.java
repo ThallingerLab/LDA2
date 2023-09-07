@@ -91,10 +91,13 @@ public class DisplayTolerancePanel extends JPanel
 	/** show the names in MSn style with available omega double bond assignments in the display results or not*/
 	private JCheckBox showOmegaNames_;
 	
+	private boolean showOmegaEditingTools_;
+	
 	
 	public DisplayTolerancePanel(LipidDataAnalyzer lda, boolean showOmegaEditingTools)
 	{
 		this.lda_ = lda;
+		this.showOmegaEditingTools_ = showOmegaEditingTools;
 		
     this.setLayout(new GridBagLayout());
     JLabel diplayTolMinus = new JLabel("- m/z: ");
@@ -253,7 +256,7 @@ public class DisplayTolerancePanel extends JPanel
     showOptionsPanel.add(show2d);
     
     showOmegaNames_ = new JCheckBox();
-    if (showOmegaEditingTools) {
+    if (showOmegaEditingTools_) {
       showOmegaNames_.addItemListener(new PanelItemListener(SHOW_OMEGA_NAMES));
       showOmegaNames_.setToolTipText(TooltipTexts.DISPLAY_SHOW_OMEGA);
       JPanel showOmegaOptionPanel = new JPanel();
@@ -335,6 +338,11 @@ public class DisplayTolerancePanel extends JPanel
 	public JCheckBox getShowOmegaNames()
 	{
 		return showOmegaNames_;
+	}
+	
+	public boolean isShowOmegaEditingTools()
+	{
+		return showOmegaEditingTools_;
 	}
 
 

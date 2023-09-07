@@ -589,8 +589,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(resultsPanel_), TooltipTexts.TABS_MAIN_STATISTICS);
     mainTabs.addTab("Display Results", displayPanel_);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(displayPanel_), TooltipTexts.TABS_MAIN_DISPLAY);
-    mainTabs.addTab("C=C Target File", targetFilePanel_);
-    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(targetFilePanel_), TooltipTexts.TABS_MAIN_TARGET);
+    if (Settings.SHOW_OMEGA_TOOLS)
+    {
+    	mainTabs.addTab("C=C Target File", targetFilePanel_);
+      mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(targetFilePanel_), TooltipTexts.TABS_MAIN_TARGET);
+    }
     mainTabs.addTab("Settings", settingsPanel_);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(settingsPanel_), TooltipTexts.TABS_MAIN_SETTINGS);
     if (LicenseChecker.isCheckLicense())
@@ -4594,7 +4597,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         String sheetToSelect = resultTabs_.getTitleAt(resultTabs_.getSelectedIndex());
         selectedSheet_.setSelectedItem(sheetToSelect);
         displayTolerancePanel_.getShowMSnNames().setSelected(showMSn);
-        displayTolerancePanel_.getShowOmegaNames().setSelected(moleculeName.contains(LipidomicsConstants.OMEGA_POSITION_START));
+        displayTolerancePanel_.getShowOmegaNames().setSelected(displayTolerancePanel_.isShowOmegaEditingTools());
         String moleculeInTableName = null;
         int selection = -1;
         for (int i=0;i!=this.displayTable_.getRowCount();i++){
