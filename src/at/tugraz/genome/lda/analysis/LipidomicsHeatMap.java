@@ -49,13 +49,8 @@ import at.tugraz.genome.maspectras.graphics.MacOSResizer;
 
 /**
  * 
- * TODO: so basically I want to turn the heatmap gen upside down: generate each row (plus the names), then now knowing min and max, we initiate the gradient, paint it and then paint the rest
- * Rows should be their own objects that can be scrambled/sorted independently.
- * Compute median values for mol. species (this has to be independent of sum comp unfortunately), but we can use sum comp areas.
- * Same for C=C assigned stuff.
- * 
- * 
  * @author Juergen Hartler
+ * @author Leonida M. Lamp
  *
  */
 public class LipidomicsHeatMap
@@ -186,7 +181,7 @@ public class LipidomicsHeatMap
       	{
       		computeAttentionValuesRow(attentionValues, experiment, compVO, maxIsotope, sumCompositionName);
       	}
-      	else
+      	else if (!name.equals(ResultCompVO.SUM_COMPOSITION))
       	{
       		row.addMolecularSpeciesContributionOfAllMods(experiment, compVO.getResultMolecule().getMolecularSpeciesContributionOfAllMods(name));
       	}
@@ -1086,6 +1081,7 @@ public class LipidomicsHeatMap
 		private Hashtable<String,Double> relativeValues_; //expname to rel value
 		private Hashtable<String,Double> molecularSpeciesContribution_;
 		private final static String RT_DELIMITER = "_";
+		private final static String STANDARD = "std";
 		
 		/**
 		 * 
@@ -1142,12 +1138,15 @@ public class LipidomicsHeatMap
 	  
 	  private String getAnalyteName()
 	  {
-	  	return String.format("%s ... %s min ... %s", getSumCompositionName(), getRtGroup(), getMolecularSpeciesName());
+	  	String delimiter = " ... ";
+	  	String rtGroup = getRtGroup().equalsIgnoreCase(STANDARD) ? delimiter : String.format("%s%s min %s", delimiter, getRtGroup(), delimiter);
+	  	return String.format("%s%s%s", getSumCompositionName(), rtGroup, getMolecularSpeciesName());
 	  }
 	  
 	  private String getOriginalAnalyteName()
 	  {
-	  	return getSumCompositionName()+"_"+getRtGroup();
+	  	String rtGroup = getRtGroup().equalsIgnoreCase(STANDARD) ? "" : "_"+getRtGroup();
+	  	return getSumCompositionName()+rtGroup;
 	  }
 		
 		private String extractSumCompositionName(String name)
@@ -1162,7 +1161,12 @@ public class LipidomicsHeatMap
 		
 		private String extractRetentionTime(String name)
 		{
-			return name.substring(name.indexOf(RT_DELIMITER)+1, name.length());
+			String nameString = STANDARD;
+			if (name.contains(RT_DELIMITER)) //if it is an internal or external standard, it won't contain a retention time
+			{
+				nameString = name.substring(name.indexOf(RT_DELIMITER)+1, name.length());
+			}
+			return nameString;
 		}
 
 		private String getSumCompositionName()
