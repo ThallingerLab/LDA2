@@ -81,37 +81,56 @@ public class TargetListExporter
   private final static int HEADER_ROW = 1;
   private final static double THRESHOLD_FOR_CLUSTERING = 5.0; //TODO: this should be a user decision, as it depends on the length of the chromatography
   
-  private Hashtable<String, RecalibrationRegression> recalibrationRegressionsForClass_;
-  private RecalibrationRegression recalibrationRegression_;
+//  private Hashtable<String, RecalibrationRegression> recalibrationRegressionsForClass_;
+//  private RecalibrationRegression recalibrationRegression_;
   private IsotopeEffectRegression isotopeEffectRegression_;
   private Vector<ResultFileVO> resultFileVO_;
   private Vector<IsotopeLabelVO> labels_;
   private String templatePath_;
-  Vector<Pair<Double,Pair<String,DoubleBondPositionVO>>> beforeAfter_ = new Vector<Pair<Double,Pair<String,DoubleBondPositionVO>>>(); //TODO: just for development! remove later
+  private boolean calibrateSeparately_ = false;
+  private CalibrationGraphPanel calibrationGraphPanel_ = null;
+  
+//TODO: just for development! for comparing target lists - remove later
+  Vector<Pair<Double,Pair<String,DoubleBondPositionVO>>> beforeAfter_ = new Vector<Pair<Double,Pair<String,DoubleBondPositionVO>>>(); 
+  
+  
+  /**
+   * Constructor for omega MassList Recalibration
+   * The recalibration regressions are retrieved from @param calibrationGraphPanel depending on @param calibrateSeparately.
+   * @param templatePath
+   * @param calibrateSeparately
+   * @param calibrationGraphPanel
+   */
+  public TargetListExporter(String templatePath, boolean calibrateSeparately, CalibrationGraphPanel calibrationGraphPanel)
+  {
+  	this.calibrateSeparately_ = calibrateSeparately;
+  	this.templatePath_ = templatePath;
+  	this.calibrationGraphPanel_ = calibrationGraphPanel;
+  }
   
   /**
    * Constructor for omega MassList Recalibration
    * @param recalibrationRegression
    */
-  public TargetListExporter(RecalibrationRegression recalibrationRegression, String templatePath)
-	{
-		this.recalibrationRegression_ = recalibrationRegression;
-		this.isotopeEffectRegression_ = null;
-		this.resultFileVO_ = new Vector<ResultFileVO>();
-		this.labels_ = new Vector<IsotopeLabelVO>();
-		this.templatePath_ = templatePath;
-	}
+//  public TargetListExporter(RecalibrationRegression recalibrationRegression, String templatePath)
+//	{
+//		this.recalibrationRegression_ = recalibrationRegression;
+//		this.isotopeEffectRegression_ = null;
+//		this.resultFileVO_ = new Vector<ResultFileVO>();
+//		this.labels_ = new Vector<IsotopeLabelVO>();
+//		this.templatePath_ = templatePath;
+//	}
   
   
-  public TargetListExporter(Hashtable<String, RecalibrationRegression> recalibrationRegressionsForClass, String templatePath)
-	{
-  	this.recalibrationRegressionsForClass_ = recalibrationRegressionsForClass;
-  	this.isotopeEffectRegression_ = null;
-		this.isotopeEffectRegression_ = null;
-		this.resultFileVO_ = new Vector<ResultFileVO>();
-		this.labels_ = new Vector<IsotopeLabelVO>();
-		this.templatePath_ = templatePath;
-	}
+//  public TargetListExporter(Hashtable<String, RecalibrationRegression> recalibrationRegressionsForClass, String templatePath)
+//	{
+//  	this.recalibrationRegressionsForClass_ = recalibrationRegressionsForClass;
+//  	this.isotopeEffectRegression_ = null;
+//		this.isotopeEffectRegression_ = null;
+//		this.resultFileVO_ = new Vector<ResultFileVO>();
+//		this.labels_ = new Vector<IsotopeLabelVO>();
+//		this.templatePath_ = templatePath;
+//	}
   
   
 	//TODO: create MassList dynamically
@@ -125,7 +144,6 @@ public class TargetListExporter
 	public TargetListExporter(
 			IsotopeEffectRegression isotopeEffectRegression, Vector<ResultFileVO> resultFileVO, Vector<IsotopeLabelVO> labels)
 	{
-		this.recalibrationRegression_ = null;
 		this.isotopeEffectRegression_ = isotopeEffectRegression;
 		this.resultFileVO_ = resultFileVO;
 		this.labels_ = labels;
@@ -181,7 +199,7 @@ public class TargetListExporter
       {
       	System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+ cName + "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
       	Vector<DoubleBondPositionVO> allLabeledVOsToAdd = new Vector<DoubleBondPositionVO>();
-      	if (this.recalibrationRegression_ == null && this.recalibrationRegressionsForClass_ == null)
+      	if (!isRecalibration())
       	{
       		MolecularSpeciesContainer container = new MolecularSpeciesContainer();
         	fillContainerForClass(cName, container);
@@ -248,7 +266,7 @@ public class TargetListExporter
 	      for (String mod : mods.keySet()) 
 	      {
 	        QuantVO quant = quantAnalytes.get(mod);
-	        if (this.recalibrationRegression_ == null && this.recalibrationRegressionsForClass_ == null && quant.getDbs() > 0) //only species with double bonds are relevant
+	        if (!isRecalibration() && quant.getDbs() > 0) //only species with double bonds are relevant
 	        {
 	        	for (DoubleBondPositionVO doubleBondPositionVO : allLabeledVOsToAdd)
 		        {
@@ -263,18 +281,17 @@ public class TargetListExporter
 	        doubleBondPositionVOs = quant.getInfoForOmegaAssignment();
 	      }
 	      
-	      if (this.recalibrationRegression_ != null || this.recalibrationRegressionsForClass_ != null)
+	      if (isRecalibration())
 	      {
-	      	RecalibrationRegression regression = recalibrationRegression_;
-      		if (recalibrationRegressionsForClass_ != null)
-      		{
-      			String key = CalibrationGraphPanel.PLOT_ALL; //lipid classes without a specific regression will be calibrated with the regression for all.
-      			if (recalibrationRegressionsForClass_.contains(cName))
-      			{
-      				key = cName;
-      			}
-      			regression = recalibrationRegressionsForClass_.get(key);
-      		}
+	      	RecalibrationRegression regression = calibrationGraphPanel_.getRegressionByFields(CalibrationGraphPanel.PLOT_ALL, CalibrationGraphPanel.PLOT_ALL);
+	      	if (this.calibrateSeparately_)
+	      	{
+	      		RecalibrationRegression regressionByClass = calibrationGraphPanel_.getRegressionByFields(CalibrationGraphPanel.PLOT_ALL, cName);
+	      		if (regressionByClass != null)
+	      		{
+	      			regression = regressionByClass;
+	      		}
+	      	}
       		boolean noRegressionAvailable = regression == null;
 	      	for (int i=0;i<doubleBondPositionVOs.size();i++)
 		      {
@@ -358,7 +375,7 @@ public class TargetListExporter
 		double before = vo.getExpectedRetentionTime();
 		try
 		{
-			double after = regression.getTargetRT(vo.getExpectedRetentionTime());
+			double after = regression.getTargetRT(before);
 			vo.setExpectedRetentionTime((float)after);
 			System.out.println(String.format("original: %s, recalibrated: %s", before, after));
 		}
@@ -1380,6 +1397,10 @@ public class TargetListExporter
   	return this.templatePath_;
   }
   
+  private boolean isRecalibration()
+	{
+		return this.calibrationGraphPanel_ != null;
+	}
   
   /**
    * Inner helper class

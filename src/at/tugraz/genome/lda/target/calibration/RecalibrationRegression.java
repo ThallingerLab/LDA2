@@ -136,7 +136,7 @@ public class RecalibrationRegression
 	
 	public double getTargetRT(double referenceRT) throws OutOfRangeException
 	{
-		return referenceRT+function_.value(referenceRT);
+		return referenceRT-function_.value(referenceRT);
 	}
 	
 	protected ArrayList<Pair<Double,Double>> getDifferences()

@@ -693,7 +693,7 @@ public class CalibrationGraphPanel extends JOptionPanel
 	 * @param lipidClass
 	 * @return
 	 */
-  private RecalibrationRegression getRegressionByFields(String dataType, String lipidClass)
+  public RecalibrationRegression getRegressionByFields(String dataType, String lipidClass)
   {
   	return getRegressionByFields(regressions_, dataType, lipidClass);
   }
@@ -771,9 +771,7 @@ public class CalibrationGraphPanel extends JOptionPanel
 		try
 		{
 			ExportPanel panel = (ExportPanel)getDefaultComponents().getCurrentPanel();
-			String className = (String)classListJComboBox_.getSelectedItem();
-			RecalibrationRegression regression = getRegressionByFields(className, PLOT_ALL);
-			panel.setExporter(new TargetListExporter(regression, originalTargetList_.getAbsolutePath()));
+			panel.setExporter(new TargetListExporter(originalTargetList_.getAbsolutePath(), classSpecificJCheckBox_.isSelected(), this));
 		} catch (Exception ex) {}
   }
   
