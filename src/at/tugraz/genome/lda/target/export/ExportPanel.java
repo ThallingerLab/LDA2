@@ -205,11 +205,14 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 		String templatePath = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\masslists_all_labels\\negative.xlsx";
 		try
 		{
-			if (exporter_.getTemplatePath() != null)
+			if (exporter_.getTemplatePath() != null) //TODO: if not writing a fully new target list: add field to allow to enter a template
 			{
 				templatePath = exporter_.getTemplatePath();
 			}
 			exporter_.export(templatePath, exportField_.getText());
+			exporter_.exportBeforeAfter(
+					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_II_b\\Recalibration\\Results\\ComparisonTest\\SILDA_II_b.xlsx",
+					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_II_b\\Recalibration\\Results\\ComparisonTest\\comparison_1.xlsx"); //TODO: this is to create figures to compare target lists; remove after
 		}
 		catch (Exception ex)
 		{

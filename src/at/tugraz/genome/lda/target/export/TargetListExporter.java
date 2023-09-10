@@ -4,12 +4,14 @@ import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.math3.exception.OutOfRangeException;
 import org.apache.poi.hssf.usermodel.HSSFCell;
@@ -35,13 +37,13 @@ import at.tugraz.genome.lda.target.IsotopeLabelVO;
 import at.tugraz.genome.lda.target.calibration.CalibrationGraphPanel;
 import at.tugraz.genome.lda.target.calibration.RecalibrationRegression;
 import at.tugraz.genome.lda.target.experiment.IsotopeEffectRegression;
-import at.tugraz.genome.lda.utils.Pair;
 import at.tugraz.genome.lda.utils.RangeDouble;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.lda.vos.ResultFileVO;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
+import javafx.util.Pair;
 
 /**
  * We do the following: 
@@ -90,8 +92,8 @@ public class TargetListExporter
   private boolean calibrateSeparately_ = false;
   private CalibrationGraphPanel calibrationGraphPanel_ = null;
   
-//TODO: just for development! for comparing target lists - remove later
-  Vector<Pair<Double,Pair<String,DoubleBondPositionVO>>> beforeAfter_ = new Vector<Pair<Double,Pair<String,DoubleBondPositionVO>>>(); 
+  //TODO: just for development! for comparing target lists - remove later (first cName, second: original rt, third recalibr. doublebondPositionVO)
+  Hashtable<String,Set<Pair<Double,DoubleBondPositionVO>>> beforeAfter_ = new Hashtable<String,Set<Pair<Double,DoubleBondPositionVO>>>(); 
   
   
   /**
@@ -106,6 +108,7 @@ public class TargetListExporter
   	this.calibrateSeparately_ = calibrateSeparately;
   	this.templatePath_ = templatePath;
   	this.calibrationGraphPanel_ = calibrationGraphPanel;
+  	this.beforeAfter_ = new Hashtable<String,Set<Pair<Double,DoubleBondPositionVO>>>(); //TODO: just for development!
   }
   
   /**
@@ -314,16 +317,8 @@ public class TargetListExporter
 		      }
 	      }
 	      
-//	      if (!doubleBondPositionVOs.isEmpty())
-//	      {
-//	      	System.out.println("before: "+doubleBondPositionVOs.size());
-//	      	Collections.sort(doubleBondPositionVOs);
-//	      	System.out.println("after: "+doubleBondPositionVOs.size());
-//	      }
 	      if (!doubleBondPositionVOs.isEmpty())
 	      	Collections.sort(doubleBondPositionVOs);
-	      
-	      
 	      
 	      for (int i=-1;i<doubleBondPositionVOs.size();i++)
 	      {
@@ -384,7 +379,12 @@ public class TargetListExporter
 			vo.setExpectedRetentionTime((float)-1.0);
 		}
 		
-		beforeAfter_.add(new Pair<Double,Pair<String,DoubleBondPositionVO>>(before,new Pair<String,DoubleBondPositionVO>(cName,vo))); //TODO: just for development, remove after!
+		//TODO: just for development, remove after!
+		if (!beforeAfter_.containsKey(cName))
+		{
+			beforeAfter_.put(cName, ConcurrentHashMap.newKeySet());
+		}
+		beforeAfter_.get(cName).add(new Pair<Double,DoubleBondPositionVO>(before,vo));
 	}
 	
 	
@@ -1386,12 +1386,6 @@ public class TargetListExporter
     return result;
   }
   
-  //TODO: just for development, remove later!
-  protected Vector<Pair<Double,Pair<String,DoubleBondPositionVO>>> getBeforeAfter()
-	{
-		return this.beforeAfter_;
-	}
-  
   public String getTemplatePath()
   {
   	return this.templatePath_;
@@ -1469,6 +1463,147 @@ public class TargetListExporter
   			return null;
   		}
   	}
+  }
+  
+  
+  
+  
+  //TODO: just for development, remove later!
+  private Hashtable<String,Set<Pair<Double,DoubleBondPositionVO>>> getBeforeAfter()
+	{
+		return this.beforeAfter_;
+	}
+  
+  //TODO: just for development, remove later!
+  public void exportBeforeAfter(String targetPath, String outPath) throws ExportException
+  {
+  	try (	BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outPath));
+				XSSFWorkbook workbook = new XSSFWorkbook();)
+  	{
+  		Sheet sheet = workbook.createSheet("beforeAfter");
+  		Cell cell;
+  		createBeforeAfterTitle(sheet);
+  		int rowCount = 1;
+  		@SuppressWarnings("rawtypes")
+			Vector quantInfo = QuantificationThread.getCorrectAnalyteSequence(targetPath,false);
+			LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)quantInfo.get(0);
+			LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantInfo.get(1);
+			Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(4);
+	  	for (String cName : classSequence.keySet())
+			{
+	  		//Key is the pair from the original target list (orig. rt, recalibrated), value from the target (rtError, target vo).
+	  		Hashtable<Pair<Double,DoubleBondPositionVO>, Pair<Double,DoubleBondPositionVO>> matchedRecalibratedToTarget = 
+	  				new Hashtable<Pair<Double,DoubleBondPositionVO>, Pair<Double,DoubleBondPositionVO>>();
+	  		//To ensure vos are not matched twice.
+	  		Hashtable<DoubleBondPositionVO,Pair<Double,Pair<Double,DoubleBondPositionVO>>> matchedTargetToRecalibrated =
+	  				new Hashtable<DoubleBondPositionVO,Pair<Double,Pair<Double,DoubleBondPositionVO>>>();
+	  		
+	  		
+	  		
+	  		Set<Pair<Double,DoubleBondPositionVO>> pairsOfClass = getBeforeAfter().get(cName);
+	  		if (pairsOfClass==null) continue;
+	  		Vector<Object> elModCharge = getAvailableElementsAndModificationsPlusCharge(quantObjects.get(cName));
+		    LinkedHashMap<String,String> mods = (LinkedHashMap<String,String>)elModCharge.get(1);
+		    
+		    for (Pair<Double,DoubleBondPositionVO> pair : pairsOfClass) //iterating over the original TG entries first to limit false matches.
+		    {
+		    	for (String analyte : analyteSequence.get(cName)) 
+			    {
+			    	Hashtable<String,QuantVO> quantAnalytes = quantObjects.get(cName).get(analyte);
+			    	for (String mod : mods.keySet()) 
+			      {
+			    		QuantVO quant = quantAnalytes.get(mod);
+			        Vector<DoubleBondPositionVO> doubleBondPositionVOs = quant.getInfoForOmegaAssignment();
+			        for (DoubleBondPositionVO vo : doubleBondPositionVOs)
+			        {
+			        	if (pair.getValue().getDoubleBondPositionsHumanReadable().equals(vo.getDoubleBondPositionsHumanReadable()))
+		        		{
+			        		double rtError = vo.getExpectedRetentionTime()-pair.getValue().getExpectedRetentionTime();
+			        		double existingRtError = Double.MAX_VALUE;
+			        		if (matchedRecalibratedToTarget.containsKey(pair))
+			        		{
+			        			existingRtError = matchedRecalibratedToTarget.get(pair).getKey();
+			        		}
+			        		else if (matchedTargetToRecalibrated.containsKey(vo))
+			        		{
+			        			existingRtError = matchedTargetToRecalibrated.get(vo).getKey();
+			        		}
+			        		else
+			        		{
+			        			if (Math.abs(rtError) < 1.0)
+			        			{
+			        				matchedRecalibratedToTarget.put(pair, new Pair<Double,DoubleBondPositionVO>(rtError,vo));
+				        			matchedTargetToRecalibrated.put(vo, new Pair<Double,Pair<Double,DoubleBondPositionVO>>(rtError,pair));
+			        			}
+			        		}
+			        		
+			        		if (existingRtError < Double.MAX_VALUE)
+			        		{
+			        			if (Math.abs(rtError) < Math.abs(existingRtError))
+			        			{
+			        				matchedRecalibratedToTarget.put(pair, new Pair<Double,DoubleBondPositionVO>(rtError,vo));
+			        				matchedTargetToRecalibrated.put(vo, new Pair<Double,Pair<Double,DoubleBondPositionVO>>(rtError,pair));
+			        			}
+			        		}
+		        		}
+			        }
+			      }
+			    }
+		    }
+		    if (!matchedRecalibratedToTarget.isEmpty())
+		    {
+		    	for (Pair<Double,DoubleBondPositionVO> originalPair : matchedRecalibratedToTarget.keySet())
+		    	{
+		    		//first double: rtError, second double: originalRT, vo: recalibrated
+		    		Pair<Double,DoubleBondPositionVO> targetPair = matchedRecalibratedToTarget.get(originalPair);
+		    		
+		    		String molName = targetPair.getValue().getDoubleBondPositionsHumanReadable();
+		    		double targetRT = targetPair.getValue().getExpectedRetentionTime();
+        		double originalRT = originalPair.getKey();
+        		double recalibratedRT = originalPair.getValue().getExpectedRetentionTime();
+        		double rtError = targetPair.getKey();
+        		
+        		Row row = sheet.createRow(rowCount);
+      			cell = row.createCell(0,HSSFCell.CELL_TYPE_STRING);
+	          cell.setCellValue(cName);
+      			cell = row.createCell(1,HSSFCell.CELL_TYPE_STRING);
+	          cell.setCellValue(molName);
+	          cell = row.createCell(2,HSSFCell.CELL_TYPE_NUMERIC);
+	          cell.setCellValue(targetRT);
+	          cell = row.createCell(3,HSSFCell.CELL_TYPE_NUMERIC);
+	          cell.setCellValue(originalRT);
+	          cell = row.createCell(4,HSSFCell.CELL_TYPE_NUMERIC);
+	          cell.setCellValue(recalibratedRT);
+	          cell = row.createCell(5,HSSFCell.CELL_TYPE_NUMERIC);
+	          cell.setCellValue(targetRT-originalRT);
+	          cell = row.createCell(6,HSSFCell.CELL_TYPE_NUMERIC);
+	          cell.setCellValue(rtError);
+	          rowCount++;
+		    	}
+		    }
+			}	
+	  	workbook.write(out);
+	  	System.out.println("recalibration_comparison.xlsx written!");
+  	}
+  	catch (Exception e) 
+		{
+      throw new ExportException(e);
+    } 
+  }
+  
+  private void createBeforeAfterTitle(Sheet sheet)
+  {
+  	Row row = sheet.createRow(0);
+    Cell cell = row.createCell(2,HSSFCell.CELL_TYPE_STRING);
+    cell.setCellValue("target DB");
+    cell = row.createCell(3,HSSFCell.CELL_TYPE_STRING);
+    cell.setCellValue("original DB");
+    cell = row.createCell(4,HSSFCell.CELL_TYPE_STRING);
+    cell.setCellValue("recalibrated DB");
+    cell = row.createCell(5,HSSFCell.CELL_TYPE_STRING);
+    cell.setCellValue("RT differences (target vs original)");
+    cell = row.createCell(6,HSSFCell.CELL_TYPE_STRING);
+    cell.setCellValue("RT error");
   }
 }
 
