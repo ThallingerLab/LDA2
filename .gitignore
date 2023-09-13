@@ -5,5 +5,4 @@
 *.bak
 
 #To avoid committing currently selected fragRules
-/fragRules/
 /fragRules/interim/
