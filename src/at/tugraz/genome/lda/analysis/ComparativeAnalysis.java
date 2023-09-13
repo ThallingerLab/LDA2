@@ -57,6 +57,7 @@ import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.lda.vos.ResultAreaVO;
 import at.tugraz.genome.lda.vos.ResultCompGroupVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
+import at.tugraz.genome.lda.vos.ResultFileVO;
 import at.tugraz.genome.lda.vos.VolumeConcVO;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
@@ -200,7 +201,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
   /** the sequence of the classes as in the quantification file*/
   private LinkedHashMap<String,Integer> classSequence_;
   /** the sequence of the analytes as in the quantification file*/
-  private Hashtable<String,Vector<String>> correctAnalyteSequence_;
+  private LinkedHashMap<String,Vector<String>> correctAnalyteSequence_;
   /** the original quantification file objects*/
   private Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects_;
   
@@ -218,7 +219,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
   
   
   public ComparativeAnalysis(Vector<File> resultFiles, String isSelectionPrefix, String esSelectionPrefix, AbsoluteSettingsVO absSetting, Hashtable<String,Double> classCutoffs, int maxCutoffIsotope, 
-      LinkedHashMap<String,Integer> classSequence, Hashtable<String,Vector<String>> correctAnalyteSequence, Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects,
+      LinkedHashMap<String,Integer> classSequence, LinkedHashMap<String,Vector<String>> correctAnalyteSequence, Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects,
       double expRtGroupingTime){
     this(resultFiles, isSelectionPrefix, esSelectionPrefix,absSetting,classCutoffs,maxCutoffIsotope,null,null,classSequence,correctAnalyteSequence,
         quantObjects,expRtGroupingTime);
@@ -226,7 +227,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
   
   public ComparativeAnalysis(Vector<File> resultFiles, String isSelectionPrefix, String esSelectionPrefix,
       AbsoluteSettingsVO absSetting, Hashtable<String,Double> classCutoffs, int maxCutoffIsotope, Vector<String> groups, Hashtable<String,Vector<File>> filesOfGroup, 
-      LinkedHashMap<String,Integer> classSequence, Hashtable<String,Vector<String>> correctAnalyteSequence,
+      LinkedHashMap<String,Integer> classSequence, LinkedHashMap<String,Vector<String>> correctAnalyteSequence,
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects, double expRtGroupingTime){
     super(resultFiles, isSelectionPrefix, esSelectionPrefix,groups,filesOfGroup);
     absSetting_ = absSetting;
@@ -981,38 +982,39 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
       disableRtGrouping();
     }
     
-    int nrChains;
+    resultFileVO_.add(new ResultFileVO(fileName, resultFile, quantRes));
+    
     if (quantRes.getLcbHydroxyEncoding()!=null)
       this.lcbHydroxyEncoding_ = quantRes.getLcbHydroxyEncoding();
     if (quantRes.getFaHydroxyEncoding()!=null)
       this.faHydroxyEncoding_ = quantRes.getFaHydroxyEncoding();  
     results = quantRes.getIdentifications();
 
-    Hashtable<String,Vector<LipidParameterSet>> MSnHash = new Hashtable<String,Vector<LipidParameterSet>>();
+    Hashtable<String,Vector<LipidParameterSet>> mSnHash = new Hashtable<String,Vector<LipidParameterSet>>();
     Hashtable<String,Vector<LipidParameterSet>> chainHash = new Hashtable<String,Vector<LipidParameterSet>>(); 
     if(statisticsViewMode != 0)
     {
-        for (String lipidClass : results.keySet()) {
-        	Vector<LipidParameterSet> params = results.get(lipidClass);
-        	Vector<LipidParameterSet> MSnSets = new Vector<LipidParameterSet>();
-        	Vector<LipidParameterSet> chainSets = new Vector<LipidParameterSet>();
-        	for (LipidParameterSet param  : params){
-      			if (param instanceof LipidomicsMSnSet) {
-      				MSnSets.add(param);
-      				LipidomicsMSnSet msn_param = (LipidomicsMSnSet) param;
-      				if(!msn_param.getChainFragments().isEmpty())
-      				{
-      					chainSets.add(param);
-      				}
-      			}
-      		}
-        	MSnHash.put(lipidClass, MSnSets);
-        	chainHash.put(lipidClass, chainSets);
-        }
+      for (String lipidClass : results.keySet()) {
+      	Vector<LipidParameterSet> params = results.get(lipidClass);
+      	Vector<LipidParameterSet> mSnSets = new Vector<LipidParameterSet>();
+      	Vector<LipidParameterSet> chainSets = new Vector<LipidParameterSet>();
+      	for (LipidParameterSet param  : params){
+    			if (param instanceof LipidomicsMSnSet) {
+    				mSnSets.add(param);
+    				LipidomicsMSnSet msn_param = (LipidomicsMSnSet) param;
+    				if(!msn_param.getChainFragments().isEmpty())
+    				{
+    					chainSets.add(param);
+    				}
+    			}
+    		}
+      	mSnHash.put(lipidClass, mSnSets);
+      	chainHash.put(lipidClass, chainSets);
+      }
     }
     if(statisticsViewMode == 1)
     {
-    	results = MSnHash;
+    	results = mSnHash;
     }
     if(statisticsViewMode == 2)
     {
@@ -1078,8 +1080,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
               areaVO = sameMoleculeDiffRet.values().iterator().next();
             else if (rtDef!=null&&rtDef.length()>0){
               areaVO = hasAreaSameRt(rtDef,sameMoleculeDiffRet);
-              if (areaVO==null) areaVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass,
-                  isInternalStandard,isExternalStandard,param.getOxState());
+              if (areaVO==null) areaVO = new ResultAreaVO(param,rtDef,fileName,formula,neutralMass,
+                  isInternalStandard,isExternalStandard);
               // Juergen: I am not sure if this "if" and the setting of the retention time is required; for various charge states it seems to be counterproductive
               else /*if (areaVO.hasModification(param.getModificationName()))*/{
                 sameMoleculeDiffRet.remove(areaVO.getRt());
@@ -1087,8 +1089,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
             }  
           }else{
             if (param.getArea()>0f){
-              areaVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass,
-                  isInternalStandard,isExternalStandard,param.getOxState());
+              areaVO = new ResultAreaVO(param,rtDef,fileName,formula,neutralMass,
+                  isInternalStandard,isExternalStandard);
               if (orderedAnalytes.size()==0||!orderedAnalytes.get(orderedAnalytes.size()-1).equalsIgnoreCase(analId))
                 orderedAnalytes.add(analId);
             }else{
@@ -1096,8 +1098,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
               if (this.isNullResult_.containsKey(fileName)) fileHash = isNullResult_.get(fileName);
               Hashtable<String,Boolean> sheetHash = new Hashtable<String,Boolean>();
               if (fileHash.containsKey(sheetName)) sheetHash = fileHash.get(sheetName);
-              ResultAreaVO dummyVO = new ResultAreaVO(param.getName(),param.getDoubleBonds(),rtDef,fileName,formula,param.getPercentalSplit(),neutralMass,
-                  isInternalStandard,isExternalStandard,param.getOxState());
+              ResultAreaVO dummyVO = new ResultAreaVO(param,rtDef,fileName,formula,neutralMass,
+                  isInternalStandard,isExternalStandard);
               sheetHash.put(dummyVO.getMoleculeName(), true);
               fileHash.put(sheetName, sheetHash);
               isNullResult_.put(fileName,fileHash);
@@ -1115,8 +1117,11 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
             }
             areaVO.addResultPart(recentModification, param.getModificationFormula(), param.Mz[0], sumMass/((double)zeroIsos.size()),
                 param.getCharge(),param.getRt());
+            
             Hashtable<Integer,Boolean> moreThanOnePeak = new Hashtable<Integer,Boolean>();
             modifications.put(recentModification, recentModification);
+            
+            double totalAreaBefore = areaVO.getTotalArea(recentModification);
             
             for (Vector<CgProbe> probes : param.getIsotopicProbes()){
               int isotope = 0;
@@ -1127,7 +1132,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
                 if (isotope==0 && probe.Area>highestZeroIsoArea){
                   retentionTime = probe.Peak/60f;
                   highestZeroIsoArea = probe.Area;
-                  areaVO.setRtOriginal(rtDef);
+                  areaVO.setRt(rtDef);
                 }
                 int iso = isotope;
                 if (iso<0) iso = iso*-1;
@@ -1136,26 +1141,13 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
                 }else
                   moreThanOnePeak.put(iso, false);
               }
-              
             }
+            
+            areaVO.addMolecularSpeciesContribution(recentModification, totalAreaBefore, param);
+            areaVO.addLipidParameterSet(param);
             areaVO.setRetentionTime(recentModification,retentionTime);
             areaVO.setMoreThanOnePeak(recentModification,moreThanOnePeak);
-            //add the MSn information
-            if (param instanceof LipidomicsMSnSet) {
-              LipidomicsMSnSet msn = (LipidomicsMSnSet)param;
-              areaVO.setMsnEvidence(true);
-              //TODO: here I use only the ones where I find chain information!!!!
-              if (msn.getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED) {
-                Hashtable<String,Double> fullAreas = new Hashtable<String,Double>();
-                for (String combi : msn.getChainCombinationRelativeAreas().keySet()) {
-                  fullAreas.put(combi, msn.getChainCombinationRelativeAreas().get(combi)*((double)param.Area));
-                }
-                nrChains = areaVO.addChainInformation(recentModification,fullAreas);
-                if (nrChains>this.chainsOfClass_.get(sheetName))
-                  this.chainsOfClass_.put(sheetName, nrChains);
-              }
-               
-            }
+            
             Hashtable<String,ResultAreaVO> sameMoleculeDiffRet = new Hashtable<String,ResultAreaVO>();      
             if (areaVOs.containsKey(areaVO.getMoleculeNameWoRT())) sameMoleculeDiffRet = areaVOs.get(areaVO.getMoleculeNameWoRT());
             sameMoleculeDiffRet.put(areaVO.getRt(),areaVO);
@@ -2027,7 +2019,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
             }
             boolean isNullInFile = false;
             if (!existsInFile && isNullResult_.containsKey(expName) && isNullResult_.get(expName).containsKey(groupName) && isNullResult_.get(expName).get(groupName).containsKey(molecule)) isNullInFile = true;
-            relativeValues.put(expName, new ResultCompVO(existsInFile,isNullInFile,resultType,moleculeMass,retentionTimes.get(expName),expNameToFile_.get(expName).getAbsolutePath(), isoNr,modsFound.get(expName), originalAreas, 
+            relativeValues.put(expName, new ResultCompVO(resultsMolecule.get(expName),existsInFile,isNullInFile,resultType,moleculeMass,retentionTimes.get(expName),expNameToFile_.get(expName).getAbsolutePath(), isoNr,modsFound.get(expName), originalAreas, 
                 correctionInternalISHash.get(expName), correctionMedianISHash.get(expName),  isSingleCorrection,
                 bestISAreasHash.get(expName), medianAreasHash.get(expName), isSingleRefAreas, 
                 correctionInternalESNoISCorrHash.get(expName), correctionMedianESNoISCorrHash.get(expName),esSingleNoCorr,
@@ -2045,7 +2037,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
           }
         }else{
           for (String expName : this.expNamesInSequence_)
-            relativeValues.put(expName, new ResultCompVO(false,false,resultType,new Vector<Double>(), new Hashtable<String,Double>(),expNameToFile_.get(expName).getAbsolutePath(), isoNr, false, new Vector<Double>(), 
+            relativeValues.put(expName, new ResultCompVO(null, false,false,resultType,new Vector<Double>(), new Hashtable<String,Double>(),expNameToFile_.get(expName).getAbsolutePath(), isoNr, false, new Vector<Double>(), 
                 new Vector<Double>(), new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(),
                 new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(), new Vector<Double>(), 
                 new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(), new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(),
@@ -2745,155 +2737,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
       return expRtGroupingTime_;
     else
       return null;
-  }
-  
-  
-  public void cleanup(){
-    if (unprocessedResults_!=null)unprocessedResults_.clear();
-    unprocessedResults_  = null;
-    if (isNullResult_!=null)isNullResult_.clear();
-    isNullResult_  = null;
-    if (allResults_!=null)allResults_.clear();
-    allResults_ = null;
-    if (allResultsHash_!=null)allResultsHash_.clear();
-    allResultsHash_ = null;
-    if (isResults_!=null)isResults_.clear();
-    isResults_ = null;
-    if (isCorrectionFactors_!=null)isCorrectionFactors_.clear();
-    isCorrectionFactors_ = null;
-    if (esResults_!=null)esResults_.clear();
-    esResults_ = null;
-    if (esCorrectionFactors_!=null)esCorrectionFactors_.clear();
-    esCorrectionFactors_ = null;
-    if (correctionFactorsToBestIS_!=null)correctionFactorsToBestIS_.clear();
-    correctionFactorsToBestIS_ = null;
-    if (correctionFactorsToBestES_!=null)correctionFactorsToBestES_.clear();
-    correctionFactorsToBestES_ = null;
-    if (correctionFactorsToBestESISCorr_!=null)correctionFactorsToBestESISCorr_.clear();
-    correctionFactorsToBestESISCorr_ = null;
-    if (correctionFactorsToBestESMedianCorr_!=null)correctionFactorsToBestESMedianCorr_.clear();
-    correctionFactorsToBestESMedianCorr_ = null;
-    if (correctionFactorsToBestESSingleCorr_!=null)correctionFactorsToBestESSingleCorr_.clear();
-    correctionFactorsToBestESSingleCorr_ = null;
-    if (intStandStatistics_!=null)intStandStatistics_.clear();
-    intStandStatistics_ = null;
-    if (extStandStatistics_!=null)extStandStatistics_.clear();
-    extStandStatistics_ = null;
-    if (extStandStatisticsISCorrected_!=null)extStandStatisticsISCorrected_.clear();
-    extStandStatisticsISCorrected_ = null;
-    if (extStandStatisticsISMedianCorrected_!=null)extStandStatisticsISMedianCorrected_.clear();
-    extStandStatisticsISMedianCorrected_ = null;
-    if (extStandStatisticsISSingleCorrected_!=null)extStandStatisticsISSingleCorrected_.clear();
-    extStandStatisticsISSingleCorrected_ = null;
-    if (standardsOrderedConcerningReliability_!=null)standardsOrderedConcerningReliability_.clear();
-    standardsOrderedConcerningReliability_ = null;
-    if (extstandsOrderedConcerningReliability_!=null)extstandsOrderedConcerningReliability_.clear();
-    extstandsOrderedConcerningReliability_ = null;
-    if (extstandsISCorrOrderedConcerningReliability_!=null)extstandsISCorrOrderedConcerningReliability_.clear();
-    extstandsISCorrOrderedConcerningReliability_ = null;
-    if (extstandsMedianCorrOrderedConcerningReliability_!=null)extstandsMedianCorrOrderedConcerningReliability_.clear();
-    extstandsMedianCorrOrderedConcerningReliability_ = null;
-    if (extstandsSingleCorrOrderedConcerningReliability_!=null)extstandsSingleCorrOrderedConcerningReliability_.clear();
-    extstandsSingleCorrOrderedConcerningReliability_ = null;
-    if (modifications_!=null)modifications_.clear();
-    modifications_ = null;
-    if (applicableStandards_!=null)applicableStandards_.clear();
-    applicableStandards_ = null;
-    if (bestExpForStandard_!=null)bestExpForStandard_.clear();
-    bestExpForStandard_ = null;
-    if (inProperForBestComparableProbe_!=null)inProperForBestComparableProbe_.clear();
-    inProperForBestComparableProbe_ = null;
-    if (inProperForBestComparableProbeES_!=null)inProperForBestComparableProbeES_.clear();
-    inProperForBestComparableProbeES_ = null;
-    if (inProperForBestComparableProbeESISCorr_!=null)inProperForBestComparableProbeESISCorr_.clear();
-    inProperForBestComparableProbeESISCorr_ = null;
-    if (inProperForBestComparableProbeESMedianCorr_!=null)inProperForBestComparableProbeESMedianCorr_.clear();
-    inProperForBestComparableProbeESMedianCorr_ = null;
-    if (inProperForBestComparableProbeESSingleCorr_!=null)inProperForBestComparableProbeESSingleCorr_.clear();
-    inProperForBestComparableProbeESSingleCorr_ = null;
-    if (applicableStandardsES_!=null)applicableStandardsES_.clear();
-    applicableStandardsES_ = null;
-    if (applicableStandardsESISCorr_!=null)applicableStandardsESISCorr_.clear();
-    applicableStandardsESISCorr_ = null;
-    if (applicableStandardsESMedianCorr_!=null)applicableStandardsESMedianCorr_.clear();
-    applicableStandardsESMedianCorr_ = null;
-    if (applicableStandardsESSingleCorr_!=null)applicableStandardsESSingleCorr_.clear();
-    applicableStandardsESSingleCorr_ = null;
-    if (bestExpForExtStandard_!=null)bestExpForExtStandard_.clear();
-    bestExpForExtStandard_ = null;
-    if (bestExpForExtStandardISCorr_!=null)bestExpForExtStandardISCorr_.clear();
-    bestExpForExtStandardISCorr_ = null;
-    if (bestExpForExtStandardMedianCorr_!=null)bestExpForExtStandardMedianCorr_.clear();
-    bestExpForExtStandardMedianCorr_ = null;
-    if (bestExpForExtStandardSingleCorr_!=null)bestExpForExtStandardSingleCorr_.clear();
-    bestExpForExtStandardSingleCorr_ = null;
-    if (referenceValues_!=null)referenceValues_.clear();
-    referenceValues_ = null;
-    if (referenceValuesES_!=null)referenceValuesES_.clear();
-    referenceValuesES_ = null;
-    if (referenceValuesESISCorr_!=null)referenceValuesESISCorr_.clear();
-    referenceValuesESISCorr_ = null;
-    if (referenceValuesESMedianCorr_!=null)referenceValuesESMedianCorr_.clear();
-    referenceValuesESMedianCorr_ = null;
-    if (referenceValuesESSingleCorr_!=null)referenceValuesESSingleCorr_.clear();
-    referenceValuesESSingleCorr_ = null;
-    if (comparativeRatios_!=null)comparativeRatios_.clear();
-    comparativeRatios_ = null;
-    if (comparativeRatiosGroups_!=null)comparativeRatiosGroups_.clear();
-    comparativeRatiosGroups_ = null;
-    if (allMoleculeNames_!=null)allMoleculeNames_.clear();
-    allMoleculeNames_ = null;   
-    if (medianOfRatios_!=null)medianOfRatios_.clear();
-    medianOfRatios_ = null;
-    if (medianOfESRatios_!=null)medianOfESRatios_.clear();
-    medianOfESRatios_ = null;
-    if (medianOfESRatiosISCorr_!=null)medianOfESRatiosISCorr_.clear();
-    medianOfESRatiosISCorr_ = null;
-    if (medianOfESRatiosMedianCorr_!=null)medianOfESRatiosMedianCorr_.clear();
-    medianOfESRatiosMedianCorr_ = null;
-    if (medianOfESRatiosSingleCorr_!=null)medianOfESRatiosSingleCorr_.clear();
-    medianOfESRatiosSingleCorr_ = null;
-    if (expNamesOfGroup_!=null)expNamesOfGroup_.clear();
-    expNamesOfGroup_ = null;
-    if (maxIsotopesOfGroup_!=null)maxIsotopesOfGroup_.clear();
-    maxIsotopesOfGroup_ = null;
-    //maybe TODO: clean of elementParser
-    elementParser_ = null;
-    //maybe TODO: clean of absSetting
-    absSetting_ = null;
-    if (isSingleRefAreas_!=null)isSingleRefAreas_.clear();
-    isSingleRefAreas_ = null;
-    if (isSingleCorrectiveFactors_!=null)isSingleCorrectiveFactors_.clear();
-    isSingleCorrectiveFactors_ = null;
-    if (correctionTypeISLookup_!=null)correctionTypeISLookup_.clear();
-    correctionTypeISLookup_ = null;
-    if (esSingleRefAreasNoCorr_!=null)esSingleRefAreasNoCorr_.clear();
-    esSingleRefAreasNoCorr_ = null;
-    if (esSingleCorrectiveFactorsNoCorr_!=null)esSingleCorrectiveFactorsNoCorr_.clear();
-    esSingleCorrectiveFactorsNoCorr_ = null;
-    if (correctionTypeESLookup_!=null)correctionTypeESLookup_.clear();
-    correctionTypeESLookup_ = null;
-    if (esSingleRefAreasIntCorr_!=null)esSingleRefAreasIntCorr_.clear();
-    esSingleRefAreasIntCorr_ = null;
-    if (esSingleCorrectiveFactorsIntCorr_!=null)esSingleCorrectiveFactorsIntCorr_.clear();
-    esSingleCorrectiveFactorsIntCorr_ = null;
-    if (esSingleRefAreasMedCorr_!=null)esSingleRefAreasMedCorr_.clear();
-    esSingleRefAreasMedCorr_ = null;
-    if (esSingleCorrectiveFactorsMedCorr_!=null)esSingleCorrectiveFactorsMedCorr_.clear();
-    esSingleCorrectiveFactorsMedCorr_ = null;
-    if (esSingleRefAreasSingleCorr_!=null)esSingleRefAreasSingleCorr_.clear();
-    esSingleRefAreasSingleCorr_ = null;
-    if (esSingleCorrectiveFactorsSingleCorr_!=null)esSingleCorrectiveFactorsSingleCorr_.clear();
-    esSingleCorrectiveFactorsSingleCorr_ = null;
-    if (isAmountLookup_!=null)isAmountLookup_.clear();
-    isAmountLookup_ = null;
-    if (esAmountLookup_!=null)esAmountLookup_.clear();
-    esAmountLookup_ = null;
-    if (correctAnalyteSequence_!=null)correctAnalyteSequence_.clear();
-    correctAnalyteSequence_ = null;
-    if (quantObjects_!=null)quantObjects_.clear();
-    quantObjects_ = null;
-//    this.isoLabels_ = null;
   }
   
   public Vector<String> getExpsOfGroup (String group){

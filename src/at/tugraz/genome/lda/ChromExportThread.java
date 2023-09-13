@@ -323,8 +323,8 @@ public class ChromExportThread extends Thread
               set = sets.get(0);
               evidence = StaticUtils.checkMS2Evidence(set);
             } else if (sets.size()>1) { 
-              set = new LipidParameterSet(sets.get(0).Mz[0], sets.get(0).Peptide, sets.get(0).getDoubleBonds(), sets.get(0).getOhNumber(),sets.get(0).getModificationName(),"", 
-                  sets.get(0).getAnalyteFormula(), sets.get(0).getModificationFormula(), sets.get(0).getCharge());
+              set = new LipidParameterSet(sets.get(0).Mz[0], sets.get(0).Peptide, sets.get(0).getDoubleBonds(),sets.get(0).getModificationName(),0.0, 
+                  sets.get(0).getAnalyteFormula(), sets.get(0).getModificationFormula(), sets.get(0).getCharge(),sets.get(0).getOhNumber());
               set.LowerMzBand = sets.get(0).LowerMzBand;
               set.UpperMzBand = sets.get(0).UpperMzBand;
               Vector<CgProbe> probes = new Vector<CgProbe>();
@@ -397,22 +397,4 @@ public class ChromExportThread extends Thread
     this.interrupt_ = true;
   }
   
-  public void cleanup() {
-    lipidClass_ = null;
-    fileToStore_ = null;
-    dim_ = null; 
-    if (expsToExport_!=null)expsToExport_.clear(); 
-    expsToExport_ = null;
-    if (resultsToUse_!=null)resultsToUse_.clear(); 
-    resultsToUse_ = null;
-    if (chromsToUse_!=null)chromsToUse_.clear(); 
-    chromsToUse_ = null;
-    if (analsToExport_!=null)analsToExport_.clear(); 
-    analsToExport_ = null;
-    picType_ = null;
-    errorString_ = null;
-    currentLipid_ = null;
-    currentExperiment_ = null;
-    rtTolerance_ = null;
-  }
 }

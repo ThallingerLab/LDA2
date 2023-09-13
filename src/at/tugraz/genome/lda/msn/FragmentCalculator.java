@@ -298,35 +298,35 @@ public class FragmentCalculator
       for (Vector<Integer> dbCombi : dbCombis){
           
     	  List<String> oxStates = new ArrayList<>(possibleCAtomsDbsOxs.get(cCombis.get(0)).get(dbCombi.get(0)).keySet());
-		  Set<List<String>> oxCombis = getOxCombinations(oxStates,chains);
-		  Set<List<String>> validOxCombis = ValidateCombinations(oxCombis); 
+			  Set<List<String>> oxCombis = getOxCombinations(oxStates,chains);
+			  Set<List<String>> validOxCombis = ValidateCombinations(oxCombis); 
 		  
     	  for(List<String> oxCombi : validOxCombis) {
-    		    String combiName = "";
-    	        Vector<String> singleCombiParts = new Vector<String>();
-    	        for (int i=0; i!=chains; i++){
-    	          int cAtoms = cCombis.get(i);
-    	          int dBonds = dbCombi.get(i);
-    	          String oxState = oxCombi.get(i);
-    	          String partName = StaticUtils.generateLipidNameString(String.valueOf(cAtoms), dBonds,-1,oxState);
-    	          combiName += partName+LipidomicsConstants.CHAIN_SEPARATOR_NO_POS;
-    	          singleCombiParts.add(partName);
-    	          
-    	        }
-    	        combiName = combiName.substring(0,combiName.length()-1);
-    	        //this is for filtering permuted double entries
-    	        Vector<String> permutedNames = StaticUtils.getPermutedChainNames(singleCombiParts,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
-    	        boolean isThere = false;
-    	        for (String permutedName : permutedNames){
-    	          if (permutedCombinations.containsKey(permutedName)){
-    	            isThere = true;
-    	            break;
-    	          }
-    	        }
-    	        if (!isThere){
-    	          for (String permutedName : permutedNames) permutedCombinations.put(permutedName, permutedName);
-    	          combinations.add(combiName);
-    	        }
+  		    String combiName = "";
+	        Vector<String> singleCombiParts = new Vector<String>();
+	        for (int i=0; i!=chains; i++){
+	          int cAtoms = cCombis.get(i);
+	          int dBonds = dbCombi.get(i);
+	          String oxState = oxCombi.get(i);
+	          String partName = StaticUtils.generateLipidNameString(String.valueOf(cAtoms), dBonds,-1,oxState);
+	          combiName += partName+LipidomicsConstants.CHAIN_SEPARATOR_NO_POS;
+	          singleCombiParts.add(partName);
+	          
+	        }
+	        combiName = combiName.substring(0,combiName.length()-1);
+	        //this is for filtering permuted double entries
+	        Vector<String> permutedNames = StaticUtils.getPermutedChainNames(singleCombiParts,LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
+	        boolean isThere = false;
+	        for (String permutedName : permutedNames){
+	          if (permutedCombinations.containsKey(permutedName)){
+	            isThere = true;
+	            break;
+	          }
+	        }
+	        if (!isThere){
+	          for (String permutedName : permutedNames) permutedCombinations.put(permutedName, permutedName);
+	          combinations.add(combiName);
+	        }
     	  }  
       }
     }
@@ -828,20 +828,6 @@ public class FragmentCalculator
     }
     return usableLevels;
   }
-
-  
-  /**
-   * returns the acyl/alkyl/alkenyl common name for an arbitrary fatty acid chain
-   * @param faName name of fatty acid 
-   * @param chainType type of chain ACYL_CHAIN/ALKYL_CHAIN/ALKENYL_CHAIN
-   * @return the acyl/alkyl/alkenyl common name for an arbitrary fatty acid chain
-   */
-  public static String getAcylAlkylOrAlkenylName(String faName, Integer chainType){
-    String chainName = new String(faName);
-    if (chainType==LipidomicsConstants.CHAIN_TYPE_FA_ALKYL) chainName = LipidomicsConstants.ALKYL_PREFIX+chainName;
-    else if (chainType==LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL) chainName = LipidomicsConstants.ALKENYL_PREFIX+chainName;
-    return chainName;
-  }
   
   /**
    * 
@@ -911,7 +897,7 @@ public class FragmentCalculator
     } else {
       availableFAChainsBeforeCombiCheck_ = new Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>>();
       Hashtable<String, Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>>> faHydroxies = FattyAcidsContainer.getAllFattyAcidChains(chainLib);
-	  addAvailableLabels(FattyAcidsContainer.getAvailableLabels(chainLib));
+      addAvailableLabels(FattyAcidsContainer.getAvailableLabels(chainLib));
       for (int ohNumber : getPossibleFaHydroxylations()) {
         String encoded = HydroxyEncoding.HYDROXYLATION_ZERO;
         if (ohNumber!=0) encoded = Settings.getFaHydroxyEncoding().getEncodedPrefix((short)ohNumber);
@@ -939,7 +925,8 @@ public class FragmentCalculator
       }
     }
     
-    if (LipidomicsConstants.checkChainLabelCombination()) {
+    if (LipidomicsConstants.checkChainLabelCombination()) 
+    {
       for (String label : availableSingleLabels_) {
         allowedLabelsInChains_.put(label, 0);        
       }
@@ -958,8 +945,10 @@ public class FragmentCalculator
           lengthSortedLabels.add(posToAdd,label);
       }
       String restOfName = new String(this.labelInName_);
-      for (String label : lengthSortedLabels) {
-        while (restOfName.indexOf(label)!=-1) {
+      for (String label : lengthSortedLabels) 
+      {
+        while (restOfName.indexOf(label)!=-1) 
+        {
           allowedLabelsInChains_.put(label, allowedLabelsInChains_.get(label)+1);
           restOfName = restOfName.substring(0,restOfName.indexOf(label))+restOfName.substring(restOfName.indexOf(label)+label.length());
         }
@@ -1001,23 +990,24 @@ public class FragmentCalculator
           if (dbs>maxDbs)
             continue;
           Hashtable<String,Hashtable<String,FattyAcidVO>> sameDbs = new Hashtable<String,Hashtable<String,FattyAcidVO>>();
-          for (String prefix : toBeChecked.get(cAtoms).get(dbs).keySet()){
-        	Hashtable<String,FattyAcidVO> sameOxs = new Hashtable<String,FattyAcidVO>();
-        	for(String oxState : toBeChecked.get(cAtoms).get(dbs).get(prefix).keySet())
-        	{
-        	  FattyAcidVO fa = toBeChecked.get(cAtoms).get(dbs).get(prefix).get(oxState);
-        	  Hashtable<String,Integer> faElements = StaticUtils.categorizeFormula(fa.getFormula());
-        	  boolean isOk = true;
-              for (String element : faElements.keySet()){
-                if (!formulaAmounts.containsKey(element) || formulaAmounts.get(element)<faElements.get(element)){
-                  isOk = false;
-                  break;
-                }
-              }
-              if (isOk)
-            	  sameOxs.put(oxState, fa);
-        	}
-        	if (sameOxs.size()>0) sameDbs.put(prefix, sameOxs);   
+          for (String prefix : toBeChecked.get(cAtoms).get(dbs).keySet())
+          {
+	        	Hashtable<String,FattyAcidVO> sameOxs = new Hashtable<String,FattyAcidVO>();
+	        	for(String oxState : toBeChecked.get(cAtoms).get(dbs).get(prefix).keySet())
+	        	{
+	        	  FattyAcidVO fa = toBeChecked.get(cAtoms).get(dbs).get(prefix).get(oxState);
+	        	  Hashtable<String,Integer> faElements = StaticUtils.categorizeFormula(fa.getFormula());
+	        	  boolean isOk = true;
+	              for (String element : faElements.keySet()){
+	                if (!formulaAmounts.containsKey(element) || formulaAmounts.get(element)<faElements.get(element)){
+	                  isOk = false;
+	                  break;
+	                }
+	              }
+	              if (isOk)
+	            	  sameOxs.put(oxState, fa);
+	        	}
+	        	if (sameOxs.size()>0) sameDbs.put(prefix, sameOxs);   
           }
           if (sameDbs.size()>0) sameCAtoms.put(dbs, sameDbs);
         }
@@ -1176,10 +1166,7 @@ public class FragmentCalculator
         	  {
         		  oxHash.put(oxs,oxs);
         	  }
-        	  
-        	  
           }
-          
         }
       }
     }
@@ -1202,29 +1189,29 @@ public class FragmentCalculator
         for (Integer dbs : faHash.get(oh).get(c).keySet()) 
         {
           newHash.get(oh).get(c).put(dbs, new Hashtable<String,Hashtable<String,FattyAcidVO>>());
-          for (String prefix : faHash.get(oh).get(c).get(dbs).keySet()) {
-        	newHash.get(oh).get(c).get(dbs).put(prefix, new Hashtable<String,FattyAcidVO>());  
-        	
-        	for(String oxState : faHash.get(oh).get(c).get(dbs).get(prefix).keySet())
-        	{
-        		FattyAcidVO faVO = faHash.get(oh).get(c).get(dbs).get(prefix).get(oxState);
-                Hashtable<String,Integer> faElements = StaticUtils.categorizeFormula(faVO.getFormula());
-                double mass = faVO.getMass();
-                if (!faElements.containsKey("O"))
-                  continue;
-                if (chainType==LipidomicsConstants.CHAIN_TYPE_FA_ALKYL){
-                  mass += (2d*elements_.getElementDetails("H").getMonoMass()-elements_.getElementDetails("O").getMonoMass());
-                  faElements.put("H",(faElements.get("H")+2));
-                  faElements.put("O",(faElements.get("O")-1));
-                } else if (chainType==LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL){
-                  mass += (-1d*elements_.getElementDetails("O").getMonoMass());
-                  faElements.put("O",(faElements.get("O")-1));
-                }
-                if (faElements.get("O")<0 || mass<0d)
-                  continue;
-                newHash.get(oh).get(c).get(dbs).get(prefix).put(oxState, new FattyAcidVO(chainType, faVO.getPrefix(), faVO.getcAtoms(),
-                    faVO.getDoubleBonds(), oh, mass, StaticUtils.getFormulaInHillNotation(faElements, true),faVO.getOxState()));
-        	}
+          for (String prefix : faHash.get(oh).get(c).get(dbs).keySet()) 
+          {
+	        	newHash.get(oh).get(c).get(dbs).put(prefix, new Hashtable<String,FattyAcidVO>());  
+	        	for(String oxState : faHash.get(oh).get(c).get(dbs).get(prefix).keySet())
+	        	{
+	        		FattyAcidVO faVO = faHash.get(oh).get(c).get(dbs).get(prefix).get(oxState);
+              Hashtable<String,Integer> faElements = StaticUtils.categorizeFormula(faVO.getFormula());
+              double mass = faVO.getMass();
+              if (!faElements.containsKey("O"))
+                continue;
+              if (chainType==LipidomicsConstants.CHAIN_TYPE_FA_ALKYL){
+                mass += (2d*elements_.getElementDetails("H").getMonoMass()-elements_.getElementDetails("O").getMonoMass());
+                faElements.put("H",(faElements.get("H")+2));
+                faElements.put("O",(faElements.get("O")-1));
+              } else if (chainType==LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL){
+                mass += (-1d*elements_.getElementDetails("O").getMonoMass());
+                faElements.put("O",(faElements.get("O")-1));
+              }
+              if (faElements.get("O")<0 || mass<0d)
+                continue;
+              newHash.get(oh).get(c).get(dbs).get(prefix).put(oxState, new FattyAcidVO(chainType, faVO.getPrefix(), faVO.getcAtoms(),
+                  faVO.getDoubleBonds(), oh, mass, StaticUtils.getFormulaInHillNotation(faElements, true),faVO.getOxState()));
+	        	}
           }
         }
       }
@@ -1255,18 +1242,23 @@ public class FragmentCalculator
    * @throws RulesException exception thrown when there is something wrong with the chain name
    */
   private void checkWhetherFaIsInLib(String chain, Set<Integer> ohNumbers, Hashtable<Integer,Hashtable<String,String>> hashToAdd,
-		  Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> chainLib) throws RulesException {
+		  Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> chainLib) throws RulesException 
+  {
     String[] cAndDbAndOx = null;
     try {
       cAndDbAndOx = StaticUtils.parseCAndDbsFromChainId(chain);
     } catch (Exception e) { throw new RulesException(e.getMessage());}
-    for (Integer oh : ohNumbers) {
-      if (!hashToAdd.containsKey(oh)) hashToAdd.put(oh, new Hashtable<String,String>());
-      if (chainLib.containsKey(oh) && chainLib.get(oh).containsKey(Integer.parseInt(cAndDbAndOx[0])) && chainLib.get(oh).get(Integer.parseInt(cAndDbAndOx[0])).containsKey(Integer.parseInt(cAndDbAndOx[1])) &&
-    		  chainLib.get(oh).get(Integer.parseInt(cAndDbAndOx[0])).get(Integer.parseInt(cAndDbAndOx[1])).get("").containsKey(cAndDbAndOx[2]) &&
-    		  chainLib.get(oh).get(Integer.parseInt(cAndDbAndOx[0])).get(Integer.parseInt(cAndDbAndOx[1])).get("").size()>0)
-        hashToAdd.get(oh).put(chain,chain);     
-    }
+    for (Integer oh : ohNumbers) 
+    {
+  		if (!hashToAdd.containsKey(oh)) hashToAdd.put(oh, new Hashtable<String,String>());
+      if (chainLib.containsKey(oh) 
+      		&& chainLib.get(oh).containsKey(Integer.parseInt(cAndDbAndOx[0])) 
+      		&& chainLib.get(oh).get(Integer.parseInt(cAndDbAndOx[0])).containsKey(Integer.parseInt(cAndDbAndOx[1])) 
+      		&& chainLib.get(oh).get(Integer.parseInt(cAndDbAndOx[0])).get(Integer.parseInt(cAndDbAndOx[1])).values().iterator().next().containsKey(cAndDbAndOx[2]))
+      {
+      	hashToAdd.get(oh).put(chain,chain);
+      }
+  	}   
   }
   
   /**
@@ -1689,7 +1681,8 @@ public class FragmentCalculator
         String[] cAndDbs;
         try {
           cAndDbs = StaticUtils.parseCAndDbsFromChainId(chain);
-          encoded.append(values.get(Integer.parseInt(cAndDbs[0])).get(Integer.parseInt(cAndDbs[1])).get("").get(cAndDbs[2]).getChainIdWOPrefix());
+          //using iterator().next() for the prefix is fine here, as no chains with prefixes end up here.
+          encoded.append(values.get(Integer.parseInt(cAndDbs[0])).get(Integer.parseInt(cAndDbs[1])).values().iterator().next().get(cAndDbs[2]).getChainIdDetailed(false,true));
         }
         catch (Exception e) {
           throw new RulesException(e);
@@ -1783,7 +1776,8 @@ public class FragmentCalculator
       Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableAlkylChains,
       Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableAlkenylChains,
       Hashtable<Integer,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> availableLCBChains,
-      Hashtable<String,FattyAcidVO> uniqueChains) throws LipidCombinameEncodingException, ChemicalFormulaException {
+      Hashtable<String,FattyAcidVO> uniqueChains) throws LipidCombinameEncodingException, ChemicalFormulaException 
+  {
     Vector<FattyAcidVO> chains = StaticUtils.decodeLipidNamesFromChainCombi(permuteId);
     //first, it is evaluated how many different options are present for each chain position
     int isotopicLabels[] = new int[chains.size()];
@@ -1796,11 +1790,13 @@ public class FragmentCalculator
     for (int i=0; i!=chains.size(); i++){
       chain = chains.get(i);
       available = getLookupHashByChainType(chain.getChainType(),availableFAChains,availableAlkylChains,availableAlkenylChains,availableLCBChains);
-      
-      Hashtable<String, FattyAcidVO> available_new = new Hashtable<String, FattyAcidVO>();
-      available_new.put("",available.get(chain.getOhNumber()).get(chain.getcAtoms()).get(chain.getDoubleBonds()).get("").get(chain.getOxState()));
-      
-      chainVOsByPosition.put(i,available_new);
+      Hashtable<String,FattyAcidVO> faPlusPrefix = new Hashtable<String,FattyAcidVO>();
+      Set<String> prefixes = available.get(chain.getOhNumber()).get(chain.getcAtoms()).get(chain.getDoubleBonds()).keySet();
+      for (String prefix : prefixes)
+      {
+      	faPlusPrefix.put(prefix, available.get(chain.getOhNumber()).get(chain.getcAtoms()).get(chain.getDoubleBonds()).get(prefix).get(chain.getOxState()));
+      }
+      chainVOsByPosition.put(i,faPlusPrefix);
       isotopicLabels[i] = chainVOsByPosition.get(i).size();
     }
     //second, it is calculated how many combinations of the different label are possible
@@ -1890,7 +1886,7 @@ public class FragmentCalculator
           toAdd.put(combiName, valueVOs);
           for (FattyAcidVO vo : valueVOs) {
             if (!uniqueChains.containsKey(vo.getChainId()))
-              uniqueChains.put(vo.getChainId(), vo);
+            	uniqueChains.put(vo.getChainId(), vo);
           }
 //          System.out.println(combiName);
         }

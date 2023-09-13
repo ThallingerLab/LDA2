@@ -142,7 +142,7 @@ public class TargetlistEntry extends QuantVO
   {
     super(lipidClass, species, -1, ohNumber, formula, mz, charge, adduct, adductFormula, -1f, 0f, 0f,
         new Vector<Double>(), new Vector<Double>(),0,"");
-	this.originalClassName_ = lipidClass;
+    this.originalClassName_ = lipidClass;
     this.detector_ = detector;
     this.polarity_ = polarity;
     this.msLevel_ = msLevel;

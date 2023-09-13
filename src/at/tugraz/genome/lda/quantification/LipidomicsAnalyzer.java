@@ -61,7 +61,6 @@ import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.msn.FragmentCalculator;
 import at.tugraz.genome.lda.msn.vos.FragmentRuleVO;
 import at.tugraz.genome.lda.msn.vos.FragmentVO;
-import at.tugraz.genome.lda.quantification.LipidomicsDefines;
 import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.maspectras.quantification.CgChromatogram;
 import at.tugraz.genome.maspectras.quantification.CgDefines;
@@ -181,8 +180,6 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
   private float relativeFarAreaCutoff_;
   private int relativeFarAreaTimeSpace_;
   private float relativeIsoInBetweenCutoff_;
-  @SuppressWarnings("unused")
-  private float twinPeakMzTolerance_;
   private int closePeakTimeTolerance_;
   private float twinInBetweenCutoff_;
   private float unionInBetweenCutoff_;
@@ -273,7 +270,6 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     this.relativeFarAreaCutoff_ = 0.1f;
     this.relativeFarAreaTimeSpace_ = 30;
     this.relativeIsoInBetweenCutoff_ = 0.5f;
-    this.twinPeakMzTolerance_ = 0.002f;
     this.closePeakTimeTolerance_ = 10;
     this.isoInBetweenMaxTimeDistance_ = 300;
     this.twinInBetweenCutoff_ = 0.95f;
@@ -294,7 +290,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
       float overlapPeakDistanceDivisor, float overlapFullDistanceDivisor, int peakDiscardingAreaFactor,
       int isotopeInBetweenTime,  float isoInBetweenAreaFactor, int isoInBetweenMaxTimeDistance, int isoNearNormalProbeTime,
       float relativeAreaCutoff, float relativeFarAreaCutoff, int relativeFarAreaTimeSpace,
-      float relativeIsoInBetweenCutoff, float twinPeakMzTolerance, int closePeakTimeTolerance, float twinInBetweenCutoff, float unionInBetweenCutoff,
+      float relativeIsoInBetweenCutoff, int closePeakTimeTolerance, float twinInBetweenCutoff, float unionInBetweenCutoff,
       float msnMzTolerance){
     this.chromSmoothRange_= chromSmoothRange;
     this.removeIfOtherIsotopePresent_ = removeIfOtherIsotopePresent;
@@ -346,7 +342,6 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     this.relativeFarAreaCutoff_ = relativeFarAreaCutoff;
     this.relativeFarAreaTimeSpace_ = relativeFarAreaTimeSpace;
     this.relativeIsoInBetweenCutoff_ = relativeIsoInBetweenCutoff;
-    this.twinPeakMzTolerance_ = twinPeakMzTolerance;
     this.closePeakTimeTolerance_ = closePeakTimeTolerance;
     this.twinInBetweenCutoff_ = twinInBetweenCutoff;
     this.unionInBetweenCutoff_ = unionInBetweenCutoff;
@@ -3510,10 +3505,18 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     boolean coversPeakTop = false;
     if (probe1.LowerValley<probe2.Peak&&probe2.Peak<probe1.UpperValley)coversPeakTop = true;
     if (probe2.LowerValley<probe1.Peak&&probe1.Peak<probe2.UpperValley)coversPeakTop = true;
-    if (probe2.LowerValley<probe1.LowerValley)
+    if (probe2.LowerValley<probe1.LowerValley) 
+    {
       probe1.LowerValley = probe2.LowerValley;
-    if (probe2.UpperValley>probe1.UpperValley)
+      probe1.setLowerValley10(probe2.getLowerValley10());
+      probe1.setLowerValley50(probe2.getLowerValley50());
+    }
+    if (probe2.UpperValley>probe1.UpperValley) 
+    {
       probe1.UpperValley = probe2.UpperValley;
+      probe1.setUpperValley10(probe2.getUpperValley10());
+      probe1.setUpperValley50(probe2.getUpperValley50());
+    }
     if (probe2.LowerMzBand>probe1.LowerMzBand)
       probe1.LowerMzBand = probe2.LowerMzBand;
     if (probe2.UpperMzBand>probe1.UpperMzBand)

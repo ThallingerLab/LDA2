@@ -53,10 +53,10 @@ public class IntegerMaxVerifier extends IntegerVerifier
 
   protected boolean performOtherChecks(int number){
     if (number>maxValue_){
-      new WarningMessage(new JFrame(), "Error", "The entered value must be lower or equal than "+maxValue_);
+      new WarningMessage(new JFrame(), "Error", "The entered value must be lower or equal "+maxValue_);
       return false;
     }else if (number<minValue_){
-      new WarningMessage(new JFrame(), "Error", "The entered value must be greater or equal than "+minValue_);
+      new WarningMessage(new JFrame(), "Error", "The entered value must be greater or equal "+minValue_);
       return false;
     }
     return true;

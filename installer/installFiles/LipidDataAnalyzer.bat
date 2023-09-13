@@ -1,1 +1,1 @@
-${installer:javaBinLocation} -Xms${installer:xms}m -Xmx${installer:xmx}m ${installer:javaProp3DL} -jar LipidDataAnalyzer.jar
+C:\Users\leoni\Develop\jdk1.8.0_202\bin\java -Xms1024m -Xmx10240m -jar LipidDataAnalyzer.jar

@@ -42,6 +42,7 @@ import javax.swing.JLabel;
 
 import at.tugraz.genome.lda.TooltipTexts;
 import at.tugraz.genome.lda.WarningMessage;
+import at.tugraz.genome.lda.exception.AbsoluteSettingsInputException;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
@@ -87,17 +88,18 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
   
 
   public ResultDisplaySettings(boolean isAvailability, boolean esAvailability, Hashtable<String,Integer>isLookup,Hashtable<String,Integer>esLookup,
-      boolean absoluteSettings, boolean hasSampleWeight, boolean hasProtein,
-      boolean hasNeutralLipid/*, ActionListener parent*/){
+      boolean absoluteSettings, AbsoluteQuantSettingsPanel panel
+      /*, ActionListener parent*/){
     this.setLayout(new GridBagLayout());
     this.isAvailability_ = isAvailability;
     this.esAvailability_ = esAvailability;
     this.isLookup_ = isLookup;
     this.esLookup_ = esLookup;
+    if (absoluteSettings)
+    {
+    	initRemoveAbsSettings(panel);
+    }
     this.absoluteSettings_ = absoluteSettings;
-    hasSampleWeight_ = hasSampleWeight;
-    this.hasProtein_ = hasProtein;
-    this.hasNeutralLipid_ = hasNeutralLipid;
     parents_ = new Vector<ActionListener>();
 ////    parent_ = parent;
     
@@ -217,11 +219,33 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
     button.addActionListener(this);
     setVisible(false);
-    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    setDefaultCloseOperation(DISPOSE_ON_CLOSE );
     pack(); 
   }
   
-  
+  private void initRemoveAbsSettings(AbsoluteQuantSettingsPanel panel)
+  {
+    this.hasProtein_ = false;
+    this.hasNeutralLipid_ = false;
+    this.hasSampleWeight_ = false;
+    
+    try {
+      if (panel.getSettingsVO().getVolumeSettings().size()>0 &&
+      		panel.getSettingsVO().getVolumeSettings().values().iterator().next().getProteinConc()!=null)
+      	this.hasProtein_ = true;
+      if (panel.getSettingsVO().getVolumeSettings().size()>0 &&
+      		panel.getSettingsVO().getVolumeSettings().values().iterator().next().getNeutralLipidConc()!=null)
+      	this.hasNeutralLipid_ = true;
+      if (panel.getSettingsVO().getVolumeSettings().size()>0 &&
+      		panel.getSettingsVO().getVolumeSettings().values().iterator().next().getSampleWeight()!=null)
+      	this.hasSampleWeight_ = true;
+
+    }
+    catch (AbsoluteSettingsInputException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
   
   public void actionPerformed(ActionEvent e) {
     if (e.getActionCommand().equalsIgnoreCase(CHANGE_IS_STATUS)){
@@ -268,11 +292,11 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
   
   private void addJustRelative(){
     displayType_.removeAllItems();
-    displayType_.addItem("relative value");
-    displayType_.addItem("relative to base peak");
-    displayType_.addItem("relative to measured class amount");
-    displayType_.addItem("relative to highest total peak");
-    displayType_.addItem("relative to total amount");
+    displayType_.addItem(ResultDisplaySettingsVO.REL_VALUE);
+    displayType_.addItem(ResultDisplaySettingsVO.REL_BASE_PEAK);
+    displayType_.addItem(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT);
+    displayType_.addItem(ResultDisplaySettingsVO.REL_HIGHEST_TOTAL_PEAK);
+    displayType_.addItem(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT);
   }
   
   private void addAllDisplayTypes(){
@@ -300,14 +324,14 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
 
     public void itemStateChanged(ItemEvent e)  {
       if (e.getStateChange()==ItemEvent.SELECTED){
-        if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("relative value")){
+        if (((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_VALUE)){
           enableSettings();
           enableMagnitudeSetting(false);
           disableAUSettings(true);
-        } else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("relative to base peak")||
-            ((String)displayType_.getSelectedItem()).equalsIgnoreCase("relative to measured class amount")||
-            ((String)displayType_.getSelectedItem()).equalsIgnoreCase("relative to highest total peak")||
-            ((String)displayType_.getSelectedItem()).equalsIgnoreCase("relative to total amount")){
+        } else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_BASE_PEAK)||
+            ((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT)||
+            ((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_HIGHEST_TOTAL_PEAK)||
+            ((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT)){
           disableSettings();         
         }else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("amount end-volume")||
             ((String)displayType_.getSelectedItem()).equalsIgnoreCase("conc. end-volume") ||
@@ -492,5 +516,9 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
   
   public void addActionListener(ActionListener parent){
     this.parents_.add(parent);
+  }
+  
+  public void removeActionListener(ActionListener parent) {
+  	this.parents_.remove(parent);
   }
 }

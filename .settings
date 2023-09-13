@@ -33,5 +33,3 @@ useCuda=false
 Alex123=true
 ## make empty entries when an analyte cannot by found by "Quant. anal. at not found" and "Take exact peak for others"
 EmptyEntriesForQuantAnalNotFound=false
-## omega export peak selection method; there are two options: 'strongest' and 'rtDiff'
-OmegaExportPeakSelection=strongest

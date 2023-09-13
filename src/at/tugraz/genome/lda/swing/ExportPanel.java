@@ -58,8 +58,6 @@ public class ExportPanel extends JPanel
 
   public static final String EXPORT_MAF = "exportMAF";
 
-  public static final String EXPORT_N_RT = "exportOmegaRts";
-
   
   private ActionListener parent_;
   
@@ -140,15 +138,6 @@ public class ExportPanel extends JPanel
       chrom.setToolTipText(TooltipTexts.EXPORT_CHROMS);
       this.add(chrom);      
     }
-    ////this has to be removed in the default LDA version; START!
-/****    label = new JLabel(" | ");
-    label.setForeground(font);
-    label.setFont(textFont);
-    this.add(label); 
-    ExportButton chrom = new ExportButton("\u03C9-RT",EXPORT_N_RT,font,background,parent_);
-    chrom.setToolTipText(TooltipTexts.EXPORT_N_RTs);
-    this.add(chrom);*/
-    ////this has to be removed in the default LDA version; END!
     
     
 

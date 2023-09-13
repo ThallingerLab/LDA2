@@ -83,7 +83,7 @@ public class AreaSettingDialog extends JDialog implements ActionListener
     initInputPanel();
     initButtonPanel();
     this.setVisible(false);
-    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     pack();
   }
   

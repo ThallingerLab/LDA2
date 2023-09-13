@@ -6,6 +6,8 @@ MsconvertPath=msconvert/msconvert.exe
 MassWolfPath=massWolf.exe
 ## path to the element config file (comes with the application)
 ElementConfig=elementconfig.xml
+## path to the (ox)modification config file (comes with the application)
+ModConfig=modconfig.xml
 ## should an overview excel be generated
 OverviewExcelWorkbook=true
 ## should the mass values be displays in the overview excel
@@ -13,7 +15,7 @@ OverviewExcelMass=true
 ## should the single isotopic values be displayed in the overview excel
 OverviewIsotopicValues=true
 ## the used look and feel; if you want the specific one of the system write "system"
-LookAndFeel=default
+LookAndFeel=java
 ## pre-selected prefix for the internalStandardSelection
 ISDefaultInput=IS
 ESDefaultInput=Ex-IS

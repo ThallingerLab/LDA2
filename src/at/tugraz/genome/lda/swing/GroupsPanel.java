@@ -92,9 +92,9 @@ public class GroupsPanel extends JPanel implements ActionListener
       count++;
     }
     if (groups_.size()>itemsInRow_){
-      panelToAddGroupPanel.setPreferredSize(new Dimension(maxWidth_-insetLeft-insetRight,(count/itemsInRow_+1)*150));
+      panelToAddGroupPanel.setPreferredSize(new Dimension(maxWidth_-insetLeft-insetRight-scrollBarWidth_,(count/itemsInRow_+1)*150));
       JScrollPane scrollPane = new JScrollPane(panelToAddGroupPanel);
-      scrollPane.setPreferredSize(new Dimension(maxWidth_-insetLeft-insetRight-scrollBarWidth_, 170));
+      scrollPane.setPreferredSize(new Dimension(maxWidth_, 170));
       this.add(scrollPane);
     }
 

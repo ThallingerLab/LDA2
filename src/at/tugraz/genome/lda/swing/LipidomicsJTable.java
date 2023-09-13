@@ -23,6 +23,8 @@
 
 package at.tugraz.genome.lda.swing;
 
+import java.util.ArrayList;
+
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -40,8 +42,11 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.table.TableCellRenderer;
 
+import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.TooltipTexts;
+import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.analysis.AnalyteAddRemoveListener;
+import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 
 /**
@@ -72,18 +77,34 @@ public class LipidomicsJTable extends JTable implements ActionListener
   private boolean controlDown_;
   private boolean shiftDown_;
   private int lastSelectedIndex_;
+
+  private final static String LABEL_ADD_ANALYTE_BEFORE = "Add analyte before";
+  
+  private final static String LABEL_ADD_ANALYTE_AFTER = "Add analyte after";
+  
+  private final static String LABEL_DELETE_ANALYTE = "Delete analyte";
+  
+  private final static String LABEL_SHOW_MSMS = "Show MS/MS";
+  
+  private final static String LABEL_SHOW_MS1 = "Show MS1";
+  
+  private final static String LABEL_SORT_BY_ORDER = "Sort by order";
+  
+  private final static String LABEL_SORT_BY_MASS = "Sort by mass";
+  
+  private final static String LABEL_SORT_BY_INTENSITY = "Sort by intensity";
   
   private final static String LABEL_EDIT_RULES = "Edit MSn rule";
   /** display text for recalculating an MSn identification of a hit*/
   private final static String LABEL_RECALCULATE_MSN = "Recalculate MSn";
   /** display text for editing the retention time of a hit*/
   private final static String LABEL_EDIT_RT = "Edit Rt";
+  
+  private final static String LABEL_EDIT_OMEGA_ASSIGNMENT = "Edit \u03C9-DB Assignment";
+  
+  private final static String LABEL_DELETE_MOLECULAR_SPECIES = "Delete molecular species";
   /** do these LipidParameterSets contain any OH information*/
   private boolean hasOh_;
-  
-  /** just for testing*/
- // private final static String LABEL_COPY = "Copy to clipboard";
-
 
   public LipidomicsJTable(LipidomicsTableModel model,TableCellRenderer renderer,boolean showMs2,int orderType,boolean showRtInAddDialog,
       AnalyteAddRemoveListener parentListener)  {
@@ -93,36 +114,48 @@ public class LipidomicsJTable extends JTable implements ActionListener
     this.renderer = renderer;
     this.showRt_ = showRtInAddDialog;
     addItemPopup_ = new JPopupMenu("Apply Peak-RT to double peaks");
-    JMenuItem item = new JMenuItem("Add analyte before");
+    
+    JMenuItem item = new JMenuItem(LABEL_ADD_ANALYTE_BEFORE);
     item.addActionListener(this);
     item.setVisible(orderType==ORDER_TYPE_AS_IS);
     addItemPopup_.add(item);
-    item = new JMenuItem("Add analyte after");
+    
+    item = new JMenuItem(LABEL_ADD_ANALYTE_AFTER);
     item.addActionListener(this);
     item.setVisible(orderType==ORDER_TYPE_AS_IS);
     addItemPopup_.add(item);
-    item = new JMenuItem("Delete analyte");
+    
+    item = new JMenuItem(LABEL_DELETE_ANALYTE);
     item.addActionListener(this);
     addItemPopup_.add(item);
-    showMS2_ = new JMenuItem("Show MS/MS");
+    
+    if (model.isShowMSn()) {
+      item = new JMenuItem(LABEL_DELETE_MOLECULAR_SPECIES);
+      item.addActionListener(this);
+      addItemPopup_.add(item);
+    }
+    
+    showMS2_ = new JMenuItem(LABEL_SHOW_MSMS);
     showMS2_.addActionListener(this);
     showMS2_.setVisible(showMs2);
     addItemPopup_.add(showMS2_);
-    showMS1_ = new JMenuItem("Show MS1");
+    
+    showMS1_ = new JMenuItem(LABEL_SHOW_MS1);
     showMS1_.addActionListener(this);
     showMS1_.setVisible(false);
     addItemPopup_.add(showMS1_);
 
-    
-    item = new JMenuItem("Sort by order");
+    item = new JMenuItem(LABEL_SORT_BY_ORDER);
     item.addActionListener(this);
     item.setVisible(orderType!=ORDER_TYPE_AS_IS);
     addItemPopup_.add(item);
-    item = new JMenuItem("Sort by mass");
+    
+    item = new JMenuItem(LABEL_SORT_BY_MASS);
     item.addActionListener(this);
     item.setVisible(orderType!=ORDER_TYPE_MZ);
     addItemPopup_.add(item);
-    item = new JMenuItem("Sort by intensity");
+    
+    item = new JMenuItem(LABEL_SORT_BY_INTENSITY);
     item.addActionListener(this);
     item.setVisible(orderType!=ORDER_TYPE_INTENSITY);
     addItemPopup_.add(item);
@@ -133,7 +166,7 @@ public class LipidomicsJTable extends JTable implements ActionListener
     addItemPopup_.add(item);
 
     //Recalculate an MSn identification
-    if (!model.isShowMSn()){
+    if (!model.isShowMSn() && !model.isShowOmega()){
       item = new JMenuItem(LABEL_RECALCULATE_MSN);
       item.addActionListener(this);
       addItemPopup_.add(item);
@@ -143,10 +176,11 @@ public class LipidomicsJTable extends JTable implements ActionListener
       addItemPopup_.add(item);
     }
     
-    /**just for testing
-    item = new JMenuItem(LABEL_COPY);
-    item.addActionListener(this);
-    addItemPopup_.add(item);*/
+    if (Settings.SHOW_OMEGA_TOOLS) {
+      item = new JMenuItem(LABEL_EDIT_OMEGA_ASSIGNMENT);
+      item.addActionListener(this);
+      addItemPopup_.add(item);
+    }
     
     this.add(addItemPopup_);
     controlDown_ = false;
@@ -211,64 +245,132 @@ public class LipidomicsJTable extends JTable implements ActionListener
 
   private void actionPerformed(String actionCommand) 
   {
-    if (actionCommand.equalsIgnoreCase("Add analyte before")){
-      int positionToAddNewAnalyte = getSelectionModel().getLeadSelectionIndex();
-      LipidParameterSet params = parentListener_.getAnalyteInTableAtPosition(positionToAddNewAnalyte);
-      String displayString = params.getNameString();
-      if (params.getModificationName()!=null&&params.getModificationName().length()>0)displayString+="_"+params.getModificationName();
-      new AddAnalyteDialog(new JFrame(),"Enter new analyte", "Add a new analyte before "+displayString,params.getNameString(),params.Mz[0],params.getAnalyteFormula(),
-          params.getModificationName(),params.getModificationFormula(),positionToAddNewAnalyte,showRt_,hasOh_ ? String.valueOf(params.getOhNumber()) : null,parentListener_);
-    } else if (actionCommand.equalsIgnoreCase("Add analyte after")){
-      int positionToAddNewAnalyte = getSelectionModel().getLeadSelectionIndex()+1;
-      LipidParameterSet params = parentListener_.getAnalyteInTableAtPosition(positionToAddNewAnalyte-1);
-      String displayString = params.getNameString();
-      if (params.getModificationName()!=null&&params.getModificationName().length()>0)displayString+="_"+params.getModificationName();
-      new AddAnalyteDialog(new JFrame(),"Enter new analyte", "Add a new analyte after "+displayString,params.getNameString(),params.Mz[0],params.getAnalyteFormula(),
-          params.getModificationName(),params.getModificationFormula(),positionToAddNewAnalyte,showRt_,hasOh_ ? String.valueOf(params.getOhNumber()) : null,parentListener_);
-    } else if (actionCommand.equalsIgnoreCase("Delete analyte")){
-      int[] indices = getSelectedRows();
-      String displayString = "\n";
-      int count = 0;
-      for (int ind : indices){
-        count++;
-        LipidParameterSet params = parentListener_.getAnalyteInTableAtPosition(ind);
-        displayString += params.getNameString();
+    int position;
+    LipidParameterSet params;
+    String displayString;
+    
+    switch (actionCommand) {
+      
+      case LABEL_ADD_ANALYTE_BEFORE:
+        position = getSelectionModel().getLeadSelectionIndex();
+        params = parentListener_.getAnalyteInTableAtPosition(position);
+        displayString = params.getNameString();
         if (params.getModificationName()!=null&&params.getModificationName().length()>0)displayString+="_"+params.getModificationName();
-        displayString += ", ";
-        if (count%8 == 0) displayString += "\n";
-      }
-      if (displayString.endsWith("\n")) displayString = displayString.substring(0,displayString.length()-1);
-      if (displayString.length()>1) displayString = displayString.substring(0,displayString.length()-2);
-      if (JOptionPane.showConfirmDialog(this, "Do you really want to delete "+displayString+"?") == JOptionPane.YES_OPTION){
-        parentListener_.removeAnalyte(indices);
-      }
-    } else if (actionCommand.equalsIgnoreCase("Show MS/MS")){
-      int position = getSelectionModel().getLeadSelectionIndex();
-      parentListener_.showMs2(position);
-    } else if (actionCommand.equalsIgnoreCase("Show MS1")){
-      int position = getSelectionModel().getLeadSelectionIndex();
-      parentListener_.initANewViewer(position);
-    } else if (actionCommand.equalsIgnoreCase("Sort by order")){
-      parentListener_.changeListSorting(ORDER_TYPE_AS_IS);      
-    } else if (actionCommand.equalsIgnoreCase("Sort by mass")){
-      parentListener_.changeListSorting(ORDER_TYPE_MZ);
-    } else if (actionCommand.equalsIgnoreCase("Sort by intensity")){
-      parentListener_.changeListSorting(ORDER_TYPE_INTENSITY);
-    } else if (actionCommand.equalsIgnoreCase(LABEL_EDIT_RULES)){
-      int position = getSelectionModel().getLeadSelectionIndex();
-      parentListener_.newRule(position);     
-    } else if (actionCommand.equalsIgnoreCase(LABEL_RECALCULATE_MSN)){
-      int position = getSelectionModel().getLeadSelectionIndex();
-      parentListener_.recalculateMSn(position);     
-    } else if (actionCommand.equalsIgnoreCase(LABEL_EDIT_RT)){
-      int position = getSelectionModel().getLeadSelectionIndex();
-      parentListener_.editRt(position);     
+        new AddAnalyteDialog(new JFrame(),"Enter new analyte", "Add a new analyte before "+displayString,params.getNameString(),params.Mz[0],params.getAnalyteFormula(),
+            params.getModificationName(),params.getModificationFormula(),position,showRt_,hasOh_ ? String.valueOf(params.getOhNumber()) : null,parentListener_);
+        break;
+        
+      case LABEL_ADD_ANALYTE_AFTER:
+        position = getSelectionModel().getLeadSelectionIndex()+1;
+        params = parentListener_.getAnalyteInTableAtPosition(position-1);
+        displayString = params.getNameString();
+        if (params.getModificationName()!=null&&params.getModificationName().length()>0)displayString+="_"+params.getModificationName();
+        new AddAnalyteDialog(new JFrame(),"Enter new analyte", "Add a new analyte after "+displayString,params.getNameString(),params.Mz[0],params.getAnalyteFormula(),
+            params.getModificationName(),params.getModificationFormula(),position,showRt_,hasOh_ ? String.valueOf(params.getOhNumber()) : null,parentListener_);
+        break;
+        
+      case LABEL_DELETE_ANALYTE:
+        int[] indices = getSelectedRows();
+        int count = 0;
+        displayString = "\n";
+        for (int ind : indices){
+          count++;
+          params = parentListener_.getAnalyteInTableAtPosition(ind);
+          displayString += params.getNameString();
+          if (params.getModificationName()!=null&&params.getModificationName().length()>0)displayString+="_"+params.getModificationName();
+          displayString += ", ";
+          if (count%8 == 0) displayString += "\n";
+        }
+        if (displayString.endsWith("\n")) displayString = displayString.substring(0,displayString.length()-1);
+        if (displayString.length()>1) displayString = displayString.substring(0,displayString.length()-2);
+        if (JOptionPane.showConfirmDialog(this, "Do you really want to delete "+displayString+"?") == JOptionPane.YES_OPTION){
+          parentListener_.removeAnalyte(indices);
+        }
+        break;
+        
+      case LABEL_DELETE_MOLECULAR_SPECIES:
+      	ArrayList<Integer> msnIndices = new ArrayList<Integer>();
+        displayString = "\n";
+        for (int ind : getSelectedRows())
+        {
+        	params = parentListener_.getAnalyteInTableAtPosition(ind);
+        	if (params instanceof LipidomicsMSnSet && (((LipidomicsMSnSet)params).getStatus()>LipidomicsMSnSet.HEAD_GROUP_DETECTED))
+        	{
+        		msnIndices.add(ind);
+          	displayString += parentListener_.getNameInTableAtPosition(ind);
+          	displayString += ", ";
+            if (msnIndices.size()%8 == 0) displayString += "\n";
+        	}
+        }
+        if (msnIndices.isEmpty())
+        {
+        	new WarningMessage(new JFrame(), "Error trying to delete molecular species.", 
+        			String.format("The selected analytes do not contain any identifications at the molecular species level. Use the option '%s' instead!", LABEL_DELETE_ANALYTE));
+        }
+        else
+        {
+        	if (displayString.endsWith("\n")) displayString = displayString.substring(0,displayString.length()-1);
+          if (displayString.length()>1) displayString = displayString.substring(0,displayString.length()-2);
+          if (JOptionPane.showConfirmDialog(this, "Do you really want to delete "+displayString+"?") == JOptionPane.YES_OPTION){
+            parentListener_.removeMolecularSpecies(msnIndices);
+          }
+        }
+      	break;
+        
+      case LABEL_SHOW_MSMS:
+        position = getSelectionModel().getLeadSelectionIndex();
+        parentListener_.showMs2(position);
+        break;
+        
+      case LABEL_SHOW_MS1:
+        position = getSelectionModel().getLeadSelectionIndex();
+        parentListener_.initANewViewer(position);
+        break;
+        
+      case LABEL_SORT_BY_ORDER:
+        parentListener_.changeListSorting(ORDER_TYPE_AS_IS);  
+        break;
+        
+      case LABEL_SORT_BY_MASS:
+        parentListener_.changeListSorting(ORDER_TYPE_MZ);
+        break;
+        
+      case LABEL_SORT_BY_INTENSITY:
+        parentListener_.changeListSorting(ORDER_TYPE_INTENSITY);
+        break;
+        
+      case LABEL_EDIT_RULES:
+        position = getSelectionModel().getLeadSelectionIndex();
+        parentListener_.newRule(position);   
+        break;
+        
+      case LABEL_RECALCULATE_MSN:
+        position = getSelectionModel().getLeadSelectionIndex();
+        parentListener_.recalculateMSn(position); 
+        break;
+        
+      case LABEL_EDIT_RT:
+        position = getSelectionModel().getLeadSelectionIndex();
+        parentListener_.editRt(position);
+        break;
+        
+      case LABEL_EDIT_OMEGA_ASSIGNMENT:
+        position = getSelectionModel().getLeadSelectionIndex();
+        parentListener_.editOmegaAssignment(position);
+        break;
+        
     }
   }
   
-  public String getSumLipidNameAt(int rowIndex){
-    return ((LipidomicsTableModel)super.getModel()).getSumLipidNameAt(rowIndex);
+  public String getDisplayedNameAt(int rowIndex)
+  {
+  	return ((LipidomicsTableModel)super.getModel()).getDisplayedNameAt(rowIndex);
   }
+  
+  
+//  public String getSumLipidNameAt(int rowIndex){
+//    return ((LipidomicsTableModel)super.getModel()).getSumLipidNameAt(rowIndex);
+//  }
   
   /**
    * depending on the currently displayed view, activates or deactivates the corresponding buttons

@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -34,6 +34,7 @@ import at.tugraz.genome.lda.utils.StaticUtils;
 /**
  * 
  * @author Juergen Hartler
+ * @author Leonida M. Lamp 
  *
  */
 public class QuantVO implements Comparable<QuantVO>
@@ -61,6 +62,8 @@ public class QuantVO implements Comparable<QuantVO>
   protected Vector<QuantVO> isobaricSpecies_;
   /** will this QuantVO be quantified by another isobar?*/
   protected boolean quantifiedByOtherIsobar_;
+  /** Vector of value objects required for omega assignment */
+  private Vector<DoubleBondPositionVO> infoForOmegaAssignment_;
   protected String oxState_;
   
   /**
@@ -116,7 +119,23 @@ public class QuantVO implements Comparable<QuantVO>
     this.negStartValue_ = negativeStartValue;
     this.isobaricSpecies_ = new Vector<QuantVO>();
     this.quantifiedByOtherIsobar_ = false;
+    this.infoForOmegaAssignment_ = new Vector<DoubleBondPositionVO>();
     this.oxState_ = oxState;
+  }
+  
+  /**
+   * @return boolean informing the caller whether infoForOmegaAssignment is available
+   */
+  public boolean hasInfoForOmegaAssignment() {
+    if (!this.infoForOmegaAssignment_.isEmpty()) return true;
+    return false;
+  }
+  
+  /**
+   * @return Vector of value objects required for omega assignment
+   */
+  public Vector<DoubleBondPositionVO> getInfoForOmegaAssignment() {
+    return this.infoForOmegaAssignment_;
   }
   
   public String getAnalyteClass()
@@ -132,6 +151,12 @@ public class QuantVO implements Comparable<QuantVO>
     }
     return null;
   }
+  
+  public int getCarbons()
+  {
+  	return carbons_;
+  }
+  
   public int getDbs()
   {
     return dbs_;
@@ -146,8 +171,7 @@ public class QuantVO implements Comparable<QuantVO>
   {
 	  return oxState_;
   }
- 
-  	
+
   public String getAnalyteFormula()
   {
     return analyteFormula_;
@@ -176,7 +200,6 @@ public class QuantVO implements Comparable<QuantVO>
   {
     return retTime_;
   }
-  
   /**
    * setter method for the retention time
    * @param rt the retention time
@@ -213,6 +236,16 @@ public class QuantVO implements Comparable<QuantVO>
    */
   public String getIdString(){
     return StaticUtils.generateLipidNameString(getAnalyteName(),dbs_,-1,oxState_);
+  }
+  
+  /**
+   * Adds a value object for omega assignment
+   * 
+   * @param labeledMolecularSpecies Value object of the potential molecular species with omega assignment
+   * @param retTime float of the retention time in minutes
+   */
+  public void addInfoForOmegaAssignment(DoubleBondPositionVO labeledSpeciesVO) {
+    this.infoForOmegaAssignment_.add(labeledSpeciesVO);
   }
   
   /**

@@ -36,7 +36,7 @@ import org.dhatim.fastexcel.Worksheet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
-//import java.util.Iterator;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Vector;
@@ -59,7 +59,7 @@ import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.utils.StaticUtils;
-//import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
+import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.maspectras.quantification.CgAreaStatus;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.maspectras.quantification.Probe3D;
@@ -190,7 +190,7 @@ public class QuantificationResultExporter
   public static void writeResultsToExcel(String filePath, QuantificationResult quantRes, Hashtable<String,Boolean> bestMatchBySpectrumCoverage) throws ExportException {
 	  
 		
-		//remove oxLipids also identified as conventional lipids
+			//remove oxLipids also identified as conventional lipids
 		  ArrayList<LipidParameterSet> removeElements = new ArrayList<LipidParameterSet>();
 		  for (String key : quantRes.getIdentifications().keySet()){
 		  	if (key.contains("ox")) {
@@ -207,10 +207,10 @@ public class QuantificationResultExporter
 		  									for (int msnp2 : msn_param2.getMsnRetentionTimes().get(2).keySet()) {				
 		  										//&& msn_param1.getMsnRetentionTimes().get(2).get(msnp1) == msn_param2.getMsnRetentionTimes().get(2).get(msnp2)
 		  										if(msnp1==msnp2 ) {
-		  											String h1 = msn_param1.getNamePlusModHumanReadable();
-		  											String h2 = msn_param2.getNamePlusModHumanReadable();
-		  											String mz1 = Float.toString(msn_param1.Mz[0]);
-		  											String mz2 = Float.toString(msn_param2.Mz[0]);
+//		  											String h1 = msn_param1.getNamePlusModHumanReadable();
+//		  											String h2 = msn_param2.getNamePlusModHumanReadable();
+//		  											String mz1 = Float.toString(msn_param1.Mz[0]);
+//		  											String mz2 = Float.toString(msn_param2.Mz[0]);
 		  											remove = true;
 		  											//System.out.println(h1 + " " + mz1 + " :: " + h2 + " " + mz2);
 		  										}
@@ -233,7 +233,6 @@ public class QuantificationResultExporter
 		  		}
 		  	}
 		  }
-		  
 
 		  //version2
 		  Hashtable<Integer, Vector<Pair<String, Integer>>> duplicates = new Hashtable<Integer, Vector<Pair<String, Integer>>>();  
@@ -241,42 +240,40 @@ public class QuantificationResultExporter
 			  if (bestMatchBySpectrumCoverage != null) {
 		  		if (bestMatchBySpectrumCoverage.containsKey(lipidClass) && bestMatchBySpectrumCoverage.get(lipidClass) == true) {
 		  	
-		  		for (int index = 0; index < quantRes.getIdentifications().get(lipidClass).size()-1; index++) {
-		  		//for (LipidParameterSet lms : quantRes.getIdentifications().get(lipidClass)) {
-		  			
-		  			LipidParameterSet lms = quantRes.getIdentifications().get(lipidClass).get(index);
-		  			if (!(lms instanceof LipidomicsMSnSet)){
-		  				continue;
-		  			}
-		  			
-		  			LipidomicsMSnSet lmn = (LipidomicsMSnSet)lms;
-		  		
-		  			for (int key : lmn.getMsnRetentionTimes().keySet()) {
-		  				LinkedHashMap<Integer, Float> scan_rt_pair = lmn.getMsnRetentionTimes().get(key);
-		  				for (int key2 : scan_rt_pair.keySet()) {
-		  					//System.out.println(key2);
-		  					
-		  					Vector<Pair<String, Integer>> vlps;
-		  					if (duplicates.containsKey(key2)) {
-		  						vlps = duplicates.get(key2);
-		  						vlps.add(new Pair<>(lipidClass, index));
-		  					}
-		  					else {
-		  						vlps = new Vector<Pair<String, Integer>>();
-		  						vlps.add(new Pair<>(lipidClass, index));
-		  					}
-		  					
-		  					duplicates.put(key2, vlps);
-		  				}
-		  				
-		  			}
+			  		for (int index = 0; index < quantRes.getIdentifications().get(lipidClass).size()-1; index++) {
+			  		//for (LipidParameterSet lms : quantRes.getIdentifications().get(lipidClass)) {
+			  			
+			  			LipidParameterSet lms = quantRes.getIdentifications().get(lipidClass).get(index);
+			  			if (!(lms instanceof LipidomicsMSnSet)){
+			  				continue;
+			  			}
+			  			
+			  			LipidomicsMSnSet lmn = (LipidomicsMSnSet)lms;
+			  		
+			  			for (int key : lmn.getMsnRetentionTimes().keySet()) {
+			  				LinkedHashMap<Integer, Float> scan_rt_pair = lmn.getMsnRetentionTimes().get(key);
+			  				for (int key2 : scan_rt_pair.keySet()) {
+			  					//System.out.println(key2);
+			  					
+			  					Vector<Pair<String, Integer>> vlps;
+			  					if (duplicates.containsKey(key2)) {
+			  						vlps = duplicates.get(key2);
+			  						vlps.add(new Pair<>(lipidClass, index));
+			  					}
+			  					else {
+			  						vlps = new Vector<Pair<String, Integer>>();
+			  						vlps.add(new Pair<>(lipidClass, index));
+			  					}
+			  					
+			  					duplicates.put(key2, vlps);
+			  				}
+			  				
+			  			}
+			  		}
 		  		}
-		  		}
+			  }
 		  }
-		  	}
-		//
-		//
-		//
+		  
 		  //pick best match from duplicates drop others
 		  for (int key : duplicates.keySet()) {
 		  	Vector<Pair<String, Integer>> vlps = duplicates.get(key);
@@ -284,8 +281,8 @@ public class QuantificationResultExporter
 		  		float minDiff = 100;
 		  		float maxCoverage = 0;
 		  		float minMods = 0;
-		  		String bestOut = "";
-		  		String out = "";
+//		  		String bestOut = "";
+//		  		String out = "";
 		  		LipidomicsMSnSet bestMatch = null;
 		  		
 		  		//find best match
@@ -302,50 +299,46 @@ public class QuantificationResultExporter
 		  			
 		  			if(!oxState.equals("")) {
 		  				Pattern p = Pattern.compile("(\\d+)");
-			  	        Matcher m = p.matcher(oxState);
-			  	        
-			  	        if(m.find()) {
-			  	        	mods =+ Integer.parseInt(m.group());
-			  	        	while(m.find()) {
-				  	            mods =+ Integer.parseInt(m.group());
-				  	        }
-			  	        }
-			  	        else {
-			  	        	mods =+1 ;
-			  	        }
-			  	        
+	  	        Matcher m = p.matcher(oxState);
+	  	        
+	  	        if(m.find()) {
+	  	        	mods =+ Integer.parseInt(m.group());
+	  	        	while(m.find()) {
+		  	            mods =+ Integer.parseInt(m.group());
+		  	        }
+	  	        }
+	  	        else {
+	  	        	mods =+1 ;
+	  	        }  
 		  			}
-		  			
 		  	        
-		  	        out = pair.getKey() + " "+ lps.getNamePlusModHumanReadable() + " theo: " + theoMz + " ev: " + evMz + " diff: " + diff + " coverage: " + coverage;
-		  		    
-		  	        if (coverage>maxCoverage) {
-		  	        	maxCoverage = coverage;
-		  	        	bestMatch = lps;
-		  	        	minDiff = diff;
-		  	        	minMods = mods;
-		  	        	bestOut = out;
-		  	        }
-		  	        else if(coverage==maxCoverage && mods==minMods) {
-		  	        	if(diff<minDiff) {
-		  	        		bestMatch = lps;
-		  	        		minDiff = diff;
-		  	        		bestOut = out;
-		  	        	}
-		  	        }
-		  	        else if(coverage==maxCoverage) {
-		  	        	if(mods<minMods) {
-		  	        		bestMatch = lps;
-		  	        		minMods = mods;
-		  	        		minDiff = diff;
-		  	        		bestOut = out;
-		  	        	}
-		  	        }
-		  	
-		  			
-		  			System.out.println(out);
+//  	        out = pair.getKey() + " "+ lps.getNamePlusModHumanReadable() + " theo: " + theoMz + " ev: " + evMz + " diff: " + diff + " coverage: " + coverage;
+  		    
+  	        if (coverage>maxCoverage) {
+  	        	maxCoverage = coverage;
+  	        	bestMatch = lps;
+  	        	minDiff = diff;
+  	        	minMods = mods;
+//  	        	bestOut = out;
+  	        }
+  	        else if(coverage==maxCoverage && mods==minMods) {
+  	        	if(diff<minDiff) {
+  	        		bestMatch = lps;
+  	        		minDiff = diff;
+//  	        		bestOut = out;
+  	        	}
+  	        }
+  	        else if(coverage==maxCoverage) {
+  	        	if(mods<minMods) {
+  	        		bestMatch = lps;
+  	        		minMods = mods;
+  	        		minDiff = diff;
+//  	        		bestOut = out;
+  	        	}
+  	        }
+//		  			System.out.println(out);
 		  		}
-		  		System.out.println("Best " + bestOut);
+//		  		System.out.println("Best " + bestOut);
 		  		
 		  		//remove all other matches
 		  		for (Pair<String, Integer> pair: vlps) {
@@ -365,10 +358,8 @@ public class QuantificationResultExporter
 		  				
 		  				quantRes.getIdentifications().get(pair.getKey()).set(pair.getValue(),lps);
 		  			}
-		  			
 		  		}
-		  		
-		  		System.out.println("");
+//		  		System.out.println("");
 		  	}
 		  		 
 		  } 
@@ -392,13 +383,11 @@ public class QuantificationResultExporter
         writeConstants(ws,propertyRows);
       }
       
-      //TODO: simple multithreading by assigning a separate thread to each sheet; only if further speedup is necessary
       for (String sheetName : quantRes.getIdentifications().keySet()) { 
         Vector<LipidParameterSet> params = quantRes.getIdentifications().get(sheetName);
         iterateParamsForClassVariables(params);
         boolean alex123TargetsUsed = constants.getAlexTargetlistUsed().containsKey(sheetName) && constants.getAlexTargetlistUsed().get(sheetName);
         int msLevel = 1;
-        //TODO: find out if msLevel always remains 1?
         if (quantRes.getMsLevels()!=null&&quantRes.getMsLevels().containsKey(sheetName)) {
           msLevel = quantRes.getMsLevels().get(sheetName);
         }
@@ -429,7 +418,7 @@ public class QuantificationResultExporter
         int resultCount = 1; 
         int ms1RowCount = HEADER_ROW;
         int msnRowCount = HEADER_ROW+1; /** leave first row empty for additions like "AlexMSnTargetsUsed" */
-//        int omegaRowCount = HEADER_ROW+1; 
+        int omegaRowCount = HEADER_ROW+1; 
         
         for (LipidParameterSet param : params){
         	if (param==null)
@@ -445,9 +434,9 @@ public class QuantificationResultExporter
               throw ex;
             }
           }
-//          if (param.hasOmegaInformation()) {
-//            omegaRowCount = writeEvidenceOmega(omegaRowCount, resultSheetOmega, param, omegaHeaderTitles);
-//          }
+          if (param.hasOmegaInformation()) {
+            omegaRowCount = writeEvidenceOmega(omegaRowCount, resultSheetOmega, param, omegaHeaderTitles);
+          }
           if (Settings.isOverviewInExcelDesired()) {
             writeEvidenceOverview(resultCount, resultSheetOverview, param, overviewHeaderTitles);
           }
@@ -459,6 +448,7 @@ public class QuantificationResultExporter
     } catch (IOException ex) {
       throw new ExportException(ex.getMessage());
     } catch (Exception ex) {
+    	ex.printStackTrace();
       throw new ExportException(ex.getMessage());
     }
     
@@ -476,12 +466,12 @@ public class QuantificationResultExporter
     hasOhInformation_ = false;
     for (LipidParameterSet param : params){
     	if (param==null){
-      		continue;
-      	}
+    		continue;
+    	}
       int maxIso = param.getIsotopicProbes().size();
       if (maxIso>amountOfIsotopes_) amountOfIsotopes_ = maxIso;
       if (param instanceof LipidomicsMSnSet) { hasMSnInformation_ = true;}
-//      if (param.hasOmegaInformation()) { hasOmegaInformation_ = true;}
+      if (param.hasOmegaInformation()) { hasOmegaInformation_ = true;}
       if (param.getOhNumber()>LipidomicsConstants.EXCEL_NO_OH_INFO) { hasOhInformation_ = true;}
     }
   }
@@ -727,25 +717,24 @@ public class QuantificationResultExporter
     if (headerTitles.indexOf(LipidomicsConstants.EXCEL_MS_OH) >= 0) {
       ws.value(rowFirst, headerTitles.indexOf(LipidomicsConstants.EXCEL_MS_OH), String.valueOf(param.getOhNumber()));
     }
+    
+    if ((headerTitles.indexOf(HEADER_OMEGA_POSITION) >= 0) && !(param instanceof LipidomicsMSnSet) && param.hasOmegaInformation()) {
+      Vector<DoubleBondPositionVO> assignedDoubleBondPositionVO = StaticUtils.getAssignedDoubleBondPositions(param.getOmegaInformation());
       
-      //TODO: I still believe we should not write the double bond positions out here
-//      if ((headerTitles.indexOf(HEADER_OMEGA_POSITION) >= 0) && !(param instanceof LipidomicsMSnSet) && param.hasOmegaInformation()) {
-//        Vector<DoubleBondPositionVO> assignedDoubleBondPositionVO = StaticUtils.getAssignedDoubleBondPositions(param.getOmegaInformation());
-//        
-//        /** there can only be one assigned species, which can only have one chain */
-//        if (!assignedDoubleBondPositionVO.isEmpty()) {
-//          int omegaPosition = assignedDoubleBondPositionVO.get(0).getChainCombination().get(0).getOmegaPosition();
-//          ws.value(rowFirst, headerTitles.indexOf(HEADER_OMEGA_POSITION), String.valueOf(omegaPosition));
-//        }
-//        
-//      }
+      /** there can only be one assigned species, which can only have one chain */
+      if (!assignedDoubleBondPositionVO.isEmpty()) {
+        int omegaPosition = assignedDoubleBondPositionVO.get(0).getChainCombination().get(0).getOmegaPosition();
+        ws.value(rowFirst, headerTitles.indexOf(HEADER_OMEGA_POSITION), String.valueOf(omegaPosition));
+      }
+    }
       
     ws.value(rowFirst, headerTitles.indexOf(HEADER_MODIFICATION), param.getModificationName());
     ws.value(rowFirst, headerTitles.indexOf(HEADER_FORMULA), param.getAnalyteFormula());
     ws.value(rowFirst, headerTitles.indexOf(HEADER_MOD_FORMULA), param.getModificationFormula());
     
     if (headerTitles.indexOf(HEADER_RT) >= 0) {
-      ws.value(rowFirst, headerTitles.indexOf(HEADER_RT), param.getRt());
+    	ws.style(rowFirst, headerTitles.indexOf(HEADER_RT)).format("0.00").set();
+      ws.value(rowFirst, headerTitles.indexOf(HEADER_RT), param.getPreciseRT());
     }
       
     ws.value(rowFirst, headerTitles.indexOf(HEADER_AREA), totalArea_);
@@ -812,25 +801,25 @@ public class QuantificationResultExporter
    * @param headerTitles list of header titles
    * @return integer value of the next row where subsequent information can be written
    */
-//  public static int writeEvidenceOmega(int row, Worksheet ws, LipidParameterSet param, List<String> headerTitles) {
-//    ws.value(row, headerTitles.indexOf(HEADER_IDENTIFIER), param.getNamePlusModHumanReadable());
-//    
-//    Vector<DoubleBondPositionVO> paramOmegaInfo = param.getOmegaInformation();
-//    Iterator<DoubleBondPositionVO> it = paramOmegaInfo.iterator();
-//    
-//    while(it.hasNext()) {
-//      
-//      DoubleBondPositionVO doubleBondPositionVO = it.next();
-//      ws.value(row, headerTitles.indexOf(HEADER_MOLECULAR_SPECIES), doubleBondPositionVO.getMolecularSpecies());
-//      ws.value(row, headerTitles.indexOf(HEADER_DOUBLE_BOND_POSITION_LEVEL), doubleBondPositionVO.getDoubleBondPositionsHumanReadable());
-//      ws.value(row, headerTitles.indexOf(HEADER_EXPECTED_RT), doubleBondPositionVO.getExpectedRetentionTime());
-//      ws.value(row, headerTitles.indexOf(HEADER_ACCURACY), doubleBondPositionVO.getAccuracy());
-//      ws.value(row, headerTitles.indexOf(HEADER_ASSIGNED), doubleBondPositionVO.getIsAssigned());
-//      row++;
-//      
-//    }
-//    return row;
-//  }
+  public static int writeEvidenceOmega(int row, Worksheet ws, LipidParameterSet param, List<String> headerTitles) {
+    ws.value(row, headerTitles.indexOf(HEADER_IDENTIFIER), param.getNamePlusModHumanReadable());
+    
+    Vector<DoubleBondPositionVO> paramOmegaInfo = param.getOmegaInformation();
+    Iterator<DoubleBondPositionVO> it = paramOmegaInfo.iterator();
+    
+    while(it.hasNext()) {
+      
+      DoubleBondPositionVO doubleBondPositionVO = it.next();
+      ws.value(row, headerTitles.indexOf(HEADER_MOLECULAR_SPECIES), doubleBondPositionVO.getMolecularSpecies());
+      ws.value(row, headerTitles.indexOf(HEADER_DOUBLE_BOND_POSITION_LEVEL), doubleBondPositionVO.getDoubleBondPositionsHumanReadable());
+      ws.value(row, headerTitles.indexOf(HEADER_EXPECTED_RT), doubleBondPositionVO.getExpectedRetentionTime());
+      ws.value(row, headerTitles.indexOf(HEADER_ACCURACY), doubleBondPositionVO.getAccuracy());
+      ws.value(row, headerTitles.indexOf(HEADER_ASSIGNED), doubleBondPositionVO.getIsAssigned());
+      row++;
+      
+    }
+    return row;
+  }
 
   
   /**
@@ -845,7 +834,6 @@ public class QuantificationResultExporter
    * @throws LipidCombinameEncodingException thrown when a lipid combi ID (containing type and OH number) cannot be decoded 
    * @throws ChemicalFormulaException thrown when something is wrong with the chemical formula
    */
-  @SuppressWarnings("unchecked")
   private static int writeEvidenceMSn(int row, Worksheet ws, LipidomicsMSnSet param, HydroxyEncoding faHydroxyEncoding,
       HydroxyEncoding lcbHydroxyEncoding) throws RulesException, LipidCombinameEncodingException, ChemicalFormulaException {
     int count = row;
@@ -927,49 +915,28 @@ public class QuantificationResultExporter
 
     int cellCount = 1;
     
-    //TODO: would be nicer to not write out any double bond positions here
-//    Vector<DoubleBondPositionVO> assignedDoubleBondPositionVOs = null;
-//    if (param.hasOmegaInformation()) {
-//      assignedDoubleBondPositionVOs = StaticUtils.getAssignedDoubleBondPositions(param.getOmegaInformation());
-//    }
-    String identificationString;
-    Vector<Object> detected = param.getMSnIdentificationNames();
-    Vector<String> newNomenclature = param.getMSnIdentificationNamesWithSNPositions();
-    int nameCount = 0;
-    for (Object nameObject : detected){
-      identificationString = "";
+    Vector<DoubleBondPositionVO> assignedDoubleBondPositionVOs = null;
+    if (param.hasOmegaInformation()) {
+      assignedDoubleBondPositionVOs = StaticUtils.getAssignedDoubleBondPositions(param.getOmegaInformation());
+    }
+    Vector<String> detected = param.getMSnIdentificationNamesWithSNPositions();
+    for (String name : detected){
       double area = 0d;
-      if (nameObject instanceof Vector){
-        area = param.getRelativeIntensity(((Vector<String>)nameObject).get(0))*((double)param.Area);
-      // LL         for (String name : (Vector<String>)nameObject){ //
-      // LL   identificationString+=name+LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS_OLD; //
-      // LL  }
-      // LL  identificationString = identificationString.substring(0,identificationString.length()-1); //
-        
-        identificationString = newNomenclature.get(nameCount);
-        nameCount++;
-      }else{
-    	    
-        String name = (String) nameObject;
-      // LL  identificationString = name;
-        identificationString = newNomenclature.get(nameCount);
-        nameCount++;
-        if (param.getStatus()==LipidomicsMSnSet.HEAD_GROUP_DETECTED) area = (double)param.Area;
-        else area = param.getRelativeIntensity(name)*((double)param.Area);
-     }
+      if (param.getStatus()==LipidomicsMSnSet.HEAD_GROUP_DETECTED) area = (double)param.Area;
+      else area = param.getRelativeIntensity(name)*((double)param.Area);
       
       /** write double bond position assignment if available */
-//      if (assignedDoubleBondPositionVOs != null) {
-//        Vector<DoubleBondPositionVO> doubleBondAssignmentsOfMolecularSpecies = StaticUtils.getDoubleBondAssignmentsOfMolecularSpecies(
-//            assignedDoubleBondPositionVOs, identificationString);
-//        if (doubleBondAssignmentsOfMolecularSpecies.size() == 1) {
-//          identificationString = doubleBondAssignmentsOfMolecularSpecies.get(0).getDoubleBondPositionsHumanReadable();
-//        } else {
-//          /** only one label can be assigned for each species */
-//        }
-//      }
+      if (assignedDoubleBondPositionVOs != null) {
+        Vector<DoubleBondPositionVO> doubleBondAssignmentsOfMolecularSpecies = StaticUtils.getDoubleBondAssignmentsOfMolecularSpecies(
+            assignedDoubleBondPositionVOs, name);
+        if (doubleBondAssignmentsOfMolecularSpecies.size() == 1) {
+        	name = doubleBondAssignmentsOfMolecularSpecies.get(0).getDoubleBondPositionsHumanReadable();
+        } else {
+          /** only one label can be assigned for each species */
+        }
+      }
 
-      createHeaderCell(ws, nameRow, cellCount, identificationString);
+      createHeaderCell(ws, nameRow, cellCount, name);
       ws.value(areaRow, cellCount, area);
       cellCount++;
     }

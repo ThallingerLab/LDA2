@@ -1,0 +1,24 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.02%
+SpectrumCoverage=5%
+RetentionTimePostprocessing=true
+ChainCutoff=50%
+ValidOnlyWithOtherAdduct=H|NH4
+OtherAdductValidityTolerance=0.2
+
+[HEAD]
+!FRAGMENTS
+Name=Precursor		Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=true
+Name=Frag95		Formula=C7H11			Charge=1	MSLevel=2	mandatory=false
+Name=Frag102		Formula=C6H16N			Charge=1	MSLevel=2	mandatory=false
+Name=Frag109		Formula=C8H13			Charge=1	MSLevel=2	mandatory=false
+
+
+!INTENSITIES
+Equation=Precursor*2>Frag95		mandatory=true
+Equation=Precursor*2>Frag102		mandatory=true
+Equation=Precursor*2>Frag109		mandatory=true
