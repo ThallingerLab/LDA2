@@ -2289,11 +2289,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     }
     if (command.equalsIgnoreCase("acceptSelectedResultFiles")){
     	cleanupResultView();
-    	resultTabs_.setComponentAt(0, new LoadingPanel("Processing data, please wait..."));
-    	Thread thread = new Thread(new Runnable()
-  		{
-  			public void run()
-  			{
+//    	resultTabs_.setComponentAt(0, new LoadingPanel("Processing data, please wait..."));
+//    	Thread thread = new Thread(new Runnable()
+//  		{
+//  			public void run()
+//  			{
   				try
   				{
   					acceptResultFiles();
@@ -2303,11 +2303,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   					ex.printStackTrace();
   					new WarningMessage(new JFrame(), "Error", ex.getMessage());
   				}
-  				resultTabs_.setComponentAt(0, resultsSelectionPanel_);
-  				resultsSelectionPanel_.repaint(); //in case an error was thrown
-  			}
-  		});
-    	thread.start(); 
+//  				resultTabs_.setComponentAt(0, resultsSelectionPanel_);
+//  				resultsSelectionPanel_.repaint(); //in case an error was thrown
+//  			}
+//  		});
+//    	thread.start(); 
     }
     if (command.equalsIgnoreCase("showChromFileChooser")){
       if (chromFileChooser_==null)
@@ -3422,8 +3422,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   @SuppressWarnings("unchecked")
   private void acceptResultFiles() throws ExcelInputFileException
   {
-    long timeMillis_0 = System.currentTimeMillis();
-    System.out.println("fastExcel Start!");
+//    long timeMillis_0 = System.currentTimeMillis();
+//    System.out.println("fastExcel Start!");
     expDisplayNamesLookup_ = new Hashtable<String,String>();
     if (this.resultFiles_!=null&&this.resultFiles_.size()>0){
       AbsoluteSettingsVO absSettingVO = null;
@@ -3483,10 +3483,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
             classSequence,correctAnalyteSequence,quantObjects,expRtGroupingTime);
       }
       try {
-        long before = System.currentTimeMillis();
+//        long before = System.currentTimeMillis();
         analysisModule_.parseInput(statisticsViewMode_,combineOxWithNonOx_);
-        System.out.println(String.format("Total time required by the reading: %s !", 
-            (System.currentTimeMillis()-before)/1000.0));
+//        System.out.println(String.format("Total time required by the reading: %s !", 
+//            (System.currentTimeMillis()-before)/1000.0));
         analysisModule_.calculateStatistics();
         analysisModule_.getNrOfChainsOfClass();
         this.expDisplayNamesLookup_ = analysisModule_.getExpNames();
@@ -3507,10 +3507,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     }else{
       new WarningMessage(new JFrame(), "Error", "Please specify the files to analyze!");
     }
-    long timeMillis_1 = System.currentTimeMillis();
-    
-    System.out.println(String.format("Total time required by fastExcel: %s !", 
-        (timeMillis_1-timeMillis_0)/1000.0));
+//    long timeMillis_1 = System.currentTimeMillis();
+//    System.out.println(String.format("Total time required by fastExcel: %s !", 
+//        (timeMillis_1-timeMillis_0)/1000.0));
   }
   
   private void removeResultTabComponentsExceptFirst()
@@ -3540,7 +3539,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     if (this.groupsPanel_.getGroups().size()>0)
       exportSettingsGroup_ = new ExportSettingsPanel(true,this);
     
-    long before = System.currentTimeMillis();
+//    long before = System.currentTimeMillis();
     
     ExecutorService threadpool = Executors.newFixedThreadPool(Math.min(analysisResults.keySet().size(), getAmountOfProcessorsPreferred()));
     //JTabbedPane is not threadsafe. Thus, the panels are stored in this collection to be added iteratively.
@@ -3560,8 +3559,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       resultTabs_.setToolTipTextAt(resultTabs_.indexOfTab(molGroup), TooltipTexts.TABS_RESULTS_GROUP+molGroup+"</html>");
     }
     
-    System.out.println(String.format("Time required by the heatmap gen in total: %s !", 
-    		(System.currentTimeMillis()-before)/1000.0));
+//    System.out.println(String.format("Time required by the heatmap gen in total: %s !", 
+//    		(System.currentTimeMillis()-before)/1000.0));
     
     if (analysisResults.size()>0)
       resultTabs_.setSelectedIndex(1);
@@ -6391,6 +6390,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
    * Cleans up fields related to results loaded by the statistical analysis.
    */
   private void cleanupResultView(){
+  	LipidParameterSet.setOmegaInformationAvailable(false); //this ensures the export settings only give the option to export omega positions when any are present
   	groupDisplayNamesLookup_ = null;
   	expDisplayNamesLookup_ = null;
   	if (heatmaps_!=null){

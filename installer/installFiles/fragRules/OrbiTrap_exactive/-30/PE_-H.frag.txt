@@ -4,6 +4,7 @@ ChainLibrary=fattyAcidChains.xlsx
 CAtomsFromName=\D*(\d+):\d+
 DoubleBondsFromName=\D*\d+:(\d+)
 BasePeakCutoff=0.01%
+ChainCutoff=10%
 RetentionTimePostprocessing=true
 SpectrumCoverage=7%
 IsobarSCExclusionRatio=0.05
@@ -26,6 +27,8 @@ Name=NL_PChead_60_WRONG	Formula=$PRECURSOR-C2O2H4	Charge=1	MSLevel=2	mandatory=o
 Equation=PChead_168_WRONG+PChead_224_WRONG+PChead_242_WRONG+Precursor*0<0.1*$BASEPEAK								mandatory=true
 Equation=PEhead_140+PEhead_196+PEhead_214+Precursor<0.9*$BASEPEAK										mandatory=true
 Equation=PChead_168_WRONG+PChead_224_WRONG+PChead_242_WRONG+NL_PChead_60_WRONG+0*Precursor<2*(PEhead_140+PEhead_196+PEhead_214+0.001*Precursor)	mandatory=true
+Equation=PEhead_140|PEhead_196|PEhead_214|PEhead_122		mandatory=true
+Equation=PEhead_140+PEhead_196>PChead_168_WRONG+NL_PChead_60_WRONG	mandatory=true
 
 
 [CHAINS]
