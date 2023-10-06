@@ -1,1 +1,1 @@
-C:\Users\leoni\Develop\jdk1.8.0_202\bin\java -Xms1024m -Xmx10240m -jar LipidDataAnalyzer.jar
+jre\bin\java -Xms1024m -Xmx10240m -jar LipidDataAnalyzer.jar

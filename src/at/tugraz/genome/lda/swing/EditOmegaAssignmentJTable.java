@@ -43,7 +43,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
-import com.sun.j3d.utils.applet.MainFrame;
+import org.jogamp.java3d.utils.applet.MainFrame;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.TooltipTexts;

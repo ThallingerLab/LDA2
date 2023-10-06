@@ -206,7 +206,7 @@ import at.tugraz.genome.maspectras.utils.StringUtils;
 import at.tugraz.genome.util.index.IndexFileException;
 import at.tugraz.genome.voutils.GeneralComparator;
 
-import com.sun.j3d.utils.applet.MainFrame;
+import org.jogamp.java3d.utils.applet.MainFrame;
 
 import de.isas.mztab2.io.MzTabValidatingWriter;
 import de.isas.mztab2.io.MzTabWriter;

@@ -1,0 +1,28 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+
+[HEAD]
+!FRAGMENTS
+Name=Precursor	Formula=$PRECURSOR	Charge=1	MSLevel=2	mandatory=false
+Name=Dehydrosulfoglycosyl	Formula=C6H9O7S	Charge=1	MSLevel=2	mandatory=true
+Name=SO3H	Formula=SO3H	Charge=1	MSLevel=2	mandatory=false
+Name=C6H7O6S	Formula=C6H7O6S	Charge=1	MSLevel=2	mandatory=false
+Name=C4H5O5S	Formula=C4H5O5S	Charge=1	MSLevel=2	mandatory=false
+Name=C3H5O5S	Formula=C3H5O5S	Charge=1	MSLevel=2	mandatory=false
+Name=C4H5O4S	Formula=C4H5O4S	Charge=1	MSLevel=2	mandatory=false
+Name=C6H5O3		Formula=C6H5O3	Charge=1	MSLevel=2	mandatory=false
+Name=CH3O3S		Formula=CH3O3S	Charge=1	MSLevel=2	mandatory=false
+
+[CHAINS]
+!FRAGMENTS
+Name=Carboxy	Formula=$CHAIN	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Carboxy	Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=true
+Name=Carboxy_H2O_OH	Formula=$CHAIN-H3O2	Charge=1	MSLevel=2	mandatory=false
+Name=Carboxy_OH	Formula=$CHAIN-OH	Charge=1	MSLevel=2	mandatory=false
+
+[POSITION]
+!INTENSITIES
+Equation=NL_Carboxy[1]>NL_Carboxy[2]*1.22					mandatory=true

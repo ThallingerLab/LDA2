@@ -300,7 +300,7 @@ import at.tugraz.genome.voutils.GeneralComparator;
 
 
 
-import com.sun.j3d.utils.applet.MainFrame;
+import org.jogamp.java3d.utils.applet.MainFrame;
 import com.sun.org.apache.xerces.internal.util.URI;
 
 import de.isas.mztab2.model.Metadata;

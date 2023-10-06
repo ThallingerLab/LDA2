@@ -1438,7 +1438,8 @@ public class StaticUtils
    * @throws LipidCombinameEncodingException thrown when a human readable chain ID (without type and OH number) cannot be decoded
    */
   public static Object[] parseChainFaAndFragmentNameFromExcel(String readableFragmentName, short chainType, int oh, boolean useOldEncoding) throws LipidCombinameEncodingException{
-    Object[] result = new Object[2];
+	  
+	  Object[] result = new Object[2];
     String faName = "";
     String fragmentName = "";
     String oxState = "";
@@ -1928,6 +1929,8 @@ public class StaticUtils
    */
   public static FattyAcidVO decodeHumanReadableChain(String humanReadable, HydroxyEncoding faHydroxyEncoding,
       HydroxyEncoding lcbHydroxyEncoding, boolean isAlexOhEncodingname, LipidomicsConstants lipidomicsConstants) throws LipidCombinameEncodingException {
+	  
+	humanReadable = removeSNPositions(humanReadable);
 	  
     short chainType = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
     String prefix = "";

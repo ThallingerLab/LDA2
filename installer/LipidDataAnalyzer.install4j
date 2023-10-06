@@ -1,224 +1,158 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<install4j version="5.1.15" transformSequenceNumber="4">
+<install4j version="10.0.6" transformSequenceNumber="10">
   <directoryPresets config="./installFiles/launcher_archive/ldaCmd.sh" />
-  <application name="Lipid Data Analyzer" distributionSourceDir="" applicationId="7095-5139-4826-4510" mediaDir="./i4j-output" mediaFilePattern="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" compression="6" lzmaCompression="false" pack200Compression="false" excludeSignedFromPacking="true" commonExternalFiles="false" createMd5Sums="true" shrinkRuntime="true" shortName="LDA" publisher="Graz University of Technology" publisherWeb="http://genome.tugraz.at/" version="2.8.3" allPathsRelative="true" backupOnSave="false" autoSave="false" convertDotsToUnderscores="true" macSignature="????" installerName="" javaMinVersion="1.6" javaMaxVersion="" allowBetaVM="true" jdkMode="runtimeJre" jdkName="">
-    <languages skipLanguageSelection="false" languageSelectionInPrincipalLanguage="false">
-      <principalLanguage id="en" customLocalizationFile="" />
-      <additionalLanguages />
-    </languages>
-    <searchSequence>
-      <registry />
-      <envVar name="JAVA_HOME" />
-      <envVar name="JDK_HOME" />
-    </searchSequence>
+  <application name="Lipid Data Analyzer" applicationId="7095-5139-4826-4510" mediaDir="./i4j-output" shortName="LDA" publisher="Graz University of Technology" publisherWeb="http://genome.tugraz.at/" version="2.9.0" allPathsRelative="true" macVolumeId="b1bfb5d3c6ff7197" javaMinVersion="1.8" allowBetaVM="true" jdkMode="runtimeJre">
     <variables>
-      <variable name="javaProp3D" value="" description="" category="" />
-      <variable name="headlessTrue" value="" description="" category="" />
+      <variable name="javaProp3D" />
+      <variable name="headlessTrue" />
     </variables>
-    <mergedProjects />
-    <codeSigning macEnabled="false" macPkcs12File="" windowsEnabled="false" windowsKeySource="pkcs12" windowsPvkFile="" windowsSpcFile="" windowsPkcs12File="" />
+    <jreBundles jdkProviderId="Zulu" release="8/8u382" />
   </application>
-  <files keepModificationTimes="false" missingFilesStrategy="warn" globalExcludeSuffixes="" defaultOverwriteMode="4" defaultUninstallMode="0" launcherOverwriteMode="3" defaultFileMode="644" defaultDirMode="755">
+  <files>
     <filesets>
-      <fileset name="Java 3D - Windows - 64" id="234" customizedId="" />
-      <fileset name="Java 3D - Linux - 64" id="241" customizedId="" />
-      <fileset name="Properties archive installation" id="568" customizedId="" />
-      <fileset name="CUDA - Windows" id="1411" customizedId="" />
-      <fileset name="CUDA - Windows - 64" id="1415" customizedId="" />
-      <fileset name="CUDA - Linux" id="1420" customizedId="" />
-      <fileset name="CUDA - Mac" id="1422" customizedId="" />
-      <fileset name="Java 3D - Mac OS X" id="1540" customizedId="" />
+      <fileset name="Java 3D - Windows - 64" id="234" />
+      <fileset name="Java 3D - Linux - 64" id="241" />
+      <fileset name="Properties archive installation" id="568" />
+      <fileset name="CUDA - Windows" id="1411" />
+      <fileset name="CUDA - Windows - 64" id="1415" />
+      <fileset name="CUDA - Linux" id="1420" />
+      <fileset name="CUDA - Mac" id="1422" />
+      <fileset name="Java 3D - Mac OS X" id="1540" />
     </filesets>
     <roots>
-      <root id="235" fileset="234" location="" />
-      <root id="242" fileset="241" location="" />
-      <root id="569" fileset="568" location="" />
-      <root id="1412" fileset="1411" location="" />
-      <root id="1416" fileset="1415" location="" />
-      <root id="1421" fileset="1420" location="" />
-      <root id="1423" fileset="1422" location="" />
-      <root id="1541" fileset="1540" location="" />
+      <root id="235" fileset="234" />
+      <root id="242" fileset="241" />
+      <root id="569" fileset="568" />
+      <root id="1412" fileset="1411" />
+      <root id="1416" fileset="1415" />
+      <root id="1421" fileset="1420" />
+      <root id="1423" fileset="1422" />
+      <root id="1541" fileset="1540" />
     </roots>
     <mountPoints>
-      <mountPoint id="22" root="" location="" mode="755" />
-      <mountPoint id="277" root="235" location="" mode="755" />
-      <mountPoint id="279" root="242" location="" mode="755" />
-      <mountPoint id="572" root="569" location="" mode="755" />
-      <mountPoint id="1417" root="1412" location="" mode="755" />
-      <mountPoint id="1419" root="1416" location="" mode="755" />
-      <mountPoint id="1424" root="1421" location="" mode="755" />
-      <mountPoint id="1425" root="1423" location="" mode="755" />
-      <mountPoint id="1542" root="1541" location="" mode="755" />
+      <mountPoint id="22" />
+      <mountPoint id="277" root="235" />
+      <mountPoint id="279" root="242" />
+      <mountPoint id="572" root="569" />
+      <mountPoint id="1417" root="1412" />
+      <mountPoint id="1419" root="1416" />
+      <mountPoint id="1424" root="1421" />
+      <mountPoint id="1425" root="1423" />
+      <mountPoint id="1542" root="1541" />
     </mountPoints>
     <entries>
-      <dirEntry mountPoint="22" file="./installFiles" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="installFiles" excludeSuffixes=".svn" dirMode="755" overrideDirMode="false">
+      <dirEntry mountPoint="22" file="./installFiles" subDirectory="installFiles" excludeSuffixes=".svn">
         <exclude>
-          <entry location="launcher_archive" fileType="regular" />
-          <entry location="LipidDataAnalyzer.properties" fileType="regular" />
+          <entry location="launcher_archive" />
+          <entry location="LipidDataAnalyzer.properties" />
         </exclude>
       </dirEntry>
-      <dirEntry mountPoint="277" file="./java3d/windows64" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="bin" excludeSuffixes=".svn" dirMode="755" overrideDirMode="false">
-        <exclude />
-      </dirEntry>
-      <dirEntry mountPoint="277" file="./windows/x64" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="x64" excludeSuffixes="" dirMode="755" overrideDirMode="false">
-        <exclude />
-      </dirEntry>
-      <dirEntry mountPoint="279" file="./java3d/linux64" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="amd64" excludeSuffixes=".svn" dirMode="755" overrideDirMode="false">
-        <exclude />
-      </dirEntry>
-      <fileEntry mountPoint="572" file="./installFiles/LipidDataAnalyzer.properties" overwriteMode="1" shared="false" fileMode="664" uninstallMode="2" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
-      <fileEntry mountPoint="572" file="./installFiles/launcher_archive/ldaCmd.sh" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
-      <fileEntry mountPoint="572" file="./installFiles/launcher_archive/LipidDataAnalyzer-console" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
-      <dirEntry mountPoint="1417" file="./cuda/windows" overwriteMode="4" shared="true" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="windows" excludeSuffixes="" dirMode="755" overrideDirMode="false">
-        <exclude />
-      </dirEntry>
-      <dirEntry mountPoint="1419" file="./cuda/windows64" overwriteMode="4" shared="true" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="windows64" excludeSuffixes="" dirMode="755" overrideDirMode="false">
-        <exclude />
-      </dirEntry>
-      <dirEntry mountPoint="1424" file="./cuda/linux" overwriteMode="4" shared="false" fileMode="770" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="linux" excludeSuffixes="" dirMode="755" overrideDirMode="false">
-        <exclude />
-      </dirEntry>
-      <dirEntry mountPoint="1425" file="./cuda/mac" overwriteMode="4" shared="false" fileMode="774" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="mac" excludeSuffixes="" dirMode="755" overrideDirMode="false">
-        <exclude />
-      </dirEntry>
-      <dirEntry mountPoint="1542" file="./java3d/mac" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="mac" excludeSuffixes=".svn" dirMode="755" overrideDirMode="false">
-        <exclude />
-      </dirEntry>
+      <dirEntry mountPoint="277" file="./java3d/windows64" subDirectory="bin" excludeSuffixes=".svn" />
+      <dirEntry mountPoint="277" file="./windows/x64" subDirectory="x64" />
+      <dirEntry mountPoint="279" file="./java3d/linux64" subDirectory="amd64" excludeSuffixes=".svn" />
+      <fileEntry mountPoint="572" file="./installFiles/LipidDataAnalyzer.properties" overwriteMode="1" fileMode="664" uninstallMode="2" overrideFileMode="true" />
+      <fileEntry mountPoint="572" file="./installFiles/launcher_archive/ldaCmd.sh" fileMode="755" overrideFileMode="true" />
+      <fileEntry mountPoint="572" file="./installFiles/launcher_archive/LipidDataAnalyzer-console" fileMode="755" overrideFileMode="true" />
+      <dirEntry mountPoint="1417" file="./cuda/windows" shared="true" subDirectory="windows" />
+      <dirEntry mountPoint="1419" file="./cuda/windows64" shared="true" subDirectory="windows64" />
+      <dirEntry mountPoint="1424" file="./cuda/linux" fileMode="770" overrideFileMode="true" subDirectory="linux" />
+      <dirEntry mountPoint="1425" file="./cuda/mac" fileMode="774" overrideFileMode="true" subDirectory="mac" />
+      <dirEntry mountPoint="1542" file="./java3d/mac" subDirectory="mac" excludeSuffixes=".svn" />
     </entries>
-    <components />
   </files>
   <launchers>
-    <launcher name="LipidDataAnalyzer (windows console)" id="69" customizedId="" external="true" excludeFromMenu="false" unixMode="755" menuName="Lipid Data Analyzer (console)" externalFile="LipidDataAnalyzer.bat" />
-    <launcher name="LipidDataAnalyzer (linux console)" id="169" customizedId="" external="true" excludeFromMenu="false" unixMode="755" menuName="Lipid Data Analyzer (console)" externalFile="LipidDataAnalyzer" />
-    <launcher name="Lipid Data Analyzer" id="440" customizedId="" external="false" excludeFromMenu="false" unixMode="755" menuName="" icnsFile="" customMacBundleIdentifier="false" macBundleIdentifier="" swtApp="false" fileset="" macBundleBinary="JavaApplicationStub" addMacEntitlements="false" macEntitlementsFile="">
-      <executable name="Lipid Data Analyzer" type="1" iconSet="false" iconFile="" executableDir="." redirectStderr="false" stderrFile="error.log" stderrMode="overwrite" redirectStdout="false" stdoutFile="output.log" stdoutMode="overwrite" failOnStderrOutput="true" executableMode="1" changeWorkingDirectory="true" workingDirectory="." singleInstance="false" serviceStartType="2" serviceDependencies="" serviceDescription="" jreLocation="" executionLevel="asInvoker" checkConsoleParameter="false" globalSingleInstance="false" singleInstanceActivate="true">
-        <versionInfo include="false" fileVersion="" fileDescription="" legalCopyright="" internalName="" productName="" />
-      </executable>
-      <splashScreen show="false" autoOff="true" alwaysOnTop="true" width="0" height="0" bitmapFile="" java6SplashScreen="false">
-        <text>
-          <statusLine x="20" y="20" text="" font="Arial" fontSize="8" fontColor="0,0,0" fontWeight="500" />
-          <versionLine x="20" y="40" text="version ${compiler:sys.version}" font="Arial" fontSize="8" fontColor="0,0,0" fontWeight="500" />
-        </text>
-      </splashScreen>
-      <java mainClass="at.tugraz.genome.lda.LipidDataAnalyzer" vmParameters="${compiler:javaProp3D} ${compiler:headlessTrue}" arguments="" allowVMPassthroughParameters="true" preferredVM="" bundleRuntime="true">
+    <launcher name="LipidDataAnalyzer (windows console)" id="69" external="true" menuName="Lipid Data Analyzer (console)" externalFile="LipidDataAnalyzer.bat" />
+    <launcher name="LipidDataAnalyzer (linux console)" id="169" external="true" menuName="Lipid Data Analyzer (console)" externalFile="LipidDataAnalyzer" />
+    <launcher name="Lipid Data Analyzer" id="440">
+      <executable name="Lipid Data Analyzer" executableDir="." redirectStderr="false" executableMode="gui" />
+      <java mainClass="at.tugraz.genome.lda.LipidDataAnalyzer" vmParameters="${compiler:javaProp3D} ${compiler:headlessTrue}">
         <classPath>
           <archive location="LipidDataAnalyzer.jar" failOnError="false" />
           <archive location="j3dcore.jar" failOnError="false" />
           <archive location="j3dutils.jar" failOnError="false" />
           <archive location="vecmath.jar" failOnError="false" />
         </classPath>
-        <nativeLibraryDirectories />
       </java>
-      <includedFiles />
-      <unextractableFiles />
-      <vmOptionsFile mode="template" overwriteMode="0" fileMode="644">
-        <content />
-      </vmOptionsFile>
-      <customScript mode="1" file="">
-        <content />
-      </customScript>
-      <infoPlist mode="1" file="">
-        <content />
-      </infoPlist>
-      <iconImageFiles />
     </launcher>
   </launchers>
-  <installerGui installerType="1" addOnAppId="" suggestPreviousLocations="true" autoUpdateDescriptorUrl="" useAutoUpdateBaseUrl="false" autoUpdateBaseUrl="">
-    <customCode />
-    <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
-      <commentFiles />
-      <customAttributes />
-    </autoUpdate>
+  <installerGui>
     <applications>
-      <application name="" id="installer" customizedId="" beanClass="com.install4j.runtime.beans.applications.InstallerApplication" enabled="true" commentSet="false" comment="" actionElevationType="none" fileset="" customIcnsFile="" customIcoFile="" macEntitlementsFile="" automaticLauncherIntegration="false" launchMode="startupFirstWindow" launchInNewProcess="false" launchSchedule="updateSchedule" allLaunchers="true">
+      <application id="installer" beanClass="com.install4j.runtime.beans.applications.InstallerApplication" styleId="160" launchInNewProcess="false">
         <serializedBean>
-          <java class="java.beans.XMLDecoder">
-            <object class="com.install4j.runtime.beans.applications.InstallerApplication">
-              <void property="resizable">
-                <boolean>false</boolean>
-              </void>
-              <void property="watermark">
-                <boolean>false</boolean>
-              </void>
-            </object>
-          </java>
+          <property name="resizable" type="boolean" value="false" />
         </serializedBean>
-        <launcherIds />
-        <variables />
+        <styleOverrides>
+          <styleOverride name="Custom watermark" enabled="true">
+            <formComponent name="Watermark" id="164" beanClass="com.install4j.runtime.beans.formcomponents.SeparatorComponent" />
+          </styleOverride>
+        </styleOverrides>
         <startup>
-          <screen name="" id="1" customizedId="" beanClass="com.install4j.runtime.beans.screens.StartupScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.StartupScreen" />
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
+          <screen id="1" beanClass="com.install4j.runtime.beans.screens.StartupScreen" rollbackBarrierExitCode="0">
             <actions>
-              <action name="" id="13" customizedId="" beanClass="com.install4j.runtime.beans.actions.misc.RequestPrivilegesAction" enabled="true" commentSet="false" comment="" actionElevationType="none" rollbackBarrier="false" multiExec="false" failureStrategy="4" errorMessage="">
+              <action id="13" beanClass="com.install4j.runtime.beans.actions.misc.RequestPrivilegesAction" actionElevationType="none" failureStrategy="askRetryQuit">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.misc.RequestPrivilegesAction">
-                      <void property="failIfNotRootUnix">
-                        <boolean>true</boolean>
-                      </void>
-                      <void property="obtainIfAdminMac">
-                        <boolean>true</boolean>
-                      </void>
-                      <void property="obtainIfNormalMac">
-                        <boolean>true</boolean>
-                      </void>
-                      <void property="obtainIfNormalWin">
-                        <boolean>true</boolean>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="failIfNotRootUnix" type="boolean" value="true" />
+                  <property name="linuxPrivilegeRequirement" type="enum" class="com.install4j.runtime.beans.actions.misc.PrivilegeRequirement" value="ROOT" />
+                  <property name="obtainIfAdminMac" type="boolean" value="true" />
+                  <property name="obtainIfNormalMac" type="boolean" value="true" />
+                  <property name="obtainIfNormalWin" type="boolean" value="true" />
                 </serializedBean>
-                <condition />
               </action>
             </actions>
-            <formComponents />
           </screen>
         </startup>
         <screens>
-          <screen name="" id="2" customizedId="" beanClass="com.install4j.runtime.beans.screens.WelcomeScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.WelcomeScreen" />
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
+          <screen id="2" beanClass="com.install4j.runtime.beans.screens.WelcomeScreen" styleId="166">
             <actions>
-              <action name="" id="3" customizedId="" beanClass="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" multiExec="true" failureStrategy="1" errorMessage="">
+              <action id="3" beanClass="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction" multiExec="true">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction">
-                      <void property="excludedVariables">
-                        <array class="java.lang.String" length="1">
-                          <void index="0">
-                            <string>sys.installationDir</string>
-                          </void>
-                        </array>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="excludedVariables" type="array" elementType="string" length="1">
+                    <element index="0">sys.installationDir</element>
+                  </property>
                 </serializedBean>
                 <condition>context.getBooleanVariable("sys.confirmedUpdateInstallation")</condition>
               </action>
             </actions>
-            <formComponents />
+            <formComponents>
+              <formComponent id="36" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent">
+                <serializedBean>
+                  <property name="labelText" type="string">${form:welcomeMessage}</property>
+                </serializedBean>
+                <visibilityScript>!context.isConsole()</visibilityScript>
+              </formComponent>
+              <formComponent id="37" beanClass="com.install4j.runtime.beans.formcomponents.ConsoleHandlerFormComponent">
+                <serializedBean>
+                  <property name="consoleScript">
+                    <object class="com.install4j.api.beans.ScriptProperty">
+                      <property name="value" type="string">String message = context.getMessage("ConsoleWelcomeLabel", context.getApplicationName());
+return console.askOkCancel(message, true);
+</property>
+                    </object>
+                  </property>
+                </serializedBean>
+              </formComponent>
+              <formComponent id="38" beanClass="com.install4j.runtime.beans.formcomponents.UpdateAlertComponent" useExternalParametrization="true" externalParametrizationName="Update Alert" externalParametrizationMode="include">
+                <externalParametrizationPropertyNames>
+                  <propertyName>updateCheck</propertyName>
+                </externalParametrizationPropertyNames>
+              </formComponent>
+              <formComponent id="39" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent" insetTop="20">
+                <serializedBean>
+                  <property name="labelText" type="string">${i18n:ClickNext}</property>
+                </serializedBean>
+              </formComponent>
+            </formComponents>
           </screen>
-          <screen name="License agreement to LDA (GNU GPL v3)" id="1199" customizedId="" beanClass="com.install4j.runtime.beans.screens.LicenseScreen" enabled="true" commentSet="true" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.LicenseScreen">
-                  <void property="displayedText">
-                    <string>&lt;html&gt;&lt;body&gt;
+          <screen name="License agreement to LDA (GNU GPL v3)" id="1199" beanClass="com.install4j.runtime.beans.screens.LicenseScreen" commentSet="true">
+            <formComponents>
+              <formComponent id="42" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent">
+                <serializedBean>
+                  <property name="labelText" type="string">${i18n:LicenseLabel3}</property>
+                </serializedBean>
+              </formComponent>
+              <formComponent id="43" beanClass="com.install4j.runtime.beans.formcomponents.LicenseComponent" useExternalParametrization="true" externalParametrizationName="License Agreement" externalParametrizationMode="include">
+                <serializedBean>
+                  <property name="displayedText" type="string">&lt;html&gt;&lt;body&gt;
 &lt;h2&gt;LICENSE AGREEMENT for Lipid Data Analyzer&lt;/h2&gt;
 &lt;h2&gt;GNU GENERAL PUBLIC LICENSE&lt;/h2&gt;
 &lt;h4&gt;Version 3, 29 June 2007&lt;/h4&gt;
@@ -374,62 +308,45 @@ This is free software, and you are welcome to redistribute it under certain cond
 &lt;p&gt;The GNU General Public License does not permit incorporating your program into proprietary programs.  If your program is a subroutine library, you may consider it more useful to permit linking proprietary applications with the library.  If this is what you want to do, use the GNU Lesser General Public License instead of this License.  But first, please read &amp;lt;http://www.gnu.org/philosophy/why-not-lgpl.html&amp;gt;.&lt;/p&gt;
 
 &lt;/body&gt;&lt;/html&gt;
-</string>
-                  </void>
-                  <void property="textSource">
-                    <object class="com.install4j.runtime.beans.screens.components.TextSource" field="DIRECT" />
-                  </void>
-                </object>
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
-            <actions />
-            <formComponents />
-          </screen>
-          <screen name="Licence agreements" id="915" customizedId="" beanClass="com.install4j.runtime.beans.screens.FormScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.FormScreen">
-                  <void property="subTitle">
-                    <string>ProteoWizard, AB Sciex WiffReader, Agilent MHDAC, Bruker CompassXtract,and Thermo MSFileReader</string>
-                  </void>
-                  <void property="title">
-                    <string>Licence agreements</string>
-                  </void>
-                </object>
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
-            <actions />
-            <formComponents>
-              <formComponent name="" id="919" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
-                <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent">
-                      <void property="labelText">
-                        <string>This installer provides the independent generally freely available msconvert from ProteoWizard package (freely available at http://proteowizard.sourceforge.net) which depends on ABSciex WiffReader, Agilent MassHunter Data Access Component, Bruker CompassXtract, and Thermo MSFileReader. These software are individual software packages which in no event represent combined work with Lipid Data Analyzer.
-Thus, none of these software are governed by the license the Lipid Data Analyzer is providing you. All of them are subject to their own individual license agreements. Therefore, you have to accept all of these licence agreements to install the software.</string>
-                      </void>
-                    </object>
-                  </java>
+</property>
+                  <property name="fillVertical" type="boolean" value="true" />
+                  <property name="textSource" type="enum" class="com.install4j.runtime.beans.screens.components.TextSource" value="DIRECT" />
                 </serializedBean>
-                <initScript />
-                <visibilityScript />
+                <externalParametrizationPropertyNames>
+                  <propertyName>textSource</propertyName>
+                  <propertyName>displayedText</propertyName>
+                  <propertyName>displayedTextFile</propertyName>
+                  <propertyName>variableName</propertyName>
+                  <propertyName>acceptInitiallySelected</propertyName>
+                  <propertyName>readAllRequired</propertyName>
+                </externalParametrizationPropertyNames>
               </formComponent>
             </formComponents>
           </screen>
-          <screen name="Licence agreement to msconvert" id="912" customizedId="" beanClass="com.install4j.runtime.beans.screens.LicenseScreen" enabled="true" commentSet="true" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+          <screen name="Licence agreements" id="915" beanClass="com.install4j.runtime.beans.screens.FormScreen">
             <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.LicenseScreen">
-                  <void property="displayedText">
-                    <string>&lt;html&gt;&lt;body&gt;
+              <property name="subTitle" type="string">ProteoWizard, AB Sciex WiffReader, Agilent MHDAC, Bruker CompassXtract,and Thermo MSFileReader</property>
+              <property name="title" type="string">Licence agreements</property>
+            </serializedBean>
+            <formComponents>
+              <formComponent id="919" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent">
+                <serializedBean>
+                  <property name="labelText" type="string">This installer provides the independent generally freely available msconvert from ProteoWizard package (freely available at http://proteowizard.sourceforge.net) which depends on ABSciex WiffReader, Agilent MassHunter Data Access Component, Bruker CompassXtract, and Thermo MSFileReader. These software are individual software packages which in no event represent combined work with Lipid Data Analyzer.
+Thus, none of these software are governed by the license the Lipid Data Analyzer is providing you. All of them are subject to their own individual license agreements. Therefore, you have to accept all of these licence agreements to install the software.</property>
+                </serializedBean>
+              </formComponent>
+            </formComponents>
+          </screen>
+          <screen name="Licence agreement to msconvert" id="912" beanClass="com.install4j.runtime.beans.screens.LicenseScreen" commentSet="true">
+            <formComponents>
+              <formComponent id="48" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent">
+                <serializedBean>
+                  <property name="labelText" type="string">${i18n:LicenseLabel3}</property>
+                </serializedBean>
+              </formComponent>
+              <formComponent id="49" beanClass="com.install4j.runtime.beans.formcomponents.LicenseComponent" useExternalParametrization="true" externalParametrizationName="License Agreement" externalParametrizationMode="include">
+                <serializedBean>
+                  <property name="displayedText" type="string">&lt;html&gt;&lt;body&gt;
 &lt;h2&gt;LICENCE AGREEMENT for msconvert (ProteoWizard)&lt;/h2&gt;
 ADDENDUM TO APACHE LICENSE&lt;br/&gt;&lt;br/&gt;
 To the best of our ability we deliver this software to you under the Apache 2.0 License listed below (the source code is available in the ProteoWizard project). This software does, however, depend on other software libraries which place further restrictions on its use and redistribution. By accepting the license terms for this software, you agree to comply with the restrictions imposed on you by the license agreements of the software libraries on which it depends:&lt;br/&gt;&lt;br/&gt;
@@ -494,27 +411,31 @@ TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION&lt;br/&gt;&lt;br/&g
 &lt;b&gt;8. Limitation of Liability.&lt;/b&gt; In no event and under no legal theory, whether in tort (including negligence), contract, or otherwise, unless required by applicable law (such as deliberate and grossly negligent acts) or agreed to in writing, shall any Contributor be liable to You for damages, including any direct, indirect, special, incidental, or consequential damages of any character arising as a result of this License or out of the use or inability to use the Work (including but not limited to damages for loss of goodwill, work stoppage, computer failure or malfunction, or any and all other commercial damages or losses), even if such Contributor has been advised of the possibility of such damages.&lt;br/&gt;&lt;br/&gt;
 
 &lt;b&gt;9. Accepting Warranty or Additional Liability.&lt;/b&gt; While redistributing the Work or Derivative Works thereof, You may choose to offer, and charge a fee for, acceptance of support, warranty, indemnity, or other liability obligations and/or rights consistent with this License. However, in accepting such obligations, You may act only on Your own behalf and on Your sole responsibility, not on behalf of any other Contributor, and only if You agree to indemnify, defend, and hold each Contributor harmless for any liability incurred by, or claims asserted against, such Contributor by reason of your accepting any such warranty or additional liability.
-&lt;/body&gt;&lt;/html&gt;</string>
-                  </void>
-                  <void property="textSource">
-                    <object class="com.install4j.runtime.beans.screens.components.TextSource" field="DIRECT" />
-                  </void>
-                </object>
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
-            <actions />
-            <formComponents />
+&lt;/body&gt;&lt;/html&gt;</property>
+                  <property name="fillVertical" type="boolean" value="true" />
+                  <property name="textSource" type="enum" class="com.install4j.runtime.beans.screens.components.TextSource" value="DIRECT" />
+                </serializedBean>
+                <externalParametrizationPropertyNames>
+                  <propertyName>textSource</propertyName>
+                  <propertyName>displayedText</propertyName>
+                  <propertyName>displayedTextFile</propertyName>
+                  <propertyName>variableName</propertyName>
+                  <propertyName>acceptInitiallySelected</propertyName>
+                  <propertyName>readAllRequired</propertyName>
+                </externalParametrizationPropertyNames>
+              </formComponent>
+            </formComponents>
           </screen>
-          <screen name="Licence agreement for AB Sciex WiffReader" id="1075" customizedId="" beanClass="com.install4j.runtime.beans.screens.LicenseScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.LicenseScreen">
-                  <void property="displayedText">
-                    <string>&lt;html&gt;&lt;body&gt;
+          <screen name="Licence agreement for AB Sciex WiffReader" id="1075" beanClass="com.install4j.runtime.beans.screens.LicenseScreen">
+            <formComponents>
+              <formComponent id="52" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent">
+                <serializedBean>
+                  <property name="labelText" type="string">${i18n:LicenseLabel3}</property>
+                </serializedBean>
+              </formComponent>
+              <formComponent id="53" beanClass="com.install4j.runtime.beans.formcomponents.LicenseComponent" useExternalParametrization="true" externalParametrizationName="License Agreement" externalParametrizationMode="include">
+                <serializedBean>
+                  <property name="displayedText" type="string">&lt;html&gt;&lt;body&gt;
 &lt;p align="center"&gt;&lt;b&gt;AB Sciex LLC&lt;br/&gt;
 END USER BETA SOFTWARE LICENSE AGREEMENT&lt;br/&gt;
 and&lt;br/&gt;
@@ -612,27 +533,31 @@ Clearcore2.ProjectUtilities.dll&lt;br/&gt;
 Clearcore2.RawXYProcessing.dll&lt;br/&gt;
 Clearcore2.StructuredStorage.dll&lt;br/&gt;
 Clearcore2.Utility.dll&lt;br/&gt;
-&lt;/body&gt;&lt;/html&gt;</string>
-                  </void>
-                  <void property="textSource">
-                    <object class="com.install4j.runtime.beans.screens.components.TextSource" field="DIRECT" />
-                  </void>
-                </object>
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
-            <actions />
-            <formComponents />
+&lt;/body&gt;&lt;/html&gt;</property>
+                  <property name="fillVertical" type="boolean" value="true" />
+                  <property name="textSource" type="enum" class="com.install4j.runtime.beans.screens.components.TextSource" value="DIRECT" />
+                </serializedBean>
+                <externalParametrizationPropertyNames>
+                  <propertyName>textSource</propertyName>
+                  <propertyName>displayedText</propertyName>
+                  <propertyName>displayedTextFile</propertyName>
+                  <propertyName>variableName</propertyName>
+                  <propertyName>acceptInitiallySelected</propertyName>
+                  <propertyName>readAllRequired</propertyName>
+                </externalParametrizationPropertyNames>
+              </formComponent>
+            </formComponents>
           </screen>
-          <screen name="Licence agreement for Agilent MHDAC" id="998" customizedId="" beanClass="com.install4j.runtime.beans.screens.LicenseScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.LicenseScreen">
-                  <void property="displayedText">
-                    <string>&lt;html&gt;&lt;body&gt;
+          <screen name="Licence agreement for Agilent MHDAC" id="998" beanClass="com.install4j.runtime.beans.screens.LicenseScreen">
+            <formComponents>
+              <formComponent id="56" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent">
+                <serializedBean>
+                  <property name="labelText" type="string">${i18n:LicenseLabel3}</property>
+                </serializedBean>
+              </formComponent>
+              <formComponent id="57" beanClass="com.install4j.runtime.beans.formcomponents.LicenseComponent" useExternalParametrization="true" externalParametrizationName="License Agreement" externalParametrizationMode="include">
+                <serializedBean>
+                  <property name="displayedText" type="string">&lt;html&gt;&lt;body&gt;
 &lt;b&gt;END-USER LICENSE TERMS FOR AGILENT MHDAC&lt;br/&gt;&lt;br/&gt;
  
 AGILENT TECHNOLOGIES, INC. SOFTWARE LICENSE TERMS FOR THE MASSHUNTER DATA ACCESS COMPONENT RUNTIME VERSION&lt;br/&gt;&lt;br/&gt;
@@ -666,27 +591,31 @@ AGILENT SOFTWARE LICENSE TERMS&lt;br/&gt;&lt;br/&gt;
 &lt;b&gt;&lt;u&gt;Export Requirements.&lt;/u&gt;&lt;/b&gt;  If you export, re-export or import Software, technology or technical data licensed hereunder, you assume responsibility for complying with applicable laws and regulations and for obtaining required export and import authorizations.  Agilent may terminate this license immediately if you are in violation of any applicable laws or regulations.&lt;br/&gt;&lt;br/&gt;
 
 &lt;b&gt;&lt;u&gt;U.S. Government Restricted Rights.&lt;/u&gt;&lt;/b&gt;  Software and technical data rights granted to the federal government include only those rights customarily provided to end user customers.  Agilent provides this customary commercial license in Software and technical data pursuant to FAR 12.211 (Technical Data) and 12.212 (Computer Software) and, for the Department of Defense, DFARS 252.227-7015 (Technical Data – Commercial Items) and DFARS 227.7202-3 (Rights in Commercial Computer Software or Computer Software Documentation).&lt;br/&gt;&lt;br/&gt;
-&lt;/body&gt;&lt;/html&gt;</string>
-                  </void>
-                  <void property="textSource">
-                    <object class="com.install4j.runtime.beans.screens.components.TextSource" field="DIRECT" />
-                  </void>
-                </object>
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
-            <actions />
-            <formComponents />
+&lt;/body&gt;&lt;/html&gt;</property>
+                  <property name="fillVertical" type="boolean" value="true" />
+                  <property name="textSource" type="enum" class="com.install4j.runtime.beans.screens.components.TextSource" value="DIRECT" />
+                </serializedBean>
+                <externalParametrizationPropertyNames>
+                  <propertyName>textSource</propertyName>
+                  <propertyName>displayedText</propertyName>
+                  <propertyName>displayedTextFile</propertyName>
+                  <propertyName>variableName</propertyName>
+                  <propertyName>acceptInitiallySelected</propertyName>
+                  <propertyName>readAllRequired</propertyName>
+                </externalParametrizationPropertyNames>
+              </formComponent>
+            </formComponents>
           </screen>
-          <screen name="Licence agreement for Bruker CompassXtract" id="1282" customizedId="" beanClass="com.install4j.runtime.beans.screens.LicenseScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.LicenseScreen">
-                  <void property="displayedText">
-                    <string>&lt;html&gt;&lt;body&gt;
+          <screen name="Licence agreement for Bruker CompassXtract" id="1282" beanClass="com.install4j.runtime.beans.screens.LicenseScreen">
+            <formComponents>
+              <formComponent id="60" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent">
+                <serializedBean>
+                  <property name="labelText" type="string">${i18n:LicenseLabel3}</property>
+                </serializedBean>
+              </formComponent>
+              <formComponent id="61" beanClass="com.install4j.runtime.beans.formcomponents.LicenseComponent" useExternalParametrization="true" externalParametrizationName="License Agreement" externalParametrizationMode="include">
+                <serializedBean>
+                  <property name="displayedText" type="string">&lt;html&gt;&lt;body&gt;
 &lt;p align="center"&gt;&lt;b&gt;SOFTWARE LICENSE AGREEMENT for CompassXtract and CompassXtract Libraries&lt;/b&gt;&lt;/p&gt;
 &lt;br/&gt;
  
@@ -738,27 +667,31 @@ You may only distribute CompassXtract Libraries to others if all of the followin
 7.5 This Agreement is governed by German law to the exclusion of the UN Convention on Contracts for the International Sale of Goods. If you are a consumer, this does not apply if legal provisions, in particular consumer protection legislation, conflict with this choice. The courts of Bremen shall have exclusive jurisdiction. If you are not a merchant, a legal entity under public law or a public-law special fund in the sense Section 38 of the German Code of Civil Procedure (ZPO), the agreement on the place of jurisdiction is replaced by the legal provisions.&lt;br/&gt;&lt;br/&gt;
 
 7.6 If individual provisions of this Agreement are or become invalid or contain a gap which needs to be filled, the validity of the remaining provisions of the Agreement will not be affected thereby. The Parties hereby undertake to substitute the invalid or lacking provision with a valid provision which comes closest to the documented intentions of the Parties.&lt;br/&gt;&lt;br/&gt;
-&lt;/body&gt;&lt;/html&gt;</string>
-                  </void>
-                  <void property="textSource">
-                    <object class="com.install4j.runtime.beans.screens.components.TextSource" field="DIRECT" />
-                  </void>
-                </object>
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
-            <actions />
-            <formComponents />
+&lt;/body&gt;&lt;/html&gt;</property>
+                  <property name="fillVertical" type="boolean" value="true" />
+                  <property name="textSource" type="enum" class="com.install4j.runtime.beans.screens.components.TextSource" value="DIRECT" />
+                </serializedBean>
+                <externalParametrizationPropertyNames>
+                  <propertyName>textSource</propertyName>
+                  <propertyName>displayedText</propertyName>
+                  <propertyName>displayedTextFile</propertyName>
+                  <propertyName>variableName</propertyName>
+                  <propertyName>acceptInitiallySelected</propertyName>
+                  <propertyName>readAllRequired</propertyName>
+                </externalParametrizationPropertyNames>
+              </formComponent>
+            </formComponents>
           </screen>
-          <screen name="Licence agreement for MSFileReader" id="911" customizedId="" beanClass="com.install4j.runtime.beans.screens.LicenseScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.LicenseScreen">
-                  <void property="displayedText">
-                    <string>&lt;html&gt;&lt;body&gt;
+          <screen name="Licence agreement for MSFileReader" id="911" beanClass="com.install4j.runtime.beans.screens.LicenseScreen">
+            <formComponents>
+              <formComponent id="64" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent">
+                <serializedBean>
+                  <property name="labelText" type="string">${i18n:LicenseLabel3}</property>
+                </serializedBean>
+              </formComponent>
+              <formComponent id="65" beanClass="com.install4j.runtime.beans.formcomponents.LicenseComponent" useExternalParametrization="true" externalParametrizationName="License Agreement" externalParametrizationMode="include">
+                <serializedBean>
+                  <property name="displayedText" type="string">&lt;html&gt;&lt;body&gt;
 &lt;p align="center"&gt;&lt;b&gt;SOFTWARE LICENSE AGREEMENT (“License”) FOR MSFileReader&lt;/b&gt;&lt;/p&gt;
 &lt;br/&gt;
 These License terms are an agreement between you and Thermo Finnigan LLC ("Licensor"). They apply to Licensor’s MSFileReader software program (“Software”), which includes documentation and any media on which you received it. These terms also apply to any updates or supplements for this Software, unless other terms accompany those items, in which case those terms apply. &lt;b&gt;If you use this Software, you accept this License. If you do not accept this License, you are prohibited from using this software.  If you comply with these License terms, you have the rights set forth below.&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;
@@ -810,348 +743,186 @@ If you distribute this Software to others, you agree to:&lt;br/&gt;&lt;br/&gt;
 5.8. LICENSOR’S TOTAL LIABILITY TO YOU FOR DIRECT DAMAGES ARISING UNDER THIS LICENSE IS LIMITED TO U.S. $1.00. YOU CANNOT RECOVER ANY OTHER DAMAGES, INCLUDING CONSEQUENTIAL, LOST PROFITS, SPECIAL, INDIRECT OR INCIDENTAL DAMAGES, EVEN IF LICENSOR IS EXPRESSLY MADE AWARE OF THE POSSIBILITY THEREOF OR IS NEGLIGENT. THIS LIMITATION APPLIES TO ANYTHING RELATED TO THIS SOFTWARE, SERVICES, CONTENT (INCLUDING CODE) ON THIRD PARTY INTERNET SITES, OR THIRD PARTY PROGRAMS, AND CLAIMS FOR BREACH OF CONTRACT, BREACH OF WARRANTY, GUARANTEE  OR CONDITION, STRICT LIABILITY, NEGLIGENCE, OR OTHER TORT TO THE EXTENT PERMITTED BY APPLICABLE LAW.&lt;br/&gt;&lt;br/&gt;
 
 5.9. Use, duplication or disclosure of this Software by the U.S. Government is subject to the restricted rights applicable to commercial computer software (under FAR 52.227019 and DFARS 252.227-7013 or parallel regulations). The manufacturer for this purpose is Thermo Finnigan LLC, 355 River Oaks Parkway, San Jose, California 95134, U.S.A.&lt;br/&gt;&lt;br/&gt;
-&lt;/body&gt;&lt;/html&gt;</string>
-                  </void>
-                  <void property="textSource">
-                    <object class="com.install4j.runtime.beans.screens.components.TextSource" field="DIRECT" />
-                  </void>
-                </object>
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
-            <actions />
-            <formComponents />
+&lt;/body&gt;&lt;/html&gt;</property>
+                  <property name="fillVertical" type="boolean" value="true" />
+                  <property name="textSource" type="enum" class="com.install4j.runtime.beans.screens.components.TextSource" value="DIRECT" />
+                </serializedBean>
+                <externalParametrizationPropertyNames>
+                  <propertyName>textSource</propertyName>
+                  <propertyName>displayedText</propertyName>
+                  <propertyName>displayedTextFile</propertyName>
+                  <propertyName>variableName</propertyName>
+                  <propertyName>acceptInitiallySelected</propertyName>
+                  <propertyName>readAllRequired</propertyName>
+                </externalParametrizationPropertyNames>
+              </formComponent>
+            </formComponents>
           </screen>
-          <screen name="" id="4" customizedId="" beanClass="com.install4j.runtime.beans.screens.InstallationDirectoryScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.InstallationDirectoryScreen" />
-              </java>
-            </serializedBean>
+          <screen id="4" beanClass="com.install4j.runtime.beans.screens.InstallationDirectoryScreen">
             <condition>!context.getBooleanVariable("sys.confirmedUpdateInstallation")</condition>
-            <validation />
-            <preActivation />
-            <postActivation />
             <actions>
-              <action name="" id="5" customizedId="" beanClass="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" multiExec="true" failureStrategy="1" errorMessage="">
+              <action id="5" beanClass="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction" multiExec="true">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction">
-                      <void property="excludedVariables">
-                        <array class="java.lang.String" length="1">
-                          <void index="0">
-                            <string>sys.installationDir</string>
-                          </void>
-                        </array>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="excludedVariables" type="array" elementType="string" length="1">
+                    <element index="0">sys.installationDir</element>
+                  </property>
                 </serializedBean>
                 <condition>context.getVariable("sys.responseFile") == null</condition>
               </action>
             </actions>
-            <formComponents />
+            <formComponents>
+              <formComponent id="69" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent" insetBottom="25">
+                <serializedBean>
+                  <property name="labelText" type="string">${i18n:SelectDirLabel(${compiler:sys.fullName})}</property>
+                </serializedBean>
+              </formComponent>
+              <formComponent id="70" beanClass="com.install4j.runtime.beans.formcomponents.InstallationDirectoryChooserComponent" useExternalParametrization="true" externalParametrizationName="Installation Directory Chooser" externalParametrizationMode="include">
+                <serializedBean>
+                  <property name="requestFocus" type="boolean" value="true" />
+                </serializedBean>
+                <externalParametrizationPropertyNames>
+                  <propertyName>suggestAppDir</propertyName>
+                  <propertyName>validateApplicationId</propertyName>
+                  <propertyName>existingDirWarning</propertyName>
+                  <propertyName>checkWritable</propertyName>
+                  <propertyName>manualEntryAllowed</propertyName>
+                  <propertyName>checkFreeSpace</propertyName>
+                  <propertyName>showRequiredDiskSpace</propertyName>
+                  <propertyName>showFreeDiskSpace</propertyName>
+                  <propertyName>allowSpacesOnUnix</propertyName>
+                  <propertyName>validationScript</propertyName>
+                  <propertyName>standardValidation</propertyName>
+                </externalParametrizationPropertyNames>
+              </formComponent>
+            </formComponents>
           </screen>
-          <screen name="" id="6" customizedId="" beanClass="com.install4j.runtime.beans.screens.ComponentsScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.ComponentsScreen">
-                  <void property="allowNewFolderCreation">
-                    <boolean>true</boolean>
-                  </void>
-                  <void property="showInstallationDirectoryChooser">
-                    <boolean>true</boolean>
-                  </void>
-                </object>
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
-            <actions />
-            <formComponents />
+          <screen id="6" beanClass="com.install4j.runtime.beans.screens.ComponentsScreen">
+            <formComponents>
+              <formComponent id="74" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent">
+                <serializedBean>
+                  <property name="labelText" type="string">${i18n:SelectComponentsLabel2}</property>
+                </serializedBean>
+                <visibilityScript>!context.isConsole()</visibilityScript>
+              </formComponent>
+              <formComponent id="75" beanClass="com.install4j.runtime.beans.formcomponents.ComponentSelectorComponent" useExternalParametrization="true" externalParametrizationName="Installation Components" externalParametrizationMode="include">
+                <serializedBean>
+                  <property name="fillVertical" type="boolean" value="true" />
+                </serializedBean>
+                <externalParametrizationPropertyNames>
+                  <propertyName>selectionChangedScript</propertyName>
+                </externalParametrizationPropertyNames>
+              </formComponent>
+              <formComponent id="73" beanClass="com.install4j.runtime.beans.formcomponents.InstallationDirectoryChooserComponent">
+                <serializedBean>
+                  <property name="labelText" type="string">${i18n:ReadyMemoDir}</property>
+                </serializedBean>
+                <visibilityScript>!context.getBooleanVariable("sys.confirmedUpdateInstallation")</visibilityScript>
+              </formComponent>
+            </formComponents>
           </screen>
-          <screen name="Additional Configuration" id="74" customizedId="" beanClass="com.install4j.runtime.beans.screens.FormScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+          <screen name="Additional Configuration" id="74" beanClass="com.install4j.runtime.beans.screens.FormScreen">
             <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.FormScreen">
-                  <void property="subTitle">
-                    <string>Please choose a machine.</string>
-                  </void>
-                  <void property="title">
-                    <string>Additional configuration</string>
-                  </void>
-                </object>
-              </java>
+              <property name="subTitle" type="string">Please choose a machine.</property>
+              <property name="title" type="string">Additional configuration</property>
             </serializedBean>
-            <condition />
             <validation>return true;</validation>
-            <preActivation />
-            <postActivation />
-            <actions />
             <formComponents>
-              <formComponent name="Configuration radio group" id="78" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.RadiobuttonsComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+              <formComponent name="Configuration radio group" id="78" beanClass="com.install4j.runtime.beans.formcomponents.RadiobuttonsComponent">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.formcomponents.RadiobuttonsComponent">
-                      <void property="labelText">
-                        <string>Available machines: </string>
-                      </void>
-                      <void property="radioButtonLabels">
-                        <array class="java.lang.String" length="8">
-                          <void index="0">
-                            <string>FT</string>
-                          </void>
-                          <void index="1">
-                            <string>Orbitrap exactive</string>
-                          </void>
-                          <void index="2">
-                            <string>Orbitrap velos</string>
-                          </void>
-                          <void index="3">
-                            <string>Orbitrap XL</string>
-                          </void>
-                          <void index="4">
-                            <string>QTOF profile</string>
-                          </void>
-                          <void index="5">
-                            <string>QTOF centroid</string>
-                          </void>
-                          <void index="6">
-                            <string>QTOF centroid processed</string>
-                          </void>
-                          <void index="7">
-                            <string>QTRAP</string>
-                          </void>
-                        </array>
-                      </void>
-                      <void property="variableName">
-                        <string>config_radioGroup</string>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="labelText" type="string">Available machines: </property>
+                  <property name="radioButtonLabels" type="array" elementType="string" length="8">
+                    <element index="0">FT</element>
+                    <element index="1">Orbitrap exactive</element>
+                    <element index="2">Orbitrap velos</element>
+                    <element index="3">Orbitrap XL</element>
+                    <element index="4">QTOF profile</element>
+                    <element index="5">QTOF centroid</element>
+                    <element index="6">QTOF centroid processed</element>
+                    <element index="7">QTRAP</element>
+                  </property>
+                  <property name="variableName" type="string">config_radioGroup</property>
                 </serializedBean>
-                <initScript />
-                <visibilityScript />
               </formComponent>
             </formComponents>
           </screen>
-          <screen name="" id="773" customizedId="" beanClass="com.install4j.runtime.beans.screens.FormScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+          <screen id="773" beanClass="com.install4j.runtime.beans.screens.FormScreen">
             <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.FormScreen">
-                  <void property="subTitle">
-                    <string>Memory settings</string>
-                  </void>
-                  <void property="title">
-                    <string>Additional configuration</string>
-                  </void>
-                </object>
-              </java>
+              <property name="subTitle" type="string">Memory settings</property>
+              <property name="title" type="string">Additional configuration</property>
             </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
-            <actions />
             <formComponents>
-              <formComponent name="" id="775" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.IntegerTextfieldComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+              <formComponent id="775" beanClass="com.install4j.runtime.beans.formcomponents.IntegerTextfieldComponent">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.formcomponents.IntegerTextfieldComponent">
-                      <void property="checkIfEmpty">
-                        <boolean>true</boolean>
-                      </void>
-                      <void property="initialText">
-                        <string>1024</string>
-                      </void>
-                      <void property="labelText">
-                        <string>Memory available in MB (for 32Bit systems 1512 is maximum) -Xmx</string>
-                      </void>
-                      <void property="variableName">
-                        <string>xmx</string>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="checkIfEmpty" type="boolean" value="true" />
+                  <property name="initialText" type="string">1024</property>
+                  <property name="labelText" type="string">Memory available in MB (for 32Bit systems 1512 is maximum) -Xmx</property>
+                  <property name="variableName" type="string">xmx</property>
                 </serializedBean>
-                <initScript />
-                <visibilityScript />
               </formComponent>
-              <formComponent name="" id="841" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.LabelComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+              <formComponent id="841" beanClass="com.install4j.runtime.beans.formcomponents.LabelComponent">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.formcomponents.LabelComponent">
-                      <void property="labelText">
-                        <string>It is recommended to use your system RAM minus the MEM that is usually reserved by the OS</string>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="labelText" type="string">It is recommended to use your system RAM minus the MEM that is usually reserved by the OS</property>
                 </serializedBean>
-                <initScript />
-                <visibilityScript />
               </formComponent>
-              <formComponent name="" id="843" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.SpacerComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+              <formComponent id="843" beanClass="com.install4j.runtime.beans.formcomponents.SpacerComponent" />
+              <formComponent id="776" beanClass="com.install4j.runtime.beans.formcomponents.IntegerTextfieldComponent">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.formcomponents.SpacerComponent" />
-                  </java>
+                  <property name="initialText" type="string">512</property>
+                  <property name="labelText" type="string">Reserved memory at initialization in MB -Xms</property>
+                  <property name="variableName" type="string">xms</property>
                 </serializedBean>
-                <initScript />
-                <visibilityScript />
               </formComponent>
-              <formComponent name="" id="776" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.IntegerTextfieldComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+              <formComponent id="845" beanClass="com.install4j.runtime.beans.formcomponents.LabelComponent">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.formcomponents.IntegerTextfieldComponent">
-                      <void property="initialText">
-                        <string>512</string>
-                      </void>
-                      <void property="labelText">
-                        <string>Reserved memory at initialization in MB -Xms</string>
-                      </void>
-                      <void property="variableName">
-                        <string>xms</string>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="labelText" type="string">It is recommended to use half of the Xmx value for Xms</property>
                 </serializedBean>
-                <initScript />
-                <visibilityScript />
               </formComponent>
-              <formComponent name="" id="845" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.LabelComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+              <formComponent id="844" beanClass="com.install4j.runtime.beans.formcomponents.SpacerComponent" />
+              <formComponent id="777" beanClass="com.install4j.runtime.beans.formcomponents.LabelComponent">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.formcomponents.LabelComponent">
-                      <void property="labelText">
-                        <string>It is recommended to use half of the Xmx value for Xms</string>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="labelText" type="string">After installation, the labels can be changed at the "Lipid Data Analyzer.vmoptions",</property>
                 </serializedBean>
-                <initScript />
-                <visibilityScript />
               </formComponent>
-              <formComponent name="" id="844" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.SpacerComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+              <formComponent id="778" beanClass="com.install4j.runtime.beans.formcomponents.LabelComponent">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.formcomponents.SpacerComponent" />
-                  </java>
+                  <property name="labelText" type="string">or for the console in the .bat and .sh, respectively</property>
                 </serializedBean>
-                <initScript />
-                <visibilityScript />
-              </formComponent>
-              <formComponent name="" id="777" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.LabelComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
-                <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.formcomponents.LabelComponent">
-                      <void property="labelText">
-                        <string>After installation, the labels can be changed at the "Lipid Data Analyzer.vmoptions",</string>
-                      </void>
-                    </object>
-                  </java>
-                </serializedBean>
-                <initScript />
-                <visibilityScript />
-              </formComponent>
-              <formComponent name="" id="778" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.LabelComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
-                <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.formcomponents.LabelComponent">
-                      <void property="labelText">
-                        <string>or for the console in the .bat and .sh, respectively</string>
-                      </void>
-                    </object>
-                  </java>
-                </serializedBean>
-                <initScript />
-                <visibilityScript />
               </formComponent>
             </formComponents>
           </screen>
-          <screen name="" id="7" customizedId="" beanClass="com.install4j.runtime.beans.screens.StandardProgramGroupScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+          <screen id="7" beanClass="com.install4j.runtime.beans.screens.StandardProgramGroupScreen">
             <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.StandardProgramGroupScreen">
-                  <void property="programGroupName">
-                    <string>${compiler:sys.fullName}</string>
-                  </void>
-                </object>
-              </java>
+              <property name="programGroupName" type="string">${compiler:sys.fullName}</property>
             </serializedBean>
             <condition>!context.getBooleanVariable("sys.confirmedUpdateInstallation")</condition>
-            <validation />
-            <preActivation />
-            <postActivation />
-            <actions />
-            <formComponents />
           </screen>
-          <screen name="" id="8" customizedId="" beanClass="com.install4j.runtime.beans.screens.InstallationScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="true" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.InstallationScreen" />
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
+          <screen id="8" beanClass="com.install4j.runtime.beans.screens.InstallationScreen" rollbackBarrier="true">
             <actions>
-              <action name="" id="9" customizedId="" beanClass="com.install4j.runtime.beans.actions.InstallFilesAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="4" errorMessage="${i18n:FileCorrupted}">
+              <action id="9" beanClass="com.install4j.runtime.beans.actions.InstallFilesAction" actionElevationType="elevated" failureStrategy="askRetryQuit" errorMessage="${i18n:FileCorrupted}" />
+              <action id="10" beanClass="com.install4j.runtime.beans.actions.desktop.CreateProgramGroupAction" actionElevationType="elevated">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.InstallFilesAction" />
-                  </java>
-                </serializedBean>
-                <condition />
-              </action>
-              <action name="" id="10" customizedId="" beanClass="com.install4j.runtime.beans.actions.desktop.CreateProgramGroupAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
-                <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.desktop.CreateProgramGroupAction">
-                      <void property="uninstallerMenuName">
-                        <string>${i18n:UninstallerMenuEntry(${compiler:sys.fullName})}</string>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="addUninstaller" type="boolean" value="true" />
+                  <property name="uninstallerMenuName" type="string">${i18n:UninstallerMenuEntry(${compiler:sys.fullName})}</property>
                 </serializedBean>
                 <condition>!context.getBooleanVariable("sys.programGroupDisabled")</condition>
               </action>
-              <action name="" id="11" customizedId="" beanClass="com.install4j.runtime.beans.actions.desktop.RegisterAddRemoveAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+              <action id="11" beanClass="com.install4j.runtime.beans.actions.desktop.RegisterAddRemoveAction" actionElevationType="elevated">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.desktop.RegisterAddRemoveAction">
-                      <void property="itemName">
-                        <string>${compiler:sys.fullName} ${compiler:sys.version}</string>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="itemName" type="string">${compiler:sys.fullName} ${compiler:sys.version}</property>
                 </serializedBean>
-                <condition />
               </action>
-              <group name="Machine configuration" id="266" customizedId="" beanClass="com.install4j.runtime.beans.groups.ActionGroup" enabled="true" commentSet="false" comment="" actionElevationType="inherit">
-                <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.groups.ActionGroup" />
-                  </java>
-                </serializedBean>
+              <group name="Machine configuration" id="266" beanClass="com.install4j.runtime.beans.groups.ActionGroup">
                 <beans>
-                  <action name="Machine configuration - Copy" id="130" customizedId="" beanClass="com.install4j.runtime.beans.actions.files.CopyFileAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="4" errorMessage="">
+                  <action name="Machine configuration - Copy" id="130" beanClass="com.install4j.runtime.beans.actions.files.CopyFileAction" actionElevationType="elevated" failureStrategy="askRetryQuit">
                     <serializedBean>
-                      <java class="java.beans.XMLDecoder">
-                        <object class="com.install4j.runtime.beans.actions.files.CopyFileAction">
-                          <void property="destinationFile">
-                            <object class="java.io.File">
-                              <string>.</string>
-                            </object>
-                          </void>
-                          <void property="fileFilter">
-                            <object class="com.install4j.api.beans.ScriptProperty">
-                              <void property="value">
-                                <string>final String FILENAME_FT = "LipidDataAnalyzer_FT.properties";
+                      <property name="destinationFile">
+                        <object class="java.io.File">
+                          <string>.</string>
+                        </object>
+                      </property>
+                      <property name="fileFilter">
+                        <object class="com.install4j.api.beans.ScriptProperty">
+                          <property name="value" type="string">final String FILENAME_FT = "LipidDataAnalyzer_FT.properties";
 final String FILENAME_ORBI_EXACTIVE = "LipidDataAnalyzer_OrbiTrap_exactive.properties";
 final String FILENAME_ORBI_VELOS = "LipidDataAnalyzer_OrbiTrap_velos.properties";
 final String FILENAME_ORBI_XL = "LipidDataAnalyzer_OrbiTrap_XL.properties";
@@ -1206,67 +977,58 @@ switch (machineSelection) {
             };
             break;    
 }
-return returnValue;</string>
-                              </void>
-                            </object>
-                          </void>
-                          <void property="files">
-                            <array class="java.io.File" length="8">
-                              <void index="0">
-                                <object class="java.io.File">
-                                  <string>properties/LipidDataAnalyzer_FT.properties</string>
-                                </object>
-                              </void>
-                              <void index="1">
-                                <object class="java.io.File">
-                                  <string>properties/LipidDataAnalyzer_OrbiTrap_exactive.properties</string>
-                                </object>
-                              </void>
-                              <void index="2">
-                                <object class="java.io.File">
-                                  <string>properties/LipidDataAnalyzer_OrbiTrap_velos.properties</string>
-                                </object>
-                              </void>
-                              <void index="3">
-                                <object class="java.io.File">
-                                  <string>properties/LipidDataAnalyzer_OrbiTrap_XL.properties</string>
-                                </object>
-                              </void>
-                              <void index="4">
-                                <object class="java.io.File">
-                                  <string>properties/LipidDataAnalyzer_QTOF.properties</string>
-                                </object>
-                              </void>
-                              <void index="5">
-                                <object class="java.io.File">
-                                  <string>properties/LipidDataAnalyzer_QTOF_centr.properties</string>
-                                </object>
-                              </void>
-                              <void index="6">
-                                <object class="java.io.File">
-                                  <string>properties/LipidDataAnalyzer_QTOF_centr_proc.properties</string>
-                                </object>
-                              </void>
-                              <void index="7">
-                                <object class="java.io.File">
-                                  <string>properties/LipidDataAnalyzer_QTRAP.properties</string>
-                                </object>
-                              </void>
-                            </array>
-                          </void>
+return returnValue;</property>
                         </object>
-                      </java>
+                      </property>
+                      <property name="files" type="array" class="java.io.File" length="8">
+                        <element index="0">
+                          <object class="java.io.File">
+                            <string>properties/LipidDataAnalyzer_FT.properties</string>
+                          </object>
+                        </element>
+                        <element index="1">
+                          <object class="java.io.File">
+                            <string>properties/LipidDataAnalyzer_OrbiTrap_exactive.properties</string>
+                          </object>
+                        </element>
+                        <element index="2">
+                          <object class="java.io.File">
+                            <string>properties/LipidDataAnalyzer_OrbiTrap_velos.properties</string>
+                          </object>
+                        </element>
+                        <element index="3">
+                          <object class="java.io.File">
+                            <string>properties/LipidDataAnalyzer_OrbiTrap_XL.properties</string>
+                          </object>
+                        </element>
+                        <element index="4">
+                          <object class="java.io.File">
+                            <string>properties/LipidDataAnalyzer_QTOF.properties</string>
+                          </object>
+                        </element>
+                        <element index="5">
+                          <object class="java.io.File">
+                            <string>properties/LipidDataAnalyzer_QTOF_centr.properties</string>
+                          </object>
+                        </element>
+                        <element index="6">
+                          <object class="java.io.File">
+                            <string>properties/LipidDataAnalyzer_QTOF_centr_proc.properties</string>
+                          </object>
+                        </element>
+                        <element index="7">
+                          <object class="java.io.File">
+                            <string>properties/LipidDataAnalyzer_QTRAP.properties</string>
+                          </object>
+                        </element>
+                      </property>
                     </serializedBean>
-                    <condition />
                   </action>
-                  <action name="Machine configuration - Rename" id="131" customizedId="" beanClass="com.install4j.runtime.beans.actions.control.RunScriptAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="4" errorMessage="Could not rename properties file to LipidDataAnalyzer.properties.">
+                  <action name="Machine configuration - Rename" id="131" beanClass="com.install4j.runtime.beans.actions.control.RunScriptAction" actionElevationType="elevated" failureStrategy="askRetryQuit" errorMessage="Could not rename properties file to LipidDataAnalyzer.properties.">
                     <serializedBean>
-                      <java class="java.beans.XMLDecoder">
-                        <object class="com.install4j.runtime.beans.actions.control.RunScriptAction">
-                          <void property="script">
-                            <object class="com.install4j.api.beans.ScriptProperty">
-                              <void property="value">
-                                <string>final String PROP_FILE = "LipidDataAnalyzer.properties";
+                      <property name="script">
+                        <object class="com.install4j.api.beans.ScriptProperty">
+                          <property name="value" type="string">final String PROP_FILE = "LipidDataAnalyzer.properties";
 final String workingFileName = context.getVariable("workingFile").toString();
 final String installDir = (String)context.getVariable("sys.installationDir");
 
@@ -1274,32 +1036,20 @@ File myFile = new File(installDir + File.separator + workingFileName);
 File destfile = new File(installDir + File.separator + PROP_FILE);
 boolean rename = myFile.renameTo(destfile);
 return rename;
-</string>
-                              </void>
-                            </object>
-                          </void>
+</property>
                         </object>
-                      </java>
+                      </property>
                     </serializedBean>
-                    <condition />
                   </action>
                 </beans>
               </group>
-              <group name="Java3D and Classpath settings" id="350" customizedId="" beanClass="com.install4j.runtime.beans.groups.ActionGroup" enabled="true" commentSet="false" comment="" actionElevationType="inherit">
-                <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.groups.ActionGroup" />
-                  </java>
-                </serializedBean>
+              <group name="Java3D and Classpath settings" id="350" beanClass="com.install4j.runtime.beans.groups.ActionGroup">
                 <beans>
-                  <action name="Set JavaProp3D_L" id="516" customizedId="" beanClass="com.install4j.runtime.beans.actions.control.SetVariableAction" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                  <action name="Set JavaProp3D_L" id="516" beanClass="com.install4j.runtime.beans.actions.control.SetVariableAction">
                     <serializedBean>
-                      <java class="java.beans.XMLDecoder">
-                        <object class="com.install4j.runtime.beans.actions.control.SetVariableAction">
-                          <void property="script">
-                            <object class="com.install4j.api.beans.ScriptProperty">
-                              <void property="value">
-                                <string>String result;
+                      <property name="script">
+                        <object class="com.install4j.api.beans.ScriptProperty">
+                          <property name="value" type="string">String result;
 
 if (Util.isMacOS() || Util.isMacosInstaller()) {
     result ="-Djava.ext.dirs=./:/System/Library/Frameworks/JavaVM.framework/Home/lib/ext";
@@ -1307,209 +1057,158 @@ if (Util.isMacOS() || Util.isMacosInstaller()) {
     result =  "-Djava.ext.dirs=./";
 }
 
-return result;</string>
-                              </void>
-                            </object>
-                          </void>
-                          <void property="variableName">
-                            <string>javaProp3DL</string>
-                          </void>
+return result;</property>
                         </object>
-                      </java>
+                      </property>
+                      <property name="variableName" type="string">javaProp3DL</property>
                     </serializedBean>
-                    <condition />
                   </action>
-                  <action name="Set Java to MyJava" id="669" customizedId="" beanClass="com.install4j.runtime.beans.actions.control.SetVariableAction" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                  <action name="Set Java to MyJava" id="669" beanClass="com.install4j.runtime.beans.actions.control.SetVariableAction">
                     <serializedBean>
-                      <java class="java.beans.XMLDecoder">
-                        <object class="com.install4j.runtime.beans.actions.control.SetVariableAction">
-                          <void property="script">
-                            <object class="com.install4j.api.beans.ScriptProperty">
-                              <void property="value">
-                                <string>String installationDir = (String)context.getVariable("sys.installationDir");
+                      <property name="script">
+                        <object class="com.install4j.api.beans.ScriptProperty">
+                          <property name="value" type="string">String installationDir = (String)context.getVariable("sys.installationDir");
 String path = "\"" + installationDir + "\\jre\\bin\\java.exe" + "\"";
-return path;</string>
-                              </void>
-                            </object>
-                          </void>
-                          <void property="variableName">
-                            <string>javaBinLocation</string>
-                          </void>
+return path;</property>
                         </object>
-                      </java>
+                      </property>
+                      <property name="variableName" type="string">javaBinLocation</property>
                     </serializedBean>
-                    <condition />
                   </action>
-                  <action name="Set Java To Java" id="668" customizedId="" beanClass="com.install4j.runtime.beans.actions.control.SetVariableAction" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                  <action name="Set Java To Java" id="668" beanClass="com.install4j.runtime.beans.actions.control.SetVariableAction">
                     <serializedBean>
-                      <java class="java.beans.XMLDecoder">
-                        <object class="com.install4j.runtime.beans.actions.control.SetVariableAction">
-                          <void property="script">
-                            <object class="com.install4j.api.beans.ScriptProperty">
-                              <void property="value">
-                                <string>return "java";</string>
-                              </void>
-                            </object>
-                          </void>
-                          <void property="variableName">
-                            <string>javaBinLocation</string>
-                          </void>
+                      <property name="script">
+                        <object class="com.install4j.api.beans.ScriptProperty">
+                          <property name="value" type="string">return "java";</property>
                         </object>
-                      </java>
+                      </property>
+                      <property name="variableName" type="string">javaBinLocation</property>
                     </serializedBean>
-                    <condition />
                   </action>
                 </beans>
               </group>
-              <action name="" id="1154" customizedId="" beanClass="com.install4j.runtime.beans.actions.files.AddWindowsFileRightsAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+              <action id="1154" beanClass="com.install4j.runtime.beans.actions.files.AddWindowsFileRightsAction" actionElevationType="elevated">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.files.AddWindowsFileRightsAction">
-                      <void property="all">
-                        <boolean>false</boolean>
-                      </void>
-                      <void property="files">
-                        <array class="java.io.File" length="10">
-                          <void index="0">
-                            <object class="java.io.File">
-                              <string>LipidDataAnalyzer.properties</string>
-                            </object>
-                          </void>
-                          <void index="1">
-                            <object class="java.io.File">
-                              <string>cache</string>
-                            </object>
-                          </void>
-                          <void index="2">
-                            <object class="java.io.File">
-                              <string>fragRules</string>
-                            </object>
-                          </void>
-                          <void index="3">
-                            <object class="java.io.File">
-                              <string>properties</string>
-                            </object>
-                          </void>
-                          <void index="4">
-                            <object class="java.io.File">
-                              <string>fattyAcids</string>
-                            </object>
-                          </void>
-                          <void index="5">
-                            <object class="java.io.File">
-                              <string>.settings</string>
-                            </object>
-                          </void>
-                          <void index="6">
-                            <object class="java.io.File">
-                              <string>elementconfig.xml</string>
-                            </object>
-                          </void>
-                          <void index="7">
-                            <object class="java.io.File">
-                              <string>mzTab.properties</string>
-                            </object>
-                          </void>
-                          <void index="8">
-                            <object class="java.io.File">
-                              <string>faHydroxylationEncoding.txt</string>
-                            </object>
-                          </void>
-                          <void index="9">
-                            <object class="java.io.File">
-                              <string>lcbHydroxylationEncoding.txt</string>
-                            </object>
-                          </void>
-                        </array>
-                      </void>
-                      <void property="read">
-                        <boolean>true</boolean>
-                      </void>
-                      <void property="write">
-                        <boolean>true</boolean>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="all" type="boolean" value="false" />
+                  <property name="files" type="array" class="java.io.File" length="10">
+                    <element index="0">
+                      <object class="java.io.File">
+                        <string>LipidDataAnalyzer.properties</string>
+                      </object>
+                    </element>
+                    <element index="1">
+                      <object class="java.io.File">
+                        <string>cache</string>
+                      </object>
+                    </element>
+                    <element index="2">
+                      <object class="java.io.File">
+                        <string>fragRules</string>
+                      </object>
+                    </element>
+                    <element index="3">
+                      <object class="java.io.File">
+                        <string>properties</string>
+                      </object>
+                    </element>
+                    <element index="4">
+                      <object class="java.io.File">
+                        <string>fattyAcids</string>
+                      </object>
+                    </element>
+                    <element index="5">
+                      <object class="java.io.File">
+                        <string>.settings</string>
+                      </object>
+                    </element>
+                    <element index="6">
+                      <object class="java.io.File">
+                        <string>elementconfig.xml</string>
+                      </object>
+                    </element>
+                    <element index="7">
+                      <object class="java.io.File">
+                        <string>mzTab.properties</string>
+                      </object>
+                    </element>
+                    <element index="8">
+                      <object class="java.io.File">
+                        <string>faHydroxylationEncoding.txt</string>
+                      </object>
+                    </element>
+                    <element index="9">
+                      <object class="java.io.File">
+                        <string>lcbHydroxylationEncoding.txt</string>
+                      </object>
+                    </element>
+                  </property>
+                  <property name="read" type="boolean" value="true" />
+                  <property name="write" type="boolean" value="true" />
                 </serializedBean>
-                <condition />
               </action>
-              <action name="" id="1360" customizedId="" beanClass="com.install4j.runtime.beans.actions.files.SetModeAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+              <action id="1360" beanClass="com.install4j.runtime.beans.actions.files.SetModeAction" actionElevationType="elevated">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.files.SetModeAction">
-                      <void property="files">
-                        <array class="java.io.File" length="10">
-                          <void index="0">
-                            <object class="java.io.File">
-                              <string>LipidDataAnalyzer.properties</string>
-                            </object>
-                          </void>
-                          <void index="1">
-                            <object class="java.io.File">
-                              <string>cache</string>
-                            </object>
-                          </void>
-                          <void index="2">
-                            <object class="java.io.File">
-                              <string>fragRules</string>
-                            </object>
-                          </void>
-                          <void index="3">
-                            <object class="java.io.File">
-                              <string>properties</string>
-                            </object>
-                          </void>
-                          <void index="4">
-                            <object class="java.io.File">
-                              <string>fattyAcids</string>
-                            </object>
-                          </void>
-                          <void index="5">
-                            <object class="java.io.File">
-                              <string>.settings</string>
-                            </object>
-                          </void>
-                          <void index="6">
-                            <object class="java.io.File">
-                              <string>elementconfig.xml</string>
-                            </object>
-                          </void>
-                          <void index="7">
-                            <object class="java.io.File">
-                              <string>mzTab.properties</string>
-                            </object>
-                          </void>
-                          <void index="8">
-                            <object class="java.io.File">
-                              <string>faHydroxylationEncoding.txt</string>
-                            </object>
-                          </void>
-                          <void index="9">
-                            <object class="java.io.File">
-                              <string>lcbHydroxylationEncoding.txt</string>
-                            </object>
-                          </void>
-                        </array>
-                      </void>
-                      <void property="mode">
-                        <string>777</string>
-                      </void>
-                      <void property="recursive">
-                        <boolean>true</boolean>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="files" type="array" class="java.io.File" length="10">
+                    <element index="0">
+                      <object class="java.io.File">
+                        <string>LipidDataAnalyzer.properties</string>
+                      </object>
+                    </element>
+                    <element index="1">
+                      <object class="java.io.File">
+                        <string>cache</string>
+                      </object>
+                    </element>
+                    <element index="2">
+                      <object class="java.io.File">
+                        <string>fragRules</string>
+                      </object>
+                    </element>
+                    <element index="3">
+                      <object class="java.io.File">
+                        <string>properties</string>
+                      </object>
+                    </element>
+                    <element index="4">
+                      <object class="java.io.File">
+                        <string>fattyAcids</string>
+                      </object>
+                    </element>
+                    <element index="5">
+                      <object class="java.io.File">
+                        <string>.settings</string>
+                      </object>
+                    </element>
+                    <element index="6">
+                      <object class="java.io.File">
+                        <string>elementconfig.xml</string>
+                      </object>
+                    </element>
+                    <element index="7">
+                      <object class="java.io.File">
+                        <string>mzTab.properties</string>
+                      </object>
+                    </element>
+                    <element index="8">
+                      <object class="java.io.File">
+                        <string>faHydroxylationEncoding.txt</string>
+                      </object>
+                    </element>
+                    <element index="9">
+                      <object class="java.io.File">
+                        <string>lcbHydroxylationEncoding.txt</string>
+                      </object>
+                    </element>
+                  </property>
+                  <property name="mode" type="string">777</property>
+                  <property name="recursive" type="boolean" value="true" />
                 </serializedBean>
-                <condition />
               </action>
-              <action name="Set headless prop" id="722" customizedId="" beanClass="com.install4j.runtime.beans.actions.control.SetVariableAction" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+              <action name="Set headless prop" id="722" beanClass="com.install4j.runtime.beans.actions.control.SetVariableAction">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.control.SetVariableAction">
-                      <void property="script">
-                        <object class="com.install4j.api.beans.ScriptProperty">
-                          <void property="value">
-                            <string>String returnValue;
+                  <property name="script">
+                    <object class="com.install4j.api.beans.ScriptProperty">
+                      <property name="value" type="string">String returnValue;
 
 if (Util.isWindows() || Util.isWindowsInstaller() || Util.isMacOS() || Util.isMacosInstaller()) {
     returnValue = "";
@@ -1517,228 +1216,148 @@ if (Util.isWindows() || Util.isWindowsInstaller() || Util.isMacOS() || Util.isMa
     returnValue = "-Djava.awt.headless=false";
 }
 
-return returnValue;</string>
-                          </void>
-                        </object>
-                      </void>
-                      <void property="variableName">
-                        <string>headlessProp</string>
-                      </void>
+return returnValue;</property>
                     </object>
-                  </java>
+                  </property>
+                  <property name="variableName" type="string">headlessProp</property>
                 </serializedBean>
-                <condition />
               </action>
-              <action name="Windows Launcher Replace" id="176" customizedId="" beanClass="com.install4j.runtime.beans.actions.text.ReplaceInstallerVariablesAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+              <action name="Windows Launcher Replace" id="176" beanClass="com.install4j.runtime.beans.actions.text.ReplaceInstallerVariablesAction" actionElevationType="elevated">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.text.ReplaceInstallerVariablesAction">
-                      <void property="encoding">
-                        <string />
-                      </void>
-                      <void property="files">
-                        <array class="java.io.File" length="3">
-                          <void index="0">
-                            <object class="java.io.File">
-                              <string>LipidDataAnalyzer.bat</string>
-                            </object>
-                          </void>
-                          <void index="1">
-                            <object class="java.io.File">
-                              <string>ldaCmd.bat</string>
-                            </object>
-                          </void>
-                          <void index="2">
-                            <object class="java.io.File">
-                              <string>AlexRtGrouper.bat</string>
-                            </object>
-                          </void>
-                        </array>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="encoding" type="string" />
+                  <property name="files" type="array" class="java.io.File" length="3">
+                    <element index="0">
+                      <object class="java.io.File">
+                        <string>LipidDataAnalyzer.bat</string>
+                      </object>
+                    </element>
+                    <element index="1">
+                      <object class="java.io.File">
+                        <string>ldaCmd.bat</string>
+                      </object>
+                    </element>
+                    <element index="2">
+                      <object class="java.io.File">
+                        <string>AlexRtGrouper.bat</string>
+                      </object>
+                    </element>
+                  </property>
                 </serializedBean>
                 <condition>return Util.isWindows();</condition>
               </action>
-              <action name="Linux / Unix Launcher Replace" id="177" customizedId="" beanClass="com.install4j.runtime.beans.actions.text.ReplaceInstallerVariablesAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+              <action name="Linux / Unix Launcher Replace" id="177" beanClass="com.install4j.runtime.beans.actions.text.ReplaceInstallerVariablesAction" actionElevationType="elevated">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.text.ReplaceInstallerVariablesAction">
-                      <void property="files">
-                        <array class="java.io.File" length="2">
-                          <void index="0">
-                            <object class="java.io.File">
-                              <string>LipidDataAnalyzer-console</string>
-                            </object>
-                          </void>
-                          <void index="1">
-                            <object class="java.io.File">
-                              <string>ldaCmd.sh</string>
-                            </object>
-                          </void>
-                        </array>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="files" type="array" class="java.io.File" length="2">
+                    <element index="0">
+                      <object class="java.io.File">
+                        <string>LipidDataAnalyzer-console</string>
+                      </object>
+                    </element>
+                    <element index="1">
+                      <object class="java.io.File">
+                        <string>ldaCmd.sh</string>
+                      </object>
+                    </element>
+                  </property>
                 </serializedBean>
                 <condition>return !(Util.isWindows());</condition>
               </action>
-              <action name="Change .sh script permissions" id="162" customizedId="" beanClass="com.install4j.runtime.beans.actions.files.SetModeAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="4" errorMessage="">
+              <action name="Change .sh script permissions" id="162" beanClass="com.install4j.runtime.beans.actions.files.SetModeAction" actionElevationType="elevated" failureStrategy="askRetryQuit">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.files.SetModeAction">
-                      <void property="files">
-                        <array class="java.io.File" length="2">
-                          <void index="0">
-                            <object class="java.io.File">
-                              <string>LipidDataAnalyzer-console</string>
-                            </object>
-                          </void>
-                          <void index="1">
-                            <object class="java.io.File">
-                              <string>ldaCmd.sh</string>
-                            </object>
-                          </void>
-                        </array>
-                      </void>
-                      <void property="mode">
-                        <string>755</string>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="files" type="array" class="java.io.File" length="2">
+                    <element index="0">
+                      <object class="java.io.File">
+                        <string>LipidDataAnalyzer-console</string>
+                      </object>
+                    </element>
+                    <element index="1">
+                      <object class="java.io.File">
+                        <string>ldaCmd.sh</string>
+                      </object>
+                    </element>
+                  </property>
+                  <property name="mode" type="string">755</property>
                 </serializedBean>
-                <condition />
               </action>
-              <action name="" id="779" customizedId="" beanClass="com.install4j.runtime.beans.actions.misc.AddVmOptionsAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+              <action id="779" beanClass="com.install4j.runtime.beans.actions.misc.AddVmOptionsAction" actionElevationType="elevated">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.misc.AddVmOptionsAction">
-                      <void property="launcherId">
-                        <string>440</string>
-                      </void>
-                      <void property="vmOptions">
-                        <array class="java.lang.String" length="1">
-                          <void index="0">
-                            <string>-Xms${installer:xms}m</string>
-                          </void>
-                        </array>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="launcherId" type="string">440</property>
+                  <property name="vmOptions" type="array" elementType="string" length="1">
+                    <element index="0">-Xms${installer:xms}m</element>
+                  </property>
                 </serializedBean>
-                <condition />
               </action>
-              <action name="" id="771" customizedId="" beanClass="com.install4j.runtime.beans.actions.misc.AddVmOptionsAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+              <action id="771" beanClass="com.install4j.runtime.beans.actions.misc.AddVmOptionsAction" actionElevationType="elevated">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.misc.AddVmOptionsAction">
-                      <void property="launcherId">
-                        <string>440</string>
-                      </void>
-                      <void property="vmOptions">
-                        <array class="java.lang.String" length="1">
-                          <void index="0">
-                            <string>-Xmx${installer:xmx}m</string>
-                          </void>
-                        </array>
-                      </void>
-                    </object>
-                  </java>
+                  <property name="launcherId" type="string">440</property>
+                  <property name="vmOptions" type="array" elementType="string" length="1">
+                    <element index="0">-Xmx${installer:xmx}m</element>
+                  </property>
                 </serializedBean>
-                <condition />
               </action>
             </actions>
-            <formComponents />
+            <formComponents>
+              <formComponent id="108" beanClass="com.install4j.runtime.beans.formcomponents.ProgressComponent">
+                <serializedBean>
+                  <property name="initialStatusMessage" type="string">${i18n:WizardPreparing}</property>
+                </serializedBean>
+              </formComponent>
+            </formComponents>
           </screen>
-          <screen name="" id="12" customizedId="" beanClass="com.install4j.runtime.beans.screens.FinishedScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="true" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.FinishedScreen" />
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
-            <actions />
-            <formComponents />
+          <screen id="12" beanClass="com.install4j.runtime.beans.screens.FinishedScreen" styleId="166" finishScreen="true">
+            <formComponents>
+              <formComponent id="110" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent" insetBottom="10">
+                <serializedBean>
+                  <property name="labelText" type="string">${form:finishedMessage}</property>
+                </serializedBean>
+              </formComponent>
+            </formComponents>
           </screen>
         </screens>
       </application>
-      <application name="" id="uninstaller" customizedId="" beanClass="com.install4j.runtime.beans.applications.UninstallerApplication" enabled="true" commentSet="false" comment="" actionElevationType="none" fileset="" customIcnsFile="" customIcoFile="" macEntitlementsFile="" automaticLauncherIntegration="false" launchMode="startupFirstWindow" launchInNewProcess="false" launchSchedule="updateSchedule" allLaunchers="true">
+      <application id="uninstaller" beanClass="com.install4j.runtime.beans.applications.UninstallerApplication" launchInNewProcess="false">
         <serializedBean>
-          <java class="java.beans.XMLDecoder">
-            <object class="com.install4j.runtime.beans.applications.UninstallerApplication" />
-          </java>
+          <property name="customMacosExecutableName" type="string">${i18n:UninstallerMenuEntry(${compiler:sys.fullName})}</property>
+          <property name="useCustomMacosExecutableName" type="boolean" value="true" />
         </serializedBean>
-        <launcherIds />
-        <variables />
         <startup>
-          <screen name="" id="14" customizedId="" beanClass="com.install4j.runtime.beans.screens.StartupScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.StartupScreen" />
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
+          <screen id="14" beanClass="com.install4j.runtime.beans.screens.StartupScreen" rollbackBarrierExitCode="0">
             <actions>
-              <link name="" id="20" customizedId="" beanClass="" enabled="true" targetId="13" mergedProjectId="" />
-              <action name="" id="21" customizedId="" beanClass="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
-                <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction" />
-                  </java>
-                </serializedBean>
-                <condition />
-              </action>
+              <link id="20" targetId="13" />
+              <action id="21" beanClass="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction" />
             </actions>
-            <formComponents />
           </screen>
         </startup>
         <screens>
-          <screen name="" id="15" customizedId="" beanClass="com.install4j.runtime.beans.screens.UninstallWelcomeScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.UninstallWelcomeScreen" />
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
-            <actions />
-            <formComponents />
-          </screen>
-          <screen name="" id="16" customizedId="" beanClass="com.install4j.runtime.beans.screens.UninstallationScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.UninstallationScreen" />
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
-            <actions>
-              <action name="" id="17" customizedId="" beanClass="com.install4j.runtime.beans.actions.UninstallFilesAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+          <screen id="15" beanClass="com.install4j.runtime.beans.screens.UninstallWelcomeScreen" styleId="166">
+            <formComponents>
+              <formComponent id="116" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent" insetBottom="10">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.UninstallFilesAction" />
-                  </java>
+                  <property name="labelText" type="string">${form:welcomeMessage}</property>
                 </serializedBean>
-                <condition />
-              </action>
-              <action name="Remove property file" id="135" customizedId="" beanClass="com.install4j.runtime.beans.actions.control.RunScriptAction" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                <visibilityScript>!context.isConsole()</visibilityScript>
+              </formComponent>
+              <formComponent id="117" beanClass="com.install4j.runtime.beans.formcomponents.ConsoleHandlerFormComponent">
                 <serializedBean>
-                  <java class="java.beans.XMLDecoder">
-                    <object class="com.install4j.runtime.beans.actions.control.RunScriptAction">
-                      <void property="script">
-                        <object class="com.install4j.api.beans.ScriptProperty">
-                          <void property="value">
-                            <string>final String PROP_FILE = "LipidDataAnalyzer.properties";
+                  <property name="consoleScript">
+                    <object class="com.install4j.api.beans.ScriptProperty">
+                      <property name="value" type="string">String message = context.getMessage("ConfirmUninstall", context.getApplicationName());
+return console.askYesNo(message, true);
+</property>
+                    </object>
+                  </property>
+                </serializedBean>
+              </formComponent>
+            </formComponents>
+          </screen>
+          <screen id="16" beanClass="com.install4j.runtime.beans.screens.UninstallationScreen">
+            <actions>
+              <action id="17" beanClass="com.install4j.runtime.beans.actions.UninstallFilesAction" actionElevationType="elevated" />
+              <action name="Remove property file" id="135" beanClass="com.install4j.runtime.beans.actions.control.RunScriptAction">
+                <serializedBean>
+                  <property name="script">
+                    <object class="com.install4j.api.beans.ScriptProperty">
+                      <property name="value" type="string">final String PROP_FILE = "LipidDataAnalyzer.properties";
 final String installDir = (String)context.getVariable("sys.installationDir");
 
 File myFile = new File(installDir + File.separator + PROP_FILE);
@@ -1746,77 +1365,291 @@ if (myFile.isFile()) {
     myFile.delete();
 } 
 
-return true;</string>
-                          </void>
-                        </object>
-                      </void>
+return true;</property>
                     </object>
-                  </java>
+                  </property>
                 </serializedBean>
-                <condition />
               </action>
             </actions>
-            <formComponents />
+            <formComponents>
+              <formComponent id="122" beanClass="com.install4j.runtime.beans.formcomponents.ProgressComponent">
+                <serializedBean>
+                  <property name="initialStatusMessage" type="string">${i18n:UninstallerPreparing}</property>
+                </serializedBean>
+              </formComponent>
+            </formComponents>
           </screen>
-          <screen name="" id="19" customizedId="" beanClass="com.install4j.runtime.beans.screens.UninstallFailureScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="true" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.UninstallFailureScreen" />
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
-            <actions />
-            <formComponents />
-          </screen>
-          <screen name="" id="18" customizedId="" beanClass="com.install4j.runtime.beans.screens.UninstallSuccessScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="true" wizardIndexChangeType="unchanged" wizardIndexKey="">
-            <serializedBean>
-              <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.UninstallSuccessScreen" />
-              </java>
-            </serializedBean>
-            <condition />
-            <validation />
-            <preActivation />
-            <postActivation />
-            <actions />
-            <formComponents />
+          <screen id="19" beanClass="com.install4j.runtime.beans.screens.UninstallFailureScreen" finishScreen="true" />
+          <screen id="18" beanClass="com.install4j.runtime.beans.screens.UninstallSuccessScreen" styleId="166" finishScreen="true">
+            <formComponents>
+              <formComponent id="125" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent" insetBottom="10">
+                <serializedBean>
+                  <property name="labelText" type="string">${form:successMessage}</property>
+                </serializedBean>
+              </formComponent>
+            </formComponents>
           </screen>
         </screens>
       </application>
     </applications>
+    <styles defaultStyleId="160">
+      <style name="Standard" id="160" beanClass="com.install4j.runtime.beans.styles.FormStyle">
+        <formComponents>
+          <formComponent name="Header" id="161" beanClass="com.install4j.runtime.beans.styles.NestedStyleComponent" insetTop="0" insetBottom="0">
+            <serializedBean>
+              <property name="styleId" type="string">173</property>
+            </serializedBean>
+          </formComponent>
+          <group name="Main" id="162" beanClass="com.install4j.runtime.beans.groups.VerticalFormComponentGroup">
+            <beans>
+              <formComponent id="163" beanClass="com.install4j.runtime.beans.styles.ContentComponent" insetTop="10" insetLeft="20" insetBottom="10" insetRight="20" />
+              <formComponent name="Watermark" id="164" beanClass="com.install4j.runtime.beans.formcomponents.SeparatorComponent" insetTop="0" insetLeft="5" insetBottom="0" useExternalParametrization="true" externalParametrizationName="Custom watermark" externalParametrizationMode="include">
+                <serializedBean>
+                  <property name="enabledTitleText" type="boolean" value="false" />
+                  <property name="labelText" type="string">install4j</property>
+                </serializedBean>
+                <externalParametrizationPropertyNames>
+                  <propertyName>labelText</propertyName>
+                </externalParametrizationPropertyNames>
+              </formComponent>
+              <formComponent name="Footer" id="165" beanClass="com.install4j.runtime.beans.styles.NestedStyleComponent" insetTop="0" insetBottom="0">
+                <serializedBean>
+                  <property name="styleId" type="string">177</property>
+                </serializedBean>
+              </formComponent>
+            </beans>
+          </group>
+        </formComponents>
+      </style>
+      <style name="Banner" id="166" beanClass="com.install4j.runtime.beans.styles.FormStyle">
+        <formComponents>
+          <group id="167" beanClass="com.install4j.runtime.beans.groups.VerticalFormComponentGroup" useExternalParametrization="true" externalParametrizationName="Customize banner image" externalParametrizationMode="include">
+            <serializedBean>
+              <property name="backgroundColor">
+                <object class="com.install4j.runtime.beans.LightOrDarkColor">
+                  <object class="java.awt.Color">
+                    <int>255</int>
+                    <int>255</int>
+                    <int>255</int>
+                    <int>255</int>
+                  </object>
+                  <object class="java.awt.Color">
+                    <int>49</int>
+                    <int>52</int>
+                    <int>53</int>
+                    <int>255</int>
+                  </object>
+                </object>
+              </property>
+              <property name="borderSides">
+                <object class="com.install4j.runtime.beans.formcomponents.BorderSides">
+                  <property name="bottom" type="boolean" value="true" />
+                </object>
+              </property>
+              <property name="imageEdgeBackgroundColor">
+                <object class="com.install4j.runtime.beans.LightOrDarkColor">
+                  <object class="java.awt.Color">
+                    <int>25</int>
+                    <int>143</int>
+                    <int>220</int>
+                    <int>255</int>
+                  </object>
+                  <object class="java.awt.Color">
+                    <int>0</int>
+                    <int>74</int>
+                    <int>151</int>
+                    <int>255</int>
+                  </object>
+                </object>
+              </property>
+              <property name="imageEdgeBorder" type="boolean" value="true" />
+              <property name="imageFile">
+                <object class="com.install4j.api.beans.ExternalFile">
+                  <string>${compiler:sys.install4jHome}/resource/styles/wizard.png</string>
+                </object>
+              </property>
+              <property name="insets">
+                <object class="java.awt.Insets">
+                  <int>5</int>
+                  <int>10</int>
+                  <int>10</int>
+                  <int>10</int>
+                </object>
+              </property>
+            </serializedBean>
+            <beans>
+              <formComponent id="168" beanClass="com.install4j.runtime.beans.styles.ScreenTitleComponent" insetTop="0">
+                <serializedBean>
+                  <property name="labelFontSizePercent" type="int" value="130" />
+                  <property name="labelFontStyle" type="enum" class="com.install4j.runtime.beans.formcomponents.FontStyle" value="BOLD" />
+                  <property name="labelFontType" type="enum" class="com.install4j.runtime.beans.formcomponents.FontType" value="DERIVED" />
+                </serializedBean>
+              </formComponent>
+              <formComponent id="169" beanClass="com.install4j.runtime.beans.formcomponents.SeparatorComponent" />
+              <formComponent id="170" beanClass="com.install4j.runtime.beans.styles.ContentComponent" insetTop="10" insetBottom="0" />
+            </beans>
+            <externalParametrizationPropertyNames>
+              <propertyName>imageAnchor</propertyName>
+              <propertyName>imageEdgeBackgroundColor</propertyName>
+              <propertyName>imageFile</propertyName>
+            </externalParametrizationPropertyNames>
+          </group>
+          <formComponent id="171" beanClass="com.install4j.runtime.beans.styles.NestedStyleComponent" insetBottom="0">
+            <serializedBean>
+              <property name="styleId" type="string">177</property>
+            </serializedBean>
+          </formComponent>
+        </formComponents>
+      </style>
+      <group name="Style components" id="172" beanClass="com.install4j.runtime.beans.groups.StyleGroup">
+        <beans>
+          <style name="Standard header" id="173" beanClass="com.install4j.runtime.beans.styles.FormStyle">
+            <serializedBean>
+              <property name="fillVertical" type="boolean" value="false" />
+              <property name="standalone" type="boolean" value="false" />
+              <property name="verticalAnchor" type="enum" class="com.install4j.api.beans.Anchor" value="NORTH" />
+            </serializedBean>
+            <formComponents>
+              <group id="174" beanClass="com.install4j.runtime.beans.groups.VerticalFormComponentGroup" useExternalParametrization="true" externalParametrizationName="Customize title bar" externalParametrizationMode="include">
+                <serializedBean>
+                  <property name="backgroundColor">
+                    <object class="com.install4j.runtime.beans.LightOrDarkColor">
+                      <object class="java.awt.Color">
+                        <int>255</int>
+                        <int>255</int>
+                        <int>255</int>
+                        <int>255</int>
+                      </object>
+                      <object class="java.awt.Color">
+                        <int>49</int>
+                        <int>52</int>
+                        <int>53</int>
+                        <int>255</int>
+                      </object>
+                    </object>
+                  </property>
+                  <property name="borderSides">
+                    <object class="com.install4j.runtime.beans.formcomponents.BorderSides">
+                      <property name="bottom" type="boolean" value="true" />
+                    </object>
+                  </property>
+                  <property name="imageAnchor" type="enum" class="com.install4j.api.beans.Anchor" value="NORTHEAST" />
+                  <property name="imageEdgeBorderWidth" type="int" value="2" />
+                  <property name="imageFile">
+                    <object class="com.install4j.api.beans.ExternalFile">
+                      <string>icon:${installer:sys.installerApplicationMode}_header.png</string>
+                    </object>
+                  </property>
+                  <property name="imageInsets">
+                    <object class="java.awt.Insets">
+                      <int>0</int>
+                      <int>5</int>
+                      <int>1</int>
+                      <int>1</int>
+                    </object>
+                  </property>
+                  <property name="insets">
+                    <object class="java.awt.Insets">
+                      <int>0</int>
+                      <int>20</int>
+                      <int>0</int>
+                      <int>10</int>
+                    </object>
+                  </property>
+                </serializedBean>
+                <beans>
+                  <formComponent name="Title" id="175" beanClass="com.install4j.runtime.beans.styles.ScreenTitleComponent">
+                    <serializedBean>
+                      <property name="labelFontStyle" type="enum" class="com.install4j.runtime.beans.formcomponents.FontStyle" value="BOLD" />
+                      <property name="labelFontType" type="enum" class="com.install4j.runtime.beans.formcomponents.FontType" value="DERIVED" />
+                    </serializedBean>
+                  </formComponent>
+                  <formComponent name="Subtitle" id="176" beanClass="com.install4j.runtime.beans.styles.ScreenTitleComponent" insetLeft="8">
+                    <serializedBean>
+                      <property name="titleType" type="enum" class="com.install4j.runtime.beans.styles.TitleType" value="SUB_TITLE" />
+                    </serializedBean>
+                  </formComponent>
+                </beans>
+                <externalParametrizationPropertyNames>
+                  <propertyName>backgroundColor</propertyName>
+                  <propertyName>foregroundColor</propertyName>
+                  <propertyName>imageAnchor</propertyName>
+                  <propertyName>imageFile</propertyName>
+                  <propertyName>imageOverlap</propertyName>
+                </externalParametrizationPropertyNames>
+              </group>
+            </formComponents>
+          </style>
+          <style name="Standard footer" id="177" beanClass="com.install4j.runtime.beans.styles.FormStyle">
+            <serializedBean>
+              <property name="fillVertical" type="boolean" value="false" />
+              <property name="standalone" type="boolean" value="false" />
+              <property name="verticalAnchor" type="enum" class="com.install4j.api.beans.Anchor" value="SOUTH" />
+            </serializedBean>
+            <formComponents>
+              <group id="178" beanClass="com.install4j.runtime.beans.groups.HorizontalFormComponentGroup">
+                <serializedBean>
+                  <property name="alignFirstLabel" type="boolean" value="false" />
+                  <property name="insets">
+                    <object class="java.awt.Insets">
+                      <int>3</int>
+                      <int>5</int>
+                      <int>8</int>
+                      <int>5</int>
+                    </object>
+                  </property>
+                </serializedBean>
+                <beans>
+                  <formComponent id="179" beanClass="com.install4j.runtime.beans.formcomponents.SpringComponent" />
+                  <formComponent name="Back button" id="180" beanClass="com.install4j.runtime.beans.styles.StandardControlButtonComponent">
+                    <serializedBean>
+                      <property name="buttonText" type="string">&lt; ${i18n:ButtonBack}</property>
+                      <property name="controlButtonType" type="enum" class="com.install4j.api.context.ControlButtonType" value="PREVIOUS" />
+                    </serializedBean>
+                  </formComponent>
+                  <formComponent name="Next button" id="181" beanClass="com.install4j.runtime.beans.styles.StandardControlButtonComponent">
+                    <serializedBean>
+                      <property name="buttonText" type="string">${i18n:ButtonNext} &gt;</property>
+                      <property name="controlButtonType" type="enum" class="com.install4j.api.context.ControlButtonType" value="NEXT" />
+                    </serializedBean>
+                  </formComponent>
+                  <formComponent name="Cancel button" id="182" beanClass="com.install4j.runtime.beans.styles.StandardControlButtonComponent" insetLeft="5">
+                    <serializedBean>
+                      <property name="buttonText" type="string">${i18n:ButtonCancel}</property>
+                      <property name="controlButtonType" type="enum" class="com.install4j.api.context.ControlButtonType" value="CANCEL" />
+                    </serializedBean>
+                  </formComponent>
+                </beans>
+              </group>
+            </formComponents>
+          </style>
+        </beans>
+      </group>
+    </styles>
   </installerGui>
   <mediaSets>
-    <windows name="Windows 64bit" id="258" customizedId="" mediaFileName="" installDir="LDA" overridePrincipalLanguage="false" jreBitType="64" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="false" customInstallBaseDir="" contentFilesType="1" downloadURL="" verifyIntegrity="true">
+    <windows name="Windows 64bit" id="258" installDir="LDA" architecture="64">
       <excludedLaunchers>
         <launcher id="169" />
       </excludedLaunchers>
       <excludedBeans>
         <bean refId="669" />
       </excludedBeans>
-      <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
       <exclude>
-        <entry location="ldaCmd.sh" fileType="regular" />
-        <entry location="LipidDataAnalyzer-console" fileType="regular" />
-        <entry location=".i4j_fileset_241" fileType="regular" />
-        <entry location=".i4j_fileset_568" fileType="regular" />
-        <entry location=".i4j_fileset_1420" fileType="regular" />
-        <entry location=".i4j_fileset_1422" fileType="regular" />
-        <entry location=".i4j_fileset_1540" fileType="regular" />
+        <entry location="ldaCmd.sh" />
+        <entry location="LipidDataAnalyzer-console" />
+        <entry filesetId="241" />
+        <entry filesetId="568" />
+        <entry filesetId="1420" />
+        <entry filesetId="1422" />
+        <entry filesetId="1540" />
       </exclude>
       <variables>
-        <variable name="javaProp3D" value="-Djava.ext.dirs=./" description="" category="" />
+        <variable name="javaProp3D" value="-Djava.ext.dirs=./" />
       </variables>
-      <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
-        <commentFiles />
-        <customAttributes />
-      </autoUpdate>
-      <excludedComponents />
-      <includedDownloadableComponents />
+      <jreBundle jreBundleSource="none" />
     </windows>
-    <unixInstaller name="Unix 64bit" id="261" customizedId="" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}-x64_${compiler:sys.version}" installDir="LDA" overridePrincipalLanguage="false" jreBitType="all" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="false" customInstallBaseDir="" contentFilesType="1" downloadURL="">
+    <unixInstaller name="Unix 64bit" id="261" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}-x64_${compiler:sys.version}" installDir="LDA">
       <excludedLaunchers>
         <launcher id="69" />
       </excludedLaunchers>
@@ -1829,32 +1662,23 @@ return true;</string>
         <bean refId="911" />
         <bean refId="669" />
       </excludedBeans>
-      <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
       <exclude>
-        <entry location="ldaCmd.bat" fileType="regular" />
-        <entry location="LipidDataAnalyzer.bat" fileType="regular" />
-        <entry location=".i4j_fileset_234" fileType="regular" />
-        <entry location=".i4j_fileset_568" fileType="regular" />
-        <entry location=".i4j_fileset_1411" fileType="regular" />
-        <entry location=".i4j_fileset_1415" fileType="regular" />
-        <entry location=".i4j_fileset_1422" fileType="regular" />
-        <entry location=".i4j_fileset_1540" fileType="regular" />
+        <entry location="ldaCmd.bat" />
+        <entry location="LipidDataAnalyzer.bat" />
+        <entry filesetId="234" />
+        <entry filesetId="568" />
+        <entry filesetId="1411" />
+        <entry filesetId="1415" />
+        <entry filesetId="1422" />
+        <entry filesetId="1540" />
       </exclude>
       <variables>
-        <variable name="javaProp3D" value="-Djava.ext.dirs=./" description="" category="" />
-        <variable name="headlessTrue" value="-Djava.awt.headless=false" description="" category="" />
+        <variable name="javaProp3D" value="-Djava.ext.dirs=./" />
+        <variable name="headlessTrue" value="-Djava.awt.headless=false" />
       </variables>
-      <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
-        <commentFiles />
-        <customAttributes />
-      </autoUpdate>
-      <excludedComponents />
-      <includedDownloadableComponents />
-      <installerScript mode="1" file="">
-        <content />
-      </installerScript>
+      <jreBundle jreBundleSource="none" />
     </unixInstaller>
-    <macosFolder name="Mac OS X" id="152" customizedId="" mediaFileName="" installDir="LDA" overridePrincipalLanguage="false" jreBitType="all" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="macosx-amd64-1.8.0_60" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="false" appleJre="false" requiredVmIdPrefix="" customInstallBaseDir="" contentFilesType="1" downloadURL="" signLaunchers="false">
+    <macosFolder name="Mac OS X" id="152" installDir="LDA">
       <excludedLaunchers>
         <launcher id="69" />
       </excludedLaunchers>
@@ -1867,123 +1691,115 @@ return true;</string>
         <bean refId="911" />
         <bean refId="669" />
       </excludedBeans>
-      <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
       <exclude>
-        <entry location="ldaCmd.bat" fileType="regular" />
-        <entry location="LipidDataAnalyzer.bat" fileType="regular" />
-        <entry location=".i4j_fileset_234" fileType="regular" />
-        <entry location=".i4j_fileset_241" fileType="regular" />
-        <entry location=".i4j_fileset_568" fileType="regular" />
-        <entry location=".i4j_fileset_1411" fileType="regular" />
-        <entry location=".i4j_fileset_1415" fileType="regular" />
-        <entry location=".i4j_fileset_1420" fileType="regular" />
+        <entry location="ldaCmd.bat" />
+        <entry location="LipidDataAnalyzer.bat" />
+        <entry filesetId="234" />
+        <entry filesetId="241" />
+        <entry filesetId="568" />
+        <entry filesetId="1411" />
+        <entry filesetId="1415" />
+        <entry filesetId="1420" />
       </exclude>
       <variables>
-        <variable name="javaProp3D" value="-Djava.ext.dirs=./:/System/Library/Frameworks/JavaVM.framework/Home/lib/ext" description="" category="" />
+        <variable name="javaProp3D" value="-Djava.ext.dirs=./:/System/Library/Frameworks/JavaVM.framework/Home/lib/ext" />
       </variables>
-      <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
-        <commentFiles />
-        <customAttributes />
-      </autoUpdate>
-      <excludedComponents />
-      <includedDownloadableComponents />
+      <jreBundle jreBundleSource="preCreated" includedJre="macosx-amd64-1.8.0_202_unpacked" />
     </macosFolder>
-    <windows name="Windows 64bit (jre)" id="511" customizedId="" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}_jre" installDir="LDA" overridePrincipalLanguage="false" jreBitType="64" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="windows-amd64-1.8.0_202" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="false" customInstallBaseDir="" contentFilesType="1" downloadURL="" verifyIntegrity="true">
+    <windows name="Windows 64bit (jre)" id="511" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}_jre" installDir="LDA" architecture="64">
       <excludedLaunchers>
         <launcher id="169" />
       </excludedLaunchers>
       <excludedBeans>
         <bean refId="668" />
       </excludedBeans>
-      <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
       <exclude>
-        <entry location="ldaCmd.sh" fileType="regular" />
-        <entry location="LipidDataAnalyzer-console" fileType="regular" />
-        <entry location=".i4j_fileset_241" fileType="regular" />
-        <entry location=".i4j_fileset_568" fileType="regular" />
-        <entry location=".i4j_fileset_1420" fileType="regular" />
-        <entry location=".i4j_fileset_1422" fileType="regular" />
-        <entry location=".i4j_fileset_1540" fileType="regular" />
+        <entry location="ldaCmd.sh" />
+        <entry location="LipidDataAnalyzer-console" />
+        <entry filesetId="241" />
+        <entry filesetId="568" />
+        <entry filesetId="1420" />
+        <entry filesetId="1422" />
+        <entry filesetId="1540" />
       </exclude>
       <variables>
-        <variable name="javaProp3D" value="-Djava.ext.dirs=./" description="" category="" />
+        <variable name="javaProp3D" value="-Djava.ext.dirs=./" />
       </variables>
-      <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
-        <commentFiles />
-        <customAttributes />
-      </autoUpdate>
-      <excludedComponents />
-      <includedDownloadableComponents />
+      <jreBundle jreBundleSource="preCreated" includedJre="windows-amd64-1.8.0_202" />
     </windows>
-    <linuxRPM name="Linux RPM 64bit" id="560" customizedId="" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}_64bit" installDir="/opt/LDA" overridePrincipalLanguage="false" jreBitType="all" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="" manualJREEntry="false" os="linux" arch="i386">
+    <linuxRPM name="Linux RPM 64bit" id="560" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}_64bit" installDir="/opt/LDA">
       <excludedLaunchers>
         <launcher id="69" />
       </excludedLaunchers>
-      <excludedBeans />
-      <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
       <exclude>
-        <entry location="ldaCmd.bat" fileType="regular" />
-        <entry location="ldaCmd.sh" fileType="regular" />
-        <entry location="LipidDataAnalyzer-console" fileType="regular" />
-        <entry location="LipidDataAnalyzer.bat" fileType="regular" />
-        <entry location=".i4j_fileset_234" fileType="regular" />
-        <entry location=".i4j_fileset_1411" fileType="regular" />
-        <entry location=".i4j_fileset_1415" fileType="regular" />
-        <entry location=".i4j_fileset_1422" fileType="regular" />
-        <entry location=".i4j_fileset_1540" fileType="regular" />
+        <entry location="ldaCmd.bat" />
+        <entry location="ldaCmd.sh" />
+        <entry location="LipidDataAnalyzer-console" />
+        <entry location="LipidDataAnalyzer.bat" />
+        <entry filesetId="234" />
+        <entry filesetId="1411" />
+        <entry filesetId="1415" />
+        <entry filesetId="1422" />
+        <entry filesetId="1540" />
       </exclude>
       <variables>
-        <variable name="javaProp3D" value="-Djava.ext.dirs=./" description="" category="" />
-        <variable name="headlessTrue" value="-Djava.awt.headless=false" description="" category="" />
+        <variable name="javaProp3D" value="-Djava.ext.dirs=./" />
+        <variable name="headlessTrue" value="-Djava.awt.headless=false" />
       </variables>
-      <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
-        <commentFiles />
-        <customAttributes />
-      </autoUpdate>
-      <preInstallScript mode="1" file="">
-        <content />
-      </preInstallScript>
-      <postInstallScript mode="3" file="">
-        <content>chmod -R 777 LipidDataAnalyzer.properties cache fragRules properties fattyAcids .settings elementconfig.xml mzTab.properties</content>
-      </postInstallScript>
-      <preUninstallScript mode="1" file="">
-        <content />
-      </preUninstallScript>
-      <postUninstallScript mode="1" file="">
-        <content />
-      </postUninstallScript>
+      <jreBundle jreBundleSource="none" />
+      <postInstallScript>chmod -R 777 LipidDataAnalyzer.properties cache fragRules properties fattyAcids .settings elementconfig.xml mzTab.properties</postInstallScript>
     </linuxRPM>
-    <unixArchive name="Unix Archive 64bit" id="564" customizedId="" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}_64bit" installDir="LDA" overridePrincipalLanguage="false" jreBitType="all" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="" manualJREEntry="false">
+    <unixArchive name="Unix Archive 64bit" id="564" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}_64bit" installDir="LDA">
       <excludedLaunchers>
         <launcher id="69" />
       </excludedLaunchers>
-      <excludedBeans />
-      <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
       <exclude>
-        <entry location="ldaCmd.bat" fileType="regular" />
-        <entry location="ldaCmd.sh" fileType="regular" />
-        <entry location="LipidDataAnalyzer-console" fileType="regular" />
-        <entry location="LipidDataAnalyzer.bat" fileType="regular" />
-        <entry location=".i4j_fileset_234" fileType="regular" />
-        <entry location=".i4j_fileset_1411" fileType="regular" />
-        <entry location=".i4j_fileset_1415" fileType="regular" />
-        <entry location=".i4j_fileset_1422" fileType="regular" />
-        <entry location=".i4j_fileset_1540" fileType="regular" />
+        <entry location="ldaCmd.bat" />
+        <entry location="ldaCmd.sh" />
+        <entry location="LipidDataAnalyzer-console" />
+        <entry location="LipidDataAnalyzer.bat" />
+        <entry filesetId="234" />
+        <entry filesetId="1411" />
+        <entry filesetId="1415" />
+        <entry filesetId="1422" />
+        <entry filesetId="1540" />
       </exclude>
       <variables>
-        <variable name="javaProp3D" value="-Djava.ext.dirs=./" description="" category="" />
-        <variable name="headlessTrue" value="-Djava.awt.headless=false" description="" category="" />
+        <variable name="javaProp3D" value="-Djava.ext.dirs=./" />
+        <variable name="headlessTrue" value="-Djava.awt.headless=false" />
       </variables>
-      <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
-        <commentFiles />
-        <customAttributes />
-      </autoUpdate>
+      <jreBundle jreBundleSource="none" />
     </unixArchive>
+    <macosFolder name="Mac OS X ARM" id="1544" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}_ARM" installDir="LDA" architecture="aarch64">
+      <excludedLaunchers>
+        <launcher id="69" />
+      </excludedLaunchers>
+      <excludedBeans>
+        <bean refId="915" />
+        <bean refId="912" />
+        <bean refId="1075" />
+        <bean refId="998" />
+        <bean refId="1282" />
+        <bean refId="911" />
+        <bean refId="669" />
+      </excludedBeans>
+      <exclude>
+        <entry location="ldaCmd.bat" />
+        <entry location="LipidDataAnalyzer.bat" />
+        <entry filesetId="234" />
+        <entry filesetId="241" />
+        <entry filesetId="568" />
+        <entry filesetId="1411" />
+        <entry filesetId="1415" />
+        <entry filesetId="1420" />
+      </exclude>
+      <variables>
+        <variable name="javaProp3D" value="-Djava.ext.dirs=./:/System/Library/Frameworks/JavaVM.framework/Home/lib/ext" />
+      </variables>
+      <jreBundle usePack200="false" />
+    </macosFolder>
   </mediaSets>
-  <buildIds buildAll="true">
-    <mediaSet refId="258" />
+  <buildIds buildAll="false">
     <mediaSet refId="511" />
   </buildIds>
-  <buildOptions verbose="false" faster="false" disableSigning="false" debug="false" />
 </install4j>
-
