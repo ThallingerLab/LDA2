@@ -6,3 +6,4 @@
 
 #To avoid committing currently selected fragRules
 /fragRules/interim/
+/bin/

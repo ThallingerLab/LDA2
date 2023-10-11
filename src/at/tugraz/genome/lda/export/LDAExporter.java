@@ -488,11 +488,15 @@ public abstract class LDAExporter
                   rtOfHighestProbe = probe.Peak;
                 }
               }
+              int currIdentificationNumber = -1;
               for (Object msnNames : msn.getMSnIdentificationNames()){
                 String detection = null;
                 String detectionWithAmbuiguities = null;
+                String detectionSn = null;
+                currIdentificationNumber++;
                 if (msnNames instanceof Vector){
                   detection = ((Vector<String>)msnNames).get(0);
+                  detectionSn = msn.getMSnIdentificationNamesWithSNPositions().get(currIdentificationNumber);
                   detectionWithAmbuiguities = "";
                   if (((Vector<String>)msnNames).size()>1){
                     for (String name : (Vector<String>)msnNames){
@@ -503,6 +507,7 @@ public abstract class LDAExporter
                   }
                 }else if (msnNames instanceof String){
                   detection = (String)msnNames;
+                  detectionSn = (String)msnNames;
                 }
                 if (detection==null)
                   throw new ExportException("It is not possible that one MSn detection is null!");
@@ -534,7 +539,7 @@ public abstract class LDAExporter
                 double relativeArea = 0d;
                 if (molSpeciesAreasOfMod.containsKey(woPosition))
                   relativeArea = molSpeciesAreasOfMod.get(woPosition);
-                double relativePercentage = msn.getRelativeIntensity(detection);
+                double relativePercentage = msn.getRelativeIntensity(detectionSn);
                 relativeArea += relativePercentage*areaOfOnePeak;
                 molSpeciesAreasOfMod.put(woPosition,relativeArea);
                 //for position

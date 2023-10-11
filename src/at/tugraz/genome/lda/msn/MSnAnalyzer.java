@@ -59,6 +59,7 @@ import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.quantification.LipidomicsChromatogram;
 import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.lda.utils.FloatFloatVO;
+import at.tugraz.genome.lda.utils.Pair;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleStringVO;
 import at.tugraz.genome.lda.vos.QuantVO;
@@ -70,7 +71,6 @@ import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.maspectras.quantification.ChromatogramReader;
 import at.tugraz.genome.maspectras.utils.Calculator;
 import at.tugraz.genome.voutils.GeneralComparator;
-import javafx.util.Pair;
 
 /**
  * Central class for the verification of MSn evidence

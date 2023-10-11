@@ -77,7 +77,7 @@
   </launchers>
   <installerGui>
     <applications>
-      <application id="installer" beanClass="com.install4j.runtime.beans.applications.InstallerApplication" styleId="160" launchInNewProcess="false">
+      <application id="installer" beanClass="com.install4j.runtime.beans.applications.InstallerApplication" actionElevationType="elevated" styleId="160" launchInNewProcess="false">
         <serializedBean>
           <property name="resizable" type="boolean" value="false" />
         </serializedBean>
@@ -1087,10 +1087,10 @@ return path;</property>
                   </action>
                 </beans>
               </group>
-              <action id="1154" beanClass="com.install4j.runtime.beans.actions.files.AddWindowsFileRightsAction" actionElevationType="elevated">
+              <action id="1154" beanClass="com.install4j.runtime.beans.actions.files.AddWindowsFileRightsAction" actionElevationType="elevated" failureStrategy="askQuit">
                 <serializedBean>
                   <property name="all" type="boolean" value="false" />
-                  <property name="files" type="array" class="java.io.File" length="10">
+                  <property name="files" type="array" class="java.io.File" length="11">
                     <element index="0">
                       <object class="java.io.File">
                         <string>LipidDataAnalyzer.properties</string>
@@ -1139,6 +1139,11 @@ return path;</property>
                     <element index="9">
                       <object class="java.io.File">
                         <string>lcbHydroxylationEncoding.txt</string>
+                      </object>
+                    </element>
+                    <element index="10">
+                      <object class="java.io.File">
+                        <string>modconfig.xml</string>
                       </object>
                     </element>
                   </property>
@@ -1799,7 +1804,7 @@ return true;</property>
       <jreBundle usePack200="false" />
     </macosFolder>
   </mediaSets>
-  <buildIds buildAll="false">
+  <buildIds>
     <mediaSet refId="511" />
   </buildIds>
 </install4j>

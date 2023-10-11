@@ -1,81 +1,88 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-
-
-<configurations>	
-
+<configurations>
 <config id="default">
-
-	<!-- Define elements -->
-	<!-- Each element may contain multiple isotope's - place main isotope first	-->
-	<elements>
-		<element symbol="C" valency="4">
-			<isotope mass="12.0" abund="0.989" />
-			<isotope mass="13.003354826" abund="0.011" />
-		</element>
-		<element symbol="Cc" valency="4">
-			<isotope mass="13.003354826" abund="1.0" />
-		</element>
-		<element symbol="H" valency="1" >
-			<isotope mass="1.007825035" abund="0.99985" />
-			<isotope mass="2.014101779" abund="0.00015" />
-		</element>
-			<!-- 'h' defines a proton: H - electron mass, used in formulas for cation weight as well -->
-		<element symbol="h" valency="1" >
-			<isotope mass="1.0072763" abund="0.99985" />
-			<isotope mass="2.014101779" abund="0.00015" />
-		</element>
-		<element symbol="D" valency="1">
-			<isotope mass="2.014101779" abund="1.0" />
-		</element>
-		<element symbol="N" valency="3">
-			<isotope mass="14.003074002" abund="0.9963" />
-			<isotope mass="15.00010897" abund="0.0037" />
-		</element>
-		<element symbol="n" valency="3">
-			<isotope mass="15.00010897" abund="1.0" />
-		</element>
-		<element symbol="O" valency="2">
-			<isotope mass="15.99491463" abund="0.9976" />
-			<isotope mass="17.9991312" abund="0.002" />
-			<isotope mass="16.9991312" abund="0.0004" />
-		</element>
-		<element symbol="o" valency="2">
-			<isotope mass="17.9991312" abund="1.0" /> 
-		</element>
-		<!-- equivalent of 2 18-O's: -->
-		<element symbol="j" valency="2">
-			<isotope mass="20.00334777" abund="1.0" />
-		</element>
-		<element symbol="P" valency="3">
-			<isotope mass="30.9737620" abund="1.0" />
-		</element>
-		<element symbol="S" valency="2">
-			<isotope mass="31.972070698" abund="0.9502" />
-			<isotope mass="33.967866650" abund="0.0421" />
-			<isotope mass="32.971458428" abund="0.0075" />
-			<isotope mass="35.967080620" abund="0.0002" />
-		</element>
-		<element symbol="Na" valency="1">
-		       <isotope mass="22.989769281" abund="1.0" />
-		</element>
-		<element symbol="F" valency="1">
-			<isotope mass="18.9984032" abund="1.0" />
-		</element>
-		<element symbol="Cl" valency="1">
-		       <isotope mass="34.968852721" abund="0.7578" />
-		       <isotope mass="35.96830698" abund="0.0000000001" />
-		       <isotope mass="36.96590262" abund="0.2422" />
-		</element>
-		<element symbol="Li" valency="1">
-		       <isotope mass="7.016004558" abund="0.9241" />
-		       <isotope mass="6.015122795" abund="0.0759" />
-		</element>
-		<element symbol="Si" valency="4">
-		       <isotope mass="27.976928" abund="0.9223" />
-		       <isotope mass="28.976496" abund="0.0467" />	
-		       <isotope mass="29.973772" abund="0.0310" />
-		</element>
-	</elements>	 
+<!--  Define elements  -->
+<!--  Each element may contain multiple isotope's - place main isotope first	 -->
+<elements>
+<element symbol="C" valency="4">
+<isotope mass="12.0" abund="0.989"/>
+<isotope mass="13.003354826" abund="0.011"/>
+</element>
+<element symbol="Cc" valency="4">
+<isotope mass="13.003354826" abund="1.0"/>
+</element>
+<element symbol="H" valency="1">
+<isotope mass="1.007825035" abund="0.99985"/>
+<isotope mass="2.014101779" abund="0.00015"/>
+</element>
+<!--  'h' defines a proton: H - electron mass, used in formulas for cation weight as well  -->
+<element symbol="h" valency="1">
+<isotope mass="1.0072763" abund="0.99985"/>
+<isotope mass="2.014101779" abund="0.00015"/>
+</element>
+<element symbol="D" valency="1">
+<isotope mass="2.014101779" abund="1.0"/>
+</element>
+<element symbol="N" valency="3">
+<isotope mass="14.003074002" abund="0.9963"/>
+<isotope mass="15.00010897" abund="0.0037"/>
+</element>
+<element symbol="n" valency="3">
+<isotope mass="15.00010897" abund="1.0"/>
+</element>
+<element symbol="O" valency="2">
+<isotope mass="15.99491463" abund="0.9976"/>
+<isotope mass="17.9991312" abund="0.002"/>
+<isotope mass="16.9991312" abund="0.0004"/>
+</element>
+<element symbol="X" valency="2">
+<isotope mass="17.9991312" abund="1.0"/>
+</element>
+<!--  equivalent of 2 18-O's:  -->
+<element symbol="j" valency="2">
+<isotope mass="20.00334777" abund="1.0"/>
+</element>
+<element symbol="P" valency="3">
+<isotope mass="30.9737620" abund="1.0"/>
+</element>
+<element symbol="S" valency="2">
+<isotope mass="31.972070698" abund="0.9502"/>
+<isotope mass="33.967866650" abund="0.0421"/>
+<isotope mass="32.971458428" abund="0.0075"/>
+<isotope mass="35.967080620" abund="0.0002"/>
+</element>
+<element symbol="Na" valency="1">
+<isotope mass="22.989769281" abund="1.0"/>
+</element>
+<element symbol="Fl" valency="1">
+<isotope mass="18.9984032" abund="1.0"/>
+</element>
+<element symbol="Cl" valency="1">
+<isotope mass="34.968852721" abund="0.7578"/>
+<isotope mass="35.96830698" abund="0.0000000001"/>
+<isotope mass="36.96590262" abund="0.2422"/>
+</element>
+<element symbol="Li" valency="1">
+<isotope mass="7.016004558" abund="0.9241"/>
+<isotope mass="6.015122795" abund="0.0759"/>
+</element>
+<element symbol="Si" valency="4">
+<isotope mass="27.976928" abund="0.9223"/>
+<isotope mass="28.976496" abund="0.0467"/>
+<isotope mass="29.973772" abund="0.0310"/>
+</element>
+<element symbol="K" valency="1">
+<isotope mass="38.9637069" abund="0.9329"/>
+<isotope mass="39.96399867" abund="0.0001"/>
+<isotope mass="40.96182597" abund="0.0673"/>
+</element>
+<element symbol="I" valency="7">
+<isotope mass="126.904468" abund="1.0"/>
+</element>
+<element symbol="Br" valency="7">
+<isotope mass="78.9183379" abund="0.5069"/>
+<isotope mass="80.916291" abund="0.4931"/>
+</element>
+</elements>
 </config>
 </configurations>
-

@@ -285,7 +285,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
         	  nameLookupPositionSnNomenclature_.put(snPosNames.get(0),combiName);
           }
           else {
-            ambiguousPositionIdentifications_.put(combiName, posNames);
+              ambiguousPositionIdentifications_.put(combiName, posNames);
             for (String ambigName : posNames)
               nameLookupHumReadableToPositionInsensitve_.put(ambigName,combiName);
           }
@@ -674,9 +674,11 @@ public class LipidomicsMSnSet extends LipidParameterSet
    */
   public double getRelativeIntensity(String fullName){
     double relativeIntensity = 0.0;
-    if (nameLookupHumReadableToPositionInsensitve_.get(fullName) != null) {
+//LL    if (nameLookupHumReadableToPositionInsensitve_.get(fullName) != null) {
+    if (nameLookupPositionSnNomenclature_.get(fullName) != null) {
     	if (status_ < FRAGMENTS_DETECTED) return 1.0;
-    	relativeIntensity = relativeIntensityOfCombination_.get(nameLookupHumReadableToPositionInsensitve_.get(fullName));
+    		relativeIntensity = relativeIntensityOfCombination_.get(nameLookupPositionSnNomenclature_.get(fullName));
+ //LL   	relativeIntensity = relativeIntensityOfCombination_.get(nameLookupHumReadableToPositionInsensitve_.get(fullName));
     }
     return relativeIntensity;
   }
