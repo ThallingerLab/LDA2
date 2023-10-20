@@ -48,7 +48,6 @@ public class ExperimentGraphPanel extends JOptionPanel
 	private static final Dimension TABLE_PANEL_DIMENSION = new Dimension(825,200);
 	private static final Dimension PLOT_DIMENSION = new Dimension(825,500);
 	
-	private ExperimentTableInputPanel definitionPanel_;
 	private ExperimentLabelDefinitionPanel labelDefinitionPanel_;
 	private LoadingPanel loadingPanel_;
 	private JPanel displayPanel_;
@@ -56,9 +55,8 @@ public class ExperimentGraphPanel extends JOptionPanel
 	private IsotopeEffectRegression isotopeEffectRegression_;
 	private TotalIsotopeEffectPlot plot_;
   
-  public ExperimentGraphPanel(JDefaultComponents wizardComponents, ExperimentTableInputPanel definitionPanel) {
+  public ExperimentGraphPanel(JDefaultComponents wizardComponents) {
       super(wizardComponents, "Use stable isotope labels specific for \u03C9-C=C positions.");
-      this.definitionPanel_ = definitionPanel;
       this.loadingPanel_ = new LoadingPanel("<html>Computing data, please wait...</html>");
       init(this.loadingPanel_);
   }

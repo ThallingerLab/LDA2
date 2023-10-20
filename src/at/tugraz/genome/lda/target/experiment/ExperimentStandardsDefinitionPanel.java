@@ -87,7 +87,7 @@ public class ExperimentStandardsDefinitionPanel extends ExperimentTableInputPane
   		{
   			if (!(getDefaultComponents().getNextPanel() instanceof ExperimentGraphPanel))
   			{
-  				getDefaultComponents().addOptionPanelAfterCurrent(new ExperimentGraphPanel(getDefaultComponents(), this));
+  				getDefaultComponents().addOptionPanelAfterCurrent(new ExperimentGraphPanel(getDefaultComponents()));
   			}
   			
   			goNext();
