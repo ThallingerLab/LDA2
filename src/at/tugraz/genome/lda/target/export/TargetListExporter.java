@@ -4,7 +4,6 @@ import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
@@ -110,30 +109,6 @@ public class TargetListExporter
   	this.calibrationGraphPanel_ = calibrationGraphPanel;
   	this.beforeAfter_ = new Hashtable<String,Set<Pair<Double,DoubleBondPositionVO>>>(); //TODO: just for development!
   }
-  
-  /**
-   * Constructor for omega MassList Recalibration
-   * @param recalibrationRegression
-   */
-//  public TargetListExporter(RecalibrationRegression recalibrationRegression, String templatePath)
-//	{
-//		this.recalibrationRegression_ = recalibrationRegression;
-//		this.isotopeEffectRegression_ = null;
-//		this.resultFileVO_ = new Vector<ResultFileVO>();
-//		this.labels_ = new Vector<IsotopeLabelVO>();
-//		this.templatePath_ = templatePath;
-//	}
-  
-  
-//  public TargetListExporter(Hashtable<String, RecalibrationRegression> recalibrationRegressionsForClass, String templatePath)
-//	{
-//  	this.recalibrationRegressionsForClass_ = recalibrationRegressionsForClass;
-//  	this.isotopeEffectRegression_ = null;
-//		this.isotopeEffectRegression_ = null;
-//		this.resultFileVO_ = new Vector<ResultFileVO>();
-//		this.labels_ = new Vector<IsotopeLabelVO>();
-//		this.templatePath_ = templatePath;
-//	}
   
   
 	//TODO: create MassList dynamically
@@ -515,69 +490,6 @@ public class TargetListExporter
 				}
 			}
 			
-			
-//			List<DoubleBondPositionVO> blackList = new ArrayList<DoubleBondPositionVO>();
-//			Vector<DoubleBondPositionVO> whiteList = new Vector<DoubleBondPositionVO>();
-			/**
-			 * markedToCombine must be filtered to some degree:
-			 * if only 1 match found: combine without issue (includes chains with permuation etc.)
-			 * if multiple matches found: check if one of the vos has double bond positions assigned for all chains:
-			 * if yes, check if all positions different from -1 are identical: 
-			 * 			if yes, combine all
-			 * 			if no, all of them should be removed from the data: add them to a list of elements to be removed and check each time if an equivalent vo is contained there.
-			 * if no, check total number of assigned positions for individual fatty acid species:
-			 * 			if number matches for all, combine without issue (includes chains with permuation etc.)
-			 * 			if no, remove species with the offending fatty acid assigned and combine the rest
-			 * TODO: this needs to be expanded, not general enough for triglycerides and some other cases
-			 */
-			
-			/**
-			 * new approach to deal with markedToCombine:
-			 * we do NOT remove any analytes. we consider all possible combinations for a peak to be correct!
-			 * 
-			 * 
-			 */
-//			for (DoubleBondPositionVO vo1 : markedToCombine.keySet())
-//			{
-//				System.out.println("Parent VO pattern: "+vo1.getPositionAssignmentPattern()+" RT: "+vo1.getExpectedRetentionTime());
-////				patternLookup.get(vo1.getPositionAssignmentPattern()).remove(vo1); //removing element
-//				Vector<DoubleBondPositionVO> toCombine = markedToCombine.get(vo1);
-//				if (vo1.areDoubleBondPositionsAssignedForAllChains())
-//				{
-//					DoubleBondPositionVO combined = new DoubleBondPositionVO(vo1);
-//					float expectedRetentionTime = combined.getExpectedRetentionTime();
-//					int count = 1;
-//					for (DoubleBondPositionVO vo : toCombine)
-//					{
-//						patternLookup.get(vo.getPositionAssignmentPattern()).remove(vo); //removing element
-//						expectedRetentionTime+= vo.getExpectedRetentionTime();
-//						count++;
-//					}
-//					combined.setExpectedRetentionTime(expectedRetentionTime/count);
-//					if (!patternLookup.containsKey(combined.getPositionAssignmentPattern()))
-//						patternLookup.put(combined.getPositionAssignmentPattern(), new Vector<DoubleBondPositionVO>());
-//					patternLookup.get(combined.getPositionAssignmentPattern()).add(combined);
-//				}
-//				else if (toCombine.size() == 1)
-//				{
-//					
-//					patternLookup.get(toCombine.get(0).getPositionAssignmentPattern()).remove(toCombine.get(0)); //removing element
-//					DoubleBondPositionVO combined = combineDoubleBondPositionVO(vo1,toCombine.get(0));
-//					if (combined != null)
-//					{
-//						if (!patternLookup.containsKey(combined.getPositionAssignmentPattern()))
-//							patternLookup.put(combined.getPositionAssignmentPattern(), new Vector<DoubleBondPositionVO>());
-//						patternLookup.get(combined.getPositionAssignmentPattern()).add(combined);
-//					}
-//				}
-//				
-//				toCombine.forEach((n) -> System.out.println((n).getPositionAssignmentPattern()));
-//				if(vo1.getMolecularSpecies().equals("16:2_18:1"))
-//				{
-//					System.out.println("stop?");
-//				}
-//			}	
-			
 			for (Vector<Integer> pattern : patternLookup.keySet()) 
 			{
 				returnElements.addAll(patternLookup.get(pattern));
@@ -595,20 +507,6 @@ public class TargetListExporter
 		}
 	}
 	
-	/**
-	 * returns true if only one possible double bond position combination is possible for the queried data
-	 * @param vo1
-	 * @param doubleBondPositionVOs
-	 * @return
-	 */
-	private boolean isCombinationStraightforward(Set<Vector<Integer>> combinedPatterns)
-	{
-		if (combinedPatterns.size() != 1)
-		{
-			return false;
-		}
-		return true;
-	}
 	
 	private Set<Vector<Integer>> computeCombinedPatterns(DoubleBondPositionVO vo1, Vector<DoubleBondPositionVO> doubleBondPositionVOs)
 	{
@@ -641,28 +539,6 @@ public class TargetListExporter
 		}
 		return combinedPattern;
 	}
-	
-	
-//	private Vector<Integer> combinePattern(Vector<Vector<Integer>> patterns)
-//	{
-//		Vector<Integer> combinedPattern = new Vector<Integer>();
-//		Vector<Integer> temp = new Vector<Integer>();
-//		for (Vector<Integer> pattern : patterns)
-//		{
-//			if (temp.isEmpty())
-//			{
-//				temp = pattern;
-//				continue;
-//			}
-//			for (int i=0;i<pattern.size();i++)
-//			{
-//				if ((pattern.get(i) == temp.get(i)) || patter )
-//			}
-//		}
-//		
-//		
-//	}
-	
 	
 	
 	private Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>> markToCombine(
@@ -759,90 +635,6 @@ public class TargetListExporter
 		}
 		return markedToCombine;
 	}
-	
-	/**
-	private Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>> markToCombine(
-			Hashtable<Vector<Integer>,Vector<DoubleBondPositionVO>> patternLookup,
-			Hashtable<Vector<Integer>,Vector<Vector<Integer>>> overlappingPatterns)
-	{
-		Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>> markedToCombine = new Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>>();
-		try
-		{
-			for (Vector<Integer> pattern : overlappingPatterns.keySet()) //combine overlapping patterns with same retention times
-			{
-				Vector<DoubleBondPositionVO> patternVOs = patternLookup.get(pattern); //the species matching the pattern exactly
-				for (Vector<Integer> overlappingPattern : overlappingPatterns.get(pattern)) //pattern overlap with the queried pattern
-				{
-					Vector<DoubleBondPositionVO> overlappingPatternVOs = patternLookup.get(overlappingPattern); //species with pattern overlap with the queried pattern
-					if (overlappingPatternVOs!=null)
-					{
-						for (DoubleBondPositionVO vo1 : patternVOs)
-						{
-							Set<Vector<Integer>> patternLookupKeySet = patternLookup.keySet();
-							for (Vector<Integer> pttrn : patternLookupKeySet)
-							{
-								if (pttrn.equals(overlappingPattern))
-								{
-									System.out.println("HI");
-									Vector<DoubleBondPositionVO> test = patternLookup.get(pttrn);
-									System.out.println("HI!");
-								}
-							}
-							for (Entry<Vector<Integer>,Vector<DoubleBondPositionVO>> dbvo : patternLookup.entrySet())
-							{
-								Vector<DoubleBondPositionVO> testest = dbvo.getValue();
-								Vector<Integer> henlo = dbvo.getKey();
-								Vector<DoubleBondPositionVO> testestest = patternLookup.get(henlo);
-								System.out.println("HI!");
-							}
-							
-							Float retentionTime1 = (float)vo1.getExpectedRetentionTime();
-							for (DoubleBondPositionVO vo2 : overlappingPatternVOs)
-							{
-								Float retentionTime2 = (float)vo2.getExpectedRetentionTime();
-//								System.out.println(String.format("Species1: %s, RT1: %s, Species2: %s, RT2: %s ", 
-//										vo1.getDoubleBondPositionsHumanReadable(), retentionTime1, vo2.getDoubleBondPositionsHumanReadable(), retentionTime2));
-								if (Math.abs(retentionTime1-retentionTime2) < (THRESHOLD_FOR_CLUSTERING/60)) //if is within threshold
-								{
-									if (markedToCombine.containsKey(vo2)) 
-									{
-										if (!markedToCombine.get(vo2).contains(vo1)) 
-										{
-											markedToCombine.get(vo2).add(vo1);
-										}
-									} 
-									else if (markedToCombine.containsKey(vo1))
-									{
-										if (!markedToCombine.get(vo1).contains(vo2)) 
-										{
-											markedToCombine.get(vo1).add(vo2);
-										}
-									}
-									else
-									{
-										markedToCombine.put(vo1, new Vector<DoubleBondPositionVO>());
-										markedToCombine.get(vo1).add(vo2);
-									}
-								}
-							}
-						}
-					}
-					else 
-					{
-						System.out.println(overlappingPattern);
-					}
-				}				
-			}
-		}
-		catch (NullPointerException ex)
-		{
-			ex.printStackTrace();
-			System.out.println("HI!");
-		}
-		
-		return markedToCombine;
-	}
-	*/
 	
 	
 	/**
@@ -1115,20 +907,6 @@ public class TargetListExporter
 	}
 	
 	
-	/**
-	 * Check to identify species which may have a more ambiguous retention time, due to coelution
-	 */
-	private boolean containsMoreThanOneSpecies(Vector<Pair<String,String>> labeledUnlabeledPairs)
-	{
-		Set<String> uniqueSpecies = new HashSet<String>();
-		for (Pair<String,String> pair : labeledUnlabeledPairs)
-		{
-			uniqueSpecies.add(pair.getKey());
-		}
-		return uniqueSpecies.size() > 1;
-	}
-	
-	
 	
 	private void fillContainerForClass(String cName, MolecularSpeciesContainer container)
 	{
@@ -1220,62 +998,7 @@ public class TargetListExporter
 		{
 			ex.printStackTrace();
 		}
-		
 	}	
-	
-	
-//	private Hashtable<String,Vector<LipidParameterSet>> collectLabeledResultsForClass(String cName)
-//	{
-//		Hashtable<String,Vector<LipidParameterSet>> labeledResultsForClass = new Hashtable<String,Vector<LipidParameterSet>>();
-//		for (int index : resultIndices_)
-//		{
-//			QuantificationResult quantRes = resultFileVO_.get(index).getQuantificationResult();
-//			Vector<LipidParameterSet> analytes = quantRes.getIdentifications().get(cName);
-//			
-//			for (LipidParameterSet analyte : analytes)
-//			{
-//				if (analyte instanceof LipidomicsMSnSet 
-//						&& analyte.getDoubleBonds()>0 
-//						&& (analyte.getChemicalFormula().contains("D") || analyte.getChemicalFormula().contains("Cc")))
-//				{
-//					String name = analyte.getNameStringWithoutRt();
-//					if (!labeledResultsForClass.contains(name))
-//					{
-//						labeledResultsForClass.put(name, new Vector<LipidParameterSet>());
-//					}
-//					analyte = addDoubleBondPositionVO((LipidomicsMSnSet)analyte);
-//					labeledResultsForClass.get(name).add(analyte);
-//				}
-//			}
-//		}
-//		return labeledResultsForClass;
-//	}
-	
-	
-	//for this task I need the label definitions, then probably replace elements accordingly and create a doublebondpositionvo, which is added to the analyte
-	private LipidParameterSet addDoubleBondPositionVO(LipidomicsMSnSet analyte)
-	{
-		
-		return analyte;
-	}
-	
-	
-	private Hashtable<String,Hashtable<String,QuantVO>> addDoubleBondPositionsToQuantVOs(
-			Hashtable<String,Hashtable<String,QuantVO>> quantObjects, Vector<String> analyteSequence, String cName)
-	{
-//		this.isotopeEffectRegression_ = isotopeEffectRegression;
-		for (ResultFileVO resultFileVO : resultFileVO_)
-		{
-			QuantificationResult quantRes = resultFileVO.getQuantificationResult();
-			Vector<LipidParameterSet> analytes = quantRes.getIdentifications().get(cName);
-			
-			
-		}
-		
-		
-		return quantObjects;
-	}
-	
 	
 	
 	
