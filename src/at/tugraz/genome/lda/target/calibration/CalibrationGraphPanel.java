@@ -44,6 +44,7 @@ public class CalibrationGraphPanel extends JOptionPanel
 {
 	private static final long serialVersionUID = 1L;
 	
+	public static final double predictionThreshold_ = 0.25; //TODO: this should be a input field.
 	private LoadingPanel loadingPanel_;
 	private JPanel displayPanel_;
 	private String[] lipidClasses_ = new String[0];
@@ -318,7 +319,6 @@ public class CalibrationGraphPanel extends JOptionPanel
   	Collections.sort(sortedLipidClasses);
   	sortedLipidClasses.add(0, PLOT_ALL); //adding PLOT_ALL at the beginning, ensuring it is always the first element
 		lipidClasses_ = sortedLipidClasses.toArray(new String[sortedLipidClasses.size()]);	
-//		filterOutliers(regressions, sortedLipidClasses, 5.0);
   	
   	return regressions;
   }
@@ -335,7 +335,7 @@ public class CalibrationGraphPanel extends JOptionPanel
   	Double maxKey = clusteredCombined.get(clusteredCombined.size()-1).getKey();
   	for (RecalibrationRegression regression : regressions)
   	{
-  		if (regression.getLipidClass().equals(PLOT_ALL)) continue;
+  		if (regression.getLipidClass().equals(PLOT_ALL) || regression.getDataType().equals(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX)) continue;
   		
   		ArrayList<Pair<Double, Double>> clustered = regression.getClustered();
   		ArrayList<Pair<Double, Double>> clusteredToAdd = new ArrayList<Pair<Double, Double>>();
@@ -393,93 +393,31 @@ public class CalibrationGraphPanel extends JOptionPanel
   	return clusteredInBetween;
   }
   
-  /**
-   * TODO: Consider improvements: e.g. only accept removal if a standard competes with the hit? Take other data into account?
-   * Regressions of data not derived from standards (but for which standards are available) for each lipid class are filtered for outliers.
-   * First, deviations of all data points for each lipid class (standards and other data) compared to the fit generated from (only!) all standards are computed.
-   * Then, for each data point belonging to "other" data, the mean and standard deviation are computed for the data without the respective data point. 
-   * Data points exceeding a deviation from the standard fit of more than mean plus minus the standard deviation multiplied with @param scaleOfFilter are removed.
-   * @param regressions
-   * @param lipidClasses
-   * @param scaleOfFilter
-   */
-  private void filterOutliers(ArrayList<RecalibrationRegression> regressions, ArrayList<String> lipidClasses, double scaleOfFilter)
-  {
-  	System.out.println("filtering");
-  	RecalibrationRegression regressionStandards = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, PLOT_ALL);
-  	if (regressionStandards == null || regressionStandards.getFunction() == null) return;
-  	for (RecalibrationRegression regressionClass : regressions)
-  	{
-  		String lipidClass = regressionClass.getLipidClass();
-  		if (lipidClass.equals(PLOT_ALL) || 
-  				regressionClass.getDataType().equals(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX) ||
-  				getRegressionByFields(regressions, CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, lipidClass) == null) //only remove a hit if standards are actually available?
-  		{
-  			continue;
-  		}
-  		System.out.println(lipidClass);
-  		ArrayList<Double> deviations = new ArrayList<Double>();
-  		for (Pair<Double,Double> difference : regressionClass.getDifferences())
-  		{
-  			if (!regressionStandards.getFunction().isValidPoint(difference.getKey())) continue;
-  			Double deviation = Math.abs(regressionStandards.getFunction().value(difference.getKey()) - difference.getValue());
-  			deviations.add(deviation);
-  		}
-  		ArrayList<Pair<Double,Double>> dataWOStd = new ArrayList<Pair<Double,Double>>(regressionClass.getDifferences());
-  		dataWOStd.removeAll(regressionStandards.getDifferences()); //to avoid possibly removing standards...
-  		ArrayList<Pair<Double,Double>> outliers = new ArrayList<Pair<Double,Double>>();
-  		for (Pair<Double,Double> dataPoint : dataWOStd)
-  		{
-  			if (!regressionStandards.getFunction().isValidPoint(dataPoint.getKey())) continue;
-  			Double deviation = Math.abs(regressionStandards.getFunction().value(dataPoint.getKey()) - dataPoint.getValue());
-  			ArrayList<Double> deviationsWO = new ArrayList<Double>(deviations);
-  			deviationsWO.remove(deviation); //removing the current item
-  			Double mean = getMean(deviationsWO);
-    		Double stdDev = getStdDev(deviationsWO);
-    		
-  			boolean isLessThanLowerBound = deviation < mean - stdDev * scaleOfFilter;
-        boolean isGreaterThanUpperBound = deviation > mean + stdDev * scaleOfFilter;
-//        System.out.println(dataPoint.getKey()+" "+deviation+" lower: "+(mean - stdDev * scaleOfFilter)+" upper: "+(mean + stdDev * scaleOfFilter));
-        if (isLessThanLowerBound || isGreaterThanUpperBound)
-        {
-        	outliers.add(dataPoint);
-        }
-  		}
-  		for (Pair<Double,Double> outlier : outliers)
-  		{
-  			System.out.println("!!! removed outlier !!!");
-  			System.out.println(lipidClass+" "+outlier.getKey()+" "+outlier.getValue());
-  			removeDataPointFromRegression(regressionClass, outlier);
-      	removeDataPointFromRegression(getRegressionByFields(regressions, PLOT_ALL, PLOT_ALL), outlier);
-  		}
-  	}
-  }
-  
-  private Double getMean(List<Double> values) 
-  {
-  	Double sum = 0.0;
-    for (Double value : values) 
-    {
-      sum += value;
-    }
-    return (sum / values.size());
-  }
-  
-  private Double getVariance(List<Double> values) 
-  {
-  	Double mean = getMean(values);
-    Double temp = 0.0;
-    for (Double a : values) 
-    {
-      temp += (a - mean) * (a - mean);
-    }
-    return temp / (values.size() - 1.0);
-  }
-  
-  private Double getStdDev(List<Double> values) 
-  {
-    return Math.sqrt(getVariance(values));
-  }
+//  private Double getMean(List<Double> values) 
+//  {
+//  	Double sum = 0.0;
+//    for (Double value : values) 
+//    {
+//      sum += value;
+//    }
+//    return (sum / values.size());
+//  }
+//  
+//  private Double getVariance(List<Double> values) 
+//  {
+//  	Double mean = getMean(values);
+//    Double temp = 0.0;
+//    for (Double a : values) 
+//    {
+//      temp += (a - mean) * (a - mean);
+//    }
+//    return temp / (values.size() - 1.0);
+//  }
+//  
+//  private Double getStdDev(List<Double> values) 
+//  {
+//    return Math.sqrt(getVariance(values));
+//  }
   
   
   
@@ -494,7 +432,7 @@ public class CalibrationGraphPanel extends JOptionPanel
   {
     //in case we have valid regressions for additional lipid classes, we need to redefine the lipidClasses_ array
   	HashSet<String> uniqueLipidClasses = new HashSet<String>();
-  	Hashtable<String, ArrayList<Pair<Double,Double>>> differencesForClass = computeDifferencesForClass(matches, 2);
+  	Hashtable<String, ArrayList<Pair<Double,Double>>> differencesForClass = computeDifferencesForClass(matches, 1);
   	ArrayList<Pair<Double,Double>> differencesAll = new ArrayList<Pair<Double,Double>>();
 		for (String lipidClass : differencesForClass.keySet()) //there might be different lipid classes here than in the standard mix
 		{
@@ -534,14 +472,27 @@ public class CalibrationGraphPanel extends JOptionPanel
   	for (MatchedIdentificationVO match : matches)
 		{
   		if (match.getConfidence() < acceptedConfidence) continue;
+  		ArrayList<Pair<IdentificationVO,IdentificationVO>> acceptedMatches = new ArrayList<Pair<IdentificationVO,IdentificationVO>>();
   		String lipidClass = match.getHighestConfidencePair().getKey().getLipidClass();
+  		if (match.getConfidence() < 2)
+  		{
+  			acceptedMatches.add(match.getHighestConfidencePair());
+  		}
+  		else if (match.getConfidence() == 2)
+  		{
+  			acceptedMatches = match.getAcceptedMatches();
+  		}
   		if (!differencesForClass.containsKey(lipidClass))
   		{
   			differencesForClass.put(lipidClass, new ArrayList<Pair<Double,Double>>());
   		}
-  		Double original = match.getHighestConfidencePair().getKey().getAverageRT();
-			Double difference = original - match.getHighestConfidencePair().getValue().getAverageRT();
-  		differencesForClass.get(lipidClass).add(new Pair<Double,Double>(original, difference));
+  		
+  		for (Pair<IdentificationVO,IdentificationVO> matchedPair : acceptedMatches)
+  		{
+  			Double original = matchedPair.getKey().getAverageRT();
+  			Double difference = original - matchedPair.getValue().getAverageRT();
+  			differencesForClass.get(lipidClass).add(new Pair<Double,Double>(original, difference));
+  		}
 		}
   	return differencesForClass;
   }
@@ -575,7 +526,13 @@ public class CalibrationGraphPanel extends JOptionPanel
 		}
   }
   
-  
+  /**
+   * Computes matches for data types other than standard mix
+   * @param originalConditions
+   * @param newConditions
+   * @return
+   * @throws ExcelInputFileException
+   */
   private ArrayList<MatchedIdentificationVO> computeMatchesForDataTypeOther(Hashtable<String,ArrayList<File>> originalConditions, Hashtable<String,ArrayList<File>> newConditions) throws ExcelInputFileException
   {
   	ArrayList<MatchedIdentificationVO> matches = new ArrayList<MatchedIdentificationVO>();
@@ -610,7 +567,8 @@ public class CalibrationGraphPanel extends JOptionPanel
   		
   		if (newIdentifications != null)
   		{
-  			matches.add(new MatchedIdentificationVO(originalIdentifications, maxOriginal, newIdentifications, maxNew));
+  			RecalibrationRegression standardsReg = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, PLOT_ALL);
+  			matches.add(new MatchedIdentificationVO(originalIdentifications, maxOriginal, newIdentifications, maxNew, standardsReg));
   		}
   	}
   	return matches;

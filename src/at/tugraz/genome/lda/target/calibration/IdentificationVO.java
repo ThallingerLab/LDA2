@@ -8,6 +8,13 @@ import java.util.Set;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 
+/**
+ * Contains identifications of the same lipid species, 
+ * within a retention time grouping parameter across several input files.
+ * 
+ * @author Leonida M. Lamp
+ *
+ */
 public class IdentificationVO
 {
 	private ArrayList<File> files_ = new ArrayList<File>();
@@ -88,7 +95,8 @@ public class IdentificationVO
 	
 	/**
 	 * If an identification was contributed to more than once by the same result file, 
-	 * either the grouping parameter or the experiment is not suitable.
+	 * it cannot be used to match identifications. If this happens in too many cases, then
+	 * either the grouping parameter needs to be lowered or the experiment is not suitable.
 	 * @return 		true if the identification was contributed to only once per file
 	 */
 	protected boolean isIdentificationUnambiguous()
