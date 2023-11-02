@@ -44,7 +44,6 @@ public class CalibrationGraphPanel extends JOptionPanel
 {
 	private static final long serialVersionUID = 1L;
 	
-	public static final double predictionThreshold_ = 0.25; //TODO: this should be a input field.
 	private LoadingPanel loadingPanel_;
 	private JPanel displayPanel_;
 	private String[] lipidClasses_ = new String[0];
@@ -56,6 +55,7 @@ public class CalibrationGraphPanel extends JOptionPanel
 	private RecalibrationPlot plot_;
 	private ArrayList<RecalibrationRegression> regressions_;
 	private File originalTargetList_;
+	private Double predictionThreshold_;
 	public static final String PLOT_ALL = "Combined";
 	private static final Dimension PLOT_DIMENSION = new Dimension(825,650);
 	private static final String TABLE_FRAME_TITLE = "Recalibrate the \u03C9-C=C target list";
@@ -256,16 +256,16 @@ public class CalibrationGraphPanel extends JOptionPanel
    */
   public void parseData(Hashtable<String,ArrayList<File>> originalConditions, Hashtable<String,ArrayList<File>> newConditions) throws ExcelInputFileException
   {
-  	regressions_ = new ArrayList<RecalibrationRegression>();
+  	this.regressions_ = new ArrayList<RecalibrationRegression>();
   	
   	if (originalConditions.containsKey(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX) &&
   			newConditions.containsKey(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX))
   	{
-  		regressions_ = parseStandardMix(
+  		this.regressions_ = parseStandardMix(
   				originalConditions.get(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX), 
   				newConditions.get(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX));
   	}
-  	regressions_.addAll(parseAllResults(originalConditions, newConditions));
+  	this.regressions_.addAll(parseAllResults(originalConditions, newConditions));
   }
   
   
@@ -301,7 +301,6 @@ public class CalibrationGraphPanel extends JOptionPanel
   }
   
   /**
-   * TODO: additional data points?
    * Parses all data and produces combined recalibration regressions for for each lipid class (wherever enough data points are available)
    * as well as fits for all calibrants combined. If not enough combined calibrants are available, an error message is thrown.
    * @param originalConditions
@@ -568,7 +567,7 @@ public class CalibrationGraphPanel extends JOptionPanel
   		if (newIdentifications != null)
   		{
   			RecalibrationRegression standardsReg = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, PLOT_ALL);
-  			matches.add(new MatchedIdentificationVO(originalIdentifications, maxOriginal, newIdentifications, maxNew, standardsReg));
+  			matches.add(new MatchedIdentificationVO(originalIdentifications, maxOriginal, newIdentifications, maxNew, standardsReg, predictionThreshold_));
   		}
   	}
   	return matches;
@@ -744,5 +743,11 @@ public class CalibrationGraphPanel extends JOptionPanel
   public void setOriginalTargetList(File originalTargetList)
   {
   	this.originalTargetList_ = originalTargetList;
+  }
+
+  
+  public void setPredictionThreshold(Double predictionThreshold)
+  {
+  	this.predictionThreshold_ = predictionThreshold;
   }
 }

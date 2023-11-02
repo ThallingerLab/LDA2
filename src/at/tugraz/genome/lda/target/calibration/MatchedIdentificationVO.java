@@ -17,23 +17,26 @@ import at.tugraz.genome.lda.utils.Pair;
  */
 public class MatchedIdentificationVO
 {
-	ArrayList<IdentificationVO> originals_;
-	int maxOriginals_;
-	ArrayList<IdentificationVO> matches_;
-	int maxMatches_;
-	RecalibrationRegression regression_;
-	Pair<IdentificationVO,IdentificationVO> highestConfidencePair_;
-	ArrayList<Pair<IdentificationVO,IdentificationVO>> acceptedMatches_ = new ArrayList<Pair<IdentificationVO,IdentificationVO>>();
-	int confidence_ = 0;
+	private ArrayList<IdentificationVO> originals_;
+	private int maxOriginals_;
+	private ArrayList<IdentificationVO> matches_;
+	private int maxMatches_;
+	private RecalibrationRegression regression_;
+	private double predictionThreshold_;
+	private Pair<IdentificationVO,IdentificationVO> highestConfidencePair_;
+	private ArrayList<Pair<IdentificationVO,IdentificationVO>> acceptedMatches_ = new ArrayList<Pair<IdentificationVO,IdentificationVO>>();
+	private int confidence_ = 0;
 //	ArrayList<Pair<IdentificationVO,IdentificationVO>> elutionOrderAssignments_ = new ArrayList<Pair<IdentificationVO,IdentificationVO>>();
 	
-	protected MatchedIdentificationVO(ArrayList<IdentificationVO> originals, int maxOriginals, ArrayList<IdentificationVO> matches, int maxMatches, RecalibrationRegression regression)
+	protected MatchedIdentificationVO(ArrayList<IdentificationVO> originals, int maxOriginals, ArrayList<IdentificationVO> matches, int maxMatches, 
+			RecalibrationRegression regression, double predictionThreshold)
 	{
 		this.originals_ = originals;
 		this.maxOriginals_ = maxOriginals;
 		this.matches_ = matches;
 		this.maxMatches_ = maxMatches;
 		this.regression_ = regression;
+		this.predictionThreshold_ = predictionThreshold;
 		findHighestConfidencePairings();
 //		findElutionOrderAssignments();
 	}
@@ -175,7 +178,7 @@ public class MatchedIdentificationVO
 	{
 		double predictedRT = regression_.getTargetRT(originalVO.getAverageRT());
 		double predictionDiff = Math.abs(predictedRT - newVO.getAverageRT());
-		if (predictionDiff < CalibrationGraphPanel.predictionThreshold_)
+		if (predictionDiff < predictionThreshold_)
 		{
 			return true;
 		}

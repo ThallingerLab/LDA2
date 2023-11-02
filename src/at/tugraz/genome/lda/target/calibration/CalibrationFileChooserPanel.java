@@ -23,6 +23,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -35,6 +36,7 @@ import at.tugraz.genome.lda.target.JDefaultComponents;
 import at.tugraz.genome.lda.target.JOptionPanel;
 import at.tugraz.genome.lda.target.JTargetFileWizard;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.verifier.DoubleVerifier;
 
 
 public class CalibrationFileChooserPanel extends JOptionPanel implements ActionListener
@@ -44,9 +46,11 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
 	private JTextField targetFileField_;
 	private SelectionTable inputPanelOriginal_;
 	private SelectionTable inputPanelNew_;
+	private JTextField predictionThresholdField_;
 	
 	private Path previousSelection_ = null;
 	
+	private static final Double DEFAULT_THRESHOLD = 0.25;
 	private static final String PLACEHOLDER_PREFIX = "Enter ";
 	private static final String BROWSE = "Browse";
 	private static final String COMMAND_OPEN_TARGET_FILE = "Open target file";
@@ -85,6 +89,25 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
         new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0
         , GridBagConstraints.CENTER, GridBagConstraints.BOTH
         , new Insets(5, 5, 5, 5), 0, 0));
+  	this.add(instantiateThresholdPanel(), new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0
+        , GridBagConstraints.EAST, GridBagConstraints.NONE
+        , new Insets(5, 5, 5, 5), 0, 0));
+  }
+  
+  private JPanel instantiateThresholdPanel()
+  {
+  	JPanel panel = new JPanel();
+  	panel.setLayout(new GridBagLayout());
+  	predictionThresholdField_ = new JTextField(DEFAULT_THRESHOLD.toString(), 5);
+  	predictionThresholdField_.setInputVerifier(new DoubleVerifier(true,true));
+  	predictionThresholdField_.setHorizontalAlignment(JTextField.RIGHT);
+  	panel.add(new JLabel("Maximum allowed deviation from standards-curve: "), new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+  	panel.add(predictionThresholdField_, new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+  	panel.add(new JLabel(" min"), new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+  	return panel;
   }
   
   /**
@@ -228,6 +251,7 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
   		  	  {
     					CalibrationGraphPanel panel = (CalibrationGraphPanel)getDefaultComponents().getCurrentPanel();
     					panel.setOriginalTargetList(new File(targetFileField_.getText()));
+    					panel.setPredictionThreshold(Double.parseDouble(predictionThresholdField_.getText()));
   		  			panel.parseData(originalConditions, newConditions);
   		  			//during data parsing a redirect back to this panel might occur.
   		  			if (getDefaultComponents().getCurrentPanel() instanceof CalibrationGraphPanel)
