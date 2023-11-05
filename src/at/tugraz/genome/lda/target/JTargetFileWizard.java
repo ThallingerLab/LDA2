@@ -1,39 +1,13 @@
 package at.tugraz.genome.lda.target;
 
 import java.awt.Dimension;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.io.File;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Set;
-import java.util.Vector;
 
-import javax.swing.ButtonGroup;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-
-import at.tugraz.genome.lda.exception.ExcelInputFileException;
-import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
-import at.tugraz.genome.lda.parser.LDAResultReader;
-import at.tugraz.genome.lda.quantification.LipidParameterSet;
-import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.target.calibration.CalibrationFileChooserPanel;
 import at.tugraz.genome.lda.target.calibration.CalibrationGraphPanel;
 import at.tugraz.genome.lda.target.experiment.ExperimentLabelDefinitionPanel;
 import at.tugraz.genome.lda.target.experiment.ExperimentResultFileChooserPanel;
 import at.tugraz.genome.lda.target.export.ExportPanel;
-import at.tugraz.genome.lda.target.experiment.ExperimentGraphPanel;
-import at.tugraz.genome.lda.utils.Pair;
-import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
-import at.tugraz.genome.lda.vos.IsotopeLabelVO;
-import at.tugraz.genome.lda.vos.ResultFileVO;
-import at.tugraz.genome.lda.exception.ExportException;
+
 
 public class JTargetFileWizard extends JWizardFramework
 {
@@ -66,7 +40,7 @@ public class JTargetFileWizard extends JWizardFramework
 	{
 		JOptionPanel calibrationFileChooserPanel = new CalibrationFileChooserPanel(getDefaultComponents());
 		JOptionPanel calibrationGraphPanel = new CalibrationGraphPanel(getDefaultComponents());
-		JOptionPanel exportPanel = new ExportPanel(getDefaultComponents(), this);
+		JOptionPanel exportPanel = new ExportPanel(getDefaultComponents());
 		getDefaultComponents().addOptionPanel(PANEL_CALIBRATION_FILE_CHOOSER, calibrationFileChooserPanel);
 		getDefaultComponents().addOptionPanel(PANEL_CALIBRATION_GRAPH, calibrationGraphPanel);
 		getDefaultComponents().addOptionPanel(PANEL_EXPORT, exportPanel);
@@ -78,7 +52,7 @@ public class JTargetFileWizard extends JWizardFramework
 	{
 		ExperimentResultFileChooserPanel experimentFileChooserPanel = new ExperimentResultFileChooserPanel(getDefaultComponents());
 		JOptionPanel experimentDefinitionPanel = new ExperimentLabelDefinitionPanel(getDefaultComponents(), experimentFileChooserPanel);
-		JOptionPanel exportPanel = new ExportPanel(getDefaultComponents(), this);
+		JOptionPanel exportPanel = new ExportPanel(getDefaultComponents());
 		getDefaultComponents().addOptionPanel(PANEL_EXPERIMENT_FILE_CHOOSER, experimentFileChooserPanel);
 		getDefaultComponents().addOptionPanel(PANEL_EXPERIMENT_DEFINITION, experimentDefinitionPanel);
 		getDefaultComponents().addOptionPanel(PANEL_EXPORT, exportPanel);

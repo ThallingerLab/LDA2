@@ -31,6 +31,7 @@ import at.tugraz.genome.lda.target.IsotopeLabelVO;
 import at.tugraz.genome.lda.target.JDefaultComponents;
 import at.tugraz.genome.lda.target.JOptionPanel;
 import at.tugraz.genome.lda.target.LoadingPanel;
+import at.tugraz.genome.lda.target.export.ExportOptionsPanel;
 import at.tugraz.genome.lda.target.export.ExportPanel;
 import at.tugraz.genome.lda.target.export.TargetListExporter;
 import at.tugraz.genome.lda.utils.Pair;
@@ -453,6 +454,7 @@ public class ExperimentGraphPanel extends JOptionPanel
   		try
   		{
   			ExportPanel panel = (ExportPanel)getDefaultComponents().getCurrentPanel();
+  			panel.addExportOptionsPanel(new ExportOptionsPanel(true));
   			panel.setExporter(new TargetListExporter(isotopeEffectRegression_, labelDefinitionPanel_.getResultFiles(), labelDefinitionPanel_.getAssignedIsotopeLabels()));
   		} catch (Exception ex) {}
   	}

@@ -80,7 +80,6 @@ public class TargetListExporter
   private final static String HEADER_RETENTION_TIME = "tR (min)";
   
   private final static int HEADER_ROW = 1;
-  private final static double THRESHOLD_FOR_CLUSTERING = 5.0; //TODO: this should be a user decision, as it depends on the length of the chromatography
   
 //  private Hashtable<String, RecalibrationRegression> recalibrationRegressionsForClass_;
 //  private RecalibrationRegression recalibrationRegression_;
@@ -160,11 +159,18 @@ public class TargetListExporter
 	 * @throws ExportException
 	 */
 	@SuppressWarnings("unchecked")
-	protected void export(String templatePath, String outPath) throws ExportException
+	protected void export(String templatePath, ExportPanel exportPanel) throws ExportException
 	{		
-		try (	BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outPath));
+		try (	BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(exportPanel.getOutPath()));
 					XSSFWorkbook workbook = new XSSFWorkbook();)
 		{
+			GradientAdjuster adjuster = null;
+			if (!isRecalibration())
+			{
+				adjuster = GradientParser.parseGradient(exportPanel.getExportOptions().getSelectedGradient());
+				if (adjuster == null) throw new ExportException("The gradient file could not be read!");
+			}
+			
 			Vector<?> quantInfo = QuantificationThread.getCorrectAnalyteSequence(templatePath,false);
 			LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)quantInfo.get(0);
 			LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantInfo.get(1);
@@ -180,12 +186,12 @@ public class TargetListExporter
       	if (!isRecalibration())
       	{
       		MolecularSpeciesContainer container = new MolecularSpeciesContainer();
-        	fillContainerForClass(cName, container);
+        	fillContainerForClass(cName, container, adjuster);
         	Set<String> labeledMolecularSpecies = container.getLabeledMolecularSpecies();
         	for (String molecularSpecies : labeledMolecularSpecies)
         	{
         		Vector<DoubleBondPositionVO> labeledVOs = container.getLabeledSpecies(molecularSpecies);
-        		Vector<DoubleBondPositionVO> clusteredLabeledVOs = clusterMolecularSpecies(labeledVOs, true);
+        		Vector<DoubleBondPositionVO> clusteredLabeledVOs = clusterMolecularSpecies(labeledVOs, true, exportPanel.getExportOptions().getSelectedClustering());
         		allLabeledVOsToAdd.addAll(clusteredLabeledVOs); 	
         	}
       	}
@@ -368,7 +374,7 @@ public class TargetListExporter
 	//if standard deviation is below our threshold, then this is an accepted cluster, we save it as a new vo
 	//when we are done, the final step is to take all obtained doublebondpositionvos and check if another dbpvo with a compatible labeling pattern is within the time threshold, if so, merge
 	//TODO: in this class we get only vos of identical molecular species. this means we can compute permutable positions for this molecular species and use this to compute overlapping patterns!
-	private Vector<DoubleBondPositionVO> clusterMolecularSpecies(Vector<DoubleBondPositionVO> doubleBondPositionVOs, boolean labeled)
+	private Vector<DoubleBondPositionVO> clusterMolecularSpecies(Vector<DoubleBondPositionVO> doubleBondPositionVOs, boolean labeled, double clusteringThreshold)
 	{
 		/**
 		 * if we have labeled species:
@@ -384,7 +390,7 @@ public class TargetListExporter
 			Hashtable<Vector<Integer>,Vector<DoubleBondPositionVO>> patternLookup = computePatternLookup(doubleBondPositionVOs);
 			for (Vector<Integer> pattern : patternLookup.keySet()) //cluster elements for each pattern
 			{
-				Vector<DoubleBondPositionVO> averageElements = computeClusters(patternLookup.get(pattern));
+				Vector<DoubleBondPositionVO> averageElements = computeClusters(patternLookup.get(pattern),clusteringThreshold);
 				patternLookup.put(pattern, averageElements);
 			}
 			
@@ -395,7 +401,7 @@ public class TargetListExporter
 			
 			Hashtable<Vector<Integer>,Vector<Vector<Integer>>> overlappingPatterns = computeOverlappingPatterns(patternLookup.keySet(),permutationPattern);
 			
-			Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>> markedToCombine = markToCombine(patternLookup, overlappingPatterns);
+			Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>> markedToCombine = markToCombine(patternLookup, overlappingPatterns,clusteringThreshold);
 			Vector<Pair<RangeDouble,Vector<DoubleBondPositionVO>>> combineRanges = new Vector<Pair<RangeDouble,Vector<DoubleBondPositionVO>>>();
 			
 			
@@ -409,7 +415,7 @@ public class TargetListExporter
 				{
 					if (range1.getKey().insideRange(doubleBondPositionVO.getExpectedRetentionTime()))
 					{
-						RangeDouble range2 = new RangeDouble(doubleBondPositionVO.getExpectedRetentionTime()-THRESHOLD_FOR_CLUSTERING/60.0, doubleBondPositionVO.getExpectedRetentionTime()+THRESHOLD_FOR_CLUSTERING/60.0);
+						RangeDouble range2 = new RangeDouble(doubleBondPositionVO.getExpectedRetentionTime()-clusteringThreshold/60.0, doubleBondPositionVO.getExpectedRetentionTime()+clusteringThreshold/60.0);
 						range1.getKey().extendToOtherRanges(range2);
 						range1.getValue().add(doubleBondPositionVO);
 						isRepresented = true;
@@ -417,7 +423,7 @@ public class TargetListExporter
 				}
 				if (!isRepresented)
 				{
-					RangeDouble range2 = new RangeDouble(doubleBondPositionVO.getExpectedRetentionTime()-THRESHOLD_FOR_CLUSTERING/60.0, doubleBondPositionVO.getExpectedRetentionTime()+THRESHOLD_FOR_CLUSTERING/60.0);
+					RangeDouble range2 = new RangeDouble(doubleBondPositionVO.getExpectedRetentionTime()-clusteringThreshold/60.0, doubleBondPositionVO.getExpectedRetentionTime()+clusteringThreshold/60.0);
 					Vector<DoubleBondPositionVO> newVector = new Vector<DoubleBondPositionVO>();
 					newVector.add(doubleBondPositionVO);
 					Pair<RangeDouble,Vector<DoubleBondPositionVO>> newRange = new Pair<RangeDouble,Vector<DoubleBondPositionVO>>(range2,newVector);
@@ -501,7 +507,7 @@ public class TargetListExporter
 			/**
 			 * we calculate the clusters, then these are transformed into a Vector of vos and returned
 			 */	
-			return computeClusters(doubleBondPositionVOs);
+			return computeClusters(doubleBondPositionVOs,clusteringThreshold);
 //			System.out.println("next");
 //			calculateDistanceMatrix(doubleBondPositionVOs);
 		}
@@ -543,7 +549,8 @@ public class TargetListExporter
 	
 	private Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>> markToCombine(
 			Hashtable<Vector<Integer>,Vector<DoubleBondPositionVO>> patternLookup,
-			Hashtable<Vector<Integer>,Vector<Vector<Integer>>> overlappingPatterns)
+			Hashtable<Vector<Integer>,Vector<Vector<Integer>>> overlappingPatterns,
+			Double clusteringThreshold)
 	{
 		Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>> markedToCombine = new Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>>();
 		for (Vector<Integer> pattern : overlappingPatterns.keySet()) //combine overlapping patterns with same retention times
@@ -562,7 +569,7 @@ public class TargetListExporter
 						Float retentionTime2 = (float)vo2.getExpectedRetentionTime();
 //							System.out.println(String.format("Species1: %s, RT1: %s, Species2: %s, RT2: %s ", 
 //									vo1.getDoubleBondPositionsHumanReadable(), retentionTime1, vo2.getDoubleBondPositionsHumanReadable(), retentionTime2));
-						if (Math.abs(retentionTime1-retentionTime2) < (THRESHOLD_FOR_CLUSTERING/60)) //if is within threshold
+						if (Math.abs(retentionTime1-retentionTime2) < (clusteringThreshold/60)) //if is within threshold
 						{
 							
 							if (!markedToCombine.containsKey(vo1))
@@ -807,7 +814,7 @@ public class TargetListExporter
 	 * merging of clusters works as follows: new cluster with elements of both, assign this new cluster to the initial clusters
 	 * @param doubleBondPositionVOs
 	 */
-	private Vector<DoubleBondPositionVO> computeClusters(Vector<DoubleBondPositionVO> doubleBondPositionVOs)
+	private Vector<DoubleBondPositionVO> computeClusters(Vector<DoubleBondPositionVO> doubleBondPositionVOs, double clusteringThreshold)
 	{
 		Vector<DoubleBondPositionVO> averageElements = new Vector<DoubleBondPositionVO>();
 		//first index of vo, second number of cluster
@@ -830,7 +837,7 @@ public class TargetListExporter
 			for (int j=0; j<doubleBondPositionVOs.size();j++)
 			{
 				DoubleBondPositionVO vo2 = doubleBondPositionVOs.get(j);
-				if (Math.abs(retentionTime1-(float)vo2.getExpectedRetentionTime()) < (THRESHOLD_FOR_CLUSTERING/60)) //if is within threshold
+				if (Math.abs(retentionTime1-(float)vo2.getExpectedRetentionTime()) < (clusteringThreshold/60)) //if is within threshold
 				{
 					if (!clusterLookup.containsKey(j)) //if this vo is in no cluster yet: add to cluster of vo1
 					{
@@ -857,58 +864,7 @@ public class TargetListExporter
 		return averageElements;
 	}
 	
-	private class Cluster
-	{
-		private Vector<DoubleBondPositionVO> doubleBondPositionVOs_ = new Vector<DoubleBondPositionVO>();
-		
-		private Cluster()
-		{
-			this.doubleBondPositionVOs_ = new Vector<DoubleBondPositionVO>(); 
-		}
-		
-		private Cluster(Cluster cluster1, Cluster cluster2)
-		{
-			this();
-			this.doubleBondPositionVOs_.addAll(cluster1.getDoubleBondPositionVOs());
-			this.doubleBondPositionVOs_.addAll(cluster2.getDoubleBondPositionVOs());
-		}
-		
-		private void addDoubleBondPositionVO(DoubleBondPositionVO vo)
-		{
-			this.doubleBondPositionVOs_.add(vo);
-		}
-		
-		private Vector<DoubleBondPositionVO> getDoubleBondPositionVOs()
-		{
-			return doubleBondPositionVOs_;
-		}
-		
-		private DoubleBondPositionVO getAverageElement() //combines elements of cluster to one vo with average rt
-		{
-			if (!doubleBondPositionVOs_.isEmpty())
-			{
-				DoubleBondPositionVO combined = new DoubleBondPositionVO(doubleBondPositionVOs_.get(0));
-				float sum = 0;
-				int count = 0;
-				for (DoubleBondPositionVO vo : doubleBondPositionVOs_) 
-				{
-					sum += vo.getExpectedRetentionTime();
-					count++;
-				}
-				float average = sum/count;
-				combined.setExpectedRetentionTime(average);
-				return combined;
-			}
-			else
-			{
-				return null;
-			}
-		}
-	}
-	
-	
-	
-	private void fillContainerForClass(String cName, MolecularSpeciesContainer container)
+	private void fillContainerForClass(String cName, MolecularSpeciesContainer container, GradientAdjuster adjuster)
 	{
 		try
 		{
@@ -930,13 +886,6 @@ public class TargetListExporter
 						}
 						Vector<Pair<String,String>> labeledUnlabeledPairs = analyteMSn.getLabeledUnlabeledPairs();
 						
-						//TODO: only for printing, remove later
-//						for (Pair<String,String> pair : labeledUnlabeledPairs)
-//						{
-//							if (analyte.getChemicalFormula().contains("D"))
-//								System.out.println(String.format("class: %s, unlabeled: %s, labeled: %s, RT: %s ", cName, pair.getKey(), pair.getValue(), analyte.getPreciseRT()));
-//						}
-						
 						Hashtable<String,Integer> elements = StaticUtils.categorizeFormula(analyte.getChemicalFormula());
 						double expectedRetentionTime = analyte.getPreciseRT();
 						
@@ -948,7 +897,8 @@ public class TargetListExporter
 							{
 								continue; //retention times affected by labels outside the calibration curve cannot be recalculated!
 							}
-							expectedRetentionTime = isotopeEffectRegression_.getRTofUnlabeledSpecies(numberDeuterium, analyte.getPreciseRT());
+							expectedRetentionTime = adjuster.getGradientAdjustedValue(isotopeEffectRegression_.getIsotopeEffect(numberDeuterium), analyte.getPreciseRT());
+//									isotopeEffectRegression_.getRTofUnlabeledSpecies(numberDeuterium, analyte.getPreciseRT());
 						}					
 						
 						for (Pair<String,String> pair : labeledUnlabeledPairs) 
@@ -1119,78 +1069,6 @@ public class TargetListExporter
 		return this.calibrationGraphPanel_ != null;
 	}
   
-  /**
-   * Inner helper class
-   * 
-   * > Hashtable className, new java class: 
-	 * 				saves labeled and unlabeled species of class separately
-	 * 				method getlabeled ( position ind. mol species)
-	 * 				method getunlabeled ( position ind. mol species)
-	 * 				method getlabeledmolecularspecies
-	 * 				2x field hashtable pos ind mol species, vector lipidomicsmsnset
-   */
-  private class MolecularSpeciesContainer
-  {
-  	private Hashtable<String, Vector<DoubleBondPositionVO>> labeledSpecies_;
-  	private Hashtable<String, Vector<DoubleBondPositionVO>> unlabeledSpecies_;
-  	
-  	private MolecularSpeciesContainer()
-  	{
-  		labeledSpecies_ = new Hashtable<String, Vector<DoubleBondPositionVO>>();
-  		unlabeledSpecies_ = new Hashtable<String, Vector<DoubleBondPositionVO>>();
-  	}
-  	
-  	private void addLabeledSpecies(String molecularSpecies, DoubleBondPositionVO doubleBondPositionVO)
-  	{
-  		if (!this.labeledSpecies_.containsKey(molecularSpecies))
-  		{
-  			this.labeledSpecies_.put(molecularSpecies, new Vector<DoubleBondPositionVO>());
-  		}
-  		this.labeledSpecies_.get(molecularSpecies).add(doubleBondPositionVO);
-  	}
-  	
-  	private void addUnlabeledSpecies(String molecularSpecies, DoubleBondPositionVO doubleBondPositionVO)
-  	{
-  		if (!this.unlabeledSpecies_.containsKey(molecularSpecies))
-  		{
-  			this.unlabeledSpecies_.put(molecularSpecies, new Vector<DoubleBondPositionVO>());
-  		}
-  		this.unlabeledSpecies_.get(molecularSpecies).add(doubleBondPositionVO);
-  	}
-  	
-  	private Set<String> getLabeledMolecularSpecies()
-  	{
-  		return labeledSpecies_.keySet();
-  	}
-  	
-  	private Vector<DoubleBondPositionVO> getLabeledSpecies(String molecularSpecies)
-  	{
-  		if (labeledSpecies_.containsKey(molecularSpecies))
-  		{
-  			return labeledSpecies_.get(molecularSpecies);
-  		}
-  		else
-  		{
-  			return null;
-  		}
-  	}
-  	
-  	private Vector<DoubleBondPositionVO> getUnlabeledSpecies(String molecularSpecies)
-  	{
-  		if (unlabeledSpecies_.containsKey(molecularSpecies))
-  		{
-  			return unlabeledSpecies_.get(molecularSpecies);
-  		}
-  		else
-  		{
-  			return null;
-  		}
-  	}
-  }
-  
-  
-  
-  
   //TODO: just for development, remove later!
   private Hashtable<String,Set<Pair<Double,DoubleBondPositionVO>>> getBeforeAfter()
 	{
@@ -1328,6 +1206,130 @@ public class TargetListExporter
     cell = row.createCell(6,HSSFCell.CELL_TYPE_STRING);
     cell.setCellValue("RT error");
   }
+  
+  
+  
+  
+  private class Cluster
+	{
+		private Vector<DoubleBondPositionVO> doubleBondPositionVOs_ = new Vector<DoubleBondPositionVO>();
+		
+		private Cluster()
+		{
+			this.doubleBondPositionVOs_ = new Vector<DoubleBondPositionVO>(); 
+		}
+		
+		private Cluster(Cluster cluster1, Cluster cluster2)
+		{
+			this();
+			this.doubleBondPositionVOs_.addAll(cluster1.getDoubleBondPositionVOs());
+			this.doubleBondPositionVOs_.addAll(cluster2.getDoubleBondPositionVOs());
+		}
+		
+		private void addDoubleBondPositionVO(DoubleBondPositionVO vo)
+		{
+			this.doubleBondPositionVOs_.add(vo);
+		}
+		
+		private Vector<DoubleBondPositionVO> getDoubleBondPositionVOs()
+		{
+			return doubleBondPositionVOs_;
+		}
+		
+		private DoubleBondPositionVO getAverageElement() //combines elements of cluster to one vo with average rt
+		{
+			if (!doubleBondPositionVOs_.isEmpty())
+			{
+				DoubleBondPositionVO combined = new DoubleBondPositionVO(doubleBondPositionVOs_.get(0));
+				float sum = 0;
+				int count = 0;
+				for (DoubleBondPositionVO vo : doubleBondPositionVOs_) 
+				{
+					sum += vo.getExpectedRetentionTime();
+					count++;
+				}
+				float average = sum/count;
+				combined.setExpectedRetentionTime(average);
+				return combined;
+			}
+			else
+			{
+				return null;
+			}
+		}
+	}
+  
+  
+  /**
+   * > Hashtable className, new java class: 
+	 * 				saves labeled and unlabeled species of class separately
+	 * 				method getlabeled ( position ind. mol species)
+	 * 				method getunlabeled ( position ind. mol species)
+	 * 				method getlabeledmolecularspecies
+	 * 				2x field hashtable pos ind mol species, vector lipidomicsmsnset
+   */
+  private class MolecularSpeciesContainer
+  {
+  	private Hashtable<String, Vector<DoubleBondPositionVO>> labeledSpecies_;
+  	private Hashtable<String, Vector<DoubleBondPositionVO>> unlabeledSpecies_;
+  	
+  	private MolecularSpeciesContainer()
+  	{
+  		labeledSpecies_ = new Hashtable<String, Vector<DoubleBondPositionVO>>();
+  		unlabeledSpecies_ = new Hashtable<String, Vector<DoubleBondPositionVO>>();
+  	}
+  	
+  	private void addLabeledSpecies(String molecularSpecies, DoubleBondPositionVO doubleBondPositionVO)
+  	{
+  		if (!this.labeledSpecies_.containsKey(molecularSpecies))
+  		{
+  			this.labeledSpecies_.put(molecularSpecies, new Vector<DoubleBondPositionVO>());
+  		}
+  		this.labeledSpecies_.get(molecularSpecies).add(doubleBondPositionVO);
+  	}
+  	
+  	private void addUnlabeledSpecies(String molecularSpecies, DoubleBondPositionVO doubleBondPositionVO)
+  	{
+  		if (!this.unlabeledSpecies_.containsKey(molecularSpecies))
+  		{
+  			this.unlabeledSpecies_.put(molecularSpecies, new Vector<DoubleBondPositionVO>());
+  		}
+  		this.unlabeledSpecies_.get(molecularSpecies).add(doubleBondPositionVO);
+  	}
+  	
+  	private Set<String> getLabeledMolecularSpecies()
+  	{
+  		return labeledSpecies_.keySet();
+  	}
+  	
+  	private Vector<DoubleBondPositionVO> getLabeledSpecies(String molecularSpecies)
+  	{
+  		if (labeledSpecies_.containsKey(molecularSpecies))
+  		{
+  			return labeledSpecies_.get(molecularSpecies);
+  		}
+  		else
+  		{
+  			return null;
+  		}
+  	}
+  	
+  	private Vector<DoubleBondPositionVO> getUnlabeledSpecies(String molecularSpecies)
+  	{
+  		if (unlabeledSpecies_.containsKey(molecularSpecies))
+  		{
+  			return unlabeledSpecies_.get(molecularSpecies);
+  		}
+  		else
+  		{
+  			return null;
+  		}
+  	}
+  }
+  
+  
+  
+  
 }
 
 

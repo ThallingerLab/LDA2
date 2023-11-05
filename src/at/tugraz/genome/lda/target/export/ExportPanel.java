@@ -2,7 +2,6 @@ package at.tugraz.genome.lda.target.export;
 
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -10,38 +9,36 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.LinkedHashMap;
 
-import javax.swing.BorderFactory;
-import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
 import javax.swing.JTextField;
-import javax.swing.border.Border;
-import javax.swing.border.TitledBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.target.JDefaultComponents;
 import at.tugraz.genome.lda.target.JOptionPanel;
-import at.tugraz.genome.lda.target.JTargetFileWizard;
 
 
 public class ExportPanel extends JOptionPanel implements ActionListener
 {
 	private static final long serialVersionUID = 1L;
-	private JTargetFileWizard jTargetFileWizard_;
 	
 	private TargetListExporter exporter_;
-	
+	private ExportOptionsPanel exportOptionsPanel_;
 	private JTextField exportField_;
+	
+
+//  String currentMachine = LipidomicsConstants.getCurrentMSMachine();
+//  msMachineTypes_.setSelectedItem(currentMachine);
+//  msMachineTypes_.setToolTipText(TooltipTexts.SETTINGS_MS_MACHINE);
+	
 	
 	private Path previousSelection_ = null;
 	private static final String PLACEHOLDER_PREFIX = "Enter ";
@@ -51,10 +48,10 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 	private static final Dimension ENTER_FIELD_DIMENSION = new Dimension(775,30);
 	private static final Dimension DEFAULT_FILE_CHOOSER_DIMENSION = new Dimension(750,750);
   
-  public ExportPanel(JDefaultComponents wizardComponents, JTargetFileWizard jTargetFileWizard) {
-      super(wizardComponents, "Export your new C=C target list.");
-      this.jTargetFileWizard_ = jTargetFileWizard;
-      init();
+	
+  public ExportPanel(JDefaultComponents wizardComponents) {
+    super(wizardComponents, "Export your new C=C target list.");
+    init();
   }
   
   private void init() 
@@ -62,12 +59,21 @@ public class ExportPanel extends JOptionPanel implements ActionListener
   	exportField_ = instantiateJTextField(PLACEHOLDER_PREFIX + "path and file name for the new C=C target file.");
   	JButton exportButton = instantiateJButton(COMMAND_OPEN_EXPORT, BROWSE);
   	
-  	JPanel exportPanel = instantiatePanel(exportField_, exportButton, "New C=C target file");
+  	JPanel exportPanel = instantiateExportPanel(exportField_, exportButton, "New C=C target file");
   	
   	this.add(exportPanel, 
   			new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
         , GridBagConstraints.CENTER, GridBagConstraints.NONE
         , new Insets(100, 0, 0, 0), 0, 0));
+  }
+  
+  public void addExportOptionsPanel(ExportOptionsPanel panel)
+  {
+  	this.exportOptionsPanel_ = panel;
+  	this.add(this.exportOptionsPanel_,
+  			new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        , GridBagConstraints.WEST, GridBagConstraints.NONE
+        , new Insets(50, 0, 0, 0), 0, 0));
   }
   
   /**
@@ -83,21 +89,21 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 		field.setText(placeholder);
 		field.setForeground(Color.GRAY);
 		field.addFocusListener(new FocusListener() {
-		    @Override
-		    public void focusGained(FocusEvent e) {
-		        if (field.getText().equals(placeholder)) {
-		        	  field.setText("");
-		        	  field.setForeground(Color.BLACK);
-		        }
-		    }
-		    @Override
-		    public void focusLost(FocusEvent e) {
-		        if (field.getText().isEmpty()) {
-		        	  field.setForeground(Color.GRAY);
-		        	  field.setText(placeholder);
-		        }
-		    }
-		    });
+	    @Override
+	    public void focusGained(FocusEvent e) {
+        if (field.getText().equals(placeholder)) {
+      	  field.setText("");
+      	  field.setForeground(Color.BLACK);
+        }
+	    }
+	    @Override
+	    public void focusLost(FocusEvent e) {
+        if (field.getText().isEmpty()) {
+      	  field.setForeground(Color.GRAY);
+      	  field.setText(placeholder);
+        }
+	    }
+	    });
 		return field;
 	}
 	
@@ -155,7 +161,7 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 		}
 	}
 	
-	private JPanel instantiatePanel(JTextField textfield, JButton button, String borderTitle)
+	private JPanel instantiateExportPanel(JTextField textfield, JButton button, String borderTitle)
 	{
 		JPanel panel = new JPanel();
   	panel.setLayout(new GridBagLayout());
@@ -199,6 +205,27 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 		this.exporter_ = exporter;
 	}
 	
+	public String getOutPath()
+	{
+		return this.exportField_.getText();
+	}
+	
+	public ExportOptionsPanel getExportOptions()
+	{
+		return this.exportOptionsPanel_;
+	}
+	
+	@Override
+  protected void back() 
+  {
+		if (exportOptionsPanel_ != null)
+		{
+			this.remove(exportOptionsPanel_);
+			exportOptionsPanel_ = null;
+		}
+		goBack();
+  }
+	
 	public void export()
 	{
 		//TODO: write a fully new masslist without requiring the template.
@@ -209,10 +236,10 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 			{
 				templatePath = exporter_.getTemplatePath();
 			}
-			exporter_.export(templatePath, exportField_.getText());
+			exporter_.export(templatePath, this);
 			exporter_.exportBeforeAfter(
-					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_II_b\\Recalibration\\Results\\ComparisonTest\\SILDA_II_b.xlsx",
-					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_II_b\\Recalibration\\Results\\ComparisonTest\\comparison_1.xlsx"); //TODO: this is to create figures to compare target lists; remove after
+					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\SILDA_II_a.xlsx",
+					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison\\comparison_SILDA_I_a_to_II_a.xlsx"); //TODO: this is to create figures to compare target lists; remove after
 		}
 		catch (Exception ex)
 		{

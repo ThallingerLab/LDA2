@@ -18,7 +18,6 @@ public class IsotopeEffectRegression
 	private Vector<MatchedPartnerVO> matchedIsotopologues_;
 	private PolynomialSplineFunction function_;
 	private final int MAX_DEUTERIUM_ALLOWED;
-//	private static int MAX_DEUTERIUM_ALLOWED = 19; //TODO: this should be the highest label represented by an authentic standard, user input dependent!
 	
 	protected IsotopeEffectRegression(Vector<MatchedPartnerVO> matchedIsotopologues, Vector<IsotopeLabelVO> labels)
 	{
