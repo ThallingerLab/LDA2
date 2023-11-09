@@ -192,7 +192,7 @@ public class CalibrationGraphPanel extends JOptionPanel
   	ArrayList<Pair<Double,Double>> data = regression == null ? new ArrayList<Pair<Double,Double>>() : regression.getDifferences();
   	RecalibrationRegression regressionStandards = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, PLOT_ALL);
   	ArrayList<Pair<Double,Double>> dataStandards = regressionStandards == null ? new ArrayList<Pair<Double,Double>>() : regressionStandards.getDifferences();
-    plot_ = new RecalibrationPlot(data, dataStandards, regression, PLOT_DIMENSION, this);
+    plot_ = new RecalibrationPlot(data, dataStandards, regression, PLOT_DIMENSION, this, null);
     addPlotToDisplayPanel();
   }
   
@@ -244,7 +244,7 @@ public class CalibrationGraphPanel extends JOptionPanel
   	ArrayList<Pair<Double,Double>> data = regression == null ? new ArrayList<Pair<Double,Double>>() : regression.getDifferences();
   	RecalibrationRegression regressionStandards = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, className);
   	ArrayList<Pair<Double,Double>> dataStandards = regressionStandards == null ? new ArrayList<Pair<Double,Double>>() : regressionStandards.getDifferences();
-  	plot_ = new RecalibrationPlot(data, dataStandards, regression, PLOT_DIMENSION, this);
+  	plot_ = new RecalibrationPlot(data, dataStandards, regression, PLOT_DIMENSION, this, plot_.getXYPlot());
   	addPlotToDisplayPanel();
   	displayPanel_.invalidate();
   	displayPanel_.updateUI();

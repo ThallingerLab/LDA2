@@ -11,6 +11,7 @@ import javax.swing.JPanel;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.function.Function2D;
@@ -29,48 +30,76 @@ public class RecalibrationPlot extends JPanel
 	ArrayList<Pair<Double,Double>> dataAll_;
 	ArrayList<Pair<Double,Double>> dataStandards_;
 	CalibrationGraphPanel panel_;
+	XYPlot plot_;
 	XYDataset curveFitDataset_;
 	XYDataset scatterPlotStandardsDataset_;
 	XYDataset scatterPlotDataset_;
 
 
-	public RecalibrationPlot(ArrayList<Pair<Double,Double>> data, ArrayList<Pair<Double,Double>> dataStandards, RecalibrationRegression regression, Dimension dimension, CalibrationGraphPanel panel)
+	public RecalibrationPlot(ArrayList<Pair<Double,Double>> data, ArrayList<Pair<Double,Double>> dataStandards, 
+			RecalibrationRegression regression, Dimension dimension, CalibrationGraphPanel panel, XYPlot previousPlot)
   {
 		this.dataAll_ = new ArrayList<Pair<Double,Double>>(data);
 		this.dataStandards_ = dataStandards;
 		this.panel_ = panel;
 		this.dataAll_.removeAll(this.dataStandards_);
 		
-    XYPlot plot = new XYPlot();
+		plot_ = new XYPlot();
     Font fontTitle = new Font("Dialog", Font.BOLD, 25);
     Font fontLabel = new Font("Dialog", Font.PLAIN, 20);
     Font tickLabel = new Font("Dialog", Font.PLAIN, 14);
     
-    plot.setDomainAxis(0, getAxis("Retention time original target list /min", fontLabel, tickLabel));
-    plot.setRangeAxis(0, getAxis("Retention time difference original vs new target list /min", fontLabel, tickLabel));
-    plot.mapDatasetToDomainAxis(0, 0);
-    plot.mapDatasetToRangeAxis(0, 0);
+    plot_.setDomainAxis(0, getAxis("Retention time original target list /min", fontLabel, tickLabel));
+    plot_.setRangeAxis(0, getAxis("Retention time difference original vs new target list /min", fontLabel, tickLabel));
+    
+    if (previousPlot != null)
+    {
+    	copyAxisRanges(plot_, previousPlot);
+    }
+    
+    plot_.mapDatasetToDomainAxis(0, 0);
+    plot_.mapDatasetToRangeAxis(0, 0);
     
     this.curveFitDataset_ = getCurveFitDataset(regression);
-    plot.setDataset(0, this.curveFitDataset_);
-    plot.setRenderer(0, getCurveRenderer(fontLabel));
+    plot_.setDataset(0, this.curveFitDataset_);
+    plot_.setRenderer(0, getCurveRenderer(fontLabel));
     
     this.scatterPlotStandardsDataset_ = getScatterPlotDataset(this.dataStandards_, String.format("Standards (%s calibrants)", this.dataStandards_.size()));
-    plot.setDataset(1, this.scatterPlotStandardsDataset_);
-    plot.setRenderer(1, getScatterRenderer(fontLabel, new Color(204, 0, 0)));
+    plot_.setDataset(1, this.scatterPlotStandardsDataset_);
+    plot_.setRenderer(1, getScatterRenderer(fontLabel, new Color(204, 0, 0)));
     
     this.scatterPlotDataset_ = getScatterPlotDataset(this.dataAll_, String.format("Other (%s calibrants)", this.dataAll_.size()));
-    plot.setDataset(2, this.scatterPlotDataset_);
-    plot.setRenderer(2, getScatterRenderer(fontLabel, new Color(153, 204, 255)));
+    plot_.setDataset(2, this.scatterPlotDataset_);
+    plot_.setRenderer(2, getScatterRenderer(fontLabel, new Color(153, 204, 255)));
 
     JFreeChart chart = new JFreeChart("Target list recalibration curve",
-    		fontTitle, plot, true);
+    		fontTitle, plot_, true);
     ChartPanel chartPanel = new ChartPanel(chart);
     chartPanel.addChartMouseListener(new RecalibrationPlotMouseListener(this));
     chartPanel.setPreferredSize(dimension);
     
     this.add(chartPanel);
   }
+	
+	private void copyAxisRanges(XYPlot plot, XYPlot previousPlot)
+	{
+		ValueAxis domainAxis = plot.getDomainAxis();
+		ValueAxis previousDomainAxis = previousPlot.getDomainAxis();
+		ValueAxis rangeAxis = plot.getRangeAxis();
+		ValueAxis previousRangeAxis = previousPlot.getRangeAxis();
+		
+		if (!previousDomainAxis.isAutoRange())
+		{
+			domainAxis.setAutoRange(false);
+			domainAxis.setRange(previousDomainAxis.getRange());
+		}
+		
+		if (!previousRangeAxis.isAutoRange())
+		{
+			rangeAxis.setAutoRange(false);
+			rangeAxis.setRange(previousRangeAxis.getRange());
+		}
+	}
 	
 	private NumberAxis getAxis(String label, Font fontLabel, Font tickLabel)
 	{
@@ -177,6 +206,11 @@ public class RecalibrationPlot extends JPanel
 	public XYDataset getScatterPlotDataset()
 	{
 		return scatterPlotDataset_;
+	}
+	
+	public XYPlot getXYPlot()
+	{
+		return plot_;
 	}
   
   
