@@ -238,12 +238,12 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 			}
 			exporter_.export(templatePath, this);
 			exporter_.exportBeforeAfter(
-					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\SILDA_II_a.xlsx",
-					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison\\comparison_SILDA_I_a_to_II_a.xlsx"); //TODO: this is to create figures to compare target lists; remove after
+					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\SILDA_II_b.xlsx",
+					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison_Grad_Adj_New\\SILDA_60min_II_b\\comparison_SILDA_60min_to_II_b_sep.xlsx"); //TODO: this is to create figures to compare target lists; remove after
 		}
 		catch (Exception ex)
 		{
-			new WarningMessage(new JFrame(), "Error", "An error occurred during the export: "+ex.getMessage());
+			new WarningMessage(new JFrame(), "Error", "An error occurred during the before after export: "+ex.getMessage());
 		}
 	}
 	

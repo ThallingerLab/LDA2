@@ -55,10 +55,6 @@ public class GradientAdjuster
 			{
 				double factor = getAdjustmentFactorForPoint(dataPoint, dataPointNext, preciseRT);
 				adjustedTIE = (isotopeEffect - NO_TIE)/factor + NO_TIE;
-				if (preciseRT > 25)
-				{
-					System.out.println("hi");
-				}
 			}
 		}
 		return adjustedTIE * preciseRT;

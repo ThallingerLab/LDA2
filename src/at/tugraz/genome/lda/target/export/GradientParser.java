@@ -30,15 +30,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.swing.JFrame;
-
 import org.dhatim.fastexcel.reader.Cell;
 import org.dhatim.fastexcel.reader.CellType;
 import org.dhatim.fastexcel.reader.ReadableWorkbook;
 import org.dhatim.fastexcel.reader.Row;
 import org.dhatim.fastexcel.reader.Sheet;
 
-import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.parser.LDAResultReader;
 import javafx.util.Pair;
 
@@ -49,7 +46,7 @@ import javafx.util.Pair;
  */
 public class GradientParser
 {
-	private final static String HEADER_TIME = "Time /min";
+	private final static String HEADER_TIME = "Adjustment time /min";
 	private final static String HEADER_FACTOR = "Adjustment Factor";
 	private final static Integer HEADER_ROW = 0;
 	

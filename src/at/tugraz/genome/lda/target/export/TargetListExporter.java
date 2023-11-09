@@ -1075,6 +1075,12 @@ public class TargetListExporter
 		return this.beforeAfter_;
 	}
   
+  /**
+   * 
+   * @param targetPath		file created with the new conditions.
+   * @param outPath
+   * @throws ExportException
+   */
   //TODO: just for development, remove later!
   public void exportBeforeAfter(String targetPath, String outPath) throws ExportException
   {
