@@ -413,14 +413,14 @@ public class PostQuantificationProcessor
       for (String analyteName : unprocessed.get(className).keySet()){
         for (String mod : unprocessed.get(className).get(analyteName).keySet()){
           try{
-            if (acceptAnyMod || RulesContainer.isRtPostprocessing(StaticUtils.getRuleName(className,mod))){
-              Hashtable<String,Hashtable<String,LipidParameterSet>> postProcessOfMod = new Hashtable<String,Hashtable<String,LipidParameterSet>>();
-              if (postProcessOfClass.containsKey(mod)) postProcessOfMod = postProcessOfClass.get(mod);
-              postProcessOfMod.put(analyteName, unprocessed.get(className).get(analyteName).get(mod));
-              postProcessOfClass.put(mod, postProcessOfMod);
-              
-              
-            }
+	        	if (!className.contains("ox")) { // no RT filtering for oxidized lipids
+	        		if (acceptAnyMod || RulesContainer.isRtPostprocessing(StaticUtils.getRuleName(className,mod))){
+	        			Hashtable<String,Hashtable<String,LipidParameterSet>> postProcessOfMod = new Hashtable<String,Hashtable<String,LipidParameterSet>>();
+	        			if (postProcessOfClass.containsKey(mod)) postProcessOfMod = postProcessOfClass.get(mod);
+	        			postProcessOfMod.put(analyteName, unprocessed.get(className).get(analyteName).get(mod));
+	        			postProcessOfClass.put(mod, postProcessOfMod);  
+	            }
+	          }
           }catch(Exception ex){}
           // if there is no post processing for this class and modification - the results can be put to the results hash
           if (!postProcessOfClass.containsKey(mod)){
@@ -970,8 +970,6 @@ public class PostQuantificationProcessor
     Hashtable<Integer,RangeInteger> dbsRanges = new Hashtable<Integer,RangeInteger>();
 
     for (String analyteName : input.keySet()){
-    	if (analyteName.contains(LipidomicsConstants.CHAIN_MOD_SEPARATOR))
-    		System.out.println("ox");
       Matcher cAtomsMatcher = cAtomsPattern.matcher(analyteName.split(LipidomicsConstants.CHAIN_MOD_SEPARATOR)[0]);
       if (!cAtomsMatcher.matches()) throw new RulesException("The analyte "+analyteName+" does not match the "+FragRuleParser.GENERAL_CATOMS_PARSE+" pattern \""+RulesContainer.getCAtomsFromNamePattern(ruleName)+"\" of the class "+ruleName+"!");
       int cAtoms = Integer.parseInt(cAtomsMatcher.group(1));

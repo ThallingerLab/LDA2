@@ -960,7 +960,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     helpText.setToolTipText(TooltipTexts.HELP_EXAMPLES);
     centerPanel.add(helpText,new GridBagConstraints(0, 4, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
-    linkAddress = "http://genome.tugraz.at/lda2/data/review/DataDescription.pdf";
+    linkAddress = "http://genome.tugraz.at/lda2/data/DataDescriptionSphingolipids.pdf";
     linkText = new JHyperlink(linkAddress,linkAddress);
     centerPanel.add(linkText,new GridBagConstraints(0, 5, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
