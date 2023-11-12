@@ -1,6 +1,5 @@
 package at.tugraz.genome.lda.target.calibration;
 
-import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -19,6 +18,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Vector;
 
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -50,6 +50,7 @@ public class CalibrationGraphPanel extends JOptionPanel
 	private JComboBox<String> classListJComboBox_;
 	private JPanel jComboBoxPanel_;
 	private JCheckBox classSpecificJCheckBox_;
+	private JButton defineSubgroupsJButton_;
 	private JSlider granularityJSlider_;
 	private Double grouping_;
 	private RecalibrationPlot plot_;
@@ -94,7 +95,7 @@ public class CalibrationGraphPanel extends JOptionPanel
   	displayPanel_ = new JPanel();
   	displayPanel_.setLayout(new GridBagLayout());
   	
-  	initClassSpecificJCheckBox();
+  	initClassSpecificJCheckBox(); //put button here
   	initClassListJComboBox();
   	initGranularityJSlider();
   	initPlot();
@@ -105,16 +106,42 @@ public class CalibrationGraphPanel extends JOptionPanel
   
   private void initClassSpecificJCheckBox()
   {
+  	JPanel panel = new JPanel();
+  	panel.setLayout(new GridBagLayout());
+  	
   	classSpecificJCheckBox_ = new JCheckBox("Calibrate lipid classes separately.", true);
-  	addToDisplayPanel(classSpecificJCheckBox_, new GridBagConstraints(10, 0, 5, 1, 0.0, 0.0
+  	classSpecificJCheckBox_.addActionListener(new ActionListener() {
+		  public void actionPerformed(ActionEvent e) 
+		  {
+		  	classSpecificJCheckBox_actionPerformed(e);
+		  }
+	  });
+  	panel.add(classSpecificJCheckBox_, new GridBagConstraints(0, 0, 0, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 0, 5, 0), 0, 0));
+  	
+  	defineSubgroupsJButton_ = new JButton("Define Subgroups");
+  	defineSubgroupsJButton_.setEnabled(classSpecificJCheckBox_.isSelected());
+  	defineSubgroupsJButton_.addActionListener(new ActionListener() {
+		  public void actionPerformed(ActionEvent e) 
+		  {
+		  	defineSubgroupsJButton_actionPerformed(e);
+		  }
+	  });
+  	panel.add(defineSubgroupsJButton_, new GridBagConstraints(0, 1, 0, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(5, 0, 0, 0), 0, 0));
+  	
+  	addToDisplayPanel(panel, new GridBagConstraints(10, 0, 0, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(5, 5, 5, 5), 0, 0));
   }
   
   private void initClassListJComboBox()
   {
   	jComboBoxPanel_ = new JPanel();
+  	jComboBoxPanel_.setLayout(new GridBagLayout());
+  	
   	JLabel label = new JLabel("Select displayed lipid class: ");
-  	jComboBoxPanel_.add(label, BorderLayout.WEST);
+  	jComboBoxPanel_.add(label, new GridBagConstraints(0, 0, 0, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 5, 0), 0, 0));
   	
   	classListJComboBox_ = new JComboBox<String>(lipidClasses_);
   	classListJComboBox_.setSelectedIndex(0);
@@ -124,9 +151,10 @@ public class CalibrationGraphPanel extends JOptionPanel
 		  	classListJComboBox_actionPerformed(e);
 		  }
 	  });
-  	jComboBoxPanel_.add(classListJComboBox_, BorderLayout.EAST);
-  	addToDisplayPanel(jComboBoxPanel_, new GridBagConstraints(10, 1, 5, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(5, 5, 5, 5), 0, 0));
+  	jComboBoxPanel_.add(classListJComboBox_, new GridBagConstraints(0, 1, 0, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(5, 0, 0, 0), 0, 0));
+  	addToDisplayPanel(jComboBoxPanel_, new GridBagConstraints(0, 0, 0, 2, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(5, 15, 5, 5), 0, 0));
   }
   
   /**
@@ -179,11 +207,11 @@ public class CalibrationGraphPanel extends JOptionPanel
     });
     
   	granularityJSlider_ = slider;
-  	panel.add(granularityJSlider_, new GridBagConstraints(0, 1, 0, 2, 0.0, 0.0
+  	panel.add(granularityJSlider_, new GridBagConstraints(0, 1, 0, 1, 0.0, 0.0
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(5, 0, 0, 0), 0, 0));
   	
   	addToDisplayPanel(panel, new GridBagConstraints(5, 0, 10, 2, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(5, 5, 5, 5), 0, 0));
+        ,GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0));
   }
   
   private void initPlot()
@@ -230,6 +258,17 @@ public class CalibrationGraphPanel extends JOptionPanel
   private void classListJComboBox_actionPerformed(ActionEvent e) 
   {
   	showViewOfChoice();
+  }
+  
+  private void classSpecificJCheckBox_actionPerformed(ActionEvent e)
+  {
+  	//TODO: maybe also adjust the displayed lipid class list accordingly
+  	defineSubgroupsJButton_.setEnabled(classSpecificJCheckBox_.isSelected());
+  }
+  
+  private void defineSubgroupsJButton_actionPerformed(ActionEvent e)
+  {
+  	//TODO: 
   }
   
   private void updatePlot(String className)

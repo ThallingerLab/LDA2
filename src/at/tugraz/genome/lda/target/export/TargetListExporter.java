@@ -1182,7 +1182,7 @@ public class TargetListExporter
 	          cell = row.createCell(4,HSSFCell.CELL_TYPE_NUMERIC);
 	          cell.setCellValue(recalibratedRT);
 	          cell = row.createCell(5,HSSFCell.CELL_TYPE_NUMERIC);
-	          cell.setCellValue(targetRT-originalRT);
+	          cell.setCellValue(originalRT-targetRT);
 	          cell = row.createCell(6,HSSFCell.CELL_TYPE_NUMERIC);
 	          cell.setCellValue(rtError);
 	          rowCount++;
@@ -1202,13 +1202,13 @@ public class TargetListExporter
   {
   	Row row = sheet.createRow(0);
     Cell cell = row.createCell(2,HSSFCell.CELL_TYPE_STRING);
-    cell.setCellValue("target DB");
+    cell.setCellValue("Target DB");
     cell = row.createCell(3,HSSFCell.CELL_TYPE_STRING);
-    cell.setCellValue("original DB");
+    cell.setCellValue("Original DB");
     cell = row.createCell(4,HSSFCell.CELL_TYPE_STRING);
-    cell.setCellValue("recalibrated DB");
+    cell.setCellValue("Recalibrated DB");
     cell = row.createCell(5,HSSFCell.CELL_TYPE_STRING);
-    cell.setCellValue("RT differences (target vs original)");
+    cell.setCellValue("RT differences (original vs target)");
     cell = row.createCell(6,HSSFCell.CELL_TYPE_STRING);
     cell.setCellValue("RT error");
   }
