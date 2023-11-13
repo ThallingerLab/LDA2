@@ -93,7 +93,7 @@ public class JOptionPanel extends JPanel
   	defaultComponents_.updateComponents();
   }
   
-  protected TitledBorder getTitledPanelBorder(String title)
+  public static TitledBorder getTitledPanelBorder(String title)
   {
   	Border raisedbevel = BorderFactory.createRaisedBevelBorder();
   	Border loweredbevel = BorderFactory.createLoweredBevelBorder();

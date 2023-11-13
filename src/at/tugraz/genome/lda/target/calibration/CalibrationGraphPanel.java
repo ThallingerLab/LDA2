@@ -47,6 +47,7 @@ public class CalibrationGraphPanel extends JOptionPanel
 	private LoadingPanel loadingPanel_;
 	private JPanel displayPanel_;
 	private String[] lipidClasses_ = new String[0];
+	private SubgroupDefinitionPanel subGroupDefinitionPanel_;
 	private JComboBox<String> classListJComboBox_;
 	private JPanel jComboBoxPanel_;
 	private JCheckBox classSpecificJCheckBox_;
@@ -109,7 +110,7 @@ public class CalibrationGraphPanel extends JOptionPanel
   	JPanel panel = new JPanel();
   	panel.setLayout(new GridBagLayout());
   	
-  	classSpecificJCheckBox_ = new JCheckBox("Calibrate lipid classes separately.", true);
+  	classSpecificJCheckBox_ = new JCheckBox("Calibrate lipid classes separately.", true); //other code relies on this being initialized with true
   	classSpecificJCheckBox_.addActionListener(new ActionListener() {
 		  public void actionPerformed(ActionEvent e) 
 		  {
@@ -139,11 +140,19 @@ public class CalibrationGraphPanel extends JOptionPanel
   	jComboBoxPanel_ = new JPanel();
   	jComboBoxPanel_.setLayout(new GridBagLayout());
   	
-  	JLabel label = new JLabel("Select displayed lipid class: ");
+  	JLabel label = new JLabel("Select displayed lipid class / group: ");
   	jComboBoxPanel_.add(label, new GridBagConstraints(0, 0, 0, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 5, 0), 0, 0));
   	
-  	classListJComboBox_ = new JComboBox<String>(lipidClasses_);
+  	initClassListJComboBox(lipidClasses_);
+  	
+  	addToDisplayPanel(jComboBoxPanel_, new GridBagConstraints(0, 0, 0, 2, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(5, 15, 5, 5), 0, 0));
+  }
+  
+  private void initClassListJComboBox(String[] toDisplay)
+  {
+  	classListJComboBox_ = new JComboBox<String>(toDisplay);
   	classListJComboBox_.setSelectedIndex(0);
   	classListJComboBox_.addActionListener(new ActionListener() {
 		  public void actionPerformed(ActionEvent e) 
@@ -153,8 +162,6 @@ public class CalibrationGraphPanel extends JOptionPanel
 	  });
   	jComboBoxPanel_.add(classListJComboBox_, new GridBagConstraints(0, 1, 0, 1, 0.0, 0.0
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(5, 0, 0, 0), 0, 0));
-  	addToDisplayPanel(jComboBoxPanel_, new GridBagConstraints(0, 0, 0, 2, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(5, 15, 5, 5), 0, 0));
   }
   
   /**
@@ -247,6 +254,7 @@ public class CalibrationGraphPanel extends JOptionPanel
   		this.remove(displayPanel_);
   		this.displayPanel_ = null;
   	}
+  	this.subGroupDefinitionPanel_ = null;
   }
   
   private void showViewOfChoice()
@@ -262,13 +270,47 @@ public class CalibrationGraphPanel extends JOptionPanel
   
   private void classSpecificJCheckBox_actionPerformed(ActionEvent e)
   {
-  	//TODO: maybe also adjust the displayed lipid class list accordingly
   	defineSubgroupsJButton_.setEnabled(classSpecificJCheckBox_.isSelected());
+  	updateClassListJComboBox();
   }
   
+  private void updateClassListJComboBox()
+  {
+  	jComboBoxPanel_.remove(classListJComboBox_);
+  	if (!classSpecificJCheckBox_.isSelected())
+  	{
+  		initClassListJComboBox(new String[] {PLOT_ALL});
+  	}
+  	else if (subGroupDefinitionPanel_ != null)
+  	{
+  		ArrayList<String> ungroupedLipidClasses = subGroupDefinitionPanel_.getUngroupedLipidClasses();
+  		ArrayList<SubGroup> subGroups = subGroupDefinitionPanel_.getDefinedSubgroups();
+  		String[] toDisplay = new String[ungroupedLipidClasses.size()+subGroups.size()+1];
+  		toDisplay[0] = PLOT_ALL;
+  		for (int i=0; i<subGroups.size(); i++)
+  		{
+  			toDisplay[i+1] = subGroups.get(i).getGroupName();
+  		}
+  		for (int i=0; i<ungroupedLipidClasses.size();i++)
+  		{
+  			toDisplay[i+subGroups.size()+1] = ungroupedLipidClasses.get(i);
+  		}
+  		jComboBoxPanel_.remove(classListJComboBox_);
+  		initClassListJComboBox(toDisplay);
+  	}
+  	else
+  	{
+  		initClassListJComboBox(lipidClasses_);
+  	}
+  	displayPanel_.invalidate();
+  	displayPanel_.updateUI();
+  }
+  
+  //TODO: complete this
   private void defineSubgroupsJButton_actionPerformed(ActionEvent e)
   {
-  	//TODO: 
+  	subGroupDefinitionPanel_ = new SubgroupDefinitionPanel(
+  			subGroupDefinitionPanel_ == null ? new ArrayList<SubGroup>() : subGroupDefinitionPanel_.getDefinedSubgroups(), lipidClasses_, this);
   }
   
   private void updatePlot(String className)
