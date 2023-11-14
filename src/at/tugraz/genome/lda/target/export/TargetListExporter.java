@@ -267,15 +267,8 @@ public class TargetListExporter
 	      
 	      if (isRecalibration())
 	      {
-	      	RecalibrationRegression regression = calibrationGraphPanel_.getRegressionByFields(CalibrationGraphPanel.PLOT_ALL, CalibrationGraphPanel.PLOT_ALL);
-	      	if (this.calibrateSeparately_)
-	      	{
-	      		RecalibrationRegression regressionByClass = calibrationGraphPanel_.getRegressionByFields(CalibrationGraphPanel.PLOT_ALL, cName);
-	      		if (regressionByClass != null)
-	      		{
-	      			regression = regressionByClass;
-	      		}
-	      	}
+	      	RecalibrationRegression regression = calibrationGraphPanel_.getRegressionByFields(CalibrationGraphPanel.PLOT_ALL, 
+      				calibrateSeparately_ ? calibrationGraphPanel_.getRelevantRegressionName(cName) : CalibrationGraphPanel.PLOT_ALL);
       		boolean noRegressionAvailable = regression == null;
 	      	for (int i=0;i<doubleBondPositionVOs.size();i++)
 		      {

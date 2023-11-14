@@ -10,6 +10,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -32,12 +34,19 @@ import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.target.JOptionPanel;
 import at.tugraz.genome.lda.verifier.StringVerifier;
 
-
+/**
+ * 
+ * @author Leonida M. Lamp
+ *
+ */
 public class SubgroupDefinitionPanel extends JFrame
 {
 	private static final long serialVersionUID = 1L;
 	private static final String TITLE = "Define subgroups to be calibrated together";
+	private final static String BUTTON_CANCEL = "Cancel";
+	private final static String BUTTON_SAVE_RETURN = "Save and Close";
 	
+	private CalibrationGraphPanel parent_;
 	private ArrayList<SubGroup> definedSubgroups_;
 	private ArrayList<String> usedLipidClasses_;
 	private ArrayList<String> ungroupedLipidClasses_;
@@ -48,9 +57,10 @@ public class SubgroupDefinitionPanel extends JFrame
 	private JPanel contentsPanel_;
 	
 	
-	public SubgroupDefinitionPanel(ArrayList<SubGroup> definedSubgroups, String[] displayedLipidClasses, JPanel parent)
+	public SubgroupDefinitionPanel(ArrayList<SubGroup> definedSubgroups, String[] displayedLipidClasses, CalibrationGraphPanel parent)
 	{
 		super(TITLE);
+		this.parent_ = parent;
 		this.definedSubgroups_ = definedSubgroups;
 		this.usedLipidClasses_ = new ArrayList<String>();
 		for (SubGroup subGroup : definedSubgroups_)
@@ -71,15 +81,82 @@ public class SubgroupDefinitionPanel extends JFrame
 		
 		initDefinedGroupsPanel();
 		initDefineNewGroupPanel();
+		initButtonPanel();
 		
 		//general settings
-		setLocationRelativeTo(parent);
-    setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+		setLocationRelativeTo(parent_);
+		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    addWindowListener(new WindowAdapter() {
+    	
+      @Override
+      public void windowClosing(WindowEvent e) 
+      {
+      	cancel_actionPerformed(new ActionEvent(e, 0, ""));
+      } 
+    });
+    
     setSize(950, 850);
     setVisible(true);
-		
 	}
 	
+	/**
+	 * Generates the button panel.
+	 */
+	private void initButtonPanel()
+	{
+		JPanel panel = new JPanel();
+		panel.setLayout(new GridBagLayout());
+		
+		JButton cancelButton = new JButton(BUTTON_CANCEL);
+		cancelButton.addActionListener(new ActionListener() {
+		  public void actionPerformed(ActionEvent e) 
+		  {
+		  	cancel_actionPerformed(e);
+		  }
+	  });
+		panel.add(cancelButton, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0,
+				GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 265), 0, 0));
+		
+		JButton saveCloseButton = new JButton(BUTTON_SAVE_RETURN);
+		saveCloseButton.addActionListener(new ActionListener() {
+		  public void actionPerformed(ActionEvent e) 
+		  {
+		  	saveClose_actionPerformed(e);
+		  }
+	  });
+		panel.add(saveCloseButton, new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0,
+				GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 265, 0, 0), 0, 0));
+		
+		contentsPanel_.add(panel, new GridBagConstraints(0, 2, 0, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(50, 25, 0, 25), 0, 0));
+	}
+	
+	/**
+	 * Handles the action triggered by the cancel button.
+	 * @param e
+	 */
+	private void cancel_actionPerformed(ActionEvent e)
+  {
+		setVisible(false); 
+		definedSubgroups_ = new ArrayList<SubGroup>();
+    dispose(); 
+  }
+	
+	/**
+	 * Handles the action triggered by the save and close button.
+	 * @param e
+	 */
+	private void saveClose_actionPerformed(ActionEvent e)
+  {
+		setVisible(false); 
+		parent_.addSubGroupRegressions(getDefinedSubgroups());
+		parent_.updateClassListJComboBox();
+    dispose(); 
+  }
+	
+	/**
+	 * Generates the panel for defined subgroups.
+	 */
 	private void initDefinedGroupsPanel()
 	{
 		definedGroupsPanel_ = new JPanel();
@@ -95,34 +172,7 @@ public class SubgroupDefinitionPanel extends JFrame
 		}
 		else
 		{
-			String[] headers = { "Defined subgroups ", "Actions" };
-			
-			DefaultTableModel model = new DefaultTableModel()
-			{
-	      private static final long serialVersionUID = 1L;
-	      
-	      @Override
-	      public boolean isCellEditable(int row, int column) 
-	      {
-	      	switch (column) 
-	      	{
-	          case 1:
-	            return true;
-	          default:
-	            return false;
-	      	}
-	      }
-			};
-			for (String header : headers)
-			{
-				model.addColumn(header);
-			}
-			for (SubGroup definedSubgroup : definedSubgroups_) 
-	    {
-				Object[] row = { definedSubgroup.getId(), new RemoveAction(false, definedSubgroup, this) };
-				model.addRow(row);
-	    }
-			JTable table = new JTable(model);
+			JTable table = new JTable(initDefinedGroupsTableModel());
 			table.getColumnModel().getColumn(1).setCellEditor(new RemoveActionEditor());
 			table.getColumnModel().getColumn(1).setCellRenderer(new RemoveActionRenderer());
 			
@@ -139,6 +189,9 @@ public class SubgroupDefinitionPanel extends JFrame
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(10, 25, 0, 25), 0, 0));
 	}
 	
+	/**
+	 * Removes a subgroup from all relevant objects.
+	 */
 	private void removeSubgroup(SubGroup subGroup)
 	{
 		definedSubgroups_.remove(subGroup);
@@ -152,6 +205,9 @@ public class SubgroupDefinitionPanel extends JFrame
 		contentsPanel_.updateUI();
 	}
 	
+	/**
+	 * Generates the panel to define new subgroups.
+	 */
 	private void initDefineNewGroupPanel()
 	{
 		defineNewGroupPanel_ = new JPanel();
@@ -196,6 +252,44 @@ public class SubgroupDefinitionPanel extends JFrame
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(25, 25, 25, 25), 0, 0));
 	}
 	
+	/**
+	 * Generates the table model for defined subgroups.
+	 * @return the generated table model
+	 */
+	private DefaultTableModel initDefinedGroupsTableModel()
+	{
+		String[] headers = { "Defined subgroups ", "Actions" };
+		DefaultTableModel model = new DefaultTableModel()
+		{
+      private static final long serialVersionUID = 1L;
+      
+      @Override
+      public boolean isCellEditable(int row, int column) 
+      {
+      	switch (column) 
+      	{
+          case 1:
+            return true;
+          default:
+            return false;
+      	}
+      }
+		};
+		for (String header : headers)
+		{
+			model.addColumn(header);
+		}
+		for (SubGroup definedSubgroup : definedSubgroups_) 
+    {
+			Object[] row = { definedSubgroup.getId(), new RemoveAction(false, definedSubgroup, this) };
+			model.addRow(row);
+    }
+		return model;
+	}
+	
+	/**
+	 * Generates the table model for new subgroups.
+	 */
 	private void initDefineNewTableModel()
 	{
 		String[] headers = { "Ungrouped lipid classes", "Selected" };
@@ -238,6 +332,10 @@ public class SubgroupDefinitionPanel extends JFrame
     }
 	}
 	
+	/**
+	 * Handles the action triggered by the save subgroup button.
+	 * @param e
+	 */
 	private void saveSubgroup_actionPerformed(ActionEvent e)
   {
 		ArrayList<String> lipidClasses = new ArrayList<String>();
@@ -250,7 +348,7 @@ public class SubgroupDefinitionPanel extends JFrame
 				lipidClasses.add((String) defineNewTableModel_.getValueAt(i, 0));
 			}
 		}
-		if (groupName.length() > 0 && lipidClasses.size()>1)
+		if (groupName.length() > 0 && !isGroupNameTaken(groupName) && lipidClasses.size()>1)
 		{
 			definedSubgroups_.add(new SubGroup(groupName, lipidClasses));
 			usedLipidClasses_.addAll(lipidClasses);
@@ -265,9 +363,25 @@ public class SubgroupDefinitionPanel extends JFrame
 		}
 		else
 		{
-			new WarningMessage(new JFrame(), "Error", "A group name must be defined and at least 2 lipid classes must be selected!");
+			new WarningMessage(new JFrame(), "Error", "A unique group name must be defined and at least 2 lipid classes must be selected to proceed!");
 		}
   }
+	
+	/**
+	 * @param groupName
+	 * @return true if a given group name is already given to a defined subgroup.
+	 */
+	private boolean isGroupNameTaken(String groupName)
+	{
+		for (SubGroup group : definedSubgroups_)
+		{
+			if (group.getGroupName().equals(groupName))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 	
 	public ArrayList<SubGroup> getDefinedSubgroups()
 	{
