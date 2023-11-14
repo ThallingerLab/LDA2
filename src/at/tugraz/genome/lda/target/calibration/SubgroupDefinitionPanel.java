@@ -149,8 +149,11 @@ public class SubgroupDefinitionPanel extends JFrame
 	private void saveClose_actionPerformed(ActionEvent e)
   {
 		setVisible(false); 
+		//remove potential subgroups with identical names to newly defined subgroups, as such entities might interfere with other code
+		parent_.removeSubGroupRegressions(); 
 		parent_.addSubGroupRegressions(getDefinedSubgroups());
 		parent_.updateClassListJComboBox();
+		parent_.showViewOfChoice();
     dispose(); 
   }
 	

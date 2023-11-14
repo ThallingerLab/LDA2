@@ -16,9 +16,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Set;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -57,7 +55,7 @@ public class CalibrationGraphPanel extends JOptionPanel
 	private JSlider granularityJSlider_;
 	private Double grouping_;
 	private RecalibrationPlot plot_;
-	private Set<RecalibrationRegression> regressions_;
+	private ArrayList<RecalibrationRegression> regressions_;
 	private File originalTargetList_;
 	private Double predictionThreshold_;
 	public static final String PLOT_ALL = "Combined";
@@ -276,7 +274,7 @@ public class CalibrationGraphPanel extends JOptionPanel
   /**
    * Shows the plot selected in the class list JComboBox
    */
-  private void showViewOfChoice()
+  public void showViewOfChoice()
   {
   	String selectedItem = (String)classListJComboBox_.getSelectedItem(); 
   	updatePlot(selectedItem);
@@ -381,6 +379,25 @@ public class CalibrationGraphPanel extends JOptionPanel
   }
   
   /**
+   * Removes all regressions with an id referring to defined sub groups.
+   */
+  public void removeSubGroupRegressions()
+  {
+  	ArrayList<RecalibrationRegression> toRemove = new ArrayList<RecalibrationRegression>();
+  	for (SubGroup group : subGroupDefinitionPanel_.getDefinedSubgroups())
+  	{
+  		for (RecalibrationRegression regression : regressions_)
+  		{
+  			if (regression.getLipidClass().equals(group.getGroupName()))
+  			{
+  				toRemove.add(regression);
+  			}
+  		}
+  	}
+  	regressions_.removeAll(toRemove);
+  }
+  
+  /**
    * Generates regressions for the subgroups.
    * @param subGroups
    */
@@ -431,7 +448,7 @@ public class CalibrationGraphPanel extends JOptionPanel
    */
   public void parseData(Hashtable<String,ArrayList<File>> originalConditions, Hashtable<String,ArrayList<File>> newConditions) throws ExcelInputFileException
   {
-  	this.regressions_ = ConcurrentHashMap.newKeySet();
+  	this.regressions_ = new ArrayList<RecalibrationRegression>();
   	
   	if (originalConditions.containsKey(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX) &&
   			newConditions.containsKey(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX))
@@ -452,9 +469,9 @@ public class CalibrationGraphPanel extends JOptionPanel
    * @return
    * @throws ExcelInputFileException
    */
-  private Set<RecalibrationRegression> parseStandardMix(ArrayList<File> originalMix, ArrayList<File> newMix) throws ExcelInputFileException
+  private ArrayList<RecalibrationRegression> parseStandardMix(ArrayList<File> originalMix, ArrayList<File> newMix) throws ExcelInputFileException
   {
-  	Set<RecalibrationRegression> regressions = ConcurrentHashMap.newKeySet();
+  	ArrayList<RecalibrationRegression> regressions = new ArrayList<RecalibrationRegression>();
   	ArrayList<IdentificationVO> originalIdentifications = parseResultFiles(originalMix);
 		ArrayList<IdentificationVO> newIdentifications = parseResultFiles(newMix);
 		ArrayList<MatchedIdentificationVO> matches = computeMatches(originalIdentifications, originalMix.size(), newIdentifications, newMix.size());
@@ -483,9 +500,9 @@ public class CalibrationGraphPanel extends JOptionPanel
    * @return
    * @throws ExcelInputFileException
    */
-  private Set<RecalibrationRegression> parseAllResults(Hashtable<String,ArrayList<File>> originalConditions, Hashtable<String,ArrayList<File>> newConditions) throws ExcelInputFileException
+  private ArrayList<RecalibrationRegression> parseAllResults(Hashtable<String,ArrayList<File>> originalConditions, Hashtable<String,ArrayList<File>> newConditions) throws ExcelInputFileException
   {
-  	Set<RecalibrationRegression> regressions = ConcurrentHashMap.newKeySet();
+  	ArrayList<RecalibrationRegression> regressions = new ArrayList<RecalibrationRegression>();
   	ArrayList<MatchedIdentificationVO> matches = computeMatchesForDataTypeOther(originalConditions, newConditions);
   	HashSet<String> uniqueLipidClasses = computeCombinedRegressionsPerClass(matches, regressions);
   	fillMissingDataPoints(regressions);
@@ -501,7 +518,7 @@ public class CalibrationGraphPanel extends JOptionPanel
    * Adds data points of the combined plot to fill in missing data 
    * @param regressions
    */
-  private void fillMissingDataPoints(Set<RecalibrationRegression> regressions)
+  private void fillMissingDataPoints(ArrayList<RecalibrationRegression> regressions)
   {
   	RecalibrationRegression regressionCombined = getRegressionByFields(regressions, PLOT_ALL, PLOT_ALL);
   	ArrayList<Pair<Double, Double>> clusteredCombined = regressionCombined.getClustered();
@@ -602,7 +619,7 @@ public class CalibrationGraphPanel extends JOptionPanel
    * @param regressions
    * @return A set of all lipid classes for which valid regressions exist.
    */
-  private HashSet<String> computeCombinedRegressionsPerClass(ArrayList<MatchedIdentificationVO> matches, Set<RecalibrationRegression> regressions)
+  private HashSet<String> computeCombinedRegressionsPerClass(ArrayList<MatchedIdentificationVO> matches, ArrayList<RecalibrationRegression> regressions)
   {
     //in case we have valid regressions for additional lipid classes, we need to redefine the lipidClasses_ array
   	HashSet<String> uniqueLipidClasses = new HashSet<String>();
@@ -680,7 +697,7 @@ public class CalibrationGraphPanel extends JOptionPanel
    * @param regressions
    * @return true if a valid regression was successfully added, otherwise false.
    */
-  private boolean addCombinedRegression(ArrayList<Pair<Double,Double>> differences, String lipidClass, HashSet<String> uniqueLipidClasses, Set<RecalibrationRegression> regressions)
+  private boolean addCombinedRegression(ArrayList<Pair<Double,Double>> differences, String lipidClass, HashSet<String> uniqueLipidClasses, ArrayList<RecalibrationRegression> regressions)
   {
 		RecalibrationRegression regressionStandards = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, lipidClass);
 		if (regressionStandards != null)
@@ -837,7 +854,7 @@ public class CalibrationGraphPanel extends JOptionPanel
    * @param lipidClass
    * @return
    */
-  private RecalibrationRegression getRegressionByFields(Set<RecalibrationRegression> regressions, String dataType, String lipidClass)
+  private RecalibrationRegression getRegressionByFields(ArrayList<RecalibrationRegression> regressions, String dataType, String lipidClass)
   {
   	for (RecalibrationRegression regression : regressions)
   	{
