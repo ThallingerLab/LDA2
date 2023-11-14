@@ -77,7 +77,7 @@ public class RecalibrationPlotMouseListener implements ChartMouseListener
 	    this.lipidClass_ = lipidClass;
 	    this.dataPoint_ = dataPoint;
 	    
-	    setLocation(380,240);
+	    this.setLocationRelativeTo(plot);
 	    
 	    getContentPane().setLayout(new GridBagLayout());
 	    

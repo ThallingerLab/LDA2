@@ -305,7 +305,6 @@ public class ExperimentLabelDefinitionPanel extends ExperimentTableInputPanel
   protected void updateValue(int row, int value)
 	{
   	unambiguousIsotopeLabels_.get(row).setOmegaPosition(value);
-  	System.out.println(unambiguousIsotopeLabels_.get(row).getOmegaPosition());
 	}
   
   public Vector<IsotopeLabelVO> getAssignedIsotopeLabels()

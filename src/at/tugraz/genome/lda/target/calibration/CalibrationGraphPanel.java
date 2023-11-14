@@ -894,11 +894,16 @@ public class CalibrationGraphPanel extends JOptionPanel
   {
   	RecalibrationRegression regressionAll = getRegressionByFields(PLOT_ALL, PLOT_ALL);
   	RecalibrationRegression regressionClass = getRegressionByFields(PLOT_ALL, lipidClass);
-  	if (removeDataPointFromRegression(regressionAll, dataPoint))
+  	RecalibrationRegression regressionSubGroup = getRegressionByFields(PLOT_ALL, getRelevantRegressionName(lipidClass));
+  	if (removeDataPointFromRegression(regressionAll, dataPoint)) //assumption that there will not be too few data points in such cases.
   	{
+  		if (!regressionClass.equals(regressionSubGroup))
+  		{
+  			removeDataPointFromRegression(regressionSubGroup, dataPoint); //assumption that there will not be too few data points in such cases.
+  		}
   		if (!removeDataPointFromRegression(regressionClass, dataPoint))
   		{
-  			new WarningMessage(new JFrame(), "Warning", String.format("Class specific calibration of %s is not possible anymore due to the removed data point!", lipidClass));
+  			new WarningMessage(new JFrame(), "Warning", String.format("Class specific calibration of %s is not possible anymore due to the removed data point!", getRelevantRegressionName(lipidClass)));
     		List<String> lipidClasses = new ArrayList<String>(Arrays.asList(lipidClasses_));
     		lipidClasses.remove(lipidClass);
     		lipidClasses_ = lipidClasses.toArray(new String[lipidClasses.size()]);
