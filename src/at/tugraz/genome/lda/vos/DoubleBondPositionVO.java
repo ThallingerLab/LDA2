@@ -270,9 +270,7 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
       {
   			if (fattyAcid1 != fattyAcid2) //we do not want to compare identical objects
   			{
-  				if ((fattyAcid1.getcAtoms() == fattyAcid2.getcAtoms()) && 
-  						(fattyAcid1.getDoubleBonds() == fattyAcid2.getDoubleBonds()) &&
-  						(fattyAcid1.getOhNumber() == fattyAcid2.getOhNumber()))
+  				if (fattyAcid1.equalsNotConsideringOmegaPosition(fattyAcid2))
   				{
   					pattern.setElementAt(true, i);
   				}

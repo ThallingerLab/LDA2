@@ -2681,33 +2681,45 @@ public class StaticUtils
   
   //TODO: ALl of this are additions for the omega assignment
   
+  
   /**
-   * returns the display name for an FA/LCB encoded molecular species identification
-   * @param combiName the encoded name for the chain combination
-   * @param chains the decoded information about the molecular species
-   * @param faEncoding the hydroxylation encoding for FA chains
-   * @param lcbEncoding the hydroxylation encoding for LCB chains
-   * @param chainPositionsFixed whether FattyAcidVOs in the Vector are ordered according to known sn positions
+   * Returns the display name for an FA/LCB encoded molecular species identification.
+   * Sorting of the chains is done with the compareTo method in FattyAcidVO; only if @param chainPositionsFixed is false.
+   * ATTENTION: the chain sorting will differ in some cases from sortFASequenceUnassigned, as more properties are taken into account.
+   * The sorting will be more predictable however.
+   * @param combiName 										the encoded name for the chain combination
+   * @param faEncoding 										the hydroxylation encoding for FA chains
+   * @param lcbEncoding 									the hydroxylation encoding for LCB chains
+   * @param chainPositionsFixed 					whether FattyAcidVOs in the Vector are ordered according to known sn positions
    * @return the encoded human readable display name for a chain combination
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   public static String getHumanReadableCombiName(String combiName, HydroxyEncoding faEncoding,
-      HydroxyEncoding lcbEncoding, boolean chainPositionsFixed) throws LipidCombinameEncodingException {
+      HydroxyEncoding lcbEncoding, boolean chainPositionsFixed) throws LipidCombinameEncodingException 
+  {
     return getHumanReadableCombiName(StaticUtils.decodeLipidNamesFromChainCombi(combiName), faEncoding, lcbEncoding, chainPositionsFixed);
   }
   
   /**
-   * returns the display name for an FA/LCB encoded molecular species identification
-   * @param chains the decoded information about the molecular species
-   * @param faEncoding the hydroxylation encoding for FA chains
-   * @param lcbEncoding the hydroxylation encoding for LCB chains
-   * @param chainPositionsFixed whether FattyAcidVOs in the Vector are ordered according to known sn positions
+   * Returns the display name for an FA/LCB encoded molecular species identification.
+   * Sorting of the chains is done with the compareTo method in FattyAcidVO; only if @param chainPositionsFixed is false.
+   * ATTENTION: the chain sorting will differ in some cases from sortFASequenceUnassigned, as more properties are taken into account.
+   * The sorting will be more predictable however.
+   * @param chains 									the decoded information about the molecular species
+   * @param faEncoding 							the hydroxylation encoding for FA chains
+   * @param lcbEncoding 						the hydroxylation encoding for LCB chains
+   * @param chainPositionsFixed 		whether FattyAcidVOs in the Vector are ordered according to known sn positions
    * @return the encoded human readable display name for a chain combination
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   public static String getHumanReadableCombiName(Vector<FattyAcidVO> chains, HydroxyEncoding faEncoding,
-        HydroxyEncoding lcbEncoding, boolean chainPositionsFixed) throws LipidCombinameEncodingException {
-    StringBuilder combi = new StringBuilder();
+      HydroxyEncoding lcbEncoding, boolean chainPositionsFixed) throws LipidCombinameEncodingException
+  {
+  	if (!chainPositionsFixed)
+    {
+    	Collections.sort(chains);
+    }
+  	StringBuilder combi = new StringBuilder();
     boolean ohPresent = areThereOhInCombi(chains);
     for (FattyAcidVO chain : chains) {
       if (combi.length()!=0) {
@@ -2716,7 +2728,7 @@ public class StaticUtils
       }
       combi.append(getHumanReadableChainName(chain, faEncoding, lcbEncoding, ohPresent));
     }
-    return sortFASequenceUnassigned(combi.toString(),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
+    return combi.toString();
   }
   
   public static Range[] determinePeakRanges(LipidParameterSet param) {

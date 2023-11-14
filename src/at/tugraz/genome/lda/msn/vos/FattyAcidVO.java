@@ -23,6 +23,7 @@
 
 package at.tugraz.genome.lda.msn.vos;
 
+import java.util.Comparator;
 import java.util.Objects;
 
 import at.tugraz.genome.lda.utils.StaticUtils;
@@ -33,7 +34,7 @@ import at.tugraz.genome.lda.utils.StaticUtils;
  * @author Juergen Hartler
  *
  */
-public class FattyAcidVO
+public class FattyAcidVO implements Comparable<FattyAcidVO>
 {
   /** the type of chain: LipidomicsConstants.CHAIN_TYPE_FA or LipidomicsConstants.CHAIN_TYPE_LCB*/
   private short chainType_;
@@ -258,5 +259,39 @@ public class FattyAcidVO
         && omegaPosition_ == other.omegaPosition_
         && Objects.equals(prefix_, other.prefix_);
   }
+  
+  /**
+   * @param other
+   * @return true if all fields except the omega position are identical
+   */
+  public boolean equalsNotConsideringOmegaPosition(FattyAcidVO other)
+  {
+  	return cAtoms_ == other.cAtoms_ && chainType_ == other.chainType_
+        && doubleBonds_ == other.doubleBonds_
+        && Objects.equals(formula_, other.formula_)
+        && Double.doubleToLongBits(mass_) == Double
+            .doubleToLongBits(other.mass_)
+        && ohNumber_ == other.ohNumber_
+        && Objects.equals(prefix_, other.prefix_);
+  }
+
+	@Override
+	/**
+	 * Compares the fields of this class.
+	 * In hierarchical order, these fields are compared until there is a difference:
+	 * chainType_, cAtoms_, doubleBonds_, ohNumber_, omegaPosition_, prefix_.
+	 * @param other
+	 * @return
+	 */
+	public int compareTo(FattyAcidVO other)
+	{
+		 return Comparator.comparing(FattyAcidVO::getChainType).reversed()
+							.thenComparing(FattyAcidVO::getcAtoms)
+							.thenComparing(FattyAcidVO::getDoubleBonds)
+							.thenComparing(FattyAcidVO::getOhNumber)
+							.thenComparing(FattyAcidVO::getOmegaPosition)
+							.thenComparing(FattyAcidVO::getPrefix)
+							.compare(this, other);
+	}
   
 }
