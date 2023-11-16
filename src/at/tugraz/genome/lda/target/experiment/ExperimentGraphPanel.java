@@ -446,7 +446,7 @@ public class ExperimentGraphPanel extends JOptionPanel
   	for (MatchedPartnerVO vo : matchedIsotopologues_)
   	{
   		arePairsChosen = vo.isUseForCalibration() == Boolean.TRUE;
-  		break;
+  		if (arePairsChosen) break;
   	}
   	if (arePairsChosen)
   	{

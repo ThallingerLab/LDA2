@@ -178,7 +178,6 @@ public class TargetListExporter
 		  
       new ElementConfigParser("elementconfig.xml").parse();
       
-      XSSFCellStyle headerStyle = getHeaderStyle(workbook);  
       for (String cName : classSequence.keySet()) 
       {
       	System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+ cName + "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
@@ -196,7 +195,7 @@ public class TargetListExporter
         	}
       	}
         Sheet sheet = workbook.createSheet(cName);
-        writeMassListForSheet(sheet, headerStyle, analyteSequence.get(cName), quantObjects.get(cName), cName, allLabeledVOsToAdd);
+        writeMassListForSheet(sheet, getHeaderStyle(workbook), getNumberStyle(workbook), analyteSequence.get(cName), quantObjects.get(cName), cName, allLabeledVOsToAdd);
       }
       workbook.write(out);
       System.out.println("workbook written!");
@@ -211,6 +210,7 @@ public class TargetListExporter
 	private void writeMassListForSheet(
 			Sheet sheet, 
 			XSSFCellStyle headerStyle, 
+			XSSFCellStyle numberStyle,
 			Vector<String> analytes, 
 			Hashtable<String,Hashtable<String,QuantVO>> quantObjects, 
 			String cName,
@@ -237,7 +237,7 @@ public class TargetListExporter
 	    }
 	    createHeader(sheet, headerTitles, headerStyle);
 	    
-	    
+	    ArrayList<String> usedQuantIDs = new ArrayList<String>();
 	    int firstModColumn = headerTitles.indexOf(headerTitles.stream().filter((s)->(s).startsWith("mass(form[")).findFirst().get());
 	    int rowCount = HEADER_ROW+1;
 	    for (String analyte : analytes) 
@@ -255,10 +255,9 @@ public class TargetListExporter
 	        	for (DoubleBondPositionVO doubleBondPositionVO : allLabeledVOsToAdd)
 		        {
 		        	if (quant.getCarbons() == doubleBondPositionVO.getNumberOfCarbons() &&
-		        			quant.getDbs() == doubleBondPositionVO.getNumberOfDoubleBonds() &&
-		        			quant.getOhNumber() == doubleBondPositionVO.getNumberOfOH())
+		        			quant.getDbs() == doubleBondPositionVO.getNumberOfDoubleBonds()) //number of oh etc are not considered on purpose, they should be grouped in the target list
 		        	{
-		        		quant.addInfoForOmegaAssignment(doubleBondPositionVO);
+		        		quant.addInfoForOmegaAssignment(doubleBondPositionVO); 
 		        	}
 		        }
 	        }
@@ -301,10 +300,21 @@ public class TargetListExporter
 	      	for (String mod : mods.keySet()) 
 		      {
 		      	QuantVO quant = quantAnalytes.get(mod);
+		      	
+		      	//the following lines only affect Cer, SM (classes with hydroxylation sites).
+		      	if ((i<0 && usedQuantIDs.contains(computeQuantID(quant, false)) ||
+		      			(i>-1 && !usedQuantIDs.contains(computeQuantID(quant, true)))))
+		        {
+		      		rowCount--;
+		        	continue;
+		        }
+		        usedQuantIDs.add(computeQuantID(quant, true));
+		        usedQuantIDs.add(computeQuantID(quant, false));
+		      	
 		      	if (modCount==0) 
 		        {   	
 		          cell = row.createCell(headerTitles.indexOf(HEADER_NAME),HSSFCell.CELL_TYPE_STRING);
-		          cell.setCellValue(quant.getAnalyteName());
+		          cell.setCellValue(quant.getCarbons());
 		          cell = row.createCell(headerTitles.indexOf(HEADER_COLON),HSSFCell.CELL_TYPE_STRING);
 		          cell.setCellValue(":");
 		          cell = row.createCell(headerTitles.indexOf(HEADER_DBS),HSSFCell.CELL_TYPE_NUMERIC);
@@ -327,6 +337,7 @@ public class TargetListExporter
 	          {
 	          	cell = row.createCell(headerTitles.indexOf(HEADER_RETENTION_TIME),HSSFCell.CELL_TYPE_NUMERIC);
 		          cell.setCellValue(doubleBondPositionVOs.get(i).getExpectedRetentionTime());
+		          cell.setCellStyle(numberStyle);
 	          }
 		      }
 	      	rowCount++;
@@ -337,6 +348,12 @@ public class TargetListExporter
 		{
 			ex.printStackTrace();
 		}
+	}
+	
+	private String computeQuantID(QuantVO quant, boolean includeOH)
+	{
+		return String.format("%s, %s, %s, %s", 
+				quant.getCarbons(), quant.getDbs(), quant.getModName(), includeOH ? quant.getOhNumber() : "");
 	}
 	
 	private void computeExpectedRetentionTime(DoubleBondPositionVO vo, RecalibrationRegression regression, String cName)
@@ -960,6 +977,11 @@ public class TargetListExporter
   		cell.setCellValue(headerTitles.get(i));
   		cell.setCellStyle(headerStyle);
   	}
+    sheet.setColumnWidth(headerTitles.indexOf(HEADER_NAME), 10 * 256);
+    sheet.setColumnWidth(headerTitles.indexOf(HEADER_COLON), 2 * 256);
+    sheet.setColumnWidth(headerTitles.indexOf(HEADER_DBS), 10 * 256);
+  	sheet.setColumnWidth(headerTitles.indexOf(HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS), 30 * 256);
+  	sheet.setColumnWidth(headerTitles.indexOf(HEADER_RETENTION_TIME), 10 * 256);
   }
 	
 	/**
@@ -996,6 +1018,12 @@ public class TargetListExporter
     return headerTitles;
   }
 	
+  public static XSSFCellStyle getNumberStyle(XSSFWorkbook wb)
+  {
+  	XSSFCellStyle numberStyle = wb.createCellStyle();
+  	numberStyle.setDataFormat(2);
+  	return numberStyle;
+  }
   
 	public static XSSFCellStyle getHeaderStyle(XSSFWorkbook wb)
 	{
@@ -1139,8 +1167,20 @@ public class TargetListExporter
 			        		
 			        		if (existingRtError < Double.MAX_VALUE)
 			        		{
-			        			if (Math.abs(rtError) < Math.abs(existingRtError))
+			        			if (Math.abs(rtError) <= Math.abs(existingRtError))
 			        			{
+			        				if (!matchedRecalibratedToTarget.containsKey(pair)) //remove existing stuff, so we don't get the false matches
+					        		{
+			        					Pair<Double,DoubleBondPositionVO> toRemove = null;
+					        			for (Pair<Double,DoubleBondPositionVO> previous : matchedRecalibratedToTarget.keySet())
+					        			{
+					        				if (matchedRecalibratedToTarget.get(previous).getValue().equals(vo))
+					        				{
+					        					toRemove = previous;
+					        				}
+					        			}
+					        			if (toRemove != null) matchedRecalibratedToTarget.remove(toRemove);
+					        		}
 			        				matchedRecalibratedToTarget.put(pair, new Pair<Double,DoubleBondPositionVO>(rtError,vo));
 			        				matchedTargetToRecalibrated.put(vo, new Pair<Double,Pair<Double,DoubleBondPositionVO>>(rtError,pair));
 			        			}
@@ -1152,10 +1192,13 @@ public class TargetListExporter
 		    }
 		    if (!matchedRecalibratedToTarget.isEmpty())
 		    {
+		    	ArrayList<DoubleBondPositionVO> usedVOs = new ArrayList<DoubleBondPositionVO>();
 		    	for (Pair<Double,DoubleBondPositionVO> originalPair : matchedRecalibratedToTarget.keySet())
 		    	{
 		    		//first double: rtError, second double: originalRT, vo: recalibrated
 		    		Pair<Double,DoubleBondPositionVO> targetPair = matchedRecalibratedToTarget.get(originalPair);
+		    		if (usedVOs.contains(targetPair.getValue())) continue;
+		    		usedVOs.add(targetPair.getValue());
 		    		
 		    		String molName = targetPair.getValue().getDoubleBondPositionsHumanReadable();
 		    		double targetRT = targetPair.getValue().getExpectedRetentionTime();

@@ -203,7 +203,7 @@ public class CalibrationGraphPanel extends JOptionPanel
 				int diff = max - value;
 				grouping_ = maxMinutes * diff / max;
 				if (grouping_ < minMinutes) grouping_ = minMinutes; //to make sure the data points are a monotonic sequence
-				System.out.println(grouping_);
+				System.out.println(grouping_+" value: "+value);
 				showViewOfChoice();
 			} 
 			

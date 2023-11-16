@@ -2793,7 +2793,6 @@ public class StaticUtils
    * @param highAccuracyHits sorted DoubleBondPositionVOs with desired level of accuracy
    * @return Vector of DoubleBondPositionVOs which can be unambiguously assigned to the detected peak
    */
-  
   public static Vector<DoubleBondPositionVO> findUnambiguousDoubleBondPositions(Vector<DoubleBondPositionVO> highAccuracyHits) {
     Vector<DoubleBondPositionVO> assignedHits = new Vector<DoubleBondPositionVO>();
     
