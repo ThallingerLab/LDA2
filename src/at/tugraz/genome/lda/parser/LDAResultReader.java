@@ -152,7 +152,6 @@ public class LDAResultReader
   private static void readSheet(Sheet sheet, Hashtable<String,Boolean> showModifications) 
       throws SettingsException, RulesException, LipidCombinameEncodingException, IOException {
     String name = sheet.getName();
-
     if (name.equals(QuantificationResultExporter.SHEET_CONSTANTS)){
       Object[] settings = readSettingsFromExcel(sheet);
       lipidomicsConstants_ = (LipidomicsConstants)settings[0];
@@ -1033,7 +1032,8 @@ public class LDAResultReader
     List<Row> contentRows = rows.subList(QuantificationResultExporter.HEADER_ROW+1, rows.size());
     
     for (Row row : contentRows) {
-      List<Cell> cells = row.stream().filter((c) -> !(c==null || c.getType().equals(CellType.ERROR))).collect(Collectors.toList());
+      List<Cell> cells = row.stream()
+      		.filter((c) -> !(c==null || c.getType().equals(CellType.ERROR) || c.getType().equals(CellType.EMPTY))).collect(Collectors.toList());
       String name = null;
       int dbs = -1;
       int oh = LipidomicsConstants.EXCEL_NO_OH_INFO;
@@ -1092,7 +1092,7 @@ public class LDAResultReader
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_MOD_FORMULA)) {
           modFormula = rawValue;
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_RT)) {
-          preciseRT = Double.parseDouble(rawValue);
+        	preciseRT = Double.parseDouble(rawValue);
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_ISOTOPE)) {
           isotope = (int)Float.parseFloat(rawValue);
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_AREA)) {
