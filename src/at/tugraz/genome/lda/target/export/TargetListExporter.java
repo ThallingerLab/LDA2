@@ -73,13 +73,13 @@ import javafx.util.Pair;
  */
 public class TargetListExporter
 {	
-  private final static String HEADER_NAME = "Name";
-  private final static String HEADER_COLON = "";
-  private final static String HEADER_DBS = "dbs";
+	public final static String HEADER_NAME = "Name";
+	public final static String HEADER_COLON = "";
+	public final static String HEADER_DBS = "dbs";
   public final static String HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS = "mol. species";
-  private final static String HEADER_RETENTION_TIME = "tR (min)";
+  public final static String HEADER_RETENTION_TIME = "tR (min)";
   
-  private final static int HEADER_ROW = 1;
+  public final static int HEADER_ROW = 1;
   
 //  private Hashtable<String, RecalibrationRegression> recalibrationRegressionsForClass_;
 //  private RecalibrationRegression recalibrationRegression_;
@@ -125,10 +125,8 @@ public class TargetListExporter
 		this.resultFileVO_ = resultFileVO;
 		this.labels_ = labels;
 	}
-	
-	
-	
-	
+
+
 	/**
 	 * How do we do this....
 	 * we go through all result files, 
@@ -350,7 +348,7 @@ public class TargetListExporter
 		}
 	}
 	
-	private String computeQuantID(QuantVO quant, boolean includeOH)
+	public String computeQuantID(QuantVO quant, boolean includeOH)
 	{
 		return String.format("%s, %s, %s, %s", 
 				quant.getCarbons(), quant.getDbs(), quant.getModName(), includeOH ? quant.getOhNumber() : "");
@@ -967,7 +965,7 @@ public class TargetListExporter
    * @param ws Excel worksheet to write the header to
    * @param headerTitles List of header titles
    */
-  private static void createHeader(Sheet sheet, List<String> headerTitles, XSSFCellStyle headerStyle) 
+  public static void createHeader(Sheet sheet, List<String> headerTitles, XSSFCellStyle headerStyle) 
   {
   	Row row = sheet.createRow(HEADER_ROW);
   	Cell cell;
@@ -990,7 +988,7 @@ public class TargetListExporter
 	 * @param mods
 	 * @return
 	 */
-  private static List<String> createHeaderTitles(
+  public static List<String> createHeaderTitles(
   		Vector<String> elements, LinkedHashMap<String,String> mods, Hashtable<String,Integer> modToCharge) 
   {
     List<String> headerTitles = new ArrayList<String>();
@@ -1043,7 +1041,7 @@ public class TargetListExporter
    * @return vector containing three objects: first object: a vector containing the elements in the order of the Hill notation; second object: a LinkedHashMap containing the modifications as key and the modification formula as value; third object: a hash table; key: modification name; value: charge of the modification 
    * @throws ChemicalFormulaException thrown when there is something wrong with the chemical formula
    */
-  protected Vector<Object> getAvailableElementsAndModificationsPlusCharge(Hashtable<String,Hashtable<String,QuantVO>> quantObjects) throws ChemicalFormulaException
+  public Vector<Object> getAvailableElementsAndModificationsPlusCharge(Hashtable<String,Hashtable<String,QuantVO>> quantObjects) throws ChemicalFormulaException
   {
     Vector<Object> result = new Vector<Object>();
     Set<String> elements = new HashSet<String>();

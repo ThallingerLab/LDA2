@@ -9,10 +9,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.LinkedHashMap;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -237,9 +235,10 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 				templatePath = exporter_.getTemplatePath();
 			}
 			exporter_.export(templatePath, this);
-			exporter_.exportBeforeAfter(
-					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\SILDA_II_b.xlsx",
-					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison_Grad_Adj_Final\\SILDA_60min_II_b\\comparison_SILDA_60min_to_II_b_sep.xlsx"); //TODO: this is to create figures to compare target lists; remove after
+			//TODO: this is to create figures to compare target lists; remove after
+//			exporter_.exportBeforeAfter(
+//					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\SILDA_II_b.xlsx",
+//					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison_Grad_Adj_Final\\SILDA_60_min_II_b\\comparison_SILDA_60min_to_II_b_sep.xlsx"); 
 		}
 		catch (Exception ex)
 		{

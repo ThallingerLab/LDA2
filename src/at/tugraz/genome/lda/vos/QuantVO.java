@@ -241,11 +241,17 @@ public class QuantVO implements Comparable<QuantVO>
   /**
    * Adds a value object for omega assignment
    * 
-   * @param labeledMolecularSpecies Value object of the potential molecular species with omega assignment
-   * @param retTime float of the retention time in minutes
+   * @param labeledSpeciesVO Value object of the potential molecular species with omega assignment
    */
   public void addInfoForOmegaAssignment(DoubleBondPositionVO labeledSpeciesVO) {
     this.infoForOmegaAssignment_.add(labeledSpeciesVO);
+  }
+  
+  /**
+   * @param labeledSpeciesVO Container with objects for potential molecular species with omega assignment
+   */
+  public void setInfoForOmegaAssignment(Vector<DoubleBondPositionVO> infoForOmegaAssignment) {
+    this.infoForOmegaAssignment_ = infoForOmegaAssignment;
   }
   
   /**
