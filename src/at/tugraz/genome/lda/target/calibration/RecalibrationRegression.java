@@ -6,7 +6,7 @@ import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.apache.commons.math3.exception.OutOfRangeException;
 
-import at.tugraz.genome.lda.utils.Pair;
+import javafx.util.Pair;
 
 public class RecalibrationRegression
 {
@@ -158,7 +158,7 @@ public class RecalibrationRegression
 		return clustered.size();
 	}
 	
-	protected ArrayList<Pair<Double,Double>> getClustered()
+	public ArrayList<Pair<Double,Double>> getClustered()
 	{
 		return clustered_;
 	}

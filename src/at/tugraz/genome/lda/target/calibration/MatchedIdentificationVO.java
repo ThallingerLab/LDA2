@@ -8,7 +8,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.math3.exception.OutOfRangeException;
-import at.tugraz.genome.lda.utils.Pair;
+
+import javafx.util.Pair;
 
 /**
  * 

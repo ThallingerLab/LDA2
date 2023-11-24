@@ -18,9 +18,10 @@ import org.jfree.data.function.Function2D;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.chart.util.ShapeUtils;
 
-import at.tugraz.genome.lda.utils.Pair;
+import javafx.util.Pair;
+
+import org.jfree.chart.util.ShapeUtils;
 
 
 public class RecalibrationPlot extends JPanel

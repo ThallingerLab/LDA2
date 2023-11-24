@@ -37,7 +37,7 @@ import at.tugraz.genome.lda.target.JOptionPanel;
 import at.tugraz.genome.lda.target.LoadingPanel;
 import at.tugraz.genome.lda.target.export.ExportPanel;
 import at.tugraz.genome.lda.target.export.TargetListExporter;
-import at.tugraz.genome.lda.utils.Pair;
+import javafx.util.Pair;
 
 
 public class CalibrationGraphPanel extends JOptionPanel

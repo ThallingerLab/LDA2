@@ -19,7 +19,7 @@ import org.jfree.chart.ChartMouseListener;
 import org.jfree.chart.entity.ChartEntity;
 import org.jfree.chart.entity.XYItemEntity;
 
-import at.tugraz.genome.lda.utils.Pair;
+import javafx.util.Pair;
 
 public class RecalibrationPlotMouseListener implements ChartMouseListener
 {

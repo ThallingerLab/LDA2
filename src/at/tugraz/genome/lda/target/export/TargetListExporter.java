@@ -361,11 +361,12 @@ public class TargetListExporter
 		{
 			double after = regression.getTargetRT(before);
 			vo.setExpectedRetentionTime((float)after);
-			System.out.println(String.format("original: %s, recalibrated: %s", before, after));
+//			System.out.println(String.format("original: %s, recalibrated: %s", before, after));
 		}
 		catch (OutOfRangeException ex)
 		{
-			vo.setExpectedRetentionTime((float)-1.0);
+			double extrapolatedRT = extrapolateRTOutOfRange(before, regression);
+			vo.setExpectedRetentionTime((float)extrapolatedRT);
 		}
 		
 		//TODO: just for development, remove after!
@@ -374,6 +375,38 @@ public class TargetListExporter
 			beforeAfter_.put(cName, ConcurrentHashMap.newKeySet());
 		}
 		beforeAfter_.get(cName).add(new Pair<Double,DoubleBondPositionVO>(before,vo));
+	}
+	
+	/**
+	 * Extrapolates calibrated retention times when the values are out of the range of calibration.
+	 * @param before
+	 * @param regression
+	 * @return
+	 */
+	private double extrapolateRTOutOfRange(double before, RecalibrationRegression regression)
+	{
+		Double returnValue = -1.0;
+		ArrayList<Pair<Double,Double>> clustered = regression.getClustered();
+		Pair<Double,Double> firstPair = null;
+		Pair<Double,Double> secondPair = null;
+		if (before < clustered.get(0).getKey())
+		{
+			firstPair = clustered.get(0);
+			secondPair = clustered.get(1);
+		}
+		else if (before > clustered.get(clustered.size()-1).getKey())
+		{
+			firstPair = clustered.get(clustered.size()-1);
+			secondPair = clustered.get(clustered.size()-2);
+		}
+		if (firstPair != null && secondPair != null)
+		{
+			double m = (secondPair.getValue() - firstPair.getValue()) / (secondPair.getKey() - firstPair.getKey());
+			double b = firstPair.getValue()-m*firstPair.getKey();
+			returnValue = before - (m*before+b);
+		}
+		System.out.println(returnValue);
+		return returnValue;
 	}
 	
 	
