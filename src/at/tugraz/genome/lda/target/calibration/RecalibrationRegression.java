@@ -81,6 +81,7 @@ public class RecalibrationRegression
   private ArrayList<Pair<Double,Double>> clusterKeys(ArrayList<Pair<Double,Double>> differences)
   {
   	ArrayList<Pair<Double,Double>> clustered = new ArrayList<Pair<Double,Double>>();
+  	ArrayList<Double> xValues = new ArrayList<Double>();
   	ArrayList<Double> intervals = new ArrayList<Double>();
   	for (int i=0; i<=(getMax(differences)-getMin(differences))/grouping_+1;i++)
   	{
@@ -97,13 +98,13 @@ public class RecalibrationRegression
       			xSum += dataPoint.getKey();
       			ySum += dataPoint.getValue();
       			count += 1;
-//      			System.out.println("Point x: "+dataPoint.getKey()+" y: "+dataPoint.getValue());
       		}
       	}
-    		if (count > 0)
+    		if (count > 0 && 
+    				!xValues.contains(xSum/count)) //this can happen in very rare cases when the interval border coincides exactly with a value
     		{
     			clustered.add(new Pair<Double,Double>(xSum/count, ySum/count));
-//      		System.out.println("Cluster: "+new Pair<Double,Double>(xSum/count, ySum/count));
+    			xValues.add(xSum/count);
     		}
   		}
   	}
