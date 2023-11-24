@@ -531,15 +531,21 @@ public class CalibrationGraphPanel extends JOptionPanel
   		ArrayList<Pair<Double, Double>> clustered = regression.getClustered();
   		ArrayList<Pair<Double, Double>> clusteredToAdd = new ArrayList<Pair<Double, Double>>();
   		
-  		//adding data points before
+  		//adding first and last datapoints
   		Double firstKey = clustered.get(0).getKey();
-  		if (minKey < firstKey-(this.grouping_*0.75))
+  		Double lastKey = clustered.get(clustered.size()-1).getKey();
+  		Double previousKey = firstKey;
+  		if (minKey < firstKey-(this.grouping_*0.1))
   		{
-  			clusteredToAdd.addAll(getClusterInBetween(clusteredCombined, minKey, firstKey-(this.grouping_*0.75)));
+  			clustered.add(0, regressionCombined.getClustered().get(0));
+  			previousKey = minKey;
+  		}
+  		if (maxKey > lastKey+(this.grouping_*0.1))
+  		{
+  			clustered.add(clusteredCombined.get(clusteredCombined.size()-1));
   		}
   		
   		//adding data points in between
-  		Double previousKey = firstKey;
   		for (Pair<Double, Double> cluster : clustered)
 			{
   			Double currentKey = cluster.getKey();
@@ -550,13 +556,6 @@ public class CalibrationGraphPanel extends JOptionPanel
   			}
   			previousKey = currentKey;
 			}
-  		
-  		//adding data points after
-  		Double lastKey = clustered.get(clustered.size()-1).getKey();
-  		if (maxKey > lastKey+(this.grouping_*0.75))
-  		{
-  			clusteredToAdd.addAll(getClusterInBetween(clusteredCombined, lastKey+(this.grouping_*0.75), maxKey));
-  		}
   		
   		clustered.addAll(clusteredToAdd);
   		Collections.sort(clustered, new Comparator<Pair<Double, Double>>() 
