@@ -5,10 +5,12 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Set;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Vector;
 
@@ -43,15 +45,24 @@ import at.tugraz.genome.lda.vos.QuantVO;
 public class SILDA_Analysis
 {
 //	private static final String TARGET_LIST_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\recalibration\\SILDA_5.xlsx";
-	private static final String TARGET_LIST_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\analyzedTL\\SILDA_7_analyzed.xlsx";
-	private static final String OUT_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\analyzedTL\\SILDA_7_FA_count.xlsx";
+//	private static final String TARGET_LIST_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\analyzedTL\\SILDA_7_analyzed.xlsx";
+//	private static final String OUT_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\analyzedTL\\SILDA_7_FA_count.xlsx";
+	private static final String TARGET_LIST_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min_final\\SILDA_30min.xlsx";
+	private static final String OUT_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min_final\\TL_analysis\\SILDA_30min_count.xlsx";
 	
+	private final static int TOTALS_ROW = 0;
 	private final static int HEADER_ROW = 1;
+	private final static String HEADER_UNIQUE_MOL = "Unique molecular species with assigned C=C positions";
 	private final static String HEADER_ALL_MOL = "All molecular species with assigned C=C positions";
   private final static String HEADER_ALL_FA = "All FA with assigned C=C positions";
 	
+  public static void main(String[] args)
+  {
+  	analyseTargetList();
+  }
+  
 	@SuppressWarnings("unchecked")
-	public void analyseTargetList()
+	public static void analyseTargetList()
 	{
 		
 		try (	BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(OUT_PATH));
@@ -59,8 +70,8 @@ public class SILDA_Analysis
 		{
 			Vector<?> quantInfo = QuantificationThread.getCorrectAnalyteSequence(TARGET_LIST_PATH,false);
 			LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)quantInfo.get(0);
-			Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)quantInfo.get(1);
-			Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(3);
+			LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantInfo.get(1);
+			Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(4);
 			
 			XSSFCellStyle headerStyle = getHeaderStyle(workbook); 
 			Set<Integer> allDoubleBondPositions = new HashSet<Integer>();
@@ -128,7 +139,7 @@ public class SILDA_Analysis
 		}
 	}
 	
-	private void writeMolecularSpecieswithDB(Sheet sheet, XSSFCellStyle headerStyle, Hashtable<String, Vector<DoubleBondPositionVO>> allDoubleBondPositionVOsForClass, int doubleBondPosition)
+	private static void writeMolecularSpecieswithDB(Sheet sheet, XSSFCellStyle headerStyle, Hashtable<String, Vector<DoubleBondPositionVO>> allDoubleBondPositionVOsForClass, int doubleBondPosition)
 	{
 		Hashtable <String, Vector<DoubleBondPositionVO>> doubleBondPositionVOsForClass = new Hashtable <String, Vector<DoubleBondPositionVO>>();
 		for (String cName : allDoubleBondPositionVOsForClass.keySet())
@@ -146,7 +157,7 @@ public class SILDA_Analysis
 		writeAllMolecularSpeciesForClass(sheet, headerStyle, doubleBondPositionVOsForClass);
 	}
 	
-	private void writeFAwithDB(Sheet sheet, XSSFCellStyle headerStyle, Hashtable<String, Vector<String>> allFAwithDBPositionsForClass, int doubleBondPosition)
+	private static void writeFAwithDB(Sheet sheet, XSSFCellStyle headerStyle, Hashtable<String, Vector<String>> allFAwithDBPositionsForClass, int doubleBondPosition)
 	{
 		Hashtable <String, Vector<String>> allFAwithDBPositionForClass = new Hashtable <String, Vector<String>>();
 		for (String cName : allFAwithDBPositionsForClass.keySet())
@@ -164,13 +175,17 @@ public class SILDA_Analysis
 		writeAllFAForClass(sheet, headerStyle, allFAwithDBPositionForClass);
 	}
 	
-	private void writeAllFAForClass(Sheet sheet, XSSFCellStyle headerStyle, Hashtable<String, Vector<String>> allFAwithDBPositionsForClass)
+	private static void writeAllFAForClass(Sheet sheet, XSSFCellStyle headerStyle, Hashtable<String, Vector<String>> allFAwithDBPositionsForClass)
 	{
 		List<String> headerTitles = new ArrayList<String>();
 		
-		for (String cName : allFAwithDBPositionsForClass.keySet())
+		ArrayList<String> classes = new ArrayList<String>(allFAwithDBPositionsForClass.keySet());
+		Collections.sort(classes);
+		for (String cName : classes)
 		{
-			Set<String> uniqueFAs = new HashSet<String>(allFAwithDBPositionsForClass.get(cName));
+			Vector<String> fas = allFAwithDBPositionsForClass.get(cName);
+			Collections.sort(fas);
+			Set<String> uniqueFAs = new LinkedHashSet<String>(fas);
 			headerTitles.add(cName);
 			
 			int rowCount = HEADER_ROW+1;
@@ -190,9 +205,10 @@ public class SILDA_Analysis
 		createHeader(sheet, headerTitles, headerStyle);
 	}
 	
-	private void writeAllFA(Sheet sheet, XSSFCellStyle headerStyle, Vector<String> allFAwithDBPositions, Set<Integer> allDoubleBondPositions)
+	private static void writeAllFA(Sheet sheet, XSSFCellStyle headerStyle, Vector<String> allFAwithDBPositions, Set<Integer> allDoubleBondPositions)
 	{
-		Set<String> uniqueFAs = new HashSet<String>(allFAwithDBPositions);
+		Collections.sort(allFAwithDBPositions);
+		Set<String> uniqueFAs = new LinkedHashSet<String>(allFAwithDBPositions);
 		List<String> headerTitles = new ArrayList<String>();
 		List<Integer> countsForDB = new ArrayList<Integer>();
 		headerTitles.add(HEADER_ALL_FA);
@@ -205,6 +221,8 @@ public class SILDA_Analysis
 		}
 		
 		createHeader(sheet, headerTitles, headerStyle);
+		
+		sheet.setColumnWidth(headerTitles.indexOf(HEADER_ALL_FA), 75 * 256);
 		
 		for (String fa : uniqueFAs)
 		{
@@ -221,29 +239,48 @@ public class SILDA_Analysis
 		}
 	}
 	
-	private void writeAllMolecularSpeciesForClass(Sheet sheet, XSSFCellStyle headerStyle, Hashtable<String, Vector<DoubleBondPositionVO>> allDoubleBondPositionVOsForClass)
+	private static void writeAllMolecularSpeciesForClass(Sheet sheet, XSSFCellStyle headerStyle, Hashtable<String, Vector<DoubleBondPositionVO>> allDoubleBondPositionVOsForClass)
 	{
 		List<String> headerTitles = new ArrayList<String>();
 		
-		for (String cName : allDoubleBondPositionVOsForClass.keySet())
+		ArrayList<String> classes = new ArrayList<String>(allDoubleBondPositionVOsForClass.keySet());
+		Collections.sort(classes);
+		
+		Row row = sheet.createRow(TOTALS_ROW);
+		for (String cName : classes)
 		{
-			Set<String> uniqueNames = new HashSet<String>();
+			Set<String> uniqueNames = new LinkedHashSet<String>();
+			Hashtable<String, ArrayList<DoubleBondPositionVO>> toRemoveLookup = new Hashtable<String, ArrayList<DoubleBondPositionVO>>();
 			Vector<DoubleBondPositionVO> vos = allDoubleBondPositionVOsForClass.get(cName);
+			Collections.sort(vos);
 			for (DoubleBondPositionVO vo : vos)
 			{
+				String id = vo.getEncodedDetailed(true, false);
+				if (!toRemoveLookup.containsKey(id))
+				{
+					toRemoveLookup.put(id, new ArrayList<DoubleBondPositionVO>());
+				}
 				uniqueNames.add(vo.getDoubleBondPositionsHumanReadable());
+				toRemoveLookup.get(id).add(vo);
 			}
-
+			
+			ArrayList<String> uniqueNamesList = removeSpeciesWithLessOmegaInfo(toRemoveLookup, uniqueNames);
+			
 			headerTitles.add(cName);
+			
+			row = sheet.getRow(TOTALS_ROW);
+			Cell cell = row.createCell(headerTitles.indexOf(cName),HSSFCell.CELL_TYPE_STRING);
+			cell.setCellValue(String.format("Total: %s", uniqueNamesList.size()));
+			
 			int rowCount = HEADER_ROW+1;
-			for (String name : uniqueNames)
+			for (String name : uniqueNamesList)
 			{
-				Row row = sheet.getRow(rowCount);
+				row = sheet.getRow(rowCount);
 				if (row == null)
 				{
 					row = sheet.createRow(rowCount);
 				}
-				Cell cell = row.createCell(headerTitles.indexOf(cName),HSSFCell.CELL_TYPE_STRING);
+				cell = row.createCell(headerTitles.indexOf(cName),HSSFCell.CELL_TYPE_STRING);
         cell.setCellValue(name);
         rowCount++;
 			}
@@ -252,32 +289,116 @@ public class SILDA_Analysis
 		createHeader(sheet, headerTitles, headerStyle);
 	}
 	
-	private void writeAllMolecularSpecies(Sheet sheet, XSSFCellStyle headerStyle, Hashtable<String, Vector<DoubleBondPositionVO>> allDoubleBondPositionVOsForClass)
+	private static void writeAllMolecularSpecies(Sheet sheet, XSSFCellStyle headerStyle, Hashtable<String, Vector<DoubleBondPositionVO>> allDoubleBondPositionVOsForClass)
 	{
 		List<String> headerTitles = new ArrayList<String>();
 		headerTitles.add(HEADER_ALL_MOL);
+		headerTitles.add(HEADER_UNIQUE_MOL);
 		
 		createHeader(sheet, headerTitles, headerStyle);
 		
+		sheet.setColumnWidth(headerTitles.indexOf(HEADER_ALL_MOL), 75 * 256);
+		sheet.setColumnWidth(headerTitles.indexOf(HEADER_UNIQUE_MOL), 75 * 256);
+		
+		Integer countAll = 0;
+		Integer countUnique = 0;
+		
 		int rowCount = HEADER_ROW+1;
-		for (String cName : allDoubleBondPositionVOsForClass.keySet())
+		ArrayList<String> classes = new ArrayList<String>(allDoubleBondPositionVOsForClass.keySet());
+		Collections.sort(classes);
+		for (String cName : classes)
 		{
+			Set<String> uniqueNames = new LinkedHashSet<String>();
+			Hashtable<String, ArrayList<DoubleBondPositionVO>> toRemoveLookup = new Hashtable<String, ArrayList<DoubleBondPositionVO>>();
+			ArrayList<String> allNames = new ArrayList<String>();
 			Vector<DoubleBondPositionVO> vos = allDoubleBondPositionVOsForClass.get(cName);
-			if (cName.contains("-"))
+			Collections.sort(vos);
+			for (DoubleBondPositionVO vo : vos)
+			{
+				String id = vo.getEncodedDetailed(true, false);
+				if (!toRemoveLookup.containsKey(id))
+				{
+					toRemoveLookup.put(id, new ArrayList<DoubleBondPositionVO>());
+				}
+				uniqueNames.add(vo.getDoubleBondPositionsHumanReadable());
+				allNames.add(vo.getDoubleBondPositionsHumanReadable());
+				toRemoveLookup.get(id).add(vo);
+			}
+			
+			ArrayList<String> uniqueNamesList = removeSpeciesWithLessOmegaInfo(toRemoveLookup, uniqueNames);
+			countAll += allNames.size();
+			countUnique += uniqueNamesList.size();
+			
+			if (cName.contains("-")) // O- or P- prefix is part of the mol species name
 			{
 				cName = cName.substring(cName.indexOf("-")+1);
 			}
-			for (DoubleBondPositionVO vo : vos)
+			
+			for (int i=0; i<allNames.size(); i++)
 			{
 				Row row = sheet.createRow(rowCount);
 				Cell cell = row.createCell(headerTitles.indexOf(HEADER_ALL_MOL),HSSFCell.CELL_TYPE_STRING);
-	      cell.setCellValue(String.format("%s %s", cName, vo.getDoubleBondPositionsHumanReadable()));
+	      cell.setCellValue(String.format("%s %s", cName, allNames.get(i)));
+	      if (i<uniqueNamesList.size())
+	      {
+	      	cell = row.createCell(headerTitles.indexOf(HEADER_UNIQUE_MOL),HSSFCell.CELL_TYPE_STRING);
+	        cell.setCellValue(String.format("%s %s", cName, uniqueNamesList.get(i)));
+	      }
 	      rowCount++;
 			}
 		}
+		
+		Row row = sheet.createRow(TOTALS_ROW);
+		Cell cell = row.createCell(headerTitles.indexOf(HEADER_ALL_MOL),HSSFCell.CELL_TYPE_STRING);
+		cell.setCellValue(String.format("Total: %s", countAll));
+		cell = row.createCell(headerTitles.indexOf(HEADER_UNIQUE_MOL),HSSFCell.CELL_TYPE_STRING);
+		cell.setCellValue(String.format("Total: %s", countUnique));
 	}
 	
-	private Vector<Integer> collectDoubleBondPositions(Vector<DoubleBondPositionVO> vos)
+	/** 
+	 * This method removes VOs which have a matching partner with more assigned C=C positions for the count.
+	 * @param toRemoveLookup
+	 * @param uniqueNames
+	 * @return
+	 */
+	private static ArrayList<String> removeSpeciesWithLessOmegaInfo(Hashtable<String, ArrayList<DoubleBondPositionVO>> toRemoveLookup, Set<String> uniqueNames)
+	{
+		ArrayList<String> uniqueNamesList = new ArrayList<String>(uniqueNames);
+		
+		for (String id : toRemoveLookup.keySet())
+		{
+			ArrayList<DoubleBondPositionVO> vosOfSameMolSpecies = toRemoveLookup.get(id);
+			Set<Vector<Integer>> patterns = new HashSet<Vector<Integer>>();
+			for (DoubleBondPositionVO vo : vosOfSameMolSpecies)
+			{
+				Vector<Integer> pattern = vo.getPositionAssignmentPattern();
+				if (!pattern.contains(-1)) //add only fully assigned species
+				{
+					patterns.add(vo.getPositionAssignmentPattern());
+				}
+			}
+			for (DoubleBondPositionVO vo : vosOfSameMolSpecies)
+			{
+				Vector<Integer> pattern = vo.getPositionAssignmentPattern();
+				if (pattern.contains(-1))
+				{
+					for (Vector<Integer> fullyAssigned : patterns)
+					{
+						for (int i=0; i<fullyAssigned.size();i++)
+						{
+							if (!pattern.get(i).equals(-1) && pattern.get(i).equals(fullyAssigned.get(i))) //I rely on the fact, that the FA in the string are sorted.
+							{
+								uniqueNamesList.remove(vo.getDoubleBondPositionsHumanReadable());
+							}
+						}
+					}
+				}
+			}
+		}
+		return uniqueNamesList;
+	}
+	
+	private static Vector<Integer> collectDoubleBondPositions(Vector<DoubleBondPositionVO> vos)
 	{
 		Vector<Integer> dbs = new Vector<Integer>();
 		for (DoubleBondPositionVO vo : vos)
@@ -293,7 +414,7 @@ public class SILDA_Analysis
 		return dbs;
 	}
 	
-	private Vector<String> collectFAwithDBPositions(Vector<DoubleBondPositionVO> vos) throws LipidCombinameEncodingException
+	private static Vector<String> collectFAwithDBPositions(Vector<DoubleBondPositionVO> vos) throws LipidCombinameEncodingException
 	{
 		Vector<String> fattyAcidsWithDoubleBondPositions = new Vector<String>();
 		for (DoubleBondPositionVO vo : vos)
@@ -320,11 +441,13 @@ public class SILDA_Analysis
   {
   	Row row = sheet.createRow(HEADER_ROW);
   	Cell cell;
+  	
   	for (int i=0; i<headerTitles.size(); i++) 
   	{
   		cell = row.createCell(i, HSSFCell.CELL_TYPE_STRING);
   		cell.setCellValue(headerTitles.get(i));
   		cell.setCellStyle(headerStyle);
+  		sheet.setColumnWidth(i, 20 * 256);
   	}
   }
 	

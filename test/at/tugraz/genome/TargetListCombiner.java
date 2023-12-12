@@ -28,11 +28,11 @@ import javafx.util.Pair;
 
 public class TargetListCombiner
 {
-	static String outPath_ = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison_Grad_Adj_Final\\Combined_30min\\SILDA_30min_autoCombined.xlsx";
-	static String inPath_SILDA_I_a_ = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison_Grad_Adj_Final\\Combined_30min\\SILDA_I_a_to_II_b.xlsx";
-	static String inPath_SILDA_II_a_ = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison_Grad_Adj_Final\\Combined_30min\\SILDA_II_a_to_II_b.xlsx";
-	static String inPath_SILDA_II_b_ = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison_Grad_Adj_Final\\Combined_30min\\SILDA_II_b.xlsx";
-	static String inPath_SILDA_60min_ = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison_Grad_Adj_Final\\Combined_30min\\SILDA_60min_to_II_b.xlsx";
+	static String outPath_ = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison_Grad_Adj_Final\\Combined_30min_new\\SILDA_30min_autoCombined.xlsx";
+	static String inPath_SILDA_I_a_ = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison_Grad_Adj_Final\\Combined_30min_new\\SILDA_I_a_to_II_b.xlsx";
+	static String inPath_SILDA_II_a_ = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison_Grad_Adj_Final\\Combined_30min_new\\SILDA_II_a_to_II_b.xlsx";
+	static String inPath_SILDA_II_b_ = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison_Grad_Adj_Final\\Combined_30min_new\\SILDA_II_b.xlsx";
+	static String inPath_SILDA_60min_ = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison_Grad_Adj_Final\\Combined_30min_new\\SILDA_60min_to_II_b.xlsx";
 	static Double rtCutoff_ = 0.1;
 	static Double rtCutoff60min_ = 0.15;
 	private final static String FOUND_IN = "Found in:";

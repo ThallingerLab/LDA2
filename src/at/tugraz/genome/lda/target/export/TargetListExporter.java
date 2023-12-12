@@ -1252,6 +1252,8 @@ public class TargetListExporter
 	          cell.setCellValue(originalRT-targetRT);
 	          cell = row.createCell(6,HSSFCell.CELL_TYPE_NUMERIC);
 	          cell.setCellValue(rtError);
+	          cell = row.createCell(7,HSSFCell.CELL_TYPE_NUMERIC);
+	          cell.setCellValue(Math.abs(rtError));
 	          rowCount++;
 		    	}
 		    }
@@ -1268,16 +1270,30 @@ public class TargetListExporter
   private void createBeforeAfterTitle(Sheet sheet)
   {
   	Row row = sheet.createRow(0);
-    Cell cell = row.createCell(2,HSSFCell.CELL_TYPE_STRING);
+  	Cell cell = row.createCell(0,HSSFCell.CELL_TYPE_STRING);
+    cell.setCellValue("Lipid Class");
+    sheet.setColumnWidth(0, 10 * 256);
+    cell = row.createCell(1,HSSFCell.CELL_TYPE_STRING);
+    cell.setCellValue("Lipid Molecular Species");
+    sheet.setColumnWidth(1, 25 * 256);
+    cell = row.createCell(2,HSSFCell.CELL_TYPE_STRING);
     cell.setCellValue("Target DB");
+    sheet.setColumnWidth(2, 15 * 256);
     cell = row.createCell(3,HSSFCell.CELL_TYPE_STRING);
     cell.setCellValue("Original DB");
+    sheet.setColumnWidth(3, 15 * 256);
     cell = row.createCell(4,HSSFCell.CELL_TYPE_STRING);
     cell.setCellValue("Recalibrated DB");
+    sheet.setColumnWidth(4, 15 * 256);
     cell = row.createCell(5,HSSFCell.CELL_TYPE_STRING);
-    cell.setCellValue("RT differences (original vs target)");
+    cell.setCellValue("RT differences (original - target)");
+    sheet.setColumnWidth(5, 15 * 256);
     cell = row.createCell(6,HSSFCell.CELL_TYPE_STRING);
     cell.setCellValue("RT error");
+    sheet.setColumnWidth(6, 15 * 256);
+    cell = row.createCell(7,HSSFCell.CELL_TYPE_STRING);
+    cell.setCellValue("Abs RT error");
+    sheet.setColumnWidth(7, 15 * 256);
   }
   
   

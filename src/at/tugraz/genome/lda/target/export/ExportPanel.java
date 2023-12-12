@@ -237,8 +237,8 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 			exporter_.export(templatePath, this);
 			//TODO: this is to create figures to compare target lists; remove after
 //			exporter_.exportBeforeAfter(
-//					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\SILDA_II_b.xlsx",
-//					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison_Grad_Adj_Final\\SILDA_60_min_II_b\\comparison_SILDA_60min_to_II_b_sep.xlsx"); 
+//					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min_final\\SILDA_I_a.xlsx",
+//					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min_final\\Recalibrations\\SILDA_60min_I_a\\comparison_SILDA_60min_to_I_a_separate_classes_774_DP.xlsx"); 
 		}
 		catch (Exception ex)
 		{
