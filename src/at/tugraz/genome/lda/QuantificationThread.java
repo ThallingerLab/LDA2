@@ -1648,7 +1648,7 @@ public class QuantificationThread extends Thread
     //deconvoluting the Hashtables
     for (String className : classSequence.keySet()){
       Hashtable<String,Hashtable<String,QuantVO>> classQuant = quantObjects.get(className);
-      Vector<LipidParameterSet> lipidParameterSet = correctedParams.get(className);
+      Vector<LipidParameterSet> setsOfClass = correctedParams.get(className);
       for (String analyteName : analyteSequence.get(className)){
         Hashtable<String,QuantVO> analyteQuant = classQuant.get(analyteName);
         for (String mod : analyteQuant.keySet()){
@@ -1656,14 +1656,14 @@ public class QuantificationThread extends Thread
           if (!infoForOmegaAssignment.isEmpty()) {
             try {
               if (Integer.parseInt(RulesContainer.getAmountOfChains(StaticUtils.getRuleName(className, mod))) < 2) {
-                addOmegaInformationToParameterSets(lipidParameterSet,analyteName,infoForOmegaAssignment,false);
+                addOmegaInformationToParameterSets(setsOfClass,analyteName,infoForOmegaAssignment,false);
               } 
             } catch (RulesException | NoRuleException | IOException | SpectrummillParserException ex) {
               System.out.println(ex.getMessage());
             }
 
             //add omega info to species requiring MSn evidence
-            addOmegaInformationToParameterSets(lipidParameterSet,analyteName,infoForOmegaAssignment,true);
+            addOmegaInformationToParameterSets(setsOfClass,analyteName,infoForOmegaAssignment,true);
           }
         }
       }
@@ -1691,7 +1691,9 @@ public class QuantificationThread extends Thread
           
           Iterator<DoubleBondPositionVO> it = infoForOmegaAssignment.iterator();
           while(it.hasNext()) {
-            DoubleBondPositionVO doubleBondPositionVO = it.next();
+          	//creating a deep copy to avoid unwanted side effects.
+            DoubleBondPositionVO doubleBondPositionVO = new DoubleBondPositionVO(it.next());
+            
             float expectedRetentionTime = doubleBondPositionVO.getExpectedRetentionTime();
             if (peakLimits.insideRange(expectedRetentionTime)) {
               if (mediumAccuracy.insideRange(expectedRetentionTime)) doubleBondPositionVO.setAccuracy(1);

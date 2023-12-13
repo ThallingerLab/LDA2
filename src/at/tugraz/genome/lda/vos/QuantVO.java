@@ -244,14 +244,18 @@ public class QuantVO implements Comparable<QuantVO>
    * @param labeledSpeciesVO Value object of the potential molecular species with omega assignment
    */
   public void addInfoForOmegaAssignment(DoubleBondPositionVO labeledSpeciesVO) {
-    this.infoForOmegaAssignment_.add(labeledSpeciesVO);
+  	DoubleBondPositionVO deepCopy = new DoubleBondPositionVO(labeledSpeciesVO);
+    this.infoForOmegaAssignment_.add(deepCopy);
   }
   
   /**
    * @param labeledSpeciesVO Container with objects for potential molecular species with omega assignment
    */
   public void setInfoForOmegaAssignment(Vector<DoubleBondPositionVO> infoForOmegaAssignment) {
-    this.infoForOmegaAssignment_ = infoForOmegaAssignment;
+  	for (DoubleBondPositionVO vo : infoForOmegaAssignment)
+  	{
+  		this.addInfoForOmegaAssignment(vo);
+  	}
   }
   
   /**

@@ -813,6 +813,7 @@ public class QuantificationResultExporter
       ws.value(row, headerTitles.indexOf(HEADER_MOLECULAR_SPECIES), doubleBondPositionVO.getMolecularSpecies());
       ws.value(row, headerTitles.indexOf(HEADER_DOUBLE_BOND_POSITION_LEVEL), doubleBondPositionVO.getDoubleBondPositionsHumanReadable());
       ws.value(row, headerTitles.indexOf(HEADER_EXPECTED_RT), doubleBondPositionVO.getExpectedRetentionTime());
+      ws.style(row, headerTitles.indexOf(HEADER_EXPECTED_RT)).format("0.00").set();
       ws.value(row, headerTitles.indexOf(HEADER_ACCURACY), doubleBondPositionVO.getAccuracy());
       ws.value(row, headerTitles.indexOf(HEADER_ASSIGNED), doubleBondPositionVO.getIsAssigned());
       row++;
