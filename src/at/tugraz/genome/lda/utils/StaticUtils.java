@@ -324,7 +324,7 @@ public class StaticUtils
     }
   }
 
-  private static void addExcelLabel(CellStyle  cellStyle, Row row, int columnCount, String toAdd){
+  public static void addExcelLabel(CellStyle  cellStyle, Row row, int columnCount, String toAdd){
     Cell label = row.createCell(columnCount,Cell.CELL_TYPE_STRING);
     label.setCellValue(toAdd);
     if (cellStyle!=null)
@@ -2731,6 +2731,16 @@ public class StaticUtils
     return combi.toString();
   }
   
+  /**
+   * Determines low, medium and high confidence peak ranges of @param. 
+   * First, the lower distance from the peak maximum to the lower and upper border is determined.
+   * The medium accuracy cutoff is 2/3 of the shorter distance.
+   * The high accuracy cutoff is 1/3 of the shorter distance.
+   * Beyond 2/3 of the shorter distance, but within the range of the peak is the low accuracy cutoff.
+   * The User provided value for the minimum threshold for high confidence RT matches overrides these predefined cutoffs.
+   * @param param
+   * @return
+   */
   public static Range[] determinePeakRanges(LipidParameterSet param) {
     float lowerValley = param.getIsotopicProbes().get(0).get(0).LowerValley;
     float upperValley = param.getIsotopicProbes().get(0).get(0).UpperValley;
@@ -2741,11 +2751,11 @@ public class StaticUtils
     float mediumAccuracyCutoff = shorterDistance/n*2;
     float highAccuracyCutoff = shorterDistance/n;
     if (shorterDistance < minimumThreshold*n) { 
+    	highAccuracyCutoff = minimumThreshold;
       if (shorterDistance > minimumThreshold) {
         mediumAccuracyCutoff = shorterDistance;
-        highAccuracyCutoff = minimumThreshold;
       } else {
-        highAccuracyCutoff = shorterDistance;
+      	mediumAccuracyCutoff = minimumThreshold;
       }
     }
     Range[] peakRanges = new Range[3];
