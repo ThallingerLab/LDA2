@@ -47,7 +47,7 @@ public class SILDA_Analysis
 //	private static final String TARGET_LIST_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\recalibration\\SILDA_5.xlsx";
 //	private static final String TARGET_LIST_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\analyzedTL\\SILDA_7_analyzed.xlsx";
 //	private static final String OUT_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\analyzedTL\\SILDA_7_FA_count.xlsx";
-	private static final String TARGET_LIST_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min_final\\SILDA_30min.xlsx";
+	private static final String TARGET_LIST_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min_final\\final_TL\\SILDA_30min.xlsx";
 	private static final String OUT_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min_final\\TL_analysis\\SILDA_30min_count.xlsx";
 	
 	private final static int TOTALS_ROW = 0;

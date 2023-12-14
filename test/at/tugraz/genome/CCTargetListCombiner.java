@@ -26,7 +26,7 @@ import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.lda.vos.QuantVO;
 import javafx.util.Pair;
 
-public class TargetListCombiner
+public class CCTargetListCombiner
 {
 	static String outPath_ = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison_Grad_Adj_Final\\Combined_30min_new\\SILDA_30min_autoCombined.xlsx";
 	static String inPath_SILDA_I_a_ = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min\\TL\\Recalibration\\Recalibration_Comparison_Grad_Adj_Final\\Combined_30min_new\\SILDA_I_a_to_II_b.xlsx";
