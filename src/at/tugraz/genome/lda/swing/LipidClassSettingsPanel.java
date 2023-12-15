@@ -30,9 +30,12 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Hashtable;
 import java.util.Set;
+import java.util.Vector;
 
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 
@@ -58,6 +61,7 @@ public class LipidClassSettingsPanel extends JPanel implements ActionListener,St
   private JCheckBox allSettingsSame_;
   private JTabbedPane experimentTabs_;
   private JCheckBox allStandardsSame_;
+  private JComboBox<String> alternativeClasses_;
   
   private String className_;
   private ComparativeNameExtractor extractor_;
@@ -77,39 +81,66 @@ public class LipidClassSettingsPanel extends JPanel implements ActionListener,St
     this.initComponents();
   }
   
-  private void initComponents(){
-    this.setLayout(new GridBagLayout());
-    allSettingsSame_  = new JCheckBox("use same settings for all experiments");
-    allSettingsSame_.setSelected(true);
-    allSettingsSame_.setActionCommand(CHANGE_IS_STATUS);
-    allSettingsSame_.addActionListener(this);
-    allSettingsSame_.setToolTipText(TooltipTexts.STATISTICS_ABS_STANDARDS_EXPS_SAME);
-    this.add(allSettingsSame_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
-    allStandardsSame_  = new JCheckBox("use same settings for all standards");
-    allStandardsSame_.setSelected(true);
-    allStandardsSame_.setActionCommand(CHANGE_STAND_STATUS);
-    allStandardsSame_.addActionListener(this);
-    allStandardsSame_.setToolTipText(TooltipTexts.STATISTICS_ABS_STANDARDS_STDS_SAME);
-    this.add(allStandardsSame_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
-
-    generalSettingsPanel_ = new StandardsSettingsPanel(null,extractor_.getISNames(className_),extractor_.getESNames(className_),this);
-    this.add(generalSettingsPanel_,new GridBagConstraints(0, 1, 4, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
-    experimentTabs_ = new JTabbedPane();
-    this.add(experimentTabs_,new GridBagConstraints(0, 2, 4, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
-    standardsSettings_ = new Hashtable<String,StandardsSettingsPanel>();
-    int count = 0;
-    for (String expName : this.extractor_.getExpNamesInSequence()){
-      StandardsSettingsPanel expStandSettings = new StandardsSettingsPanel(expName,extractor_.getISNames(className_),extractor_.getESNames(className_),this);
-      standardsSettings_.put(expName, expStandSettings);
-      experimentTabs_.addTab(extractor_.getExpNames().get(expName),expStandSettings);
-      experimentTabs_.setToolTipTextAt(count, TooltipTexts.STATISTICS_ABS_STANDARDS_TAB_EXP+expName+"</html>");
-      count++;
+  private void initComponents()
+  {
+  	Vector<String> isNames = extractor_.getISNames(className_);
+    Vector<String> esNames = extractor_.getESNames(className_);
+  	
+  	if (isNames.isEmpty() && esNames.isEmpty())
+    {
+    	JLabel label1 = new JLabel("No standards were detected for this lipid class.");
+    	this.add(label1,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+          ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    	JLabel label2 = new JLabel("You may choose to use standards from another class: ");
+    	this.add(label2,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+          ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+    	alternativeClasses_ = new JComboBox<String>(extractor_.getAllClassNames());
+      alternativeClasses_.setSelectedItem(className_);
+      this.add(alternativeClasses_,new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0
+          ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+      
+      standardsSettings_ = new Hashtable<String,StandardsSettingsPanel>();
+      for (String expName : this.extractor_.getExpNamesInSequence()){
+        StandardsSettingsPanel expStandSettings = new StandardsSettingsPanel(expName,isNames,esNames,this);
+        standardsSettings_.put(expName, expStandSettings);
+      }
     }
-    experimentTabs_.setVisible(false);
+  	else
+  	{
+  		this.setLayout(new GridBagLayout());
+      allSettingsSame_  = new JCheckBox("use same settings for all experiments");
+      allSettingsSame_.setSelected(true);
+      allSettingsSame_.setActionCommand(CHANGE_IS_STATUS);
+      allSettingsSame_.addActionListener(this);
+      allSettingsSame_.setToolTipText(TooltipTexts.STATISTICS_ABS_STANDARDS_EXPS_SAME);
+      this.add(allSettingsSame_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+          ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+      allStandardsSame_  = new JCheckBox("use same settings for all standards");
+      allStandardsSame_.setSelected(true);
+      allStandardsSame_.setActionCommand(CHANGE_STAND_STATUS);
+      allStandardsSame_.addActionListener(this);
+      allStandardsSame_.setToolTipText(TooltipTexts.STATISTICS_ABS_STANDARDS_STDS_SAME);
+      this.add(allStandardsSame_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+          ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+
+      generalSettingsPanel_ = new StandardsSettingsPanel(null,isNames,esNames,this);
+      this.add(generalSettingsPanel_,new GridBagConstraints(0, 1, 4, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+      experimentTabs_ = new JTabbedPane();
+      this.add(experimentTabs_,new GridBagConstraints(0, 2, 4, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+      standardsSettings_ = new Hashtable<String,StandardsSettingsPanel>();
+      int count = 0;
+      for (String expName : this.extractor_.getExpNamesInSequence()){
+        StandardsSettingsPanel expStandSettings = new StandardsSettingsPanel(expName,isNames,esNames,this);
+        standardsSettings_.put(expName, expStandSettings);
+        experimentTabs_.addTab(extractor_.getExpNames().get(expName),expStandSettings);
+        experimentTabs_.setToolTipTextAt(count, TooltipTexts.STATISTICS_ABS_STANDARDS_TAB_EXP+expName+"</html>");
+        count++;
+      }
+      experimentTabs_.setVisible(false);
+  	}
+    
   }
 
   public void actionPerformed(ActionEvent e)
@@ -205,11 +236,23 @@ public class LipidClassSettingsPanel extends JPanel implements ActionListener,St
   public void cleanSettings(){
     oneTimeExpCopied_ = false;
     oneTimeStandCopied_ = false;
-    allSettingsSame_.setSelected(true);
-    allStandardsSame_.setSelected(true);
-    generalSettingsPanel_.setVisible(true);
-    experimentTabs_.setVisible(false);
-    generalSettingsPanel_.cleanSettings();
+    if (allSettingsSame_ != null)
+    {
+    	allSettingsSame_.setSelected(true);
+    }
+    if (allStandardsSame_ != null)
+    {
+    	allStandardsSame_.setSelected(true);
+    }
+    if (generalSettingsPanel_ != null)
+    {
+    	generalSettingsPanel_.setVisible(true);
+    	generalSettingsPanel_.cleanSettings();
+    }
+    if (experimentTabs_ != null)
+    {
+    	experimentTabs_.setVisible(false);
+    }
     for (StandardsSettingsPanel standSets : standardsSettings_.values())
       standSets.cleanSettings();
   }
@@ -220,7 +263,7 @@ public class LipidClassSettingsPanel extends JPanel implements ActionListener,St
     Hashtable<String,Hashtable<String,VolumeConcVO>> isStandards = new Hashtable<String,Hashtable<String,VolumeConcVO>>();
     for (String expName : standardsSettings_.keySet()){
       String valueString = null;
-      if (allSettingsSame_.isSelected())
+      if (allSettingsSame_ != null && allSettingsSame_.isSelected())
         valueString = generalSettingsPanel_.getDilutionFactor().getText();
       else
         valueString = standardsSettings_.get(expName).getDilutionFactor().getText();
@@ -233,22 +276,25 @@ public class LipidClassSettingsPanel extends JPanel implements ActionListener,St
       dilutionFactors.put(expName, value);
     }
     for (String expName : standardsSettings_.keySet()){
-      for (String esName : generalSettingsPanel_.getExtVolumeSettings().keySet()){
-        Hashtable<String,VolumeConcVO> expsHash = new Hashtable<String,VolumeConcVO>();
-        if (esStandards.containsKey(esName))
-          expsHash = esStandards.get(esName);
-        VolumeConcVO value = getVolConcVO(expName, esName, false);
-        expsHash.put(expName, value);
-        esStandards.put(esName, expsHash);
-      }
-      for (String isName : generalSettingsPanel_.getIntVolumeSettings().keySet()){
-        Hashtable<String,VolumeConcVO> expsHash = new Hashtable<String,VolumeConcVO>();
-        if (isStandards.containsKey(isName))
-          expsHash = isStandards.get(isName);
-        VolumeConcVO value = this.getVolConcVO(expName, isName, true);
-        expsHash.put(expName, value);
-        isStandards.put(isName, expsHash);
-      }
+    	if (generalSettingsPanel_ != null)
+    	{
+    		for (String esName : generalSettingsPanel_.getExtVolumeSettings().keySet()){
+          Hashtable<String,VolumeConcVO> expsHash = new Hashtable<String,VolumeConcVO>();
+          if (esStandards.containsKey(esName))
+            expsHash = esStandards.get(esName);
+          VolumeConcVO value = getVolConcVO(expName, esName, false);
+          expsHash.put(expName, value);
+          esStandards.put(esName, expsHash);
+        }
+        for (String isName : generalSettingsPanel_.getIntVolumeSettings().keySet()){
+          Hashtable<String,VolumeConcVO> expsHash = new Hashtable<String,VolumeConcVO>();
+          if (isStandards.containsKey(isName))
+            expsHash = isStandards.get(isName);
+          VolumeConcVO value = this.getVolConcVO(expName, isName, true);
+          expsHash.put(expName, value);
+          isStandards.put(isName, expsHash);
+        }
+    	}
     }
     return new LipidClassSettingVO(dilutionFactors,esStandards,isStandards);
   }
@@ -284,6 +330,21 @@ public class LipidClassSettingsPanel extends JPanel implements ActionListener,St
       }
     }
     return value;
+  }
+  
+  public String getChosenClass()
+  {
+  	if (alternativeClasses_ == null)
+  	{
+  		return className_;
+  	}
+  	return (String)alternativeClasses_.getSelectedItem();
+  }
+  
+  public boolean areStandardsAvailable()
+  {
+    return 	!extractor_.getISNames(className_).isEmpty() || 
+    				!extractor_.getESNames(className_).isEmpty();
   }
    
 }

@@ -311,7 +311,8 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
   private void extractStandardVOsFromResults(Hashtable<String,Hashtable<String,Hashtable<String,ResultAreaVO>>> standResults,
       Hashtable<String,Hashtable<String,String>> standNames, String selectionPrefix){
     for (String molGroupName : allResults_.keySet()){
-      Hashtable<String,Vector<ResultAreaVO>> resultsMoleculeGroup = allResults_.get(molGroupName);
+    	String chosenGroupForStandards = absSetting_.getChosenClass(molGroupName);
+      Hashtable<String,Vector<ResultAreaVO>> resultsMoleculeGroup = allResults_.get(chosenGroupForStandards);
       Hashtable<String,Hashtable<String,ResultAreaVO>> isResultOfOneGroup = new Hashtable<String,Hashtable<String,ResultAreaVO>>();
       Hashtable<String,String> isOfOneMolGroup = new Hashtable<String,String>();
       int highestIsoValue = 0;
@@ -1631,68 +1632,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
         allMoleculeNames_.put(groupName,correctOrder);
       }
     }
-    
-    
-    //TODO: remove this code when the alternative isoLabel algorithm is finalized.
-//    this.extractPotentialIsotopicLabels();
-//    // with this the order is brought into the one of the original input file
-//    if (correctAnalyteSequence_!=null){
-//      for (String groupName : correctAnalyteSequence_.keySet()){
-//        Vector<String> analytesInSequence = correctAnalyteSequence_.get(groupName);
-//        if (!allMoleculeNames_.containsKey(groupName)) continue;
-//        Vector<String> unorderedSequence = allMoleculeNames_.get(groupName);
-//        Vector<String> correctOrder = new Vector<String>();        
-//        for (String analPlain : analytesInSequence){
-//          Vector<String> analytesInclIsotopicLabels = new Vector<String>();
-//          analytesInclIsotopicLabels.add(analPlain);
-//          for (IsotopicLabelVO labelVO : isoLabels_) {
-//            for (String prefix : labelVO.getPrefixes().keySet())
-//              analytesInclIsotopicLabels.add(prefix+analPlain);
-//          }
-//          for (String anal : analytesInclIsotopicLabels) {
-//            Vector<DoubleStringVO> sameRt = new Vector<DoubleStringVO>();
-//            for (String isThereAnal : unorderedSequence){
-//              if (expRtGroupingTime_>0 && !isThereAnal.startsWith(isSelectionPrefix_) && !isThereAnal.startsWith(esSelectionPrefix_)){
-//                if (isThereAnal.startsWith(anal)&&isThereAnal.toCharArray()[anal.length()]=='_'){
-//                  try{
-//                    String rtString = isThereAnal.substring(anal.length()+1);
-//                    double rt = Double.parseDouble(rtString);
-//                    sameRt.add(new DoubleStringVO(rtString,rt));
-//                  } catch (NumberFormatException nfx){}
-//                }
-//              }else{
-//                if (anal.equalsIgnoreCase(isThereAnal)){
-//                  correctOrder.add(anal);
-//                  break;
-//                }
-//              }
-//            }
-//            if (expRtGroupingTime_>0){
-//              Collections.sort(sameRt,new GeneralComparator("at.tugraz.genome.lda.vos.DoubleStringVO", "getValue", "java.lang.Double"));
-//              for (DoubleStringVO rt : sameRt){
-//                correctOrder.add(anal+"_"+rt.getKey());
-//              }
-//            }
-//          }
-//        }
-//        //this is just for cross check if the quant file contains all analytes;
-//        //analytes that are not in the file are added at the end
-//        for (String isThereAnal : unorderedSequence){
-//          boolean found = false;
-//          for (String anal : correctOrder){
-//            if (anal.equalsIgnoreCase(isThereAnal)){
-//              found = true;
-//              break;
-//            }
-//          }
-//          if (!found){
-//            System.out.println("Warning: The molecule "+isThereAnal+" is not in the Quant file! Putting it to the end!!!");
-//            correctOrder.add(isThereAnal);
-//          }
-//        }
-//        allMoleculeNames_.put(groupName,correctOrder);
-//      }
-//    }
     
     comparativeRatios_ = new Hashtable<String,Hashtable<String,Hashtable<String,ResultCompVO>>>();
     for (String groupName : this.allResults_.keySet()){

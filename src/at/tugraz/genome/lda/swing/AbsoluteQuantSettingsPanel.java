@@ -232,12 +232,21 @@ public class AbsoluteQuantSettingsPanel extends JPanel implements ExpVolumeListe
       throw new AbsoluteSettingsInputException("The neutral lipid concentration has to be set for all experiments or for none");
     if (foundSampleWeightOnce && !foundSampleWeightAll)
       throw new AbsoluteSettingsInputException("The sample weight has to be set for all experiments or for none");
+    
+    Hashtable<String,String> chosenClassLookup = new Hashtable<String,String>();
     for (String className : classSettings_.keySet()){
-      LipidClassSettingVO classVO = classSettings_.get(className).getSettings();
+    	String chosenClass = getChosenClassLookup(className);
+      LipidClassSettingVO classVO = classSettings_.get(chosenClass).getSettings();
       standSet.put(className, classVO);
+      chosenClassLookup.put(className, chosenClass);
     }
-    AbsoluteSettingsVO settingsVO = new AbsoluteSettingsVO(probeVols,standSet);
+    AbsoluteSettingsVO settingsVO = new AbsoluteSettingsVO(probeVols,standSet,chosenClassLookup);
     return settingsVO;
+  }
+  
+  public String getChosenClassLookup(String className)
+  {
+  	return classSettings_.get(className).getChosenClass();
   }
   
   

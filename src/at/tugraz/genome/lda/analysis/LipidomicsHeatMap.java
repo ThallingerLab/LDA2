@@ -903,6 +903,11 @@ public class LipidomicsHeatMap
 	
 	private void addUnitValue(List<Integer> unitValues, String unit)
 	{
+		if (unit == null)
+		{
+			unitValues.add(0);
+			return; //TODO: This is a workaround, as with MSn Only, we sometimes get completely empty rows in the heatmap. Fix this!
+		}
 		switch (unit)
   	{
   		case "":

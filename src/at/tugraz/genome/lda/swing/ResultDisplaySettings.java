@@ -336,62 +336,67 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
 
     public void itemStateChanged(ItemEvent e)  {
       if (e.getStateChange()==ItemEvent.SELECTED){
-        if (((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_VALUE)){
-          enableSettings();
+      	itemSelected();
+      }
+    }
+    
+    public void itemSelected()
+    {
+    	if (((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_VALUE)){
+        enableSettings();
+        enableMagnitudeSetting(false);
+        disableAUSettings(true);
+      } else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_BASE_PEAK)||
+          ((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT)||
+          ((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_HIGHEST_TOTAL_PEAK)||
+          ((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT)){
+        disableSettings();         
+      }else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("amount end-volume")||
+          ((String)displayType_.getSelectedItem()).equalsIgnoreCase("conc. end-volume") ||
+          ((String)displayType_.getSelectedItem()).equalsIgnoreCase("weight end-volume")){
+        enableIntStandSetting(true);
+        if (considerInternalStandards_!=null)
+          considerInternalStandards_.setSelected(true);
+        enableIntStandSetting(false);
+        isType_.setEnabled(true);
+        enableExtStandSetting(true);
+        if (considerExternalStandards_!=null)
+          considerExternalStandards_.setSelected(false);
+        enableExtStandSetting(false);        
+        enableDilutionSetting(true);
+        considerDilution_.setSelected(false);
+        enableDilutionSetting(false);
+        if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("conc. end-volume"))
+          enableMagnitudeSetting(true);
+        else
           enableMagnitudeSetting(false);
-          disableAUSettings(true);
-        } else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_BASE_PEAK)||
-            ((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT)||
-            ((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_HIGHEST_TOTAL_PEAK)||
-            ((String)displayType_.getSelectedItem()).equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT)){
-          disableSettings();         
-        }else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("amount end-volume")||
-            ((String)displayType_.getSelectedItem()).equalsIgnoreCase("conc. end-volume") ||
-            ((String)displayType_.getSelectedItem()).equalsIgnoreCase("weight end-volume")){
-          enableIntStandSetting(true);
-          if (considerInternalStandards_!=null)
-            considerInternalStandards_.setSelected(true);
-          enableIntStandSetting(false);
-          isType_.setEnabled(true);
-          enableExtStandSetting(true);
-          if (considerExternalStandards_!=null)
-            considerExternalStandards_.setSelected(false);
-          enableExtStandSetting(false);        
-          enableDilutionSetting(true);
-          considerDilution_.setSelected(false);
-          enableDilutionSetting(false);
-          if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("conc. end-volume"))
-            enableMagnitudeSetting(true);
-          else
-            enableMagnitudeSetting(false);
-          disableAUSettings(false);
-        }else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("amount sample-volume") ||
-            ((String)displayType_.getSelectedItem()).equalsIgnoreCase("conc. sample-volume") ||
-            ((String)displayType_.getSelectedItem()).equalsIgnoreCase("weight sample-volume")){
-          enableProbeSettings();
-          disableAUSettings(false);
-          if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("conc. sample-volume"))
-            enableMagnitudeSetting(true);
-          else
-            enableMagnitudeSetting(false);
-        }else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("relative to sample weight")){
-          enableProbeSettings();
+        disableAUSettings(false);
+      }else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("amount sample-volume") ||
+          ((String)displayType_.getSelectedItem()).equalsIgnoreCase("conc. sample-volume") ||
+          ((String)displayType_.getSelectedItem()).equalsIgnoreCase("weight sample-volume")){
+        enableProbeSettings();
+        disableAUSettings(false);
+        if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("conc. sample-volume"))
           enableMagnitudeSetting(true);
-          disableAUSettings(false);
-        }else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("relation to protein content")){
-          enableProbeSettings();
-          enableMagnitudeSetting(true);
-          checkAUEnable();
-        }else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("relation to neutral lipid content")){
-          enableProbeSettings();
-          enableMagnitudeSetting(true);
-          checkAUEnable();
-        }else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("relation to measured neutral lipid")){
-          enableProbeSettings();
-          enableMagnitudeSetting(true);
-          disableAUSettings(false);
-//          checkAUEnable();
-        }
+        else
+          enableMagnitudeSetting(false);
+      }else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("relative to sample weight")){
+        enableProbeSettings();
+        enableMagnitudeSetting(true);
+        disableAUSettings(false);
+      }else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("relation to protein content")){
+        enableProbeSettings();
+        enableMagnitudeSetting(true);
+        checkAUEnable();
+      }else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("relation to neutral lipid content")){
+        enableProbeSettings();
+        enableMagnitudeSetting(true);
+        checkAUEnable();
+      }else if (((String)displayType_.getSelectedItem()).equalsIgnoreCase("relation to measured neutral lipid")){
+        enableProbeSettings();
+        enableMagnitudeSetting(true);
+        disableAUSettings(false);
+//        checkAUEnable();
       }
     }
   }
@@ -538,6 +543,8 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
   		if (((String)displayType_.getItemAt(i)).equals(valueType))
   		{
   			this.displayType_.setSelectedIndex(i);
+  			SelectionItemListener dummyListener = new SelectionItemListener();
+  			dummyListener.itemSelected();
   		}
   	}
   	
@@ -578,10 +585,7 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
     	this.considerDilution_.setSelected(other.considerDilution_.isSelected());
     }
     
-    if (this.useAU_!=null)
-    {
-    	this.useAU_.setSelected(other.useAU_.isSelected());
-    }
+    checkAUEnable();
 
     if (this.unitMagnitude_!=null)
     {

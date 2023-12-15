@@ -35,13 +35,16 @@ public class AbsoluteSettingsVO
   
   private Hashtable<String,ProbeVolConcVO> volumeSettings_;
   private Hashtable<String, LipidClassSettingVO> classSettings_;
+  private Hashtable<String,String> chosenClass_;
   
   public AbsoluteSettingsVO(Hashtable<String,ProbeVolConcVO> volumeSettings_,
-      Hashtable<String,LipidClassSettingVO> classSettings_)
+      Hashtable<String,LipidClassSettingVO> classSettings_,
+      Hashtable<String,String> chosenClass)
   {
     super();
     this.volumeSettings_ = volumeSettings_;
     this.classSettings_ = classSettings_;
+    this.chosenClass_ = chosenClass;
   }
   
   public Hashtable<String,ProbeVolConcVO> getVolumeSettings()
@@ -51,6 +54,11 @@ public class AbsoluteSettingsVO
   public Hashtable<String,LipidClassSettingVO> getClassSettings()
   {
     return classSettings_;
+  }
+  
+  public String getChosenClass(String originalClassName)
+  {
+  	return chosenClass_.get(originalClassName);
   }
   
 }

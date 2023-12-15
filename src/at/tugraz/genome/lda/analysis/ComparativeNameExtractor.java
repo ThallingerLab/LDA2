@@ -462,6 +462,13 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
     return this.sortedISNames_.get(className);
   }
   
+  public Vector<String> getAllClassNames()
+  {
+  	Vector<String> allClassNames = new Vector<String>(lipidClassesHash_.keySet());
+  	Collections.sort(allClassNames);
+  	return allClassNames;
+  }
+  
   public Vector<String> getESNames(String className){
     return this.sortedESNames_.get(className);
   }

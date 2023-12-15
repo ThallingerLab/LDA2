@@ -104,6 +104,8 @@ import uk.ac.ebi.pride.jmztab2.utils.errors.MZTabErrorType.Level;
 import org.apache.batik.dom.GenericDOMImplementation;
 import org.apache.batik.svggen.SVGGraphics2D;
 import org.apache.commons.math3.util.Precision;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 
@@ -3346,7 +3348,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     	
     	if (groupHeatmaps_ != null)
     	{
-    		HeatMapDrawing drawing = heatmaps_.get(molGroup);
+    		HeatMapDrawing drawing = groupHeatmaps_.get(molGroup);
     		drawing.adjustDisplaySettings(settings);
     	}
     }
@@ -7262,6 +7264,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 			Hashtable<String,Hashtable<String,Integer>> corrTypeISLookup = analysisModule_.getCorrectionTypeISLookup();
 			Hashtable<String,Hashtable<String,Integer>> corrTypeESLookup = analysisModule_.getCorrectionTypeESLookup();
 			
+			String chosenMolGroup = quantSettingsPanel_.getChosenClassLookup(molGroup_);
+			if (molGroup_.equals("P-PE"))
+			{
+				System.out.println("hi");
+			}
+			
 			JPanel aResultsViewPanel = new JPanel(new BorderLayout());
       JTabbedPane resultsViewTabs= new JTabbedPane();
       aResultsViewPanel.add(resultsViewTabs,BorderLayout.CENTER);
@@ -7269,17 +7277,17 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       Vector<String> molNames = analysisModule_.getAllMoleculeNames().get(molGroup_);
       Hashtable<String,Integer> isLookup = new Hashtable<String,Integer> ();
       Hashtable<String,Integer> esLookup = new Hashtable<String,Integer> ();
-      if (corrTypeISLookup.containsKey(molGroup_))
-        isLookup = corrTypeISLookup.get(molGroup_);
-      if (corrTypeESLookup.containsKey(molGroup_))
-        esLookup = corrTypeESLookup.get(molGroup_);
+      if (corrTypeISLookup.containsKey(chosenMolGroup))
+        isLookup = corrTypeISLookup.get(chosenMolGroup);
+      if (corrTypeESLookup.containsKey(chosenMolGroup))
+        esLookup = corrTypeESLookup.get(chosenMolGroup);
       
       JPanel aPanel = new JPanel();
       aPanel.setLayout(new BorderLayout());
       boolean hasAbs = jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove absolute settings");
-      
-      ResultDisplaySettings displaySettings = new ResultDisplaySettings(analysisModule_.getISAvailability().get(molGroup_),analysisModule_.getESAvailability().get(molGroup_),isLookup,esLookup,hasAbs,
-          quantSettingsPanel_);
+      ResultDisplaySettings displaySettings = new ResultDisplaySettings(
+      		analysisModule_.getISAvailability().get(chosenMolGroup),
+      		analysisModule_.getESAvailability().get(chosenMolGroup),isLookup,esLookup,hasAbs,quantSettingsPanel_);
       ResultSelectionSettings selectionSettings = new ResultSelectionSettings(null,molNames,true);
       ResultSelectionSettings combinedChartSettings = new ResultSelectionSettings(null,molNames,false);
       
