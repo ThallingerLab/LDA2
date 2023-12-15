@@ -42,6 +42,7 @@ import java.awt.event.ItemEvent;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -129,6 +130,7 @@ import at.tugraz.genome.lda.exception.RetentionTimeGroupingException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.exception.SettingsException;
 import at.tugraz.genome.lda.export.LDAExporter;
+import at.tugraz.genome.lda.export.OmegaCollector;
 import at.tugraz.genome.lda.export.QuantificationResultExporter;
 import at.tugraz.genome.lda.interfaces.ColorChangeListener;
 import at.tugraz.genome.lda.listeners.AnnotationThresholdListener;
@@ -4596,6 +4598,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     if (resultsFile.exists()&&resultsFile.isFile()){
       selectedResultFile.setText(compVO.getAbsoluteFilePath());
       String chromFileBase = StaticUtils.extractChromBaseName(compVO.getAbsoluteFilePath(),experimentName);
+      String tlPath = "_negative";
+      if (chromFileBase == null && compVO.getAbsoluteFilePath().contains(tlPath)) //TODO: delete and replace with String in "About" tab
+      {
+      	chromFileBase = compVO.getAbsoluteFilePath().substring(0,compVO.getAbsoluteFilePath().indexOf(tlPath));
+      }
       boolean chromFileExists = false;
       if (chromFileBase!=null && chromFileBase.length()>0){
         chromFileExists = true;        
@@ -6366,6 +6373,27 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   }
   
 
+  //TODO: for SILDA analysis, remove when done
+  public void exportSummary(File exportFile, boolean isGrouped)
+  {
+  	Hashtable<String, HeatMapDrawing> heatMaps = isGrouped ? groupHeatmaps_ : heatmaps_;
+  	OmegaCollector omegaCollector = new OmegaCollector(); //to collect class overarching data
+  	try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(exportFile));)
+  	{
+  		XSSFWorkbook workbook = new XSSFWorkbook();
+    	for (String molGroup : heatMaps.keySet())
+    	{
+    		Sheet sheet = workbook.createSheet(molGroup);
+    		HeatMapDrawing drawing = heatMaps.get(molGroup);
+    		drawing.exportSummary(omegaCollector, sheet, workbook, out);
+    	}
+    	workbook.write(out);
+  	}
+  	catch (NumberFormatException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
+    catch (FileNotFoundException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
+    catch (IOException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
+  }
+  
   
   private int getMaxProcessors(){
     int maxProcessors = Runtime.getRuntime().availableProcessors();

@@ -30,6 +30,7 @@ import java.awt.event.ActionListener;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.TooltipTexts;
 
 /**
@@ -57,6 +58,8 @@ public class ExportPanel extends JPanel
   public static final String EXPORT_RDB = "exportRdb";
 
   public static final String EXPORT_MAF = "exportMAF";
+
+  public static final String EXPORT_SUMMARY = "exportSummary";
 
   
   private ActionListener parent_;
@@ -137,6 +140,15 @@ public class ExportPanel extends JPanel
       ExportButton chrom = new ExportButton("Chroms",EXPORT_CHROMS,font,background,parent_);
       chrom.setToolTipText(TooltipTexts.EXPORT_CHROMS);
       this.add(chrom);      
+    }
+    if (Settings.SHOW_OMEGA_TOOLS) //TODO: for SILDA analysis, remove when done
+    {
+      label = new JLabel(" | ");
+      label.setForeground(font);
+      label.setFont(textFont);
+      this.add(label); 
+      ExportButton summary = new ExportButton("Summary",EXPORT_SUMMARY,font,background,parent_);
+      this.add(summary);      
     }
     
     

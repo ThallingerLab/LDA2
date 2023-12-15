@@ -148,6 +148,7 @@ public interface HeatMapClickListener extends SampleLookup
   public void exportMzTab(File exportFile, short speciesType, boolean exportDoubleBondPositions);
   public void exportRdb(File exportFile);
   public void exportMaf(File exportFile);
+  public void exportSummary(File exportFile, boolean isGrouped);
   
   /**
    * callback to show the settings dialog for exporting
