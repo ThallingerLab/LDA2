@@ -59,6 +59,10 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
   protected static final String CHANGE_IS_STATUS = "changeIStatus";
   protected static final String CHANGE_ES_STATUS = "changeESStatus";
   protected static final String CHANGE_DIL_STATUS = "changeDilutionStatus";
+  public static final String APPLY_DISPLAY_SETTINGS = "AcceptDisplaySettings";
+  public static final String APPLY_DISPLAY_SETTINGS_TO_ALL = "ApplyDisplaySettingsToAllLipidClasses";
+  protected static final String STANDARD_MOST_RELIABLE = "most reliable standard";
+  protected static final String STANDARD_MEDIAN = "median";
   
   private JComboBox<String> displayType_;
   protected JCheckBox considerInternalStandards_;
@@ -144,8 +148,8 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
       this.add(considerInternalStandards_,new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
       isType_ = new JComboBox<String>();
-      isType_.addItem("most reliable standard");
-      isType_.addItem("median");
+      isType_.addItem(STANDARD_MOST_RELIABLE);
+      isType_.addItem(STANDARD_MEDIAN);
       for (String isName : isLookup_.keySet())
         isType_.addItem(isName);
       isType_.setToolTipText(TooltipTexts.HEATMAP_STANDARD_CORRECTION_TYPE);
@@ -165,8 +169,8 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
       this.add(considerExternalStandards_,new GridBagConstraints(1, 2, 1, 1, 0.0, 0.0
           ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
       esType_ = new JComboBox<String>();
-      esType_.addItem("most reliable standard");
-      esType_.addItem("median");
+      esType_.addItem(STANDARD_MOST_RELIABLE);
+      esType_.addItem(STANDARD_MEDIAN);
       for (String esName : esLookup_.keySet())
         esType_.addItem(esName);
       esType_.setToolTipText(TooltipTexts.HEATMAP_STANDARD_CORRECTION_TYPE);
@@ -212,12 +216,20 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
       }
     }
-    JButton button = new JButton("OK");
-    button.setActionCommand("AcceptDisplaySettings");
-    button.setToolTipText(TooltipTexts.ACCEPT_GENERAL);
-    this.add(button,new GridBagConstraints(0, 6, 3, 1, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
-    button.addActionListener(this);
+    JButton buttonOK = new JButton("Apply");
+    buttonOK.setActionCommand(APPLY_DISPLAY_SETTINGS);
+    buttonOK.setToolTipText(TooltipTexts.ACCEPT_GENERAL);
+    this.add(buttonOK,new GridBagConstraints(0, 6, 3, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(10, 10, 10, 10), 0, 0));
+    buttonOK.addActionListener(this);
+    
+    JButton buttonApplyToAll = new JButton("Apply to all");
+    buttonApplyToAll.setActionCommand(APPLY_DISPLAY_SETTINGS_TO_ALL);
+    buttonApplyToAll.setToolTipText(TooltipTexts.HEATMAP_SETTINGS_APPLY_TO_ALL);
+    this.add(buttonApplyToAll,new GridBagConstraints(1, 6, 3, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(10, 10, 10, 10), 0, 0));
+    buttonApplyToAll.addActionListener(this);
+    
     setVisible(false);
     setDefaultCloseOperation(DISPOSE_ON_CLOSE );
     pack(); 
@@ -261,7 +273,7 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
         this.esType_.setEnabled(false);
       }
       checkAUEnable();
-    }else if (e.getActionCommand().equalsIgnoreCase("AcceptDisplaySettings")){
+    }else if (e.getActionCommand().equalsIgnoreCase(APPLY_DISPLAY_SETTINGS) || e.getActionCommand().equalsIgnoreCase(APPLY_DISPLAY_SETTINGS_TO_ALL)){
       String type = (String)displayType_.getSelectedItem();
       boolean acceptSettings = true;
       if (type.equalsIgnoreCase("amount sample-volume") || type.equalsIgnoreCase("conc. sample-volume") || type.equalsIgnoreCase("weight sample-volume") ||
@@ -488,16 +500,16 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
     boolean useDilution = false;
     boolean useAU = false;
     if (considerInternalStandards_!=null && considerInternalStandards_.isSelected())
-      if (((String)isType_.getSelectedItem()).equalsIgnoreCase("most reliable standard")){
+      if (((String)isType_.getSelectedItem()).equalsIgnoreCase(STANDARD_MOST_RELIABLE)){
         useIs = ResultCompVO.STANDARD_CORRECTION_INTERNAL;
-      }else if (((String)isType_.getSelectedItem()).equalsIgnoreCase("median")){
+      }else if (((String)isType_.getSelectedItem()).equalsIgnoreCase(STANDARD_MEDIAN)){
         useIs = ResultCompVO.STANDARD_CORRECTION_MEDIAN;
       }else
         useIs = isLookup_.get((String)isType_.getSelectedItem());
     if (considerExternalStandards_!=null && considerExternalStandards_.isSelected()){
-      if (((String)esType_.getSelectedItem()).equalsIgnoreCase("most reliable standard")){
+      if (((String)esType_.getSelectedItem()).equalsIgnoreCase(STANDARD_MOST_RELIABLE)){
         useEs = ResultCompVO.STANDARD_CORRECTION_INTERNAL;
-      }else if (((String)esType_.getSelectedItem()).equalsIgnoreCase("median")){
+      }else if (((String)esType_.getSelectedItem()).equalsIgnoreCase(STANDARD_MEDIAN)){
         useEs = ResultCompVO.STANDARD_CORRECTION_MEDIAN;
       }else
         useEs = esLookup_.get((String)esType_.getSelectedItem());
@@ -512,6 +524,69 @@ public class ResultDisplaySettings extends JDialog implements ActionListener
       unitMagnitude = (String)unitMagnitude_.getSelectedItem();
     return new ResultDisplaySettingsVO((String)displayType_.getSelectedItem(),useIs,useEs,
         useDilution,useAU,unitMagnitude);
+  }
+  
+  /**
+   * Copies the settings from another object as far as applicable.
+   * @param other
+   */
+  public void copySettings(ResultDisplaySettings other)
+  {
+  	String valueType = (String)other.displayType_.getSelectedItem();
+  	for (int i=0;i<this.displayType_.getItemCount();i++)
+  	{
+  		if (((String)displayType_.getItemAt(i)).equals(valueType))
+  		{
+  			this.displayType_.setSelectedIndex(i);
+  		}
+  	}
+  	
+    if (this.considerInternalStandards_!=null)
+    {
+    	this.considerInternalStandards_.setSelected(other.considerInternalStandards_.isSelected());
+    	if (this.considerInternalStandards_.isSelected())
+    	{
+    		if (((String)other.isType_.getSelectedItem()).equalsIgnoreCase(STANDARD_MOST_RELIABLE))
+    		{
+    			this.isType_.setSelectedItem(STANDARD_MOST_RELIABLE);
+    		}
+    		else if (((String)other.isType_.getSelectedItem()).equalsIgnoreCase(STANDARD_MEDIAN))
+    		{
+    			this.isType_.setSelectedItem(STANDARD_MEDIAN);
+    		}
+    	}
+    }
+    
+    if (this.considerExternalStandards_!=null)
+    {
+    	this.considerExternalStandards_.setSelected(other.considerExternalStandards_.isSelected());
+    	if (this.considerExternalStandards_.isSelected())
+    	{
+    		if (((String)other.esType_.getSelectedItem()).equalsIgnoreCase(STANDARD_MOST_RELIABLE))
+    		{
+    			this.esType_.setSelectedItem(STANDARD_MOST_RELIABLE);
+    		}
+    		else if (((String)other.esType_.getSelectedItem()).equalsIgnoreCase(STANDARD_MEDIAN))
+    		{
+    			this.esType_.setSelectedItem(STANDARD_MEDIAN);
+    		}
+    	}
+    }
+    
+    if (this.considerDilution_!=null)
+    {
+    	this.considerDilution_.setSelected(other.considerDilution_.isSelected());
+    }
+    
+    if (this.useAU_!=null)
+    {
+    	this.useAU_.setSelected(other.useAU_.isSelected());
+    }
+
+    if (this.unitMagnitude_!=null)
+    {
+    	this.unitMagnitude_.setSelectedItem((String)other.unitMagnitude_.getSelectedItem());
+    }
   }
   
   public void addActionListener(ActionListener parent){

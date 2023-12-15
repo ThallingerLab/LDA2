@@ -3332,6 +3332,27 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   }
   
   /**
+   * Adjusts display settings of all heatmaps to a reference object as far as applicable.
+   */
+  public void applySettingsToAllClasses(ResultDisplaySettings settings)
+  {
+    for (String molGroup : analysisModule_.getResults().keySet())
+    {
+    	if (heatmaps_ != null)
+    	{
+    		HeatMapDrawing drawing = heatmaps_.get(molGroup);
+    		drawing.adjustDisplaySettings(settings);
+    	}
+    	
+    	if (groupHeatmaps_ != null)
+    	{
+    		HeatMapDrawing drawing = heatmaps_.get(molGroup);
+    		drawing.adjustDisplaySettings(settings);
+    	}
+    }
+  }
+  
+  /**
    * updates and saves a LipidParameterSet object at a certain position in the displayed table
    * @param newOne the new LipidParameterSet object
    * @param position the position in the table where the object shall be updated
@@ -3439,15 +3460,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         }
       }
       if (jButtonResultCutoff_.getText().equalsIgnoreCase("Remove cutoff settings")){
-        try {
-          cutoffValues = cutoffSettingsPanel_.getCutoffs();
-          maxCutoffIsotope = cutoffSettingsPanel_.getMaxIsotope();
-        }
-        catch (AbsoluteSettingsInputException e) {
-          new WarningMessage(new JFrame(), "Error", e.getMessage());
-          return;
-        }
-        
+      	maxCutoffIsotope = cutoffSettingsPanel_.getMaxIsotope();
       }
       LinkedHashMap<String,Integer> classSequence = null;
       LinkedHashMap<String,Vector<String>> correctAnalyteSequence = null;
@@ -7312,7 +7325,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 //      resultTabs_.setToolTipTextAt(resultTabs_.indexOfTab(molGroup_), TooltipTexts.TABS_RESULTS_GROUP+molGroup_+"</html>");
 		}
   }
-  
   
 }
   

@@ -28,6 +28,7 @@ import java.util.Hashtable;
 import java.util.Set;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.swing.ResultDisplaySettings;
 import at.tugraz.genome.lda.vos.AutoAnalyteAddVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
@@ -153,5 +154,7 @@ public interface HeatMapClickListener extends SampleLookup
    * @param grouped is it the export settings for the grouped heat map
    */
   public void showExportSettingsDialog(boolean grouped);
+  
+  public void applySettingsToAllClasses(ResultDisplaySettings settings);
   
 }

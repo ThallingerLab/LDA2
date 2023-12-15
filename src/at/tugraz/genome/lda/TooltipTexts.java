@@ -57,7 +57,7 @@ public class TooltipTexts
   public final static String GENERAL_ACCEPT_SINGLE_END = "?</html>";
   public final static String ALL_GENERAL  = "<html>Select all</html>";
   public final static String NONE_GENERAL  = "<html>Select none</html>";
-  public final static String INVERT_GENERAL  = "<html>Invert selection</html>";;
+  public final static String INVERT_GENERAL  = "<html>Invert selection</html>";
   
   public final static String QUANTITATION_SINGLE_RAW_FILE = "<html>Enter the raw file of your experiment!<br>" +
   		  "The following file types are accepted:<br>" +
@@ -225,6 +225,7 @@ public class TooltipTexts
   public final static String EXPORT_N_RTs = "<html>Export mass list for &omega identification.</html>";
   public final static String EXPORT_MAF = "<html>Exports data in MAF format.</html>";
   
+  public final static String HEATMAP_SETTINGS_APPLY_TO_ALL = "<html>Apply these settings to all lipid classes, as far as applicable</html>";
   public final static String HEATMAP_SHOW_INT = "<html>Display the internal standards in the heat map or not.</html>";
   public final static String HEATMAP_SHOW_EXT = "<html>Display the external standards in the heat map or not.</html>";
   public final static String HEATMAP_ISOTOPES = "<html>Upper limit for the additional isotopic peaks used for the quantitative value.</html>";

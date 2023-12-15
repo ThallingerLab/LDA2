@@ -464,7 +464,8 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     if (actionCommand.equalsIgnoreCase(CHANGE_IS_STATUS)||
         actionCommand.equalsIgnoreCase(CHANGE_ES_STATUS)||
         actionCommand.equalsIgnoreCase(CHANGE_DOUBLE_STATUS)||
-        actionCommand.equalsIgnoreCase("AcceptDisplaySettings")){
+        actionCommand.equalsIgnoreCase(ResultDisplaySettings.APPLY_DISPLAY_SETTINGS)||
+        actionCommand.equalsIgnoreCase(ResultDisplaySettings.APPLY_DISPLAY_SETTINGS_TO_ALL)){
       settingsVO_ = displaySettings_.getSettingsVO();
       selectionSettings_.setVisible(false);
       boolean update = true;    
@@ -499,8 +500,14 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         chromExport_.checkMolecules(getISs(),showInternalStandards_.isSelected());
       }else if (actionCommand.equalsIgnoreCase(CHANGE_ES_STATUS) && !isGrouped_){
         chromExport_.checkMolecules(getESs(),showExternalStandards_.isSelected());
-      } else if (actionCommand.equalsIgnoreCase("AcceptDisplaySettings") && !isGrouped_ ){
+      } else if (!isGrouped_ &&
+      		(actionCommand.equalsIgnoreCase(ResultDisplaySettings.APPLY_DISPLAY_SETTINGS)||
+      		actionCommand.equalsIgnoreCase(ResultDisplaySettings.APPLY_DISPLAY_SETTINGS_TO_ALL)) ){
         chromExport_.checkMolecules(getUnselectedMoleculeNames(),false);
+      }
+      if (actionCommand.equalsIgnoreCase(ResultDisplaySettings.APPLY_DISPLAY_SETTINGS_TO_ALL))
+      {
+      	heatMapListener_.applySettingsToAllClasses(displaySettings_);
       }
       if (actionCommand.equalsIgnoreCase(CHANGE_IS_STATUS) && parentAction_)
         heatMapListener_.changeISStatus(groupName_, isGrouped_, showInternalStandards_.isSelected());
