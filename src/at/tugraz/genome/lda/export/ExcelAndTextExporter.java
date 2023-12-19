@@ -28,13 +28,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.commons.math3.util.Precision;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
@@ -45,6 +45,7 @@ import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.analysis.ComparativeResultsLookup;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.ExportException;
@@ -53,6 +54,7 @@ import at.tugraz.genome.lda.exception.RetentionTimeGroupingException;
 import at.tugraz.genome.lda.export.vos.SpeciesExportVO;
 import at.tugraz.genome.lda.export.vos.SummaryVO;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
+import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.parser.LDAResultReader;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
@@ -698,7 +700,13 @@ public class ExcelAndTextExporter extends LDAExporter
     row = sheet.createRow(++rowCount);
     double area;
     for (String rowName : rowNames){
-    	if (!rowName.contains(LipidomicsConstants.OMEGA_POSITION_START)) continue; //TODO: change if this is not relevant... this will be essential for the omegacollector!
+//    	if (!rowName.contains(LipidomicsConstants.OMEGA_POSITION_START)) continue; //TODO: change if this is not relevant... this will be essential for the omegacollector!
+    	
+    	//extract omega collector info
+    	fillOmegaCollector(omegaCollector, sheet.getSheetName(), molSpeciesDetails,
+    				columnNames, expNames, expsOfGroup,
+    				expVO, modifications, rowName);
+    	
     	String omegaId = extractOmegaPos(rowName);
       columnCount = 0;
       String valueToPrint = rowName;
@@ -882,7 +890,180 @@ public class ExcelAndTextExporter extends LDAExporter
       }
     }
   }
+  
+  private static void fillOmegaCollector(OmegaCollector omegaCollector, String lClass, LinkedHashMap<String,SummaryVO> molSpeciesDetails,
+			Vector<String> columnNames, Hashtable<String,String> expNames, LinkedHashMap<String,Vector<String>> expsOfGroup,
+			ExportOptionsVO expVO, ArrayList<String> modifications, String rowName)
+  {
+  	if (lClass.equals("Cer") || lClass.equals("SM") || !rowName.contains("_")) return; //TODO: we ignore these for now
+  	
+  	int numFA = 2;
+  	if (lClass.startsWith("L")) //lysos have 1 FA
+  	{
+  		numFA = 1;
+  	}
+  	
+  	//summing up the total for all FA (assumes this is set to MSn Only)
+  	for (String experimentName : columnNames){
+  		
+      SummaryVO sumVO = molSpeciesDetails.get(rowName);
+      Double area = sumVO.getMeanArea(experimentName);	
+      Double stdev = sumVO.calculateDeviationValue(expVO, expsOfGroup.get(experimentName));
+      
+      //summing up the total for all FA. mol dependent on num of FA
+      omegaCollector.addToTotalFAPerClass(experimentName, lClass, area*numFA);
+      
+      if (rowName.contains("|") || rowName.startsWith("L")) //this means there's a molecular species
+      {
+      	String molName = rowName;
+      	if (rowName.contains("|"))
+      	{
+      		molName = rowName.substring(rowName.indexOf("|")+2);
+      	}
+      	else if (rowName.startsWith("L"))
+      	{
+      		molName = rowName.substring(rowName.indexOf(" ")+1, rowName.indexOf("_"));
+      	}
+      	try
+      	{
+      		Vector<FattyAcidVO> chains = StaticUtils.decodeFAsFromHumanReadableName(molName,Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),false,null);
+      		Vector<FattyAcidVO> sameChainType = new Vector<FattyAcidVO>();
+      		for (FattyAcidVO chain : chains)
+      		{
+      			//mapping all chain types to acyl chains
+      			FattyAcidVO sameChain = new FattyAcidVO(
+      					LipidomicsConstants.CHAIN_TYPE_FA_ACYL, "", chain.getcAtoms(), chain.getDoubleBonds(), chain.getOhNumber(), chain.getMass(), chain.getFormula(), chain.getOxState());
+      			sameChain.setOmegaPosition(chain.getOmegaPosition());
+      			
+      			sameChainType.add(sameChain);
+      			
+      			if (sameChain.getOmegaPosition()>0)
+      			{
+      				//filling info for the per description count
+      				omegaCollector.addToTotalFAPerDescription(experimentName, OmegaCollector.DESCRIPTION_ASSIGNED, area);
+      				
+      				//filling info of the omega total validation, one mol for each
+      				omegaCollector.addToTotalOmegaPerClass(experimentName, lClass, sameChain.getOmegaPosition(), area);
+      				omegaCollector.addToTotalOmegaPerClassSTD(experimentName, sameChain.getOmegaPosition(), stdev);
+      				
+      				//filling info for the fa to lClass heatmap, one mol for each
+      				omegaCollector.addToTotalOmegaFAPerClass(experimentName, lClass, sameChain.getCarbonDbsId(), area);
+      			}
+      			else
+      			{
+      				String description = sameChain.getDoubleBonds()>0 ? OmegaCollector.DESCRIPTION_UNASSIGNED : OmegaCollector.DESCRIPTION_SATURATED;
+      				//filling info for the per description count
+      				omegaCollector.addToTotalFAPerDescription(experimentName, description, area);
+      				
+      				// go into further detail
+      				if (description.equals(OmegaCollector.DESCRIPTION_UNASSIGNED))
+      				{
+      					//first odd or even chain, then partner
+      					if (sameChain.getcAtoms()%2 == 1) //if uneven
+      					{
+      						omegaCollector.addToTotalFAPerDescription(experimentName, OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN, area);
+      						if (chains.size()>1)
+      						{
+      							FattyAcidVO partner = chains.indexOf(chain) == 1 ? chains.get(0) : chains.get(1); 
+      							if (partner.getOmegaPosition() > 0 || partner.getDoubleBonds() == 0)
+      							{
+      								omegaCollector.addToTotalFAPerDescription(experimentName, OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN_PARTNER_KNOWN, area);
+      							}
+      							else
+      							{
+      								omegaCollector.addToTotalFAPerDescription(experimentName, OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN_PARTNER_UNASSIGNED, area);
+      							}
+      						}
+      						else
+      						{
+      							omegaCollector.addToTotalFAPerDescription(experimentName, OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN_PARTNER_KNOWN, area);
+      						}
+      					}
+      					else
+      					{
+      						omegaCollector.addToTotalFAPerDescription(experimentName, OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN, area);
+      						if (chains.size()>1)
+      						{
+      							FattyAcidVO partner = chains.indexOf(chain) == 1 ? chains.get(0) : chains.get(1); 
+      							if (partner.getOmegaPosition() > 0 || partner.getDoubleBonds() == 0)
+      							{
+      								omegaCollector.addToTotalFAPerDescription(experimentName, OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN_PARTNER_KNOWN, area);
+      							}
+      							else
+      							{
+      								omegaCollector.addToTotalFAPerDescription(experimentName, OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN_PARTNER_UNASSIGNED, area);
+      							}
+      						}
+      						else
+      						{
+      							omegaCollector.addToTotalFAPerDescription(experimentName, OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN_PARTNER_KNOWN, area);
+      						}
+      					}
+      				}
+      			}
+      		}
+      		
+      		Collections.sort(sameChainType); //ensuring that a pair will always be in the same order
+      		
+      		//filling partner info. mol dependent on num of FA, as that's also part of the total calculation.
+          omegaCollector.addToFAContentToPartnerContent(experimentName, lClass, sameChainType.get(0).getCarbonDbsId(),
+          		sameChainType.size()>1 ? sameChainType.get(1).getCarbonDbsId() : "", area*numFA);
+      	}
+      	
+      	catch (Exception ex)
+      	{
+      		ex.printStackTrace();
+      	}
+      }
+  	}
+  }
 
+  public static void writeHeatMapData(OmegaCollector omegaCollector, XSSFWorkbook workbook, OutputStream out)
+  {	
+  	Sheet sheetA = workbook.createSheet("Validation");
+  	Row headerRowA = sheetA.createRow(0);
+  	Sheet sheetD = workbook.createSheet("Description Count");
+  	Row headerRowD = sheetD.createRow(0);
+  	
+  	Vector<String> experimentNames = omegaCollector.getExperimentNames();
+  	String experimentNameUnsuppl = "F) RAW264.7 unsupplemented"; //ensure this is named this way
+  	for (int i=0;i<experimentNames.size();i++)
+  	{
+  		int columnNr = i+1;
+  		String experimentName = experimentNames.get(i);
+  		System.out.println(experimentName);
+  		Double totalFAContent = omegaCollector.getTotalFA(experimentName);
+  		CellStyle headerStyle = getHeaderStyle(workbook);
+	    CellStyle numberStyle = TargetListExporter.getNumberStyle(workbook);
+  		
+//  		if (!experimentName.startsWith("F")) continue; //testing with just unsupplemented
+	  	Sheet sheetB = workbook.createSheet("HeatMap 1"+experimentName.charAt(0));
+	  	Sheet sheetC = workbook.createSheet("HeatMap 2"+experimentName.charAt(0));
+	  	
+	    Row headerRowB = sheetB.createRow(0);
+	    Row headerRowC = sheetC.createRow(0);
+	    
+	    
+	    
+  		
+  		
+  		//for validation
+	    writeValidation(omegaCollector, experimentName, experimentNameUnsuppl, columnNr, i, sheetA, headerRowA, headerStyle, numberStyle, totalFAContent);
+  		
+  		//for fa to lclass heatmap
+  		writeFAvsLClassHeatmap(omegaCollector, experimentName, sheetB, headerRowB, headerStyle, numberStyle, totalFAContent);
+  		
+  		//for fa to fa heatmap
+  		writeFAvsFAHeatmap(omegaCollector, experimentName, sheetC, headerRowC, headerStyle, numberStyle, totalFAContent);
+  		
+  		//for description
+  		writeDescription(omegaCollector, experimentName, columnNr, i, sheetD, headerRowD, headerStyle, numberStyle, totalFAContent);
+  		
+  	}
+  	
+  	
+  	//TODO: do something
+  }
   
   private static void writeValuesForOmega(Hashtable<String,Hashtable<String,OmegaSummary>> valuesForOmega, 
   		Sheet sheet, XSSFWorkbook workbook, OutputStream out, int rowCount, CellStyle headerStyle, CellStyle normalStyle)
@@ -952,6 +1133,7 @@ public class ExcelAndTextExporter extends LDAExporter
 
   private static String extractOmegaPos(String name)
   {
+  	if (!name.contains(LipidomicsConstants.OMEGA_POSITION_START)) return "none";
   	String omegaId = "";
   	ArrayList<Integer> omegaPos = new ArrayList<Integer>();
   	omegaPos.add(Integer.parseInt(name.substring(
@@ -1034,6 +1216,378 @@ public class ExcelAndTextExporter extends LDAExporter
 //      }
 //    }
   	return true;
+  }
+  
+  private static void writeValidation(
+  		OmegaCollector omegaCollector, String experimentName, String experimentNameUnsuppl, int columnNr, int i,
+  		Sheet sheetA, Row headerRowA, CellStyle headerStyle, CellStyle numberStyle, Double totalFAContent)
+  {
+  	LinkedHashMap<Integer,Double> normTotalOmegaFA = omegaCollector.getNormTotalOmegaFA(experimentName);
+//		LinkedHashMap<Integer,Double> normTotalOmegaFAUnsuppl = omegaCollector.getNormTotalOmegaFA(experimentNameUnsuppl);
+		Vector<Integer> omegaPos = new Vector<Integer>(normTotalOmegaFA.keySet());
+		Collections.sort(omegaPos);
+		
+		Cell cell = headerRowA.createCell(columnNr,Cell.CELL_TYPE_STRING);
+		cell.setCellValue(experimentName);
+		cell.setCellStyle(headerStyle);
+		
+		//print values
+		for (int j=0; j<omegaPos.size();j++)
+		{
+			Integer omega = omegaPos.get(j);
+			Double normalized = normTotalOmegaFA.get(omega);
+//			Double refNorm = normTotalOmegaFAUnsuppl.get(omega);
+			
+			Double value = normalized;
+			
+			int rowNr = j+1;
+			Row row;
+			if (i==0) 
+			{
+				row = sheetA.createRow(rowNr);
+				cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+  			cell.setCellValue(String.format("omega %s", omega));
+  			cell.setCellStyle(headerStyle);
+			}
+			else 
+			{
+				row = sheetA.getRow(rowNr);
+			}
+			
+			cell = row.createCell(columnNr, Cell.CELL_TYPE_NUMERIC);
+			cell.setCellValue(value);
+			cell.setCellStyle(numberStyle);
+		}
+		
+		//print std
+		for (int j=0; j<omegaPos.size();j++)
+		{
+			Integer omega = omegaPos.get(j);
+//			Double refNorm = normTotalOmegaFAUnsuppl.get(omega);
+			Double stdev = omegaCollector.getOmegaSTD(experimentName, omega);
+			
+			Double value = stdev/totalFAContent;
+			
+			int rowNr = j+(omegaPos.size()+2);
+			Row row;
+			if (i==0) 
+			{
+				row = sheetA.createRow(rowNr);
+				cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+  			cell.setCellValue(String.format("omega %s", omega));
+  			cell.setCellStyle(headerStyle);
+			}
+			else 
+			{
+				row = sheetA.getRow(rowNr);
+			}
+			
+			cell = row.createCell(columnNr, Cell.CELL_TYPE_NUMERIC);
+			cell.setCellValue(value);
+			cell.setCellStyle(numberStyle);
+		}
+  }
+  
+  private static void writeDescription(OmegaCollector omegaCollector, String experimentName, int columnNr, int i,
+  		Sheet sheetD, Row headerRowD, CellStyle headerStyle, CellStyle numberStyle, Double totalFAContent)
+  {
+  	LinkedHashMap<String,Double> descriptionCount = omegaCollector.getTotalFAPerDescription(experimentName);
+		
+		Cell cell = headerRowD.createCell(columnNr,Cell.CELL_TYPE_STRING);
+		cell.setCellValue(experimentName);
+		cell.setCellStyle(headerStyle);
+		
+		Row row;
+		if (i==0) 
+		{
+			row = sheetD.createRow(1);
+			cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_SATURATED));
+			cell.setCellStyle(headerStyle);
+			
+			row = sheetD.createRow(2);
+			cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_ASSIGNED));
+			cell.setCellStyle(headerStyle);
+			
+			row = sheetD.createRow(3);
+			cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED));
+			cell.setCellStyle(headerStyle);
+			
+			row = sheetD.createRow(4);
+			cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN));
+			cell.setCellStyle(headerStyle);
+			
+			row = sheetD.createRow(5);
+			cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN));
+			cell.setCellStyle(headerStyle);
+			
+			row = sheetD.createRow(6);
+			cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN_PARTNER_KNOWN));
+			cell.setCellStyle(headerStyle);
+			
+			row = sheetD.createRow(7);
+			cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN_PARTNER_KNOWN));
+			cell.setCellStyle(headerStyle);
+			
+			row = sheetD.createRow(8);
+			cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN_PARTNER_UNASSIGNED));
+			cell.setCellStyle(headerStyle);
+			
+			row = sheetD.createRow(9);
+			cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN_PARTNER_UNASSIGNED));
+			cell.setCellStyle(headerStyle);
+		}
+		
+		row = sheetD.getRow(1);
+		cell = row.createCell(columnNr, Cell.CELL_TYPE_NUMERIC);
+		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_SATURATED) /totalFAContent);
+		cell.setCellStyle(numberStyle);
+		
+		row = sheetD.getRow(2);
+		cell = row.createCell(columnNr, Cell.CELL_TYPE_NUMERIC);
+		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_ASSIGNED) /totalFAContent);
+		cell.setCellStyle(numberStyle);
+		
+		row = sheetD.getRow(3);
+		cell = row.createCell(columnNr, Cell.CELL_TYPE_NUMERIC);
+		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED) /totalFAContent);
+		cell.setCellStyle(numberStyle);
+		
+		row = sheetD.getRow(4);
+		cell = row.createCell(columnNr,Cell.CELL_TYPE_NUMERIC);
+		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN) /totalFAContent);
+		cell.setCellStyle(numberStyle);
+		
+		row = sheetD.getRow(5);
+		cell = row.createCell(columnNr,Cell.CELL_TYPE_NUMERIC);
+		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN) /totalFAContent);
+		cell.setCellStyle(numberStyle);
+		
+		row = sheetD.getRow(6);
+		cell = row.createCell(columnNr,Cell.CELL_TYPE_NUMERIC);
+		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN_PARTNER_KNOWN) /totalFAContent);
+		cell.setCellStyle(numberStyle);
+		
+		row = sheetD.getRow(7);
+		cell = row.createCell(columnNr,Cell.CELL_TYPE_NUMERIC);
+		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN_PARTNER_KNOWN) /totalFAContent);
+		cell.setCellStyle(numberStyle);
+		
+		row = sheetD.getRow(8);
+		cell = row.createCell(columnNr,Cell.CELL_TYPE_NUMERIC);
+		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN_PARTNER_UNASSIGNED) /totalFAContent);
+		cell.setCellStyle(numberStyle);
+		
+		row = sheetD.getRow(9);
+		cell = row.createCell(columnNr,Cell.CELL_TYPE_NUMERIC);
+		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN_PARTNER_UNASSIGNED) /totalFAContent);
+		cell.setCellStyle(numberStyle);
+  }
+  
+  private static void writeFAvsLClassHeatmap(
+  		OmegaCollector omegaCollector, String experimentName, Sheet sheetB, Row headerRowB, CellStyle headerStyle, CellStyle numberStyle, Double totalFAContent)
+  {
+		LinkedHashMap<String,LinkedHashMap<String,Double>> totalOmegaFAPerClass = omegaCollector.getTotalOmegaFAPerClass(experimentName);
+		Vector<String> lClasses = new Vector<String>(totalOmegaFAPerClass.keySet());
+		Collections.sort(lClasses);
+		
+		Set<String> allFASet = new HashSet<String>();
+		for (String lClass : lClasses)
+		{
+			LinkedHashMap<String,Double> entries = totalOmegaFAPerClass.get(lClass);
+			for (String faName : entries.keySet())
+  		{
+				Double area = entries.get(faName);
+				if (area > 0)
+				{
+					allFASet.add(faName);
+				}
+  		}
+		}
+		
+		Vector<FattyAcidVO> allFAs = new Vector<FattyAcidVO>();
+		for (String faName : allFASet)
+		{
+			try
+			{
+				FattyAcidVO vo = StaticUtils.decodeHumanReadableChain(faName, Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),false,null);
+  			allFAs.add(vo);
+			} catch (Exception ex){ex.printStackTrace();}
+		}
+		sortFAs(allFAs);
+		
+		//writing it to sheet
+		for (int i=0; i<lClasses.size();i++)
+		{
+			int columnNr = i+1;
+			Cell cell = headerRowB.createCell(columnNr,Cell.CELL_TYPE_STRING);
+			cell.setCellValue(lClasses.get(i));
+			cell.setCellStyle(headerStyle);
+			
+			for (int j=0; j<allFAs.size();j++)
+			{
+				int rowNr = j+1;
+				Row row;
+				if (i==0) 
+				{
+					row = sheetB.createRow(rowNr);
+					cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+    			cell.setCellValue(allFAs.get(j).getCarbonDbsId());
+    			cell.setCellStyle(headerStyle);
+				}
+				else 
+				{
+					row = sheetB.getRow(rowNr);
+				}
+				
+				cell = row.createCell(columnNr, Cell.CELL_TYPE_NUMERIC);
+				double number = 0.0;
+				if (totalOmegaFAPerClass.get(lClasses.get(i)).containsKey(allFAs.get(j).getCarbonDbsId()))
+				{
+					number = totalOmegaFAPerClass.get(lClasses.get(i)).get(allFAs.get(j).getCarbonDbsId()) /totalFAContent;
+				}
+				cell.setCellValue(number);
+  			cell.setCellStyle(numberStyle);
+			}
+		}
+  }
+  
+  private static void writeFAvsFAHeatmap(
+  		OmegaCollector omegaCollector, String experimentName, Sheet sheetC, Row headerRowC, CellStyle headerStyle, CellStyle numberStyle, Double totalFAContent)
+  {
+  	LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>> faContentToPartnerContent = omegaCollector.getFAContentToPartnerContent(experimentName);
+		//just want the total fa to fa, so summing up over classes
+		LinkedHashMap<String,LinkedHashMap<String,Double>> totalFAFA = new LinkedHashMap<String,LinkedHashMap<String,Double>>();
+		Set<String> allFASet1 = new HashSet<String>(); //to figure out rows and columns
+		Set<String> allFASet2 = new HashSet<String>(); //to figure out rows and columns
+		for (String lClass : faContentToPartnerContent.keySet())
+		{
+			LinkedHashMap<String,LinkedHashMap<String,Double>> fafaForClass = faContentToPartnerContent.get(lClass);
+			for (String fa : fafaForClass.keySet())
+			{
+				LinkedHashMap<String,Double> partnerFAs = fafaForClass.get(fa);
+				if (!totalFAFA.containsKey(fa))
+				{
+					totalFAFA.put(fa, new LinkedHashMap<String,Double>());
+				}
+				for (String partnerFA : partnerFAs.keySet())
+				{
+					Double value = partnerFAs.get(partnerFA);
+					if (value>0 && 
+							(fa.contains(LipidomicsConstants.OMEGA_POSITION_START) || partnerFA.contains(LipidomicsConstants.OMEGA_POSITION_START) || fa.length() <=1 ))  //one of the FA has to have an omega pos, or lyso
+					{
+						allFASet1.add(fa);
+						allFASet2.add(partnerFA);
+					}
+					if (!totalFAFA.get(fa).containsKey(partnerFA))
+  				{
+  					totalFAFA.get(fa).put(partnerFA, 0.0);
+  				}
+					Double before = totalFAFA.get(fa).get(partnerFA);
+					totalFAFA.get(fa).put(partnerFA, before+value);
+				}
+			}
+		}
+		
+		//sorting fas
+		Vector<FattyAcidVO> allFAs1 = new Vector<FattyAcidVO>();
+		for (String faName : allFASet1)
+		{
+			if (faName.equals("")) 
+			{
+				if (!allFAs1.contains(null))
+					allFAs1.add(null);
+				continue;
+			}
+			try
+			{
+				FattyAcidVO vo = StaticUtils.decodeHumanReadableChain(faName, Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),false,null);
+  			allFAs1.add(vo);
+			} catch (Exception ex){ex.printStackTrace();}
+		}
+		sortFAs(allFAs1);
+		
+		//sorting fas
+		Vector<FattyAcidVO> allFAs2 = new Vector<FattyAcidVO>();
+		for (String faName : allFASet2)
+		{
+			if (faName.equals(""))
+			{
+				if (!allFAs2.contains(null))
+					allFAs2.add(null);
+				continue;
+			}
+			try
+			{
+				FattyAcidVO vo = StaticUtils.decodeHumanReadableChain(faName, Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),false,null);
+  			allFAs2.add(vo);
+			} catch (Exception ex){ex.printStackTrace();}
+		}
+		sortFAs(allFAs2);
+		
+		//writing fafa to sheet
+		for (int i=0; i<allFAs1.size();i++)
+		{
+			int columnNr = i+1;
+			String key1 = allFAs1.get(i) == null ? "" : allFAs1.get(i).getCarbonDbsId();
+			
+			Cell cell = headerRowC.createCell(columnNr,Cell.CELL_TYPE_STRING);
+			cell.setCellValue(key1.length() <= 1 ? "lyso" : key1);
+			cell.setCellStyle(headerStyle);
+			
+			for (int j=0; j<allFAs2.size();j++)
+			{
+				String key2 = allFAs2.get(j) == null ? "" : allFAs2.get(j).getCarbonDbsId();
+				
+				int rowNr = j+1;
+				Row row;
+				if (i==0) 
+				{
+					row = sheetC.createRow(rowNr);
+					cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+    			cell.setCellValue(key2.length() <= 1 ? "lyso" : key2);
+    			cell.setCellStyle(headerStyle);
+				}
+				else 
+				{
+					row = sheetC.getRow(rowNr);
+				}
+				
+				cell = row.createCell(columnNr, Cell.CELL_TYPE_NUMERIC);
+				double number = 0.0;
+				if (totalFAFA.containsKey(key1) && totalFAFA.get(key1).containsKey(key2))
+				{
+					number = totalFAFA.get(key1).get(key2) /totalFAContent;
+				}
+				cell.setCellValue(number);
+  			cell.setCellStyle(numberStyle);
+			}
+		}
+  }
+  
+  private static void sortFAs(Vector<FattyAcidVO> fas)
+  {
+  	Collections.sort(fas, new Comparator<FattyAcidVO>() {
+      @Override
+      public int compare(FattyAcidVO fa1, FattyAcidVO fa2) {
+      	if (fa1 == null && fa2 == null) return 0;
+      	else if (fa1 == null) return 1;
+      	else if (fa2 == null) return -1;
+      	
+      	return Comparator.comparing(FattyAcidVO::getOmegaPosition)
+      			.thenComparing(FattyAcidVO::getcAtoms)
+      			.thenComparing(FattyAcidVO::getDoubleBonds)
+						.compare(fa1, fa2);
+      }
+		});
   }
 
   private static class OmegaSummary

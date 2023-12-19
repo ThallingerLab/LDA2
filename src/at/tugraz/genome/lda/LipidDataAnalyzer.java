@@ -45,6 +45,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -129,6 +130,7 @@ import at.tugraz.genome.lda.exception.RdbWriterException;
 import at.tugraz.genome.lda.exception.RetentionTimeGroupingException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.exception.SettingsException;
+import at.tugraz.genome.lda.export.ExcelAndTextExporter;
 import at.tugraz.genome.lda.export.LDAExporter;
 import at.tugraz.genome.lda.export.OmegaCollector;
 import at.tugraz.genome.lda.export.QuantificationResultExporter;
@@ -6387,6 +6389,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     		HeatMapDrawing drawing = heatMaps.get(molGroup);
     		drawing.exportSummary(omegaCollector, sheet, workbook, out);
     	}
+    	ExcelAndTextExporter.writeHeatMapData(omegaCollector, workbook, out);
     	workbook.write(out);
   	}
   	catch (NumberFormatException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
@@ -7293,10 +7296,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 			Hashtable<String,Hashtable<String,Integer>> corrTypeESLookup = analysisModule_.getCorrectionTypeESLookup();
 			
 			String chosenMolGroup = quantSettingsPanel_.getChosenClassLookup(molGroup_);
-			if (molGroup_.equals("P-PE"))
-			{
-				System.out.println("hi");
-			}
 			
 			JPanel aResultsViewPanel = new JPanel(new BorderLayout());
       JTabbedPane resultsViewTabs= new JTabbedPane();
