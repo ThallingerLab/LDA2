@@ -120,6 +120,7 @@
 		<delete includeEmptyDirs="true" quiet="true">
 			<fileset dir="${dist.dir}" />
 			<fileset dir="${classes.dir}" />
+			<fileset dir="${junit.dir}" />
 			<fileset dir="${lib.classes.dir}" />
 			<fileset dir="${classes.utils.dir}" />
 			<fileset dir="${classes.classSplitter.dir}" />

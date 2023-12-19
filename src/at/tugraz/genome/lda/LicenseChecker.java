@@ -76,6 +76,10 @@ public class LicenseChecker
 		LicenseHandler.showLicenseDialog();
 	}
 	
+	/**
+	 * Set to false when pushing to public git
+	 * @return
+	 */
 	public static boolean isCheckLicense()
 	{
 		return true;
