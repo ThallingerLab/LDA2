@@ -101,6 +101,7 @@ public class CheckBoxOptionPane extends JDialog implements ActionListener
     }
     JScrollPane scrollPane = new JScrollPane(textPanel);
     scrollPane.setPreferredSize(new Dimension(950, 250));
+    scrollPane.setMinimumSize(new Dimension(500, 150));
     this.add(scrollPane, new GridBagConstraints(0, 0, columns, 1, 0.0, 0.0
             ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 2, 2, 2), 0, 0));
   
