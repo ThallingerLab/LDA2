@@ -23,8 +23,10 @@
 
 package at.tugraz.genome.lda.swing;
 
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -39,6 +41,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 
 import at.tugraz.genome.lda.TooltipTexts;
 
@@ -85,15 +88,21 @@ public class CheckBoxOptionPane extends JDialog implements ActionListener
     value_ = JOptionPane.NO_OPTION;
     int columns = chechboxes.size()/NR_OF_ROWS;
     if (chechboxes.size()%NR_OF_ROWS!=0 || columns==0)columns++;
-    int rowCount = 0;
-    for (String message : messages){
-      if (message!=null&&message.length()>0){
+    int rowCount = 1;
+    JPanel textPanel = new JPanel();
+    textPanel.setLayout(new GridLayout());
+    for (String message : messages) //edit here!!
+    {
+      if (message!=null&&message.length()>0)
+      {
         JLabel titleLabel = new JLabel(message);
-        this.add(titleLabel, new GridBagConstraints(0, rowCount, columns, 1, 0.0, 0.0
-            ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 2, 2, 2), 0, 0));
-        rowCount++;
+        textPanel.add(titleLabel);
       }
     }
+    JScrollPane scrollPane = new JScrollPane(textPanel);
+    scrollPane.setPreferredSize(new Dimension(950, 250));
+    this.add(scrollPane, new GridBagConstraints(0, 0, columns, 1, 0.0, 0.0
+            ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 2, 2, 2), 0, 0));
   
 //  int rows = moleculeNames_.size()/columns_;
 //  if (moleculeNames_.size()>0 && moleculeNames_.size()%columns_!=0)
