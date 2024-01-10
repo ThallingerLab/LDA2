@@ -58,7 +58,7 @@ public class ExportPanel extends JPanel
   public static final String EXPORT_RDB = "exportRdb";
 
   public static final String EXPORT_MAF = "exportMAF";
-
+  
   public static final String EXPORT_SUMMARY = "exportSummary";
 
   

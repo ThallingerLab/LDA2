@@ -33,6 +33,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
@@ -992,9 +993,17 @@ public class LipidomicsHeatMap
 		return this.heatMapRows_.get(row).getPreferredUnit();
 	}
 	
-	public ArrayList<String> getAnalyteNames()
+	/**
+	 * @return the original sum composition analyte names
+	 */
+	public ArrayList<String> getOriginalAnalyteNames()
 	{
-		return analyteNames_;
+		Set<String> analyteNames = new LinkedHashSet<String>(); //Set to ensure only one entry for each sum composition
+  	for (HeatMapRow row : heatMapRows_)
+    {
+  		analyteNames.add(row.getOriginalAnalyteName());
+    }
+  	return new ArrayList<String>(analyteNames);
 	}
 	
 	public int getAnalyteIndex(String analyte)

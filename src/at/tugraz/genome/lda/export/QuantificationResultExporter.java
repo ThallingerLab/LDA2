@@ -84,9 +84,9 @@ public class QuantificationResultExporter
 	public final static int HEADER_ROW = 0;
 	
 	public final static String HEADER_SPECIES = "Species";
-
+	
 	public final static String HEADER_AREA = "Area";
-
+	
 	public final static String HEADER_ISOTOPE = "Isotope";
 
 	// MS1 Sheet Headers

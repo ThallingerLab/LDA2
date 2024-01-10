@@ -1092,7 +1092,7 @@ public class LDAResultReader
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_MOD_FORMULA)) {
           modFormula = rawValue;
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_RT)) {
-        	preciseRT = Double.parseDouble(rawValue);
+          preciseRT = Double.parseDouble(rawValue);
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_ISOTOPE)) {
           isotope = (int)Float.parseFloat(rawValue);
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_AREA)) {

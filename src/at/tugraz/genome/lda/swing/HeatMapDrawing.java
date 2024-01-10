@@ -365,7 +365,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     this.generateHeatMap();
     
     if (!isGrouped_){     
-      chromExport_ = new ChromExportDialog("Chrom export",getDisplayNames(),this.heatmap_.getAnalyteNames(),modifications_,this);
+      chromExport_ = new ChromExportDialog("Chrom export",getDisplayNames(),this.heatmap_.getOriginalAnalyteNames(),modifications_,this);
 ////      chromExport_.addActionListener(this);
     }
     chromExportThread_ = null;
@@ -783,7 +783,8 @@ public class HeatMapDrawing extends JPanel implements ActionListener
             }
         	} 
         }
-      } if (chromFileExists) {
+      } 
+      if (chromFileExists) {
         for (String mod : this.modifications_){
           if (chromExport_.isModificationSelected(mod))modsToUse.add(mod);
         }
@@ -1703,6 +1704,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   	displaySettings_.copySettings(settings);
   	actionPerformed(ResultDisplaySettings.APPLY_DISPLAY_SETTINGS);
   }
+  
   
   public void cleanup(){
   	ungroupedPartner_ = null;
