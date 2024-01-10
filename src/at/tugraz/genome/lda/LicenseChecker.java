@@ -23,13 +23,13 @@
 
 package at.tugraz.genome.lda;
 
-import java.io.File;
-import java.util.Vector;
-
-import javax.swing.ImageIcon;
-
-import jlk.LicenseHandler;
-import jlk.MatrixLipidDataAnalyzer2;
+//import java.io.File;
+//import java.util.Vector;
+//
+//import javax.swing.ImageIcon;
+//
+//import jlk.LicenseHandler;
+//import jlk.MatrixLipidDataAnalyzer2;
 
 /**
  * 
@@ -41,39 +41,39 @@ public class LicenseChecker
 {
 	public void checkLicense() 
 	{
-		MatrixLipidDataAnalyzer2 licenseMatrix = new MatrixLipidDataAnalyzer2();
-	  Vector<String> forbiddenkeys = new Vector<String>();
-	  LicenseHandler.setForbiddenKeyMD5Hashes(forbiddenkeys);
-	  LicenseHandler.setLicenseArray(licenseMatrix);
-	  LicenseHandler.setApplicationIcon(new ImageIcon(getClass().getResource("/images/Delete.gif")));
-	  LicenseHandler.setAppName(licenseMatrix.getApplicationName());
-	  LicenseHandler.setModuleNames(new String[]{"0"});
-	  LicenseHandler.setDemoModeEnabled(false);
-	  LicenseHandler.setUseRoamingProfileEnabled(false);
-	  File licenseFolder = new File(Settings.getLicensePath());
-	  File ldaHomeFolder = new File (Settings.getLdaUserHomePath());
-	  if (!ldaHomeFolder.exists()) {
-	    if (!ldaHomeFolder.mkdirs()) {
-	      System.err.println("Could not create mandatory directory "+ldaHomeFolder.getAbsolutePath());
-	      System.exit(-1);
-	    }
-	    try {
-	      Runtime.getRuntime().exec("attrib +h \""+ldaHomeFolder.getAbsolutePath()+"\"");
-	    } catch (Exception ex) {
-	      System.err.println("Could not hide directory "+ldaHomeFolder.getAbsolutePath());
-	    }
-	  }
-	  ////this is for the demo license for the reviewers
-	  //if (!licenseFolder.exists()) {               
-	    //TODO: this license for reviewing is valid until the 30th of November 2021!
-	   //LicenseHandler.writeLicenseStringAndUserName(licenseFolder,"mG46-sSp]-[WSu-Ob8S-^7kF-4z@v-XO5r-K]^z","Test 2.8.1");
-	  //}
-	  LicenseHandler.checkLicenseInFolder(licenseFolder);
+//		MatrixLipidDataAnalyzer2 licenseMatrix = new MatrixLipidDataAnalyzer2();
+//	  Vector<String> forbiddenkeys = new Vector<String>();
+//	  LicenseHandler.setForbiddenKeyMD5Hashes(forbiddenkeys);
+//	  LicenseHandler.setLicenseArray(licenseMatrix);
+//	  LicenseHandler.setApplicationIcon(new ImageIcon(getClass().getResource("/images/Delete.gif")));
+//	  LicenseHandler.setAppName(licenseMatrix.getApplicationName());
+//	  LicenseHandler.setModuleNames(new String[]{"0"});
+//	  LicenseHandler.setDemoModeEnabled(false);
+//	  LicenseHandler.setUseRoamingProfileEnabled(false);
+//	  File licenseFolder = new File(Settings.getLicensePath());
+//	  File ldaHomeFolder = new File (Settings.getLdaUserHomePath());
+//	  if (!ldaHomeFolder.exists()) {
+//	    if (!ldaHomeFolder.mkdirs()) {
+//	      System.err.println("Could not create mandatory directory "+ldaHomeFolder.getAbsolutePath());
+//	      System.exit(-1);
+//	    }
+//	    try {
+//	      Runtime.getRuntime().exec("attrib +h \""+ldaHomeFolder.getAbsolutePath()+"\"");
+//	    } catch (Exception ex) {
+//	      System.err.println("Could not hide directory "+ldaHomeFolder.getAbsolutePath());
+//	    }
+//	  }
+//	  ////this is for the demo license for the reviewers
+//	  //if (!licenseFolder.exists()) {               
+//	    //TODO: this license for reviewing is valid until the 30th of November 2021!
+//	   //LicenseHandler.writeLicenseStringAndUserName(licenseFolder,"mG46-sSp]-[WSu-Ob8S-^7kF-4z@v-XO5r-K]^z","Test 2.8.1");
+//	  //}
+//	  LicenseHandler.checkLicenseInFolder(licenseFolder);
 	}
 	
 	public static void showLicenseDialog()
 	{
-		LicenseHandler.showLicenseDialog();
+//		LicenseHandler.showLicenseDialog();
 	}
 	
 	/**
@@ -82,7 +82,7 @@ public class LicenseChecker
 	 */
 	public static boolean isCheckLicense()
 	{
-		return true;
+		return false;
 	}
 	
 }

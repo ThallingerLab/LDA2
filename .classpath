@@ -59,9 +59,11 @@
 	<classpathentry kind="lib" path="lib/excel/commons-compress-1.21.jar"/>
 	<classpathentry kind="lib" path="lib/excel/stax2-api-4.2.jar"/>
 	<classpathentry kind="lib" path="lib/excel/aalto-xml-1.3.1.jar"/>
+	
+	<!-- when on a mac or linux system, replace these natives with the ones in natives/mac or natives/linux64, respectively -->
 	<classpathentry kind="lib" path="natives/windows64/gluegen-rt-natives-windows-amd64.jar"/>
 	<classpathentry kind="lib" path="natives/windows64/joal-natives-windows-amd64.jar"/>
 	<classpathentry kind="lib" path="natives/windows64/jogl-all-natives-windows-amd64.jar"/>
-	<classpathentry kind="lib" path="lib/license/jlk.jar"/>
+	
 	<classpathentry kind="output" path="classes"/>
 </classpath>

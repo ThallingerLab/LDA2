@@ -1,7 +1,8 @@
 /classes/
 /junit/
+/bin/
 /toInstall/
-/installer/i4j-output/
+/installer/
 *.bak
 
 #To avoid committing currently selected fragRules
