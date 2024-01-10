@@ -1,0 +1,26 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.02%
+ChainCutoff=50%
+AlkylChains=1
+RetentionTimePostprocessing=true
+singleChainIdentification=true
+
+[HEAD]
+!FRAGMENTS
+Name=PChead		Formula=P1O4C5N1H15		Charge=1	MSLevel=2	mandatory=false
+Name=Precursor		Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=false
+Name=NL-triMeth		Formula=$PRECURSOR-NC3H9	Charge=1	MSLevel=2	mandatory=false
+Name=NL-Na_wrong	Formula=$PRECURSOR-P1O4C5N1H14	Charge=1	MSLevel=2	mandatory=false
+
+[CHAINS]
+!FRAGMENTS
+Name=NL-Ketene		Formula=$PRECURSOR-$CHAIN+H2O		Charge=1	MSLevel=2	mandatory=false
+Name=NL-Carboxy		Formula=$PRECURSOR-$CHAIN		Charge=1	MSLevel=2	mandatory=false
+Name=NL-Kete-Alk	Formula=$PRECURSOR-$ALKYLCHAIN+H2O	Charge=1	MSLevel=2	mandatory=false
+Name=NL-Carb-Alk	Formula=$PRECURSOR-$ALKYLCHAIN		Charge=1	MSLevel=2	mandatory=false
+Name=Carb-Alk		Formula=$ALKYLCHAIN+H			Charge=1	MSLevel=2	mandatory=false
+

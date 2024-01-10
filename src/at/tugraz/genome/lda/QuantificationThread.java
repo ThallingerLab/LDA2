@@ -60,7 +60,6 @@ import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
-import at.tugraz.genome.lda.export.OmegaMasslistExporter;
 import at.tugraz.genome.lda.export.QuantificationResultExporter;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.MSnAnalyzer;
@@ -70,13 +69,16 @@ import at.tugraz.genome.lda.msn.RulesContainer;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.msn.vos.RtPredictVO;
+import at.tugraz.genome.lda.parser.ModificationParser;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.swing.Range;
+import at.tugraz.genome.lda.target.export.TargetListExporter;
 import at.tugraz.genome.lda.utils.RangeInteger;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleStringVO;
+import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
@@ -92,7 +94,6 @@ import at.tugraz.genome.voutils.GeneralComparator;
  * @author Leonida M. Lamp
  *
  */
-//TODO: features for omega assingment have been commented out / not added
 public class QuantificationThread extends Thread
 {
   private String chromFile_;
@@ -229,7 +230,8 @@ public class QuantificationThread extends Thread
     }
     if (quantContent!=null){
       LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)quantContent.get(0);
-      Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)quantContent.get(1);
+ // LL    Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)quantContent.get(1);
+      LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantContent.get(1);
     
       totalAmountOfLipids_ = 0;
       for (String className : classSequence.keySet()) totalAmountOfLipids_ += analyteSequence.get(className).size();
@@ -300,8 +302,8 @@ public class QuantificationThread extends Thread
         LipidomicsConstants.getIsotopeInBetweenTime(),LipidomicsConstants.getIsoInBetweenAreaFactor(),LipidomicsConstants.getIsoInBetweenMaxTimeDistance(),
         LipidomicsConstants.getIsoNearNormalProbeTime(),LipidomicsConstants.getRelativeAreaCutoff(),
         LipidomicsConstants.getRelativeFarAreaCutoff(),LipidomicsConstants.getRelativeFarAreaTimeSpace(),
-        LipidomicsConstants.getRelativeIsoInBetweenCutoff(),LipidomicsConstants.getTwinPeakMzTolerance(),
-        LipidomicsConstants.getClosePeakTimeTolerance(),LipidomicsConstants.getTwinInBetweenCutoff(), LipidomicsConstants.getUnionInBetweenCutoff(),
+        LipidomicsConstants.getRelativeIsoInBetweenCutoff(),LipidomicsConstants.getClosePeakTimeTolerance(),
+        LipidomicsConstants.getTwinInBetweenCutoff(), LipidomicsConstants.getUnionInBetweenCutoff(),
         LipidomicsConstants.getMs2MzTolerance());
     }
   }
@@ -400,16 +402,24 @@ public class QuantificationThread extends Thread
     Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();
     LinkedHashMap<String,Integer> classSequence = new LinkedHashMap<String,Integer>();
     Hashtable<String,Boolean> adductInsensitiveRtFilter = new Hashtable<String,Boolean>();
-    Hashtable<String,Vector<String>> analyteSequence = new Hashtable<String,Vector<String>>();
+    Hashtable<String,Boolean> bestMatchBySpectrumCoverage = new Hashtable<String,Boolean>();
+ // LL  Hashtable<String,Vector<String>> analyteSequence = new Hashtable<String,Vector<String>>();
+    LinkedHashMap<String,Vector<String>> analyteSequence = new LinkedHashMap<String,Vector<String>>();
     boolean excelOK = false;
     ElementConfigParser aaParser = Settings.getElementParser();
     for (int sheetNumber = 0; sheetNumber!=workbook.getNumberOfSheets(); sheetNumber++){
       Hashtable<String,Hashtable<String,QuantVO>> quantsOfClass = new Hashtable<String,Hashtable<String,QuantVO>>();
+      Hashtable<String,Hashtable<String,QuantVO>> quantsOfOxClass = new Hashtable<String,Hashtable<String,QuantVO>>();
+      
       Vector<String> analytes = new Vector<String>();
+      Vector<String> oxAnalytes = new Vector<String>();
       Sheet sheet = workbook.getSheetAt(sheetNumber);
       boolean rtFilterInsensitive = false;
+      boolean pickBestMatchBySpectrumCoverage = false;
       int sideChainColumn = -1;
       int doubleBondColumn = -1;
+      int molecularSpeciesWithDoubleBondPositionsColumn = -1;
+      int oxStateColumn = -1;
 
       Hashtable<Integer,String> massOfInterestColumns = new Hashtable<Integer,String>();
       Hashtable<String,Hashtable<String,Integer>> adductComposition = new Hashtable<String,Hashtable<String,Integer>>();
@@ -427,10 +437,11 @@ public class QuantificationThread extends Thread
         Row row = sheet.getRow(rowCount);
         String sideChain = "";
         int doubleBonds = -1;
-        
+        String oxState = "";
         Hashtable<String,Integer> elementalComposition = new Hashtable<String,Integer>();
         Hashtable <String,Double> massesOfInterest = new Hashtable <String,Double>();
         float retTime = -1;
+        String molecularSpeciesWithDB = null;
         Hashtable<Integer,String> possibleElementColumns = new  Hashtable<Integer,String>();
         for (int i=0; row!=null && i!=(row.getLastCellNum()+1);i++){
           Cell cell = row.getCell(i);
@@ -457,6 +468,8 @@ public class QuantificationThread extends Thread
             
             else if (contents.equalsIgnoreCase("dbs")||contents.equalsIgnoreCase("dbs_TAG")){
               doubleBondColumn = i;
+            } else if (contents.equalsIgnoreCase(LipidomicsConstants.CHAIN_MOD_COLUMN_NAME)){
+              oxStateColumn = i;
             } 
 
             else if (contents.startsWith("mass")&&contents.contains("(")&&contents.contains(")")){
@@ -507,13 +520,9 @@ public class QuantificationThread extends Thread
                   }
                 }
               }
-            } 
-            
-            else if (contents.trim().equalsIgnoreCase("adductInsensitiveRtFilter")) {
-              rtFilterInsensitive = true;
-            }
-            
-            else if (contents.startsWith("OH-Number:")){
+            } else if (contents.trim().equalsIgnoreCase("adductInsensitiveRtFilter")) {
+            	rtFilterInsensitive = true;
+            } else if (contents.startsWith("OH-Number:")){
               String ohString = contents.substring("OH-Number:".length()).trim().replaceAll(",", ".");
               try{
                 ohNumber = Integer.parseInt(ohString);
@@ -521,9 +530,7 @@ public class QuantificationThread extends Thread
               }catch(NumberFormatException nfx){
                 ohNumber = Settings.getLcbHydroxyEncoding().getHydroxyNumber(ohString);
               }
-            } 
-            
-            else if (contents.startsWith("OH-Range:")){
+            } else if (contents.startsWith("OH-Range:")){
               String ohRangeString = contents.substring("OH-Range:".length()).trim().replaceAll(",", ".");
               String[] ohRangeParts = ohRangeString.split("-");
               boolean error = false;
@@ -537,10 +544,12 @@ public class QuantificationThread extends Thread
               }catch(NumberFormatException nfx){error = true;}
               if (error)
                 throw new HydroxylationEncodingException("The value \"OH-Range\" must be a single integer, or a range in the format $lower$-$higher$; the value \""+ohRangeString+"\" in sheet "+sheet.getSheetName()+" does not comply!");
+            } else if (contents.trim().equalsIgnoreCase("pickBestMatchBySpectrumCoverage")) {
+            	pickBestMatchBySpectrumCoverage = true;
+            } else if (contents.equalsIgnoreCase(TargetListExporter.HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS)){
+              molecularSpeciesWithDoubleBondPositionsColumn = i;
             }
-            
-          }else{  
-            
+          }else{            
             if (i==sideChainColumn&&contents!=null&contents.length()>0){
 //          for Marlene metabolomics implementation - exclude the if - only "sideChain = contents;" must remain 
               if (numeric!=null){
@@ -548,9 +557,11 @@ public class QuantificationThread extends Thread
               }else
                 sideChain = contents;
             }
-            
             if (i==doubleBondColumn&&contents!=null&&contents.length()>0){
               doubleBonds = numeric.intValue();
+            }
+            if (i==oxStateColumn&&contents!=null&&contents.length()>0){
+              oxState = contents;
             }
             
             if (elementColumns.containsKey(i)&&contents.length()>0){
@@ -581,6 +592,10 @@ public class QuantificationThread extends Thread
             if (i==retTimeColumn&&contents!=null&contents.length()>0){
               retTime = numeric.floatValue();
               retTime += rtShift;
+            }
+            
+            if (i==molecularSpeciesWithDoubleBondPositionsColumn&&contents!=null&contents.length()>0){
+              molecularSpeciesWithDB = contents;
             }
           }
         }
@@ -632,54 +647,163 @@ public class QuantificationThread extends Thread
                 stopOh = ohRange.getStop();
               }
             }
-            for (int oh=startOh; oh<(stopOh+1); oh++) {
-              Hashtable<String,QuantVO> quantsOfAnalyte = new Hashtable<String,QuantVO>();
-              String analEncoded = null;
-              Hashtable<String,Integer> correctedElementalComposition = new Hashtable<String,Integer>(elementalComposition);
-              double ohDiff = 0d;
-              int ohToUse = LipidomicsConstants.EXCEL_NO_OH_INFO;
-              if (ohNumber>LipidomicsConstants.EXCEL_NO_OH_INFO) {
-                ohToUse = oh;
-                if (oh!=ohNumber) {
-                  int oxygens = 0;
-                  if (correctedElementalComposition.containsKey("O")) oxygens = correctedElementalComposition.get("O");
-                  oxygens += (oh-ohNumber);
-                  if (oxygens<0) continue;
-                  correctedElementalComposition.put("O", oxygens);
-                  ohDiff = (oh-ohNumber)*Settings.getElementParser().getElementDetails("O").getMonoMass();
+            
+            //create new quantVO objects for each (ox)modified lipid
+            String[] oxStates = oxState.split(";");
+            if (oxState.length() == 0) {
+              for (int oh=startOh; oh<(stopOh+1); oh++) {
+                Hashtable<String,QuantVO> quantsOfAnalyte = new Hashtable<String,QuantVO>();
+                String analEncoded = null;
+                Hashtable<String,Integer> correctedElementalComposition = new Hashtable<String,Integer>(elementalComposition);
+                double ohDiff = 0d;
+                int ohToUse = LipidomicsConstants.EXCEL_NO_OH_INFO;
+                if (ohNumber>LipidomicsConstants.EXCEL_NO_OH_INFO) {
+                  ohToUse = oh;
+                  if (oh!=ohNumber) {
+                    int oxygens = 0;
+                    if (correctedElementalComposition.containsKey("O")) oxygens = correctedElementalComposition.get("O");
+                    oxygens += (oh-ohNumber);
+                    if (oxygens<0) continue;
+                    correctedElementalComposition.put("O", oxygens);
+                    ohDiff = (oh-ohNumber)*Settings.getElementParser().getElementDetails("O").getMonoMass();
+                  }
+                }
+                
+                for (String modName : massesOfInterest.keySet()){
+                  Hashtable<String,Integer> modElements = adductComposition.get(modName);
+                  Integer charge = charges.get(modName);
+                  double massOfInterest = massesOfInterest.get(modName)+ohDiff/((double)charge);
+                  Integer mult = multi.get(modName);
+                  
+                  String[] formulas = getFormulasAsString(correctedElementalComposition,modElements,mult);
+                  String analyteFormula = formulas[0];
+                  String modificationFormula = formulas[1];
+                  String chemicalFormula = formulas[2];
+                  //no negative elements are allowed after an applied modification
+                  if (chemicalFormula.indexOf("-")!=-1)
+                    continue;
+                  Object[] distris = getTheoreticalIsoDistributions(aaParser,isotopesMustMatch,amountOfIsotopes,chemicalFormula);
+                  Vector<Double> mustMatchProbabs = (Vector<Double>)distris[0];
+                  Vector<Double> probabs = (Vector<Double>)distris[1];
+                  int negativeStartValue = (Integer)distris[2];
+
+                  QuantVO quantVO = new QuantVO(sheet.getSheetName(), sideChain, doubleBonds,
+                      ohToUse,analyteFormula, massOfInterest, charge, modName,
+                      modificationFormula, retTime, usedMinusTime, usedPlusTime,
+                      mustMatchProbabs, probabs,negativeStartValue, "");
+                  
+                  analEncoded = quantVO.getAnalyteName();
+                  quantsOfAnalyte.put(modName, quantVO);
+                }
+                String analyteName = StaticUtils.generateLipidNameString((analEncoded!=null ? analEncoded : sideChain), doubleBonds, -1, "");
+                if (!quantsOfClass.containsKey(analyteName)) {
+                  analytes.add(analyteName);
+                  quantsOfClass.put(analyteName, quantsOfAnalyte);
+                } else if (!hasValidInfoForOmegaAssignment(molecularSpeciesWithDB, retTime)) {
+                  System.out.println(String.format("Ignoring duplicate analyte %s in mass list (line %s)!", analyteName, (rowCount+1)));
+                }
+                if (hasValidInfoForOmegaAssignment(molecularSpeciesWithDB, retTime)) {
+                  for (String mod : quantsOfAnalyte.keySet()){
+                    try {
+                      Vector<FattyAcidVO> chainCombination = StaticUtils.decodeFAsFromHumanReadableName(
+                          molecularSpeciesWithDB, Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), false, null);
+                      DoubleBondPositionVO doubleBondPositionVO = new DoubleBondPositionVO(
+                          chainCombination, retTime);
+                      quantsOfClass.get(analyteName).get(mod).addInfoForOmegaAssignment(doubleBondPositionVO);
+                    } catch (LipidCombinameEncodingException ex) {
+                      System.out.println(ex.getMessage());
+                    }
+                  }
                 }
               }
-              
-              for (String modName : massesOfInterest.keySet()){
-                Hashtable<String,Integer> modElements = adductComposition.get(modName);
-                Integer charge = charges.get(modName);
-                double massOfInterest = massesOfInterest.get(modName)+ohDiff/((double)charge);
-                Integer mult = multi.get(modName);
-                
-                String[] formulas = getFormulasAsString(correctedElementalComposition,modElements,mult);
-                String analyteFormula = formulas[0];
-                String modificationFormula = formulas[1];
-                String chemicalFormula = formulas[2];
-                //no negative elements are allowed after an applied modification
-                if (chemicalFormula.indexOf("-")!=-1)
-                  continue;
-                Object[] distris = getTheoreticalIsoDistributions(aaParser,isotopesMustMatch,amountOfIsotopes,chemicalFormula);
-                Vector<Double> mustMatchProbabs = (Vector<Double>)distris[0];
-                Vector<Double> probabs = (Vector<Double>)distris[1];
-                int negativeStartValue = (Integer)distris[2];
+            	
+            } else {
+            for (String oxMod : oxStates)
+            {
+            	oxMod = oxMod.replaceAll("\\s", "");
+            	
+	            for (int oh=startOh; oh<(stopOh+1); oh++) {
+	              Hashtable<String,QuantVO> quantsOfAnalyte = new Hashtable<String,QuantVO>();
+	              Hashtable<String,QuantVO> quantsOfOxAnalyte = new Hashtable<String,QuantVO>();
+	              
+	              String analEncoded = null;
+	              Hashtable<String,Integer> correctedElementalComposition = new Hashtable<String,Integer>(elementalComposition);
+	              double ohDiff = 0d;
+	              int ohToUse = LipidomicsConstants.EXCEL_NO_OH_INFO;
+	              if (ohNumber>LipidomicsConstants.EXCEL_NO_OH_INFO) {
+	                ohToUse = oh;
+	                if (oh!=ohNumber) {
+	                  int oxygens = 0;
+	                  if (correctedElementalComposition.containsKey("O")) oxygens = correctedElementalComposition.get("O");
+	                  oxygens += (oh-ohNumber);
+	                  if (oxygens<0) continue;
+	                  correctedElementalComposition.put("O", oxygens);
+	                  ohDiff = (oh-ohNumber)*Settings.getElementParser().getElementDetails("O").getMonoMass();
+	                }
+	              }
+	              
+	              ModificationParser mp = new ModificationParser(oxMod);
+	              mp.parse();
+	              correctedElementalComposition = mp.getNewChemicalComposition(correctedElementalComposition);
+	              
+	              for (String modName : massesOfInterest.keySet()){
+	                
+	                String analyteClass = sheet.getSheetName();
+	                
+	                
+	                //apply respective (ox)modification to all masses and formulas
 
-                QuantVO quantVO = new QuantVO(sheet.getSheetName(), sideChain, doubleBonds,
-                    ohToUse,analyteFormula, massOfInterest, charge, modName,
-                    modificationFormula, retTime, usedMinusTime, usedPlusTime,
-                    mustMatchProbabs, probabs,negativeStartValue);
-                
-                analEncoded = quantVO.getAnalyteName();
-                quantsOfAnalyte.put(modName, quantVO);
-              }
-              String analyteName = StaticUtils.generateLipidNameString((analEncoded!=null ? analEncoded : sideChain), doubleBonds, -1);
-              analytes.add(analyteName);
-              quantsOfClass.put(analyteName, quantsOfAnalyte);
+                    Hashtable<String,Integer> modElements = adductComposition.get(modName);
+                    Integer charge = charges.get(modName);
+                    double massOfInterest = mp.getNewMass(massesOfInterest.get(modName)+ohDiff/((double)charge));
+                    Integer mult = multi.get(modName);
+
+                    String[] formulas = getFormulasAsString(correctedElementalComposition,modElements,mult);
+                    String analyteFormula = formulas[0];
+                    String modificationFormula = formulas[1];
+                    String chemicalFormula = formulas[2];
+                                        
+                    //no negative elements are allowed after an applied modification
+                    if (chemicalFormula.indexOf("-")!=-1)
+                      continue;
+                    Object[] distris = getTheoreticalIsoDistributions(aaParser,isotopesMustMatch,amountOfIsotopes,chemicalFormula);
+                    Vector<Double> mustMatchProbabs = (Vector<Double>)distris[0];
+                    Vector<Double> probabs = (Vector<Double>)distris[1];
+                    int negativeStartValue = (Integer)distris[2];
+                	
+                	//add ox-prefix to modified lipids
+                	if(!oxMod.equals("")) {
+                    	analyteClass = "ox" + analyteClass;
+                    }
+                	
+                	QuantVO quantVO = new QuantVO(analyteClass, sideChain, doubleBonds,
+                            ohToUse,analyteFormula, massOfInterest, charge, modName,
+                            modificationFormula, retTime, usedMinusTime, usedPlusTime,
+                            mustMatchProbabs, probabs,negativeStartValue,oxMod);
+                            analEncoded = quantVO.getAnalyteName();
+                            
+                    /*add oxLipids to another sheet (effectively becoming a tab in the GUI)*/
+                            //==
+                    if(oxMod.equals("")) {
+                    	quantsOfAnalyte.put(modName, quantVO);
+                    }else {
+                    	quantsOfOxAnalyte.put(modName, quantVO);
+                    }
+	                	
+	              }
+	              String analyteName = StaticUtils.generateLipidNameString((analEncoded!=null ? analEncoded : sideChain), doubleBonds, -1, oxMod);
+	              
+	              /*add oxLipids to another sheet (effectively becoming a tab in the GUI)*/
+	              if(oxMod.equals("")) {
+	            	  analytes.add(analyteName);
+	            	  quantsOfClass.put(analyteName, quantsOfAnalyte);
+	              }else {
+	            	  oxAnalytes.add(analyteName);
+	            	  quantsOfOxClass.put(analyteName, quantsOfOxAnalyte);
+	              }              
+	            }
             }
+          	}
           }
         }
       } 
@@ -687,6 +811,18 @@ public class QuantificationThread extends Thread
       analyteSequence.put(sheet.getSheetName(), analytes);
       classSequence.put(sheet.getSheetName(),msLevel);
       adductInsensitiveRtFilter.put(sheet.getSheetName(), rtFilterInsensitive);
+      bestMatchBySpectrumCoverage.put(sheet.getSheetName(), pickBestMatchBySpectrumCoverage);
+      
+      /*add (if applicable) oxLipids to another sheet (effectively becoming a tab in the GUI)*/
+      if(!oxAnalytes.isEmpty())
+      {
+    	  quantObjects.put("ox"+sheet.getSheetName(), quantsOfOxClass);
+          analyteSequence.put("ox"+sheet.getSheetName(), oxAnalytes);
+          classSequence.put("ox"+sheet.getSheetName(),msLevel);
+          adductInsensitiveRtFilter.put("ox"+sheet.getSheetName(), rtFilterInsensitive);
+          bestMatchBySpectrumCoverage.put("ox"+sheet.getSheetName(), pickBestMatchBySpectrumCoverage);
+      }
+      
       if (foundColumns) excelOK = true;
     }
     myxls.close();
@@ -697,8 +833,20 @@ public class QuantificationThread extends Thread
     results.add(classSequence);
     results.add(analyteSequence);
     results.add(adductInsensitiveRtFilter);
+    results.add(bestMatchBySpectrumCoverage);
     results.add(quantObjects);
     return results;
+  }
+  
+  /**
+   * @param molecularSpeciesWithDB String of the potential molecular species with double bond position assignment
+   * @param retTime retention time in minutes
+   * @return true if a molecular species with double bond position information and a corresponding retention time was found in the mass list
+   */
+  private static boolean hasValidInfoForOmegaAssignment(String molecularSpeciesWithDB, float retTime)
+  {
+    if (molecularSpeciesWithDB != null && retTime>0) return true;
+    return false;
   }
   
   @SuppressWarnings({ "rawtypes" })
@@ -748,8 +896,10 @@ public class QuantificationThread extends Thread
   
   private class ThreadSupervisor extends TimerTask{
     private LinkedHashMap<String,Integer> classSequence_;
-    private Hashtable<String,Vector<String>> analyteSequence_;
+ // LL  private Hashtable<String,Vector<String>> analyteSequence_;
+    private LinkedHashMap<String,Vector<String>> analyteSequence_;
     private Hashtable<String,Boolean> adductInsensitiveRtFilter_;
+    private Hashtable<String,Boolean> bestMatchBySpectrumCoverage_;
     private Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects_;
     private float bpCutoff_;
     private String rsFile_;
@@ -759,9 +909,11 @@ public class QuantificationThread extends Thread
     protected ThreadSupervisor(Vector excelContent, float  basePeakCutoff, String resultFile){
       currentLipidCount_ = 0;
       classSequence_ = (LinkedHashMap<String,Integer>)excelContent.get(0);
-      analyteSequence_ = (Hashtable<String,Vector<String>>)excelContent.get(1);
+   // LL  analyteSequence_ = (Hashtable<String,Vector<String>>)excelContent.get(1);
+      analyteSequence_ = (LinkedHashMap<String,Vector<String>>)excelContent.get(1);
       adductInsensitiveRtFilter_ = (Hashtable<String,Boolean>)excelContent.get(2);
-      quantObjects_ = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)excelContent.get(3);
+      bestMatchBySpectrumCoverage_ = (Hashtable<String,Boolean>)excelContent.get(3);
+      quantObjects_ = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)excelContent.get(4);
       bpCutoff_ = basePeakCutoff;
       rsFile_ = resultFile;
       initThreadHashes();
@@ -771,7 +923,7 @@ public class QuantificationThread extends Thread
     { 
       try{
         if (!finished_)
-          handleTimerEvent(classSequence_,analyteSequence_,adductInsensitiveRtFilter_,quantObjects_,bpCutoff_,rsFile_,chromFileName_);
+          handleTimerEvent(classSequence_,analyteSequence_,adductInsensitiveRtFilter_,bestMatchBySpectrumCoverage_,quantObjects_,bpCutoff_,rsFile_,chromFileName_);
       } catch (Exception ex){
         ex.printStackTrace();
         errorString_ = ex.toString();
@@ -797,7 +949,9 @@ public class QuantificationThread extends Thread
         Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>> resultsClass = new Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>();
         Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>> resultsNeg = new Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>();
         Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>> unsplitted = new Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>();
+
         for (String analyteName : analyteSequence_.get(className)){
+   // LL    for (String analyteName : analytes){
           Hashtable<String,QuantVO> analyteQuant = classQuant.get(analyteName);
           Hashtable<String,Integer> status = new Hashtable<String,Integer>();
           for (String mod : analyteQuant.keySet()){
@@ -819,9 +973,9 @@ public class QuantificationThread extends Thread
   }
   
   
-  private void handleTimerEvent(LinkedHashMap<String,Integer> classSequence,Hashtable<String,Vector<String>> analyteSequence,
-      Hashtable<String,Boolean> adductInsensitiveRtFilter, Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects,
-      float basePeakCutoff, String resultFile, String chromFile){
+  private void handleTimerEvent(LinkedHashMap<String,Integer> classSequence,LinkedHashMap<String,Vector<String>> analyteSequence,
+	      Hashtable<String,Boolean> adductInsensitiveRtFilter, Hashtable<String,Boolean> bestMatchBySpectrumCoverage, Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects,
+	      float basePeakCutoff, String resultFile, String chromFile){
     
     boolean allFinished = true;
     boolean error = false;
@@ -884,6 +1038,9 @@ public class QuantificationThread extends Thread
               Hashtable<String,LipidParameterSet> newHits = new Hashtable<String,LipidParameterSet>();
               for (String rt : hitsOfOneMod.keySet()){
                 LipidParameterSet set = hitsOfOneMod.get(rt);
+                
+                set.setOxState(oneQuant.getOxState());           
+                
                 boolean insideAllowedMz = false;
                 if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
                   insideAllowedMz = true;
@@ -1006,13 +1163,15 @@ public class QuantificationThread extends Thread
     //if there are free threads, assign jobs to them!
     int currentThreadNumber = 0;
     if (!error && availableThread.size()>0){
+    	
       for (String className : classSequence.keySet()){
         if (currentThreadNumber>=availableThread.size())
           break;
         Hashtable<String,Hashtable<String,QuantVO>> classQuant = quantObjects.get(className);
         quantObjects.get(className);
         int msLevel = classSequence.get(className);
-        for (String analyteName : analyteSequence.get(className)){
+
+      for (String analyteName : analyteSequence.get(className)){
           if (currentThreadNumber>=availableThread.size())
             break;
           Hashtable<String,QuantVO> analyteQuant = classQuant.get(analyteName);
@@ -1029,6 +1188,7 @@ public class QuantificationThread extends Thread
                 Vector<QuantVO> quants = new Vector<QuantVO>();
                 quants.add(analyteQuant.get(mod));
                 quants.addAll(analyteQuant.get(mod).getOtherIsobaricSpecies());
+                Collections.sort(quants); /// LL
                 for (int i=0; i!=quants.size();i++){
                   QuantVO quant = quants.get(i);
                   try{
@@ -1097,9 +1257,9 @@ public class QuantificationThread extends Thread
       }
       int countToProcess = 0;
       if (areThereMS1HitsToProcess){
-        PostQuantificationProcessor processor = new PostQuantificationProcessor(results_,ms2Removed_,adductInsensitiveRtFilter);
+/*LL*/        PostQuantificationProcessor processor = new PostQuantificationProcessor(results_,ms2Removed_,adductInsensitiveRtFilter);
         try {
-          latestRtPredictions_ = processor.predictRetentionTimesBasedOnResults(onlyMS1DataPresent_,latestRtPredictions_);
+/*LL*/          latestRtPredictions_ = processor.predictRetentionTimesBasedOnResults(onlyMS1DataPresent_,latestRtPredictions_);
           Hashtable<String,Hashtable<String,Boolean>> predictionFound = new Hashtable<String,Hashtable<String,Boolean>>();
           Hashtable<String,Hashtable<String,Hashtable<String,String>>> toRemove = new Hashtable<String,Hashtable<String,Hashtable<String,String>>>();
           // these reinits the quantification of analytes where an RT prediction was made
@@ -1180,43 +1340,43 @@ public class QuantificationThread extends Thread
       if (!error){
         //check here for results that need other adducts to be correct
         if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE) {
-          try {
-            results_ = OtherAdductChecker.checkTheResultsForOtherAdducts(results_,unsplittedPeaks_,quantObjects,analyzers_.get(0),classSequence);
-          }
-          catch (CgException | LipidCombinameEncodingException e) {
-            e.printStackTrace();
-          }
+ /*LL*/         try {
+ /*LL*/           results_ = OtherAdductChecker.checkTheResultsForOtherAdducts(results_,unsplittedPeaks_,quantObjects,analyzers_.get(0),classSequence);
+ /*LL*/         }
+ /*LL*/         catch (CgException | LipidCombinameEncodingException e) {
+ /*LL*/           e.printStackTrace();
+  /*LL*/        }
         }
         if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE && LipidomicsConstants.isMS2()){
-          PostQuantificationProcessor processor = new PostQuantificationProcessor(results_,ms2Removed_,adductInsensitiveRtFilter);
+ /*LL*/         PostQuantificationProcessor processor = new PostQuantificationProcessor(results_,ms2Removed_,adductInsensitiveRtFilter);
           try {
-            results_ = processor.chooseMoreLikelyOne(quantObjects);
+ /*LL*/           results_ = processor.chooseMoreLikelyOne(quantObjects);
           }
           catch (Exception e) {
             e.printStackTrace();
             new WarningMessage(new JFrame(), "Warning","Choose more likely one could not be executed because of: "+e.getMessage()+"!");
           }
           try {
-            results_ = processor.processData();
+/*LL*/            results_ = processor.processData();
           }
           catch (Exception e) {
             e.printStackTrace();
             new WarningMessage(new JFrame(), "Warning","Post processing could not be executed because of: "+e.getMessage()+"!");
           }
-          results_ = reuniteWronglySeparatedPeaks(results_,quantObjects,unsplittedPeaks_);
+/*LL*/          results_ = reuniteWronglySeparatedPeaks(results_,quantObjects,unsplittedPeaks_);
         }
         //so that the checkTheResultsForOtherAdducts is really 100% correct, remove all hits that fall below the
         //base peak cutoff, and execute OtherAdductChecker.checkTheResultsForOtherAdducts again
         if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE) {
-          try {
-            OtherAdductChecker.removePeaksThatFallBelowTheBasepeakCutoff(results_,extractHighestArea()*(basePeakCutoff/1000f));
-            results_ = OtherAdductChecker.checkTheResultsForOtherAdducts(results_,unsplittedPeaks_,quantObjects,analyzers_.get(0),classSequence);
-          }
-          catch (CgException | LipidCombinameEncodingException e) {
-            e.printStackTrace();
-          }
+  /*LL*/        try {
+  /*LL*/          OtherAdductChecker.removePeaksThatFallBelowTheBasepeakCutoff(results_,extractHighestArea()*(basePeakCutoff/1000f));
+    /*LL*/        results_ = OtherAdductChecker.checkTheResultsForOtherAdducts(results_,unsplittedPeaks_,quantObjects,analyzers_.get(0),classSequence);
+   /*LL*/       }
+ /*LL*/         catch (CgException | LipidCombinameEncodingException e) {
+  /*LL*/          e.printStackTrace();
+  /*LL*/        }
         }
-        executeFinalProcesses(classSequence,analyteSequence,quantObjects,basePeakCutoff,resultFile,chromFile);
+        executeFinalProcesses(classSequence,analyteSequence,quantObjects,basePeakCutoff,resultFile,chromFile,bestMatchBySpectrumCoverage);
       }
       finished_ = true;
       for (Integer analyzer : analyzers_.keySet()){
@@ -1328,15 +1488,17 @@ public class QuantificationThread extends Thread
   }
   
   @SuppressWarnings("unchecked")
-  private void executeFinalProcesses(LinkedHashMap<String,Integer> classSequence,Hashtable<String,Vector<String>> analyteSequence,
-      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects, float basePeakCutoff, String resultFile, String chromFile){
+  private void executeFinalProcesses(LinkedHashMap<String,Integer> classSequence,LinkedHashMap<String,Vector<String>> analyteSequence,
+	      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects, float basePeakCutoff, String resultFile, String chromFile, Hashtable<String,Boolean> bestMatchBySpectrumCoverage){
     Hashtable<String,Vector<LipidParameterSet>> sheetParams = new Hashtable<String,Vector<LipidParameterSet>>();
+    boolean omegaInfoAvailable = false;
     for (String className : classSequence.keySet()){
       Vector<LipidParameterSet> params = new Vector<LipidParameterSet>();
       Hashtable<String,Hashtable<String,QuantVO>> classQuant = quantObjects.get(className);
       for (String analyteName : analyteSequence.get(className)){
         Hashtable<String,QuantVO> analyteQuant = classQuant.get(analyteName);
         for (String mod : analyteQuant.keySet()){
+          if (!omegaInfoAvailable && !analyteQuant.get(mod).getInfoForOmegaAssignment().isEmpty()) omegaInfoAvailable = true;
           if (results_.containsKey(className) && results_.get(className).containsKey(analyteName) && results_.get(className).get(analyteName).containsKey(mod)&&(results_.get(className).get(analyteName).get(mod)!=null)){
             Hashtable<String,LipidParameterSet> hitsOfOneMod = results_.get(className).get(analyteName).get(mod);
             if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
@@ -1408,7 +1570,15 @@ public class QuantificationThread extends Thread
       }
       correctedParams.put(sheetName, corrected);
     }
-    System.out.println("Required time: "+((System.currentTimeMillis()-startCalcTime_)/(60*1000))+" minutes "+(System.currentTimeMillis()-startCalcTime_)%(60*1000)/1000+" seconds");
+    
+    if (omegaInfoAvailable) {
+      applyOmegaInfo(correctedParams, classSequence, analyteSequence, quantObjects);
+      LipidParameterSet.setOmegaInformationAvailable(true);
+    }
+    
+    long timeMilliSeconds = (System.currentTimeMillis()-startCalcTime_);
+    System.out.println(String.format("Required time: %s minutes, %s seconds", timeMilliSeconds/(60*1000), timeMilliSeconds%(60*1000)/1000));
+    
     try {
       LipidomicsConstants constants = LipidomicsConstants.getInstance();
       constants.setRawFileName(chromFile);
@@ -1434,21 +1604,8 @@ public class QuantificationThread extends Thread
       constants.setAlexTargetlistUsed(alexTargetlistUsed);
       HydroxyEncoding[] encodings = getOnlyUsedHydroxyEncodings(correctedParams,Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding());
       QuantificationResult quantRes = new QuantificationResult(correctedParams,constants,classSequence,encodings[0],encodings[1]);
-      
-//      long timeMillis_0 = System.currentTimeMillis();
-//      String resultFilePOI = resultFile.substring(0,resultFile.indexOf("."))+"_POI.xlsx";
-//      QuantificationResultExporterApachePOI.writeResultsToExcel(resultFilePOI,quantRes);
-//      long timeMillis_1 = System.currentTimeMillis();
-      
-      QuantificationResultExporter.writeResultsToExcel(resultFile,quantRes);
-      
-      
-//      long timeMillis_2 = System.currentTimeMillis();
-//      
-//      System.out.println(String.format("Time required by Apache POI: %s \n"
-//          + "Time required by fastExcel: %s", 
-//          (timeMillis_1-timeMillis_0)/1000.0, (timeMillis_2-timeMillis_1)/1000.0));
-      
+     
+      QuantificationResultExporter.writeResultsToExcel(resultFile,quantRes,bestMatchBySpectrumCoverage);
       
       if (isAlexTargetList || cli_){
         String alexResultFile = new String(resultFile);
@@ -1458,7 +1615,10 @@ public class QuantificationThread extends Thread
         Vector<QuantificationResult> results = new Vector<QuantificationResult>();
         results.add(quantRes);
         RdbOutputWriter rdbWriter = new RdbOutputWriter();
-        rdbWriter.write(alexResultFile, results, classSequence, analyteSequence, quantObjects);
+        Hashtable<String,Vector<String>> analyteSeq = new Hashtable<String, Vector<String>>();
+        analyteSeq.putAll(analyteSequence);
+ //       rdbWriter.write(alexResultFile, results, classSequence, analyteSequence, quantObjects);
+        rdbWriter.write(alexResultFile, results, classSequence, analyteSeq, quantObjects);
       }
     } catch (ExportException ex) {
       new WarningMessage(new JFrame(), "Error", ex.getMessage());
@@ -1468,6 +1628,181 @@ public class QuantificationThread extends Thread
       this.errorString_ = e.toString();
     }
   }
+  
+  //TODO: starting here is the omega stuff
+  
+  /**
+   * Applies information about omega labels where enough evidence is present
+   * @param correctedParams Hashtable containing only accepted isotopic probes
+   * @param classSequence Class names in correctedParams, analyteSequence and quantObjects
+   * @param analyteSequence Analytes in each class
+   * @param quantObjects
+   * @return correctedParams with added omega information
+   */
+  private void applyOmegaInfo(
+      Hashtable<String,Vector<LipidParameterSet>> correctedParams, 
+      LinkedHashMap<String,Integer> classSequence,
+      LinkedHashMap<String,Vector<String>> analyteSequence,
+      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects) 
+  {
+    //deconvoluting the Hashtables
+    for (String className : classSequence.keySet()){
+      Hashtable<String,Hashtable<String,QuantVO>> classQuant = quantObjects.get(className);
+      Vector<LipidParameterSet> lipidParameterSet = correctedParams.get(className);
+      for (String analyteName : analyteSequence.get(className)){
+        Hashtable<String,QuantVO> analyteQuant = classQuant.get(analyteName);
+        for (String mod : analyteQuant.keySet()){
+          Vector<DoubleBondPositionVO> infoForOmegaAssignment = analyteQuant.get(mod).getInfoForOmegaAssignment();
+          if (!infoForOmegaAssignment.isEmpty()) {
+            try {
+              if (Integer.parseInt(RulesContainer.getAmountOfChains(StaticUtils.getRuleName(className, mod))) < 2) {
+                addOmegaInformationToParameterSets(lipidParameterSet,analyteName,infoForOmegaAssignment,false);
+              } 
+            } catch (RulesException | NoRuleException | IOException | SpectrummillParserException ex) {
+              System.out.println(ex.getMessage());
+            }
+
+            //add omega info to species requiring MSn evidence
+            addOmegaInformationToParameterSets(lipidParameterSet,analyteName,infoForOmegaAssignment,true);
+          }
+        }
+      }
+    }
+  }
+  
+  /**
+   * If the available evidence is sufficient, omega information is added
+   * @param lipidParameterSet
+   * @param analyteName
+   * @param infoForOmegaAssignment
+   * @param needsMSnEvidence Lipid species with only one chain do not require MSn evidence for assignment
+   */
+  private void addOmegaInformationToParameterSets(Vector<LipidParameterSet> lipidParameterSets,
+      String analyteName, Vector<DoubleBondPositionVO> infoForOmegaAssignment, boolean needsMSnEvidence) {
+    for (int i = 0; i < lipidParameterSets.size(); i++) {
+      if ((!needsMSnEvidence || (needsMSnEvidence && (lipidParameterSets.get(i) instanceof LipidomicsMSnSet)) 
+          && !(lipidParameterSets.get(i).hasOmegaInformation()))) {
+        LipidParameterSet param = lipidParameterSets.get(i);
+        if (param.getNameStringWithoutRt().equals(analyteName)) {
+          Range[] peakRanges = StaticUtils.determinePeakRanges(param);
+          Range peakLimits = peakRanges[0];
+          Range mediumAccuracy = peakRanges[1];
+          Range highAccuracy = peakRanges[2];
+          
+          Iterator<DoubleBondPositionVO> it = infoForOmegaAssignment.iterator();
+          while(it.hasNext()) {
+            DoubleBondPositionVO doubleBondPositionVO = it.next();
+            float expectedRetentionTime = doubleBondPositionVO.getExpectedRetentionTime();
+            if (peakLimits.insideRange(expectedRetentionTime)) {
+              if (mediumAccuracy.insideRange(expectedRetentionTime)) doubleBondPositionVO.setAccuracy(1);
+              if (highAccuracy.insideRange(expectedRetentionTime)) doubleBondPositionVO.setAccuracy(2);
+              
+              if (needsMSnEvidence) {
+                String chainCombination = getEquivalentChainCombination((LipidomicsMSnSet)param, doubleBondPositionVO);
+                if (chainCombination != null) {
+                  orderChainCombination(chainCombination, doubleBondPositionVO);
+                  doubleBondPositionVO.setMolecularSpecies(chainCombination);
+                  param.addOmegaInformation(doubleBondPositionVO);
+                }
+              } else if (!needsMSnEvidence) {
+                String doubleBondPositionsHumanReadable = doubleBondPositionVO.getDoubleBondPositionsHumanReadable();
+                doubleBondPositionVO.setMolecularSpecies(StaticUtils.getHumanReadableWODoubleBondPositions(doubleBondPositionsHumanReadable));
+                param.addOmegaInformation(doubleBondPositionVO);
+              }
+            }
+          }
+          
+          //sort omega information and add assignments
+          Vector<DoubleBondPositionVO> paramOmegaInfo = param.getOmegaInformation();
+          Collections.sort(paramOmegaInfo);
+          Vector<DoubleBondPositionVO> highAccuracyHits = StaticUtils.getHighAccuracyDoubleBondPositions(paramOmegaInfo);
+          Vector<DoubleBondPositionVO> assignedHits = StaticUtils.findUnambiguousDoubleBondPositions(highAccuracyHits);
+          for (DoubleBondPositionVO assignedHit : assignedHits) {
+            assignedHit.setIsAssigned(true);
+          }
+        }
+      }
+    }
+  }
+  
+  /**
+   * Orders the Vector of FattyAcidVOs in a DoubleBondPositionVO according to a given chain combination, if it contains positional evidence
+   * @param chainCombination Human readable String of a molecular species without annotated double bond positions 
+   * @param doubleBondPositionVO DoubleBondPositionVO Object describing the same molecular species as chainCombination
+   */
+  private void orderChainCombination(String chainCombination, DoubleBondPositionVO doubleBondPositionVO) {
+    String doubleBondPositionsHumanReadable = doubleBondPositionVO.getDoubleBondPositionsHumanReadable();
+    if (chainCombination.contains(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS)) {
+      doubleBondPositionsHumanReadable = orderChainsAccordingToTemplate(chainCombination, doubleBondPositionsHumanReadable);
+      try {
+        Vector<FattyAcidVO> orderedFattyAcids = StaticUtils.decodeFAsFromHumanReadableName(
+            doubleBondPositionsHumanReadable, Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), false, null);
+        doubleBondPositionVO.setChainCombination(orderedFattyAcids);
+      } catch (LipidCombinameEncodingException ex) {
+        System.out.println(ex.getMessage());
+      }
+    }
+  }
+  
+  /**
+   * Orders a chain combination according to a template 
+   * @param equivalentChainCombination Human readable String of a molecular species without annotated double bond positions
+   * @param doubleBondPositionsHumanReadable Human readable String of a molecular species with annotated double bond positions
+   * @return reordered String
+   */
+  private String orderChainsAccordingToTemplate(String equivalentChainCombination, String doubleBondPositionsHumanReadable) {
+    String[] templateArray = StaticUtils.splitChainCombinationsAtChainSeparators(equivalentChainCombination);
+    String[] doubleBondPositionsArray = StaticUtils.splitChainCombinationsAtChainSeparators(doubleBondPositionsHumanReadable);
+    String[] noDoubleBondPositionsArray = new String[templateArray.length];
+    String[] nakedPositionsArray = new String[templateArray.length];
+    String orderedChains = null;
+    
+    //split doubleBondPositionsArray into an Array of Strings without double bond position assignment and a second array of just the assignments
+    for(int i=0; i<templateArray.length; i++) {
+      noDoubleBondPositionsArray[i] = StaticUtils.getHumanReadableWODoubleBondPositions(doubleBondPositionsArray[i]);
+      nakedPositionsArray[i] = doubleBondPositionsArray[i].replace(noDoubleBondPositionsArray[i], "");
+    }
+    
+    //create String of ordered chains
+    for(int i=0; i<templateArray.length; i++) {
+      for (int j=0; j<templateArray.length; j++) {
+        if (noDoubleBondPositionsArray[j].equals(templateArray[i])) {
+          if (i==0) {
+            orderedChains = templateArray[0] + nakedPositionsArray[j];
+          } else {
+            orderedChains += LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS;
+            orderedChains = orderedChains + templateArray[i] + nakedPositionsArray[j];
+            break;
+          }
+        }
+      }
+    }
+    return orderedChains;
+  }
+  
+  /**
+   * If available, the human readable String of a molecule with MSn evidence describing the same molecular species as doubleBondPositionVO is returned
+   * @param lipidomicsMsnSet
+   * @param doubleBondPositionVO
+   * @return Human readable String of a molecular species without double bond position information
+   */
+  private String getEquivalentChainCombination(LipidomicsMSnSet lipidomicsMsnSet, DoubleBondPositionVO doubleBondPositionVO) {
+    Set<String> mSnNamesHumanReadable = lipidomicsMsnSet.getHumanReadableNameSet();
+    String doubleBondPositionsHumanReadable = doubleBondPositionVO.getDoubleBondPositionsHumanReadable();
+    String equivalentChainCombination = null;
+    Iterator<String> it = mSnNamesHumanReadable.iterator();
+    while(it.hasNext()) {
+      String mSnName = it.next();
+      if (StaticUtils.isChainCombinationEquivalent(doubleBondPositionsHumanReadable, mSnName)) {
+        equivalentChainCombination = mSnName;
+      }
+    }
+    return equivalentChainCombination;
+  }
+  
+  
+  //TODO: this concludes the omega stuff
+  
     
   private float extractHighestArea(){
     float highestArea = 0;
@@ -1487,7 +1822,7 @@ public class QuantificationThread extends Thread
    * @throws IOException if a file is not there
    * @throws SpectrummillParserException if there is something wrong with the elementconfig.xml
    */
-  private static void checkForIsobaricSpecies(LinkedHashMap<String,Integer> classSequence, Hashtable<String,Vector<String>> analyteSequence,
+  private static void checkForIsobaricSpecies(LinkedHashMap<String,Integer> classSequence, LinkedHashMap<String,Vector<String>> analyteSequence,
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects) throws RulesException, IOException, SpectrummillParserException{
     Vector<String> classes = new Vector<String>(classSequence.keySet());
 
@@ -1563,8 +1898,9 @@ public class QuantificationThread extends Thread
 //              if ((quant1.getAnalyteClass().equalsIgnoreCase("P-PE")&&quant1.getIdString().equalsIgnoreCase("36:4"))||
 //                  (quant2.getAnalyteClass().equalsIgnoreCase("P-PE")&&quant2.getIdString().equalsIgnoreCase("36:4")))
 //                System.out.println(quant1.getAnalyteClass()+quant1.getIdString()+"_"+quant1.getModName()+"/"+quant2.getAnalyteClass()+quant2.getIdString()+"_"+quant2.getModName()+" "+quant1.getAnalyteMass()+"/"+mz2);
-              if (sameMass)
+              if (sameMass) {
                 quant2.setQuantifiedByOtherIsobar(true);
+              }
             }
           }
           String idString = getUniqueQuantVOString(quant1);
@@ -1632,7 +1968,9 @@ public class QuantificationThread extends Thread
     
     LinkedHashMap<String,Integer> classSequence = new LinkedHashMap<String,Integer>();
     Hashtable<String,Boolean> adductInsensitiveRtFilter = new Hashtable<String,Boolean>();
-    Hashtable<String,Vector<String>> analyteSequence = new Hashtable<String,Vector<String>>();
+    Hashtable<String,Boolean> bestMatchBySpectrumCoverage = new Hashtable<String,Boolean>();
+// LL   Hashtable<String,Vector<String>> analyteSequence = new Hashtable<String,Vector<String>>();
+    LinkedHashMap<String,Vector<String>> analyteSequence = new LinkedHashMap<String,Vector<String>>();
     Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();
 
     //now generate the corresponding objects
@@ -1670,19 +2008,21 @@ public class QuantificationThread extends Thread
           quantsOfAnalyte.put(entry.getModName(), entry);
         }
         
-        String analyteName = StaticUtils.generateLipidNameString(sideChain, doubleBonds, -1);
+        String analyteName = StaticUtils.generateLipidNameString(sideChain, doubleBonds, -1, "");
         analytes.add(analyteName);
         quantsOfClass.put(analyteName, quantsOfAnalyte);
       }
       quantObjects.put(className, quantsOfClass);
       analyteSequence.put(className, analytes);
       adductInsensitiveRtFilter.put(className, false);
+      bestMatchBySpectrumCoverage.put(className, false);
     }
     checkForIsobaricSpecies(classSequence,analyteSequence,quantObjects);
     Vector results = new Vector();
     results.add(classSequence);
     results.add(analyteSequence);
     results.add(adductInsensitiveRtFilter);
+    results.add(bestMatchBySpectrumCoverage);
     results.add(quantObjects);
     //TODO: these few lines are only for testing purposes
 //    classSequence = new LinkedHashMap<String,Integer>();

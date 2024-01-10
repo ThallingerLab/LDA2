@@ -30,7 +30,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
@@ -57,9 +59,11 @@ import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.msn.vos.FragmentRuleVO;
 import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
+import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.lda.swing.RangeColor;
 import at.tugraz.genome.lda.vos.IntegerStringVO;
 import at.tugraz.genome.lda.vos.IsotopicLabelVO;
+import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
 import at.tugraz.genome.lda.xml.RawToChromThread;
@@ -495,7 +499,7 @@ public class StaticUtils
     if (settingVO.getType().equalsIgnoreCase("amount end-volume")){
       resultString +="Amount end-volume";
     } else if (settingVO.getType().equalsIgnoreCase("relative to base peak")){
-        resultString +="Base peak";
+      resultString +="Base peak";
     } else if (settingVO.getType().equalsIgnoreCase("relative to measured class amount")){
       resultString +="Total class amount";
     } else if (settingVO.getType().equalsIgnoreCase("relative to highest total peak")){
@@ -768,18 +772,22 @@ public class StaticUtils
   }
 
   
-  public static String generateLipidNameString(String name, Integer doubleBonds, Integer omegaPos){
+  public static String generateLipidNameString(String name, Integer doubleBonds, Integer omegaPos, String oxState){
     String nameString = name;
+    
     if (doubleBonds!=null && doubleBonds>-1)
+    {
       nameString += ":"+String.valueOf(doubleBonds);
-//    nameString += "_";
+      if(oxState!=null && !oxState.equals(""))
+        nameString += LipidomicsConstants.CHAIN_MOD_SEPARATOR + oxState;
+    }
     if (omegaPos!=null && omegaPos>-1)
       nameString += "(n-"+String.valueOf(omegaPos)+")";
     return nameString;
   }
   
-  public static String generateLipidNameString(String name, Integer doubleBonds, String rt){
-    String nameString = generateLipidNameString(name,doubleBonds,-1);
+  public static String generateLipidNameString(String name, Integer doubleBonds, String rt, String oxState){
+    String nameString = generateLipidNameString(name,doubleBonds,-1,oxState);
     if (rt!=null&&rt.length()>0) nameString+="_"+rt;
     return nameString;
   }
@@ -788,11 +796,12 @@ public class StaticUtils
    * encodes a human readable string unique to one chain including all information 
    * @param vo the FattyAcidVO containing all of the required information
    * @param includePrefix include the prefix
+   * @param includeOmegaPosition include the omega position
    * @return a human readable string unique to one chain including all information 
    */
-  public static String encodeLipidNameForCreatingCombis(FattyAcidVO vo, boolean includePrefix) {
+  public static String encodeLipidNameForCreatingCombis(FattyAcidVO vo, boolean includePrefix, boolean includeOmegaPosition) {
     return encodeLipidNameForCreatingCombis(vo.getChainType(),includePrefix ? vo.getPrefix() : "",vo.getcAtoms(),vo.getDoubleBonds(),
-        vo.getOhNumber(),vo.getOmegaPosition());
+        vo.getOhNumber(),includeOmegaPosition ? vo.getOmegaPosition() : -1,vo.getOxState());
   }
   
   /**
@@ -803,10 +812,11 @@ public class StaticUtils
    * @param doubleBonds number of double bonds
    * @param ohNumber the number of OH groups
    * @param omega the omega position
+   * @param oxState the oxidation state
    * @return a human readable string unique to one chain including all information 
    */
   private static String encodeLipidNameForCreatingCombis(short chainType, String prefix, int cAtoms, int doubleBonds,
-      int ohNumber, int omega) {
+      int ohNumber, int omega, String oxState) {
     StringBuilder sb = new StringBuilder();
     if (chainType<LipidomicsConstants.CHAIN_TYPE_LCB)
       sb.append(LipidomicsConstants.CHAIN_TYPE_FA_NAME);
@@ -820,7 +830,7 @@ public class StaticUtils
     else if (chainType==LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL)
       sb.append(ALKENYL_COMBI_PREFIX);
     sb.append(prefix);
-    sb.append(generateLipidNameString(String.valueOf(cAtoms),doubleBonds,omega));
+    sb.append(generateLipidNameString(String.valueOf(cAtoms),doubleBonds,omega,oxState));
     return sb.toString();
   }
   
@@ -880,11 +890,14 @@ public class StaticUtils
     String prefix = prefixBuilder.toString();
     if (prefix.length()>0)
       chainInfo = chainInfo.substring(prefix.length());
-    int[] cAndDbs;
-    try{cAndDbs = parseCAndDbsFromChainId(chainInfo);}catch(Exception ex) {
+    String[] cAndDbsAndOx;
+    try {
+    	cAndDbsAndOx = parseCAndDbsFromChainId(chainInfo);}catch(Exception ex) {
       throw new LipidCombinameEncodingException("The combiname \""+encoded+"\" is irregular. The chain info \""+chainInfo+"\" is not of the format $CAtoms$:$DoubleBonds$");
     }
-    return new FattyAcidVO(chainType, prefix, cAndDbs[0], cAndDbs[1], ohNumber, -1d, null);
+    
+    return new FattyAcidVO(chainType, prefix, Integer.parseInt(cAndDbsAndOx[0]), Integer.parseInt(cAndDbsAndOx[1]), ohNumber, -1d, null,cAndDbsAndOx[2]);
+   
   }
   
   /**
@@ -936,7 +949,7 @@ public class StaticUtils
   }
   
   public static boolean isWithinTolerance(double tolerance, double ref, double value){
-    return ((ref-tolerance)<value && value<(ref+tolerance));
+    return ((ref-tolerance)<=value && value<=(ref+tolerance));
   }
 
   public static String[] extractMoleculeRtAndModFromMoleculeName(String moleculeName){
@@ -1023,7 +1036,7 @@ public class StaticUtils
     String selected = null;
     if (selectedMSn!=null && selectedMSn.length()>0){
       selected = new String(selectedMSn);
-      selected = (String)cleanEmptyFAPositionsAndEncodeToLDACombiName(selected, faHydroxyEncoding, lcbHydroxyEncoding, isAlex123)[0];
+      selected = (String)cleanEmptyFAPositionsAndEncodeToLDACombiName(selected, faHydroxyEncoding, lcbHydroxyEncoding, isAlex123, null)[0];
     }
     Hashtable<Integer,Vector<RangeColor>> rangeColorLevels = null;
     if (paramUncasted instanceof LipidomicsMSnSet){
@@ -1195,13 +1208,15 @@ public class StaticUtils
    * @param faHydroxyEncoding the OH encodings of the FA moiety
    * @param lcbHydroxyEncoding the OH encodings of the LCB moiety
    * @param isAlexOhEncoding is this a hit of the Alex123 target lists that contains an OH encoding
+   * @param lipidomicsConstants constants of the read result file (call trace starting from LDAResultReader), null if called from elsewhere
    * @return [0] the combi name, [1] the number of assignable positions; [2] contains alkyl chains; [3] contains alkenyl chains
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   public static Object[] cleanEmptyFAPositionsAndEncodeToLDACombiName(String identification, HydroxyEncoding faHydroxyEncoding,
-      HydroxyEncoding lcbHydroxyEncoding, boolean isAlexOhEncoding) throws LipidCombinameEncodingException{
+      HydroxyEncoding lcbHydroxyEncoding, boolean isAlexOhEncoding, LipidomicsConstants lipidomicsConstants) throws LipidCombinameEncodingException{
     Object[] result = new Object[4];
     int positions = 0;
+    
     String name = identification.replaceAll(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS, LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
     while (name.startsWith(EMPTY_AT_BEGINNING) || name.indexOf(EMPTY_IN_MIDDLE)!=-1 || name.endsWith(EMPTY_AT_END)){
       positions++;
@@ -1213,7 +1228,7 @@ public class StaticUtils
         name = name.substring(0,name.indexOf(EMPTY_IN_MIDDLE))+name.substring(name.indexOf(EMPTY_IN_MIDDLE)+EMPTY_AT_END.length());
       }
     }
-    Vector<FattyAcidVO> chains = decodeFAsFromHumanReadableName(name,faHydroxyEncoding,lcbHydroxyEncoding,isAlexOhEncoding);
+    Vector<FattyAcidVO> chains = decodeFAsFromHumanReadableName(name,faHydroxyEncoding,lcbHydroxyEncoding,isAlexOhEncoding,lipidomicsConstants);
     positions += chains.size();
     boolean containsAlkyl = false;
     boolean containsAlkenyl = false;
@@ -1266,6 +1281,7 @@ public class StaticUtils
     return results;
   }
   
+  //TODO: this would be faster and more elegant, if FattyAcidVO objects were sorted instead.
   public static String sortFASequenceUnassigned(String key, String separator) throws LipidCombinameEncodingException{
     Vector<String> fas = StaticUtils.splitChainCombiToEncodedStrings(key,separator);
     Hashtable<Integer,Integer> emptyFas = new Hashtable<Integer,Integer>();
@@ -1295,12 +1311,20 @@ public class StaticUtils
         assignedFAs.add(lowestCarbonNumbers.get(0));
         unassignedFAs.remove(lowestCarbonNumbers.get(0));
       }else{
+      	int containsOmega = 0;
         Vector<Integer> lowestDoubleBonds = new Vector<Integer>();
         int lowestDoubleBondNumber = Integer.MAX_VALUE;
         for (int j=0; j!=lowestCarbonNumbers.size(); j++){
           int indexInFA = lowestCarbonNumbers.get(j);
           String fa = fas.get(indexInFA);
           String dbString = fa.substring(fa.indexOf(":")+1);
+          
+          if (dbString.indexOf(LipidomicsConstants.OMEGA_POSITION_START)!=-1) {
+          	dbString = dbString.substring(0,dbString.indexOf(LipidomicsConstants.OMEGA_POSITION_START));
+          	containsOmega++;
+          }
+          if(dbString.indexOf(LipidomicsConstants.CHAIN_MOD_SEPARATOR)!=-1)
+          	dbString = dbString.substring(0,dbString.indexOf(LipidomicsConstants.CHAIN_MOD_SEPARATOR));
           if (dbString.indexOf("(")!=-1)
             dbString = dbString.substring(0,dbString.indexOf("("));
           int doubleBonds = Integer.parseInt(dbString);
@@ -1312,10 +1336,36 @@ public class StaticUtils
             lowestDoubleBonds.add(j);
           }
         }
-        for (Integer nrInLowestCs : lowestDoubleBonds){
-          int indexInFA = lowestCarbonNumbers.get(nrInLowestCs);
-          assignedFAs.add(indexInFA);
-          unassignedFAs.remove(indexInFA);
+        if (lowestDoubleBonds.size()>1 && lowestDoubleBonds.size()==containsOmega){
+        	Vector<Integer> lowestOmegas = new Vector<Integer>();
+        	int lowestOmegaNumber = Integer.MAX_VALUE;
+        	for (int i=0; i<lowestDoubleBonds.size(); i++){
+        		int indexInFA = lowestDoubleBonds.get(i);
+        		String fa = fas.get(indexInFA);
+        		if (fa.indexOf(LipidomicsConstants.OMEGA_POSITION_START)!=-1) {
+        			String omegaString = fa.substring(fa.indexOf(LipidomicsConstants.OMEGA_POSITION_START)+3,fa.indexOf(LipidomicsConstants.OMEGA_POSITION_END));
+        			int omega = Integer.parseInt(omegaString);
+        			if (omega<lowestOmegaNumber){
+                lowestOmegas = new Vector<Integer>();
+                lowestOmegas.add(i);
+                lowestOmegaNumber = omega;
+              } else if (omega==lowestOmegaNumber){
+              	lowestOmegas.add(i);
+              }
+        		}
+        	}
+        	for (Integer nrInLowestDBs : lowestOmegas)
+        	{
+        		int indexInFA = lowestDoubleBonds.get(nrInLowestDBs);
+            assignedFAs.add(indexInFA);
+            unassignedFAs.remove(indexInFA);
+        	}
+        }else{
+        	for (Integer nrInLowestCs : lowestDoubleBonds){
+            int indexInFA = lowestCarbonNumbers.get(nrInLowestCs);
+            assignedFAs.add(indexInFA);
+            unassignedFAs.remove(indexInFA);
+          }
         }
       }
     }
@@ -1383,13 +1433,16 @@ public class StaticUtils
    * @param readableFragmentName the readable name containing fragment name and fatty acyl name
    * @param chainType the type of the chain
    * @param oh the number of OH positions
+   * @param useOldEncoding indicates if old (before 2.8.4) or new encoding should be used
    * @return [0] the encoded chain object (FattyAcidVO); [1] fragment name
    * @throws LipidCombinameEncodingException thrown when a human readable chain ID (without type and OH number) cannot be decoded
    */
-  public static Object[] parseChainFaAndFragmentNameFromExcel(String readableFragmentName, short chainType, int oh) throws LipidCombinameEncodingException{
-    Object[] result = new Object[2];
+  public static Object[] parseChainFaAndFragmentNameFromExcel(String readableFragmentName, short chainType, int oh, boolean useOldEncoding) throws LipidCombinameEncodingException{
+	  
+	  Object[] result = new Object[2];
     String faName = "";
     String fragmentName = "";
+    String oxState = "";
     //this is for Alex123 naming
     if (readableFragmentName.startsWith("FA ")||readableFragmentName.startsWith("-FA ")||
         readableFragmentName.startsWith("LCB ")||readableFragmentName.startsWith("-LCB ")||
@@ -1424,16 +1477,22 @@ public class StaticUtils
         faName = faName.substring(0,faName.indexOf(LipidomicsConstants.ALEX_OH_SEPARATOR));
       fragmentName += readableFragmentName.substring(stop);
     }else{
-      faName = readableFragmentName.substring(readableFragmentName.lastIndexOf("(")+1,readableFragmentName.lastIndexOf(")"));
-      fragmentName = readableFragmentName.substring(0,readableFragmentName.lastIndexOf("("));
+      faName = readableFragmentName.substring(readableFragmentName.indexOf("(")+1,readableFragmentName.lastIndexOf(")"));
+      fragmentName = readableFragmentName.substring(0,readableFragmentName.indexOf("("));
+    }
+    if(faName.contains(LipidomicsConstants.CHAIN_MOD_SEPARATOR))
+    {
+    	oxState = faName.substring(faName.indexOf(LipidomicsConstants.CHAIN_MOD_SEPARATOR)+1);
+    //	fragmentName = readableFragmentName.substring(0, readableFragmentName.indexOf(LipidomicsConstants.CHAIN_MOD_SEPARATOR1));
     }
     
     Object[] prefixCAndDbs = null;
-    try {prefixCAndDbs = parsePrefixCAndDbsFromChainId(faName);
+    try {
+    	prefixCAndDbs = parsePrefixCAndDbsFromChainId(faName);
     }catch (Exception e) {
       throw new LipidCombinameEncodingException("The chain-id: \""+readableFragmentName+"\" cannot be decoded");
     }
-    result[0] = new FattyAcidVO(chainType, (String)prefixCAndDbs[0], (Integer)prefixCAndDbs[1], (Integer)prefixCAndDbs[2], oh, -1, null);
+    result[0] = new FattyAcidVO(chainType, (String)prefixCAndDbs[0], (Integer)prefixCAndDbs[1], (Integer)prefixCAndDbs[2], oh, -1, null,oxState);
     result[1] = fragmentName.trim();
     //for Alex123
     if (readableFragmentName.startsWith("FA ")||readableFragmentName.startsWith("-FA ")||
@@ -1625,13 +1684,25 @@ public class StaticUtils
    * @return int[] containing the number of C atoms at int[0] and the number of double bonds at int[1]
    * @throws Exception
    */
-  public static int[] parseCAndDbsFromChainId(String chainId) throws Exception {
-    String[] cAndDbs = chainId.split(":");
-    if (cAndDbs.length!=2)
-      throw new Exception("The chain id \""+chainId+"\" is not valid!");
-    int[] cad = new int[2];
-    try {cad[0] = Integer.parseInt(cAndDbs[0]);}catch(NumberFormatException nfx) {throw new Exception("The chain id \""+chainId+"\" is not valid!");}
-    try {cad[1] = Integer.parseInt(cAndDbs[1]);}catch(NumberFormatException nfx) {throw new Exception("The chain id \""+chainId+"\" is not valid!");}
+  public static String[] parseCAndDbsFromChainId(String chainId) throws Exception {
+    String[] cAndDbs = chainId.split(":|\\"+LipidomicsConstants.CHAIN_MOD_SEPARATOR);
+    String[] cad = new String[3];
+    
+    if (cAndDbs.length==2)
+    {	
+    	cad[2] = "";
+    }else if (cAndDbs.length==3) {
+    	cad[2] = cAndDbs[2];
+    }else {
+    	throw new Exception("The chain id \""+chainId+"\" is not valid!");
+    }
+    
+    try {Integer.parseInt(cAndDbs[0]);}catch(NumberFormatException nfx) {throw new Exception("The chain id \""+chainId+"\" is not valid!");}
+    try {Integer.parseInt(cAndDbs[1]);}catch(NumberFormatException nfx) {throw new Exception("The chain id \""+chainId+"\" is not valid!");}
+    
+    cad[0] = cAndDbs[0];
+    cad[1] = cAndDbs[1];
+    //System.out.println("cAndDbs: " + cad[0] + "-" + cad[1] + "-" + cad[2]);
     return cad;
   }
   
@@ -1795,29 +1866,55 @@ public class StaticUtils
    * @param faHydroxyEncoding the OH encodings of the FA moiety
    * @param lcbHydroxyEncoding the OH encodings of the LCB moiety
    * @param isAlexOhEncoding is this a hit of the Alex123 target lists that contains an OH encoding
+   * @param lipidomicsConstants constants of the read result file (call trace starting from LDAResultReader), null if called from elsewhere
    * @return the decoded chains of the composition
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   public static Vector<FattyAcidVO> decodeFAsFromHumanReadableName(String humanReadable, HydroxyEncoding faHydroxyEncoding,
-      HydroxyEncoding lcbHydroxyEncoding, boolean isAlexOhEncodingname) throws LipidCombinameEncodingException{
+      HydroxyEncoding lcbHydroxyEncoding, boolean isAlexOhEncodingname, LipidomicsConstants lipidomicsConstants) throws LipidCombinameEncodingException{
     Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
     String toSplit = humanReadable.replaceAll(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS, LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
     String[] hrChains = toSplit.split(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
     for (String hrChain : hrChains) {
-      chains.add(decodeHumanReadableChain(hrChain,faHydroxyEncoding,lcbHydroxyEncoding,isAlexOhEncodingname));
+      chains.add(decodeHumanReadableChain(hrChain,faHydroxyEncoding,lcbHydroxyEncoding,isAlexOhEncodingname,lipidomicsConstants));
     }
     return chains;
   }
   
   /**
    * Removes all double bond position annotations from a human readable String denoting a lipid species
-   * Double bond positions need to be in brackets! '(' and ')'
+   * This method uses a regex pattern including LipidomicsConstants.OMEGA_POSITION_START and LipidomicsConstants.OMEGA_POSITION_END,
+   * ensure the pattern still works if these constants change!
    * @param doubleBondPositionsHumanReadable Human readable String
    * @return Human readable String without double bond position annotations
    */
   public static String getHumanReadableWODoubleBondPositions(String doubleBondPositionsHumanReadable) {
-    String regex = "\\(.*?\\)";
+    String regex = String.format("\\%s.*?\\%s", LipidomicsConstants.OMEGA_POSITION_START, LipidomicsConstants.OMEGA_POSITION_END);
     return doubleBondPositionsHumanReadable.replaceAll(regex, "");
+  }
+  
+  /**
+   * Removes sn position annotations from a human readable String denoting a lipid species
+   * sn positions need to be in brackets! ' (sn-' and ')'
+   * @param snPositionsHumanReadable Human readable String
+   * @return Human readable String without sn position annotations
+   */
+  public static String removeSNPositions(String snPositionsHumanReadable) {
+	  String regex = "\\s\\" + LipidomicsConstants.SN_POSITION_START + ".*?\\" + LipidomicsConstants.SN_POSITION_END;
+    return snPositionsHumanReadable.replaceAll(regex, "");
+  }
+  
+  /**
+   * Removes modification from a human readable String denoting a lipid species
+   * @param snPositionsHumanReadable Human readable String
+   * @return Human readable String without sn position annotations
+   */
+  public static String removeModification(String withModification) {
+	  String regex = "\\;.*?[_\\/\\d$]";
+	  if (withModification.indexOf(LipidomicsConstants.CHAIN_MOD_SEPARATOR) != -1)
+		  return withModification.replaceAll(regex, "");
+	  else
+		  return withModification;
   }  
   
   /**
@@ -1826,11 +1923,15 @@ public class StaticUtils
    * @param faHydroxyEncoding the OH encodings of the FA moiety
    * @param lcbHydroxyEncoding the OH encodings of the LCB moiety
    * @param isAlexOhEncoding is this a hit of the Alex123 target lists that contains an OH encoding
+   * @param lipidomicsConstants constants of the read result file (call trace starting from LDAResultReader), null if called from elsewhere
    * @return the decoded FA chain
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   public static FattyAcidVO decodeHumanReadableChain(String humanReadable, HydroxyEncoding faHydroxyEncoding,
-      HydroxyEncoding lcbHydroxyEncoding, boolean isAlexOhEncodingname) throws LipidCombinameEncodingException {
+      HydroxyEncoding lcbHydroxyEncoding, boolean isAlexOhEncodingname, LipidomicsConstants lipidomicsConstants) throws LipidCombinameEncodingException {
+	  
+	humanReadable = removeSNPositions(humanReadable);
+	  
     short chainType = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
     String prefix = "";
     int cAtoms = -1;
@@ -1839,6 +1940,7 @@ public class StaticUtils
     int oh = 0;
     int omegaPos = -1;
     String rest = humanReadable;
+    String oxState = "";
     if (rest.startsWith(LipidomicsConstants.ALKYL_PREFIX)) {
       rest = rest.substring(LipidomicsConstants.ALKYL_PREFIX.length());
       chainType = LipidomicsConstants.CHAIN_TYPE_FA_ALKYL;
@@ -1846,9 +1948,10 @@ public class StaticUtils
       rest = rest.substring(LipidomicsConstants.ALKENYL_PREFIX.length());
       chainType = LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL;
     }
+    
     char[] charsOfRest = rest.toCharArray();
     int i=0;
-    while (!Character.isDigit(charsOfRest[i]))i++;
+    while (!Character.isDigit(charsOfRest[i]) && i < charsOfRest.length)i++;
     String beforeNumberString = rest.substring(0,i);
     rest = rest.substring(i);
     if (beforeNumberString.length()>0) {
@@ -1878,20 +1981,32 @@ public class StaticUtils
       }
       prefix = beforeNumberString.substring(endIndex);
     }
-    if (isAlexOhEncodingname && rest.indexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS)!=-1) {
+    if (isAlexOhEncodingname && rest.indexOf(LipidomicsConstants.ALEX_OH_SEPARATOR)!=-1) {
       try {
-        oh = Integer.parseInt(rest.substring(rest.lastIndexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS)+1));
-        rest = rest.substring(0,rest.lastIndexOf(LipidomicsConstants.CHAIN_COMBI_SEPARATOR_AMBIG_POS));
+        oh = Integer.parseInt(rest.substring(rest.lastIndexOf(LipidomicsConstants.ALEX_OH_SEPARATOR)+1));
+        rest = rest.substring(0,rest.lastIndexOf(LipidomicsConstants.ALEX_OH_SEPARATOR));
       }catch(NumberFormatException nfx) {
         throw new LipidCombinameEncodingException("The chain-id: \""+humanReadable+"\" cannot be decoded");
       }
     }
+    
+    // the chain modification separator changed, so we have to choose depending on version
+    String chainModSeparator = LipidomicsConstants.CHAIN_MOD_SEPARATOR;
+    if (lipidomicsConstants != null)
+    	chainModSeparator = lipidomicsConstants.getModSeparatorDependingOnVersion();
+    	
     if (rest.indexOf(LipidomicsConstants.CHAIN_SEPARATOR_DBS)!=-1) {
       try {
-        dbsPart = rest.substring(rest.lastIndexOf(LipidomicsConstants.CHAIN_SEPARATOR_DBS)+1);
-        if (dbsPart.indexOf("(n-")!=-1 && dbsPart.indexOf(")")!=-1) {
-          dbs = Integer.parseInt(dbsPart.substring(0,dbsPart.indexOf("(n-")));
-          omegaPos = Integer.parseInt(dbsPart.substring(dbsPart.indexOf("(n-")+"(n-".length(),dbsPart.lastIndexOf(")")));
+    	dbsPart = rest.substring(rest.lastIndexOf(LipidomicsConstants.CHAIN_SEPARATOR_DBS)+1);
+		if (rest.indexOf(chainModSeparator)!=-1){
+          oxState = dbsPart.substring(dbsPart.indexOf(chainModSeparator)+1);
+          dbsPart = dbsPart.substring(0,dbsPart.indexOf(chainModSeparator));
+		}
+		if (dbsPart.indexOf(LipidomicsConstants.OMEGA_POSITION_START)!=-1 && dbsPart.indexOf(LipidomicsConstants.OMEGA_POSITION_END)!=-1) {
+        dbs = Integer.parseInt(dbsPart.substring(0,dbsPart.indexOf(LipidomicsConstants.OMEGA_POSITION_START)));
+          omegaPos = Integer.parseInt(dbsPart.substring(
+          		dbsPart.indexOf(LipidomicsConstants.OMEGA_POSITION_START)+LipidomicsConstants.OMEGA_POSITION_START.length(),
+          		dbsPart.lastIndexOf(LipidomicsConstants.OMEGA_POSITION_END)));
         }else {
           dbs = Integer.parseInt(dbsPart);
         }
@@ -1905,7 +2020,7 @@ public class StaticUtils
     }catch(NumberFormatException nfx) {
       throw new LipidCombinameEncodingException("The chain-id: \""+humanReadable+"\" cannot be decoded");
     }
-    FattyAcidVO fa = new FattyAcidVO(chainType,prefix,cAtoms,dbs,oh,-1,null);
+    FattyAcidVO fa = new FattyAcidVO(chainType,prefix,cAtoms,dbs,oh,-1,null,oxState);
     fa.setOmegaPosition(omegaPos);
     return fa;
   }
@@ -1918,7 +2033,7 @@ public class StaticUtils
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (not containing type and OH number) cannot be decoded
    */
   public static Object[] parsePrefixCAndDbsFromChainId(String chainId) throws LipidCombinameEncodingException {
-    Object[] prefixCAndDbs = new Object[4];
+    Object[] prefixCAndDbs = new Object[5];
     String rest = chainId;
     String prefix = "";
     //the chain type is extracted for backward compatibility - but it cannot distinguish between acyl and LCB chains
@@ -1935,15 +2050,16 @@ public class StaticUtils
     while (!Character.isDigit(chars[i]))i++;
     prefix = rest.substring(0,i);
     rest = rest.substring(i);
-    int[] cAndDb = null;  
-    try {cAndDb = parseCAndDbsFromChainId(rest);
+    String[] cAndDbAndOx = null;  
+    try {cAndDbAndOx = parseCAndDbsFromChainId(rest);
     }catch (Exception e) {
       throw new LipidCombinameEncodingException("The chain-id: \""+chainId+"\" cannot be decoded");
     }
     prefixCAndDbs[0] = prefix;
-    prefixCAndDbs[1] = cAndDb[0];
-    prefixCAndDbs[2] = cAndDb[1];
+    prefixCAndDbs[1] = Integer.parseInt(cAndDbAndOx[0]);
+    prefixCAndDbs[2] = Integer.parseInt(cAndDbAndOx[1]);
     prefixCAndDbs[3] = chainType;
+    prefixCAndDbs[4] = cAndDbAndOx[2];
     return prefixCAndDbs;
   }
   
@@ -2021,7 +2137,7 @@ public class StaticUtils
     }catch(NumberFormatException nfx) {
       throw new LipidCombinameEncodingException("The molecular species \""+encoded+"\" of the species \""+species+"\" cannot be decoded");
     }
-    return new FattyAcidVO(type, prefix, cs, dbs, oh, -1, null);
+    return new FattyAcidVO(type, prefix, cs, dbs, oh, -1, null,"");
   }
 
   /**
@@ -2161,7 +2277,7 @@ public class StaticUtils
     for (String combi : unsorted) {
       unsortedHash.put(combi, decodeLipidNamesFromChainCombi(combi));
     }
-    String encodedFA;
+    String encodedFA = null;
     int nrOfChains = unsortedHash.values().iterator().next().size();
     int[][] positions = new int[unsorted.size()][nrOfChains-1];
     Hashtable<Integer,Integer> nrOfOptionsEachLevel = new Hashtable<Integer,Integer>();
@@ -2169,7 +2285,7 @@ public class StaticUtils
       Hashtable<String,String> there = new Hashtable<String,String>();
       unsortedFAs = new Vector<FattyAcidVO>();
       for (Vector<FattyAcidVO> fas : unsortedHash.values()) {
-        encodedFA = encodeLipidNameForCreatingCombis(fas.get(i),true);
+        encodedFA = encodeLipidNameForCreatingCombis(fas.get(i),true,true);
         if (there.containsKey(encodedFA))
           continue;
         there.put(encodedFA, encodedFA);
@@ -2179,9 +2295,9 @@ public class StaticUtils
       nrOfOptionsEachLevel.put(i, sortedFAs.size());
       count = 0;
       for (Vector<FattyAcidVO> fas : unsortedHash.values()) {
-        fa1Encoded = encodeLipidNameForCreatingCombis(fas.get(i),true);
+        fa1Encoded = encodeLipidNameForCreatingCombis(fas.get(i),true,true);
         for (int j=0; j!=sortedFAs.size(); j++) {
-          if (fa1Encoded.equalsIgnoreCase(encodeLipidNameForCreatingCombis(sortedFAs.get(j),true)))
+          if (fa1Encoded.equalsIgnoreCase(encodeLipidNameForCreatingCombis(sortedFAs.get(j),true,true)))
             positions[count][i] = j;
         }
         count++;
@@ -2229,13 +2345,18 @@ public class StaticUtils
    * takes a list of unsorted chain (or species) names and sorts them in ascending carbon number, followed by ascending double bond, and followed by ascending OH number
    * @param unsorted unsorted chain (or species) names
    * @param ohInCombi are there hydroxylation encodings in the chain names
+   * @param excludePrefix if true return sorted chain names without chain prefixes
    * @return sorted list of chain (or species) names
    * @throws LipidCombinameEncodingException thrown whenever there is something wrong with the hydroxylation encodings
    */
-  public static Vector<String> sortChainNames(Vector<String> unsorted, boolean ohInCombi) throws LipidCombinameEncodingException{
+  public static Vector<String> sortChainNames(Vector<String> unsorted, boolean ohInCombi, boolean excludePrefix) throws LipidCombinameEncodingException{
     Vector<FattyAcidVO> fas = new Vector<FattyAcidVO>();
-    for (String name : unsorted)
-      fas.add(decodeHumanReadableChain(name,Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),false));
+    for (String name : unsorted){
+    	FattyAcidVO fa = decodeHumanReadableChain(name,Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),false,null);
+    	if (excludePrefix)
+    		fa.setPrefix("");
+    	fas.add(fa);
+    } 
     Vector<FattyAcidVO> sortedChains = sortChainVOs(fas);
     Vector<String> sorted = new Vector<String>();
     for (FattyAcidVO vo : sortedChains)
@@ -2245,6 +2366,7 @@ public class StaticUtils
   
   
   /**
+   * TODO: this would be more efficient with collections sorting methods
    * takes a list of unsorted chains and sorts them in ascending carbon number, followed by ascending double bond, and followed by ascending OH number
    * @param unsorted vector containing FattyAcidVOs
    * @return sorted list of chains
@@ -2255,7 +2377,7 @@ public class StaticUtils
     //for building the hash
     String encoded;
     for (FattyAcidVO fa : unsorted) {
-      encoded = encodeLipidNameForCreatingCombis(fa, true);
+      encoded = encodeLipidNameForCreatingCombis(fa, true, true);
       if (!frequencyOfFA.containsKey(encoded))
         frequencyOfFA.put(encoded, 0);
       frequencyOfFA.put(encoded, (frequencyOfFA.get(encoded)+1));
@@ -2297,7 +2419,7 @@ public class StaticUtils
               List<String> prefixes = new ArrayList<String>(hash.get(carbon).get(db).get(oh).get(omega).get(sameType.get(i)).keySet());
               if (prefixes.contains("")) {
                 fac = hash.get(carbon).get(db).get(oh).get(omega).get(sameType.get(i)).get("");
-                encoded = encodeLipidNameForCreatingCombis(fac, true);
+                encoded = encodeLipidNameForCreatingCombis(fac, true, true);
                 for (int j=0; j!=frequencyOfFA.get(encoded); j++)
                   sorted.add(fac);
                 prefixes.remove("");
@@ -2305,7 +2427,7 @@ public class StaticUtils
               Collections.sort(prefixes);
               for (String prefix : prefixes) {
                 fac = hash.get(carbon).get(db).get(oh).get(omega).get(sameType.get(i)).get(prefix);
-                encoded = encodeLipidNameForCreatingCombis(fac, true);
+                encoded = encodeLipidNameForCreatingCombis(fac, true, true);
                 for (int j=0; j!=frequencyOfFA.get(encoded); j++)
                   sorted.add(fac);
               }
@@ -2423,7 +2545,6 @@ public class StaticUtils
       for (IsotopicLabelVO label : labels) {
         if (acidVO.getPrefix().startsWith(label.getLabelId())) {
           labeledChains.add(acidVO);
-          break;
         }
       }
     }
@@ -2538,6 +2659,220 @@ public class StaticUtils
     }
     parts.add(0,rest);
     return parts;
+  }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  //TODO: ALl of this are additions for the omega assignment
+  
+  /**
+   * returns the display name for an FA/LCB encoded molecular species identification
+   * @param combiName the encoded name for the chain combination
+   * @param chains the decoded information about the molecular species
+   * @param faEncoding the hydroxylation encoding for FA chains
+   * @param lcbEncoding the hydroxylation encoding for LCB chains
+   * @param chainPositionsFixed whether FattyAcidVOs in the Vector are ordered according to known sn positions
+   * @return the encoded human readable display name for a chain combination
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
+   */
+  public static String getHumanReadableCombiName(String combiName, HydroxyEncoding faEncoding,
+      HydroxyEncoding lcbEncoding, boolean chainPositionsFixed) throws LipidCombinameEncodingException {
+    return getHumanReadableCombiName(StaticUtils.decodeLipidNamesFromChainCombi(combiName), faEncoding, lcbEncoding, chainPositionsFixed);
+  }
+  
+  /**
+   * returns the display name for an FA/LCB encoded molecular species identification
+   * @param chains the decoded information about the molecular species
+   * @param faEncoding the hydroxylation encoding for FA chains
+   * @param lcbEncoding the hydroxylation encoding for LCB chains
+   * @param chainPositionsFixed whether FattyAcidVOs in the Vector are ordered according to known sn positions
+   * @return the encoded human readable display name for a chain combination
+   * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
+   */
+  public static String getHumanReadableCombiName(Vector<FattyAcidVO> chains, HydroxyEncoding faEncoding,
+        HydroxyEncoding lcbEncoding, boolean chainPositionsFixed) throws LipidCombinameEncodingException {
+    StringBuilder combi = new StringBuilder();
+    boolean ohPresent = areThereOhInCombi(chains);
+    for (FattyAcidVO chain : chains) {
+      if (combi.length()!=0) {
+        if (!chainPositionsFixed) combi.append(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
+        else combi.append(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS);
+      }
+      combi.append(getHumanReadableChainName(chain, faEncoding, lcbEncoding, ohPresent));
+    }
+    return sortFASequenceUnassigned(combi.toString(),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
+  }
+  
+  public static Range[] determinePeakRanges(LipidParameterSet param) {
+    float lowerValley = param.getIsotopicProbes().get(0).get(0).LowerValley;
+    float upperValley = param.getIsotopicProbes().get(0).get(0).UpperValley;
+    float peak = param.getIsotopicProbes().get(0).get(0).Peak;
+    float shorterDistance = (Math.abs(peak-lowerValley) <= Math.abs(peak-upperValley)) ? Math.abs(peak-lowerValley) : Math.abs(peak-upperValley);
+    int n = 3;
+    int minimumThreshold = LipidomicsConstants.getMinimumThresholdForHighConfidenceRTMatch();
+    float mediumAccuracyCutoff = shorterDistance/n*2;
+    float highAccuracyCutoff = shorterDistance/n;
+    if (shorterDistance < minimumThreshold*n) { 
+      if (shorterDistance > minimumThreshold) {
+        mediumAccuracyCutoff = shorterDistance;
+        highAccuracyCutoff = minimumThreshold;
+      } else {
+        highAccuracyCutoff = shorterDistance;
+      }
+    }
+    Range[] peakRanges = new Range[3];
+    peakRanges[0] = new Range(
+        lowerValley/60f,
+        upperValley/60f);
+    peakRanges[1] = new Range(
+        (peak-mediumAccuracyCutoff)/60f, 
+        (peak+mediumAccuracyCutoff)/60f);
+    peakRanges[2] = new Range(
+        (peak-highAccuracyCutoff)/60f, 
+        (peak+highAccuracyCutoff)/60f);
+    return peakRanges;
+  }
+  
+  /**
+   * @param paramOmegaInfo 
+   * @return Vector of assigned DoubleBondPositionVOs
+   */
+  public static Vector<DoubleBondPositionVO> getAssignedDoubleBondPositions(Vector<DoubleBondPositionVO> paramOmegaInfo) {
+    Vector<DoubleBondPositionVO> assignedHits = new Vector<DoubleBondPositionVO>();
+    for (int i = 0; i < paramOmegaInfo.size(); i++) {
+      if (paramOmegaInfo.get(i).getIsAssigned()) {
+        assignedHits.add(paramOmegaInfo.get(i));
+      }
+    }
+    return assignedHits;
+  }
+  
+  /**
+   * @param paramOmegaInfo 
+   * @return Vector of DoubleBondPositionVOs with desired level of accuracy
+   */
+  public static Vector<DoubleBondPositionVO> getHighAccuracyDoubleBondPositions(Vector<DoubleBondPositionVO> paramOmegaInfo) {
+    Vector<DoubleBondPositionVO> highAccuracyHits = new Vector<DoubleBondPositionVO>();
+    for (int i = 0; i < paramOmegaInfo.size(); i++) {
+      if (paramOmegaInfo.get(i).getAccuracy() > 1) {
+        highAccuracyHits.add(paramOmegaInfo.get(i));
+      }
+    }
+    return highAccuracyHits;
+  }
+  
+  /**
+   * @param highAccuracyHits sorted DoubleBondPositionVOs with desired level of accuracy
+   * @return Vector of DoubleBondPositionVOs which can be unambiguously assigned to the detected peak
+   */
+  
+  public static Vector<DoubleBondPositionVO> findUnambiguousDoubleBondPositions(Vector<DoubleBondPositionVO> highAccuracyHits) {
+    Vector<DoubleBondPositionVO> assignedHits = new Vector<DoubleBondPositionVO>();
+    
+    int n = highAccuracyHits.size();
+    
+    if (n == 1) {
+      assignedHits.add(highAccuracyHits.get(0));
+      return assignedHits;
+    } else if (n == 2) {
+      if (!highAccuracyHits.get(0).getMolecularSpecies().equals(highAccuracyHits.get(1).getMolecularSpecies())) {
+        assignedHits.add(highAccuracyHits.get(0));
+        assignedHits.add(highAccuracyHits.get(1));
+        return assignedHits;
+      }
+    } else if (n > 2) {
+      if (!highAccuracyHits.get(0).getMolecularSpecies().equals(highAccuracyHits.get(1).getMolecularSpecies())) {
+        assignedHits.add(highAccuracyHits.get(0));
+      }
+      
+      for (int i = 1; i < n-1; i++) {
+        if (!highAccuracyHits.get(i).getMolecularSpecies().equals(highAccuracyHits.get(i-1).getMolecularSpecies()) &&
+            !highAccuracyHits.get(i).getMolecularSpecies().equals(highAccuracyHits.get(i+1).getMolecularSpecies())) {
+          assignedHits.add(highAccuracyHits.get(i));
+        }
+      }
+      
+      if (!highAccuracyHits.get(n-2).getMolecularSpecies().equals(highAccuracyHits.get(n-1).getMolecularSpecies())) {
+        assignedHits.add(highAccuracyHits.get(n-1));
+      }
+    }
+    return assignedHits;
+  }
+  
+  public static Set<String> getMolecularSpeciesSet(Vector<DoubleBondPositionVO> omegaInfo) {
+    Set<String> molecularSpeciesSet = new HashSet<String>();
+    for (DoubleBondPositionVO doubleBondPositionVO : omegaInfo) {
+      molecularSpeciesSet.add(doubleBondPositionVO.getMolecularSpecies());
+    }
+    return molecularSpeciesSet;
+  }
+  
+  //TODO: use internal position insensitive names, plus this method should only return one species IMO
+  public static Vector<DoubleBondPositionVO> getDoubleBondAssignmentsOfMolecularSpecies(Vector<DoubleBondPositionVO> omegaInfo, String molecularSpecies) {
+    Vector<DoubleBondPositionVO> doubleBondAssignmentsOfMolecularSpecies = new Vector<DoubleBondPositionVO>();
+    for (DoubleBondPositionVO labeledChainCombiVO : omegaInfo) {
+      if (labeledChainCombiVO.getMolecularSpecies().equals(molecularSpecies)) {
+        doubleBondAssignmentsOfMolecularSpecies.add(labeledChainCombiVO);
+      }
+    }
+    return doubleBondAssignmentsOfMolecularSpecies;
+  }
+  
+  /**
+   * Checks whether two human readable Strings, one with annotated double bond positions and the other without, describe the same molecular species 
+   * @param doubleBondPositionsHumanReadable Human readable String of a molecular species with annotated double bond positions
+   * @param molecularSpecies Human readable String of a molecular species without annotated double bond positions
+   * @return boolean informing the caller whether the given chain combinations can be considered equivalent
+   */
+  public static boolean isChainCombinationEquivalent(String doubleBondPositionsHumanReadable, String molecularSpecies) {
+    boolean isChainCombinationEquivalent = false;
+    String noDoubleBonds = StaticUtils.getHumanReadableWODoubleBondPositions(doubleBondPositionsHumanReadable);
+    String[] arrayNoDoubleBonds = splitChainCombinationsAtChainSeparators(noDoubleBonds);
+    String[] arrayIdentifications = splitChainCombinationsAtChainSeparators(molecularSpecies);
+    
+    if (!(arrayNoDoubleBonds == null || arrayIdentifications == null)) {
+      Arrays.sort(arrayNoDoubleBonds);
+      Arrays.sort(arrayIdentifications);
+      if (Arrays.equals(arrayNoDoubleBonds, arrayIdentifications)) {
+        isChainCombinationEquivalent = true;
+      }
+    }
+    return isChainCombinationEquivalent;
+  }
+  
+  /**
+   * Splits a String into substrings at CHAIN_SEPARATOR_NO_POS or CHAIN_SEPARATOR_KNOWN_POS as defined in LipidomicsConstants.
+   * @param s String to be split
+   * @return Array of Strings split at the defined positions
+   */
+  public static String[] splitChainCombinationsAtChainSeparators(String s) {
+    String str = new String(s);
+    String[] splitString = {str};
+    if (str.contains(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)) {
+      splitString = str.split(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
+    } else if (str.contains(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS)) {
+      splitString = str.split(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS);
+    }
+    return splitString;
   }
   
 }

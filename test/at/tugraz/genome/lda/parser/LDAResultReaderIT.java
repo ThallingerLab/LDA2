@@ -1,32 +1,18 @@
 package at.tugraz.genome.lda.parser;
 
-//import java.io.BufferedOutputStream;
-//import java.io.FileOutputStream;
-//import java.io.IOException;
-//import java.util.Date;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.Vector;
 import java.util.concurrent.ThreadLocalRandom;
 
-//import org.apache.poi.ss.usermodel.Cell;
-//import org.apache.poi.ss.usermodel.CellStyle;
-//import org.apache.poi.ss.usermodel.Row;
-//import org.apache.poi.ss.usermodel.Sheet;
-//import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-//import org.dhatim.fastexcel.Workbook;
-//import org.dhatim.fastexcel.Worksheet;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.export.QuantificationResultExporter;
-import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
@@ -83,68 +69,6 @@ public class LDAResultReaderIT
   }
   
   
-  @Test
-  @DisplayName("Reading a QuantificationResult with ApacheIO, then writing it out and in again with fastExcel leaves the Object unchanged.")
-  void consistencyTest() {
-    String filePathApachePOI = DEFAULT_TEST_DIR+"\\testApachePOI.xlsx";
-    String filePath = DEFAULT_TEST_DIR+"\\writtenWithFastExcel.xlsx";
-    QuantificationResult quantRes1 = null;
-    QuantificationResult quantRes2 = null;
-    try {
-      quantRes1 = LDAResultReaderApachePOI.readResultFile(filePathApachePOI, new Hashtable<String,Boolean>());
-    } catch (ExcelInputFileException ex) {
-      fail(ex.getMessage());
-    }
-    try {
-      QuantificationResultExporter.writeResultsToExcel(filePath, quantRes1);
-    } catch (ExportException ex) {
-      fail(ex.getMessage());
-    }
-    try {
-      quantRes2 = LDAResultReader.readResultFile(filePath, new Hashtable<String,Boolean>());
-    } catch (ExcelInputFileException ex) {
-      fail(ex.getMessage());
-    }
-    
-    if (!quantRes1.getConstants().equals(quantRes2.getConstants())) {
-      fail("LipidomicsConstants Object is not consistent.");
-    }
-    if (!quantRes1.getFaHydroxyEncoding().equals(quantRes2.getFaHydroxyEncoding())) {
-      fail("Fatty Acid HydroxyEncoding Object is not consistent.");
-    }
-    if (!quantRes1.getLcbHydroxyEncoding().equals(quantRes2.getLcbHydroxyEncoding())) {
-      fail("LCB HydroxyEncoding Object is not consistent.");
-    }
-    if (!Objects.equals(quantRes1.getMsLevels(), quantRes2.getMsLevels())) {
-      fail("MsLevels are not consistent.");
-    }
-    if (!quantRes1.getIdentifications().keySet().equals(quantRes1.getIdentifications().keySet())) {
-      fail("Sheet names are not consistent.");
-    }
-    
-    
-    for (String lipidClass : quantRes1.getIdentifications().keySet()) {
-      Vector<LipidParameterSet> lipidParameterSets1 = quantRes1.getIdentifications().get(lipidClass);
-      Vector<LipidParameterSet> lipidParameterSets2 = quantRes2.getIdentifications().get(lipidClass);
-      if (!(lipidParameterSets1.size() == lipidParameterSets2.size())) {
-        fail("Number of analytes is not consistent.");
-      }
-      for (int i = 0; i < lipidParameterSets1.size(); i++) {
-        LipidParameterSet param1 = lipidParameterSets1.get(i);
-        LipidParameterSet param2 = lipidParameterSets2.get(i);
-        if (!param1.equals(param2)) {
-          if (param1 instanceof LipidomicsMSnSet) {
-            fail("LipidomicsMSnSet Objects are not consistent.");
-          } else {
-            fail("LipidParameterSet Objects are not consistent.");
-          }
-        }
-      }
-    }
-  }
-  
-  
-  
   QuantificationResult createMockQuantificationResult() throws LipidCombinameEncodingException {
     List<String> lipidClasses = new ArrayList<String>();
     lipidClasses.add("ClassOne");
@@ -178,7 +102,7 @@ public class LDAResultReaderIT
   Vector<LipidParameterSet> createMockLipidParameterSets(int num) throws LipidCombinameEncodingException, CgException {
     Vector<LipidParameterSet> mockParams = new Vector<LipidParameterSet>();
     for (int i = 0; i < num; i++) {
-      LipidParameterSet mockMS1Set = new LipidParameterSet(829.798461914062f, "48", 1, "NH4", "", "C45 H86 N O8 P", "+N1 +H4",1,0);
+      LipidParameterSet mockMS1Set = new LipidParameterSet(829.798461914062f, "48", 1, "NH4", 0.0, "C45 H86 N O8 P", "+N1 +H4",1,0);
       CgProbe probe = new CgProbe(0,1);
       probe.AreaStatus = CgAreaStatus.OK;
       probe.Area = 1.66817472E8f;

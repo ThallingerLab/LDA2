@@ -1,0 +1,37 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.02%
+ChainCutoff=10%
+SpectrumCoverage=10%
+RetentionTimePostprocessing=true
+
+
+[HEAD]
+!FRAGMENTS
+Name=PChead_184			Formula=C5H15NO4P		Charge=1	MSLevel=2	mandatory=false
+Name=NL-Na_wrong		Formula=$PRECURSOR-P1O4C5N1H14	Charge=1	MSLevel=2	mandatory=other
+Name=Precursor			Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=other
+Name=NL-triMeth_WRONG		Formula=$PRECURSOR-NC3H9	Charge=1	MSLevel=2	mandatory=false
+Name=NL_PEhead_141_WRONG	Formula=$PRECURSOR-C2H8NO4P	Charge=1	MSLevel=2	mandatory=other
+
+
+!INTENSITIES
+Equation=PChead_184>0.05*$BASEPEAK		mandatory=true
+Equation=NL-Na_wrong<0.7*$BASEPEAK		mandatory=true
+Equation=NL-Na_wrong<0.4*PChead_184		mandatory=true
+Equation=Precursor<PChead_184*0.7		mandatory=true
+Equation=1.5*PChead_184>NL_PEhead_141_WRONG	mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=NL_Carboxy		Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=true
+Name=NL_Ketene		Formula=$PRECURSOR-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false
+
+
+[POSITION]
+!INTENSITIES
+Equation=NL_Ketene[2]*0.7>NL_Ketene[1]				mandatory=true

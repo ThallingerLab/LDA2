@@ -25,7 +25,9 @@ package at.tugraz.genome.lda.msn;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.Settings;
@@ -116,13 +118,22 @@ public class RulesContainer
     if (!rulesDir.exists()) throw new RulesException("The provided fragmentation rules directory does not exist!");
     if (!rulesDir.isDirectory()) throw new RulesException("The provided fragmentation rules directory is a file - not a directory!");
     File[] files = rulesDir.listFiles();
+    List<String> fileNames = Arrays.asList(rulesDir.list());
     ElementConfigParser elementParser = Settings.getElementParser();
+    
+    String analyteClass = "";
     for (File file : files){
       if (!file.getAbsolutePath().endsWith(StaticUtils.RULE_FILE_SUFFIX)) continue;
       FragRuleParser parser = new FragRuleParser(elementParser);
       try {
         parser.parseFile(file);
-        rules_.put(file.getName().substring(0,file.getName().length()-StaticUtils.RULE_FILE_SUFFIX.length()), parser);
+        analyteClass = file.getName().substring(0,file.getName().length()-StaticUtils.RULE_FILE_SUFFIX.length());
+        rules_.put(analyteClass, parser);
+        if(!fileNames.contains("ox" + analyteClass+".frag.txt"))
+        {
+        	rules_.put("ox" + analyteClass, parser);
+        }
+                
       } catch (RulesException ex){
         throw new RulesException(file.getName()+": "+ex.getMessage());
       }
@@ -140,6 +151,7 @@ public class RulesContainer
   
   /**
    * verifies if a rule for this class is in the rules directory
+   * oxRules can point either to an ox rules file or to the standard rules file (e.g oxPC -> oxPC or oxPC -> PC)
    * @param rule name of the lipid class
    * @param rulesDir directory where the rule files are stored
    * @throws RulesException specifies in detail which rules are not valid

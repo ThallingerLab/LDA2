@@ -148,7 +148,20 @@ public class LipidomicsConstants
   /** the separator between the number of carbon atoms and the double bonds*/  
   public final static String CHAIN_SEPARATOR_DBS = ":";
   /** separator used between human readable chain combinations to show that there are more than one possible position assignment*/
-  public final static String CHAIN_COMBI_SEPARATOR_AMBIG_POS = ";";
+  public final static String CHAIN_COMBI_SEPARATOR_AMBIG_POS_OLD = ";";
+  
+  /** String starting the sn position assignment for proven positions*/
+  public final static String SN_POSITION_START = "(sn-";
+  /** String ending the sn position assignment for proven positions*/
+  public final static String SN_POSITION_END = ")";
+  
+  /** String starting the omega position assignment*/
+  public final static String OMEGA_POSITION_START = "(n-";
+  /** String ending the omega position assignment*/
+  public final static String OMEGA_POSITION_END = ")";
+  
+  /** String indicating that no FA is linked at this position*/
+  public final static String NO_FA_LINKED = "-";
   
   /** the String for separating the OH numbers*/
   public final static String ALEX_OH_SEPARATOR = ";";
@@ -165,6 +178,11 @@ public class LipidomicsConstants
   /** the String indicating an internal standard*/
   public final static String ALEX_IS_PREFIX = "IS ";
 
+  
+  
+  /**chain-modification variables*/
+  public final static String CHAIN_MOD_SEPARATOR =";";
+  public final static String CHAIN_MOD_COLUMN_NAME ="PSM";
   
   public static String LDA_PROPERTIES_FILE = "LipidDataAnalyzer.properties";
   public static String MZTAB_PROPERTIES_FILE = "mzTab.properties";
@@ -193,6 +211,8 @@ public class LipidomicsConstants
   private boolean respectIsotopicDistribution_;
   /** check if number of labels in species name corresponds with number of labels in chains*/
   private boolean checkChainLabelCombination_;
+  /** minimum threshold in seconds to match predicted and measured retention times with high confidence */
+  private int minimumThresholdForHighConfidenceRTMatch_;
   private boolean useNoiseCutoff_;
   private float noiseCutoffDeviationValue_;
   private Float minimumRelativeIntensity_;
@@ -244,7 +264,6 @@ public class LipidomicsConstants
   private float relativeFarAreaCutoff_;
   private int relativeFarAreaTimeSpace_;
   private float relativeIsoInBetweenCutoff_;
-  private float twinPeakMzTolerance_;
   private int closePeakTimeTolerance_;
   private float twinInBetweenCutoff_;
   private float unionInBetweenCutoff_;
@@ -461,8 +480,6 @@ public class LipidomicsConstants
   private final static String RELATIVE_AREA_FAR_TIME_SPACE_DEFAULT = "30";
   private final static String RELATIVE_ISO_INBETWEEN_CUTOFF = "relativeIsoInBetweenCutoff";
   private final static String RELATIVE_ISO_INBETWEEN_CUTOFF_DEFAULT = "0.5";
-  private final static String TWIN_PEAK_MZ_TOL = "twinPeakMzTolerance";
-  private final static String TWIN_PEAK_MZ_TOL_DEFAULT = "0.002";
   private final static String PEAK_CLOSE_TIME_TOL = "closePeakTimeTolerance";
   private final static String PEAK_CLOSE_TIME_TOL_DEFAULT = "10";
   private final static String CHROM_MULT_FOR_INT = "chromMultiplicationFactorForInt";
@@ -498,7 +515,9 @@ public class LipidomicsConstants
   private final static String CHAIN_CUTOFF_DEFAULT = "0.01";
   private final static String ALEX_TARGETLIST = "alexTargetlist";
   private final static String USE_MSCONVERT_FOR_WATERS = "useMsconvertForWaters";
-
+  private final static String MINIMUM_THRESHOLD_FOR_HIGH_CONFIDENCE_RT_MATCH = "minimumThresholdForHighConfidenceRTMatch";
+  private final static String MINIMUM_THRESHOLD_FOR_HIGH_CONFIDENCE_RT_MATCH_DEFAULT = "4";
+  
   
   private final static String MZTAB_INSTRUMENT = "mzTabInstrumentName";
   private final static String MZTAB_IONSOURCE = "mzTabInstrumentIonsource";
@@ -620,6 +639,7 @@ public class LipidomicsConstants
     String checkChainLabelCombinationString = properties.getProperty(CHECK_CHAIN_LABEL_COMBINATION,CHECK_CHAIN_LABEL_COMBINATION_DEFAULT);
     if (checkChainLabelCombinationString!=null && (checkChainLabelCombinationString.equalsIgnoreCase("yes")||checkChainLabelCombinationString.equalsIgnoreCase("true")))
       checkChainLabelCombination_ = true;
+    minimumThresholdForHighConfidenceRTMatch_ = Integer.parseInt(properties.getProperty(MINIMUM_THRESHOLD_FOR_HIGH_CONFIDENCE_RT_MATCH,MINIMUM_THRESHOLD_FOR_HIGH_CONFIDENCE_RT_MATCH_DEFAULT));
     useNoiseCutoff_ = false;
     String cutoffString = properties.getProperty(NOISE_CUTOFF,NOISE_CUTOFF_DEFAULT);
     if (cutoffString!=null && (cutoffString.equalsIgnoreCase("yes")||cutoffString.equalsIgnoreCase("true")))
@@ -684,7 +704,6 @@ public class LipidomicsConstants
     relativeFarAreaCutoff_ = Float.parseFloat(properties.getProperty(RELATIVE_AREA_FAR_CUTOFF,RELATIVE_AREA_FAR_CUTOFF_DEFAULT));
     relativeFarAreaTimeSpace_ = Integer.parseInt(properties.getProperty(RELATIVE_AREA_FAR_TIME_SPACE,RELATIVE_AREA_FAR_TIME_SPACE_DEFAULT));
     relativeIsoInBetweenCutoff_ = Float.parseFloat(properties.getProperty(RELATIVE_ISO_INBETWEEN_CUTOFF,RELATIVE_ISO_INBETWEEN_CUTOFF_DEFAULT));
-    twinPeakMzTolerance_ = Float.parseFloat(properties.getProperty(TWIN_PEAK_MZ_TOL,TWIN_PEAK_MZ_TOL_DEFAULT));
     closePeakTimeTolerance_ = Integer.parseInt(properties.getProperty(PEAK_CLOSE_TIME_TOL,PEAK_CLOSE_TIME_TOL_DEFAULT));
     chromMultiplicationFactorForInt_ = Integer.parseInt(properties.getProperty(CHROM_MULT_FOR_INT,CHROM_MULT_FOR_INT_DEFAULT));
     chromLowestResolution_ = Integer.parseInt(properties.getProperty(CHROM_RESOLUTION_LOWEST,CHROM_RESOLUTION_LOWEST_DEFAULT));
@@ -890,6 +909,12 @@ public class LipidomicsConstants
   {
     getInstance();
     return instance_.checkChainLabelCombination_;
+  }
+  
+  public static int getMinimumThresholdForHighConfidenceRTMatch() 
+  {
+    getInstance();
+    return instance_.minimumThresholdForHighConfidenceRTMatch_;
   }
   
   public static float getNoiseCutoffDeviationValue()
@@ -1322,15 +1347,7 @@ public class LipidomicsConstants
     getInstance();
     return instance_.relativeIsoInBetweenCutoff_;
   }
-
-  /**
-   * @return tolerance in m/z direction to allow the union of twin peaks
-   */
-  public static float getTwinPeakMzTolerance()
-  {
-    getInstance();
-    return instance_.twinPeakMzTolerance_;
-  }
+  
   /**
    * @return this is the time distance in seconds defines if in a last step close peaks should be united
    */
@@ -1989,7 +2006,6 @@ public class LipidomicsConstants
     if (shotgun_==SHOTGUN_FALSE){
       propertyRows.add(new Pair<String,String>(RELATIVE_ISO_INBETWEEN_CUTOFF,String.valueOf(relativeIsoInBetweenCutoff_)));
       propertyRows.add(new Pair<String,String>(ISO_IN_BETWEEN_TIME_MAX,String.valueOf(isoInBetweenMaxTimeDistance_)));
-      propertyRows.add(new Pair<String,String>(TWIN_PEAK_MZ_TOL,String.valueOf(twinPeakMzTolerance_)));
       propertyRows.add(new Pair<String,String>(PEAK_CLOSE_TIME_TOL,String.valueOf(closePeakTimeTolerance_)));
       propertyRows.add(new Pair<String,String>(TWIN_INBETWEEN_CUTOFF,String.valueOf(twinInBetweenCutoff_)));
       propertyRows.add(new Pair<String,String>(UNION_INBETWEEN_CUTOFF,String.valueOf(unionInBetweenCutoff_)));
@@ -2180,7 +2196,7 @@ public class LipidomicsConstants
         && maxFileSizeForChromTranslationAtOnceInMB_ == other.maxFileSizeForChromTranslationAtOnceInMB_
         && Objects.equals(minimumRelativeIntensity_,
             other.minimumRelativeIntensity_)
-//        && minimumThresholdForHighConfidenceRTMatch_ == other.minimumThresholdForHighConfidenceRTMatch_
+        && minimumThresholdForHighConfidenceRTMatch_ == other.minimumThresholdForHighConfidenceRTMatch_
         && ms2ChromMultiplicationFactorForInt_ == other.ms2ChromMultiplicationFactorForInt_
         && Float.floatToIntBits(ms2IsobarSCExclusionRatio_) == Float
             .floatToIntBits(other.ms2IsobarSCExclusionRatio_)
@@ -2282,8 +2298,6 @@ public class LipidomicsConstants
             other.threeDViewerMs2DefaultTimeResolution_)
         && Float.floatToIntBits(twinInBetweenCutoff_) == Float
             .floatToIntBits(other.twinInBetweenCutoff_)
-        && Float.floatToIntBits(twinPeakMzTolerance_) == Float
-            .floatToIntBits(other.twinPeakMzTolerance_)
         && Float.floatToIntBits(unionInBetweenCutoff_) == Float
             .floatToIntBits(other.unionInBetweenCutoff_)
         && use3D_ == other.use3D_
@@ -2320,6 +2334,10 @@ public class LipidomicsConstants
   
   public void setLDAVersion(String ldaVersion) {
     this.ldaVersion_ = ldaVersion;
+  }
+  
+  public String getLDAVersion() {
+	  return ldaVersion_;
   }
   
   public String getRawFileName(){
@@ -2377,7 +2395,50 @@ public class LipidomicsConstants
   public boolean getRespectIsotopicDistribution(){
     return respectIsotopicDistribution_;
   }
+  
+  /**
+   * returns the ambigious position separator depending on the LDA version
+   */
+  public String getChainCombiSeparatorAmbigPosDependingOnVersion()
+  {
+	  if (shouldOldEncodingBeUsed())
+		  return CHAIN_COMBI_SEPARATOR_AMBIG_POS_OLD;
+	  
+	  // return null for new encoding since it is not a separator anymore (sn nomenclature)
+	  return null;	  
+  }
+  
+  /**
+   * returns the modification separator depending on the LDA version
+   */
+  public String getModSeparatorDependingOnVersion()
+  {
+	  if (!shouldOldEncodingBeUsed())
+		  return CHAIN_MOD_SEPARATOR;
+	  
+	  // old separator (at least starting one)
+	  return "[";	  
+  }
+  
+  /**
+   * returns true if old encoding should be used, false otherwise
+   */
+  public boolean shouldOldEncodingBeUsed()
+  {
+	  String[] version = this.ldaVersion_.split("_")[0].split("\\.");
 
+	  // for versions >= 2.9 use new encoding
+	  if (Integer.parseInt(version[0]) > 2)
+		  return false;
+	  else if (Integer.parseInt(version[0]) >= 2) {
+		  if (Integer.parseInt(version[1]) >= 9)
+				  return false;
+	  }
+
+	  // for all other versions use old encoding
+	  return true;
+  }
+  
   /**
    * 
    * @param tolerance the tolerance value in its original unit
@@ -2392,4 +2453,5 @@ public class LipidomicsConstants
     else
       return tolerance;
   }
+  
 }

@@ -165,7 +165,7 @@ public class SingleQuantThread extends Thread
       } else if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_PRM){
         //TODO: the MS-level is here always set to 2
         isotopicProbes = analyzer.processPrmData((float)quantSet.getAnalyteMass(),quantSet.getCharge(),2,quantSet.getAnalyteClass(),
-            quantSet.getModName(), StaticUtils.generateLipidNameString(quantSet.getAnalyteName(), quantSet.getDbs(), -1),quantSet.getAnalyteFormula(),quantSet.getOhNumber());
+            quantSet.getModName(), StaticUtils.generateLipidNameString(quantSet.getAnalyteName(), quantSet.getDbs(),-1,quantSet.getOxState()),quantSet.getAnalyteFormula(),quantSet.getOhNumber(),quantSet.getOxState());
 //        for (Integer hitNumber : isotopicProbes.keySet()){
 //          for (Integer isoNr: isotopicProbes.get(hitNumber).keySet()){
 //            for (CgProbe probe : isotopicProbes.get(hitNumber).get(isoNr)){
@@ -352,6 +352,7 @@ public class SingleQuantThread extends Thread
         }
         for (QuantVO quant : isobarHitsOfOneSpecies.keySet()){
           LipidParameterSet set = isobarHitsOfOneSpecies.get(quant);
+          set.setOxState(quant.getOxState());
           Hashtable<String,LipidParameterSet> hitsOfOneMod = new Hashtable<String,LipidParameterSet>();
           if (hitsAccordingToQuant.containsKey(quant)) hitsOfOneMod = hitsAccordingToQuant.get(quant);
           String rt = "";
@@ -587,7 +588,7 @@ public class SingleQuantThread extends Thread
     Vector<Vector<CgProbe>> isotopicProbes2 = new Vector<Vector<CgProbe>>();
     // k is the isotope number
     float totalArea = 0;
-    String rt = "";
+    double rt = 0.0;
     for (int k=0;k!=oneHit.size();k++){
       Vector<CgProbe> probes = oneHit.get(k);
       if (probes !=null){
@@ -604,13 +605,13 @@ public class SingleQuantThread extends Thread
           }
         }
         if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE && k==0){
-          rt = Calculator.FormatNumberToString(Calculator.mean(rts)/60d,2d);
+        	rt = Calculator.mean(rts)/60d;
         }
       }
     }
     if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE)
-      rt = null;
-    LipidParameterSet param = new LipidParameterSet(analyteMass, analyteName, dbs, ohNumber, modName, rt, analyteFormula, modFormula,charge);
+    	rt = -1.0;
+    LipidParameterSet param = new LipidParameterSet(analyteMass, analyteName, dbs, modName, rt, analyteFormula, modFormula,charge, ohNumber);
     param.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance(analyteMass);
     param.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance(analyteMass);
     param.Area = totalArea;

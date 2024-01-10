@@ -1,0 +1,24 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=1%
+ChainCutoff=1%
+SpectrumCoverage=10%
+RetentionTimePostprocessing=true
+
+
+[HEAD]
+!FRAGMENTS
+Name=PChead_125			Formula=C2H6O4P			Charge=1	MSLevel=2	mandatory=false
+Name=PChead_184			Formula=C5H15NO4P		Charge=1	MSLevel=2	mandatory=true
+Name=Precursor			Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=other
+Name=NL_PChead_183		Formula=$PRECURSOR-C5H14NO4P	Charge=1	MSLevel=2	mandatory=other
+Name=PChead_147			Formula=C2H5O4PNa		Charge=1	MSLevel=2	mandatory=other
+Name=NL_trimethylamine_59	Formula=$PRECURSOR-C3H9N	Charge=1	MSLevel=2	mandatory=other
+
+!INTENSITIES
+Equation=(PChead_184+PChead_125)*3>NL_trimethylamine_59+NL_PChead_183+PChead_147	mandatory=true
+Equation=PChead_184>0.1*$BASEPEAK						mandatory=true
+Equation=PChead_184*0.05>Precursor						mandatory=true

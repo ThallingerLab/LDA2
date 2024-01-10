@@ -40,6 +40,7 @@ public class LipidomicsTableCellRenderer extends DefaultTableCellRenderer
   private static final long serialVersionUID = 393014627701796523L;
   
   public final static Color BRIGHT_GREEN = new Color(200,255,200);
+  
 
 
   public Component getTableCellRendererComponent(JTable table, Object
@@ -53,11 +54,15 @@ public class LipidomicsTableCellRenderer extends DefaultTableCellRenderer
       else renderedLabel.setHorizontalAlignment(JLabel.LEFT);
       LipidomicsTableModel model = (LipidomicsTableModel)table.getModel();
       if (!isSelected){
+        
         if (model.isPercentalSplitInstance(row)) renderedLabel.setBackground(Color.ORANGE);
         else if (model.isSplitInstance(row)) renderedLabel.setBackground(Color.YELLOW);
         // data containing MSn evidence is colored in green
         else if (model.hasMS2Evidence(row)) renderedLabel.setBackground(BRIGHT_GREEN);
         else renderedLabel.setBackground(Color.WHITE);
+        if (model.hasOmegaEvidenceConflict(row)) renderedLabel.setForeground(Color.RED);
+        else renderedLabel.setForeground(Color.BLACK);
+        
       }
       return renderedLabel;
   }

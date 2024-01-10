@@ -1,0 +1,60 @@
+/* 
+ * This file is part of Lipid Data Analyzer
+ * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp  
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
+ *  
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *  
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details. 
+ *  
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Please contact lda@genome.tugraz.at if you need additional information or 
+ * have any questions.
+ */ 
+
+package at.tugraz.genome.lda.vos;
+
+import java.io.File;
+
+import at.tugraz.genome.lda.quantification.QuantificationResult;
+
+/**
+ * Value object holding experiment names, filenames and the corresponding QuantificationResult
+ * 
+ * @author Leonida M. Lamp
+ *
+ */
+
+public class ResultFileVO
+{
+  String fileName_;
+  File resultFile_;
+  QuantificationResult result_;
+  
+  public ResultFileVO(String fileName, File resultFile, QuantificationResult result) {
+    this.fileName_ = fileName;
+    this.resultFile_ = resultFile;
+    this.result_ = result;
+  }
+  
+  public String getFileName() {
+    return this.fileName_;
+  }
+  
+  public File getResultFile() {
+    return this.resultFile_;
+  }
+  
+  public QuantificationResult getQuantificationResult() {
+    return this.result_;
+  }
+}

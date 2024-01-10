@@ -36,6 +36,7 @@ public class TooltipTexts
   public final static String TABS_MAIN_BATCH = "<html>Batch Quantitation of a experiments</html>";
   public final static String TABS_MAIN_STATISTICS = "<html>Analysis of quantified results</html>";
   public final static String TABS_MAIN_DISPLAY = "<html>Manual verification of results with 3D viewer</html>";
+  public final static String TABS_MAIN_TARGET = "<html>Creation of target files with information for \u03C9-C=C position identification</html>";
   public final static String TABS_MAIN_SETTINGS = "<html>Default LDA settings; e.g. type of mass spectrometer</html>";
   public final static String TABS_MAIN_LICENSE = "<html>Information about the current licensing status</html>";
   public final static String TABS_MAIN_HELP = "<html>Help component</html>";
@@ -248,7 +249,7 @@ public class TooltipTexts
   public final static String HEATMAP_DIVISOR_UNIT =  "<html>The display units for the divisors; e.g. m for /mL of a concentration</html>";
   public final static String HEATMAP_USE_AU =  "<html>Should arbitrary units be used or absolute entities?</html>";
   
-  public final static String HEATMAP_EXPORT_DEVIATION = "<html>Should the deviation values be exported (standard deviation or standar error)?</html>";
+  public final static String HEATMAP_EXPORT_DEVIATION = "<html>Should the deviation values be exported (standard deviation or standard error)?</html>";
   public final static String HEATMAP_EXPORT_STANDARD_DEVIATION = "<html>Use the standard deviation?</html>";
   public final static String HEATMAP_EXPORT_STANDARD_DEVIATION_WHICH = "<html>Single standard deviation, double standard deviation etc?</html>";
   public final static String HEATMAP_EXPORT_STANDARD_ERROR = "<html>Use the standard error?</html>";
@@ -256,11 +257,12 @@ public class TooltipTexts
   public final static String HEATMAP_EXPORT_COLUMN_EXPERIMENT = "<html>Table setup: experiments/groups in columns and analytes in rows</html>";
   public final static String HEATMAP_EXPORT_RT = "<html>Should the retention time be exported?</html>";
   public final static String HEATMAP_EXPORT_RT_SD = "<html>Should the standard deviation of the retention time be exported?</html>";
-  public final static String HEATMAP_EXPORT_SPECIES = "<html>The exported shall be on the species level</html>";
-  public final static String HEATMAP_EXPORT_CHAIN = "<html>The exported shall be on the chain level</html>";
-  public final static String HEATMAP_EXPORT_POSITION = "<html>The exported shall be on the position level.<br/>"
-      + "A position will be exported if a majority for a position is available<br/>"
-      + "and no contradicting evidence.</html>";
+  public final static String HEATMAP_EXPORT_SPECIES = "<html>Analytes shall be exported at molecular species level</html>";
+  public final static String HEATMAP_EXPORT_CHAIN = "<html>Analytes shall be exported at chain level</html>";
+  public final static String HEATMAP_EXPORT_POSITION = "<html>Analytes shall be exported at position level.<br/>"
+      + "A position will be exported if a majority for a position <br/>"
+      + "and no contradicting evidence is available.</html>";
+  public final static String HEATMAP_EXPORT_DB_POSITION = "<html>Analytes shall be exported at \u03C9 - double bond position level, where evidence is available.<br/>";
   
   public final static String BARCHART_VALUE_TYPE = "<html>The quantitative type that is used for the geration of the bar chart.<br/>" +
   "A detailed description about the types can be found in the user<br>" +
@@ -283,7 +285,7 @@ public class TooltipTexts
   public final static String DISPLAY_OPEN_CHROM = "<html>Enter the raw file of your experiment! Just chrom file is allowed</html>";
   public final static String DISPLAY_OPEN_RESULT = "<html>Enter the result file of the quantitation! Just Excel file is allowed</html>";
   public final static String DISPLAY_START = "<html>Starts the display! Chrom and result file have to be selected before!</html>";
-  public final static String DISPLAY_SELECT_CLASS = "<html>Selecte the analyte class you want to inspect.</html>";
+  public final static String DISPLAY_SELECT_CLASS = "<html>Select the analyte class you want to inspect.</html>";
   public final static String DISPLAY_SELECTION_TABLE = "<html>Click left mouse button to select an analyte and display it.<br/>" +
   		"Click right mouse button to add analyte before or after, or delete it.</html>";
   public final static String DISPLAY_MZ_PLUS = "<html>Display range for the 3D viewer in Dalton.<br/>" +
@@ -294,6 +296,7 @@ public class TooltipTexts
   public final static String DISPLAY_SHOW_2D = "<html>Should the 2D viewer be displayed or not?<br/>" +
   		"The 2D viewer allows to change the quantitation manually. The 3D viewer is just for displaying purposes</html>";
   public final static String DISPLAY_SHOW_MSN = "<html>Should the names be displayed using MSn evidence?</html>";
+  public final static String DISPLAY_SHOW_OMEGA = "<html>Should assigned \u03C9 double bond positions be displayed?</html>";
   public final static String DISPLAY_LOCK_MZ = "<html>This setting locks the 3D viewer to a certain m/z range</html>";
   public final static String DISPLAY_RT_START = "<html>Display range for the 3D viewer in minutes.<br/>" +
   "This defines the start retention time.</html>";
@@ -317,6 +320,18 @@ public class TooltipTexts
   public final static String DISPLAY_ADD_ANALYTE_MASS = "<html>The m/z of the analyte.</html>";
   public final static String DISPLAY_ADD_ANALYTE_ACCEPT = "<html>Accept the settings and add the analyte.</html>";
   public final static String DISPLAY_ADD_ANALYTE_OH = "<html>The number of hydroxylation sites.</html>";
+  
+  public final static String DISPLAY_SELECT_SPECIES = "<html>Select this molecular species.</html>";
+  public final static String DISPLAY_MEASURED_RT = "<html>The measured retention time for this analyte.</html>";
+  public final static String DISPLAY_EXPECTED_RT = "<html>Enter the expected retention time for this \u03C9 - double bond position assignment.</html>";
+  public final static String DISPLAY_CHAIN_POSITION = "<html>Enter the \u03C9 - double bond position for this species.</html>";
+  public final static String DISPLAY_ADD_NEW_DB_SPECIES = "<html>Add new molecular species with specified \u03C9 - double bond"
+      + "positions and expected retention time.</html>";
+  public final static String DISPLAY_CHANGE_SELECTED_DB_SPECIES = "<html>Change selected molecular species to specified \u03C9 - double bond"
+      + "positions and expected retention time.</html>";
+  public final static String DISPLAY_ASSIGN_SELECTED_DB_SPECIES = "<html>Assign selected molecular species to this signal.</html>";
+  public final static String DISPLAY_REMOVE_SELECTED_DB_SPECIES = "<html>Remove selected molecular species.</html>";
+  public final static String DISPLAY_SAVE_CHANGES = "<html>Save changes to result file.</html>";
   
   public final static String DIALOG_ADD_PEAK_START_TIME = "<html>The lower time border in minutes.</html>";
   public final static String DIALOG_ADD_PEAK_STOP_TIME = "<html>The upper time border in minutes.</html>";

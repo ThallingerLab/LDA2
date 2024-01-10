@@ -95,6 +95,20 @@ public class RuleHydroxyRequirementsVO
   {
     this.mandatory_ = mandatory;
   }
-  
+
+
+  @Override
+  public boolean equals(Object obj)
+  {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    RuleHydroxyRequirementsVO other = (RuleHydroxyRequirementsVO) obj;
+    return chainType_ == other.chainType_ && mandatory_ == other.mandatory_
+        && oh_ == other.oh_;
+  }
   
 }

@@ -1,0 +1,45 @@
+[GENERAL]
+AmountOfChains=2
+AmountOfLCBs=1
+ChainLibrary=fattyAcidChains.xlsx
+LCBLibrary=dLCB.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.1%
+ChainCutoff=70%
+SpectrumCoverage=5%
+FaHydroxylationRange=0-1
+LcbHydroxylationRange=1-3
+RetentionTimePostprocessing=true
+SingleChainIdentification=false
+
+
+[HEAD]
+!FRAGMENTS
+Name=NL_Hex			Formula=$PRECURSOR-C6H10O5	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Hex_H2O			Formula=NL_Hex-H2O		Charge=1	MSLevel=2	mandatory=false
+Name=NL_formaldehyde+H2O	Formula=NL_Hex-CH4O2		Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=NL_Hex|NL_Hex_H2O			mandatory=true
+Equation=NL_Hex+NL_Hex_H2O>0.4*$BASEPEAK	mandatory=true
+
+[CHAINS]
+!FRAGMENTS
+Name=SPH_fragment	Formula=$LCB-H6ON			Charge=1	MSLevel=2	mandatory=true		oh=2
+Name=SPH_fragment_3	Formula=$LCB-CH8ON			Charge=1	MSLevel=2	mandatory=false		oh=3
+Name=Carboxy		Formula=$CHAIN-H			Charge=1	MSLevel=2	mandatory=true		
+Name=Ketene		Formula=$CHAIN-H3O			Charge=1	MSLevel=2	mandatory=false
+Name=NL_LCB_part	Formula=$CHAIN+C3H4N1			Charge=1	MSLevel=2	mandatory=false		
+
+!INTENSITIES
+Equation=Carboxy>0.005*$BASEPEAK		mandatory=true
+Equation=Carboxy>1.5*SPH_fragment		mandatory=true
+Equation=Carboxy>1.5*SPH_fragment_3		mandatory=true
+
+[POSITION]
+!INTENSITIES
+Equation=Carboxy[2]>0*$BASEPEAK		mandatory=true
+
+
+

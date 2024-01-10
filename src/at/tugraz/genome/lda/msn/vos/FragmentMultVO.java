@@ -23,6 +23,8 @@
 
 package at.tugraz.genome.lda.msn.vos;
 
+import java.util.Objects;
+
 /**
  * Class containing a part of an equation, namely, the fragment name
  * the multiplication factor, if the value shall be added or subtracted, and, if appropriate, the affected position
@@ -127,6 +129,23 @@ public class FragmentMultVO
       value += "["+String.valueOf(position_)+"]";
     value += "*"+multFactor_;
     return value;
+  }
+
+
+  @Override
+  public boolean equals(Object obj)
+  {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    FragmentMultVO other = (FragmentMultVO) obj;
+    return Objects.equals(fragmentName_, other.fragmentName_)
+        && Objects.equals(multFactor_, other.multFactor_)
+        && position_ == other.position_ && positive_ == other.positive_
+        && type_ == other.type_;
   }
   
 }

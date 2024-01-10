@@ -24,6 +24,7 @@
 package at.tugraz.genome.lda.msn.vos;
 
 import java.util.Hashtable;
+import java.util.Objects;
 import java.util.Vector;
 
 import at.tugraz.genome.maspectras.quantification.CgProbe;
@@ -146,4 +147,20 @@ public class ExpressionForComparisonVO
     }
     return isAbsolute;
   }
+
+
+  @Override
+  public boolean equals(Object obj)
+  {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    ExpressionForComparisonVO other = (ExpressionForComparisonVO) obj;
+    return Objects.equals(fragments_, other.fragments_)
+        && Objects.equals(globalMultiplier_, other.globalMultiplier_);
+  }
+  
 }

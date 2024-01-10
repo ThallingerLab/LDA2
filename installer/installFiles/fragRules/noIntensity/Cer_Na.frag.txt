@@ -1,0 +1,16 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=1%
+ChainCutoff=1%
+RetentionTimePostprocessing=true
+
+[HEAD]
+!FRAGMENTS
+Name=NL_H2O			Formula=$PRECURSOR-H2O	Charge=1	MSLevel=2	mandatory=false
+Name=NL_formaldehyde+H2O_48	Formula=$PRECURSOR-CH4O2	Charge=1	MSLevel=2	mandatory=false
+
+
+

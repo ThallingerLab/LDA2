@@ -217,6 +217,7 @@ public class IntensityPositionVO extends IntensityRuleVO
       ruleSmaller = rule.substring(0,rule.indexOf("<"));
       ruleBigger = rule.substring(rule.indexOf("<")+1);
     }
+    
     Vector<ShortStringVO> biggerNbpNames =  FragmentRuleVO.getLengthSortedFragmentNames(new Hashtable<String,Short>(),ruleVO.getBiggerNonHeadAndBasePeakNames(),new Hashtable<String,Short>());
     Vector<ShortStringVO> biggerPosNames =  FragmentRuleVO.getLengthSortedFragmentNames(new Hashtable<String,Short>(),getNonHeadAndBasePeakNamesPlusPos(ruleVO.biggerExpression_.getFragments()),new Hashtable<String,Short>());
     //the checkIfOnlyMissedValuesArePresent had been introduced because it was not possible to differentiate alkenylated species with same carbon dbs numbers; e.g. P-PE P-16:0/16:0
@@ -333,7 +334,6 @@ public class IntensityPositionVO extends IntensityRuleVO
       }
     }
     return filteredNames;
-  }
-  
+  }  
   
 }

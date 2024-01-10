@@ -1,0 +1,18 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.1%
+ChainCutoff=1%
+SpectrumCoverage=10%
+RetentionTimePostprocessing=false
+
+
+[HEAD]
+!FRAGMENTS
+Name=NL_HCl	Formula=$PRECURSOR-HCl	Charge=1	MSLevel=2	mandatory=true
+
+!INTENSITIES
+Equation=NL_HCl>0.5*$BASEPEAK	mandatory=true
+

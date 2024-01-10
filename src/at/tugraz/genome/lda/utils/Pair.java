@@ -30,64 +30,76 @@ package at.tugraz.genome.lda.utils;
  */
 public class Pair<K, V>
 {
-    public final K key;
-    public final V value;
+  private K key_;
+  private V value_;
  
-    /**
-     * Constructor for a Pair
-     * @param key
-     * @param value
-     */
-    public Pair(K key, V value)
-    {
-        this.key = key;
-        this.value = value;
-    }
+  /**
+   * Constructor for a Pair
+   * @param key
+   * @param value
+   */
+  public Pair(K key, V value)
+  {
+    this.key_ = key;
+    this.value_ = value;
+  }
     
-    public K getKey() {
-      return this.key;
-    }
+  public K getKey() 
+  {
+    return this.key_;
+  }
     
-    public V getValue() {
-      return this.value;
-    }
- 
-    @Override
-    public boolean equals(Object o)
-    {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Pair<?, ?> pair = (Pair<?, ?>) o;
-        if (!key.equals(pair.key)) {
-            return false;
-        }
-        return value.equals(pair.value);
-    }
- 
-    /**
-     * Computes hash code for an object to support hash tables
-     * using hash codes of the underlying objects
-     */
-    @Override
-    public int hashCode()
-    {
-        return 31 * key.hashCode() + value.hashCode();
-    }
- 
-    @Override
-    public String toString() {
-        return "(" + key + ", " + value + ")";
-    }
+  public V getValue() 
+  {
+    return this.value_;
+  }
     
-    /**
-     * Factory method for creating an immutable instance of a typed Pair
-     */
-    public static <K, V> Pair <K, V> of(K a, V b)
-    {
-        return new Pair<>(a, b);
+  public void setKey(K key)
+  {
+  	this.key_ = key;
+  }
+    
+  public void setValue(V value)
+  {
+  	this.value_ = value;
+  }
+ 
+  @Override
+  public boolean equals(Object o)
+  {
+    if (this == o) {
+      return true;
     }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Pair<?, ?> pair = (Pair<?, ?>) o;
+    if (!key_.equals(pair.key_)) {
+      return false;
+    }
+    return value_.equals(pair.value_);
+  }
+ 
+  /**
+   * Computes hash code for an object to support hash tables
+   * using hash codes of the underlying objects
+   */
+  @Override
+  public int hashCode()
+  {
+    return 31 * key_.hashCode() + value_.hashCode();
+  }
+ 
+  @Override
+  public String toString() {
+    return "(" + key_ + ", " + value_ + ")";
+  }
+    
+  /**
+   * Factory method for creating an immutable instance of a typed Pair
+   */
+  public static <K, V> Pair <K, V> of(K a, V b)
+  {
+    return new Pair<>(a, b);
+  }
 }

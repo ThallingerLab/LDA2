@@ -23,6 +23,8 @@
 
 package at.tugraz.genome.lda.analysis;
 
+import java.util.ArrayList;
+
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.vos.AddAnalyteVO;
 
@@ -40,7 +42,9 @@ public interface AnalyteAddRemoveListener
    */
   public void addAnalyte(int position, AddAnalyteVO analyteDescrVO);
   public void removeAnalyte(int[] indices);
+  public void removeMolecularSpecies(ArrayList<Integer> indices);
   public LipidParameterSet getAnalyteInTableAtPosition(int position);
+  public String getNameInTableAtPosition(int position);
   public void showMs2(int position);
   public void listSelectionChanged(int leadIndex);
   public void changeListSorting(int sortType);
@@ -57,6 +61,12 @@ public interface AnalyteAddRemoveListener
    * @param position the position in the JTable
    */
   public void editRt(int position);
+  
+  /**
+   * pops up a menu for omega assignment editing
+   * @param position the position in the JTable
+   */
+  public void editOmegaAssignment(int position);
   
   /**
    * starts a new MS1 viewer

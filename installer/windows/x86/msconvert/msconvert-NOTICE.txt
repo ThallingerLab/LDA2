@@ -1,0 +1,46 @@
+The following files were subject to changes in the source code by the
+Graz University of Technology for obtaining correct precursor information
+from Thermo RAW files:
+
+1) pwiz_aux/msrc/utility/vendor_api/thermo/RawFile.h; changed code:
+            struct PWIZ_API_DECL PrecursorInfo
+        {
+            double isolationMZ;
+            double monoisotopicMZ;
+
+2) pwiz_aux/msrc/utility/vendor_api/thermo/RawFile.cpp; changed code:
+	         double ScanInfoImpl::precursorMZ(long index, bool preferMonoisotope) const
+         {
+         //  if (preferMonoisotope)
+         //  {
+         //    try
+         //    {
+         //      double mz = trailerExtraValueDouble("Monoisotopic M/Z:");
+         //      if (mz > 0)
+         //        return mz;
+         //  }
+         //  catch (RawEgg&)
+         //  {
+               // almost certainly means that the label was not present
+         //  }
+         //}
+	   IXRawfile3Ptr raw3 = (IXRawfile3Ptr) rawfile_->raw_;
+           VARIANT vPrecursorInfos;
+           VariantInit(&vPrecursorInfos);
+           long nPrecursorInfos = 0;
+           HRESULT hr = raw3->GetPrecursorInfoFromScanNum(scanNumber_,&vPrecursorInfos,&nPrecursorInfos);
+           if (SUCCEEDED(hr)){
+             BYTE* pData;
+	     SafeArrayAccessData(vPrecursorInfos.parray, (void**)&pData);
+	     for (int i=0; i < nPrecursorInfos; ++i){
+	       // Copy the scan information from the safearray buffer
+	       PrecursorInfo info;
+   	       memcpy(&info,pData + i * sizeof(PrecursorInfo),sizeof(PrecursorInfo));
+	       double mz = info.monoisotopicMZ;
+               if (mz > 0)
+                 return mz;
+	       }
+             }
+             return precursorMZs_[index];
+           }
+

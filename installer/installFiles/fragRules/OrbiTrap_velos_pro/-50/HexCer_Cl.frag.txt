@@ -1,0 +1,26 @@
+[GENERAL]
+AmountOfChains=2
+AmountOfLCBs=1
+ChainLibrary=fattyAcidChains.xlsx
+LCBLibrary=dLCB.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.1%
+ChainCutoff=1%
+SpectrumCoverage=5%
+FaHydroxylationRange=0-1
+LcbHydroxylationRange=1-3
+RetentionTimePostprocessing=false
+IsobarSCExclusionRatio=0.5
+IsobarSCFarExclusionRatio=0.5
+
+[HEAD]
+!FRAGMENTS
+Name=NL_HCl	Formula=$PRECURSOR-HCl		Charge=1	MSLevel=2	mandatory=true
+Name=NL_H3Cl	Formula=NL_HCl-H2		Charge=1	MSLevel=2	mandatory=other
+Name=NL_Hex	Formula=NL_HCl-C6H10O5		Charge=1	MSLevel=2	mandatory=true
+
+
+!INTENSITIES
+Equation=NL_HCl>2*NL_Hex	mandatory=true
+Equation=NL_HCl>NL_H3Cl		mandatory=true

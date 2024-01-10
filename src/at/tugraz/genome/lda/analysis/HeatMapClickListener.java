@@ -25,9 +25,11 @@ package at.tugraz.genome.lda.analysis;
 
 import java.io.File;
 import java.util.Hashtable;
+import java.util.Set;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.vos.AutoAnalyteAddVO;
+import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
 
 /**
@@ -37,7 +39,7 @@ import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
  */
 public interface HeatMapClickListener extends SampleLookup
 {
-  public boolean heatMapClicked(String experimentName, String resultFilePath,  String moleculeName);
+  public boolean heatMapClicked(String experimentName, ResultCompVO compVO, String moleculeName, boolean showMSn);
   
   /**
    * showing a bar chart when a specific analyte was clicked
@@ -121,7 +123,7 @@ public interface HeatMapClickListener extends SampleLookup
   public void changeESStatus(String groupName, boolean isGrouped, boolean value);
   public void changeIsotopesUsed(String groupName, boolean isGrouped, int value);
   public void eliminateDoublePeaks(String groupName, String analyteName, String absFilePathStartExp, Vector<String> selectedMods, Vector<String> foundUpdateables);
-  public void eliminateAnalyteEverywhere(String groupName, Hashtable<String,String> selectedAnalytes, Vector<String> selectedMods, Vector<String> foundUpdateables);
+  public void eliminateAnalyteEverywhere(String groupName, Set<ResultCompVO> toRemove, Vector<String> selectedMods, Set<String> filePaths);
   
   /**
    * for automatically adding analytes by selecting template probes in the heat map
@@ -140,8 +142,9 @@ public interface HeatMapClickListener extends SampleLookup
    * exports the contents of the heat map to mzTab
    * @param exportFile the file where mzTab shall be written
    * @param speciesType which species shall be exported - for details see LipidomicsConstants.EXPORT_ANALYTE_TYPE
+   * @param exportDoubleBondPositions true when double bond positions shall be exported
    */
-  public void exportMzTab(File exportFile, short speciesType);
+  public void exportMzTab(File exportFile, short speciesType, boolean exportDoubleBondPositions);
   public void exportRdb(File exportFile);
   public void exportMaf(File exportFile);
   

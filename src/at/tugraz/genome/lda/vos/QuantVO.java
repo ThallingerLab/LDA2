@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -23,6 +23,7 @@
 
 package at.tugraz.genome.lda.vos;
 
+import java.util.Collections;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
@@ -33,9 +34,10 @@ import at.tugraz.genome.lda.utils.StaticUtils;
 /**
  * 
  * @author Juergen Hartler
+ * @author Leonida M. Lamp 
  *
  */
-public class QuantVO
+public class QuantVO implements Comparable<QuantVO>
 {
   protected String analyteClass_;
   protected String prefixOrName_;
@@ -60,6 +62,9 @@ public class QuantVO
   protected Vector<QuantVO> isobaricSpecies_;
   /** will this QuantVO be quantified by another isobar?*/
   protected boolean quantifiedByOtherIsobar_;
+  /** Vector of value objects required for omega assignment */
+  private Vector<DoubleBondPositionVO> infoForOmegaAssignment_;
+  protected String oxState_;
   
   /**
    * constructor for an object holding necessary information for 
@@ -85,7 +90,7 @@ public class QuantVO
       String modName, String modFormula, float retTime,
       float usedMinusTime, float usedPlusTime,
       Vector<Double> mustMatchProbabs, Vector<Double> probabs,
-      int negativeStartValue) throws HydroxylationEncodingException
+      int negativeStartValue,String oxState) throws HydroxylationEncodingException
   {
     super();
     this.analyteClass_ = analyteClass;
@@ -114,6 +119,23 @@ public class QuantVO
     this.negStartValue_ = negativeStartValue;
     this.isobaricSpecies_ = new Vector<QuantVO>();
     this.quantifiedByOtherIsobar_ = false;
+    this.infoForOmegaAssignment_ = new Vector<DoubleBondPositionVO>();
+    this.oxState_ = oxState;
+  }
+  
+  /**
+   * @return boolean informing the caller whether infoForOmegaAssignment is available
+   */
+  public boolean hasInfoForOmegaAssignment() {
+    if (!this.infoForOmegaAssignment_.isEmpty()) return true;
+    return false;
+  }
+  
+  /**
+   * @return Vector of value objects required for omega assignment
+   */
+  public Vector<DoubleBondPositionVO> getInfoForOmegaAssignment() {
+    return this.infoForOmegaAssignment_;
   }
   
   public String getAnalyteClass()
@@ -129,6 +151,12 @@ public class QuantVO
     }
     return null;
   }
+  
+  public int getCarbons()
+  {
+  	return carbons_;
+  }
+  
   public int getDbs()
   {
     return dbs_;
@@ -137,6 +165,11 @@ public class QuantVO
   public int getOhNumber()
   {
     return oh_;
+  }
+  
+  public String getOxState()
+  {
+	  return oxState_;
   }
 
   public String getAnalyteFormula()
@@ -202,7 +235,17 @@ public class QuantVO
    * @return original string for the analyte name
    */
   public String getIdString(){
-    return StaticUtils.generateLipidNameString(getAnalyteName(),dbs_,-1);
+    return StaticUtils.generateLipidNameString(getAnalyteName(),dbs_,-1,oxState_);
+  }
+  
+  /**
+   * Adds a value object for omega assignment
+   * 
+   * @param labeledMolecularSpecies Value object of the potential molecular species with omega assignment
+   * @param retTime float of the retention time in minutes
+   */
+  public void addInfoForOmegaAssignment(DoubleBondPositionVO labeledSpeciesVO) {
+    this.infoForOmegaAssignment_.add(labeledSpeciesVO);
   }
   
   /**
@@ -243,6 +286,7 @@ public class QuantVO
         }
       }
     }
+    Collections.sort(this.isobaricSpecies_);
   }
 
   /**
@@ -322,4 +366,14 @@ public class QuantVO
     return prefixAndC;
   }
   
+  /**
+   * this method compares two QuantVOs by analyte mass
+   * @param otherQuantVO the other QuantVO to compare
+   * @return -1 if analyte mass of other QuantVO is smaller, 0 for equality and 1 if analyte mass of other QuantVO is bigger
+   */
+  public int compareTo(QuantVO otherQuantVO) {
+	  
+	  int ret = (this.getAnalyteFormula() + this.getModFormula()).compareTo(otherQuantVO.getAnalyteFormula() + otherQuantVO.getModFormula());
+	  return ret;
+  }
 }

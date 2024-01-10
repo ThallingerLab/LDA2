@@ -1,0 +1,22 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=1%
+RetentionTimePostprocessing=true
+SpectrumCoverage=20%
+
+[HEAD]
+!FRAGMENTS
+Name=NL_H2O		Formula=$PRECURSOR-H2O		Charge=1	MSLevel=2	mandatory=true
+Name=NL_PEhead_61	Formula=$PRECURSOR-C2H7NO	Charge=1	MSLevel=2	mandatory=false
+Name=NL_PEhead_141	Formula=$PRECURSOR-C2H8NO4P	Charge=1	MSLevel=2	mandatory=true
+
+!INTENSITIES
+Equation=(NL_H2O+NL_PEhead_141)>0.5*$BASEPEAK	mandatory=true
+Equation=NL_PEhead_61<0.25*$BASEPEAK		mandatory=true
+
+[CHAINS]
+!FRAGMENTS
+Name=NL_Ketene		Formula=$PRECURSOR-$CHAIN+H2O		Charge=1	MSLevel=2	mandatory=false

@@ -51,6 +51,8 @@ public class FattyAcidVO
   private int ohNumber_;
   /** omegaPosition*/
   private int omegaPosition_;
+    // oxidation state
+  private String oxState_;
   
   /**
    * all the information has to be provided in the constructor
@@ -61,7 +63,7 @@ public class FattyAcidVO
    * @param mass mass value
    * @param formula chemical formula
    */
-  public FattyAcidVO(short chainType, String prefix, int cAtoms, int doubleBonds, int ohNumber, double mass, String formula){
+  public FattyAcidVO(short chainType, String prefix, int cAtoms, int doubleBonds, int ohNumber, double mass, String formula, String oxState){
     this.chainType_ = chainType;
     this.prefix_ = prefix;
     this.cAtoms_ = cAtoms;
@@ -70,9 +72,13 @@ public class FattyAcidVO
     this.mass_ = mass;
     this.formula_ = formula;
     this.omegaPosition_ = -1;
+    this.oxState_ = oxState;
   }
   
-  
+  public FattyAcidVO(FattyAcidVO other) {
+    this(other.getChainType(), other.getPrefix(), other.getcAtoms(), other.getDoubleBonds(), other.getOhNumber(), other.getMass(), other.getFormula(), other.getOxState());
+    this.setOmegaPosition(other.getOmegaPosition());
+  }
   
   /**
    * 
@@ -162,7 +168,15 @@ public class FattyAcidVO
   {
     return formula_;
   }
-
+  
+  /**
+   * 
+   * @param formula the chemical formula
+   */
+  public void setFormula(String formula)
+  {
+    this.formula_ = formula;
+  }
   
   /**
    * 
@@ -183,29 +197,38 @@ public class FattyAcidVO
     this.omegaPosition_ = omegaPosition;
   }
 
-
+  /**
+   * 
+   * @return oxidation state
+   */
+  public String getOxState()
+  {
+    return oxState_;
+  }
 
   /**
-   * @return name consisting of number of C atoms : number of double bonds
+   * @return name consisting of number of C atoms : number of double bonds ;oxState (n- C=C position)
    */
-  public String getCarbonDbsId(){
-    return StaticUtils.generateLipidNameString(prefix_+String.valueOf(cAtoms_),doubleBonds_,omegaPosition_);
+  public String getCarbonDbsId()
+  {
+    return StaticUtils.generateLipidNameString(prefix_+String.valueOf(cAtoms_),doubleBonds_,omegaPosition_,oxState_);
   }
   
   /**
-   * 
-   * @return an unique identifier for the chain that includes the chain type, the number of OHs, the #C-atoms, the #double bonds, and the isotope prefix
+   * @return an unique identifier for the chain that includes the chain type, the number of OHs, the #C-atoms, the #double bonds, omega position and the isotope prefix
    */
   public String getChainId() {
-    return StaticUtils.encodeLipidNameForCreatingCombis(this,true);
+  	return getChainIdDetailed(true, true);
   }
   
   /**
-   * 
-   * @return the sames as getChainId(), but without the isotope prefix
+   * Get a chainId specifying the level of detail the id should include.
+   * @param includePrefix
+   * @param includeOmegaPosition
+   * @return
    */
-  public String getChainIdWOPrefix() {
-    return StaticUtils.encodeLipidNameForCreatingCombis(this,false);    
+  public String getChainIdDetailed(boolean includePrefix, boolean includeOmegaPosition) {
+    return StaticUtils.encodeLipidNameForCreatingCombis(this,includePrefix,includeOmegaPosition);    
   }
   
   /**

@@ -70,7 +70,7 @@ public class StandardSelectionOverview extends JDialog
     initOverview();
     initButtonPanel();
     this.setVisible(false);
-    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     pack(); 
   }
   
@@ -163,6 +163,16 @@ public class StandardSelectionOverview extends JDialog
     doLayout();
     this.setSize(this.getPreferredSize());
     repaint();
+  }
+  
+  /**
+   * Disconnects action listeners that prevent garbage collection
+   */
+  public void cleanup()
+  {
+  	buttonOK_.removeActionListener(parent_);
+  	buttonCancel_.removeActionListener(parent_);
+  	parent_ = null;
   }
   
 }

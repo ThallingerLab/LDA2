@@ -36,6 +36,7 @@ public class ExportOptionsVO
   private boolean analyteInColumn_;
   private boolean exportRT_;
   private boolean exportRTDev_;
+  private boolean exportDoubleBondPositions_;
   private int commaPositions_;
   /** which type of species shall be exported*/
   private short speciesType_;
@@ -53,16 +54,18 @@ public class ExportOptionsVO
    * @param analyteInColumn true when analytes are in the columns, false when they are in the rows
    * @param exportRT true when retention time values shall be exported
    * @param exportRTDev true when standard deviation values of retention times shall be exported
+   * @param exportDoubleBondPositions true when double bond positions shall be exported
    * @param commaPositions the amounts of decimal places after the comma
    * @param speciesType structural level of data export (lipid species, chain level, position level - for details see LipidomicsConstants.EXPORT_ANALYTE_TYPE)
    */
-  public ExportOptionsVO(int exportType,String sdValue, boolean analyteInColumn, boolean exportRT, boolean exportRTDev, int commaPositions,
-      short speciesType){
+  public ExportOptionsVO(int exportType,String sdValue, boolean analyteInColumn, boolean exportRT, boolean exportRTDev, boolean exportDoubleBondPositions, 
+      int commaPositions, short speciesType){
     exportType_ = exportType;
     sdValue_ = sdValue;
     analyteInColumn_ = analyteInColumn;
     exportRT_ = exportRT;
     exportRTDev_ = exportRTDev;
+    exportDoubleBondPositions_ = exportDoubleBondPositions;
     commaPositions_ = commaPositions;
     speciesType_ = speciesType;
   }
@@ -95,6 +98,11 @@ public class ExportOptionsVO
   public boolean isExportRTDev()
   {
     return exportRTDev_;
+  }
+  
+  public boolean isExportDoubleBondPositions()
+  {
+    return exportDoubleBondPositions_;
   }
 
 

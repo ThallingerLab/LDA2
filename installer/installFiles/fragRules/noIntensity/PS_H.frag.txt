@@ -1,0 +1,23 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.02%
+ChainCutoff=60%
+
+[HEAD]
+!FRAGMENTS
+Name=NL_PShead_185	Formula=$PRECURSOR-C3H8NO6P	Charge=1	MSLevel=2	mandatory=false
+
+[CHAINS]
+!FRAGMENTS
+Name=NL_Carboxy		Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Ketene		Formula=$PRECURSOR-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Ket_Head	Formula=NL_PShead_185-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false
+
+
+[POSITION]
+!INTENSITIES
+Equation=NL_Carboxy[2]*0.6>NL_Carboxy[1]			mandatory=false
+Equation=NL_Ketene[2]*0.6>NL_Ketene[1]				mandatory=false
