@@ -34,6 +34,7 @@ import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.exception.LMException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
@@ -177,8 +178,8 @@ public class PostQuantificationProcessor
             if (!analytesMod.containsKey(mod) || unprocResult.containsKey(analyteName)) continue;
             QuantVO quantVO = analytesMod.get(mod);
             LipidParameterSet setForPred = new LipidParameterSet((float)quantVO.getAnalyteMass(), quantVO.getAnalyteName(),
-                quantVO.getDbs(), quantVO.getOhNumber(), quantVO.getModName(), "-1.0", quantVO.getAnalyteFormula(), quantVO.getModFormula(),
-                quantVO.getCharge());
+                quantVO.getDbs(), quantVO.getModName(), -1.0, quantVO.getAnalyteFormula(), quantVO.getModFormula(),
+                quantVO.getCharge(), quantVO.getOhNumber());
             Hashtable<String,LipidParameterSet> forPred = new Hashtable<String,LipidParameterSet>();
             forPred.put(setForPred.getRt(), setForPred);
             unprocResult.put(analyteName, forPred);
@@ -211,9 +212,9 @@ public class PostQuantificationProcessor
             Hashtable<String,QuantVO> analytesMod = ms1ToPredict.get(className).get(analyteName);
             if (!analytesMod.containsKey(mod)) continue;
             QuantVO quantVO = analytesMod.get(mod);
-            Matcher cAtomsMatcher = cAtomsPattern.matcher(analyteName);
+            Matcher cAtomsMatcher = cAtomsPattern.matcher(analyteName.split(LipidomicsConstants.CHAIN_MOD_SEPARATOR)[0]);
             if (!cAtomsMatcher.matches()) throw new RulesException("The analyte "+analyteName+" does not match the "+FragRuleParser.GENERAL_CATOMS_PARSE+" pattern \""+RulesContainer.getCAtomsFromNamePattern(ruleName)+"\" of the class "+ruleName+"!");
-            Matcher dbsMatcher = dbsPattern.matcher(analyteName);
+            Matcher dbsMatcher = dbsPattern.matcher(analyteName.split(LipidomicsConstants.CHAIN_MOD_SEPARATOR)[0]);
             int cAtoms = Integer.parseInt(cAtomsMatcher.group(1));
             if (!dbsMatcher.matches()) throw new RulesException("The analyte "+analyteName+" does not match the "+FragRuleParser.GENERAL_DBOND_PARSE+" pattern \""+RulesContainer.getDoubleBondsFromNamePattern(ruleName)+"\" of the class "+ruleName+"!");
             int dbs = Integer.parseInt(dbsMatcher.group(1));
@@ -412,14 +413,14 @@ public class PostQuantificationProcessor
       for (String analyteName : unprocessed.get(className).keySet()){
         for (String mod : unprocessed.get(className).get(analyteName).keySet()){
           try{
-            if (acceptAnyMod || RulesContainer.isRtPostprocessing(StaticUtils.getRuleName(className,mod))){
-              Hashtable<String,Hashtable<String,LipidParameterSet>> postProcessOfMod = new Hashtable<String,Hashtable<String,LipidParameterSet>>();
-              if (postProcessOfClass.containsKey(mod)) postProcessOfMod = postProcessOfClass.get(mod);
-              postProcessOfMod.put(analyteName, unprocessed.get(className).get(analyteName).get(mod));
-              postProcessOfClass.put(mod, postProcessOfMod);
-              
-              
-            }
+	        	if (!className.contains("ox")) { // no RT filtering for oxidized lipids
+	        		if (acceptAnyMod || RulesContainer.isRtPostprocessing(StaticUtils.getRuleName(className,mod))){
+	        			Hashtable<String,Hashtable<String,LipidParameterSet>> postProcessOfMod = new Hashtable<String,Hashtable<String,LipidParameterSet>>();
+	        			if (postProcessOfClass.containsKey(mod)) postProcessOfMod = postProcessOfClass.get(mod);
+	        			postProcessOfMod.put(analyteName, unprocessed.get(className).get(analyteName).get(mod));
+	        			postProcessOfClass.put(mod, postProcessOfMod);  
+	            }
+	          }
           }catch(Exception ex){}
           // if there is no post processing for this class and modification - the results can be put to the results hash
           if (!postProcessOfClass.containsKey(mod)){
@@ -513,10 +514,10 @@ public class PostQuantificationProcessor
     Pattern dbsPattern =  Pattern.compile(RulesContainer.getDoubleBondsFromNamePattern(ruleName));
     for (String analyteName : unprocessed.keySet()){
       Hashtable<String,LipidParameterSet> sameAnalyte = unprocessed.get(analyteName);
-      Matcher cAtomsMatcher = cAtomsPattern.matcher(analyteName);
+      Matcher cAtomsMatcher = cAtomsPattern.matcher(analyteName.split(LipidomicsConstants.CHAIN_MOD_SEPARATOR)[0]);
       if (!cAtomsMatcher.matches()) throw new RulesException("The analyte "+analyteName+" does not match the "+FragRuleParser.GENERAL_CATOMS_PARSE+" pattern \""+RulesContainer.getCAtomsFromNamePattern(ruleName)+"\" of the class "+ruleName+"!");
       int cAtoms = Integer.parseInt(cAtomsMatcher.group(1));
-      Matcher dbsMatcher = dbsPattern.matcher(analyteName);
+      Matcher dbsMatcher = dbsPattern.matcher(analyteName.split(LipidomicsConstants.CHAIN_MOD_SEPARATOR)[0]);
       if (!dbsMatcher.matches()) throw new RulesException("The analyte "+analyteName+" does not match the "+FragRuleParser.GENERAL_DBOND_PARSE+" pattern \""+RulesContainer.getDoubleBondsFromNamePattern(ruleName)+"\" of the class "+ruleName+"!");
       int dbs = Integer.parseInt(dbsMatcher.group(1));
       if (!newForModel.containsKey(cAtoms) || !newForModel.get(cAtoms).containsKey(dbs)) continue;
@@ -969,10 +970,10 @@ public class PostQuantificationProcessor
     Hashtable<Integer,RangeInteger> dbsRanges = new Hashtable<Integer,RangeInteger>();
 
     for (String analyteName : input.keySet()){
-      Matcher cAtomsMatcher = cAtomsPattern.matcher(analyteName);
+      Matcher cAtomsMatcher = cAtomsPattern.matcher(analyteName.split(LipidomicsConstants.CHAIN_MOD_SEPARATOR)[0]);
       if (!cAtomsMatcher.matches()) throw new RulesException("The analyte "+analyteName+" does not match the "+FragRuleParser.GENERAL_CATOMS_PARSE+" pattern \""+RulesContainer.getCAtomsFromNamePattern(ruleName)+"\" of the class "+ruleName+"!");
       int cAtoms = Integer.parseInt(cAtomsMatcher.group(1));
-      Matcher dbsMatcher = dbsPattern.matcher(analyteName);
+      Matcher dbsMatcher = dbsPattern.matcher(analyteName.split(LipidomicsConstants.CHAIN_MOD_SEPARATOR)[0]);
       if (!dbsMatcher.matches()) throw new RulesException("The analyte "+analyteName+" does not match the "+FragRuleParser.GENERAL_DBOND_PARSE+" pattern \""+RulesContainer.getDoubleBondsFromNamePattern(ruleName)+"\" of the class "+ruleName+"!");
       int dbs = Integer.parseInt(dbsMatcher.group(1));
       if (cAtoms<cAtomsRange.getStart()) cAtomsRange = new RangeInteger(cAtoms,cAtomsRange.getStop());
@@ -1143,9 +1144,9 @@ public class PostQuantificationProcessor
     String ruleName = StaticUtils.getRuleName(className, modName);
     Pattern cAtomsPattern =  Pattern.compile(RulesContainer.getCAtomsFromNamePattern(ruleName));
     Pattern dbsPattern =  Pattern.compile(RulesContainer.getDoubleBondsFromNamePattern(ruleName));
-    Matcher cAtomsMatcher = cAtomsPattern.matcher(analyteName);
+    Matcher cAtomsMatcher = cAtomsPattern.matcher(analyteName.split(LipidomicsConstants.CHAIN_MOD_SEPARATOR)[0]);
     if (!cAtomsMatcher.matches()) throw new RulesException("The analyte "+analyteName+" does not match the "+FragRuleParser.GENERAL_CATOMS_PARSE+" pattern \""+RulesContainer.getCAtomsFromNamePattern(ruleName)+"\" of the class "+ruleName+"!");
-    Matcher dbsMatcher = dbsPattern.matcher(analyteName);
+    Matcher dbsMatcher = dbsPattern.matcher(analyteName.split(LipidomicsConstants.CHAIN_MOD_SEPARATOR)[0]);
     int cAtoms = Integer.parseInt(cAtomsMatcher.group(1));
     if (!dbsMatcher.matches()) throw new RulesException("The analyte "+analyteName+" does not match the "+FragRuleParser.GENERAL_DBOND_PARSE+" pattern \""+RulesContainer.getDoubleBondsFromNamePattern(ruleName)+"\" of the class "+ruleName+"!");
     int dbs = Integer.parseInt(dbsMatcher.group(1));
@@ -1318,10 +1319,10 @@ public class PostQuantificationProcessor
         }
         Pattern cAtomsPattern =  Pattern.compile(RulesContainer.getCAtomsFromNamePattern(ruleName));
         Pattern dbsPattern =  Pattern.compile(RulesContainer.getDoubleBondsFromNamePattern(ruleName));
-        Matcher cAtomsMatcher = cAtomsPattern.matcher(contr.getQuantVO().getIdString());
+        Matcher cAtomsMatcher = cAtomsPattern.matcher(contr.getQuantVO().getIdString().split(LipidomicsConstants.CHAIN_MOD_SEPARATOR)[0]);
         if (!cAtomsMatcher.matches()) throw new RulesException("The analyte "+contr.getQuantVO().getIdString()+" does not match the "+FragRuleParser.GENERAL_CATOMS_PARSE+" pattern \""+RulesContainer.getCAtomsFromNamePattern(ruleName)+"\" of the class "+ruleName+"!");
         int cAtoms = Integer.parseInt(cAtomsMatcher.group(1));
-        Matcher dbsMatcher = dbsPattern.matcher(contr.getQuantVO().getIdString());
+        Matcher dbsMatcher = dbsPattern.matcher(contr.getQuantVO().getIdString().split(LipidomicsConstants.CHAIN_MOD_SEPARATOR)[0]);
         if (!dbsMatcher.matches()) throw new RulesException("The analyte "+contr.getQuantVO().getIdString()+" does not match the "+FragRuleParser.GENERAL_DBOND_PARSE+" pattern \""+RulesContainer.getDoubleBondsFromNamePattern(ruleName)+"\" of the class "+ruleName+"!");
         int dbs = Integer.parseInt(dbsMatcher.group(1));
         float[] cAndDbs = new float[2];

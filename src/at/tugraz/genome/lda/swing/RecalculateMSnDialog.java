@@ -39,11 +39,12 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.TooltipTexts;
-import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.MSnAnalyzer;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
+import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleStringVO;
 import at.tugraz.genome.maspectras.utils.Calculator;
 import at.tugraz.genome.voutils.GeneralComparator;
@@ -129,12 +130,21 @@ public class RecalculateMSnDialog extends JDialog implements ActionListener
       float area = result_.getArea();
       LipidomicsMSnSet msn = (LipidomicsMSnSet)result_;
       List<DoubleStringVO> nameAreaVO = new ArrayList<DoubleStringVO>();
-      Vector<Object> detected = null;
-      try {detected = msn.getMSnIdentificationNames();
-      }catch (LipidCombinameEncodingException lcx) {
-        detected = new Vector<Object>();
-        lcx.printStackTrace();
+      Vector<String> detected = msn.getMSnIdentificationNamesWithSNPositions();
+      
+      for (String name : detected) {
+        String extract = "";
+        double relArea = 0d;
+        if(name.contains(LipidomicsConstants.SN_POSITION_START))
+      	  extract = StaticUtils.removeSNPositions(name).replaceAll(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS, LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS);
+        else
+      	  extract = name;
+      	  
+        relArea =msn.getRelativeIntensity(extract);
+      
+        nameAreaVO.add(new DoubleStringVO(name,relArea));
       }
+      
       for (Object names : detected){
         String name = "";
         double relArea = 0d;
@@ -200,7 +210,7 @@ public class RecalculateMSnDialog extends JDialog implements ActionListener
     buttonPanel.add(cancelButton);
     cancelButton.addActionListener(this);
     cancelButton.addActionListener(parent_);
-    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    setDefaultCloseOperation(DISPOSE_ON_CLOSE );
     this.add(buttonPanel,BorderLayout.SOUTH);
     
   }

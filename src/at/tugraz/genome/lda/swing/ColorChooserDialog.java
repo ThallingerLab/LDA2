@@ -99,7 +99,7 @@ public class ColorChooserDialog extends JDialog implements ActionListener
     okButton.setActionCommand("AcceptColorSelection");
     okButton.setToolTipText(TooltipTexts.ACCEPT_GENERAL);
     add(buttonPane, BorderLayout.SOUTH);
-    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     pack(); 
     setVisible(false);
   }
@@ -172,6 +172,14 @@ public class ColorChooserDialog extends JDialog implements ActionListener
     else if (type==GROUP_TYPE)
       return groupColors_.get(name);
     else return Color.BLACK;
+  }
+  
+  /**
+   * Disconnects the parent listener.
+   */
+  public void cleanup()
+  {
+  	changeListener_ = null;
   }
   
   

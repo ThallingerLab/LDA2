@@ -34,6 +34,7 @@ import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.analysis.ComparativeAnalysis;
 import at.tugraz.genome.lda.exception.ExportException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
+import at.tugraz.genome.lda.exception.RetentionTimeGroupingException;
 import at.tugraz.genome.lda.export.LDAExporter;
 import at.tugraz.genome.lda.export.vos.EvidenceVO;
 import at.tugraz.genome.lda.export.vos.FeatureVO;
@@ -68,6 +69,7 @@ public class MztabUtils extends LDAExporter
   /**
    * extracts the combined information of several experiments according to selections in the heat maps plus detailed data from LDA result files
    * @param speciesType structural level of data export (lipid species, chain level, position level - for details see LipidomicsConstants.EXPORT_ANALYTE_TYPE)
+   * @param exportDoubleBondPositionsForMolecule true when double bond positions shall be exported for this lipid class
    * @param currentSummaryId a running unique identifier
    * @param currentFeatureId a running unique identifier
    * @param currentEvidenceId a running unique identifier
@@ -88,12 +90,12 @@ public class MztabUtils extends LDAExporter
    * @throws SpectrummillParserException when there are elements missing in the elementconfig.xml
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  public static SmallMztabMolecule createSmallMztabMolecule(short speciesType, int currentSummaryId, int currentFeatureId, int currentEvidenceId,
+  public static SmallMztabMolecule createSmallMztabMolecule(short speciesType, boolean exportDoubleBondPositionsForClass, int currentSummaryId, int currentFeatureId, int currentEvidenceId,
       int currentEvGroupingId, int maxIsotopes, ComparativeAnalysis analysisModule, Hashtable<String,MsRun> msruns,
       Hashtable<String,QuantificationResult> originalExcelResults, String molGroup, String molName, Hashtable<String,Vector<Double>> resultsMol,
       LinkedHashMap<String,Boolean> adductsSorted, LinkedHashMap<String,Vector<String>> expsOfGroup, HydroxyEncoding faHydroxyEncoding,
       HydroxyEncoding lcbHydroxyEncoding)
-          throws ExportException, SpectrummillParserException, LipidCombinameEncodingException{
+          throws ExportException, SpectrummillParserException, LipidCombinameEncodingException, RetentionTimeGroupingException{
     
     Hashtable<String,String> modFormulas = new Hashtable<String,String>();
     Hashtable<String,Integer> modCharges = new Hashtable<String,Integer>();
@@ -120,7 +122,7 @@ public class MztabUtils extends LDAExporter
         }
       }
     }
-    SpeciesExportVO exportVO =  extractExportableSummaryInformation(speciesType,  true, currentSummaryId, currentFeatureId, true, currentEvidenceId,
+    SpeciesExportVO exportVO = LDAExporter.extractExportableSummaryInformation(speciesType, exportDoubleBondPositionsForClass, true, currentSummaryId, currentFeatureId, true, currentEvidenceId,
         currentEvGroupingId, isRtGrouped, adductsSorted, analysisModule.getExpNamesInSequence(),expsOfGroup,  molName, resultsMol,
         relevantOriginals, isotopes, faHydroxyEncoding, lcbHydroxyEncoding);
 //    System.out.println("------------------------------------------");

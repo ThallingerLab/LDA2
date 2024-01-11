@@ -65,14 +65,30 @@ public class QuantificationResult
     faHydroxyEncoding_ = faHydroxyEncoding;
     lcbHydroxyEncoding_ = lcbHydroxyEncoding;
   }
-
+  
+  /**
+   * constructor to create a deep copy
+   * @param that
+   */
+  public QuantificationResult(QuantificationResult that) {
+    this(that.getIdentifications(), that.getConstants(), that.getMsLevels(), that.getFaHydroxyEncoding(), that.getLcbHydroxyEncoding());
+  }
+  
   /**
    * 
-   * @return the MS identification hash - key: class
+   * @return the MS identification hash => key: class
    */
   public Hashtable<String,Vector<LipidParameterSet>> getIdentifications()
   {
     return identifications_;
+  }
+  
+  /**
+   * set the Identifications (needed for OxSheets)
+   */
+  public void setIdentifications(Hashtable<String,Vector<LipidParameterSet>> identifications)
+  {
+    this.identifications_ = identifications;
   }
 
   /**

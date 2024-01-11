@@ -141,7 +141,7 @@ public class TargetlistEntry extends QuantVO
       String fragmentSumComposition, String fragmentFormula) throws AlexTargetlistParserException, HydroxylationEncodingException
   {
     super(lipidClass, species, -1, ohNumber, formula, mz, charge, adduct, adductFormula, -1f, 0f, 0f,
-        new Vector<Double>(), new Vector<Double>(),0);
+        new Vector<Double>(), new Vector<Double>(),0,"");
     this.originalClassName_ = lipidClass;
     this.detector_ = detector;
     this.polarity_ = polarity;

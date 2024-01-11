@@ -39,20 +39,20 @@ import java.util.stream.Stream;
 
 import javax.swing.JFrame;
 
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.dhatim.fastexcel.reader.Cell;
 import org.dhatim.fastexcel.reader.CellType;
 import org.dhatim.fastexcel.reader.ReadableWorkbook;
+import org.dhatim.fastexcel.reader.Row;
+import org.dhatim.fastexcel.reader.Sheet;
 
+import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.export.QuantificationResultExporter;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleStringVO;
+import at.tugraz.genome.lda.vos.ResultFileVO;
 import at.tugraz.genome.voutils.GeneralComparator;
 import at.tugraz.genome.lda.parser.LDAResultReader;
 
@@ -74,6 +74,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
   protected Hashtable<String,Hashtable<String,String>> allISNames_;
   protected Hashtable<String,Hashtable<String,String>> allESNames_;
   protected Hashtable<String,Vector<File>> filesOfGroup_;
+  protected Vector<ResultFileVO> resultFileVO_;
   protected Hashtable<String,File> expNameToFile_ = new Hashtable<String,File>();
   
   private Hashtable<String,Vector<String>> sortedISNames_;
@@ -105,7 +106,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
     this.filesOfGroup_ = filesOfGroup;  
   }
     
-  protected void extractInformation() throws ExcelInputFileException, LipidCombinameEncodingException{
+  protected void extractInformation(int statisticsViewMode, boolean combineOxWithNonOx) throws ExcelInputFileException, LipidCombinameEncodingException{
     expNameCut1_ = new  Vector<String>();
     expNameCut2_ = new  Vector<String>();
     if (resultFiles_.size()>1){
@@ -128,6 +129,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
     sortedESNames_ = new Hashtable<String,Vector<String>>();
     lipidClassesHash_ = new Hashtable<String,String>();
     lipidClasses_ = new Vector<String>();
+    resultFileVO_ = new Vector<ResultFileVO>();
     for (int i=0; i!=resultFiles_.size();i++){
       File resultFile = resultFiles_.get(i);
       String fileName = StaticUtils.extractFileName(resultFile.getAbsolutePath());
@@ -140,7 +142,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
         expNames_.put(fileName,fileName);
       expNameToFile_.put(fileName, resultFile);
       expNamesInSequence_.add(fileName);
-      parseResultFile(resultFile,fileName);
+      parseResultFile(resultFile,fileName, statisticsViewMode, combineOxWithNonOx);
     }
     buildResultHashes();
     for (String className : sortedISNames_.keySet()){
@@ -153,23 +155,21 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
     
   }
   
-  protected void parseResultFile(File resultFile, String fileName) throws ExcelInputFileException, LipidCombinameEncodingException{
+  protected void parseResultFile(File resultFile, String fileName, int statisticsViewMode, boolean combineOxWithNonOx) throws ExcelInputFileException, LipidCombinameEncodingException{
   	if (resultFile.getAbsolutePath().endsWith(".xlsx")){
-    	parseResultFileFastExcel(resultFile, fileName);
+    	parseResultFileFastExcel(resultFile, fileName, statisticsViewMode, combineOxWithNonOx);
     }
-  	//for backwards compatibility, in case there are files in the old excel format
-  	else if (resultFile.getAbsolutePath().endsWith(".xls")) {
-      parseResultFileApachePOI(resultFile, fileName);
-    } else {
+  	else 
+  	{
     	new WarningMessage(new JFrame(), "ERROR", "The specified file format is not supported!");
       throw new ExcelInputFileException("The specified file format is not supported!");
     }
   }
   
-  protected void parseResultFileFastExcel(File resultFile, String fileName) throws ExcelInputFileException, LipidCombinameEncodingException{
-  	try (InputStream is = new FileInputStream(resultFile);
-        ReadableWorkbook wb = new ReadableWorkbook(is);
-        Stream<org.dhatim.fastexcel.reader.Sheet> sheets = wb.getSheets();) 
+  protected void parseResultFileFastExcel(File resultFile, String fileName, int statisticsViewMode, boolean combineOxWithNonOx) throws ExcelInputFileException, LipidCombinameEncodingException{
+    try (InputStream is = new FileInputStream(resultFile);
+      ReadableWorkbook wb = new ReadableWorkbook(is);
+        Stream<Sheet> sheets = wb.getSheets();)
   	{
       sheets.filter((s) -> (!s.getName().equals(QuantificationResultExporter.SHEET_CONSTANTS)&&
 						                !s.getName().endsWith(QuantificationResultExporter.ADDUCT_OMEGA_SHEET)&&
@@ -182,7 +182,6 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
       throw new ExcelInputFileException(ex);
     }
   }
-  
   //adapted from the original apache poi version
   protected void parseSheet(org.dhatim.fastexcel.reader.Sheet sheet) {
   	Hashtable<String,String> isNames = new Hashtable<String,String>();
@@ -200,22 +199,23 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
       lipidClassesHash_.put(groupName, groupName);
     }
     
-    List<org.dhatim.fastexcel.reader.Row> rows = null;
+    List<Row> rows = null;
     try {
       rows = sheet.read();
     } catch (IOException ex) {}
-    org.dhatim.fastexcel.reader.Row headerRow = rows.get(QuantificationResultExporter.HEADER_ROW);
+    Row headerRow = rows.get(QuantificationResultExporter.HEADER_ROW);
     List<String> headerTitles = LDAResultReader.readSheetHeaderTitles(headerRow);
-    List<org.dhatim.fastexcel.reader.Row> contentRows = rows.subList(QuantificationResultExporter.HEADER_ROW+1, rows.size());
+    List<Row> contentRows = rows.subList(QuantificationResultExporter.HEADER_ROW+1, rows.size());
     
-    for (org.dhatim.fastexcel.reader.Row row : contentRows) {
-      List<org.dhatim.fastexcel.reader.Cell> cells = row.stream().filter((c) -> !(c==null || c.getType().equals(CellType.ERROR))).collect(Collectors.toList());
+    for (Row row : contentRows) {
+      List<Cell> cells = row.stream().filter((c) -> !(c==null || c.getType().equals(CellType.ERROR))).collect(Collectors.toList());
       int index;
       String rawValue;
       String name = null;
       int dbs = -1;
+      String oxState = "";
       
-      for (org.dhatim.fastexcel.reader.Cell cell : cells) {
+      for (Cell cell : cells) {
         index  = cell.getColumnIndex();
         rawValue = cell.getRawValue();
         
@@ -223,6 +223,8 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
           name = rawValue;
         } else if (index == headerTitles.indexOf(QuantificationResultExporter.HEADER_DBS)) {
           dbs = (int)Float.parseFloat(rawValue);
+        } else if (index == headerTitles.indexOf(LipidomicsConstants.CHAIN_MOD_COLUMN_NAME)) {
+          oxState = rawValue;
         }
       }
       
@@ -239,7 +241,7 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
           name = (String)components[0];
           doubleBonds = (Integer)components[1];
         }
-        name = StaticUtils.generateLipidNameString(name,doubleBonds,-1);
+        name = StaticUtils.generateLipidNameString(name,doubleBonds,-1, oxState);
         if (isSelectionPrefix_!=null && name.startsWith(isSelectionPrefix_)){
           if (!isNames.containsKey(name)){
             isNames.put(name, name);
@@ -258,126 +260,6 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
 	  allESNames_.put(groupName, esNames);
 	  sortedISNames_.put(groupName, sortedIS);
 	  sortedESNames_.put(groupName, sortedES); 
-  }
-  
-  @Deprecated
-  //slower Apache POI reader is only used for old xls excel files
-  //TODO: remove completely after an adequate transition period *note written: 25.05.2022*
-  //(1 year should suffice as xls files are not written since a few years already and newer LDA versions do not support such old file formats anymore anyway) 
-  protected void parseResultFileApachePOI(File resultFile, String fileName) throws ExcelInputFileException, LipidCombinameEncodingException{
-  	try (InputStream myxls = new FileInputStream(resultFile);
-  			Workbook workbook = new HSSFWorkbook(myxls);)
-  	{
-      for (int sheetNumber=0;sheetNumber!=workbook.getNumberOfSheets();sheetNumber++)
-      {
-        Sheet sheet = workbook.getSheetAt(sheetNumber);
-        if (!sheet.getSheetName().equals(QuantificationResultExporter.SHEET_CONSTANTS)&&
-            !sheet.getSheetName().endsWith(QuantificationResultExporter.ADDUCT_OMEGA_SHEET)&&
-            !sheet.getSheetName().endsWith(QuantificationResultExporter.ADDUCT_OVERVIEW_SHEET)&&
-            !sheet.getSheetName().endsWith(QuantificationResultExporter.ADDUCT_MSN_SHEET))
-        {
-        	parseSheet(sheet);
-        }
-      }
-  	}
-  	catch (IOException e) {
-      e.printStackTrace();
-    } 
-        
-  }
-  
-  @Deprecated
-  //slower Apache POI reader is only used for old xls excel files
-  //TODO: remove completely after an adequate transition period *note written: 25.05.2022*
-  //(1 year should suffice as xls files are not written since a few years already and newer LDA versions do not support such old file formats anymore anyway) 
-  protected void parseSheet(Sheet sheet) {
-  	Hashtable<String,String> isNames = new Hashtable<String,String>();
-    Hashtable<String,String> esNames = new Hashtable<String,String>();
-    Vector<String> sortedIS = new Vector<String>();
-    Vector<String> sortedES = new Vector<String>();
-    String groupName = sheet.getSheetName();
-    if (lipidClassesHash_.containsKey(groupName)){
-      isNames = allISNames_.get(groupName);
-      esNames = allESNames_.get(groupName);
-      sortedIS = sortedISNames_.get(groupName);
-      sortedES = sortedESNames_.get(groupName);
-    }else{
-      lipidClasses_.add(groupName);
-      lipidClassesHash_.put(groupName, groupName);
-    }
-    int nameColumn = -1;
-    int dbsColumn = -1;
-    int modificationColumn = -1;
-    for (int rowCount=0;rowCount!=(sheet.getLastRowNum()+1);rowCount++){
-      Row row = sheet.getRow(rowCount);
-      String name = null;
-      if (rowCount==0){
-        for (int i=0;  row!=null && i!=(row.getLastCellNum()+1);i++){
-          Cell cell = row.getCell(i);
-          String contents = "";
-          int cellType = -1;
-          if (cell!=null) cellType = cell.getCellType();
-          if (cellType==Cell.CELL_TYPE_STRING){
-            contents = cell.getStringCellValue();
-          }
-          if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_NAME))
-            nameColumn = i;
-          if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_DBS))
-            dbsColumn = i;
-          if (contents.equalsIgnoreCase(QuantificationResultExporter.HEADER_MODIFICATION))
-            modificationColumn = i;
-        }
-      }else if (nameColumn >-1){
-        Cell cell = row.getCell(nameColumn);
-        int cellType = -1;
-        String contents = "";
-        if (cell!=null) cellType = cell.getCellType();
-        if (cellType==Cell.CELL_TYPE_STRING){
-          contents = cell.getStringCellValue();
-        }
-        if (contents!=null&&contents.length()>0){
-          Integer doubleBonds = null;
-          if (modificationColumn==-1){
-            Object[] components = ComparativeNameExtractor.splitOldNameStringToComponents(contents);
-            name = (String)components[0];
-            doubleBonds = (Integer)components[1];
-          }else{
-            name = contents;
-            cell = row.getCell(dbsColumn);
-            cellType = -1;
-            Double numeric = null;
-            if (cell!=null) cellType = cell.getCellType();
-            if (cellType==Cell.CELL_TYPE_STRING){
-              try{ numeric = new Double(cell.getStringCellValue());}catch(NumberFormatException nfx){nfx.printStackTrace();};
-            }else if (cellType==Cell.CELL_TYPE_NUMERIC || cellType==Cell.CELL_TYPE_FORMULA){
-             numeric = cell.getNumericCellValue();
-            }
-            doubleBonds = numeric.intValue();
-          }
-          name = StaticUtils.generateLipidNameString(name,doubleBonds,-1);
-          if (isSelectionPrefix_!=null && name.startsWith(isSelectionPrefix_)){
-            if (!isNames.containsKey(name)){
-              isNames.put(name, name);
-              sortedIS.add(name);
-//              this.addItemAtSortedPosition(name, previousISName, sortedIS);
-            }
-//            previousISName = name;
-          }
-          else if (esSelectionPrefix_!=null && name.startsWith(esSelectionPrefix_)){
-            if (!esNames.containsKey(name)){
-              esNames.put(name, name);
-              sortedES.add(name);
-//              this.addItemAtSortedPosition(name, previousESName, sortedES);
-            }
-//            previousESName = name;                  
-          }
-        }
-      }
-    }
-    allISNames_.put(groupName, isNames);
-    allESNames_.put(groupName, esNames);
-    sortedISNames_.put(groupName, sortedIS);
-    sortedESNames_.put(groupName, sortedES);
   }
   
 //  private void addItemAtSortedPosition(String name, String previousName, Vector<String> sorted){
@@ -586,6 +468,26 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
   
   public File getFullFilePath(String expName){
     return this.expNameToFile_.get(expName);
+  }
+  
+  public Vector<ResultFileVO> getResultFileVOs() {
+    return this.resultFileVO_;
+  }
+  
+  /**
+   * Returns the result file of the given file path or null if no match is present.
+   * @param filePath
+   * @return
+   */
+  public ResultFileVO getResultFileVO(String filePath) {
+  	for (ResultFileVO vo : getResultFileVOs())
+    {
+    	if (vo.getResultFile().getAbsolutePath().equals(filePath))
+    	{
+    		return vo;
+    	}
+    }
+  	return null;
   }
   
   /**

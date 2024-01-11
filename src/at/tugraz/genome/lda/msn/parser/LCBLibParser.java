@@ -64,8 +64,7 @@ public class LCBLibParser extends FALibParser
    * the second integer is the amount of carbon atoms
    * the third integer is the amount of double bonds
    */
-  private Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> result_;
-
+  private Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> result_;
   
   
   /**
@@ -83,7 +82,7 @@ public class LCBLibParser extends FALibParser
    * @throws IOException general exception if a file is not there
    */
   public void parseFile() throws RulesException, IOException{
-    result_ = new Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>>();
+    result_ = new Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>>();
     availablePrefixes_ = new HashSet<String>();
     //first, create a hashtable of all available hydroxylation sites
     HydroxyEncoding hydroxies = Settings.getLcbHydroxyEncoding();
@@ -120,11 +119,13 @@ public class LCBLibParser extends FALibParser
         if (sheet==null) continue;
         result_.put(hydrKey, parseSheet(sheet,encodedHydroxyStrings.get(hydrKey)));
         //correct result for correct chain type
-        for (Hashtable<Integer,Hashtable<String,FattyAcidVO>> sameC : result_.get(hydrKey).values()){
-          for (Hashtable<String,FattyAcidVO> sameDb : sameC.values()) {
-            for (FattyAcidVO fa : sameDb.values()) {
-              fa.correctChainType(LipidomicsConstants.CHAIN_TYPE_LCB);
-            }
+        for (Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>> sameC : result_.get(hydrKey).values()){
+          for (Hashtable<String, Hashtable<String, FattyAcidVO>> sameDb : sameC.values()) {
+        	for (Hashtable<String, FattyAcidVO> sameOx : sameDb.values()) {  
+	            for (FattyAcidVO fa : sameOx.values()) {
+	              fa.correctChainType(LipidomicsConstants.CHAIN_TYPE_LCB);
+	            }
+        	}
           }
         }
 //        if (workbook.getSheetAt(sheetNumber).getSheetName().equalsIgnoreCase(FAS_SHEET_NAME)) sheet = workbook.getSheetAt(sheetNumber);
@@ -132,7 +133,7 @@ public class LCBLibParser extends FALibParser
       if (result_.size()==0) throw new RulesException("A long chain base library must contain at least one sheet starting with the hydroxylation code, followed by \""+LCB_SHEET_SUFFIX+"\", e.g. d"+LCB_SHEET_SUFFIX+"! The lib "+inputFile_.getName()+" has not!");
      
       int previousResultNumber = 0;
-      Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> otherHydroxyResults = null;
+      Hashtable<Integer,Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> otherHydroxyResults = null;
       // when there are chains entered, fill up the chain values for all possible hydroxylation sites
       double oxygenMass = Settings.getElementParser().getElementDetails("O").getMonoMass();
       String encoded;
@@ -158,23 +159,31 @@ public class LCBLibParser extends FALibParser
           }
         }
         // now, create a the new hash tables and calculate the mass differences according to the hydroxylation numbers
-        Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>> currentHydroxy = new Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>();
+        Hashtable<Integer,Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> currentHydroxy = new Hashtable<Integer,Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>>();
         int hydroxyDifference = i-previousResultNumber;
         for (Integer cAtoms : otherHydroxyResults.keySet()) {
-          Hashtable<Integer,Hashtable<String,FattyAcidVO>> otherCAtoms = otherHydroxyResults.get(cAtoms);
-          Hashtable<Integer,Hashtable<String,FattyAcidVO>> cAtomsRes = new Hashtable<Integer,Hashtable<String,FattyAcidVO>>();
+          Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>> otherCAtoms = otherHydroxyResults.get(cAtoms);
+          Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>> cAtomsRes = new Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>();
           for (Integer dbs : otherCAtoms.keySet()) {
-            Hashtable<String,FattyAcidVO> otherDbs = otherCAtoms.get(dbs);
-            Hashtable<String,FattyAcidVO> dbsRes = new Hashtable<String,FattyAcidVO>();
+        	Hashtable<String, Hashtable<String, FattyAcidVO>> otherDbs = otherCAtoms.get(dbs);
+        	Hashtable<String, Hashtable<String, FattyAcidVO>> dbsRes = new Hashtable<String, Hashtable<String, FattyAcidVO>>();
             for (String prefix : otherDbs.keySet()) {
-              FattyAcidVO otherFA = otherDbs.get(prefix);
-              Hashtable<String,Integer> formulaCat = StaticUtils.categorizeFormula(otherFA.getFormula());
-              int oxygens = 0;
-              if (formulaCat.containsKey("O")) oxygens = formulaCat.get("O");
-              oxygens += hydroxyDifference;
-              formulaCat.put("O", oxygens);
-              FattyAcidVO chainVO = new FattyAcidVO(LipidomicsConstants.CHAIN_TYPE_LCB, otherFA.getPrefix(), otherFA.getcAtoms(), otherFA.getDoubleBonds(),i, otherFA.getMass()+hydroxyDifference*oxygenMass, StaticUtils.getFormulaInHillNotation(formulaCat, true));
-              dbsRes.put(prefix, chainVO);
+            	Hashtable<String, FattyAcidVO> otherOxs = otherDbs.get(prefix);
+                Hashtable<String,FattyAcidVO> OxsRes = new Hashtable<String,FattyAcidVO>();
+                for(String oxState: otherOxs.keySet())
+                {
+              	    FattyAcidVO otherFA = otherOxs.get(oxState);
+                    Hashtable<String,Integer> formulaCat = StaticUtils.categorizeFormula(otherFA.getFormula());
+                    int oxygens = 0;
+                    if (formulaCat.containsKey("O")) oxygens = formulaCat.get("O");
+ // Krettler                   oxygens += i;
+                    oxygens += hydroxyDifference;
+                    formulaCat.put("O", oxygens);
+// Krettler                    FattyAcidVO chainVO = new FattyAcidVO(otherFA.getChainType(), otherFA.getPrefix(), otherFA.getcAtoms(), otherFA.getDoubleBonds(),i, otherFA.getMass()+i*oxygenMass, StaticUtils.getFormulaInHillNotation(formulaCat, true),otherFA.getOxState());
+                    FattyAcidVO chainVO = new FattyAcidVO(LipidomicsConstants.CHAIN_TYPE_LCB, otherFA.getPrefix(), otherFA.getcAtoms(), otherFA.getDoubleBonds(),i, otherFA.getMass()+hydroxyDifference*oxygenMass, StaticUtils.getFormulaInHillNotation(formulaCat, true),otherFA.getOxState());
+                    OxsRes.put(oxState, chainVO);
+                }	
+              dbsRes.put(prefix, OxsRes);
             }
             cAtomsRes.put(dbs, dbsRes);
           }
@@ -194,7 +203,7 @@ public class LCBLibParser extends FALibParser
   /**
    * @return hash containing the result of the parsing; first key: encoding of the number of hydroxylation sites; second key: number of carbon atoms; third key: number of double bonds
    */
-  public Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,FattyAcidVO>>>> getResult(){
+  public Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> getResult(){
     return result_;
   }
   

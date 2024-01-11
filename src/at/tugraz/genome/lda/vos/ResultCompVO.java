@@ -23,6 +23,7 @@
 
 package at.tugraz.genome.lda.vos;
 
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Vector;
 
@@ -45,6 +46,8 @@ public class ResultCompVO
   public final static int EXTERNAL_STANDARD_TYPE = 2;
   public final static int CLASS_TYPE = 3;
   
+  private ResultAreaVO resultMolecule_;
+  
   protected int type_;
   protected Vector<Double> mass_;
   protected Hashtable<String,Double> retentionTime_;
@@ -55,7 +58,8 @@ public class ResultCompVO
   private Vector<Double> correctionFactorInternalIS_;
   private Vector<Double> correctionFactorMedianIS_;
   private Hashtable<Integer,Vector<Double>> correctionFactorSingleIS_;
-  protected Vector<Double> relativeMedianArea_;
+  protected Hashtable<String,ArrayList<Double>> relativeMedianAreas_ = new Hashtable<String,ArrayList<Double>>();
+  public final static String SUM_COMPOSITION = "Sum composition";
   private Vector<Double> areaISInternalComparison_;
   private Vector<Double> areaISMedianComparison_;
   private Hashtable<Integer,Vector<Double>> areaISSingleComparison_;
@@ -122,12 +126,13 @@ public class ResultCompVO
   protected boolean existsInFile_;
   protected boolean isNullInFile_;
   
+  
   // this should be just for CLASS_TYPE only
   public ResultCompVO (int type, int usedIsotopes, Vector<Double> originalArea){
     this.setConstructorValues(true,false,type, usedIsotopes, originalArea);
   }
   
-  public ResultCompVO(boolean existsInFile, boolean isNullInFile, int type,Vector<Double> mass,Hashtable<String,Double> retentionTime, String absoluteFilePath, int usedIsotopes, boolean allModsFound, Vector<Double> originalArea, Vector<Double> correctionFactorInternalIS, Vector<Double> correctionFactorMedianIS,
+  public ResultCompVO(ResultAreaVO resultMolecule, boolean existsInFile, boolean isNullInFile, int type,Vector<Double> mass,Hashtable<String,Double> retentionTime, String absoluteFilePath, int usedIsotopes, boolean allModsFound, Vector<Double> originalArea, Vector<Double> correctionFactorInternalIS, Vector<Double> correctionFactorMedianIS,
       Hashtable<Integer,Vector<Double>> correctionFactorSingleIS, Vector<Double> areaISInternalComparision,
       Vector<Double> areaISMedianComparison, Hashtable<Integer,Vector<Double>> areaISSingleComparison,
       Vector<Double> correctionFactorESNoISCorrInternal,Vector<Double> correctionFactorESNoISCorrMedian, Hashtable<Integer,Vector<Double>> correctionFactorESNoISCorrSingle,
@@ -148,7 +153,7 @@ public class ResultCompVO
       Vector<Hashtable<String,Boolean>> moreThanOnePeak,
       boolean hasAbs){    
     super();
-    this.setConstructorValues(existsInFile,isNullInFile,type,mass,retentionTime,absoluteFilePath,usedIsotopes, allModsFound, originalArea, correctionFactorInternalIS, correctionFactorMedianIS, correctionFactorSingleIS,
+    this.setConstructorValues(resultMolecule,existsInFile,isNullInFile,type,mass,retentionTime,absoluteFilePath,usedIsotopes, allModsFound, originalArea, correctionFactorInternalIS, correctionFactorMedianIS, correctionFactorSingleIS,
         areaISInternalComparision, areaISMedianComparison, areaISSingleComparison,
         correctionFactorESNoISCorrInternal, correctionFactorESNoISCorrMedian, correctionFactorESNoISCorrSingle, correctionFactorESISInternalCorrInternal,
         correctionFactorESISInternalCorrMedian, correctionFactorESISInternalCorrSingle, correctionFactorESISMedianCorrInternal, correctionFactorESISMedianCorrMedian,
@@ -170,7 +175,7 @@ public class ResultCompVO
     this.originalArea_ = originalArea;
   }
   
-  protected void setConstructorValues(boolean existsInFile, boolean isNullInFile, int type, Vector<Double> mass, Hashtable<String,Double> retentionTime,String absoluteFilePath, int usedIsotopes, boolean allModsFound, Vector<Double> originalArea, Vector<Double> correctionFactorInternalIS, Vector<Double> correctionFactorMedianIS,
+  protected void setConstructorValues(ResultAreaVO resultMolecule, boolean existsInFile, boolean isNullInFile, int type, Vector<Double> mass, Hashtable<String,Double> retentionTime,String absoluteFilePath, int usedIsotopes, boolean allModsFound, Vector<Double> originalArea, Vector<Double> correctionFactorInternalIS, Vector<Double> correctionFactorMedianIS,
       Hashtable<Integer,Vector<Double>> correctionFactorSingleIS,
       Vector<Double> areaISInternalComparision, Vector<Double> areaISMedianComparison, Hashtable<Integer,Vector<Double>> areaISSingleComparison,
       Vector<Double> correctionFactorESNoISCorrInternal,Vector<Double> correctionFactorESNoISCorrMedian, Hashtable<Integer,Vector<Double>> correctionFactorESNoISCorrSingle,
@@ -189,6 +194,7 @@ public class ResultCompVO
       Hashtable<Integer,Double> esStandardVolumeSingleCorr, Hashtable<Integer,Double> esStandardConcentrationSingleCorr,
       Double endVolume, Double probeVolume, Double sampleWeight, Double proteinConcentration, Double neutralLipidConcentration, Vector<Hashtable<String,Boolean>> moreThanOnePeak, boolean hasAbs){
     this.setConstructorValues(existsInFile, isNullInFile,type, usedIsotopes, originalArea);
+    this.resultMolecule_ = resultMolecule;
     this.mass_ = mass;
     if (mass_==null){
       mass_ = new Vector<Double>();
@@ -261,8 +267,24 @@ public class ResultCompVO
     this.hasAbs_ = hasAbs;
   }
   
-  protected ResultCompVO(){
-    
+  public ResultCompVO()
+  {
+    this(null, false,false,ResultCompVO.ANALYTE_TYPE, null, new Hashtable<String,Double>(),"", 0, false, new Vector<Double>(), 
+        new Vector<Double>(), new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(), 
+        new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(),
+        new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(), new Vector<Double>(), 
+        new Hashtable<Integer,Vector<Double>>(),new Vector<Double>(), new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(),
+        new Hashtable<Integer,Vector<Double>>(), new Hashtable<Integer,Vector<Double>>(), new Hashtable<Integer,Hashtable<Integer,Vector<Double>>>(),
+        new Vector<Double>(), new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(), new Vector<Double>(), 
+        new Hashtable<Integer,Vector<Double>>(), new Vector<Double>(), new Vector<Double>(), new Hashtable<Integer,Vector<Double>>(),
+        new Hashtable<Integer,Vector<Double>>(), new Hashtable<Integer,Vector<Double>>(),new Hashtable<Integer,Hashtable<Integer,Vector<Double>>>(),
+        new Hashtable<Integer,VolumeConcVO>(), null, new Hashtable<Integer,VolumeConcVO>(), null, null, null, null, null, null, null, null, null, null,null,
+        new Vector<Hashtable<String,Boolean>>(),false);
+  }
+  
+  public ResultAreaVO getResultMolecule()
+  {
+  	return this.resultMolecule_;
   }
   
   public int getType()
@@ -339,40 +361,56 @@ public class ResultCompVO
         return 0;
     }
   }
-
-  /**
-   * Attention: the median areas have to be calculated before and set via setRelativeMedianArea(Vector<Double> relativeMedianArea),
-   * before the getRelativeValue can be called!!!
-   * @param maxIsotope
-   * @param standMethod
-   * @param esMethod
-   * @param dilutionFactor
-   * @return
-   */
+   
+  
   public double getRelativeValue(int maxIsotope, ResultDisplaySettingsVO settingVO)
   {
-    if (maxIsotope>=usedIsotpes_ || maxIsotope<0)
+  	return getRelativeValue(maxIsotope, settingVO, SUM_COMPOSITION, 1.0);
+  }
+  
+  /**
+   * Attention: the median areas have to be calculated before and set via addRelativeMedianArea(ArrayList<Double> relativeMedianArea),
+   * before the getRelativeValue can be called!!!
+   * @param maxIsotope
+   * @param settingVO
+   * @param molecularSpecies
+   * @param molecularSpeciesContribution
+   * @return
+   */
+  public double getRelativeValue(int maxIsotope, ResultDisplaySettingsVO settingVO, String molecularSpecies, double molecularSpeciesContribution)
+  {
+  	if (maxIsotope>=usedIsotpes_ || maxIsotope<0)
       return -1;
     else{
       
       Double standardizedArea = null;
       try {
-        standardizedArea = getArea(maxIsotope, settingVO);
+        standardizedArea = getArea(maxIsotope, settingVO) * molecularSpeciesContribution;
       }
       catch (CalculationNotPossibleException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();
       }
-      Double relativeMedianArea = relativeMedianArea_.get(maxIsotope);
+      Double relativeMedianArea = relativeMedianAreas_.get(molecularSpecies).get(maxIsotope);
 //      if (dilutionFactor && dilutionFactor_ != null)
 //        relativeMedianArea = relativeMedianArea/dilutionFactor_;
       return standardizedArea/relativeMedianArea;
     }
   }
-
-  public void setRelativeMedianArea(Vector<Double> relativeMedianArea)
+  
+  /**
+   * Adds a relative median area. 
+   * @param molecularSpecies				the molecular species this relativeMedianArea belongs to
+   * @param relativeMedianArea			the relative median area per isotope		
+   */
+  public void addRelativeMedianArea(String molecularSpecies, ArrayList<Double> relativeMedianArea)
   {
-    this.relativeMedianArea_ = relativeMedianArea;
+  	this.relativeMedianAreas_.put(molecularSpecies, relativeMedianArea);
+  }
+  
+  public void addRelativeMedianArea(ArrayList<Double> relativeMedianArea)
+  {
+  	addRelativeMedianArea(SUM_COMPOSITION, relativeMedianArea);
   }
 
   public int getUsedIsotpes()
@@ -725,19 +763,20 @@ public class ResultCompVO
 //    return (esStandardVolume_*esStandardConcentration_)/this.dilutionFactor_;
 //  }
   
+  //TODO: result comp is composed of one result area, which is composed of multiple params - we need to compute rel. contribution of each mol. species to a result area!
   public double getArea(int maxIsotope, ResultDisplaySettingsVO settingVO) throws CalculationNotPossibleException{
     double area = 0;
     if (settingVO.isPercent()){
       area = getRatioToPercentualValue(maxIsotope,settingVO);
-    } else if (settingVO.getType().equalsIgnoreCase("relative value")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_VALUE)){
       area = getStandardizedArea(maxIsotope, settingVO.getISStandMethod(), settingVO.getESStandMethod(), settingVO.considerDilution());
-    } else if (settingVO.getType().equalsIgnoreCase("relative to base peak")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_BASE_PEAK)){
       area = getRatioToHighestPeak(maxIsotope);
-    } else if (settingVO.getType().equalsIgnoreCase("relative to measured class amount")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_MEASURED_CLASS_AMOUNT)){
       area = getRatioToTotalIntensity(maxIsotope);
-    } else if (settingVO.getType().equalsIgnoreCase("relative to highest total peak")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_HIGHEST_TOTAL_PEAK)){
       area = getRatioToHighestFoundPeak(maxIsotope);
-    } else if (settingVO.getType().equalsIgnoreCase("relative to total amount")){
+    } else if (settingVO.getType().equalsIgnoreCase(ResultDisplaySettingsVO.REL_TOTAL_AMOUNT)){
       area = this.getRatioToOverallGroupsIntensity(maxIsotope);
     } else if (settingVO.getType().equalsIgnoreCase("amount end-volume")){
       area = getAmountInEndVolume(maxIsotope, settingVO.getISStandMethod());
@@ -961,110 +1000,4 @@ public class ResultCompVO
     return allModsFound_;
   }
   
-  public void cleanup(){
-    if (mass_!=null) mass_.clear();
-    mass_ = null;
-    if (retentionTime_!=null) retentionTime_.clear();
-    retentionTime_ = null;
-    if (originalArea_!=null) originalArea_.clear();
-    originalArea_ = null;
-    if (correctionFactorInternalIS_!=null) correctionFactorInternalIS_.clear();
-    correctionFactorInternalIS_ = null;
-    if (correctionFactorMedianIS_!=null) correctionFactorMedianIS_.clear();
-    correctionFactorMedianIS_ = null;
-    if (correctionFactorSingleIS_!=null) correctionFactorSingleIS_.clear();
-    correctionFactorSingleIS_ = null;
-    if (relativeMedianArea_!=null) relativeMedianArea_.clear();
-    relativeMedianArea_ = null;
-    if (areaISInternalComparison_!=null) areaISInternalComparison_.clear();
-    areaISInternalComparison_ = null;
-    if (areaISMedianComparison_!=null) areaISMedianComparison_.clear();
-    areaISMedianComparison_ = null;
-    if (areaISSingleComparison_!=null) areaISSingleComparison_.clear();
-    areaISSingleComparison_ = null;
-    dilutionFactor_ = null;
-    if (correctionFactorESNoISCorrInternal_!=null) correctionFactorESNoISCorrInternal_.clear();
-    correctionFactorESNoISCorrInternal_ = null;
-    if (correctionFactorESNoISCorrMedian_!=null) correctionFactorESNoISCorrMedian_.clear();
-    correctionFactorESNoISCorrMedian_ = null;
-    if (correctionFactorESNoISCorrSingle_!=null) correctionFactorESNoISCorrSingle_.clear();
-    correctionFactorESNoISCorrSingle_ = null;
-    if (correctionFactorESISInternalCorrInternal_!=null) correctionFactorESISInternalCorrInternal_.clear();
-    correctionFactorESISInternalCorrInternal_ = null;
-    if (correctionFactorESISInternalCorrMedian_!=null) correctionFactorESISInternalCorrMedian_.clear();
-    correctionFactorESISInternalCorrMedian_ = null;
-    if (correctionFactorESISInternalCorrSingle_!=null) correctionFactorESISInternalCorrSingle_.clear();
-    correctionFactorESISInternalCorrSingle_ = null;
-    if (correctionFactorESISMedianCorrInternal_!=null) correctionFactorESISMedianCorrInternal_.clear();
-    correctionFactorESISMedianCorrInternal_ = null;
-    if (correctionFactorESISMedianCorrMedian_!=null) correctionFactorESISMedianCorrMedian_.clear();
-    correctionFactorESISMedianCorrMedian_ = null;
-    if (correctionFactorESISMedianCorrSingle_!=null) correctionFactorESISMedianCorrSingle_.clear();
-    correctionFactorESISMedianCorrSingle_ = null;
-    if (correctionFactorESISSingleCorrInternal_!=null) correctionFactorESISSingleCorrInternal_.clear();
-    correctionFactorESISSingleCorrInternal_ = null;
-    if (correctionFactorInternalESISSingleCorrMedian_!=null) correctionFactorInternalESISSingleCorrMedian_.clear();
-    correctionFactorInternalESISSingleCorrMedian_ = null;
-    if (correctionFactorESISSingleCorrSingle_!=null) correctionFactorESISSingleCorrSingle_.clear();
-    correctionFactorESISSingleCorrSingle_ = null;
-    if (areaESNoISCorrInternalComparison_!=null) areaESNoISCorrInternalComparison_.clear();
-    areaESNoISCorrInternalComparison_ = null;
-    if (areaESNoISCorrMedianComparison_!=null) areaESNoISCorrMedianComparison_.clear();
-    areaESNoISCorrMedianComparison_ = null;
-    if (areaESNoISCorrSingleComparison_!=null) areaESNoISCorrSingleComparison_.clear();
-    areaESNoISCorrSingleComparison_ = null;
-    if (areaESISInternalCorrInternalComparison_!=null) areaESISInternalCorrInternalComparison_.clear();
-    areaESISInternalCorrInternalComparison_ = null;
-    if (areaESISInternalCorrMedianComparison_!=null) areaESISInternalCorrMedianComparison_.clear();
-    areaESISInternalCorrMedianComparison_ = null;
-    if (areaESISInternalCorrSingleComparison_!=null) areaESISInternalCorrSingleComparison_.clear();
-    areaESISInternalCorrSingleComparison_ = null;
-    if (areaESISMedianCorrInternalComparison_!=null) areaESISMedianCorrInternalComparison_.clear();
-    areaESISMedianCorrInternalComparison_ = null;
-    if (areaESISMedianCorrMedianComparison_!=null) areaESISMedianCorrMedianComparison_.clear();
-    areaESISMedianCorrMedianComparison_ = null;
-    if (areaESISMedianCorrSingleComparison_!=null) areaESISMedianCorrSingleComparison_.clear();
-    areaESISMedianCorrSingleComparison_ = null;
-    if (areaESISSingleCorrInternalComparison_!=null) areaESISSingleCorrInternalComparison_.clear();
-    areaESISSingleCorrInternalComparison_ = null;
-    if (areaESISSingleCorrMedianComparison_!=null) areaESISSingleCorrMedianComparison_.clear();
-    areaESISSingleCorrMedianComparison_ = null;
-    if (areaESISSingleCorrSingleComparison_!=null) areaESISSingleCorrSingleComparison_.clear();
-    areaESISSingleCorrSingleComparison_ = null;
-    relativeValue_ = null;
-    absoluteFilePath_ = null;
-    if (isAmounts_!=null) isAmounts_.clear();
-    isAmounts_ = null;
-    if (esAmounts_!=null) esAmounts_.clear();
-    esAmounts_ = null;
-    esStandardVolumeInternalCorr_ = null;
-    esStandardConcentrationInternalCorr_ = null;
-    esStandardVolumeMedianCorr_ = null;
-    esStandardConcentrationMedianCorr_ = null;
-    if (esStandardVolumeSingleCorr_!=null) esStandardVolumeSingleCorr_.clear();
-    esStandardVolumeSingleCorr_ = null;
-    if (esStandardConcentrationSingleCorr_!=null) esStandardConcentrationSingleCorr_.clear();
-    esStandardConcentrationSingleCorr_ = null;
-    endVolume_ = null;
-    probeVolume_ = null;
-    sampleWeight_ = null;
-    proteinConcentration_ = null;
-    neutralLipidConcentration_ = null;
-    if (measuredNeutralLipidConcentration_!=null) measuredNeutralLipidConcentration_.clear();
-    measuredNeutralLipidConcentration_ = null;
-    if (highestGroupIntensity_!=null) highestGroupIntensity_.clear();
-    highestGroupIntensity_ = null;
-    if (totalGroupIntensity_!=null) totalGroupIntensity_.clear();
-    totalGroupIntensity_ = null;  
-    if (totalGroupMass_!=null) totalGroupMass_.clear();
-    totalGroupMass_ = null;
-    if (highestFoundIntensity_!=null) highestFoundIntensity_.clear();
-    highestFoundIntensity_ = null;
-    if (totalFoundIntensity_!=null) totalFoundIntensity_.clear();
-    totalFoundIntensity_ = null;
-    if (sumValueForPercentage_!=null) sumValueForPercentage_.clear();
-    sumValueForPercentage_ = null; 
-    if (moreThanOnePeak_!=null) moreThanOnePeak_.clear();
-    moreThanOnePeak_ = null;
-  }
 }

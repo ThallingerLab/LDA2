@@ -262,7 +262,9 @@ public class RdbOutputWriter
           if (maxIso>highestIsotopeNumber) highestIsotopeNumber = maxIso;
         }else{
           for (LipidParameterSet set : result.getIdentifications().get(className)){
-            if ((set.getIsotopicProbes().size()-1)>highestIsotopeNumber) highestIsotopeNumber = (set.getIsotopicProbes().size()-1);
+        	  if (set == null)
+        		  continue;
+        	  if ((set.getIsotopicProbes().size()-1)>highestIsotopeNumber) highestIsotopeNumber = (set.getIsotopicProbes().size()-1);
           }
         }
       }
@@ -355,6 +357,8 @@ public class RdbOutputWriter
           Vector<LipidParameterSet> classResultsFile = result.getIdentifications().get(className);
           Hashtable<String,Vector<LipidParameterSet>> foundSpecies = new Hashtable<String,Vector<LipidParameterSet>>();
           for (LipidParameterSet set : classResultsFile){
+        	if (set == null)
+        		continue;
             if (isRtGrouped) {
               if (!fromSpeciesToSpeciesWithRt.containsKey(set.getNameStringWithoutRt()))
                 continue;

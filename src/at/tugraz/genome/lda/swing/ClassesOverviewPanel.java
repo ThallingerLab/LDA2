@@ -376,7 +376,7 @@ public class ClassesOverviewPanel extends JPanel implements ActionListener
       }
     }
     
-    ResultDisplaySettingsVO settingVO = new ResultDisplaySettingsVO("relative value", ResultCompVO.NO_STANDARD_CORRECTION, ResultCompVO.NO_STANDARD_CORRECTION,
+    ResultDisplaySettingsVO settingVO = new ResultDisplaySettingsVO(ResultDisplaySettingsVO.REL_VALUE, ResultCompVO.NO_STANDARD_CORRECTION, ResultCompVO.NO_STANDARD_CORRECTION,
         false, false);
     centerPanel_.removeAll();
     BarChartPainter painter = new BarChartPainter(BarChartPainter.TYPE_CLASSES,"Overview",classes,overviewResults,experiments,sampleLookup_,true,isGrouped,maxIsotope,false,isGrouped,settingVO, preferredUnit,unit,
@@ -409,5 +409,20 @@ public class ClassesOverviewPanel extends JPanel implements ActionListener
       }
     }  
     return area;
+  }
+  
+  public void cleanup()
+  {
+  	if (selectionSettings_!=null) 
+  	{
+  		selectionSettings_.removeActionListener(this);
+  		selectionSettings_.dispose();
+    	selectionSettings_ = null;
+  	}
+  	if (standardSelection_!=null) 
+  	{
+  		standardSelection_.cleanup();
+    	standardSelection_ = null;
+  	}	
   }
 }

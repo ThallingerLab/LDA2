@@ -122,13 +122,17 @@ public class ResultSelectionSettings extends JDialog implements ActionListener
     button_.setActionCommand("AcceptDisplaySettings");
     buttonPanel.add(button_);
     setVisible(false);
-    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    setDefaultCloseOperation(DISPOSE_ON_CLOSE );
     pack(); 
 
   }
   
   public void addActionListener(ActionListener parent){
     button_.addActionListener(parent);
+  }
+  
+  public void removeActionListener(ActionListener parent) {
+  	button_.removeActionListener(parent);
   }
 
   public boolean isSelected(String moleculeName){

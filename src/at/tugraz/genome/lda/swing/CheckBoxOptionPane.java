@@ -23,11 +23,14 @@
 
 package at.tugraz.genome.lda.swing;
 
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Vector;
 
@@ -38,6 +41,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 
 import at.tugraz.genome.lda.TooltipTexts;
 
@@ -53,7 +57,7 @@ public class CheckBoxOptionPane extends JDialog implements ActionListener
   
   private final int NR_OF_ROWS = 5;
   private int value_ = JOptionPane.NO_OPTION;
-  private Vector<String> checkBoxStrings_;
+  private ArrayList<String> checkBoxStrings_;
   private Hashtable<String,JCheckBox> checkBoxHash_;
   private boolean showOne_;
 
@@ -65,7 +69,7 @@ public class CheckBoxOptionPane extends JDialog implements ActionListener
    * @param chechboxStrings a list of strings displayed next to the check boxes (each string is an individual check box)
    * @param showOne is false when a single check box should not be displayed
    */
-  private CheckBoxOptionPane(JFrame parent, String title, Vector<String> messages, Vector<String> chechboxStrings, boolean showOne){
+  private CheckBoxOptionPane(JFrame parent, String title, Vector<String> messages, ArrayList<String> chechboxStrings, boolean showOne){
     super(parent, title, true);
     checkBoxStrings_ = chechboxStrings;
     showOne_ = showOne;
@@ -84,15 +88,22 @@ public class CheckBoxOptionPane extends JDialog implements ActionListener
     value_ = JOptionPane.NO_OPTION;
     int columns = chechboxes.size()/NR_OF_ROWS;
     if (chechboxes.size()%NR_OF_ROWS!=0 || columns==0)columns++;
-    int rowCount = 0;
-    for (String message : messages){
-      if (message!=null&&message.length()>0){
+    int rowCount = 1;
+    JPanel textPanel = new JPanel();
+    textPanel.setLayout(new GridLayout());
+    for (String message : messages) //edit here!!
+    {
+      if (message!=null&&message.length()>0)
+      {
         JLabel titleLabel = new JLabel(message);
-        this.add(titleLabel, new GridBagConstraints(0, rowCount, columns, 1, 0.0, 0.0
-            ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 2, 2, 2), 0, 0));
-        rowCount++;
+        textPanel.add(titleLabel);
       }
     }
+    JScrollPane scrollPane = new JScrollPane(textPanel);
+    scrollPane.setPreferredSize(new Dimension(950, 250));
+    scrollPane.setMinimumSize(new Dimension(500, 150));
+    this.add(scrollPane, new GridBagConstraints(0, 0, columns, 1, 0.0, 0.0
+            ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 2, 2, 2), 0, 0));
   
 //  int rows = moleculeNames_.size()/columns_;
 //  if (moleculeNames_.size()>0 && moleculeNames_.size()%columns_!=0)
@@ -122,7 +133,7 @@ public class CheckBoxOptionPane extends JDialog implements ActionListener
     cancelButton.setToolTipText(TooltipTexts.CANCEL_GENERAL);
     buttonPanel.add(cancelButton);
     cancelButton.addActionListener(this);
-    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     pack(); 
     setVisible(true);
   }
@@ -138,7 +149,7 @@ public class CheckBoxOptionPane extends JDialog implements ActionListener
    * @return the checked checkboxes, if cancel is pressed the returned Vector is empty
    */
   
-  public static Vector<String> showConfirmDialog(JFrame parent, String title, Vector<String> messages, Vector<String> chechboxStrings, boolean showOne){  
+  public static Vector<String> showConfirmDialog(JFrame parent, String title, Vector<String> messages, ArrayList<String> chechboxStrings, boolean showOne){  
     CheckBoxOptionPane dialog = new CheckBoxOptionPane(parent, title, messages, chechboxStrings, showOne);
     return dialog.getSelected();
   }

@@ -86,7 +86,8 @@ public class AlexRtGrouper
       
       ComparativeAnalysis analysisModule = new ComparativeAnalysis(resultFiles,"IS","Ex-IS", null, null, -1, 
         null,null,null,groupingTime_);
-      analysisModule.parseInput();
+      //TODO: using default values for statistics view mode: 0 and not combining ox with non ox.
+      analysisModule.parseInput(0,false);
       analysisModule.calculateStatistics();
         
       //TODO: this is a fixed value - might be taken as input parameter in future

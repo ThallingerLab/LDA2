@@ -30,6 +30,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Vector;
 
@@ -64,9 +65,9 @@ public class ChromExportDialog extends JDialog implements ActionListener
   
   private int value_ = JOptionPane.NO_OPTION;
   private JTabbedPane tabs_;
-  private Vector<String> experiments_;
-  private Vector<String> analytes_;
-  private Vector<String> modifications_;
+  private ArrayList<String> experiments_;
+  private ArrayList<String> analytes_;
+  private ArrayList<String> modifications_;
   private Hashtable<String,JCheckBox> expBoxes_;
   private Hashtable<String,JCheckBox> analBoxes_;
   private Hashtable<String,JCheckBox> modBoxes_;
@@ -78,8 +79,9 @@ public class ChromExportDialog extends JDialog implements ActionListener
   private ActionListener parent_;
   private JTextField width_;
   private JTextField height_;
+  private JButton okButton_;
 
-  public ChromExportDialog(String title, Vector<String> experiments, Vector<String> analytes, Vector<String> modifications, ActionListener parent){
+  public ChromExportDialog(String title, ArrayList<String> experiments, ArrayList<String> analytes, ArrayList<String> modifications, ActionListener parent){
     super(new JFrame(), title, true);
     experiments_ = experiments;
     analytes_ = analytes;
@@ -108,10 +110,10 @@ public class ChromExportDialog extends JDialog implements ActionListener
     initButtonPanel();
   }
   
-  private Hashtable<String,JCheckBox> initCheckboxes(JPanel panel, String title, Vector<String> names){
+  private Hashtable<String,JCheckBox> initCheckboxes(JPanel panel, String title, ArrayList<String> analytes){
     panel.setLayout(new GridBagLayout());
     Hashtable<String,JCheckBox> boxes = new Hashtable<String,JCheckBox>();
-    int titleColSpan = names.size();
+    int titleColSpan = analytes.size();
     if (titleColSpan>columns_)
       titleColSpan = columns_;
     if (title!=null&&title.length()>0){
@@ -120,11 +122,11 @@ public class ChromExportDialog extends JDialog implements ActionListener
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 2, 2, 2), 0, 0));
     }
     
-    int rows = names.size()/columns_;
-    if (names.size()>0 && names.size()%columns_!=0)
+    int rows = analytes.size()/columns_;
+    if (analytes.size()>0 && analytes.size()%columns_!=0)
       rows++;
-    for (int i=0; i!=names.size(); i++){
-      String name = names.get(i);
+    for (int i=0; i!=analytes.size(); i++){
+      String name = analytes.get(i);
       JCheckBox select  = new JCheckBox(name);
       select.setSelected(true);
       int row = i%rows;
@@ -190,18 +192,18 @@ public class ChromExportDialog extends JDialog implements ActionListener
     
     JLabel emptyLabel = new JLabel("   ");
     buttonPanel.add(emptyLabel);
-    JButton okButton = new JButton("OK");
-    okButton.setActionCommand("AcceptChromExport");
-    okButton.setToolTipText(TooltipTexts.ACCEPT_GENERAL);
-    buttonPanel.add(okButton);
-    okButton.addActionListener(this);
-    okButton.addActionListener(parent_);
+    okButton_ = new JButton("OK");
+    okButton_.setActionCommand("AcceptChromExport");
+    okButton_.setToolTipText(TooltipTexts.ACCEPT_GENERAL);
+    buttonPanel.add(okButton_);
+    okButton_.addActionListener(this);
+    okButton_.addActionListener(parent_);
     JButton cancelButton = new JButton("Cancel");
     cancelButton.setActionCommand("DeclineSelection");
     cancelButton.setToolTipText(TooltipTexts.CANCEL_GENERAL);
     buttonPanel.add(cancelButton);
     cancelButton.addActionListener(this);
-    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     pack(); 
     setVisible(false);
   }
@@ -219,7 +221,7 @@ public class ChromExportDialog extends JDialog implements ActionListener
     }else if (e.getActionCommand().equalsIgnoreCase("SelectAll")||
         e.getActionCommand().equalsIgnoreCase("SelectNone")||
         e.getActionCommand().equalsIgnoreCase("Invert")){
-      Vector<String> names = null;
+    	ArrayList<String> names = null;
       Hashtable<String,JCheckBox> boxes = null;
       if (tabs_.getSelectedIndex()==0){
         names = experiments_;
@@ -246,7 +248,7 @@ public class ChromExportDialog extends JDialog implements ActionListener
     return value_;
   }
   
-  public void refreshNames(Vector<String> names){
+  public void refreshNames(ArrayList<String> names){
     for (int i=0; i!=names.size();i++){
       String oldName = experiments_.get(i);
       String newName = names.get(i);
@@ -320,5 +322,14 @@ public class ChromExportDialog extends JDialog implements ActionListener
   
   public Dimension getPictureDimension(){
     return new Dimension(Integer.parseInt(this.width_.getText()),Integer.parseInt(this.height_.getText()));
+  }
+  
+  /**
+   * Removes parent action listener.
+   */
+  public void cleanup()
+  {
+  	okButton_.removeActionListener(parent_);
+  	parent_ = null;
   }
 }

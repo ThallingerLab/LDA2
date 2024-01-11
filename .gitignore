@@ -1,4 +1,10 @@
 /classes/
+/junit/
+/bin/
 /toInstall/
+/installer/
 *.bak
-/test-output/
+
+#To avoid committing currently selected fragRules
+/fragRules/
+/fragRules/interim/

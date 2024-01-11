@@ -108,7 +108,7 @@ public class EditRtDialog extends JDialog implements ActionListener
     buttonPanel.add(cancelButton);
     cancelButton.addActionListener(this);
     cancelButton.addActionListener(parent_);
-    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     this.add(buttonPanel,BorderLayout.SOUTH);
     
   }
@@ -133,9 +133,9 @@ public class EditRtDialog extends JDialog implements ActionListener
    * 
    * @return the entered retention time
    */
-  public String getRt()
+  public Double getRt()
   {
-    return rTime_.getText();
+    return Double.parseDouble(rTime_.getText());
   }
   
   
