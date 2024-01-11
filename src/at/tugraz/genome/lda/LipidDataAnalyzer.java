@@ -57,7 +57,6 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -103,7 +102,6 @@ import uk.ac.ebi.pride.jmztab2.utils.errors.MZTabErrorType.Level;
 
 import org.apache.batik.dom.GenericDOMImplementation;
 import org.apache.batik.svggen.SVGGraphics2D;
-import org.apache.commons.math3.util.Precision;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 
@@ -166,7 +164,6 @@ import at.tugraz.genome.lda.swing.ResultSelectionSettings;
 import at.tugraz.genome.lda.swing.RuleDefinitionInterface;
 import at.tugraz.genome.lda.swing.SpectrumUpdateListener;
 import at.tugraz.genome.lda.target.JTargetFileWizard;
-import at.tugraz.genome.lda.target.LoadingPanel;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.verifier.DoubleVerifier;
 import at.tugraz.genome.lda.verifier.IntegerMaxVerifier;
@@ -573,7 +570,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     resultsPanel_.setLayout(new BorderLayout());
     settingsPanel_ = new JPanel();
     initSettingsPanel();
-    licensePanel_ = new JPanel();
     targetFilePanel_ = new JTargetFileWizard();
     helpPanel_ = new JPanel();
     initHelpPanel();
@@ -598,6 +594,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(settingsPanel_), TooltipTexts.TABS_MAIN_SETTINGS);
     if (LicenseChecker.isCheckLicense())
     {
+    	licensePanel_ = new JPanel();
       mainTabs.addTab("License", licensePanel_);
       mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(licensePanel_), TooltipTexts.TABS_MAIN_LICENSE);
       LicenseChangeListener licenseListener = new LicenseChangeListener();
