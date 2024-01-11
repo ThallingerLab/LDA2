@@ -246,7 +246,7 @@ public class AbsoluteQuantSettingsPanel extends JPanel implements ExpVolumeListe
   
   public String getChosenClassLookup(String className)
   {
-  	return classSettings_.get(className).getChosenClass();
+  	return classSettings_ == null ? className : classSettings_.get(className).getChosenClass();
   }
   
   

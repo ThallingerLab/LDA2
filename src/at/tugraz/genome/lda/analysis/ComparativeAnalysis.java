@@ -311,7 +311,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
   private void extractStandardVOsFromResults(Hashtable<String,Hashtable<String,Hashtable<String,ResultAreaVO>>> standResults,
       Hashtable<String,Hashtable<String,String>> standNames, String selectionPrefix){
     for (String molGroupName : allResults_.keySet()){
-    	String chosenGroupForStandards = absSetting_.getChosenClass(molGroupName);
+    	String chosenGroupForStandards = absSetting_ == null ? molGroupName : absSetting_.getChosenClass(molGroupName);
       Hashtable<String,Vector<ResultAreaVO>> resultsMoleculeGroup = allResults_.get(chosenGroupForStandards);
       Hashtable<String,Hashtable<String,ResultAreaVO>> isResultOfOneGroup = new Hashtable<String,Hashtable<String,ResultAreaVO>>();
       Hashtable<String,String> isOfOneMolGroup = new Hashtable<String,String>();
