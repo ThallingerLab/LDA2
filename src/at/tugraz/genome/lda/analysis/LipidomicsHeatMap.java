@@ -1008,7 +1008,8 @@ public class LipidomicsHeatMap
 	
 	public int getAnalyteIndex(String analyte)
 	{
-		return analyteNames_.indexOf(analyte);
+		ArrayList<String> originalNames = getOriginalAnalyteNames();
+		return originalNames.indexOf(analyte);
 	}
 	
 	public String getAnalyteName(int row)
