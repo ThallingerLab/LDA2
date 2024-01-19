@@ -4601,13 +4601,18 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         int selection = -1;
         for (int i=0;i!=this.displayTable_.getRowCount();i++){
           String moleculeInTable = (String)this.displayTable_.getDisplayedNameAt(i);
+          String rtInTableString = null;
           if (moleculeInTable.startsWith(moleculeName)){
             boolean found = false;
-            String rtInTableString = moleculeInTable.substring(moleculeName.length()+1);
-            if (rtInTableString.indexOf("_")!=-1) rtInTableString = rtInTableString.substring(0,rtInTableString.indexOf("_"));
-            if (compVO.getResultMolecule().belongsRtToThisAreaVO(rtInTableString, null))
-            {
+            if (moleculeInTable.equals(moleculeName)) {
             	found = true;
+            }else {
+            	rtInTableString = moleculeInTable.substring(moleculeName.length()+1);
+            	if (rtInTableString.indexOf("_")!=-1) rtInTableString = rtInTableString.substring(0,rtInTableString.indexOf("_"));
+            	if (compVO.getResultMolecule().belongsRtToThisAreaVO(rtInTableString, null))
+            	{
+            		found = true;
+            	}
             }
             if (found){
               //if show MS2 spectra is selected, try to find an adequate matching hit where MS2 spectra are present

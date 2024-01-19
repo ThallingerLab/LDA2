@@ -126,7 +126,7 @@ public class IsoLocationSpaces
           }
         }
         if (oneArea>0){
-          meanZeroArea = (meanZeroArea+(oneArea*((float)distri.get(0).doubleValue()))/((float)distri.get(1).doubleValue()))/2f;
+          meanZeroArea = (meanZeroArea+(oneArea*((float)distri.get(0).doubleValue())/((float)distri.get(1).doubleValue())))/2f;
         }
       }
       zeroAreas_.put(count, meanZeroArea);
@@ -239,7 +239,7 @@ public class IsoLocationSpaces
    */
   private boolean isWithinRange (float start1, float end1, float start2, float end2){
     boolean isInRange = false;
-    if ((start1<start2&&end1>start2)||(start1>start2&&end2>start1)){
+    if ((start1<=start2&&end1>=start2)||(start1>=start2&&end2>=start1)){
       isInRange = true;
     }
     return isInRange;
