@@ -588,7 +588,7 @@ public class SingleQuantThread extends Thread
     Vector<Vector<CgProbe>> isotopicProbes2 = new Vector<Vector<CgProbe>>();
     // k is the isotope number
     float totalArea = 0;
-    double rt = 0.0;
+    Double rt = 0.0;
     for (int k=0;k!=oneHit.size();k++){
       Vector<CgProbe> probes = oneHit.get(k);
       if (probes !=null){
@@ -610,7 +610,7 @@ public class SingleQuantThread extends Thread
       }
     }
     if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE)
-    	rt = -1.0;
+    	rt = null;
     LipidParameterSet param = new LipidParameterSet(analyteMass, analyteName, dbs, modName, rt, analyteFormula, modFormula,charge, ohNumber);
     param.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance(analyteMass);
     param.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance(analyteMass);
@@ -706,7 +706,8 @@ public class SingleQuantThread extends Thread
       Vector<CgProbe> corrected = new Vector<CgProbe>();
       float mz = param.Mz[0]+i*LipidomicsConstants.getNeutronMass()/(float)param.getCharge();
       for (CgProbe aProbe : probes){
-        mzTolerance = aProbe.LowerMzBand;
+      	if (i==0)
+      		mzTolerance = aProbe.LowerMzBand;
         CgProbe probe = new CgProbe(aProbe);
         probe.Mz = mz;
         corrected.add(probe);

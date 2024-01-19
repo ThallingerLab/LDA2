@@ -63,8 +63,8 @@ import at.tugraz.genome.lda.xml.ModConfigParser;
 public class Settings
 {
   private static Settings instance_ = null;
-  
-  public final static String VERSION = "2.9.0_3";
+
+  public final static String VERSION = "2.9.0_4";
 
   public final static String SETTINGS_FILE = ".settings";
   

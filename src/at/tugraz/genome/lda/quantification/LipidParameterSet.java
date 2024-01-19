@@ -56,7 +56,7 @@ public class LipidParameterSet extends CgParameterSet
   private String chemicalFormula_;
   private String chemicalFormulaWODeducts_;
   private Integer charge_;
-  private double preciseRetentionTime_;
+  private Double preciseRetentionTime_;
   private String rt_;
   /** (total) number of hydroxylation sites present on the molecule*/
   private Integer ohNumber_;
@@ -119,13 +119,16 @@ public class LipidParameterSet extends CgParameterSet
    * @param ohNumber the number of hydroxylation sites (total)
    */
   public LipidParameterSet(float mz, String name,
-      Integer doubleBonds, String modificationName, double preciseRetentionTime, String analyteFormula,
+      Integer doubleBonds, String modificationName, Double preciseRetentionTime, String analyteFormula,
       String modificationFormula, Integer charge, Integer ohNumber)
   {
     super(mz, name,mz,-1,-1, -1,-1, -1, -1, -1, -1, -1,
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
     this.preciseRetentionTime_ = preciseRetentionTime;
-  	this.rt_ = PreciseRTFormatter.FormatNumberToString(preciseRetentionTime,2);
+    if (preciseRetentionTime!=null)
+    	this.rt_ = PreciseRTFormatter.FormatNumberToString(preciseRetentionTime,2);
+    else
+    	rt_ = null;
     this.doubleBonds_ = doubleBonds;
     this.modificationName_ = modificationName;
     this.analyteFormula_ = analyteFormula;
@@ -295,7 +298,7 @@ public class LipidParameterSet extends CgParameterSet
     return rt_;
   }
   
-  public double getPreciseRT()
+  public Double getPreciseRT()
   {
   	return preciseRetentionTime_;
   }
@@ -303,7 +306,10 @@ public class LipidParameterSet extends CgParameterSet
   public void setPreciseRt(Double rt)
   {
   	this.preciseRetentionTime_ = rt;
-  	this.rt_ = PreciseRTFormatter.FormatNumberToString(rt,2);
+  	if (rt!=null)
+  		this.rt_ = PreciseRTFormatter.FormatNumberToString(rt,2);
+  	else
+  		this.rt_ = null;
   }
 
   public String getChemicalFormula()

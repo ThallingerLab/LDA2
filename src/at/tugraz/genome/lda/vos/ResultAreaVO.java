@@ -556,11 +556,20 @@ public class ResultAreaVO
    */
   public boolean belongsRtToThisAreaVO(String rt, String mod)
   {
+  	try { Double.parseDouble(rt); }
+    catch (NumberFormatException | NullPointerException ex) { rt = null; } //retention time should be null if it is not a number (may happen with shotgun data).
   	for (LipidParameterSet param : lipidParameterSets_)
   	{
-  		if ((mod != null ? param.getModificationName().equals(mod) : true) && param.getRt().equals(rt))
+  		if ((mod != null ? param.getModificationName().equals(mod) : true))
   		{
-  			return true;
+  			if (rt != null && param.getRt().equals(rt))
+  			{
+  				return true;
+  			}
+  			else if (rt == null && param.getRt() == null) //relevant for shotgun data
+  			{
+  				return true;
+  			}
   		}
   	}
   	return false;

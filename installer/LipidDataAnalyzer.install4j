@@ -43,6 +43,8 @@
     <entries>
       <dirEntry mountPoint="22" file="./installFiles" subDirectory="installFiles" excludeSuffixes=".svn">
         <exclude>
+          <entry location="cache/dummy.frag.txt" />
+          <entry location="fragRules/interim/dummy.frag.txt" />
           <entry location="launcher_archive" />
           <entry location="LipidDataAnalyzer.properties" />
         </exclude>
