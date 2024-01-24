@@ -21,11 +21,13 @@ import javafx.util.Pair;
  */
 public class Exp_USO_Combine
 {
-	private static final String EXPERIMENT_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_II_b\\Samples_Unlabeled\\before_comb_USO\\";
-	private static final String USO_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_II_b\\Samples_Unlabeled\\USO_PC\\";
-	private static final String OUT_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_II_b\\Samples_Unlabeled\\";
+//	private static final String FOLDER_GENERAL = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_II_b\\Samples_Unlabeled\\";
+	private static final String FOLDER_GENERAL = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_II_c_and_III_a_60min\\Samples_Unlabeled\\";
+	private static final String EXPERIMENT_PATH = FOLDER_GENERAL+"before_comb_USO\\";
+	private static final String USO_PATH = FOLDER_GENERAL+"USO_PC\\";
+	private static final String OUT_PATH = FOLDER_GENERAL;
 	private static final String EXCEL_SUFFIX = ".xlsx";
-	private static final String EXPERIMENT_TL_SUFFIX = "_SILDA_30min";
+	private static final String EXPERIMENT_TL_SUFFIX = "_SILDA_60min";
 	private static final String USO_TL_SUFFIX = "_USO_IS";
 	
 //	private static final String EXPERIMENT_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\labeled_n7\\corr_no_18_3\\";

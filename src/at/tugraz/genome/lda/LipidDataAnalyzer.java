@@ -3349,7 +3349,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     	if (groupHeatmaps_ != null)
     	{
     		HeatMapDrawing drawing = groupHeatmaps_.get(molGroup);
-    		drawing.adjustDisplaySettings(settings);
+    		if (drawing != null)
+    		{
+    			drawing.adjustDisplaySettings(settings);
+    		}
     	}
     }
   }

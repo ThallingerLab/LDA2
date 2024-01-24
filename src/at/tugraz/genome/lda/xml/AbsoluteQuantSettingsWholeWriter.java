@@ -86,6 +86,7 @@ public class AbsoluteQuantSettingsWholeWriter extends XMLFileWriter
     Hashtable<String,LipidClassSettingsPanel> classSets =  quantSettingsPanel_.getClassSettings();
     for (String className : classSets.keySet()){
       LipidClassSettingsPanel classPanel = classSets.get(className);
+      if (classPanel.getAllSettingsSame() == null) continue; //TODO: in this case it is a class without available standards that may be defined by another class, consider writing this out.
       Element classSetting = newDoc.createElement(XMLConstants.WHOLE_ABS_SET_CLASS_SET);
       classSetting.setAttribute(XMLConstants.WHOLE_ABS_SET_CLASS_NAME,className);
       boolean allExpsSame = classPanel.getAllSettingsSame().isSelected();

@@ -110,6 +110,7 @@ public class AbsoluteQuantSettingsWholeReader extends XMLFileLoader
   private void parseClassesSettings(Element classSet){
     String className = classSet.getAttribute(XMLConstants.WHOLE_ABS_SET_CLASS_NAME);
     LipidClassSettingsPanel classPanel = quantSettingsPanel_.getClassSettings().get(className);
+    if (classPanel == null) return;
     if (classPanel.getChosenClass()!=className)
     {
     	classPanel = quantSettingsPanel_.getClassSettings().get(classPanel.getChosenClass());
