@@ -333,9 +333,17 @@ public class OmegaCollector
 	
 	public Double getOmegaSTD(String exp, Integer omega)
 	{
-		Double stdPow = omegaSTD_.get(exp).get(omega);
-		Integer numContributors = numContributorsOmega_.get(exp).get(omega);
-		return Math.sqrt(stdPow/numContributors);
+		try
+		{
+			Double stdPow = omegaSTD_.get(exp).get(omega);
+			Integer numContributors = numContributorsOmega_.get(exp).get(omega);
+			return Math.sqrt(stdPow/numContributors);
+		}
+		catch (Exception ex)
+		{
+			System.out.println("exception...");
+		}
+		return 0.0;
 	}
 	
 }

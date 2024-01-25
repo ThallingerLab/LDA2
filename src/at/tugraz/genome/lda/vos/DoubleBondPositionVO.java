@@ -45,6 +45,10 @@ import javafx.util.Pair;
  */
 public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
 {
+	public static final int ACCURACY_LOW = 0;
+	public static final int ACCURACY_MEDIUM = 1;
+	public static final int ACCURACY_HIGH = 2;
+	
   /** Vector of FattyAcidVOs the molecular species is composed of */
   Vector<FattyAcidVO> chainCombination_;
   /** the expected retention time */
@@ -66,7 +70,7 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
   public DoubleBondPositionVO(
       Vector<FattyAcidVO> chainCombination, float expectedRetentionTime) 
   {
-    this(chainCombination, expectedRetentionTime,0,null);
+    this(chainCombination, expectedRetentionTime,ACCURACY_LOW,null);
   }
   
   /**

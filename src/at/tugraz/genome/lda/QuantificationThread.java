@@ -1696,8 +1696,8 @@ public class QuantificationThread extends Thread
             
             float expectedRetentionTime = doubleBondPositionVO.getExpectedRetentionTime();
             if (peakLimits.insideRange(expectedRetentionTime)) {
-              if (mediumAccuracy.insideRange(expectedRetentionTime)) doubleBondPositionVO.setAccuracy(1);
-              if (highAccuracy.insideRange(expectedRetentionTime)) doubleBondPositionVO.setAccuracy(2);
+              if (mediumAccuracy.insideRange(expectedRetentionTime)) doubleBondPositionVO.setAccuracy(DoubleBondPositionVO.ACCURACY_MEDIUM);
+              if (highAccuracy.insideRange(expectedRetentionTime)) doubleBondPositionVO.setAccuracy(DoubleBondPositionVO.ACCURACY_HIGH);
               
               if (needsMSnEvidence) {
                 String chainCombination = getEquivalentChainCombination((LipidomicsMSnSet)param, doubleBondPositionVO);
@@ -1717,8 +1717,9 @@ public class QuantificationThread extends Thread
           //sort omega information and add assignments
           Vector<DoubleBondPositionVO> paramOmegaInfo = param.getOmegaInformation();
           Collections.sort(paramOmegaInfo);
-          Vector<DoubleBondPositionVO> highAccuracyHits = StaticUtils.getHighAccuracyDoubleBondPositions(paramOmegaInfo);
-          Vector<DoubleBondPositionVO> assignedHits = StaticUtils.findUnambiguousDoubleBondPositions(highAccuracyHits);
+//          Vector<DoubleBondPositionVO> highAccuracyHits = StaticUtils.getHighAccuracyDoubleBondPositions(paramOmegaInfo);
+//          Vector<DoubleBondPositionVO> assignedHits = StaticUtils.findUnambiguousDoubleBondPositions(highAccuracyHits);
+          Vector<DoubleBondPositionVO> assignedHits = StaticUtils.findUnambiguousDoubleBondPositionsNew(param);
           for (DoubleBondPositionVO assignedHit : assignedHits) {
             assignedHit.setIsAssigned(true);
           }

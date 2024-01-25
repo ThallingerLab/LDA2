@@ -507,7 +507,8 @@ public class TargetListExporter
 							expectedRetentionTime+= vo.getExpectedRetentionTime();
 							count++;
 						}
-						DoubleBondPositionVO combined = new DoubleBondPositionVO(combinedFattyAcidVO, expectedRetentionTime/count, 0, doubleBondPositionVO.getMolecularSpecies());
+						DoubleBondPositionVO combined = new DoubleBondPositionVO(
+								combinedFattyAcidVO, expectedRetentionTime/count, DoubleBondPositionVO.ACCURACY_LOW, doubleBondPositionVO.getMolecularSpecies());
 						toBeAddedToLookup.add(combined);
 //						System.out.println("To be removed parent: "+doubleBondPositionVO.getMolecularSpecies()+"        pattern: "+doubleBondPositionVO.getPositionAssignmentPattern()+"     RT: "+doubleBondPositionVO.getExpectedRetentionTime());
 						toBeRemovedFromLookup.add(doubleBondPositionVO);
@@ -797,7 +798,7 @@ public class TargetListExporter
   		{
   			combinedFattyAcidVO.get(i).setOmegaPosition(combinedPattern.get(i));
   		}
-  		return new DoubleBondPositionVO(combinedFattyAcidVO, combinedRetentionTime, 0, vo1.getMolecularSpecies());
+  		return new DoubleBondPositionVO(combinedFattyAcidVO, combinedRetentionTime, DoubleBondPositionVO.ACCURACY_LOW, vo1.getMolecularSpecies());
   	}
   	return null;
   }
@@ -972,13 +973,13 @@ public class TargetListExporter
 							{
 				    		container.addLabeledSpecies(
 				    				pair.getKey(), 
-				    				new DoubleBondPositionVO(chains,(float)expectedRetentionTime,0,pair.getKey()));
+				    				new DoubleBondPositionVO(chains,(float)expectedRetentionTime,DoubleBondPositionVO.ACCURACY_LOW,pair.getKey()));
 							}
 			    		else 
 			    		{
 			    			container.addUnlabeledSpecies(
 				    				pair.getKey(), 
-				    				new DoubleBondPositionVO(chains,(float)expectedRetentionTime,0,pair.getKey()));
+				    				new DoubleBondPositionVO(chains,(float)expectedRetentionTime,DoubleBondPositionVO.ACCURACY_LOW,pair.getKey()));
 			    		}
 						}
 					}
@@ -1396,18 +1397,6 @@ public class TargetListExporter
   		if (labeledSpecies_.containsKey(molecularSpecies))
   		{
   			return labeledSpecies_.get(molecularSpecies);
-  		}
-  		else
-  		{
-  			return null;
-  		}
-  	}
-  	
-  	private Vector<DoubleBondPositionVO> getUnlabeledSpecies(String molecularSpecies)
-  	{
-  		if (unlabeledSpecies_.containsKey(molecularSpecies))
-  		{
-  			return unlabeledSpecies_.get(molecularSpecies);
   		}
   		else
   		{

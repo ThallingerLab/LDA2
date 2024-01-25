@@ -418,7 +418,7 @@ public class ExperimentGraphPanel extends JOptionPanel
       				DoubleBondPositionVO doubleBondPositionVO = new DoubleBondPositionVO(
       						chainCombination, 
       						Float.parseFloat(authenticStandard.getRt()),
-      						0,
+      						DoubleBondPositionVO.ACCURACY_LOW,
       						name);
       				authenticStandard.addOmegaInformation(doubleBondPositionVO);
       				authenticStandards.get(lipidClass).add(mSnSet);

@@ -85,7 +85,7 @@ public class EditOmegaAssignmentJTable extends JFrame implements ActionListener
   private final static String BUTTON_CANCEL = "Cancel";
   private final static String COMMAND_CANCEL = "cancel";
   /** Strings to indicate the accuracy of retention time matches */
-  private final static String[] accuracy_ = { "low", "medium", "high" };
+  private final String[] accuracy_ = { "low", "medium", "high" };
   /** Textfields for user input */
   private JTextField positionChainFirst_, positionChainSecond_, positionChainThird_, expectedRT_;
   /** local lipidParameterSet for use within this class and lipidParameterSet for saving the changes */
@@ -492,12 +492,12 @@ public class EditOmegaAssignmentJTable extends JFrame implements ActionListener
       }
       
       DoubleBondPositionVO newDoubleBondPositionVO = new DoubleBondPositionVO(
-          chainCombination, expectedRT, 0, molecularSpecies_, false);
+          chainCombination, expectedRT, DoubleBondPositionVO.ACCURACY_LOW, molecularSpecies_, false);
       return newDoubleBondPositionVO;
     }
     
     /**
-     * Determines the accuracy of a double bond position based on it's expected retention time
+     * Determines the accuracy of a double bond position based on its expected retention time
      * @param doubleBondPositionVO the double bond position value object
      * @throws NumberOutOfRangeException when the given expected retention time is outside the peak range
      */
@@ -509,11 +509,11 @@ public class EditOmegaAssignmentJTable extends JFrame implements ActionListener
       Range mediumAccuracy = peakRanges[1];
       Range highAccuracy = peakRanges[2];
       
-      doubleBondPositionVO.setAccuracy(0);
+      doubleBondPositionVO.setAccuracy(DoubleBondPositionVO.ACCURACY_LOW);
       if (peakLimits.insideRange(expectedRT)) 
       {
-        if (mediumAccuracy.insideRange(expectedRT)) doubleBondPositionVO.setAccuracy(1);
-        if (highAccuracy.insideRange(expectedRT)) doubleBondPositionVO.setAccuracy(2);
+        if (mediumAccuracy.insideRange(expectedRT)) doubleBondPositionVO.setAccuracy(DoubleBondPositionVO.ACCURACY_MEDIUM);
+        if (highAccuracy.insideRange(expectedRT)) doubleBondPositionVO.setAccuracy(DoubleBondPositionVO.ACCURACY_HIGH);
       } 
       else 
       {
