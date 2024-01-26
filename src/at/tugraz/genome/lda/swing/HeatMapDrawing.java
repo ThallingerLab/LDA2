@@ -952,14 +952,15 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       Vector<String> confirmationMessages = new Vector<String>();
       String confirmationMessage = "Are you sure you want to eliminate double peaks for "+currentlySelected.getLabel()+"? The peak nearest to the RT of "+currentlySelected.getValue()+" is taken!";
       if (actionCommand.equalsIgnoreCase("Quant. anal. at not found")||actionCommand.equalsIgnoreCase("Take exact peak for others")){
-        confirmationMessage = "Are you sure you want to automatically add peaks for the following molecules? ";
+        confirmationMessage = "<html>Are you sure you want to automatically add peaks for the following molecules?";
         if (actionCommand.equalsIgnoreCase("Quant. anal. at not found"))
-          confirmationMessage += "The peak nearest to the RT of the following experiments are taken:";
+          confirmationMessage += "<br>The peak nearest to the RT of the following identifications (ID) are taken: </br>";
         else if (actionCommand.equalsIgnoreCase("Take exact peak for others"))
-          confirmationMessage += "The exact peak borders of the following experiments are taken:";
-        confirmationMessages.add(confirmationMessage);
+          confirmationMessage += "<br>The exact peak borders of the following identifications (ID) are taken: </br>";
         for (SimpleValueObject species : templateSpecies)
-          confirmationMessages.add(species.getLabel()+":    "+species.getValue());
+          confirmationMessage += "<br> ID: "+species.getLabel()+" &emsp; experiment: "+species.getValue()+" </br>";
+        confirmationMessage += "</html>";
+        confirmationMessages.add(confirmationMessage);
       }else{
         confirmationMessages.add(confirmationMessage);
       }
