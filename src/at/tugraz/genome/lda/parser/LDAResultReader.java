@@ -20,6 +20,7 @@
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
  */
+
 package at.tugraz.genome.lda.parser;
 
 import java.io.FileInputStream;
@@ -953,8 +954,7 @@ public class LDAResultReader
    * Reads double bond position evidence from an Excel sheet. The results are stored in a Vector of DoubleBondPositionVOs for each LipidParameterSet.
    * @param sheet Omega Excel sheet
    */
-  private static void readOmegaSheet(Sheet sheet) throws IOException, LipidCombinameEncodingException
-  {
+  private static void readOmegaSheet(Sheet sheet) {
     String lipidClass = sheet.getName().replace(QuantificationResultExporter.ADDUCT_OMEGA_SHEET, "");
     Hashtable<String,LipidParameterSet> msHash = new Hashtable<String,LipidParameterSet>();
     for (LipidParameterSet param : resultParameterSets_.get(lipidClass)){
@@ -962,7 +962,9 @@ public class LDAResultReader
     }
     
     List<Row> rows = null;
-    rows = sheet.read();
+    try {
+      rows = sheet.read();
+    } catch (IOException ex) {}
     Row headerRow = rows.get(QuantificationResultExporter.HEADER_ROW);
     List<String> headerTitles = readSheetHeaderTitles(headerRow);
     List<Row> contentRows = rows.subList(QuantificationResultExporter.HEADER_ROW+1, rows.size());
@@ -976,8 +978,7 @@ public class LDAResultReader
     int index;
     String rawValue;
     
-    for (Row row : contentRows) 
-    {
+    for (Row row : contentRows) {
       List<Cell> cells = row.stream().filter((c) -> !(c==null || c.getType().equals(CellType.ERROR))).collect(Collectors.toList());
       for (Cell cell : cells) {
         index = cell.getColumnIndex();
@@ -997,12 +998,21 @@ public class LDAResultReader
           isAssigned = rawValue.equalsIgnoreCase("1");
         } 
       }
-      Vector<FattyAcidVO> chainCombination = StaticUtils.decodeFAsFromHumanReadableName(
-          doubleBondPosition, Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), false, lipidomicsConstants_);
-      
-      DoubleBondPositionVO doubleBondPositionVO = new DoubleBondPositionVO(
-          chainCombination, expectedRetentionTime, accuracy, molecularSpecies, isAssigned);
-      msHash.get(identifier).addOmegaInformation(doubleBondPositionVO);
+      try {
+        Vector<FattyAcidVO> chainCombination = StaticUtils.decodeFAsFromHumanReadableName(
+            doubleBondPosition, Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), false, lipidomicsConstants_);
+        
+        DoubleBondPositionVO doubleBondPositionVO = new DoubleBondPositionVO(
+            chainCombination, expectedRetentionTime, accuracy, molecularSpecies, isAssigned);
+        msHash.get(identifier).addOmegaInformation(doubleBondPositionVO);
+      } 
+      catch (Exception ex)
+      {
+      	ex.printStackTrace();
+      }
+//      catch (LipidCombinameEncodingException ex) {
+//        System.out.println(ex.getMessage());
+//      }
     }
   }
   
@@ -1170,7 +1180,8 @@ public class LDAResultReader
         if (headerTitles.indexOf(QuantificationResultExporter.HEADER_MODIFICATION) == -1 ||
             headerTitles.indexOf(QuantificationResultExporter.HEADER_FORMULA) == -1 || 
             headerTitles.indexOf(QuantificationResultExporter.HEADER_MOD_FORMULA) == -1){
-          Object[] components = ComparativeNameExtractor.splitOldNameStringToComponents(name);
+          @SuppressWarnings("deprecation")
+					Object[] components = ComparativeNameExtractor.splitOldNameStringToComponents(name);
           name = (String)components[0];
           dbs = (Integer)components[1];
           formula = (String)components[2];

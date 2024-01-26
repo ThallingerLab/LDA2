@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -63,7 +63,6 @@ import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.lda.swing.RangeColor;
 import at.tugraz.genome.lda.vos.IntegerStringVO;
-import at.tugraz.genome.lda.vos.IsotopicLabelVO;
 import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
@@ -79,6 +78,7 @@ import at.tugraz.genome.voutils.GeneralComparator;
 /**
  * 
  * @author Juergen Hartler
+ * @author Leonida M. Lamp
  *
  */
 public class StaticUtils
@@ -2505,75 +2505,6 @@ public class StaticUtils
         return false;
     }
     return true;
-  }
-  
-  /**
-   * this removes the label from the lipid chain combination encoded in the LDA style
-   * @param encoded the chain encoded in the LDA style
-   * @param labels the labels attached to this species
-   * @return the chain combination encoded in the LDA style of the unlabeled species
-   * @throws LipidCombinameEncodingException
-   */
-  public static String removeLabelsFromChains(String encoded, Vector<IsotopicLabelVO> labels) throws LipidCombinameEncodingException {
-    Vector<FattyAcidVO> chains = decodeLipidNamesFromChainCombi(encoded);
-    for (IsotopicLabelVO label : labels) {
-      for (FattyAcidVO acidVO : chains) {
-        if (acidVO.getPrefix().startsWith(label.getLabelId())) {
-          acidVO.setPrefix(acidVO.getPrefix().substring(label.getLabelId().length()));
-          break;
-        }
-      }
-    }
-    for (FattyAcidVO acidVO : chains) {
-      if (acidVO.getPrefix().length()>0)
-        throw new LipidCombinameEncodingException("There is still a label left: "+encodeLipidCombi(chains));
-    }
-    return encodeLipidCombi(chains);
-  }
-  
-
-  /**
-   * returns only chains that carry a labeled chain
-   * @param encoded the encoded name
-   * @param labels the possible isotopic labels
-   * @return only the encoded name
-   * @throws LipidCombinameEncodingException thrown whenever there is something wrong with the hydroxylation encodings
-   */
-  public static String getLabeledChainsOnly(String encoded, Vector<IsotopicLabelVO> labels) throws LipidCombinameEncodingException {
-    Vector<FattyAcidVO> chains = decodeLipidNamesFromChainCombi(encoded);
-    Vector<FattyAcidVO> labeledChains = new Vector<FattyAcidVO>();
-    for (FattyAcidVO acidVO : chains) {
-      for (IsotopicLabelVO label : labels) {
-        if (acidVO.getPrefix().startsWith(label.getLabelId())) {
-          labeledChains.add(acidVO);
-        }
-      }
-    }
-    labeledChains = sortChainVOs(labeledChains);
-    return encodeLipidCombi(labeledChains);
-  }
-  
-  /**
-   * encodes the omega position in a human readable format - the omega position is added to the molecular species name
-   * @param encoded the encoded molecular species name
-   * @param labels information about isotopic labels
-   * @param faEncoding the hydroxylation encoding for FA chains
-   * @param lcbEncoding the hydroxylation encoding for LCB chains
-   * @return the human readable molecular species name that contains the omega encoding
-   * @throws LipidCombinameEncodingException thrown whenever there is something wrong with the hydroxylation encodings
-   */
-  public static String encodeOmegaPositions(String encoded, Vector<IsotopicLabelVO> labels, HydroxyEncoding faEncoding,
-      HydroxyEncoding lcbEncoding) throws LipidCombinameEncodingException {
-    Vector<FattyAcidVO> chains = decodeLipidNamesFromChainCombi(encoded);
-    for (FattyAcidVO acidVO : chains) {
-      for (IsotopicLabelVO label : labels) {
-        if (acidVO.getPrefix().startsWith(label.getLabelId())) {
-          acidVO.setOmegaPosition(label.getOmegaPosition());
-          acidVO.setPrefix(acidVO.getPrefix().substring(label.getLabelId().length()));
-        }
-      }
-    }
-    return getHumanReadableCombiName(chains,faEncoding,lcbEncoding);
   }
   
 

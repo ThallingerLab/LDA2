@@ -43,8 +43,6 @@
     <entries>
       <dirEntry mountPoint="22" file="./installFiles" subDirectory="installFiles" excludeSuffixes=".svn">
         <exclude>
-          <entry location="cache/dummy.frag.txt" />
-          <entry location="fragRules/interim/dummy.frag.txt" />
           <entry location="launcher_archive" />
           <entry location="LipidDataAnalyzer.properties" />
         </exclude>
@@ -1732,7 +1730,7 @@ return true;</property>
       <variables>
         <variable name="javaProp3D" value="-Djava.ext.dirs=./" />
       </variables>
-      <jreBundle jreBundleSource="preCreated" includedJre="windows-amd64-1.8.0_202" />
+      <jreBundle jreBundleSource="preCreated" includedJre="C:/Users/leoni/AppData/Local/install4j/v10/jres/windows-amd64-17.0.7.tar.gz" manualJreEntry="true" />
     </windows>
     <linuxRPM name="Linux RPM 64bit" id="560" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}_64bit" installDir="/opt/LDA">
       <excludedLaunchers>
@@ -1803,7 +1801,7 @@ return true;</property>
       <variables>
         <variable name="javaProp3D" value="-Djava.ext.dirs=./:/System/Library/Frameworks/JavaVM.framework/Home/lib/ext" />
       </variables>
-      <jreBundle usePack200="false" />
+      <jreBundle usePack200="false" jreBundleSource="preCreated" includedJre="C:/Users/leoni/AppData/Local/install4j/v10/jres/macosx-amd64-1.8.0_202_unpacked.tar.gz" manualJreEntry="true" />
     </macosFolder>
   </mediaSets>
   <buildIds>

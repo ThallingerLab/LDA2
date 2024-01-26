@@ -46,7 +46,7 @@ import de.isas.mztab2.model.PublicationItem;
 import de.isas.mztab2.model.PublicationItem.TypeEnum;
 import de.isas.mztab2.model.Sample;
 import de.isas.mztab2.model.SampleProcessing;
-import at.tugraz.genome.lda.utils.Pair;
+import javafx.util.Pair;
 import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.SettingsException;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
@@ -521,6 +521,7 @@ public class LipidomicsConstants
   private final static String MINIMUM_THRESHOLD_FOR_HIGH_CONFIDENCE_RT_MATCH_DEFAULT = "4";
   private final static String MAXIMUM_THRESHOLD_FOR_INTERMEDIATE_CONFIDENCE_RT_MATCH = "maximumThresholdForIntermediateConfidenceRTMatch";
   private final static String MAXIMUM_THRESHOLD_FOR_INTERMEDIATE_CONFIDENCE_RT_MATCH_DEFAULT = "4";
+
   
   private final static String MZTAB_INSTRUMENT = "mzTabInstrumentName";
   private final static String MZTAB_IONSOURCE = "mzTabInstrumentIonsource";

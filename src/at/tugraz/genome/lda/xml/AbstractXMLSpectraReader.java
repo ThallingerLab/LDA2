@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */
+ */ 
 
 package at.tugraz.genome.lda.xml;
 
@@ -38,7 +38,6 @@ import javax.xml.stream.XMLStreamReader;
 import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.maspectras.quantification.CgDefines;
 import at.tugraz.genome.maspectras.quantification.CgException;
-import at.tugraz.genome.maspectras.quantification.CgScan;
 
 /**
  * StAX based mzXML Reader for the Package.

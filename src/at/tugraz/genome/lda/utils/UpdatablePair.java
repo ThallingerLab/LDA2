@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp 
+ * Copyright (c) 2023 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -20,15 +20,16 @@
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
  */ 
+
 package at.tugraz.genome.lda.utils;
  
 /**
- * Pair Class using generics
+ * Pair class that is updatable in contrast to the otherwise analogous Pair class offered by javafx.
  * 
  * @author Leonida M. Lamp
  *
  */
-public class Pair<K, V>
+public class UpdatablePair<K, V>
 {
   private K key_;
   private V value_;
@@ -38,7 +39,7 @@ public class Pair<K, V>
    * @param key
    * @param value
    */
-  public Pair(K key, V value)
+  public UpdatablePair(K key, V value)
   {
     this.key_ = key;
     this.value_ = value;
@@ -73,7 +74,7 @@ public class Pair<K, V>
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Pair<?, ?> pair = (Pair<?, ?>) o;
+    UpdatablePair<?, ?> pair = (UpdatablePair<?, ?>) o;
     if (!key_.equals(pair.key_)) {
       return false;
     }
@@ -98,8 +99,8 @@ public class Pair<K, V>
   /**
    * Factory method for creating an immutable instance of a typed Pair
    */
-  public static <K, V> Pair <K, V> of(K a, V b)
+  public static <K, V> UpdatablePair <K, V> of(K a, V b)
   {
-    return new Pair<>(a, b);
+    return new UpdatablePair<>(a, b);
   }
 }

@@ -1,3 +1,26 @@
+/* 
+ * This file is part of Lipid Data Analyzer
+ * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
+ * Copyright (c) 2023 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
+ *  
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *  
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details. 
+ *  
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Please contact lda@genome.tugraz.at if you need additional information or 
+ * have any questions.
+ */
+
 package at.tugraz.genome.lda.target.export;
 
 import java.io.BufferedOutputStream;
@@ -44,17 +67,11 @@ import at.tugraz.genome.lda.vos.ResultFileVO;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
 import javafx.util.Pair;
 
+
 /**
- * We do the following: 
- * possibly run the analysis module on our read in files for clustering 
- * then for each species containing a defined label (here we just use the prefix I guess):
- * we write the molecular species according to the defined labels and calculate the RT according to the formula
- * then it's written out; we likely do not need a quant file for ordering because we can just remove the prefix via regex I believe
- *
- * !!!!!!!!!!!! we need a template masslist !!!!!!
+ * !!!!!!!!!!!! needs a template masslist for now !!!!!!
  * 
- * with this things changed.. we do not need comparative analysis: we just take our template masslist.. 
- * ...just locate it somewhere in the filesystem and give it a default path for now.
+ * ...locate the template masslist somewhere in the filesystem and give it a default path for now.
  * 
  * then we go through the class and correct analyte sequence and just write the masslist out. 
  * group hits together if they are below a certain threshold apart
@@ -67,9 +84,8 @@ import javafx.util.Pair;
  * when we iterate over this for the export we can do a median over identical ones.
  * as a final step we just export the QuantVOs.
  * 
- * 
- * 
- * 
+ * @author Leonida M. Lamp
+ *
  */
 public class TargetListExporter
 {	
@@ -831,21 +847,21 @@ public class TargetListExporter
 	 * TODO: delete later
 	 * @param doubleBondPositionVOs
 	 */
-	private void calculateDistanceMatrix(Vector<DoubleBondPositionVO> doubleBondPositionVOs)
-	{
-		Vector<Vector<Float>> distanceMatrix = new Vector<Vector<Float>>();
-		for (DoubleBondPositionVO vo1 : doubleBondPositionVOs)
-		{
-			Float retentionTime1 = (float)vo1.getExpectedRetentionTime();
-			Vector<Float> distances = new Vector<Float>();
-			for (DoubleBondPositionVO vo2 : doubleBondPositionVOs)
-			{
-				distances.add(Math.abs(retentionTime1-(float)vo2.getExpectedRetentionTime()));
-			}
-			distanceMatrix.add(distances);
-			System.out.println(distances);
-		}
-	}
+//	private void calculateDistanceMatrix(Vector<DoubleBondPositionVO> doubleBondPositionVOs)
+//	{
+//		Vector<Vector<Float>> distanceMatrix = new Vector<Vector<Float>>();
+//		for (DoubleBondPositionVO vo1 : doubleBondPositionVOs)
+//		{
+//			Float retentionTime1 = (float)vo1.getExpectedRetentionTime();
+//			Vector<Float> distances = new Vector<Float>();
+//			for (DoubleBondPositionVO vo2 : doubleBondPositionVOs)
+//			{
+//				distances.add(Math.abs(retentionTime1-(float)vo2.getExpectedRetentionTime()));
+//			}
+//			distanceMatrix.add(distances);
+//			System.out.println(distances);
+//		}
+//	}
 	
 	/**
 	 * what we do is the following: 
@@ -1135,7 +1151,8 @@ public class TargetListExporter
    * @throws ExportException
    */
   //TODO: just for development, remove later!
-  public void exportBeforeAfter(String targetPath, String outPath) throws ExportException
+  @SuppressWarnings("unchecked")
+	public void exportBeforeAfter(String targetPath, String outPath) throws ExportException
   {
   	try (	BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outPath));
 				XSSFWorkbook workbook = new XSSFWorkbook();)
