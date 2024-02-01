@@ -2809,6 +2809,8 @@ public class StaticUtils
   			continue;
   		}
   		
+  		if (highAccuracy != null && !highAccuracy.isEmpty()) continue;
+  		
   		ArrayList<DoubleBondPositionVO> intermediateConfidence = new ArrayList<DoubleBondPositionVO>();
   		if (speciesOfHit.get(DoubleBondPositionVO.ACCURACY_MEDIUM) != null) intermediateConfidence.addAll(speciesOfHit.get(DoubleBondPositionVO.ACCURACY_MEDIUM));
   		if (speciesOfHit.get(DoubleBondPositionVO.ACCURACY_LOW) != null) intermediateConfidence.addAll(speciesOfHit.get(DoubleBondPositionVO.ACCURACY_LOW));
