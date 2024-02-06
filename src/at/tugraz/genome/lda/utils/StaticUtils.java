@@ -2817,7 +2817,6 @@ public class StaticUtils
   		
   		if (intermediateConfidence.size() == 1)
   		{
-  			System.out.println(intermediateConfidence.get(0).getMolecularSpecies()+"..."+Math.abs(param.getPreciseRT()-intermediateConfidence.get(0).getExpectedRetentionTime())*60);
   			assignedHits.add(intermediateConfidence.get(0));
   		}
   	}

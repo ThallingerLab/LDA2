@@ -240,7 +240,16 @@ public class FattyAcidVO implements Comparable<FattyAcidVO>
   }
   
   
+  
+  
   @Override
+	public int hashCode()
+	{
+		return Objects.hash(cAtoms_, chainType_, doubleBonds_, formula_, mass_,
+				ohNumber_, omegaPosition_, oxState_, prefix_);
+	}
+
+	@Override
   public boolean equals(Object obj)
   {
     if (this == obj)

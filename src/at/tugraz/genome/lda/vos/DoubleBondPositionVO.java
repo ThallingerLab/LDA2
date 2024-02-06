@@ -190,37 +190,23 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
   {
     if ((molecularSpecies_ != null) && molecularSpecies_.contains(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS)) 
     {
-      String[] individualChains = molecularSpecies_.split(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS);
-      if (individualChains.length > 1) 
+      if (chainCombination_.size() > 1) 
       {
-        if (areDoubleBondPositionsAssignedForAllChains()) 
+      	Set<FattyAcidVO> assignedSet = new HashSet<FattyAcidVO>(chainCombination_);
+      	if (assignedSet.size() == 1) 
+      	{
+      		return true; //if all chains including the C=C assignment are equal, the chain positions remain fixed
+      	}
+      	
+      	String[] individualChains = molecularSpecies_.split(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS);
+        Set<String> unassignedSet = new HashSet<String>(Arrays.asList(individualChains));
+        if (individualChains.length == unassignedSet.size()) 
         {
-          return true;
-        }
-        Set<String> set = new HashSet<String>(Arrays.asList(individualChains));
-        Object[] uniqueChains = set.toArray();
-        if (individualChains.length == uniqueChains.length) 
-        {
-          return true;
+          return true; //if all chains without C=C assignment are different, the chain positions remain fixed
         }
       }
     }
     return false;
-  }
-  
-  /**
-   * @return whether all chains this molecular species is composed of have assigned double bond positions
-   */
-  public boolean areDoubleBondPositionsAssignedForAllChains() 
-  {
-    for (FattyAcidVO fattyAcid : chainCombination_) 
-    {
-      if (fattyAcid.getOmegaPosition() < 0) 
-      {
-        return false;
-      }
-    }
-    return true;
   }
   
   /**
