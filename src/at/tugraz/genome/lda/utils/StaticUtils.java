@@ -2773,7 +2773,7 @@ public class StaticUtils
   
   /**
    * Finds C=C to be assigned for each identification
-   * First divide into molecular species groups, then subdivide into high and not high accuracy hits.
+   * First divide into molecular species groups, then subdivide into high, medium and low accuracy hits.
    * If there is only one high accuracy hit: assign. If there are more, do not assign any C=C position.
    * If there are no high accuracy hits and only one other hit, that falls within the appropriate threshold: assign. Else, do not assign any C=C position.
    * 
@@ -2783,38 +2783,44 @@ public class StaticUtils
   public static Vector<DoubleBondPositionVO> findUnambiguousDoubleBondPositionsNew(LipidParameterSet param)
   {
   	Vector<DoubleBondPositionVO> assignedHits = new Vector<DoubleBondPositionVO>();
-  	LinkedHashMap<String,LinkedHashMap<Integer,ArrayList<DoubleBondPositionVO>>> container = new LinkedHashMap<String,LinkedHashMap<Integer,ArrayList<DoubleBondPositionVO>>>();
-  	
-  	//sort hits into container
-  	for (DoubleBondPositionVO vo : param.getOmegaInformation())
-  	{
-  		String molecularSpecies = vo.getMolecularSpecies();
-  		if (!container.containsKey(molecularSpecies)) container.put(molecularSpecies, new LinkedHashMap<Integer,ArrayList<DoubleBondPositionVO>>());
-  		Integer accuracy = vo.getAccuracy();
-  		if (!container.get(molecularSpecies).containsKey(accuracy)) container.get(molecularSpecies).put(accuracy, new ArrayList<DoubleBondPositionVO>());
-  		if (Math.abs(param.getPreciseRT()-vo.getExpectedRetentionTime())*60 < LipidomicsConstants.getMaximumThresholdForIntermediateConfidenceRTMatch())
-  		{
-  			container.get(molecularSpecies).get(accuracy).add(vo);
-  		}
-  	}
+  	LinkedHashMap<String,LinkedHashMap<Integer,ArrayList<DoubleBondPositionVO>>> container = sortDoubleBondPositionVOsOfID(param);
   	
   	for (String molecularSpecies : container.keySet())
   	{
   		LinkedHashMap<Integer,ArrayList<DoubleBondPositionVO>> speciesOfHit = container.get(molecularSpecies);
-  		
   		ArrayList<DoubleBondPositionVO> highAccuracy = speciesOfHit.get(DoubleBondPositionVO.ACCURACY_HIGH);
-  		if (highAccuracy != null && highAccuracy.size() == 1)
+  		if (highAccuracy.size() > 1)
+  		{
+  			DoubleBondPositionVO combined = combineUnambiguousDoubleBondPositions(highAccuracy, param.getPreciseRT());
+  			if (combined != null)
+  			{
+  				highAccuracy.removeAll(highAccuracy);
+  				highAccuracy.add(combined);
+  				param.addOmegaInformation(combined);
+  			}
+  		}
+  		if (highAccuracy.size() == 1)
   		{
   			assignedHits.add(highAccuracy.get(0));
   			continue;
   		}
   		
-  		if (highAccuracy != null && !highAccuracy.isEmpty()) continue;
+  		if (!highAccuracy.isEmpty()) continue;
   		
-  		ArrayList<DoubleBondPositionVO> intermediateConfidence = new ArrayList<DoubleBondPositionVO>();
-  		if (speciesOfHit.get(DoubleBondPositionVO.ACCURACY_MEDIUM) != null) intermediateConfidence.addAll(speciesOfHit.get(DoubleBondPositionVO.ACCURACY_MEDIUM));
-  		if (speciesOfHit.get(DoubleBondPositionVO.ACCURACY_LOW) != null) intermediateConfidence.addAll(speciesOfHit.get(DoubleBondPositionVO.ACCURACY_LOW));
-  		
+  		ArrayList<DoubleBondPositionVO> intermediateConfidence = speciesOfHit.get(DoubleBondPositionVO.ACCURACY_MEDIUM);
+  		ArrayList<DoubleBondPositionVO> notHighAccuracy = new ArrayList<DoubleBondPositionVO>(intermediateConfidence);
+  		notHighAccuracy.addAll(speciesOfHit.get(DoubleBondPositionVO.ACCURACY_LOW));
+  		if (notHighAccuracy.size() > 1 && !intermediateConfidence.isEmpty())
+  		{
+  			intermediateConfidence.removeAll(intermediateConfidence);
+  			DoubleBondPositionVO combined = combineUnambiguousDoubleBondPositions(notHighAccuracy, param.getPreciseRT());
+  			if (combined != null)
+  			{
+  				intermediateConfidence.add(combined);
+  				param.addOmegaInformation(combined);
+  			}
+  		}
+  			
   		if (intermediateConfidence.size() == 1)
   		{
   			assignedHits.add(intermediateConfidence.get(0));
@@ -2822,6 +2828,120 @@ public class StaticUtils
   	}
   	
   	return assignedHits;
+  }
+  
+  private static DoubleBondPositionVO combineUnambiguousDoubleBondPositions(ArrayList<DoubleBondPositionVO> vos, Double rt)
+  {
+  	ArrayList<Vector<Integer>> patterns = new ArrayList<Vector<Integer>>();
+  	for (DoubleBondPositionVO vo : vos)
+  	{
+  		patterns.add(vo.getPositionAssignmentPattern());
+  	}
+  	Vector<Integer> combinedPattern = computeConsensusPattern(patterns);
+  	boolean anyPositionDefined = false;
+  	for (Integer pos : combinedPattern)
+  	{
+  		if (pos > 0) anyPositionDefined = true;
+  	}
+  	DoubleBondPositionVO newVO = null;
+  	if (anyPositionDefined)
+  	{
+  		DoubleBondPositionVO closest = vos.get(0);
+  		Double closestDiff = Math.abs(closest.getExpectedRetentionTime() - rt);
+  		for (DoubleBondPositionVO vo : vos)
+  		{
+  			if (Math.abs(vo.getExpectedRetentionTime() - rt) < closestDiff) closest = vo;
+  		}
+  		newVO = new DoubleBondPositionVO(closest);
+  		Vector<FattyAcidVO> newChainCombination = new Vector<FattyAcidVO>();
+  		for (Integer i=0; i<newVO.getChainCombination().size(); i++)
+  		{
+  			FattyAcidVO fattyAcid = newVO.getChainCombination().get(i);
+  			fattyAcid.setOmegaPosition(combinedPattern.get(i));
+  			newChainCombination.add(fattyAcid);
+  		}
+  		newVO.setChainCombination(newChainCombination);
+  	}
+  	
+  	return newVO;
+  }
+  
+  
+  
+  private static Vector<Integer> computeConsensusPattern(ArrayList<Vector<Integer>> patterns)
+	{
+		Vector<Integer> combinedPattern = new Vector<Integer>();
+		LinkedHashMap<Integer,HashSet<Integer>> patternOverlap = new LinkedHashMap<Integer,HashSet<Integer>>();
+		//compute pattern overlap
+		for (Vector<Integer> pattern : patterns)
+		{
+			for (int j=0; j<pattern.size(); j++)
+			{
+				if (!patternOverlap.containsKey(j)) patternOverlap.put(j, new HashSet<Integer>());
+				patternOverlap.get(j).add(pattern.get(j));
+			}
+		}
+		
+		for (int chainPos : patternOverlap.keySet())
+		{
+			ArrayList<Integer> consensus = new ArrayList<Integer>(patternOverlap.get(chainPos));
+			int numberOfPos = 0;
+			for (int pos : consensus)
+			{
+				if (pos > 0) numberOfPos++;
+			}
+			if (numberOfPos == 1)
+			{
+				if (consensus.contains(-1)) combinedPattern.add(chainPos, -1);
+				else combinedPattern.add(chainPos, consensus.get(0));
+			}
+			else
+			{
+				combinedPattern.add(chainPos, -1);
+			}
+		}
+		
+		return combinedPattern;
+	}
+  
+  /**
+   * Sorts DoubleBondPositionVOs of an identification by their molecular species and their accuracy
+   * @param param
+   * @return
+   */
+  private static LinkedHashMap<String,LinkedHashMap<Integer,ArrayList<DoubleBondPositionVO>>> sortDoubleBondPositionVOsOfID(LipidParameterSet param)
+  {
+  	LinkedHashMap<String,LinkedHashMap<Integer,ArrayList<DoubleBondPositionVO>>> container = new LinkedHashMap<String,LinkedHashMap<Integer,ArrayList<DoubleBondPositionVO>>>();
+  	
+  	for (DoubleBondPositionVO vo : param.getOmegaInformation())
+  	{
+  		String molecularSpecies = vo.getMolecularSpecies();
+  		if (!container.containsKey(molecularSpecies)) 
+  		{
+  			container.put(molecularSpecies, new LinkedHashMap<Integer,ArrayList<DoubleBondPositionVO>>());
+  			container.get(molecularSpecies).put(DoubleBondPositionVO.ACCURACY_HIGH, new ArrayList<DoubleBondPositionVO>());
+  			container.get(molecularSpecies).put(DoubleBondPositionVO.ACCURACY_MEDIUM, new ArrayList<DoubleBondPositionVO>());
+  			container.get(molecularSpecies).put(DoubleBondPositionVO.ACCURACY_LOW, new ArrayList<DoubleBondPositionVO>());
+  		}
+  		Integer accuracy = vo.getAccuracy() == DoubleBondPositionVO.ACCURACY_LOW ? DoubleBondPositionVO.ACCURACY_MEDIUM : vo.getAccuracy();
+  		
+  		if (accuracy == DoubleBondPositionVO.ACCURACY_HIGH)
+  		{
+  			container.get(molecularSpecies).get(accuracy).add(vo);
+  		}
+  		else
+  		{
+  			if (Math.abs(param.getPreciseRT()-vo.getExpectedRetentionTime())*60 < LipidomicsConstants.getMaximumThresholdForIntermediateConfidenceRTMatch())
+    		{
+    			container.get(molecularSpecies).get(accuracy).add(vo);
+    		}
+  			else
+  			{
+  				container.get(molecularSpecies).get(DoubleBondPositionVO.ACCURACY_LOW).add(vo);
+  			}
+  		}
+  	}
+  	return container;
   }
   
   public static Set<String> getMolecularSpeciesSet(Vector<DoubleBondPositionVO> omegaInfo) {
