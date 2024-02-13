@@ -512,6 +512,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private boolean combineOxWithNonOx_;
   
   private int statisticsViewMode_ = 0;
+  //TODO: set to false for users
+  private boolean exportChromatogramsFromDRView_ = true;
 
   
   public LipidDataAnalyzer(){
@@ -911,6 +913,13 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     exportSpectra_ = new ExportPanel(null,Color.BLACK,this,false,false,true);
     spectrumZoomPanel.add(exportSpectra_,new GridBagConstraints(0, 4, 2, 1, 0.0, 0.0
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(3, 0, 0, 0), 0, 0));
+    
+    if (exportChromatogramsFromDRView_)
+    {
+    	l2dMenu.add(exportSpectra_,new GridBagConstraints(0, 11, 2, 1, 0.0, 0.0
+          ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(15, 0, 0, 0), 0, 0));
+    }
+    
     exportFileChooser_ = new JFileChooser();
     exportFileChooser_.setPreferredSize(new Dimension(600,500));
     
@@ -3273,9 +3282,14 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 
             // Create an instance of the SVG Generator.
             SVGGraphics2D svgGenerator = new SVGGraphics2D(document);
-            spectrumPainter_.draw2DDiagram(svgGenerator);
-            //this is for exporting chromatograms
-            ////l2DPainter_.draw2DDiagram(svgGenerator);
+            if (!exportChromatogramsFromDRView_)
+            {
+            	spectrumPainter_.draw2DDiagram(svgGenerator);
+            }
+            else
+            {
+            	l2DPainter_.draw2DDiagram(svgGenerator);
+            }
             boolean useCSS = true; // we want to use CSS style attributes
             BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(fileToStore));
             Writer out = new OutputStreamWriter(stream, "UTF-8");
@@ -4441,7 +4455,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     annotationLabel_.setVisible(false);
     annotationThreshold_.setVisible(false);
     annotationUnit_.setVisible(false);
-    exportSpectra_.setVisible(false);
+    if (!exportChromatogramsFromDRView_)
+    	exportSpectra_.setVisible(false);
   }
   
   private void showInputElements(){

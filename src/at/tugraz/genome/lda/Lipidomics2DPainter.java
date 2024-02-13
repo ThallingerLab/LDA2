@@ -23,6 +23,7 @@
 
 package at.tugraz.genome.lda;
 
+import java.awt.BasicStroke;
 import java.awt.Button;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -143,6 +144,8 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
   private boolean doSparseCorrection_ = false;
   /** indicating whether shotgun data was used*/
   private boolean shotgun_ = false;
+  /** if lines for the displayed chromatogram should be thicker (for pictures) TODO: set to false for users */
+  private static boolean thickChrom_ = true;
 
   public Lipidomics2DPainter(LipidomicsAnalyzer analyzer,String[] dataStrings, Hashtable<Integer,Float> retentionTimes, float mzStart, float mzStop, int resolutionFactor,float stepSize, ActionListener listener,int displayTime,
       float start, float stop, boolean raw, Vector<CgProbe> storedProbes, Vector<CgProbe> selectedProbes,int isotopeNumber, int charge, int msLevel, boolean shotgun){
@@ -441,7 +444,14 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
       float m_minDispTime2d, float m_maxDispTime2d, float maxIntensity, float m_2dGain, int displayTime, float timeCorrectionFactor, boolean raw,
       boolean drawLegend, boolean relativeValue, boolean barChart, Float ms2Position, Vector<RangeColor> rangeColors, boolean stopAtH0)
   {
-
+  	if (thickChrom_)
+  	{
+  		x0 = x0+250;
+  		y0 = y0-75;
+  		w0 = (int)(w0*0.6);
+  		h0 = (int)(h0*0.8);
+  	}
+  	
     int x = 0, y = 0;
     int i, j;
 //    boolean firstPoint;
@@ -459,20 +469,36 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
 
     float t = 0;
     float dt;
+    int fontSize = 10;
+    if (thickChrom_)
+    {
+    	fontSize = 38;
+    }
 
-    gx.setFont(new Font("SansSerif", Font.PLAIN, 10));
+    gx.setFont(new Font("SansSerif", Font.PLAIN, fontSize));
     FontMetrics fm = gx.getFontMetrics();
+    
     int sw;
-
-    gx.drawLine(x0, y0, x0 + w0 + 3, y0);
-    gx.drawLine(x0 + w0 + 3, y0 - 2, x0 + w0 + 3, y0 + 2);
-    gx.drawLine(x0 + w0 + 3, y0 - 2, x0 + w0 + 9, y0);
-    gx.drawLine(x0 + w0 + 3, y0 + 2, x0 + w0 + 9, y0);
-
-    gx.drawLine(x0, y0, x0, y0 - h0 + 5);
-    gx.drawLine(x0 - 2, y0 - h0 + 5, x0 + 2, y0 - h0 + 5);
-    gx.drawLine(x0 - 2, y0 - h0 + 5, x0, y0 - h0 - 1);
-    gx.drawLine(x0 + 2, y0 - h0 + 5, x0, y0 - h0 - 1);
+    
+    int arrowHeight = 6;
+    int arrowWidth = 2;
+    if (thickChrom_)
+    {
+    	arrowHeight = 18;
+      arrowWidth = 8;
+    }
+    
+    int lineEndX = x0 + w0 + 3;
+    gx.drawLine(x0, y0, lineEndX, y0);
+    gx.drawLine(lineEndX, y0 - arrowWidth, lineEndX, y0 + arrowWidth);
+    gx.drawLine(lineEndX, y0 - arrowWidth, lineEndX + arrowHeight, y0);
+    gx.drawLine(lineEndX, y0 + arrowWidth, lineEndX + arrowHeight, y0);
+    
+    int lineEndY = y0 - h0 + 5;
+    gx.drawLine(x0, y0, x0, lineEndY);
+    gx.drawLine(x0 - arrowWidth, lineEndY, x0 + arrowWidth, lineEndY);
+    gx.drawLine(x0 - arrowWidth, lineEndY, x0, lineEndY - arrowHeight);
+    gx.drawLine(x0 + arrowWidth, lineEndY, x0, lineEndY - arrowHeight);
 
     dt = 100;
     t = (m_maxDispTime2d - m_minDispTime2d) / 10;
@@ -524,20 +550,41 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
         x = x0
             + (int) ((w0 * (t* timeCorrectionFactor - m_minDispTime2d))  / (m_maxDispTime2d - m_minDispTime2d));
         y = y0;
-        gx.drawLine(x, y, x, y + 3);
+        
+        int tickLen = 3;
+        if (thickChrom_)
+        {
+        	tickLen = 12;
+        }
+        
+        gx.drawLine(x, y, x, y + tickLen);
         s = Integer.toString((int) t);
         sw = fm.stringWidth(s);
 
         if ((x + sw / 2 + 10) < (x0 + w0 - j)){
-          if (drawLegend) gx.drawString(s, x - sw / 2, y + 12);
+        	int posX = x - sw / 2;
+        	int posY = y + 12;
+        	if (thickChrom_)
+        	{
+        		posY = y + 45;
+        	}
+        	
+          if (drawLegend) gx.drawString(s, posX, posY);
         }  
       }
       t += dt;
     }
-    if (drawLegend) gx.drawString(timeUnit, x0 + w0 - j + 9, y + 12);
+    int xLegendPosX = x0 + w0 - j + 9;
+    int xLegendPosY = y + 12;
+    if (thickChrom_)
+  	{
+    	xLegendPosY = y + 45;
+  	}
+    
+    if (drawLegend) gx.drawString(timeUnit, xLegendPosX, xLegendPosY);
 
     // **** Draw the y coordinates ****
-
+    
     double in = 0;
     double din = 0;
 
@@ -616,16 +663,31 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
       if (in > 2147483000)
         break;
 
-      gx.drawLine(x, y, x - 3, y);
+      int tickLen = 3;
+      if (thickChrom_)
+      {
+      	tickLen = 12;
+      }
+      gx.drawLine(x, y, x - tickLen, y);
       s = Integer.toString((int) in);
       if (in<1&&in>0||(in>1&&in<2)||(in>2&&in<3)||(in>7&&in<8)) s = Double.toString(in);
       if (in>999) s = Calculator.scientificFormat(in);
       sw = fm.stringWidth(s);
       if (drawLegend){
-        if (in == 0)
-          gx.drawString(s, x - sw - 4, y);
-        else
-          gx.drawString(s, x - sw - 4, y + 4);
+      	int posX = x - sw - 4;
+      	int posY = y;
+      	if (in == 0)
+      	{
+        	posY = y + 4;
+      	}
+      	
+      	if (thickChrom_)
+      	{
+      		posX = posX - 12;
+      		posY = y + 12;
+      	}
+      	
+      	gx.drawString(s, posX, posY);
       }
       in += din;
     }
@@ -637,7 +699,14 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
       ((Graphics2D)gx).rotate(-standRotAngle);
     }else{
       j = fm.stringWidth("Arb.Units / AU");
-      if (drawLegend) gx.drawString("Arb.Units / AU", x - j - 4, y0 - h0 + 6);      
+      int posX = x - j - 4;
+      int posY = y0 - h0 + 6;
+      if (thickChrom_)
+      {
+      	posX = posX - 12;
+      	posY = posY + 12;
+      }
+      if (drawLegend) gx.drawString("Arb.Units / AU", posX, posY);      
     }
     
     if (ms2Position !=null){
@@ -699,7 +768,12 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
   
   protected static void drawDiagramItself(Graphics gx, CgChromatogram cr, int x0, int y0, int w0, int h0, float m_minDispTime2d, 
       float m_maxDispTime2d, float maxIntensity, float m_2dGain, boolean raw, boolean relativeValue, boolean barChart, Vector<RangeColor> rangeColors,
-      boolean stopAtH0){
+      boolean stopAtH0)
+  {
+  	if (thickChrom_)
+  	{
+  		((Graphics2D)gx).setStroke(new BasicStroke(3));
+  	}
     int x = 0, y = 0;
     int xx = 0, yy = 0;
     gx.setColor(Color.BLACK);
@@ -1215,7 +1289,7 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
 //              / cp.Area);
           s = s.replace("e0", "e").replace(",", ".");
           gx.setColor(Color.BLUE);
-          if (displayLegend) gx.drawString(s, x, y);
+          if (displayLegend && !thickChrom_) gx.drawString(s, x, y);
         }
       }
     }
