@@ -513,7 +513,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   
   private int statisticsViewMode_ = 0;
   //TODO: set to false for users
-  private boolean exportChromatogramsFromDRView_ = true;
+  private boolean exportChromatogramsFromDRView_ = false;
 
   
   public LipidDataAnalyzer(){

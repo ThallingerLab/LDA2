@@ -145,7 +145,7 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
   /** indicating whether shotgun data was used*/
   private boolean shotgun_ = false;
   /** if lines for the displayed chromatogram should be thicker (for pictures) TODO: set to false for users */
-  private static boolean thickChrom_ = true;
+  private static boolean thickChrom_ = false;
 
   public Lipidomics2DPainter(LipidomicsAnalyzer analyzer,String[] dataStrings, Hashtable<Integer,Float> retentionTimes, float mzStart, float mzStop, int resolutionFactor,float stepSize, ActionListener listener,int displayTime,
       float start, float stop, boolean raw, Vector<CgProbe> storedProbes, Vector<CgProbe> selectedProbes,int isotopeNumber, int charge, int msLevel, boolean shotgun){
@@ -698,7 +698,7 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
       gx.drawString("Relative abundance [%]",(h0-j)/2-y0, x/2+fm.getHeight()/2);
       ((Graphics2D)gx).rotate(-standRotAngle);
     }else{
-      j = fm.stringWidth("Arb.Units / AU");
+      j = fm.stringWidth("Intensity / cts");
       int posX = x - j - 4;
       int posY = y0 - h0 + 6;
       if (thickChrom_)
@@ -706,7 +706,7 @@ public class Lipidomics2DPainter extends Panel implements ActionListener,MouseMo
       	posX = posX - 12;
       	posY = posY + 12;
       }
-      if (drawLegend) gx.drawString("Arb.Units / AU", posX, posY);      
+      if (drawLegend) gx.drawString("Intensity / AU", posX, posY);      
     }
     
     if (ms2Position !=null){

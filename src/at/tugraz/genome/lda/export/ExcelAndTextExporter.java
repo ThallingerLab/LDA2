@@ -613,13 +613,23 @@ public class ExcelAndTextExporter extends LDAExporter
     //extract the values according to the molecular species
     boolean rtGroupingUsed = isRtGrouped;
     LinkedHashMap<String,SummaryVO> molSpeciesDetails = new LinkedHashMap<String,SummaryVO>();
+    LinkedHashMap<String,Boolean> omegaSuggestionAvailable = new LinkedHashMap<String,Boolean>();
     //Quantification
     for (String molName : molNames){
       Hashtable<String,Hashtable<String,Vector<LipidParameterSet>>> relevantOriginals = null;
       if (includeResultFiles){
         relevantOriginals = new Hashtable<String,Hashtable<String,Vector<LipidParameterSet>>>();
+        boolean omegaSuggestion = false;
         for (String expId : expFullPaths.keySet()){
           ResultAreaVO areaVO = compLookup.getResultAreaVO(sheet.getSheetName(),molName,expId);
+          for (String mod : modifications)
+          {
+          	if (areaVO == null) continue;
+          	for (LipidParameterSet set : areaVO.getLipidParameterSets(mod))
+          	{
+          		if (!set.getOmegaInformation().isEmpty()) omegaSuggestion = true;
+          	}
+          }
           if (!isGrouped && !expNames.containsKey(expId))
             continue;
           if (areaVO!=null){
@@ -629,6 +639,7 @@ public class ExcelAndTextExporter extends LDAExporter
             relevantOriginals.put(expId, sets);
           }
         }
+        omegaSuggestionAvailable.put(molName, omegaSuggestion);
       }
       SpeciesExportVO exportVO = LDAExporter.extractExportableSummaryInformation(speciesType, exportDoubleBondPositionsForClass, false, 0, 0, false, 0, 0, rtGroupingUsed, adductsSorted, new Vector<String>(expFullPaths.keySet()),
         expsOfGroup,  molName, results.get(molName), relevantOriginals, maxIsotope, faEncoding, lcbEncoding);
@@ -641,17 +652,17 @@ public class ExcelAndTextExporter extends LDAExporter
         if (sumVO.getMolecularId()!=null)
           id += " | "+sumVO.getMolecularId();
         molSpeciesDetails.put(id, sumVO);
+        omegaSuggestionAvailable.put(id, omegaSuggestionAvailable.get(molName));
       }
     }
-    writeExcelSheetToFile(omegaCollector, sheet,workbook,out,molSpeciesDetails, isGrouped, expIdNames, expNames, expsOfGroup, preferredUnit, expVO,modifications);
+    writeExcelSheetToFile(omegaCollector, sheet,workbook,out,molSpeciesDetails, isGrouped, expIdNames, expNames, expsOfGroup, preferredUnit, expVO, modifications, omegaSuggestionAvailable);
   }
 
 
   //TODO: maybe just write out the summary part and not the stuff that's already done in the normal excel sheet.
-  //TODO: for saturday: fill the omega collector, add a method to write an overview sheet and boom!
   private static void writeExcelSheetToFile(OmegaCollector omegaCollector, Sheet sheet, XSSFWorkbook workbook, OutputStream out, LinkedHashMap<String,SummaryVO> molSpeciesDetails,
       boolean isGrouped, Vector<String> expIdNames, Hashtable<String,String> expNames, LinkedHashMap<String,Vector<String>> expsOfGroup,
-      String preferredUnit, ExportOptionsVO expVO, ArrayList<String> modifications) throws IOException{  
+      String preferredUnit, ExportOptionsVO expVO, ArrayList<String> modifications, LinkedHashMap<String,Boolean> omegaSuggestionAvailable) throws IOException{  
     CellStyle headerStyle = getHeaderStyle(workbook);
     CellStyle numberStyle = TargetListExporter.getNumberStyle(workbook);
     CellStyle normalStyle = getNormalStyle(workbook);
@@ -705,7 +716,7 @@ public class ExcelAndTextExporter extends LDAExporter
     	//extract omega collector info
     	fillOmegaCollector(omegaCollector, sheet.getSheetName(), molSpeciesDetails,
     				columnNames, expNames, expsOfGroup,
-    				expVO, modifications, rowName);
+    				expVO, modifications, rowName, omegaSuggestionAvailable.get(rowName));
     	
     	String omegaId = extractOmegaPos(rowName);
       columnCount = 0;
@@ -893,7 +904,7 @@ public class ExcelAndTextExporter extends LDAExporter
   
   private static void fillOmegaCollector(OmegaCollector omegaCollector, String lClass, LinkedHashMap<String,SummaryVO> molSpeciesDetails,
 			Vector<String> columnNames, Hashtable<String,String> expNames, LinkedHashMap<String,Vector<String>> expsOfGroup,
-			ExportOptionsVO expVO, ArrayList<String> modifications, String rowName)
+			ExportOptionsVO expVO, ArrayList<String> modifications, String rowName, Boolean omegaSuggestionAvailable)
   {
   	if (lClass.equals("Cer") || lClass.equals("SM") || !rowName.contains("_")) return; //TODO: we ignore these for now
   	
@@ -931,8 +942,12 @@ public class ExcelAndTextExporter extends LDAExporter
       		for (FattyAcidVO chain : chains)
       		{
       			//mapping all chain types to acyl chains
+//      			FattyAcidVO sameChain = new FattyAcidVO(
+//      					LipidomicsConstants.CHAIN_TYPE_FA_ACYL, "", chain.getcAtoms(), chain.getDoubleBonds(), chain.getOhNumber(), chain.getMass(), chain.getFormula(), chain.getOxState());
+      			
       			FattyAcidVO sameChain = new FattyAcidVO(
-      					LipidomicsConstants.CHAIN_TYPE_FA_ACYL, "", chain.getcAtoms(), chain.getDoubleBonds(), chain.getOhNumber(), chain.getMass(), chain.getFormula(), chain.getOxState());
+      					chain.getChainType(), "", chain.getcAtoms(), chain.getDoubleBonds(), chain.getOhNumber(), chain.getMass(), chain.getFormula(), chain.getOxState());
+      			
       			sameChain.setOmegaPosition(chain.getOmegaPosition());
       			
       			sameChainType.add(sameChain);
@@ -958,6 +973,11 @@ public class ExcelAndTextExporter extends LDAExporter
       				// go into further detail
       				if (description.equals(OmegaCollector.DESCRIPTION_UNASSIGNED))
       				{
+      					if (omegaSuggestionAvailable)
+      					{
+      						omegaCollector.addToTotalFAPerDescription(experimentName, OmegaCollector.DESCRIPTION_UNASSIGNED_SUGGESTED, area);
+      					}
+      					
       					//first odd or even chain, then partner
       					if (sameChain.getcAtoms()%2 == 1) //if uneven
       					{
@@ -1008,6 +1028,10 @@ public class ExcelAndTextExporter extends LDAExporter
       		//filling partner info. mol dependent on num of FA, as that's also part of the total calculation.
           omegaCollector.addToFAContentToPartnerContent(experimentName, lClass, sameChainType.get(0).getCarbonDbsId(),
           		sameChainType.size()>1 ? sameChainType.get(1).getCarbonDbsId() : "", area*numFA);
+          if (molName.contains("/"))
+          {
+          	omegaCollector.addToSn1ContentToSn2Content(experimentName, lClass, sameChainType.get(0).getCarbonDbsId(), sameChainType.get(1).getCarbonDbsId(), area*numFA);
+          }
       	}
       	
       	catch (Exception ex)
@@ -1037,8 +1061,8 @@ public class ExcelAndTextExporter extends LDAExporter
 	    CellStyle numberStyle = TargetListExporter.getNumberStyle(workbook);
   		
 //  		if (!experimentName.startsWith("F")) continue; //testing with just unsupplemented
-	  	Sheet sheetB = workbook.createSheet("HeatMap 1"+experimentName.charAt(0));
-	  	Sheet sheetC = workbook.createSheet("HeatMap 2"+experimentName.charAt(0));
+	  	Sheet sheetB = workbook.createSheet("HeatMap LC"+experimentName.charAt(0));
+	  	Sheet sheetC = workbook.createSheet("HeatMap FA"+experimentName.charAt(0));
 	  	
 	    Row headerRowB = sheetB.createRow(0);
 	    Row headerRowC = sheetC.createRow(0);
@@ -1317,30 +1341,35 @@ public class ExcelAndTextExporter extends LDAExporter
 			
 			row = sheetD.createRow(4);
 			cell = row.createCell(0,Cell.CELL_TYPE_STRING);
-			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN));
+			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_SUGGESTED));
 			cell.setCellStyle(headerStyle);
 			
 			row = sheetD.createRow(5);
 			cell = row.createCell(0,Cell.CELL_TYPE_STRING);
-			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN));
+			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN));
 			cell.setCellStyle(headerStyle);
 			
 			row = sheetD.createRow(6);
 			cell = row.createCell(0,Cell.CELL_TYPE_STRING);
-			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN_PARTNER_KNOWN));
+			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN));
 			cell.setCellStyle(headerStyle);
 			
 			row = sheetD.createRow(7);
 			cell = row.createCell(0,Cell.CELL_TYPE_STRING);
-			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN_PARTNER_KNOWN));
+			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN_PARTNER_KNOWN));
 			cell.setCellStyle(headerStyle);
 			
 			row = sheetD.createRow(8);
 			cell = row.createCell(0,Cell.CELL_TYPE_STRING);
-			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN_PARTNER_UNASSIGNED));
+			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN_PARTNER_KNOWN));
 			cell.setCellStyle(headerStyle);
 			
 			row = sheetD.createRow(9);
+			cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN_PARTNER_UNASSIGNED));
+			cell.setCellStyle(headerStyle);
+			
+			row = sheetD.createRow(10);
 			cell = row.createCell(0,Cell.CELL_TYPE_STRING);
 			cell.setCellValue(String.format("%s", OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN_PARTNER_UNASSIGNED));
 			cell.setCellStyle(headerStyle);
@@ -1362,31 +1391,36 @@ public class ExcelAndTextExporter extends LDAExporter
 		cell.setCellStyle(numberStyle);
 		
 		row = sheetD.getRow(4);
-		cell = row.createCell(columnNr,Cell.CELL_TYPE_NUMERIC);
-		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN) /totalFAContent);
+		cell = row.createCell(columnNr, Cell.CELL_TYPE_NUMERIC);
+		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_SUGGESTED) /totalFAContent);
 		cell.setCellStyle(numberStyle);
 		
 		row = sheetD.getRow(5);
 		cell = row.createCell(columnNr,Cell.CELL_TYPE_NUMERIC);
-		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN) /totalFAContent);
+		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN) /totalFAContent);
 		cell.setCellStyle(numberStyle);
 		
 		row = sheetD.getRow(6);
 		cell = row.createCell(columnNr,Cell.CELL_TYPE_NUMERIC);
-		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN_PARTNER_KNOWN) /totalFAContent);
+		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN) /totalFAContent);
 		cell.setCellStyle(numberStyle);
 		
 		row = sheetD.getRow(7);
 		cell = row.createCell(columnNr,Cell.CELL_TYPE_NUMERIC);
-		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN_PARTNER_KNOWN) /totalFAContent);
+		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN_PARTNER_KNOWN) /totalFAContent);
 		cell.setCellStyle(numberStyle);
 		
 		row = sheetD.getRow(8);
 		cell = row.createCell(columnNr,Cell.CELL_TYPE_NUMERIC);
-		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN_PARTNER_UNASSIGNED) /totalFAContent);
+		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN_PARTNER_KNOWN) /totalFAContent);
 		cell.setCellStyle(numberStyle);
 		
 		row = sheetD.getRow(9);
+		cell = row.createCell(columnNr,Cell.CELL_TYPE_NUMERIC);
+		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_EVEN_CHAIN_PARTNER_UNASSIGNED) /totalFAContent);
+		cell.setCellStyle(numberStyle);
+		
+		row = sheetD.getRow(10);
 		cell = row.createCell(columnNr,Cell.CELL_TYPE_NUMERIC);
 		cell.setCellValue(descriptionCount.get(OmegaCollector.DESCRIPTION_UNASSIGNED_ODD_CHAIN_PARTNER_UNASSIGNED) /totalFAContent);
 		cell.setCellStyle(numberStyle);
@@ -1463,7 +1497,8 @@ public class ExcelAndTextExporter extends LDAExporter
   private static void writeFAvsFAHeatmap(
   		OmegaCollector omegaCollector, String experimentName, Sheet sheetC, Row headerRowC, CellStyle headerStyle, CellStyle numberStyle, Double totalFAContent)
   {
-  	LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>> faContentToPartnerContent = omegaCollector.getFAContentToPartnerContent(experimentName);
+//  	LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>> faContentToPartnerContent = omegaCollector.getFAContentToPartnerContent(experimentName);
+  	LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>> faContentToPartnerContent = omegaCollector.getSn1ContentToSn2Content(experimentName);
 		//just want the total fa to fa, so summing up over classes
 		LinkedHashMap<String,LinkedHashMap<String,Double>> totalFAFA = new LinkedHashMap<String,LinkedHashMap<String,Double>>();
 		Set<String> allFASet1 = new HashSet<String>(); //to figure out rows and columns

@@ -36,6 +36,7 @@ public class OmegaCollector
 	public final static String DESCRIPTION_SATURATED = "saturated";
 	public final static String DESCRIPTION_ASSIGNED = "unsaturated assigned";
 	public final static String DESCRIPTION_UNASSIGNED = "unsaturated unassigned (u.a.)";
+	public final static String DESCRIPTION_UNASSIGNED_SUGGESTED = "u.a. suggested";
 	public final static String DESCRIPTION_UNASSIGNED_EVEN_CHAIN = "u.a. even chain";
 	public final static String DESCRIPTION_UNASSIGNED_ODD_CHAIN = "u.a. odd chain";
 	public final static String DESCRIPTION_UNASSIGNED_EVEN_CHAIN_PARTNER_KNOWN = "u.a. even chain; partner chain assigned / saturated";
@@ -72,6 +73,11 @@ public class OmegaCollector
 	 * this is for the fa vs fa heatmap
 	 */
 	LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>>> faContentToPartnerContent_;
+	/**
+	 * experiment, class, faName at sn1 position, faName at sn2 position, totalFA
+	 * this is for the sn1 vs sn2 heatmap
+	 */
+	LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>>> sn1ContentToSn2Content_;
 	
 	
 	
@@ -98,6 +104,7 @@ public class OmegaCollector
 		totalOmegaPerClass_ = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<Integer,Double>>>();
 		totalOmegaFAPerClass_ = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>>();
 		faContentToPartnerContent_ = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>>>();
+		sn1ContentToSn2Content_ = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>>>();
 		
 		totalFASTD_ = new LinkedHashMap<String,Double>();
 		numContributorsTotal_ = new LinkedHashMap<String,Integer>();
@@ -181,6 +188,7 @@ public class OmegaCollector
 		}
 	}
 	
+	
 	public void addToFAContentToPartnerContent(String exp, String lClass, String vo, String partnerVO, Double amount)
 	{
 		if (!faContentToPartnerContent_.containsKey(exp))
@@ -220,6 +228,32 @@ public class OmegaCollector
 		{
 			double before = faContentToPartnerContent_.get(exp).get(lClass).get(partnerVO).get(vo);
 			faContentToPartnerContent_.get(exp).get(lClass).get(partnerVO).put(vo, before+amount);
+		}
+	}
+	
+	public void addToSn1ContentToSn2Content(String exp, String lClass, String sn1, String sn2, Double amount)
+	{
+		if (!sn1ContentToSn2Content_.containsKey(exp))
+		{
+			sn1ContentToSn2Content_.put(exp, new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>>());
+		}
+		if (!sn1ContentToSn2Content_.get(exp).containsKey(lClass))
+		{
+			sn1ContentToSn2Content_.get(exp).put(lClass, new LinkedHashMap<String,LinkedHashMap<String,Double>>());
+		}
+		
+		if (!sn1ContentToSn2Content_.get(exp).get(lClass).containsKey(sn1))
+		{
+			sn1ContentToSn2Content_.get(exp).get(lClass).put(sn1, new LinkedHashMap<String,Double>());
+		}
+		if (!sn1ContentToSn2Content_.get(exp).get(lClass).get(sn1).containsKey(sn2))
+		{
+			sn1ContentToSn2Content_.get(exp).get(lClass).get(sn1).put(sn2, amount);
+		}
+		else
+		{
+			double before = sn1ContentToSn2Content_.get(exp).get(lClass).get(sn1).get(sn2);
+			sn1ContentToSn2Content_.get(exp).get(lClass).get(sn1).put(sn2, before+amount);
 		}
 	}
 	
@@ -290,6 +324,11 @@ public class OmegaCollector
 	public LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>> getFAContentToPartnerContent(String experiment)
 	{
 		return faContentToPartnerContent_.get(experiment);
+	}
+	
+	public LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>> getSn1ContentToSn2Content(String experiment)
+	{
+		return sn1ContentToSn2Content_.get(experiment);
 	}
 	
 	
@@ -364,7 +403,7 @@ public class OmegaCollector
 		}
 		catch (Exception ex)
 		{
-			System.out.println("exception...");
+			System.out.println("Likely only one replicate, so no standard deviation...");
 		}
 		return 0.0;
 	}

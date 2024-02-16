@@ -404,6 +404,7 @@ public class EditOmegaAssignmentJTable extends JFrame implements ActionListener
         {
           for (int i=0; i < table_.getRowCount(); i++) 
           {
+          	localDoubleBondPositionVOs_.get(i).setIsAssigned(false);
             model_.setValueAt(false, i, 4);
           }
           localDoubleBondPositionVOs_.get(selectedRow).setIsAssigned(true);
