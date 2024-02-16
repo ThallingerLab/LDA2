@@ -350,7 +350,7 @@ public class TestClass extends JApplet implements AddScan
   private final String COLUMN_HEADER_COMMENT= "Comment";
   private final String COLUMN_HEADER_MAX_FRAGS= "MS2_Max_fragments_expected";
   private final String COLUMN_HEADER_MAX_ALL_FRAGS = "MS2_Max_fragments_expected combined";
-  private final String COLUMN_HEADER_SCORE_UNCORRECTED = "ALEX score uncorr.";
+  private final String COLUMN_HEADER_SCORE_UNCORRECTED = "ALEX score corr.";
   private final String COLUMN_HEADER_AMBIGUOUS = "Ambiguous partner";
 
   
@@ -377,7 +377,7 @@ public class TestClass extends JApplet implements AddScan
     // this.testExportPanel();
     //this.translateTAGListToMzMineFormat();
     //this.shortenMSList();
-    //this.calculateTheoreticalMass();
+    this.calculateTheoreticalMass();
     //calculateByKnownMassesAndCAtoms();
     //this.calculateIntensityDistribution();
     //this.justMzValues();
@@ -999,7 +999,7 @@ public class TestClass extends JApplet implements AddScan
     try {
       parser.parse();
       //System.out.println(parser.calculateTheoreticalMass("C18 H31 O1", false));
-      System.out.println(parser.calculateTheoreticalMass("C2 F3 O2", false));
+      System.out.println(parser.calculateTheoreticalMass("C48 H87 O10 P1 N1", false));
       //System.out.println(parser.calculateTheoreticalMass("C44 H83 O8 P1 N1", false));
     }
     catch (SpectrummillParserException e) {
@@ -21131,7 +21131,8 @@ public void testTabFile() throws Exception {
 //   String alexIdentificationFile = baseDir+"13_LCMSdata_CtrlEx1_allALEXscores_targetDB_v220305.tab";
 //   String output = baseDir+"LCMSdata_CtrlEx1_targetsearch.tab";
 	 //for mouse brain
-	 String baseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
+	 //String baseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
+	 String baseDir = "E:\\Lipidomics\\data\\Christer\\LProphet-TestFiles\\LC_MS\\brain\\result\\";
 //   String alexIdentificationFile = baseDir+"21_LCMSdata_brain_allALEXscores_targetsearch_v220303.tab";
 //   String output = baseDir+"LCMSdata_brain_targetsearch.tab";
 
@@ -23241,8 +23242,9 @@ public void testTabFile() throws Exception {
      String decoyBaseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
      //String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_Na_12.5.tab";
      //String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_Na_12.5_generated.tab";
-     String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_harshest.tab";
-     String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_harshest_generated.tab";
+     																							 
+     String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_harshest_forBetterComparison.tab";
+     String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_harshest_generated_forBetterComparison.tab";
      
      //this is for LC-MS human plasma
 //     String decoyBaseDir = "C:\\data\\Christer\\20220610_decoyLCMS-plasma\\";
