@@ -53,7 +53,7 @@ public class Range
    * @param value value to be checked
    * @return true if the value is inside the range
    */
-  public boolean insideRange(float value){
+  public boolean insideRange(double value){
     if (start_<value && value<stop_) return true;
     else return false;
   }

@@ -52,7 +52,7 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
   /** Vector of FattyAcidVOs the molecular species is composed of */
   Vector<FattyAcidVO> chainCombination_;
   /** the expected retention time */
-  float expectedRetentionTime_;
+  double expectedRetentionTime_;
   /** the accuracy of this retention time match */
   int accuracy_;
   /** molecular species String without double bond positions */
@@ -60,7 +60,7 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
   /** whether this double bond position is assigned */
   boolean isAssigned_;
   /** To optionally add Exp, RT pairs TODO: only for analysis, remove after */
-  Hashtable<Pair<String,Integer>,Float> experimentRTLookup_ = new Hashtable<Pair<String,Integer>,Float>();
+  Hashtable<Pair<String,Integer>,Double> experimentRTLookup_ = new Hashtable<Pair<String,Integer>,Double>();
   
   /**
    * Constructor for a value object holding data required for the assignment of a double bond position
@@ -68,7 +68,7 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
    * @param expectedRetentionTime the expected retention time
    */
   public DoubleBondPositionVO(
-      Vector<FattyAcidVO> chainCombination, float expectedRetentionTime) 
+      Vector<FattyAcidVO> chainCombination, double expectedRetentionTime) 
   {
     this(chainCombination, expectedRetentionTime,ACCURACY_LOW,null);
   }
@@ -81,7 +81,7 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
    * @param molecularSpecies molecular species String without double bond positions
    */
   public DoubleBondPositionVO(
-      Vector<FattyAcidVO> chainCombination, float expectedRetentionTime, int accuracy, String molecularSpecies) 
+      Vector<FattyAcidVO> chainCombination, double expectedRetentionTime, int accuracy, String molecularSpecies) 
   {
     this(chainCombination, expectedRetentionTime, accuracy, molecularSpecies, false);
   }
@@ -95,7 +95,7 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
    * @param isAssigned whether this double bond position is assigned
    */
   public DoubleBondPositionVO(
-      Vector<FattyAcidVO> chainCombination, float expectedRetentionTime, int accuracy, String molecularSpecies, boolean isAssigned) 
+      Vector<FattyAcidVO> chainCombination, double expectedRetentionTime, int accuracy, String molecularSpecies, boolean isAssigned) 
   {
     this.chainCombination_ = chainCombination;
     this.expectedRetentionTime_ = expectedRetentionTime;
@@ -338,17 +338,17 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
   }
   
   /**
-   * @param expectedRetentionTime the expected retention time in minutes
+   * @param currentRT the expected retention time in minutes
    */
-  public void setExpectedRetentionTime(float expectedRetentionTime) 
+  public void setExpectedRetentionTime(double currentRT) 
   {
-    this.expectedRetentionTime_ = expectedRetentionTime;
+    this.expectedRetentionTime_ = currentRT;
   }
   
   /**
    * @return the expected retention time in minutes
    */
-  public float getExpectedRetentionTime() 
+  public double getExpectedRetentionTime() 
   {
     return this.expectedRetentionTime_;
   }
@@ -389,7 +389,7 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
    * TODO just for analysis, remove after
    * @return
    */
-	public Hashtable<Pair<String,Integer>,Float> getExperimentRTLookup()
+	public Hashtable<Pair<String,Integer>,Double> getExperimentRTLookup()
 	{
 		return experimentRTLookup_;
 	}
@@ -397,11 +397,11 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
 	/**
 	 * TODO just for analysis, remove after
 	 * @param experiment
-	 * @param rt
+	 * @param d
 	 */
-	public void addToExperimentRTLookup(Pair<String,Integer> experiment, Float rt)
+	public void addToExperimentRTLookup(Pair<String,Integer> experiment, double d)
 	{
-		this.experimentRTLookup_.put(experiment, rt);
+		this.experimentRTLookup_.put(experiment, d);
 	}
   
 }

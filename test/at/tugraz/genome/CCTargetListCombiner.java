@@ -264,7 +264,7 @@ public class CCTargetListCombiner
 			{
 				if (dbOne.getEncodedDetailed(true, true).equals(dbTwo.getEncodedDetailed(true, true)))
 				{
-					float rtDiff = Math.abs(dbOne.getExpectedRetentionTime() - dbTwo.getExpectedRetentionTime());
+					double rtDiff = Math.abs(dbOne.getExpectedRetentionTime() - dbTwo.getExpectedRetentionTime());
 					if (rtDiff < rtCutoff_ || 
 							(toAddName.equals(description_SILDA_60min_) && rtDiff < rtCutoff60min_))
 					{
@@ -288,9 +288,9 @@ public class CCTargetListCombiner
 		}
 	}
 	
-	private static String getDescription(Hashtable<Pair<String,Integer>,Float> experimentRTLookup)
+	private static String getDescription(Hashtable<Pair<String,Integer>,Double> hashtable)
 	{
-		Vector<Pair<String,Integer>> keys = new Vector<Pair<String,Integer>>(experimentRTLookup.keySet());
+		Vector<Pair<String,Integer>> keys = new Vector<Pair<String,Integer>>(hashtable.keySet());
 		Collections.sort(keys, new ExperimentRankComparator());
 		StringBuilder description = new StringBuilder();
 		for (int i=0;i<keys.size();i++)

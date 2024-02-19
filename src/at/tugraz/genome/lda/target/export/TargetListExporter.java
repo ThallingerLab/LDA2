@@ -198,14 +198,36 @@ public class TargetListExporter
       	Vector<DoubleBondPositionVO> allLabeledVOsToAdd = new Vector<DoubleBondPositionVO>();
       	if (!isRecalibration())
       	{
+      		Double clusteringThreshold = exportPanel.getExportOptions().getSelectedClustering();
       		MolecularSpeciesContainer container = new MolecularSpeciesContainer();
         	fillContainerForClass(cName, container, adjuster);
-        	Set<String> labeledMolecularSpecies = container.getLabeledMolecularSpecies();
-        	for (String molecularSpecies : labeledMolecularSpecies)
+        	for (String molecularSpecies : container.getSingleLabeledMolecularSpecies())
         	{
-        		Vector<DoubleBondPositionVO> labeledVOs = container.getLabeledSpecies(molecularSpecies);
-        		Vector<DoubleBondPositionVO> clusteredLabeledVOs = clusterMolecularSpecies(labeledVOs, true, exportPanel.getExportOptions().getSelectedClustering());
-        		allLabeledVOsToAdd.addAll(clusteredLabeledVOs); 	
+        		Vector<DoubleBondPositionVO> singleLabeledVOs = container.getSingleLabeledSpecies(molecularSpecies);
+        		Vector<DoubleBondPositionVO> multiLabeledVOs = container.getMultiLabeledSpecies(molecularSpecies); //TODO: here we only take those that were also found as single labels, this can be expanded later
+        		
+        		//add multi labeled info to single label vos before clustering them.
+        		if (multiLabeledVOs != null)
+        		{
+        			Vector<DoubleBondPositionVO> clusteredMultiLabeledVOs = clusterMolecularSpecies(multiLabeledVOs, true, clusteringThreshold);
+        			for (DoubleBondPositionVO voMulti : clusteredMultiLabeledVOs)
+        			{
+        				double multiRT = voMulti.getExpectedRetentionTime();
+        				RangeDouble range = new RangeDouble(multiRT-clusteringThreshold/60.0, multiRT+clusteringThreshold/60.0);
+        				for (DoubleBondPositionVO voSingle : singleLabeledVOs)
+        				{
+        					double singleRT = voSingle.getExpectedRetentionTime();
+        					if (range.insideRange(singleRT) && computeCombinedPattern(voMulti, voSingle).equals(voMulti.getPositionAssignmentPattern()))
+        					{
+        						voSingle.setChainCombination(voMulti.getChainCombination());
+        					}
+        				}
+        			}
+        		}
+        		
+        		Vector<DoubleBondPositionVO> clusteredSingleLabeledVOs = clusterMolecularSpecies(singleLabeledVOs, true, clusteringThreshold);
+        		
+        		allLabeledVOsToAdd.addAll(clusteredSingleLabeledVOs); 	
         	}
       	}
         Sheet sheet = workbook.createSheet(cName);
@@ -425,12 +447,18 @@ public class TargetListExporter
 		return returnValue;
 	}
 	
-	
-	//first all vos are sorted according to the labeling pattern (they already all have the same molecular species) into objects
-	//then for the vos within these objects the mean and standard deviation is calculated
-	//if standard deviation is below our threshold, then this is an accepted cluster, we save it as a new vo
-	//when we are done, the final step is to take all obtained doublebondpositionvos and check if another dbpvo with a compatible labeling pattern is within the time threshold, if so, merge
-	//TODO: in this class we get only vos of identical molecular species. this means we can compute permutable positions for this molecular species and use this to compute overlapping patterns!
+	/**
+	 * first all vos are sorted according to the labeling pattern (they already all have the same molecular species) into objects
+	 * then for the vos within these objects the mean and standard deviation is calculated
+	 * if standard deviation is below our threshold, then this is an accepted cluster, we save it as a new vo
+	 * when we are done, the final step is to take all obtained doublebondpositionvos and check if another dbpvo with a compatible labeling pattern is within the time threshold, if so, merge
+	 * TODO: in this class we get only vos of identical molecular species. this means we can compute permutable positions for this molecular species and use this to compute overlapping patterns!
+	 * 
+	 * @param doubleBondPositionVOs
+	 * @param labeled
+	 * @param clusteringThreshold
+	 * @return
+	 */
 	private Vector<DoubleBondPositionVO> clusterMolecularSpecies(Vector<DoubleBondPositionVO> doubleBondPositionVOs, boolean labeled, double clusteringThreshold)
 	{
 		/**
@@ -452,8 +480,7 @@ public class TargetListExporter
 			}
 			
 			/**
-			 * TODO: for now we do nothing with patterns which could be combined, because I am not sure if it's scientifically accurate to do
-			 * plan is:  iterate over markedToCombine (they are within threshold and have an overlapping pattern) and combine to a common vo 
+			 * iterate over markedToCombine (they are within threshold and have an overlapping pattern) and combine to a common vo 
 			 */
 			
 			Hashtable<Vector<Integer>,Vector<Vector<Integer>>> overlappingPatterns = computeOverlappingPatterns(patternLookup.keySet(),permutationPattern);
@@ -461,10 +488,6 @@ public class TargetListExporter
 			Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>> markedToCombine = markToCombine(patternLookup, overlappingPatterns,clusteringThreshold);
 			Vector<Pair<RangeDouble,Vector<DoubleBondPositionVO>>> combineRanges = new Vector<Pair<RangeDouble,Vector<DoubleBondPositionVO>>>();
 			
-			
-			/**
-			 * TODO: I have an interesting bug here: the current settings will print the weirdness out. I do not understand it. Sorry future me.
-			 */
 			for (DoubleBondPositionVO doubleBondPositionVO : markedToCombine.keySet())
 			{
 				boolean isRepresented = false;
@@ -514,19 +537,17 @@ public class TargetListExporter
 			  			fattyAcid.setOmegaPosition(pattern.get(i));
 			  			combinedFattyAcidVO.add(fattyAcid);
 			  		}
-						float expectedRetentionTime = doubleBondPositionVO.getExpectedRetentionTime();
+						double expectedRetentionTime = doubleBondPositionVO.getExpectedRetentionTime();
 						int count = 1;
 						for (DoubleBondPositionVO vo : vos)
 						{
 							toBeRemovedFromLookup.add(vo);
-//							System.out.println("To be removed vo1: "+vo.getMolecularSpecies()+"        pattern: "+vo.getPositionAssignmentPattern()+"     RT: "+vo.getExpectedRetentionTime());
 							expectedRetentionTime+= vo.getExpectedRetentionTime();
 							count++;
 						}
 						DoubleBondPositionVO combined = new DoubleBondPositionVO(
 								combinedFattyAcidVO, expectedRetentionTime/count, DoubleBondPositionVO.ACCURACY_LOW, doubleBondPositionVO.getMolecularSpecies());
 						toBeAddedToLookup.add(combined);
-//						System.out.println("To be removed parent: "+doubleBondPositionVO.getMolecularSpecies()+"        pattern: "+doubleBondPositionVO.getPositionAssignmentPattern()+"     RT: "+doubleBondPositionVO.getExpectedRetentionTime());
 						toBeRemovedFromLookup.add(doubleBondPositionVO);
 					}
 					
@@ -542,18 +563,15 @@ public class TargetListExporter
 								patternLookup.put(toBeAdded.getPositionAssignmentPattern(), new Vector<DoubleBondPositionVO>());
 							}
 							patternLookup.get(toBeAdded.getPositionAssignmentPattern()).add(toBeAdded);
-//							System.out.println("To be added: "+toBeAdded.getMolecularSpecies()+"        pattern: "+toBeAdded.getPositionAssignmentPattern()+"     RT: "+toBeAdded.getExpectedRetentionTime());
 							added.add(toBeAdded.getPositionAssignmentPattern());
 						}
 					}
 					for (DoubleBondPositionVO toBeRemoved : toBeRemovedFromLookup)
 					{
 						patternLookup.get(toBeRemoved.getPositionAssignmentPattern()).remove(toBeRemoved);
-//						System.out.println("To be removed: "+toBeRemoved.getMolecularSpecies()+"        pattern: "+toBeRemoved.getPositionAssignmentPattern()+"     RT: "+toBeRemoved.getExpectedRetentionTime());
 					}
 				}
 			}
-			
 			for (Vector<Integer> pattern : patternLookup.keySet()) 
 			{
 				returnElements.addAll(patternLookup.get(pattern));
@@ -566,8 +584,6 @@ public class TargetListExporter
 			 * we calculate the clusters, then these are transformed into a Vector of vos and returned
 			 */	
 			return computeClusters(doubleBondPositionVOs,clusteringThreshold);
-//			System.out.println("next");
-//			calculateDistanceMatrix(doubleBondPositionVOs);
 		}
 	}
 	
@@ -792,7 +808,7 @@ public class TargetListExporter
   {
   	if (vo1.getMolecularSpecies().equals(vo2.getMolecularSpecies()))
   	{
-  		float combinedRetentionTime = (vo1.getExpectedRetentionTime()+vo2.getExpectedRetentionTime())/2;
+  		double combinedRetentionTime = (vo1.getExpectedRetentionTime()+vo2.getExpectedRetentionTime())/2;
   		Vector<Integer> pattern1 = vo1.getPositionAssignmentPattern();
   		Vector<Integer> pattern2 = vo2.getPositionAssignmentPattern();
   		if (vo2.getPermutationPattern().contains(Boolean.TRUE) && pattern2.size() == 2) //TODO: adapt for more than 2 chains
@@ -944,20 +960,49 @@ public class TargetListExporter
 						}
 						Vector<Pair<String,String>> labeledUnlabeledPairs = analyteMSn.getLabeledUnlabeledPairs();
 						
-						Hashtable<String,Integer> elements = StaticUtils.categorizeFormula(analyte.getChemicalFormula());
 						double expectedRetentionTime = analyte.getPreciseRT();
+						boolean viableForCalibration = true;
+						boolean singleLabel = true;
 						
 						//only deuterated species need recalculation of the expected retention time
 						if (isotopeEffectRegression_ != null && analyte.getChemicalFormula().contains("D"))
 						{
-							int numberDeuterium = elements.get("D");
+							int numberDeuterium = StaticUtils.categorizeFormula(analyte.getChemicalFormula()).get("D");
 							if (numberDeuterium > isotopeEffectRegression_.getMaxNumDeuteriumAllowed())
 							{
-								continue; //retention times affected by labels outside the calibration curve cannot be recalculated!
+								singleLabel = false;
+								String validCombi = analyteMSn.getValidChainCombinations().get(0);
+								for (FattyAcidVO fa : StaticUtils.decodeLipidNamesFromChainCombi(validCombi))
+								{
+									String prefix = fa.getPrefix();
+									if (prefix != null && !prefix.equals(""))
+									{
+										for (IsotopeLabelVO label : labels_)
+										{
+											if (label.getLabelId().equals(prefix))
+											{
+												int num = label.getLabelElements().containsKey("D") ? label.getLabelElements().get("D") : 0;
+												if (num > isotopeEffectRegression_.getMaxNumDeuteriumAllowed())
+												{
+													viableForCalibration = false; //retention times affected by labels outside the calibration curve cannot be recalculated!
+												}
+												else
+												{
+													expectedRetentionTime = adjuster.getGradientAdjustedValue(isotopeEffectRegression_.getIsotopeEffect(num), expectedRetentionTime);
+												}
+												continue;
+											}
+										}
+									}
+					      }
 							}
-							expectedRetentionTime = adjuster.getGradientAdjustedValue(isotopeEffectRegression_.getIsotopeEffect(numberDeuterium), analyte.getPreciseRT());
-//									isotopeEffectRegression_.getRTofUnlabeledSpecies(numberDeuterium, analyte.getPreciseRT());
+							else
+							{
+								expectedRetentionTime = adjuster.getGradientAdjustedValue(isotopeEffectRegression_.getIsotopeEffect(numberDeuterium), analyte.getPreciseRT());
+							}
 						}					
+						
+						if (!viableForCalibration) continue;
 						
 						for (Pair<String,String> pair : labeledUnlabeledPairs) 
 						{
@@ -984,19 +1029,21 @@ public class TargetListExporter
 			    			chains.add(fa);
 			    		}
 			    		
-			    		//all isotope labeled species are stored separate from unlabeled species, as only they get written out in the end
 			    		if (analyte.getChemicalFormula().contains("D") || analyte.getChemicalFormula().contains("Cc")) //TODO: consider accounting for additional isotopes?
 							{
-				    		container.addLabeledSpecies(
-				    				pair.getKey(), 
-				    				new DoubleBondPositionVO(chains,(float)expectedRetentionTime,DoubleBondPositionVO.ACCURACY_LOW,pair.getKey()));
+			    			if (singleLabel)
+			    			{
+			    				container.addSingleLabeledSpecies(
+					    				pair.getKey(), 
+					    				new DoubleBondPositionVO(chains,expectedRetentionTime,DoubleBondPositionVO.ACCURACY_LOW,pair.getKey()));
+			    			}
+			    			else
+			    			{
+			    				container.addMultiLabeledSpecies(
+					    				pair.getKey(), 
+					    				new DoubleBondPositionVO(chains,expectedRetentionTime,DoubleBondPositionVO.ACCURACY_LOW,pair.getKey()));
+			    			}
 							}
-			    		else 
-			    		{
-			    			container.addUnlabeledSpecies(
-				    				pair.getKey(), 
-				    				new DoubleBondPositionVO(chains,(float)expectedRetentionTime,DoubleBondPositionVO.ACCURACY_LOW,pair.getKey()));
-			    		}
 						}
 					}
 				}
@@ -1368,52 +1415,68 @@ public class TargetListExporter
   
   
   /**
-   * > Hashtable className, new java class: 
-	 * 				saves labeled and unlabeled species of class separately
-	 * 				method getlabeled ( position ind. mol species)
-	 * 				method getunlabeled ( position ind. mol species)
-	 * 				method getlabeledmolecularspecies
-	 * 				2x field hashtable pos ind mol species, vector lipidomicsmsnset
+   * Saves species of a class which were detected with a stable isotope label.
+   * All retention times must be corrected for the isotope effect on retention time.
+   * 
+   * @author Leonida M. Lamp
+   *
    */
   private class MolecularSpeciesContainer
   {
-  	private Hashtable<String, Vector<DoubleBondPositionVO>> labeledSpecies_;
-  	private Hashtable<String, Vector<DoubleBondPositionVO>> unlabeledSpecies_;
+  	private Hashtable<String, Vector<DoubleBondPositionVO>> singleLabeledSpecies_;
+  	private Hashtable<String, Vector<DoubleBondPositionVO>> multiLabeledSpecies_;
   	
   	private MolecularSpeciesContainer()
   	{
-  		labeledSpecies_ = new Hashtable<String, Vector<DoubleBondPositionVO>>();
-  		unlabeledSpecies_ = new Hashtable<String, Vector<DoubleBondPositionVO>>();
+  		singleLabeledSpecies_ = new Hashtable<String, Vector<DoubleBondPositionVO>>();
+  		multiLabeledSpecies_ = new Hashtable<String, Vector<DoubleBondPositionVO>>();
   	}
   	
-  	private void addLabeledSpecies(String molecularSpecies, DoubleBondPositionVO doubleBondPositionVO)
+  	private void addSingleLabeledSpecies(String molecularSpecies, DoubleBondPositionVO doubleBondPositionVO)
   	{
-  		if (!this.labeledSpecies_.containsKey(molecularSpecies))
+  		if (!this.singleLabeledSpecies_.containsKey(molecularSpecies))
   		{
-  			this.labeledSpecies_.put(molecularSpecies, new Vector<DoubleBondPositionVO>());
+  			this.singleLabeledSpecies_.put(molecularSpecies, new Vector<DoubleBondPositionVO>());
   		}
-  		this.labeledSpecies_.get(molecularSpecies).add(doubleBondPositionVO);
+  		this.singleLabeledSpecies_.get(molecularSpecies).add(doubleBondPositionVO);
   	}
   	
-  	private void addUnlabeledSpecies(String molecularSpecies, DoubleBondPositionVO doubleBondPositionVO)
+  	private void addMultiLabeledSpecies(String molecularSpecies, DoubleBondPositionVO doubleBondPositionVO)
   	{
-  		if (!this.unlabeledSpecies_.containsKey(molecularSpecies))
+  		if (!this.multiLabeledSpecies_.containsKey(molecularSpecies))
   		{
-  			this.unlabeledSpecies_.put(molecularSpecies, new Vector<DoubleBondPositionVO>());
+  			this.multiLabeledSpecies_.put(molecularSpecies, new Vector<DoubleBondPositionVO>());
   		}
-  		this.unlabeledSpecies_.get(molecularSpecies).add(doubleBondPositionVO);
+  		this.multiLabeledSpecies_.get(molecularSpecies).add(doubleBondPositionVO);
   	}
   	
-  	private Set<String> getLabeledMolecularSpecies()
+  	private Set<String> getSingleLabeledMolecularSpecies()
   	{
-  		return labeledSpecies_.keySet();
+  		return singleLabeledSpecies_.keySet();
   	}
   	
-  	private Vector<DoubleBondPositionVO> getLabeledSpecies(String molecularSpecies)
+  	private Vector<DoubleBondPositionVO> getSingleLabeledSpecies(String molecularSpecies)
   	{
-  		if (labeledSpecies_.containsKey(molecularSpecies))
+  		if (singleLabeledSpecies_.containsKey(molecularSpecies))
   		{
-  			return labeledSpecies_.get(molecularSpecies);
+  			return singleLabeledSpecies_.get(molecularSpecies);
+  		}
+  		else
+  		{
+  			return null;
+  		}
+  	}
+  	
+  	private Set<String> getMultiLabeledMolecularSpecies()
+  	{
+  		return multiLabeledSpecies_.keySet();
+  	}
+  	
+  	private Vector<DoubleBondPositionVO> getMultiLabeledSpecies(String molecularSpecies)
+  	{
+  		if (multiLabeledSpecies_.containsKey(molecularSpecies))
+  		{
+  			return multiLabeledSpecies_.get(molecularSpecies);
   		}
   		else
   		{

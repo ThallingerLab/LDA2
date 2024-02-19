@@ -1694,7 +1694,7 @@ public class QuantificationThread extends Thread
           	//creating a deep copy to avoid unwanted side effects.
             DoubleBondPositionVO doubleBondPositionVO = new DoubleBondPositionVO(it.next());
             
-            float expectedRetentionTime = doubleBondPositionVO.getExpectedRetentionTime();
+            double expectedRetentionTime = doubleBondPositionVO.getExpectedRetentionTime();
             if (peakLimits.insideRange(expectedRetentionTime)) {
               if (mediumAccuracy.insideRange(expectedRetentionTime)) doubleBondPositionVO.setAccuracy(DoubleBondPositionVO.ACCURACY_MEDIUM);
               if (highAccuracy.insideRange(expectedRetentionTime)) doubleBondPositionVO.setAccuracy(DoubleBondPositionVO.ACCURACY_HIGH);

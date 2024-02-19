@@ -233,12 +233,12 @@ public class EditOmegaAssignmentJTable extends JFrame implements ActionListener
   
   /**
    * Converts a float to a String with two decimals
-   * @param floatValue the float Object
+   * @param d the float Object
    * @return String with two decimals
    */
-  private String getStringWithTwoDecimals(float floatValue) 
+  private String getStringWithTwoDecimals(double d) 
   {
-    return String.format("%.2f", floatValue);
+    return String.format("%.2f", d);
   }
     
   /**
@@ -290,7 +290,7 @@ public class EditOmegaAssignmentJTable extends JFrame implements ActionListener
         if (selectedRow > -1) 
         {
           DoubleBondPositionVO selected = localDoubleBondPositionVOs_.get(selectedRow);
-          float currentRT = selected.getExpectedRetentionTime();
+          double currentRT = selected.getExpectedRetentionTime();
           try 
           {
             expectedRT = Float.parseFloat(expectedRT_.getText());
@@ -504,7 +504,7 @@ public class EditOmegaAssignmentJTable extends JFrame implements ActionListener
      */
     private void determineAccuracy(DoubleBondPositionVO doubleBondPositionVO) throws NumberOutOfRangeException 
     {
-      float expectedRT = doubleBondPositionVO.getExpectedRetentionTime();
+      double expectedRT = doubleBondPositionVO.getExpectedRetentionTime();
       Range[] peakRanges = StaticUtils.determinePeakRanges(localLipidParameterSet_);
       Range peakLimits = peakRanges[0];
       Range mediumAccuracy = peakRanges[1];
@@ -532,12 +532,12 @@ public class EditOmegaAssignmentJTable extends JFrame implements ActionListener
     
     /**
      * Calculates the time difference of the measured and expected retention times in seconds
-     * @param expectedRT the expected retention time
+     * @param d the expected retention time
      * @return the retention time difference as float object
      */
-    private float getDeltaRT(float expectedRT) 
+    private double getDeltaRT(double d) 
     {
-      return Math.abs(getMeasuredRT() - expectedRT) *60;
+      return Math.abs(getMeasuredRT() - d) *60;
     }
     
     /**
