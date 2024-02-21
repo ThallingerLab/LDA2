@@ -401,10 +401,18 @@ public class SubgroupDefinitionPanel extends JFrame
 	{
 		for (SubGroup group : definedSubgroups_)
 		{
-			if (group.getGroupName().equals(groupName))
-			{
+			if (group.getGroupName().equals(groupName)) 
 				return true;
-			}
+		}
+		for (String name : usedLipidClasses_)
+		{
+			if (name.equals(groupName)) 
+				return true;
+		}
+		for (String name : ungroupedLipidClasses_)
+		{
+			if (name.equals(groupName)) 
+				return true;
 		}
 		return false;
 	}
