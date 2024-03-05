@@ -50,6 +50,8 @@ public class FattyAcidsContainer
   public final static String FA_FILE_SUFFIX_NEW = ".xlsx";
   /** file suffix old Excel*/
   public final static String FA_FILE_SUFFIX_OLD = ".xls";
+  /** prefix that is only present for temporary excel files */
+  private final static String EXCEL_TEMPORARY_PREFIX = "~$";
   
   /** the cache instance*/
   private static FattyAcidsContainer instance_;
@@ -174,6 +176,7 @@ public class FattyAcidsContainer
     if (!faLibDir.isDirectory()) throw new RulesException("The fatty acid lib directory is a file - not a directory!");
     File[] files = faLibDir.listFiles();
     for (File file : files){
+    	if (file.getAbsolutePath().contains(EXCEL_TEMPORARY_PREFIX)) continue;
       if (!file.getAbsolutePath().endsWith(FA_FILE_SUFFIX_NEW) && !file.getAbsolutePath().endsWith(FA_FILE_SUFFIX_OLD)) continue;
       try {
         try {
