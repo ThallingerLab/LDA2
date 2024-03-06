@@ -527,11 +527,11 @@ public class QuantificationResultExporter
 																					 * like "AlexMSnTargetsUsed"
 																					 */
 				int omegaRowCount = HEADER_ROW + 1;
-
+				
 				for (LipidParameterSet param:params) {
 					if (param == null)
 						continue;
-
+					
 					ms1RowCount = writeEvidenceMS1(ms1RowCount, resultCount, resultSheet,
 							param, mS1HeaderTitles);
 
@@ -566,7 +566,6 @@ public class QuantificationResultExporter
 			ex.printStackTrace();
 			throw new ExportException(ex.getMessage());
 		}
-
 	}
 
 	/**
@@ -826,58 +825,57 @@ public class QuantificationResultExporter
 				totalIsoArea += probe.Area;
 
 				if (areaStatusOK) {
-
 					ws.value(row, headerTitles.indexOf(HEADER_ISOTOPE), chargeState);
-					ws.value(row, headerTitles.indexOf(HEADER_AREA),
-							new Double(probe.Area));
+					ws.value(row, headerTitles.indexOf(HEADER_AREA), 
+							getDoubleValue(probe.Area));
 					ws.value(row, headerTitles.indexOf(HEADER_AREA_ERROR),
-							new Double(probe.AreaError));
+							getDoubleValue(probe.AreaError));
 					ws.value(row, headerTitles.indexOf(HEADER_BACKGROUND),
-							new Double(probe.Background));
+							getDoubleValue(probe.Background));
 					ws.value(row, headerTitles.indexOf(HEADER_CHARGE), probe.Charge);
 					ws.value(row, headerTitles.indexOf(HEADER_PEAK),
-							new Double(probe.Peak));
+							getDoubleValue(probe.Peak));
 					ws.value(row, headerTitles.indexOf(HEADER_LOWER_VALLEY),
-							new Double(probe.LowerValley));
+							getDoubleValue(probe.LowerValley));
 					ws.value(row, headerTitles.indexOf(HEADER_UPPER_VALLEY),
-							new Double(probe.UpperValley));
+							getDoubleValue(probe.UpperValley));
 
 					if (probe.getLowerValley10() != null) {
 						ws.value(row, headerTitles.indexOf(HEADER_RAW_APEX),
-								new Double(probe.getApexIntensity()));
+								getDoubleValue(probe.getApexIntensity()));
 						ws.value(row, headerTitles.indexOf(HEADER_LOWER_VALLEY10PC),
-								new Double(probe.getLowerValley10()));
+								getDoubleValue(probe.getLowerValley10()));
 						ws.value(row, headerTitles.indexOf(HEADER_LOWER_VALLEY50PC),
-								new Double(probe.getLowerValley50()));
+								getDoubleValue(probe.getLowerValley50()));
 						ws.value(row, headerTitles.indexOf(HEADER_UPPER_VALLEY50PC),
-								new Double(probe.getUpperValley50()));
+								getDoubleValue(probe.getUpperValley50()));
 						ws.value(row, headerTitles.indexOf(HEADER_UPPER_VALLEY10PC),
-								new Double(probe.getUpperValley10()));
+								getDoubleValue(probe.getUpperValley10()));
 					}
 
 					if (probe3D != null) {
 						ws.value(row, headerTitles.indexOf(HEADER_LOWER_MZ),
-								new Double(probe3D.LowerMzBand));
+								getDoubleValue(probe3D.LowerMzBand));
 						ws.value(row, headerTitles.indexOf(HEADER_UPPER_MZ),
-								new Double(probe3D.UpperMzBand));
+								getDoubleValue(probe3D.UpperMzBand));
 						ws.value(row, headerTitles.indexOf(HEADER_ELL_CENT_TIME),
-								new Double(probe3D.getEllipseTimePosition()));
+								getDoubleValue(probe3D.getEllipseTimePosition()));
 						ws.value(row, headerTitles.indexOf(HEADER_ELL_CENT_MZ),
-								new Double(probe3D.getEllipseMzPosition()));
+								getDoubleValue(probe3D.getEllipseMzPosition()));
 						ws.value(row, headerTitles.indexOf(HEADER_ELL_STRETCH_TIME),
-								new Double(probe3D.getEllipseTimeStretch()));
+								getDoubleValue(probe3D.getEllipseTimeStretch()));
 						ws.value(row, headerTitles.indexOf(HEADER_ELL_STRETCH_MZ),
-								new Double(probe3D.getEllipseMzStretch()));
+								getDoubleValue(probe3D.getEllipseMzStretch()));
 
 						if (probe3D.getLowMz10() > -1) {
 							ws.value(row, headerTitles.indexOf(HEADER_LOWER_MZ10PC),
-									new Double(probe3D.getLowMz10()));
+									getDoubleValue(probe3D.getLowMz10()));
 							ws.value(row, headerTitles.indexOf(HEADER_LOWER_MZ50PC),
-									new Double(probe3D.getLowMz50()));
+									getDoubleValue(probe3D.getLowMz50()));
 							ws.value(row, headerTitles.indexOf(HEADER_UPPER_MZ50PC),
-									new Double(probe3D.getUpMz50()));
+									getDoubleValue(probe3D.getUpMz50()));
 							ws.value(row, headerTitles.indexOf(HEADER_UPPER_MZ10PC),
-									new Double(probe3D.getUpMz10()));
+									getDoubleValue(probe3D.getUpMz10()));
 						}
 
 					}
@@ -885,8 +883,7 @@ public class QuantificationResultExporter
 				} else {
 					ws.value(row, headerTitles.indexOf(HEADER_AREA), new Double(0));
 				}
-
-				ws.value(row, headerTitles.indexOf(HEADER_MZ_MS1), probe.Mz);
+				ws.value(row, headerTitles.indexOf(HEADER_MZ_MS1), getDoubleValue(probe.Mz));
 			}
 
 			totalArea_ += totalIsoArea;
@@ -922,7 +919,7 @@ public class QuantificationResultExporter
 						String.valueOf(omegaPosition));
 			}
 		}
-
+		
 		ws.value(rowFirst, headerTitles.indexOf(HEADER_MODIFICATION),
 				param.getModificationName());
 		ws.value(rowFirst, headerTitles.indexOf(HEADER_FORMULA),
@@ -934,7 +931,7 @@ public class QuantificationResultExporter
 			ws.style(rowFirst, headerTitles.indexOf(HEADER_RT)).format("0.00").set();
 			ws.value(rowFirst, headerTitles.indexOf(HEADER_RT), param.getPreciseRT());
 		}
-
+		
 		ws.value(rowFirst, headerTitles.indexOf(HEADER_AREA), totalArea_);
 		ws.value(rowFirst, headerTitles.indexOf(HEADER_CHARGE), param.getCharge());
 		ws.value(rowFirst, headerTitles.indexOf(HEADER_MZ_MS1), param.Mz[0]);
@@ -956,12 +953,24 @@ public class QuantificationResultExporter
 					param.getPercentalSplit());
 		}
 
-		if (param.getOxState() != null && !param.getOxState().isEmpty())
+		if (param.getOxState() != null && !param.getOxState().isEmpty()) {
 			ws.value(rowFirst,
 					headerTitles.indexOf(LipidomicsConstants.CHAIN_MOD_COLUMN_NAME),
 					param.getOxState());
+		}
+			
 
 		return row++;
+	}
+	
+	private static Double getDoubleValue(float value)
+	{
+		Double doubleValue = new Double(value);
+		if (doubleValue.isNaN() || doubleValue.isInfinite())
+		{
+			return new Double(0);
+		}
+		return doubleValue;
 	}
 
 	/**
