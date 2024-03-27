@@ -351,7 +351,7 @@ public class TestClass extends JApplet implements AddScan
   private final String COLUMN_HEADER_COMMENT= "Comment";
   private final String COLUMN_HEADER_MAX_FRAGS= "MS2_Max_fragments_expected";
   private final String COLUMN_HEADER_MAX_ALL_FRAGS = "MS2_Max_fragments_expected combined";
-  private final String COLUMN_HEADER_SCORE_UNCORRECTED = "ALEX score corr.";
+  private final String COLUMN_HEADER_SCORE_UNCORRECTED = "ALEX score uncorr.";
   private final String COLUMN_HEADER_AMBIGUOUS = "Ambiguous partner";
 
   
@@ -363,6 +363,7 @@ public class TestClass extends JApplet implements AddScan
   private final short ALEX_DATA_BIN_FIXED_0_04 = 0;
   private final short ALEX_DATA_BIN_LOW_RES = 1;
   private final short ALEX_DATA_BIN_HIGH_RES = 2;
+  
 
 
   public TestClass()
@@ -378,7 +379,7 @@ public class TestClass extends JApplet implements AddScan
     // this.testExportPanel();
     //this.translateTAGListToMzMineFormat();
     //this.shortenMSList();
-    this.calculateTheoreticalMass();
+    //this.calculateTheoreticalMass();
     //calculateByKnownMassesAndCAtoms();
     //this.calculateIntensityDistribution();
     //this.justMzValues();
@@ -466,7 +467,7 @@ public class TestClass extends JApplet implements AddScan
     //parseMSDialTxt();
     //this.compareLDABMSDialControlledPositiveProbes();
     //this.compareLDABMSDialControlledNegativeProbes();
-    //this.compareLDAMSDialNaturalProbesPositive();
+    this.compareLDAMSDialNaturalProbesPositive();
     //this.compareLDAMSDialNaturalProbesNegative();
     //parseMSFinderStructure();
     //this.generateDetailsSphingosBiologicalExperiment();
@@ -496,7 +497,7 @@ public class TestClass extends JApplet implements AddScan
     //this.checkMixtureModelLMFormula();
     //this.mixtureModelWithDecoySearch();
     //this.mixtureModelWithDecoySearchAddFunction();
-    this.validateHitsBasedOnRetentionTime();
+    //this.validateHitsBasedOnRetentionTime();
     //this.generateCodeForSpeciesEvaluation();
   }
 
@@ -17142,10 +17143,15 @@ public void testTabFile() throws Exception {
   }
   
   private void parseMSDialTxt() {
+  	//this version has been used for the comparison of the sphingolipids 2020
+  	////String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_0;
+  	//this is the current version
+  	String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_9;
+
     //MSDialTxtParser dialParser = new MSDialTxtParser("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\MS-Dial_Mix1\\export\\Mix1_neg_1.txt");
     MSDialTxtParser dialParser = new MSDialTxtParser("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\MS-Dial_Mix1\\export\\Mix1_1.txt");
     try {
-      dialParser.parse();
+      dialParser.parse(msDialVersion);
       Vector<MSDialEntry> entries = dialParser.getResults();
 //      for (MSDialEntry entry : entries) {
 //        System.out.println(entry.getName());
@@ -17160,6 +17166,10 @@ public void testTabFile() throws Exception {
   
   
   private void compareLDABMSDialControlledPositiveProbes() {
+  	//this version has been used for the comparison of the sphingolipids 2020
+  	////String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_0;
+  	//this is the current version
+  	String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_9;
     LinkedHashMap<String,LinkedHashMap<String,Boolean[]>> comparableClassesAndAdducts = new LinkedHashMap<String,LinkedHashMap<String,Boolean[]>>();
     Hashtable<String,LinkedHashMap<String,ReferenceInfoVO>> correctAnalytes = new Hashtable<String,LinkedHashMap<String,ReferenceInfoVO>>();
     Hashtable<String,Integer> snPositions = new Hashtable<String,Integer>();
@@ -17239,13 +17249,17 @@ public void testTabFile() throws Exception {
     String outputFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\MS-Dial_Mix2\\Mix2_5_Dial_comp_generated.xlsx";
 
     
-    compareLDAMSDialControlledProbes(comparableClassesAndAdducts,snPositions,correctAnalytes,chromFile,quantFile,ldaFile,msDialFile,/*msFinderFile,*/outputFile);
+    compareLDAMSDialControlledProbes(comparableClassesAndAdducts,snPositions,correctAnalytes,chromFile,quantFile,ldaFile,msDialFile,/*msFinderFile,*/outputFile,msDialVersion);
 
     
   }
   
   
   private void compareLDABMSDialControlledNegativeProbes() {
+  	//this version has been used for the comparison of the sphingolipids 2020
+  	////String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_0;
+  	//this is the current version
+  	String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_9;
     LinkedHashMap<String,LinkedHashMap<String,Boolean[]>> comparableClassesAndAdducts = new LinkedHashMap<String,LinkedHashMap<String,Boolean[]>>();
     Hashtable<String,LinkedHashMap<String,ReferenceInfoVO>> correctAnalytes = new Hashtable<String,LinkedHashMap<String,ReferenceInfoVO>>();
     Hashtable<String,Integer> snPositions = new Hashtable<String,Integer>();
@@ -17306,13 +17320,13 @@ public void testTabFile() throws Exception {
     String quantFile = "C:\\Sphingolipids\\Experiment1\\massLists\\Orbitrap\\stands_negative_Mix2.xlsx";
     String outputFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\MS-Dial_Mix2\\Mix2_neg_5_Dial_comp_generated.xlsx";
     
-    compareLDAMSDialControlledProbes(comparableClassesAndAdducts,snPositions,correctAnalytes,chromFile,quantFile,ldaFile,msDialFile,/*msFinderFile,*/outputFile);
+    compareLDAMSDialControlledProbes(comparableClassesAndAdducts,snPositions,correctAnalytes,chromFile,quantFile,ldaFile,msDialFile,/*msFinderFile,*/outputFile,msDialVersion);
 
   }
   
   private void compareLDAMSDialControlledProbes(LinkedHashMap<String,LinkedHashMap<String,Boolean[]>> comparableClassesAndAdducts,
       Hashtable<String,Integer> snPositions, Hashtable<String,LinkedHashMap<String,ReferenceInfoVO>> correctAnalytes,
-      String chromFile, String quantFile, String ldaFile, String msdialFile,/* String msfinderFile,*/ String outputFile){
+      String chromFile, String quantFile, String ldaFile, String msdialFile,/* String msfinderFile,*/ String outputFile, String msDialVersion){
     try{
       BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile));
       Workbook resultWorkbook = new XSSFWorkbook();
@@ -17330,7 +17344,7 @@ public void testTabFile() throws Exception {
       CellStyle notFoundStyle = getNotFoundStyle(resultWorkbook);
       Hashtable<String,Vector<LipidParameterSet>> resultsLDA = LDAResultReader.readResultFile(ldaFile, new Hashtable<String,Boolean>()).getIdentifications();
       MSDialTxtParser msdialParser = new MSDialTxtParser(msdialFile);
-      msdialParser.parse();
+      msdialParser.parse(msDialVersion);
       //MSFinderStructureParser finderParser = new MSFinderStructureParser(msfinderFile);
       //finderParser.parse();
       //TODO: this might need to be changed
@@ -18766,6 +18780,10 @@ public void testTabFile() throws Exception {
 
   
   private void compareLDAMSDialNaturalProbesPositive(){
+  	//this version has been used for the comparison of the sphingolipids 2020
+  	////String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_0;
+  	//this is the current version
+  	String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_9;
     //the first key is the lipid class, the second key the ms1 species name, the third key the structural identification
     LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>>();
     Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
@@ -18782,16 +18800,20 @@ public void testTabFile() throws Exception {
     }
     ////this.getValid4000QTRAPSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
 
-    String chromFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_5.chrom";
-    String quantFile = "C:\\Sphingolipids\\Brain\\massLists\\Orbitrap\\sphingos_positive.xlsx";
-    String ldaFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_5_sphingos_positive.xlsx";
-    String msDialFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\MS-Dial_positive\\export\\Brain_pos_5.txt";
-    String outputFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\MS-Dial_positive\\Brain_pos_5_comp_generated.xlsx";
+    String chromFile = "E:\\Lipidomics\\data\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_1.chrom";
+    String quantFile = "E:\\Lipidomics\\data\\Sphingolipids\\Brain\\massLists\\Orbitrap\\sphingos_positive.xlsx";
+    String ldaFile = "E:\\Lipidomics\\data\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_1_sphingos_positive.xlsx";
+    String msDialFile = "E:\\Lipidomics\\data\\Sphingolipids\\Brain\\Orbitrap\\MS-Dial_positive_v4.9\\export\\Brain_pos_1.txt";
+    String outputFile = "E:\\Lipidomics\\data\\Sphingolipids\\Brain\\Orbitrap\\MS-Dial_positive_v4.9\\export\\Brain_pos_1_comp_generated.xlsx";
 
-    performMSDialComparisonOfNaturalProbes(lipidClasses,lipidClassInfo,chromFile,quantFile,ldaFile,msDialFile,outputFile);    
+    performMSDialComparisonOfNaturalProbes(lipidClasses,lipidClassInfo,chromFile,quantFile,ldaFile,msDialFile,outputFile,msDialVersion);    
   }
   
   private void compareLDAMSDialNaturalProbesNegative(){
+  	//this version has been used for the comparison of the sphingolipids 2020
+  	////String msDialVersion = "4.0";
+  	//this is the current version
+  	String msDialVersion = "4.9";
     //the first key is the lipid class, the second key the ms1 species name, the third key the structural identification
     LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>>();
     Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
@@ -18812,19 +18834,19 @@ public void testTabFile() throws Exception {
 //    String lbFile = "D:\\BiologicalExperiment\\LipidBlast\\4000QTRAP\\negative\\output\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_MF450.mgf.tsv";
 //    String outputFile = "D:\\BiologicalExperiment\\LipidBlast\\4000QTRAP\\negative\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_MF450_comp_generated.xlsx";
 
-    performMSDialComparisonOfNaturalProbes(lipidClasses,lipidClassInfo,chromFile,quantFile,ldaFile,msDialFile,outputFile);
+    performMSDialComparisonOfNaturalProbes(lipidClasses,lipidClassInfo,chromFile,quantFile,ldaFile,msDialFile,outputFile,msDialVersion);
   }
 
   private void  performMSDialComparisonOfNaturalProbes(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses, 
-      Hashtable<String,LipidClassInfoVO> lipidClassInfo, String chromFile, String quantFile, String ldaFile, String msDialFile, String outputFile){
+      Hashtable<String,LipidClassInfoVO> lipidClassInfo, String chromFile, String quantFile, String ldaFile, String msDialFile, String outputFile, String msDialVersion){
     try{
       Vector quantValues = (new MassListParser(quantFile, 0f, 0f, 0, 0, true, 0f, 0f, 0f,true)).getResultsVector();
       ////Vector quantValues = null;
       String[] chromPaths = StringUtils.getChromFilePaths(chromFile);   
       LipidomicsAnalyzer analyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
 
-      Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)quantValues.get(1);
-      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>) quantValues.get(3);
+      LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantValues.get(1);
+      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>) quantValues.get(4);
       BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile));
       Workbook resultWorkbook = new XSSFWorkbook();
       CellStyle fullyCorrectStyle = getFullyCorrectStyle(resultWorkbook);
@@ -18839,7 +18861,7 @@ public void testTabFile() throws Exception {
       leftHeaderStyle.setAlignment(CellStyle.ALIGN_LEFT);
       Hashtable<String,Vector<LipidParameterSet>> resultsLDA = LDAResultReader.readResultFile(ldaFile, new Hashtable<String,Boolean>()).getIdentifications();
       MSDialTxtParser msdialParser = new MSDialTxtParser(msDialFile);
-      msdialParser.parse();
+      msdialParser.parse(msDialVersion);
       //Hashtable<String,Hashtable<String,Hashtable<String,LipidBLASTIdentificationVO>>> resultsLB = lBlastParser.getResults_();
       Hashtable<String,Hashtable<String,Hashtable<String,Vector<MSDialEntry>>>> resultsDial = msdialParser.getStructuredResults();
       Hashtable<String,Hashtable<String,Hashtable<String,Vector<MSDialEntry>>>> dialMS1Only = msdialParser.getStructuredMS1Only();
@@ -18859,8 +18881,10 @@ public void testTabFile() throws Exception {
             toRemove.add(analyte);
           else if (lClass.equalsIgnoreCase("Cer") || lClass.equalsIgnoreCase("Cer1P") || lClass.equalsIgnoreCase("HexCer") || lClass.equalsIgnoreCase("SM")){
             cAndDbsAndOx = StaticUtils.parseCAndDbsFromChainId(analyte.substring(1));
-            int[] cAndDbs = new int[1];
+            int[] cAndDbs = new int[2];
             cAndDbs[0] = Integer.parseInt(cAndDbsAndOx[0]);
+            if (cAndDbsAndOx.length<2)
+            	System.out.println(analyte.substring(1));
             cAndDbs[1] = Integer.parseInt(cAndDbsAndOx[1]);
             
             if (cAndDbs[0]<26 && cAndDbs[1]>1)
@@ -19763,7 +19787,6 @@ public void testTabFile() throws Exception {
         cell = row.createCell(legendColumn);
         cell.setCellValue("-3: false negative and false positive hit, e.g., hit at correct RT not found, but something at wrong RT reported");
       }
-            
       resultWorkbook.write(out);
       out.close();
     }catch(Exception ex){
@@ -21131,14 +21154,16 @@ public void testTabFile() throws Exception {
 //   String baseDir = "C:\\data\\Christer\\20220204_decoyLCMS-Exp1\\";
 //   String alexIdentificationFile = baseDir+"13_LCMSdata_CtrlEx1_allALEXscores_targetDB_v220305.tab";
 //   String output = baseDir+"LCMSdata_CtrlEx1_targetsearch.tab";
-	 //for mouse brain
-	 //String baseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
-	 String baseDir = "E:\\Lipidomics\\data\\Christer\\LProphet-TestFiles\\LC_MS\\brain\\result\\";
+	 
+	 
+	 //for LCMS mouse brain
+	 String baseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
+	 //String baseDir = "E:\\Lipidomics\\data\\Christer\\LProphet-TestFiles\\LC_MS\\brain\\result\\";
 //   String alexIdentificationFile = baseDir+"21_LCMSdata_brain_allALEXscores_targetsearch_v220303.tab";
 //   String output = baseDir+"LCMSdata_brain_targetsearch.tab";
 
-   String alexIdentificationFile = baseDir+"02_LP_ALEXscores_LCMSbrain_target_230720-1_harshest.tab";
-   String output = baseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_harshest.tab";
+   String alexIdentificationFile = baseDir+"02_LP_ALEXscores_LCMSbrain_target_230720-1_lessHarsh_ethylamine_wLPE-LPC_ext_lessHarsh.tab";
+   String output = baseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext.tab";
 
    //for NIST human plasma
 //   String baseDir = "C:\\Collaborator_Files\\Christer\\20220610_decoyLCMS-plasma\\";
@@ -23239,13 +23264,15 @@ public void testTabFile() throws Exception {
 //     String decoyBaseDir = "C:\\data\\Christer\\20220204_decoyLCMS-Exp1\\";
 //     String alexIdentificationFile = decoyBaseDir+"LCMSdata_CtrlEx1targetsearch.tab";
 //     String outFile = decoyBaseDir+"LCMSdata_CtrlEx1targetsearch_rtChecked.tab";
+  	 
+  	 
      //this is for LC-MS mouse brain
      String decoyBaseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
      //String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_Na_12.5.tab";
      //String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_Na_12.5_generated.tab";
      																							 
-     String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_harshest_forBetterComparison.tab";
-     String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_harshest_generated_forBetterComparison.tab";
+     String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext.tab";
+     String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext_generated.tab";
      
      //this is for LC-MS human plasma
 //     String decoyBaseDir = "C:\\data\\Christer\\20220610_decoyLCMS-plasma\\";

@@ -63,7 +63,7 @@ public class MSDialTxtParser
     this.fileName_ = fileName;
   }
 
-  public void parse() throws MSDialException{
+  public void parse(String msDialVersion) throws MSDialException{
     results_ = new Vector<MSDialEntry>();
     ms1Only_ = new Vector<MSDialEntry>();
     File file = new File(fileName_);
@@ -172,7 +172,7 @@ public class MSDialTxtParser
               adduct = entry;
             }else if (isotopeColumn>-1 && columnCount==isotopeColumn) {
               isotope = entry;
-            }else if (scoreColumn>-1 && columnCount==scoreColumn) {
+            }else if (scoreColumn>-1 && columnCount==scoreColumn && entry.length()>0 && !entry.equalsIgnoreCase("null")) {
               try{
                 score = Float.parseFloat(entry);
               } catch(NumberFormatException nfx) {
@@ -191,9 +191,11 @@ public class MSDialTxtParser
               throw new MSDialException ("There is something wrong with the entry on line number "+lineNumber+": "+line);
             }
             //the entry in the adduct column is not reliable;
-            adduct = name.substring(name.lastIndexOf(";")+1).trim();
-            name = name.substring(0,name.lastIndexOf(";"));
-            vo = new MSDialEntry(id, name, scans, rtStart, rt, rtStop, mz, area, adduct, isotope, score, signalNoise, msmsSpectrum);
+            if (msDialVersion.equalsIgnoreCase(MSDialEntry.MSDIAL_VERSION_4_0)) {
+            	adduct = name.substring(name.lastIndexOf(";")+1).trim();
+            	name = name.substring(0,name.lastIndexOf(";"));
+            }
+            vo = new MSDialEntry(id, name, scans, rtStart, rt, rtStop, mz, area, adduct, isotope, score, signalNoise, msmsSpectrum, msDialVersion);
             if (!vo.getIsotope().equalsIgnoreCase("M + 0")) {
               throw new MSDialException("!!! Identification with "+HEAD_ID+" "+id+" is based on another isotope: "+vo.getIsotope()+" - this hit is discarded !!!");
             }

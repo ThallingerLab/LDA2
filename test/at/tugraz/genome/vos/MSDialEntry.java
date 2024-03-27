@@ -33,6 +33,10 @@ import at.tugraz.genome.exception.MSDialException;
  */
 public class MSDialEntry
 {
+	
+  public final static String MSDIAL_VERSION_4_0 = "4.0";
+  public final static String MSDIAL_VERSION_4_9 = "4.9";
+
   
   private static Hashtable<String,String> adductLookup_ = new Hashtable<String,String>(){{
     put("[M-H]-","-H");
@@ -64,12 +68,15 @@ public class MSDialEntry
   
   
   public MSDialEntry(String id, String name, int scans, float rtStart, float rt, float rtStop, double mz,
-      float area, String adduct, String isotope, float score, float signalNoise, String msmsSpectrum) throws MSDialException
+      float area, String adduct, String isotope, float score, float signalNoise, String msmsSpectrum, String msDialVersion) throws MSDialException
   {
     super();
     this.id_ = id;
     this.name_ = name;
-    this.categorizeName(mz,rt);
+    if (msDialVersion.equalsIgnoreCase(MSDIAL_VERSION_4_0))
+    	this.categorizeNameVersion_4_0(mz,rt);
+    else if (msDialVersion.equalsIgnoreCase(MSDIAL_VERSION_4_9))
+    	this.categorizeNameVersion_4_9(mz,rt);
     this.scans_ = scans;
     this.rtStart_ = rtStart;
     this.rt_ = rt;
@@ -87,7 +94,130 @@ public class MSDialEntry
   }
   
   
-  private void categorizeName(double mz, float rt) throws MSDialException{
+  private void categorizeNameVersion_4_9(double mz, float rt) throws MSDialException{
+    dialClassName_ = null;
+    dialMs2Name_ = null;
+    ldaClassName_ = null;
+    ldaMs1Name_ = null;
+    ldaMs2Name_ = null;
+    dialMs1Name_ = name_;
+    if (dialMs1Name_.startsWith("w/o MS2:"))
+      dialMs1Name_ = dialMs1Name_.substring("w/o MS2:".length());
+    
+    dialClassName_ = dialMs1Name_;
+    if (dialClassName_.indexOf(" ")!=-1)
+    	dialClassName_ = dialClassName_.substring(0,dialClassName_.indexOf(" "));
+    if (!dialMs1Name_.contains(" "))
+    	return;
+    if (dialMs1Name_.length()<(dialClassName_.length()+2))
+    	return;
+    char subsequentToEmptySpace = dialMs1Name_.substring(dialClassName_.length()+2,dialClassName_.length()+3).toCharArray()[0];
+    //the character subsequent to the empty space must start with a digit for the supported naming convention
+    if (!Character.isDigit(subsequentToEmptySpace))
+    	return;
+  	System.out.println(dialMs1Name_);
+
+    //in this case, both the MSDIAL MS1 and MS2 name are stored in the file
+    if (dialMs1Name_.contains("|")) {
+    	dialMs2Name_ = dialMs1Name_.substring(dialMs1Name_.indexOf("|")+1);
+    	dialMs1Name_ = dialMs1Name_.substring(0,dialMs1Name_.indexOf("|"));
+    }else {
+    	//in this case it is assumed that MSDIAL contains an MS2 name only
+    	if (dialMs1Name_.contains("_")||dialMs1Name_.contains("/")) {
+    		
+    	} else {
+    		
+    	}
+    }
+ 
+//    if (dialMs1Name_.indexOf(";")!=-1) {
+//      dialMs2Name_ = dialMs1Name_.substring(dialMs1Name_.indexOf(";")+1);
+//      dialMs1Name_ = dialMs1Name_.substring(0,dialMs1Name_.indexOf(";"));
+//    }
+//    if (dialMs1Name_.indexOf(" ")==-1)
+//      throw new MSDialException("There is no class in the identification: "+name_);    
+//    dialClassName_ = dialMs1Name_.substring(0,dialMs1Name_.indexOf(" "));
+//    dialMs1Name_ = dialMs1Name_.substring(dialClassName_.length()).trim();
+//    if (dialMs2Name_!=null && dialMs2Name_.length()>0)
+//      dialMs2Name_ = dialMs2Name_.substring(dialClassName_.length()+1).trim();
+//    
+//    ldaClassName_ = dialClassName_;
+//    ldaMs1Name_ = dialMs1Name_;
+//    ldaMs2Name_ = dialMs2Name_;
+
+    
+    
+ //    boolean faHydroxylated = false;
+//    if (dialClassName_.lastIndexOf("-")!=-1) {
+//      ldaClassName_ = dialClassName_.substring(0,dialClassName_.lastIndexOf("-"));
+//      String hydroxClass = dialClassName_.substring(dialClassName_.lastIndexOf("-")+1);
+//      if (hydroxClass.startsWith("A")||hydroxClass.startsWith("B")||hydroxClass.startsWith("EO")) {
+//        faHydroxylated = true;
+//        hydroxClass = hydroxClass.substring(1);
+//        if (hydroxClass.startsWith("EO"))
+//          hydroxClass = hydroxClass.substring(1);
+//      }else if (hydroxClass.startsWith("N")){
+//        hydroxClass = hydroxClass.substring(1);
+//      }else if (hydroxClass.startsWith("H")){
+//        hydroxClass = hydroxClass.substring(1);
+//        System.out.println("I do not know what the hydroxyClass \""+hydroxClass+"\" might be: "+name_+"   "+mz+";"+rt);        
+//      }else
+//        throw new MSDialException("The hydroxylation encoding cannot be decoded: "+name_);
+//      int nrOfHydroxies = 0;
+//      if (hydroxClass.equalsIgnoreCase("DS")||hydroxClass.equalsIgnoreCase("S")) {
+//        nrOfHydroxies = 2;
+//      }else if (hydroxClass.equalsIgnoreCase("P")) {
+//        nrOfHydroxies = 3;
+//      }
+//      if (faHydroxylated)
+//        nrOfHydroxies++;
+//      String hEncoding = "";
+//      if (nrOfHydroxies==1)
+//        hEncoding = "m";
+//      else if (nrOfHydroxies==2)
+//        hEncoding = "d";
+//      else if (nrOfHydroxies==3)
+//        hEncoding = "t";
+//      else if (nrOfHydroxies==4)
+//        hEncoding = "q";
+//      else
+//        throw new MSDialException("This amount of hydroxylation encodings is not possible in MS-DIAL: "+nrOfHydroxies+"  "+name_);
+//      ldaMs1Name_ = hEncoding+dialMs1Name_.substring(1);
+//      if (ldaMs1Name_.endsWith("+O"))
+//        ldaMs1Name_ = ldaMs1Name_.substring(0,ldaMs1Name_.length()-2);
+//      else if (ldaMs1Name_.endsWith("+1O"))
+//        ldaMs1Name_ = ldaMs1Name_.substring(0,ldaMs1Name_.length()-3);
+//      
+//    } 
+//    if (dialMs2Name_!=null){
+//      ldaMs2Name_ = dialMs2Name_.substring(0,dialMs2Name_.indexOf("/")+1);
+//      if (faHydroxylated)
+//        ldaMs2Name_ += "h";
+//      else
+//        ldaMs2Name_ += "n";
+//      ldaMs2Name_ += dialMs2Name_.substring(dialMs2Name_.indexOf("/")+1);
+//      if (ldaMs2Name_.endsWith("+O"))
+//        ldaMs2Name_ = ldaMs2Name_.substring(0,ldaMs2Name_.length()-2);
+//    }
+//    if (ldaClassName_.equalsIgnoreCase("CerP")) {
+//      ldaClassName_ = "Cer1P";
+//      ldaMs1Name_ = "d"+ldaMs1Name_;
+//    } else if (dialClassName_.equalsIgnoreCase("Sphinganine")||dialClassName_.equalsIgnoreCase("Sphingosine")) {
+//      ldaClassName_ = "SphBase";
+//      ldaMs1Name_ = "d"+ldaMs1Name_;
+//    } else if (dialClassName_.equalsIgnoreCase("Phytosphingosine")) {
+//      ldaClassName_ = "SphBase";
+//      ldaMs1Name_ = "t"+ldaMs1Name_;
+//    }
+
+//    System.out.println(dialClassName_+" ! "+dialMs1Name_+" ! "+dialMs2Name_);
+//    System.out.println(ldaClassName_+" ! "+ldaMs1Name_+" ! "+ldaMs2Name_);
+    
+  }
+  
+  
+  
+  private void categorizeNameVersion_4_0(double mz, float rt) throws MSDialException{
     dialClassName_ = null;
     dialMs2Name_ = null;
     ldaClassName_ = null;
