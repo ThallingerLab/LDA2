@@ -232,7 +232,6 @@ import at.tugraz.genome.maspectras.quantification.RawToChromatogramTranslator;
 import at.tugraz.genome.maspectras.utils.Calculator;
 import at.tugraz.genome.maspectras.utils.StringUtils;
 import at.tugraz.genome.parsers.LipidBLASTParser;
-import at.tugraz.genome.parsers.MSDialResultsCombiner;
 import at.tugraz.genome.parsers.MSDialTxtParser;
 import at.tugraz.genome.parsers.MSFinderStructureParser;
 import at.tugraz.genome.util.FloatMatrix;
@@ -248,7 +247,6 @@ import at.tugraz.genome.vos.LdaLbStandardsEvidence;
 import at.tugraz.genome.vos.LipidBLASTDetectionVO;
 import at.tugraz.genome.vos.LipidBLASTIdentificationVO;
 import at.tugraz.genome.vos.LipidClassInfoVO;
-import at.tugraz.genome.vos.MSDialCombinedEntry;
 import at.tugraz.genome.vos.MSDialEntry;
 import at.tugraz.genome.vos.MSFinderEntry;
 import at.tugraz.genome.vos.MSFinderHitVO;
@@ -355,19 +353,6 @@ public class TestClass extends JApplet implements AddScan
   private final String COLUMN_HEADER_MAX_ALL_FRAGS = "MS2_Max_fragments_expected combined";
   private final String COLUMN_HEADER_SCORE_UNCORRECTED = "ALEX score uncorr.";
   private final String COLUMN_HEADER_AMBIGUOUS = "Ambiguous partner";
-
-  private final String COLUMN_HEADER_DIAL_SCORE = "MSDIAL score (avg)";
-  private final String COLUMN_HEADER_DIAL_SCORE_MAX = "MSDIAL score (max)";
-  private final String COLUMN_HEADER_MOL_SPECIES_ALEX = "ALEX annotation";
-  private final String COLUMN_HEADER_MOL_SPECIES_MZ = "m/z";
-  private final String COLUMN_HEADER_DOT_PRODUCT_AVG = "Dot product (avg)";
-  private final String COLUMN_HEADER_WEIGHTED_DOT_PRODUCT_AVG = "Weighted dot product (avg)";
-  private final String COLUMN_HEADER_REVERSE_DOT_PRODUCT_AVG = "Reverse dot product (avg)";
-  private final String COLUMN_HEADER_RETENTION_TIMES = "Retention times";
-  private final String COLUMN_HEADER_DIAL_SCORE_INDIVIDUAL = "Total score (individual)";
-  private final String COLUMN_HEADER_DOT_PRODUCT_INDIVIDUAL = "Dot product (individual)";
-  private final String COLUMN_HEADER_WEIGHTED_DOT_PRODUCT_INDIVIDUAL = "Weighted dot product (individual)";
-  private final String COLUMN_HEADER_REVERSE_DOT_PRODUCT_INDIVIDUAL = "Reverse dot product (individual)";
 
   
   private final String TYPE_SPECIES = "Species-level identification";
@@ -483,7 +468,7 @@ public class TestClass extends JApplet implements AddScan
     //this.compareLDABMSDialControlledPositiveProbes();
     //this.compareLDABMSDialControlledNegativeProbes();
     //this.compareLDAMSDialNaturalProbesPositive();
-    //this.compareLDAMSDialNaturalProbesNegative();
+    this.compareLDAMSDialNaturalProbesNegative();
     //parseMSFinderStructure();
     //this.generateDetailsSphingosBiologicalExperiment();
     //this.generateDetailsSphingosControlExperiment();
@@ -513,7 +498,6 @@ public class TestClass extends JApplet implements AddScan
     //this.mixtureModelWithDecoySearch();
     //this.mixtureModelWithDecoySearchAddFunction();
     //this.validateHitsBasedOnRetentionTime();
-  	this.validateMSDIALHitsBasedOnRetentionTime();
     //this.generateCodeForSpeciesEvaluation();
   }
 
@@ -10423,60 +10407,11 @@ public void testTabFile() throws Exception {
     adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("Cer", FoundBiologicalSpecies.getCerSpeciesOrbitrap());
     //original version
-    //adducts.put("-H", false);
+    adducts.put("-H", false);
     //MS-DIAL comparison
     adducts.put("HCOO", false);
     lipidClassInfo.put("Cer", new LipidClassInfoVO(1,true,0.7d,adducts));
-    adducts = new LinkedHashMap<String,Boolean>();
-    lipidClasses.put("LPS", new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>());
-    adducts.put("-H", false);
-    lipidClassInfo.put("LPS", new LipidClassInfoVO(1,true,0.7d,adducts));
   }
-  
-  
-  private void getValidOrbitrapCIDSpeciesNegativeMSDIAL(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
-      Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
-    lipidClasses.put("PI", FoundBiologicalSpecies.getPISpeciesOrbitrap());
-    adducts.put("-H", true);
-    lipidClassInfo.put("PI", new LipidClassInfoVO(2,true,0.5d,adducts));
-    adducts = new LinkedHashMap<String,Boolean>();
-    lipidClasses.put("P-PE", FoundBiologicalSpecies.getPPESpeciesOrbitrap());
-    adducts.put("-H", true);
-    lipidClassInfo.put("P-PE", new LipidClassInfoVO(2,true,0.5d,adducts));
-    adducts = new LinkedHashMap<String,Boolean>();
-    lipidClasses.put("LPE", FoundBiologicalSpecies.getLPESpeciesOrbitrap());
-    adducts.put("-H", false);
-    lipidClassInfo.put("LPE", new LipidClassInfoVO(1,true,0.5,adducts));
-    adducts = new LinkedHashMap<String,Boolean>();
-    lipidClasses.put("PS", FoundBiologicalSpecies.getPSSpeciesOrbitrap());
-    adducts.put("-H", true);
-    lipidClassInfo.put("PS", new LipidClassInfoVO(2,false,1.2,adducts));
-    adducts = new LinkedHashMap<String,Boolean>();
-    lipidClasses.put("PC", FoundBiologicalSpecies.getPCSpeciesOrbitrap());
-    adducts.put("HCOO", true);
-    adducts.put("-CH3", true);
-    lipidClassInfo.put("PC", new LipidClassInfoVO(2,true,0.5d,adducts));
-    adducts = new LinkedHashMap<String,Boolean>();
-    lipidClasses.put("PE", FoundBiologicalSpecies.getPESpeciesOrbitrap());
-    adducts.put("-H", true);
-    lipidClassInfo.put("PE", new LipidClassInfoVO(2,true,0.5d,adducts));
-    adducts = new LinkedHashMap<String,Boolean>();
-    lipidClasses.put("PG", FoundBiologicalSpecies.getPGSpeciesOrbitrap());
-    adducts.put("-H", true);
-    lipidClassInfo.put("PG", new LipidClassInfoVO(2,true,0.5d,adducts));
-    adducts = new LinkedHashMap<String,Boolean>();
-    lipidClasses.put("Cer", FoundBiologicalSpecies.getCerSpeciesOrbitrap());
-    //original version
-    //adducts.put("-H", false);
-    //MS-DIAL comparison
-    adducts.put("HCOO", false);
-    lipidClassInfo.put("Cer", new LipidClassInfoVO(1,true,0.5d,adducts));
-    adducts = new LinkedHashMap<String,Boolean>();
-    lipidClasses.put("LPS", new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>());
-    adducts.put("-H", false);
-    lipidClassInfo.put("LPS", new LipidClassInfoVO(1,true,0.7d,adducts));
-  }
-
   
   private void getValid4000QTRAPSpeciesNegative(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
       Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
@@ -17217,8 +17152,7 @@ public void testTabFile() throws Exception {
   	String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_9;
 
     //MSDialTxtParser dialParser = new MSDialTxtParser("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\MS-Dial_Mix1\\export\\Mix1_neg_1.txt");
-  	File msDialFile = new File("E:\\Lipidomics\\data\\BiologicalExperiment\\Orbitrap_CID\\MS-Dial_positive\\export\\002_liver2-1_Orbitrap_CID_pos.txt");
-    MSDialTxtParser dialParser = new MSDialTxtParser(msDialFile.getAbsolutePath(),msDialFile.getName());
+    MSDialTxtParser dialParser = new MSDialTxtParser("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\MS-Dial_Mix1\\export\\Mix1_1.txt");
     try {
       dialParser.parse(msDialVersion);
       Vector<MSDialEntry> entries = dialParser.getResults();
@@ -17412,8 +17346,7 @@ public void testTabFile() throws Exception {
       CellStyle ms1FoundStyle = getMS1FoundStyle(resultWorkbook);
       CellStyle notFoundStyle = getNotFoundStyle(resultWorkbook);
       Hashtable<String,Vector<LipidParameterSet>> resultsLDA = LDAResultReader.readResultFile(ldaFile, new Hashtable<String,Boolean>()).getIdentifications();
-      File msDialF = new File(msdialFile);
-      MSDialTxtParser msdialParser = new MSDialTxtParser(msDialF.getAbsolutePath(),msDialF.getName());
+      MSDialTxtParser msdialParser = new MSDialTxtParser(msdialFile);
       msdialParser.parse(msDialVersion);
       //MSFinderStructureParser finderParser = new MSFinderStructureParser(msfinderFile);
       //finderParser.parse();
@@ -18902,6 +18835,7 @@ public void testTabFile() throws Exception {
     String ldaFile = baseDir+"positive\\002_liver2-1_Orbitrap_CID_pos_positive.xlsx";
     String msDialFile = baseDir+"MS-Dial_positive\\export\\002_liver2-1_Orbitrap_CID_pos.txt";
     String outputFile = baseDir+"MS-Dial_positive\\002_liver2-1_Orbitrap_CID_pos_comp_generated.xlsx";
+    
 
     performMSDialComparisonOfNaturalProbes(lipidClasses,lipidClassInfo,chromFile,quantFile,ldaFile,msDialFile,outputFile,msDialVersion);    
   }
@@ -18939,11 +18873,11 @@ public void testTabFile() throws Exception {
     this.getValidOrbitrapCIDSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
     ////this.getValid4000QTRAPSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
  
-    String chromFile = baseDir+"negative\\015_liver2-3_Orbitrap_CID_neg.chrom";
+    String chromFile = baseDir+"negative\\002_liver2-1_Orbitrap_CID_neg.chrom";
     String quantFile = baseDir+"negative\\quant\\negative.xlsx";
-    String ldaFile = baseDir+"negative\\015_liver2-3_Orbitrap_CID_neg_negative.xlsx";
-    String msDialFile = baseDir+"MS-Dial_negative\\export\\015_liver2-3_Orbitrap_CID_neg.txt";
-    String outputFile = baseDir+"MS-Dial_negative\\015_liver2-3_Orbitrap_CID_neg_comp_generated.xlsx";
+    String ldaFile = baseDir+"negative\\002_liver2-1_Orbitrap_CID_neg_negative.xlsx";
+    String msDialFile = baseDir+"MS-Dial_negative\\export\\002_liver2-1_Orbitrap_CID_neg.txt";
+    String outputFile = baseDir+"MS-Dial_negative\\002_liver2-1_Orbitrap_CID_neg_comp_generated.xlsx";
     
 
     performMSDialComparisonOfNaturalProbes(lipidClasses,lipidClassInfo,chromFile,quantFile,ldaFile,msDialFile,outputFile,msDialVersion);
@@ -18972,8 +18906,7 @@ public void testTabFile() throws Exception {
       leftHeaderStyle.cloneStyleFrom(headerStyle);
       leftHeaderStyle.setAlignment(CellStyle.ALIGN_LEFT);
       Hashtable<String,Vector<LipidParameterSet>> resultsLDA = LDAResultReader.readResultFile(ldaFile, new Hashtable<String,Boolean>()).getIdentifications();
-      File msDialF = new File(msDialFile);
-      MSDialTxtParser msdialParser = new MSDialTxtParser(msDialF.getAbsolutePath(),msDialF.getName());
+      MSDialTxtParser msdialParser = new MSDialTxtParser(msDialFile);
       msdialParser.parse(msDialVersion);
       //Hashtable<String,Hashtable<String,Hashtable<String,LipidBLASTIdentificationVO>>> resultsLB = lBlastParser.getResults_();
       Hashtable<String,Hashtable<String,Hashtable<String,Vector<MSDialEntry>>>> resultsDial = msdialParser.getStructuredResults();
@@ -19925,10 +19858,7 @@ public void testTabFile() throws Exception {
     }else
     	result[2] = 0;
     result[0] = Integer.parseInt(analyte.substring(0,analyte.indexOf(":")));
-    String dbsString = analyte.substring(analyte.indexOf(":")+1);
-    if (dbsString.indexOf("(")!=-1)
-    	dbsString = dbsString.substring(0,dbsString.indexOf("("));
-    result[1] = Integer.parseInt(dbsString);
+    result[1] = Integer.parseInt(analyte.substring(analyte.indexOf(":")+1));
     return result;
   }
   
@@ -21270,9 +21200,9 @@ public void testTabFile() throws Exception {
  
  private void filterOnlyRelevantLipidClasses() {
    //for filtering LC-MS liver
-   String baseDir = "E:\\Lipidomics\\data\\Christer\\20220119_decoyLCMS-liver\\";
-   String alexIdentificationFile = baseDir+"21_LCMSdata_liver_allALEXscores_targetsearch_v240306.tab";
-   String output = baseDir+"LP_LCMSliver_target_240306-1_allScore_Na_12.5_lessHarsh_combRemovalAll.tab";
+//   String baseDir = "C:\\data\\Christer\\20220119_decoyLCMS-liver\\";
+//   String alexIdentificationFile = baseDir+"21_LCMSdata_Liver_allALEXscores_targetsearch_v220303.tab";
+//   String output = baseDir+"LCMSdata_liver_targetsearch.tab";
    //for filtering LC-MS Exp 1
 //   String baseDir = "C:\\data\\Christer\\20220204_decoyLCMS-Exp1\\";
 //   String alexIdentificationFile = baseDir+"13_LCMSdata_CtrlEx1_allALEXscores_targetDB_v220305.tab";
@@ -21280,13 +21210,13 @@ public void testTabFile() throws Exception {
 	 
 	 
 	 //for LCMS mouse brain
-//	 String baseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
-//	 //String baseDir = "E:\\Lipidomics\\data\\Christer\\LProphet-TestFiles\\LC_MS\\brain\\result\\";
-////   String alexIdentificationFile = baseDir+"21_LCMSdata_brain_allALEXscores_targetsearch_v220303.tab";
-////   String output = baseDir+"LCMSdata_brain_targetsearch.tab";
-//
-//   String alexIdentificationFile = baseDir+"02_LP_ALEXscores_LCMSbrain_target_230720-1_lessHarsh_ethylamine_wLPE-LPC_ext_lessHarsh.tab";
-//   String output = baseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext.tab";
+	 String baseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
+	 //String baseDir = "E:\\Lipidomics\\data\\Christer\\LProphet-TestFiles\\LC_MS\\brain\\result\\";
+//   String alexIdentificationFile = baseDir+"21_LCMSdata_brain_allALEXscores_targetsearch_v220303.tab";
+//   String output = baseDir+"LCMSdata_brain_targetsearch.tab";
+
+   String alexIdentificationFile = baseDir+"02_LP_ALEXscores_LCMSbrain_target_230720-1_lessHarsh_ethylamine_wLPE-LPC_ext_lessHarsh.tab";
+   String output = baseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext.tab";
 
    //for NIST human plasma
 //   String baseDir = "C:\\Collaborator_Files\\Christer\\20220610_decoyLCMS-plasma\\";
@@ -23379,9 +23309,9 @@ public void testTabFile() throws Exception {
    
    private void validateHitsBasedOnRetentionTime() {
      //this is for LC-MS liver
-     String decoyBaseDir = "E:\\Lipidomics\\data\\Christer\\20220119_decoyLCMS-liver\\";
-     String alexIdentificationFile = decoyBaseDir+"LP_LCMSliver_target_240306-1_allScore_Na_12.5_lessHarsh_combRemovalAll.tab";
-     String outFile = decoyBaseDir+"LCMSdata_liver_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_combRemovalAll_generated.tab";
+//     String decoyBaseDir = "C:\\data\\Christer\\20220119_decoyLCMS-liver\\";
+//     String alexIdentificationFile = decoyBaseDir+"LCMSdata_liver_targetsearch_PE_O-5frag.tab";
+//     String outFile = decoyBaseDir+"LCMSdata_liver_targetsearch_rtChecked_13_PE_O-5frag.tab";
 
      //this is for LC-MS Exp1
 //     String decoyBaseDir = "C:\\data\\Christer\\20220204_decoyLCMS-Exp1\\";
@@ -23390,20 +23320,20 @@ public void testTabFile() throws Exception {
   	 
   	 
      //this is for LC-MS mouse brain
-//     String decoyBaseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
-//     //String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_Na_12.5.tab";
-//     //String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_Na_12.5_generated.tab";
-//     																							 
-//     String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext.tab";
-//     String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext_generated.tab";
+     String decoyBaseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
+     //String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_Na_12.5.tab";
+     //String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_Na_12.5_generated.tab";
+     																							 
+     String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext.tab";
+     String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext_generated.tab";
      
      //this is for LC-MS human plasma
 //     String decoyBaseDir = "C:\\data\\Christer\\20220610_decoyLCMS-plasma\\";
 //     String alexIdentificationFile = decoyBaseDir+"LCMSdata_serum_targetsearch_13_PE_O-5frag.tab";
 //     String outFile = decoyBaseDir+"LCMSdata_serum_targetsearch_rtChecked_13_PE_O-5frag.tab";
      
-     String filePrevAssign = decoyBaseDir+"LCMSdata_liver_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_combRemovalAll_old.xlsx";
-     //String filePrevAssign = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext_old.xlsx";
+     //String filePrevAssign = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_PE_O-5frag.xlsx";
+     String filePrevAssign = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_combiCorrected.xlsx";
      
      String lookupClass;
      String lookupSpecies;
@@ -23424,11 +23354,11 @@ public void testTabFile() throws Exception {
      Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
      //LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
      //this is for LC-MS liver
-     getValidOrbitrapCIDMouseLiverSpecies(lipidClasses, lipidClassInfo, new LinkedHashMap<String,Boolean>());
+     //getValidOrbitrapCIDMouseLiverSpecies(lipidClasses, lipidClassInfo, new LinkedHashMap<String,Boolean>());
      //this is for LC-MS Exp1
      //getValidOrbitrapCIDCtrlExp1SpeciesPositive(lipidClasses, lipidClassInfo, adducts);
      //this is for LC-MS mouse brain
-     //getValidOrbitrapCIDMouseBrainSpecies(lipidClasses, lipidClassInfo);
+     getValidOrbitrapCIDMouseBrainSpecies(lipidClasses, lipidClassInfo);
      //this is for LC-MS human plasma
      //getValidOrbitrapCIDHumanPlasmaSpecies(lipidClasses, lipidClassInfo);
 
@@ -23571,10 +23501,10 @@ public void testTabFile() throws Exception {
 //                refRt = refRt-0.6d;
 //            }
             //this is for LC-MS liver
-            if (result.isPositive() && (lookupClass.equalsIgnoreCase("P-PC") || lookupClass.equalsIgnoreCase("P-PE") || lookupClass.equalsIgnoreCase("LPE") ||
-                lookupClass.equalsIgnoreCase("PS") || lookupClass.equalsIgnoreCase("PC") || lookupClass.equalsIgnoreCase("PE") || lookupClass.equalsIgnoreCase("Cer"))) {
-              refRt = refRt-0.2d;
-            }            
+//            if (result.isPositive() && (lookupClass.equalsIgnoreCase("P-PC") || lookupClass.equalsIgnoreCase("P-PE") || lookupClass.equalsIgnoreCase("LPE") ||
+//                lookupClass.equalsIgnoreCase("PS") || lookupClass.equalsIgnoreCase("PC") || lookupClass.equalsIgnoreCase("PE") || lookupClass.equalsIgnoreCase("Cer"))) {
+//              refRt = refRt-0.2d;
+//            }            
           //this is for LC-MS Exp1 brain
 //            if (result.isPositive()) {
 //              refRt = refRt-0.05d;
@@ -23667,413 +23597,6 @@ public void testTabFile() throws Exception {
       }
     }
    }
-   
-   private void validateMSDIALHitsBasedOnRetentionTime() {
-  	 double rtGroupingTolerance = 0.4d;
-  	 
-     //this is for LC-MS liver
-  	 String filePrevAssign = "E:\\Lipidomics\\data\\Christer\\20220119_decoyLCMS-liver\\LCMSdata_liver_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_combRemovalAll.xlsx";
-  	 String baseDir = "E:\\Lipidomics\\data\\BiologicalExperiment\\Orbitrap_CID\\";
-  	 //this is just for the sequence of the hits
-  	 //String quantFile = baseDir+"quant\\positive.xlsx";
-  	 String posIonModeMSDIALResultsDir = baseDir+"MS-Dial_positive\\export\\";
-  	 String negIonModeMSDIALResultsDir = baseDir+"MS-Dial_negative\\export\\";
-  	 //TODO: this has to be replaced with the MS-DIAL identifications (post grouping)
-  	 ////String alexIdentificationFile = decoyBaseDir+"LCMSdata_liver_targetsearch_PE_O-5frag.tab";
-  	 String outFile = baseDir+"LCMSdata_liver_MSDIALsearch_rtChecked.tab";
-  	 
-  	 
-     String lookupClass;
-     String lookupSpecies;
-     String lookupMolSpecies;
-     String refMolSpecies;
-     LipidClassInfoVO info;
-     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> speciesAll;
-     LinkedHashMap<String,ReferenceInfoVO> molSpecInfo;
-     double rt;
-     double refRt;
-     String tpString;
-     BufferedOutputStream out = null;
-     short nrOh;
-     String[] twoChains;
-     HashMap<String,Set<String>> relevantClasses = getRelevantClassesForMSDialComparison();
-    
-     LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>>();
-     Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
-     //LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
-     //this is for LC-MS liver
-     getValidOrbitrapCIDMouseLiverSpeciesMSDIAL(lipidClasses, lipidClassInfo, new LinkedHashMap<String,Boolean>());
-
-     try {
-       Hashtable<String,Hashtable<String,Vector<RTCheckedVO>>> previousAssignments = null;
-       if (filePrevAssign!=null && filePrevAssign.length()>0) {
-         previousAssignments = parsePreviousAssignements(filePrevAssign);
-       }
-     	//this is just for the sequence of the hits
-       //Vector quantValues = QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f, true);
-       //LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantValues.get(1);
-       ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>) quantValues.get(4);
-       //TODO: now, I have to read the MS-DIAL results and combine them
-       MSDialResultsCombiner resultsCombiner = new MSDialResultsCombiner(posIonModeMSDIALResultsDir, negIonModeMSDIALResultsDir, relevantClasses,rtGroupingTolerance/*, analyteSequence*/);
-       resultsCombiner.parseAndCombine();
-       List<MSDialCombinedEntry> resultsAll = resultsCombiner.getResults();
-       Collections.sort(resultsAll,new GeneralComparator("at.tugraz.genome.vos.MSDialCombinedEntry", "getTotalScoreAvg", "java.lang.Float"));
-       //start: these lines perform a second sorting by the ALEX molecular species name
-       List<MSDialCombinedEntry> resultsSortedAlsoBySecondScore = new ArrayList<MSDialCombinedEntry>();
-       List<MSDialCombinedEntry> sublist = new ArrayList<MSDialCombinedEntry>();
-       double lastScore = -1;
-       for (int i=resultsAll.size()-1; i!=-1; i--) {
-      	 MSDialCombinedEntry result = resultsAll.get(i);
-         if (i==resultsAll.size()-1) lastScore = result.getTotalScoreAvg();
-         if (lastScore!=result.getTotalScoreAvg()) {
-           Collections.sort(sublist,new GeneralComparator("at.tugraz.genome.vos.MSDialCombinedEntry", "getTotalScoreMax", "java.lang.Float"));
-           for (int j=sublist.size()-1; j!=-1; j--)
-             resultsSortedAlsoBySecondScore.add(sublist.get(j));
-           sublist = new ArrayList<MSDialCombinedEntry>();   
-           lastScore = result.getTotalScoreAvg();
-         }
-         sublist.add(result);
-       }
-       if (sublist.size()>0) {
-      	 Collections.sort(sublist,new GeneralComparator("at.tugraz.genome.vos.MSDialCombinedEntry", "getTotalScoreMax", "java.lang.Float"));
-         for (int j=sublist.size()-1; j!=-1; j--)
-           resultsSortedAlsoBySecondScore.add(sublist.get(j));
-         sublist = new ArrayList<MSDialCombinedEntry>();
-       }
-       resultsAll = resultsSortedAlsoBySecondScore;
-       //end: these lines perform a second sorting by the combined ALEX score
-       int countFound = 0;
-       //for debugging
-//       for (int i=0; i!=resultsSortedAlsoBySecondScore.size(); i++) {
-//      	 MSDialCombinedEntry combined = resultsSortedAlsoBySecondScore.get(i);
-//      	 System.out.println(combined.getAlexMs2Name()+"_"+combined.getGroupingRt()+"_"+combined.getAdduct()+": "+combined.getTotalScoreAvg());
-//       }
-       
-       for (int i=0; i!=resultsAll.size(); i++) {
-         MSDialCombinedEntry result = resultsAll.get(i);
-
-         if (previousAssignments!=null && previousAssignments.containsKey(result.getAlexClassName()) && previousAssignments.get(result.getAlexClassName()).containsKey(result.getAlexMs1Name())) {
-           if (result.getAlexClassName().startsWith("IS ")) {
-             refRt = -1000d;  
-           }else
-             refRt = Double.parseDouble(result.getGroupingRt());
-           boolean found = false;
-           for (RTCheckedVO rtChecked : previousAssignments.get(result.getAlexClassName()).get(result.getAlexMs1Name())){
-             if ((rtChecked.getMolSpec().equalsIgnoreCase(result.getAlexMs2Name()) || StaticUtils.isAPermutedVersion(rtChecked.getMolSpec(), result.getAlexMs2Name(), "-")) && rtChecked.getAdduct().equalsIgnoreCase(result.getAlexAdduct())) {
-               if (result.getAlexClassName().startsWith("IS ")) {
-                 rt = -1000d;
-               }else
-                 rt = Double.parseDouble(rtChecked.getRtGroup());
-               if ((refRt-0.4d)<=rt && rt<=(refRt+0.4d)) {
-                 //System.out.println("I have found this one in the results: "+result.getLipidClass()+" "+result.getLipidSpecies()+" "+result.getMolSpecies());
-                 result.setTp(rtChecked.getTruePos());
-//               if (rtChecked.getComment()!=null && rtChecked.getComment().length()>0)
-//                 System.out.println(rtChecked.getComment()+" ; "+rtChecked.getTruePos());
-                 result.setComment((rtChecked.getComment()!=null && rtChecked.getComment().length()>0) ? rtChecked.getComment() : "");
-                 if (found)
-                   System.out.println("I have found it more than one time");
-
-                 found = true;
-                 countFound++;
-               }
-             }
-           }
-           if (found)
-             continue;
-         }
-         
-         result.setTp("false");
-        lookupClass = result.getLdaClassName();
-//         if (lookupClass.equalsIgnoreCase("DAG"))
-//           lookupClass = "DG";
-//         if (lookupClass.equalsIgnoreCase("TAG"))
-//           lookupClass = "TG";
-         if (lookupClass.equalsIgnoreCase("O-PC"))
-           lookupClass = "P-PC";
-         if (lookupClass.equalsIgnoreCase("O-PE"))
-           lookupClass = "P-PE";
-         if (!lipidClasses.containsKey(lookupClass)) {
-           //System.out.println(result.getLipidClass());
-           continue;
-         }
-         info = lipidClassInfo.get(lookupClass);
-         speciesAll = lipidClasses.get(lookupClass);
-         lookupSpecies = result.getLdaMs1Name();
-         if (result.getLdaClassName().equalsIgnoreCase("O-PE") || result.getLdaClassName().equalsIgnoreCase("O-PC")) {
-           //lookupSpecies = result.getLipidSpecies().substring("PE O-".length());
-           int nrDbs = Integer.parseInt(lookupSpecies.substring(lookupSpecies.indexOf(":")+1));
-           nrDbs--;
-           lookupSpecies = lookupSpecies.substring(0,lookupSpecies.indexOf(":")+1)+String.valueOf(nrDbs);
-           //System.out.println("Lookup-Species "+lookupSpecies);
-         }// else if (result.getLipidClass().equalsIgnoreCase("Cer") || result.getLipidClass().equalsIgnoreCase("HexCer") || result.getLipidClass().equalsIgnoreCase("SM")) {
-//           nrOh = Short.parseShort(lookupSpecies.substring(lookupSpecies.indexOf(";")+1));
-//           //this line is for the new LDA version supporting different LCB backbones and different numbers of hydroxylation
-//           ////lookupSpecies = Settings.getLcbHydroxyEncoding().getEncodedPrefix(nrOh)+lookupSpecies.substring(0,lookupSpecies.indexOf(";"));
-//           //the next 5 lines are for the old LDA version (before 2.8)
-//           int nrCarbons = Integer.parseInt(lookupSpecies.substring(0,lookupSpecies.indexOf(":")))-18;
-//           int doubleBonds = Integer.parseInt(lookupSpecies.substring(lookupSpecies.indexOf(":")+1,lookupSpecies.indexOf(";")))-1;
-//           if (doubleBonds<0)
-//             lookupSpecies = "---";
-//           lookupSpecies = nrCarbons+":"+doubleBonds;
-//         }
-         if (!speciesAll.containsKey(lookupSpecies))
-           continue;
-         molSpecInfo = speciesAll.get(lookupSpecies);
-         lookupMolSpecies = result.getLdaMs2Name();
-         if (lookupMolSpecies==null && result.getAlexMs2Name()!=null)
-           lookupMolSpecies=result.getAlexMs2Name().substring(result.getAlexClassName().length()+1);
-         lookupMolSpecies = lookupMolSpecies.replace("/", "_");
-         //result.getMolSpecies().substring((result.getLipidClass().length()+1)).replaceAll("-", "_");
-         if ((result.getLdaClassName().equalsIgnoreCase("O-PE") || result.getLdaClassName().equalsIgnoreCase("P-PC"))) {
-           String firstPart = "P"+lookupMolSpecies.substring(1,lookupMolSpecies.indexOf("_"));
-           int nrDbs = Integer.parseInt(firstPart.substring(firstPart.indexOf(":")+1));
-           nrDbs--;
-           firstPart = firstPart.substring(0,firstPart.indexOf(":")+1)+String.valueOf(nrDbs);
-           lookupMolSpecies = firstPart+lookupMolSpecies.substring(lookupMolSpecies.indexOf("_"));
-//           System.out.println("Lookup-Species "+lookupSpecies);
-//           System.out.println("Lookup-Mol-Species "+lookupMolSpecies);
-         }// else if ((result.getLipidClass().equalsIgnoreCase("Cer") || result.getLipidClass().equalsIgnoreCase("HexCer") || result.getLipidClass().equalsIgnoreCase("SM"))
-//             && result.getIdentificationType()==AlexScoreVO.IDENT_TYPE_MOL_SPECIES) {
-//           twoChains = lookupMolSpecies.split("/");
-//           nrOh = Short.parseShort(twoChains[0].substring(twoChains[0].indexOf(";")+1));
-//           lookupMolSpecies = Settings.getLcbHydroxyEncoding().getEncodedPrefix(nrOh)+twoChains[0].substring(0,twoChains[0].indexOf(";"))+"/n"+twoChains[1];
-////           System.out.println(lookupMolSpecies);
-//         }
-//         lookupMolSpecies = lookupMolSpecies.replaceAll("/", "_");
-         rt = Double.parseDouble(result.getGroupingRt());
-         //I have to add here a check of the retention time
-         tpString = "false";
-         for (ReferenceInfoVO refMolSpec : molSpecInfo.values()) {
-           for (double refAsFixed : refMolSpec.getCorrectRts()) {
-             refRt = refAsFixed;
-             //this is for LC-MS Exp1 data
-//             if (!result.isPositive()) {
-//               if (lookupClass.startsWith("L"))
-//                 refRt = refRt-0.2d;
-//               else
-//                 refRt = refRt-0.6d;
-//             }
-             //this is for LC-MS liver
-//             if (result.isPositive() && (lookupClass.equalsIgnoreCase("P-PC") || lookupClass.equalsIgnoreCase("P-PE") || lookupClass.equalsIgnoreCase("LPE") ||
-//                 lookupClass.equalsIgnoreCase("PS") || lookupClass.equalsIgnoreCase("PC") || lookupClass.equalsIgnoreCase("PE") || lookupClass.equalsIgnoreCase("Cer"))) {
-//               refRt = refRt-0.2d;
-//             }            
-           //this is for LC-MS Exp1 brain
-//             if (result.isPositive()) {
-//               refRt = refRt-0.05d;
-//             }
-             if ((refRt-info.getRtTolerance())<rt && rt<(refRt+info.getRtTolerance())) {
-               tpString = "true";
-             //this lead of too many hits to check
-             //}else if (!tpString.equalsIgnoreCase("true") && ((refRt-2d*info.getRtTolerance())<rt && rt<(refRt+2d*info.getRtTolerance()))) {
-             //thus, I take only 1.5 times the RT tolerance
-             }else if (!tpString.equalsIgnoreCase("true") && ((refRt-3d*info.getRtTolerance())<rt && rt<(refRt+3d*info.getRtTolerance()))) {
-               tpString = String.valueOf(refRt);
-             }
-//             if (lookupClass.equalsIgnoreCase("SM") && lookupSpecies.equalsIgnoreCase("36:2;2")) {
-//               System.out.println(result.getLipidSpecies()+" ; "+result.getMolSpecies()+" ; "+rt+"-"+refRt+" ; "+tpString);
-//             }
-           }
-         }
-         if (tpString.equalsIgnoreCase("false"))
-           continue;
-         tpString = "this mol species is not in lookup";
-         for (ReferenceInfoVO refMolSpec : molSpecInfo.values()) {
-           boolean correctMolSpecies = false;
-           refMolSpecies = refMolSpec.getMS2Name().replaceAll("/", "_");
-//         if (lookupClass.equalsIgnoreCase("LPE"))
-//           System.out.println(lookupMolSpecies+" & "+refMolSpecies);
-//         System.out.println(refMolSpecies);
-//          if (lookupClass.equalsIgnoreCase("P-PE"))
-//             System.out.println(refMolSpecies);
-//           if (lookupClass.equalsIgnoreCase("TG") && !lookupMolSpecies.equalsIgnoreCase(refMolSpecies)) {
-//             System.out.println(lookupMolSpecies+" & "+refMolSpecies);
-//           }
-           if (lookupMolSpecies.equalsIgnoreCase(refMolSpecies) || StaticUtils.isAPermutedVersion(lookupMolSpecies, refMolSpecies, "_")) {
-             for (double refAsFixed : refMolSpec.getCorrectRts()) {
-                 refRt = refAsFixed;
-//                 if (!result.isPositive()) {
-//                   if (lookupClass.startsWith("L"))
-//                     refRt = refRt-0.2d;
-//                   else
-//                     refRt = refRt-0.6d;
-//                 }
-               if ((refRt-info.getRtTolerance())<rt && rt<(refRt+info.getRtTolerance())) {
-                 tpString = "true";
-               }else if (!tpString.equalsIgnoreCase("true") && ((refRt-3d*info.getRtTolerance())<rt && rt<(refRt+3d*info.getRtTolerance()))) {
-                 tpString = String.valueOf(refRt);
-               }
-             }
-           }
-//             if (lookupClass.equalsIgnoreCase("PC") && lookupSpecies.equalsIgnoreCase("40:0")) {
-//               System.out.println(result.getLipidSpecies()+" ; "+result.getMolSpecies()+" ; "+tpString);
-//             }
-
-         }
-         result.setTp(tpString);
-         
-         
-//         if (lookupClass.equalsIgnoreCase("Cer") && speciesAll.containsKey(lookupSpecies)) {
-//           
-//           System.out.println(result.getLipidSpecies()+"; "+lookupMolSpecies);
-//         }
-         
-         
-       }
-       System.out.println("Found: "+countFound);
-       String line;
-       out = new BufferedOutputStream(new FileOutputStream(outFile));
-       line = COLUMN_HEADER_ADDUCT+"\t"+COLUMN_HEADER_DIAL_SCORE+"\t"+COLUMN_HEADER_DIAL_SCORE_MAX+"\t"+COLUMN_HEADER_CLASS+"\t"+COLUMN_HEADER_SPECIES
-           +"\t"+COLUMN_HEADER_MOL_SPECIES+"\t"+COLUMN_HEADER_MOL_SPECIES_ALEX+"\t"+COLUMN_HEADER_MOL_SPECIES_MZ
-         +"\t"+COLUMN_HEADER_RT_GROUP+"\t"+COLUMN_HEADER_TP+"\t"+COLUMN_HEADER_COMMENT+"\t"+"\t"+"\t"+"\t"+COLUMN_HEADER_DOT_PRODUCT_AVG+"\t"
-         +COLUMN_HEADER_WEIGHTED_DOT_PRODUCT_AVG+"\t"+COLUMN_HEADER_REVERSE_DOT_PRODUCT_AVG+"\t"+COLUMN_HEADER_RETENTION_TIMES
-         +"\t"+COLUMN_HEADER_DIAL_SCORE_INDIVIDUAL+"\t"+COLUMN_HEADER_DOT_PRODUCT_INDIVIDUAL+"\t"+COLUMN_HEADER_WEIGHTED_DOT_PRODUCT_INDIVIDUAL+"\t"
-         +COLUMN_HEADER_REVERSE_DOT_PRODUCT_INDIVIDUAL+"\n";
-       out.write(line.getBytes());
-       
-       
-       
-//       for (AlexScoreVO result : resultsAll) {
-       //for (int i=resultsAll.size()-1; i!=-1; i--) {
-       for (int i=0; i!=resultsAll.size(); i++) {
-      	 MSDialCombinedEntry result = resultsAll.get(i);
-             line = result.getAlexAdduct()+"\t"+String.valueOf(result.getTotalScoreAvg())+"\t"+String.valueOf(result.getTotalScoreMax())+"\t"
-                 +result.getDialClassName()+"\t"+result.getDialClassName()+" "+result.getDialMs1Name()+"\t"+(result.getDialMs2Name()!=null ? (result.getDialClassName()+" "+result.getDialMs2Name()) : result.getAlexMs2Name())
-                 +"\t"+result.getAlexMs2Name()+"\t"+result.getMz()+"\t"+result.getGroupingRt()+"\t"+result.getTp()+"\t"+(result.getComment()!=null ? result.getComment() : "")+"\t"+"\t"+"\t"+"\t"+result.getDotProductAvg()+"\t"+result.getWeightedDotProductAvg()
-                 +"\t"+result.getReverseDotProductAvg()+"\t"+result.getDetectedRts()+"\t"+result.getDetectedTotalScoresMax()+"\t"+result.getDetectedDotProductMax()+"\t"+result.getDetectedWeightedDotProductMax()
-                 +"\t"+result.getDetectedReverseDotProductMax();
-             line += "\n";
-             out.write(line.toString().getBytes());
-       }
-
-
-     }catch (Exception e) {
-       // TODO Auto-generated catch block
-       e.printStackTrace();
-     }finally {
-       try {
-         if (out!=null) out.close();
-       }catch(Exception ex) {
-         ex.printStackTrace();
-       }
-     }
-   }
-   
-   private HashMap<String,Set<String>> getRelevantClassesForMSDialComparison(){
-     HashMap<String,Set<String>> relevantClasses = new HashMap<String,Set<String>>();
-     Set<String> posAndNeg = new HashSet<String>();
-     posAndNeg.add("+");
-     posAndNeg.add("-");
-     Set<String> pos = new HashSet<String>();
-     pos.add("+");
-     Set<String> neg = new HashSet<String>();
-     neg.add("-");
-     
-     relevantClasses.put("Cer", neg);
-     relevantClasses.put("DG", pos);
-     relevantClasses.put("LPC", posAndNeg);
-     relevantClasses.put("LPE", posAndNeg);
-     relevantClasses.put("LPS", neg);
-     relevantClasses.put("O-PE", posAndNeg);
-     relevantClasses.put("P-PE", posAndNeg);
-     relevantClasses.put("PC", posAndNeg);
-     relevantClasses.put("PE", posAndNeg);
-     relevantClasses.put("PG", neg);
-     relevantClasses.put("PI", neg);
-     relevantClasses.put("PS", neg);
-     relevantClasses.put("SM", posAndNeg);
-     relevantClasses.put("TG", pos);
- 
-     return relevantClasses;
-   }
-   
-   private void getValidOrbitrapCIDMouseLiverSpecies(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
-       Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
-     getValidOrbitrapCIDSpeciesNegative(lipidClasses, lipidClassInfo, adducts);    
-     lipidClasses.put("P-PC", FoundBiologicalSpecies.getPPCSpeciesOrbitrap());
-     lipidClassInfo.get("P-PE").getAdducts().put("H", true);
-     lipidClassInfo.get("P-PE").getAdducts().put("Na", true);
-     lipidClassInfo.get("LPE").getAdducts().put("H", true);
-     lipidClassInfo.get("LPE").getAdducts().put("Na", true);
-     lipidClassInfo.get("PS").getAdducts().put("H", true);
-     lipidClassInfo.put("PS", new LipidClassInfoVO(2,false,-1,adducts));
-     lipidClassInfo.get("PC").getAdducts().put("H", true);
-     lipidClassInfo.get("PC").getAdducts().put("Na", true);
-     lipidClassInfo.get("PE").getAdducts().put("H", true);
-     lipidClassInfo.get("PE").getAdducts().put("Na", true);
-     //this is for the MSDIAL comparison
-     lipidClassInfo.get("Cer").getAdducts().put("H", true);
-     //this was the original version
-     //lipidClassInfo.get("Cer").getAdducts().put("Na", true);
-     
-     adducts = new LinkedHashMap<String,Boolean>();
-     lipidClasses.put("LPC", FoundBiologicalSpecies.getLPCSpeciesOrbitrap());
-     adducts.put("H", false);
-     adducts.put("Na", false);
-     adducts.put("HCOO", false);
-     lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,1.2d,adducts));
-     adducts = new LinkedHashMap<String,Boolean>();
-     lipidClasses.put("DG", FoundBiologicalSpecies.getDGSpeciesOrbitrap());
-     adducts.put("Na", true);
-     adducts.put("NH4", true);
-     lipidClassInfo.put("DG", new LipidClassInfoVO(3,true,0.7d,adducts));
-     adducts = new LinkedHashMap<String,Boolean>();
-     lipidClasses.put("TG", FoundBiologicalSpecies.getTGSpeciesOrbitrap());
-     adducts.put("NH4", true);
-     adducts.put("Na", true);
-     lipidClassInfo.put("TG", new LipidClassInfoVO(3,true,0.7d,adducts));
-     adducts = new LinkedHashMap<String,Boolean>();
-     lipidClasses.put("SM", FoundBiologicalSpecies.getSMSpeciesOrbitrap());
-     adducts.put("H", false);
-     adducts.put("Na", false);
-     adducts.put("HCOO", false);
-     lipidClassInfo.put("SM", new LipidClassInfoVO(1,true,0.7d,adducts));
-   }
-   
-   
-   private void getValidOrbitrapCIDMouseLiverSpeciesMSDIAL(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
-       Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
-     getValidOrbitrapCIDSpeciesNegativeMSDIAL(lipidClasses, lipidClassInfo, adducts);    
-     lipidClasses.put("P-PC", FoundBiologicalSpecies.getPPCSpeciesOrbitrap());
-     lipidClassInfo.get("P-PE").getAdducts().put("H", true);
-     lipidClassInfo.get("P-PE").getAdducts().put("Na", true);
-     lipidClassInfo.get("LPE").getAdducts().put("H", true);
-     lipidClassInfo.get("LPE").getAdducts().put("Na", true);
-     lipidClassInfo.get("PS").getAdducts().put("H", true);
-     lipidClassInfo.put("PS", new LipidClassInfoVO(2,false,1.2,adducts));
-     lipidClassInfo.get("PC").getAdducts().put("H", true);
-     lipidClassInfo.get("PC").getAdducts().put("Na", true);
-     lipidClassInfo.get("PE").getAdducts().put("H", true);
-     lipidClassInfo.get("PE").getAdducts().put("Na", true);
-     //this is for the MSDIAL comparison
-     lipidClassInfo.get("Cer").getAdducts().put("H", true);
-     //this was the original version
-     //lipidClassInfo.get("Cer").getAdducts().put("Na", true);
-     
-     adducts = new LinkedHashMap<String,Boolean>();
-     lipidClasses.put("LPC", FoundBiologicalSpecies.getLPCSpeciesOrbitrap());
-     adducts.put("H", false);
-     adducts.put("Na", false);
-     adducts.put("HCOO", false);
-     lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,0.5d,adducts));
-     adducts = new LinkedHashMap<String,Boolean>();
-     lipidClasses.put("DG", FoundBiologicalSpecies.getDGSpeciesOrbitrap());
-     adducts.put("Na", true);
-     adducts.put("NH4", true);
-     lipidClassInfo.put("DG", new LipidClassInfoVO(3,true,0.5d,adducts));
-     adducts = new LinkedHashMap<String,Boolean>();
-     lipidClasses.put("TG", FoundBiologicalSpecies.getTGSpeciesOrbitrap());
-     adducts.put("NH4", true);
-     adducts.put("Na", true);
-     lipidClassInfo.put("TG", new LipidClassInfoVO(3,true,0.5d,adducts));
-     adducts = new LinkedHashMap<String,Boolean>();
-     lipidClasses.put("SM", FoundBiologicalSpecies.getSMSpeciesOrbitrap());
-     adducts.put("H", false);
-     adducts.put("Na", false);
-     adducts.put("HCOO", false);
-     lipidClassInfo.put("SM", new LipidClassInfoVO(1,true,0.5d,adducts));
-   }
-   
    
    
    private void getValidOrbitrapCIDCtrlExp1SpeciesPositive(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
