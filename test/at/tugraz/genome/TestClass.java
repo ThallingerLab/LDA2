@@ -18780,6 +18780,7 @@ public void testTabFile() throws Exception {
 
   
   private void compareLDAMSDialNaturalProbesPositive(){
+    String baseDir = "E:\\Lipidomics\\data\\Sphingolipids\\Brain\\";
   	//this version has been used for the comparison of the sphingolipids 2020
   	////String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_0;
   	//this is the current version
@@ -18800,11 +18801,11 @@ public void testTabFile() throws Exception {
     }
     ////this.getValid4000QTRAPSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
 
-    String chromFile = "E:\\Lipidomics\\data\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_1.chrom";
-    String quantFile = "E:\\Lipidomics\\data\\Sphingolipids\\Brain\\massLists\\Orbitrap\\sphingos_positive.xlsx";
-    String ldaFile = "E:\\Lipidomics\\data\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_1_sphingos_positive.xlsx";
-    String msDialFile = "E:\\Lipidomics\\data\\Sphingolipids\\Brain\\Orbitrap\\MS-Dial_positive_v4.9\\export\\Brain_pos_1.txt";
-    String outputFile = "E:\\Lipidomics\\data\\Sphingolipids\\Brain\\Orbitrap\\MS-Dial_positive_v4.9\\export\\Brain_pos_1_comp_generated.xlsx";
+    String chromFile = baseDir+"Orbitrap\\positive\\Brain_pos_1.chrom";
+    String quantFile = baseDir+"massLists\\Orbitrap\\sphingos_positive.xlsx";
+    String ldaFile = baseDir+"Orbitrap\\positive\\Brain_pos_1_sphingos_positive.xlsx";
+    String msDialFile = baseDir+"Orbitrap\\MS-Dial_positive_v4.9\\export\\Brain_pos_1.txt";
+    String outputFile = baseDir+"Orbitrap\\MS-Dial_positive_v4.9\\export\\Brain_pos_1_comp_generated.xlsx";
 
     performMSDialComparisonOfNaturalProbes(lipidClasses,lipidClassInfo,chromFile,quantFile,ldaFile,msDialFile,outputFile,msDialVersion);    
   }
