@@ -20064,7 +20064,7 @@ public void testTabFile() throws Exception {
               String dialMs2Name = entry.getDialMs2Name();
               if (entry.getLdaMs2Name()!=null && entry.getLdaMs2Name().length()>0)
                 dialMs2Name = entry.getLdaMs2Name();
-              if (!StaticUtils.isAPermutedVersion(keyWOSlash, dialMs2Name.replaceAll("/", "_"),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)) continue;
+              if (!StaticUtils.isAPermutedVersion(keyWOSlash, dialMs2Name.replaceAll("/", "_"),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)) continue;             
               dialNames.put(entry.getDialMs2Name(), entry.getDialMs2Name());
               dialOKAccordingToReference.put(dialMs2Name, dialMs2Name);
               double score = entry.getScore();
