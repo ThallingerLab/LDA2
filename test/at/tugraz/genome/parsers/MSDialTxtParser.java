@@ -43,6 +43,7 @@ public class MSDialTxtParser
 
   private final static String HEAD_ID = "PeakID";
   private final static String HEAD_TITLE = "Title";
+  private final static String HEAD_NAME = "Name";
   private final static String HEAD_SCANS = "Scans";
   private final static String HEAD_RT_START = "RT left(min)";
   private final static String HEAD_RT = "RT (min)";
@@ -112,7 +113,7 @@ public class MSDialTxtParser
         lineNumber++;
         int columnCount = 0;
         if (!headerFound){
-          if (line.indexOf(HEAD_ID)!=-1 && line.indexOf(HEAD_TITLE)!=-1 && line.indexOf(HEAD_RT)!=-1 &&
+          if (line.indexOf(HEAD_ID)!=-1 && (line.indexOf(HEAD_TITLE)!=-1 || line.indexOf(HEAD_NAME)!=-1) && line.indexOf(HEAD_RT)!=-1 &&
               line.indexOf(HEAD_MZ)!=-1 && line.indexOf(HEAD_ADDUCT)!=-1 && line.indexOf(HEAD_ISOTOPE)!=-1 &&
               line.indexOf(HEAD_SCORE)!=-1){
             headerFound = true;
@@ -120,7 +121,7 @@ public class MSDialTxtParser
                         
             for (String header : tokens){
               if (header.equalsIgnoreCase(HEAD_ID)) idColumn = columnCount;
-              else if (header.equalsIgnoreCase(HEAD_TITLE)) titleColumn = columnCount;
+              else if (header.equalsIgnoreCase(HEAD_TITLE) || header.equalsIgnoreCase(HEAD_NAME)) titleColumn = columnCount;
               else if (header.equalsIgnoreCase(HEAD_SCANS)) scansColumn = columnCount;
               else if (header.equalsIgnoreCase(HEAD_RT_START)) rtStartColumn = columnCount;
               else if (header.equalsIgnoreCase(HEAD_RT)) rtColumn = columnCount;
