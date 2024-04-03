@@ -1440,9 +1440,56 @@ public class FoundBiologicalSpecies{
 //    species.put("44:12", molSpecies);
     return species;
   }
-
-
+  
+  
   public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getCerSpeciesOrbitrap(){
+    LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
+    LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d18:1/n16:0", new ReferenceInfoVO("d18:1/n16:0",26.1d,true,false));
+    species.put("d34:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d18:1/n18:0", new ReferenceInfoVO("d18:1/n18:0",28.6d,true,false));
+    species.put("d36:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d18:1/n20:0", new ReferenceInfoVO("d18:1/n20:0",30.8d,true,false));
+    species.put("d38:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d18:1/n21:0", new ReferenceInfoVO("d18:1/n21:0",31.9d,true,false));
+    species.put("d39:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d18:1/n22:0", new ReferenceInfoVO("d18:1/n22:0",32.9d,true,false));
+    species.put("d40:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d18:1/n22:1", new ReferenceInfoVO("d18:1/n22:1",31.1d,true,false));
+    species.put("d40:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d18:1/n23:0", new ReferenceInfoVO("d18:1/n23:0",33.8d,true,false));
+    species.put("d41:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d18:1/n23:1", new ReferenceInfoVO("d18:1/n23:1",32.1d,true,false));
+    species.put("d41:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d18:1/n24:0", new ReferenceInfoVO("d18:1/n24:0",34.4d,true,false));
+    species.put("d42:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d18:1/n24:1", new ReferenceInfoVO("d18:1/n24:1",33.0d,true,false));
+    species.put("d42:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d18:1/n24:2", new ReferenceInfoVO("d18:1/n24:2",31.5d,true,false));
+    species.put("d42:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d18:1/n25:0", new ReferenceInfoVO("d18:1/n25:0",35.6d,true,false));
+    species.put("d43:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d18:1/n25:1", new ReferenceInfoVO("d18:1/n25:1",33.9d,true,false));
+    species.put("d43:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d18:1/n26:0", new ReferenceInfoVO("d18:1/n26:0",36.5d,true,false));
+    species.put("d44:1", molSpecies);
+    return species;
+  }
+
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getCerSpeciesOrbitrapOriginal(){
     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
     LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
     molSpecies.put("16:0", new ReferenceInfoVO("16:0",26.1d,true,false));
@@ -1519,6 +1566,85 @@ public class FoundBiologicalSpecies{
   }
   
   public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getDGSpeciesOrbitrap(){
+    LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
+    LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0_16:0", new ReferenceInfoVO("16:0_16:0",30.3d,true,false));
+    species.put("32:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0_16:1", new ReferenceInfoVO("16:0_16:1",28.6d,true,false));
+    molSpecies.put("14:0_18:1", new ReferenceInfoVO("14:0_18:1",28.6d,true,false));
+    species.put("32:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("14:0_18:2", new ReferenceInfoVO("14:0_18:2",26.8d,true,false));
+    molSpecies.put("16:1_16:1", new ReferenceInfoVO("16:1_16:1",26.8d,true,false));
+    species.put("32:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0_18:0", new ReferenceInfoVO("16:0_18:0",32.3d,true,false));
+    species.put("34:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0_18:1", new ReferenceInfoVO("16:0_18:1",30.7d,true,false));
+    species.put("34:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0_18:2", new ReferenceInfoVO("16:0_18:2",29.1d,true,false));
+    species.put("34:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:1_18:2", new ReferenceInfoVO("16:1_18:2",27.4d,true,false));
+    molSpecies.put("16:0_18:3", new ReferenceInfoVO("16:0_18:3",27.4d,true,false));
+    species.put("34:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0_18:0", new ReferenceInfoVO("18:0_18:0",34.1d,true,false));
+    species.put("36:0", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0_18:1", new ReferenceInfoVO("18:0_18:1",32.6d,true,false));
+    species.put("36:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1_18:1", new ReferenceInfoVO("18:1_18:1",31.2d,true,false));
+    molSpecies.put("18:0_18:2", new ReferenceInfoVO("18:0_18:2",31.2d,true,false));
+    species.put("36:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1_18:2", new ReferenceInfoVO("18:1_18:2",29.6d,true,false));
+    species.put("36:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_18:2", new ReferenceInfoVO("18:2_18:2",27.9d,true,false));
+    molSpecies.put("16:0_20:4", new ReferenceInfoVO("16:0_20:4",28.9d,true,false));
+    molSpecies.put("18:1_18:3", new ReferenceInfoVO("18:1_18:3",27.9d,true,false));
+    species.put("36:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0_20:4", new ReferenceInfoVO("18:0_20:4",31d,true,false));
+    molSpecies.put("18:1_20:3", new ReferenceInfoVO("18:1_20:3",30.1d,true,false));
+    species.put("38:4", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1_20:4", new ReferenceInfoVO("18:1_20:4",29.3d,true,false));
+    molSpecies.put("16:1_22:4", new ReferenceInfoVO("16:1_22:4",29.3d,true,false));
+    molSpecies.put("16:0_22:5", new ReferenceInfoVO("16:0_22:5",29.3d,true,false));
+    molSpecies.put("18:2_20:3", new ReferenceInfoVO("18:2_20:3",28.6d,true,false));
+    species.put("38:5", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("16:0_22:6", new ReferenceInfoVO("16:0_22:6",28.4d,true,false));
+    molSpecies.put("18:2_20:4", new ReferenceInfoVO("18:2_20:4",27.7d,true,false));
+    molSpecies.put("16:1_22:5", new ReferenceInfoVO("16:1_22:5",28.4d,true,false));
+    species.put("38:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:0/-/22:6", new ReferenceInfoVO("18:0/-/22:6",30.5d,true,false));
+    molSpecies.put("18:1/-/22:5", new ReferenceInfoVO("18:1/-/22:5",30.2d,true,false));
+    species.put("40:6", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:1_22:6", new ReferenceInfoVO("18:1_22:6",28.8d,true,false));
+    molSpecies.put("18:2_22:5", new ReferenceInfoVO("18:2_22:5",28.8d,true,false));
+    species.put("40:7", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("18:2_22:6", new ReferenceInfoVO("18:2_22:6",27.2d,true,false));
+    species.put("40:8", molSpecies);
+
+    
+//    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+//    molSpecies.put("18:1/-/18:2", new ReferenceInfoVO("18:1/-/18:2",29.6d,true,false));
+//    species.put("36:3", molSpecies);
+    return species;
+  }
+
+  
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getDGSpeciesOrbitrapOriginal(){
     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
     LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
     molSpecies.put("16:0/16:0/-", new ReferenceInfoVO("16:0/16:0/-",30.3d,true,false));
@@ -3519,9 +3645,68 @@ public class FoundBiologicalSpecies{
     
     return species;
   }
-
-
+  
   public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getSMSpeciesOrbitrap(){
+    LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
+    LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+     
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d32:1", new ReferenceInfoVO("d32:1",19.19d,true,false));
+    species.put("d32:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d33:1", new ReferenceInfoVO("d33:1",20.67d,true,false));
+    species.put("d33:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d34:1", new ReferenceInfoVO("d34:1",22.07d,true,false));
+    species.put("d34:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d34:2", new ReferenceInfoVO("d34:2",19.98d,true,false));
+    species.put("d34:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d35:1", new ReferenceInfoVO("d35:1",23.51d,true,false));
+    species.put("d35:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d36:1", new ReferenceInfoVO("d36:1",24.82d,true,false));
+    species.put("d36:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d38:1", new ReferenceInfoVO("d38:1",27.46d,true,false));
+    species.put("d38:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d39:1", new ReferenceInfoVO("d39:1",28.8d,true,false));
+    species.put("d39:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d40:1", new ReferenceInfoVO("d40:1",29.87d,true,false));
+    species.put("d40:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d40:2", new ReferenceInfoVO("d40:2",27.75d,true,false));
+    species.put("d40:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d41:1", new ReferenceInfoVO("d41:1",31.01d,true,false));
+    species.put("d41:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d41:2", new ReferenceInfoVO("d41:2",28.89d,true,false));
+    species.put("d41:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d42:1", new ReferenceInfoVO("d42:1",32.06d,true,false));
+    species.put("d42:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d42:2", new ReferenceInfoVO("d42:2",29.92d,true,false));
+    species.put("d42:2", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d42:3", new ReferenceInfoVO("d42:3",28.19d,true,false));
+    species.put("d42:3", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d43:1", new ReferenceInfoVO("d43:1",33.04d,true,false));
+    species.put("d43:1", molSpecies);
+    molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
+    molSpecies.put("d43:2", new ReferenceInfoVO("d43:2",30.98d,true,false));
+    species.put("d43:2", molSpecies);
+  
+    return species;
+  }
+
+
+  public static LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> getSMSpeciesOrbitrapOriginal(){
     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> species = new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>();
     LinkedHashMap<String,ReferenceInfoVO> molSpecies = new LinkedHashMap<String,ReferenceInfoVO>();
      

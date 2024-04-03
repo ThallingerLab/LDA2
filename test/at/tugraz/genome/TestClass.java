@@ -467,8 +467,8 @@ public class TestClass extends JApplet implements AddScan
     //parseMSDialTxt();
     //this.compareLDABMSDialControlledPositiveProbes();
     //this.compareLDABMSDialControlledNegativeProbes();
-    this.compareLDAMSDialNaturalProbesPositive();
-    //this.compareLDAMSDialNaturalProbesNegative();
+    //this.compareLDAMSDialNaturalProbesPositive();
+    this.compareLDAMSDialNaturalProbesNegative();
     //parseMSFinderStructure();
     //this.generateDetailsSphingosBiologicalExperiment();
     //this.generateDetailsSphingosControlExperiment();
@@ -10406,7 +10406,10 @@ public void testTabFile() throws Exception {
     lipidClassInfo.put("PG", new LipidClassInfoVO(2,true,0.7d,adducts));
     adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("Cer", FoundBiologicalSpecies.getCerSpeciesOrbitrap());
+    //original version
     adducts.put("-H", false);
+    //MS-DIAL comparison
+    adducts.put("HCOO", false);
     lipidClassInfo.put("Cer", new LipidClassInfoVO(1,true,0.7d,adducts));
   }
   
@@ -18780,32 +18783,58 @@ public void testTabFile() throws Exception {
 
   
   private void compareLDAMSDialNaturalProbesPositive(){
-    String baseDir = "E:\\Lipidomics\\data\\Sphingolipids\\Brain\\";
   	//this version has been used for the comparison of the sphingolipids 2020
   	////String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_0;
   	//this is the current version
   	String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_9;
+
+  	//this is for LCMS brain
+//    String baseDir = "E:\\Lipidomics\\data\\Sphingolipids\\Brain\\";
+//    //the first key is the lipid class, the second key the ms1 species name, the third key the structural identification
+//    LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>>();
+//    Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
+//    LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
+//    //TODO: the implementation of this method is not complete - only a test case
+//    this.getValidSphingoOrbitrapCIDSpeciesPositive(lipidClasses,lipidClassInfo,adducts);
+//    for (LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> correctAnalytes: lipidClasses.values()) {
+//      for (LinkedHashMap<String,ReferenceInfoVO> classCorrect : correctAnalytes.values()) {
+//        for (ReferenceInfoVO info : classCorrect.values()) {
+//          for (int i=0; i!=info.getCorrectRts().length; i++) {
+//            info.getCorrectRts()[i] = info.getCorrectRts()[i]-0.05d;        }
+//        }
+//      }
+//    }
+//    ////this.getValid4000QTRAPSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
+//
+//    String chromFile = baseDir+"Orbitrap\\positive\\Brain_pos_1.chrom";
+//    String quantFile = baseDir+"massLists\\Orbitrap\\sphingos_positive.xlsx";
+//    String ldaFile = baseDir+"Orbitrap\\positive\\Brain_pos_1_sphingos_positive.xlsx";
+//    String msDialFile = baseDir+"Orbitrap\\MS-Dial_positive_v5.1\\export\\Brain_pos_1.txt";
+//    String outputFile = baseDir+"Orbitrap\\MS-Dial_positive_v5.1\\export\\Brain_pos_1_comp_generated.xlsx";
+    
+  	//this is for LCMS liver
+    String baseDir = "E:\\Lipidomics\\data\\BiologicalExperiment\\Orbitrap_CID\\";
     //the first key is the lipid class, the second key the ms1 species name, the third key the structural identification
     LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>>();
     Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
     LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
     //TODO: the implementation of this method is not complete - only a test case
-    this.getValidSphingoOrbitrapCIDSpeciesPositive(lipidClasses,lipidClassInfo,adducts);
-    for (LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> correctAnalytes: lipidClasses.values()) {
-      for (LinkedHashMap<String,ReferenceInfoVO> classCorrect : correctAnalytes.values()) {
-        for (ReferenceInfoVO info : classCorrect.values()) {
-          for (int i=0; i!=info.getCorrectRts().length; i++) {
-            info.getCorrectRts()[i] = info.getCorrectRts()[i]-0.05d;        }
-        }
-      }
-    }
+    this.getValidOrbitrapCIDSpeciesPositive(lipidClasses,lipidClassInfo,adducts);
+//    for (LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> correctAnalytes: lipidClasses.values()) {
+//      for (LinkedHashMap<String,ReferenceInfoVO> classCorrect : correctAnalytes.values()) {
+//        for (ReferenceInfoVO info : classCorrect.values()) {
+//          for (int i=0; i!=info.getCorrectRts().length; i++) {
+//            info.getCorrectRts()[i] = info.getCorrectRts()[i]-0.05d;        }
+//        }
+//      }
+//    }
     ////this.getValid4000QTRAPSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
 
-    String chromFile = baseDir+"Orbitrap\\positive\\Brain_pos_1.chrom";
-    String quantFile = baseDir+"massLists\\Orbitrap\\sphingos_positive.xlsx";
-    String ldaFile = baseDir+"Orbitrap\\positive\\Brain_pos_1_sphingos_positive.xlsx";
-    String msDialFile = baseDir+"Orbitrap\\MS-Dial_positive_v4.9\\export\\Brain_pos_1.txt";
-    String outputFile = baseDir+"Orbitrap\\MS-Dial_positive_v4.9\\export\\Brain_pos_1_comp_generated.xlsx";
+    String chromFile = baseDir+"positive\\002_liver2-1_Orbitrap_CID_pos.chrom";
+    String quantFile = baseDir+"quant\\positive.xlsx";
+    String ldaFile = baseDir+"positive\\002_liver2-1_Orbitrap_CID_pos_positive.xlsx";
+    String msDialFile = baseDir+"MS-Dial_positive\\export\\002_liver2-1_Orbitrap_CID_pos.txt";
+    String outputFile = baseDir+"MS-Dial_positive\\002_liver2-1_Orbitrap_CID_pos_comp_generated.xlsx";
 
     performMSDialComparisonOfNaturalProbes(lipidClasses,lipidClassInfo,chromFile,quantFile,ldaFile,msDialFile,outputFile,msDialVersion);    
   }
@@ -18820,20 +18849,35 @@ public void testTabFile() throws Exception {
     Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
     LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
     
+    //this is for LCMS brain
+//    String baseDir = "E:\\Lipidomics\\data\\Sphingolipids\\Brain\\";
+//    //TODO: the implementation of this method is not complete - only a test case
+//    this.getValidSphingoOrbitrapCIDSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
+//    ////this.getValid4000QTRAPSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
+// 
+//    String chromFile = baseDir+"Orbitrap\\negative\\Brain_neg_1.chrom";
+//    String quantFile = baseDir+"\\massLists\\Orbitrap\\sphingos_negative.xlsx";
+//    String ldaFile = baseDir+"Orbitrap\\negative\\Brain_neg_1_sphingos_negative.xlsx";
+//    String msDialFile = baseDir+"Orbitrap\\MS-Dial_negative\\export\\Brain_neg_1.txt";
+//    String outputFile = baseDir+"Orbitrap\\MS-Dial_negative\\Brain_neg_1_comp_generated.xlsx";
+////    String chromFile = "D:\\BiologicalExperiment\\QTRAP\\negative\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg.chrom";
+////    String quantFile = "D:\\BiologicalExperiment\\massLists\\negative\\QTRAP\\negative.xlsx";
+////    String ldaFile = "D:\\BiologicalExperiment\\QTRAP\\negative\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_negative.xlsx";
+////    String lbFile = "D:\\BiologicalExperiment\\LipidBlast\\4000QTRAP\\negative\\output\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_MF450.mgf.tsv";
+////    String outputFile = "D:\\BiologicalExperiment\\LipidBlast\\4000QTRAP\\negative\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_MF450_comp_generated.xlsx";
+    
+    //this is for LCMS liver
+    String baseDir = "E:\\Lipidomics\\data\\BiologicalExperiment\\Orbitrap_CID\\";
     //TODO: the implementation of this method is not complete - only a test case
-    this.getValidSphingoOrbitrapCIDSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
+    this.getValidOrbitrapCIDSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
     ////this.getValid4000QTRAPSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
-
-    String chromFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\negative\\Brain_neg_1.chrom";
-    String quantFile = "C:\\Sphingolipids\\Brain\\massLists\\Orbitrap\\sphingos_negative.xlsx";
-    String ldaFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\negative\\Brain_neg_1_sphingos_negative.xlsx";
-    String msDialFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\MS-Dial_negative\\export\\Brain_neg_1.txt";
-    String outputFile = "C:\\\\Sphingolipids\\\\Brain\\\\Orbitrap\\\\MS-Dial_negative\\Brain_neg_1_comp_generated.xlsx";
-//    String chromFile = "D:\\BiologicalExperiment\\QTRAP\\negative\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg.chrom";
-//    String quantFile = "D:\\BiologicalExperiment\\massLists\\negative\\QTRAP\\negative.xlsx";
-//    String ldaFile = "D:\\BiologicalExperiment\\QTRAP\\negative\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_negative.xlsx";
-//    String lbFile = "D:\\BiologicalExperiment\\LipidBlast\\4000QTRAP\\negative\\output\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_MF450.mgf.tsv";
-//    String outputFile = "D:\\BiologicalExperiment\\LipidBlast\\4000QTRAP\\negative\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_MF450_comp_generated.xlsx";
+ 
+    String chromFile = baseDir+"negative\\002_liver2-1_Orbitrap_CID_neg.chrom";
+    String quantFile = baseDir+"negative\\quant\\negative.xlsx";
+    String ldaFile = baseDir+"negative\\002_liver2-1_Orbitrap_CID_neg_negative.xlsx";
+    String msDialFile = baseDir+"MS-Dial_negative\\export\\002_liver2-1_Orbitrap_CID_neg.txt";
+    String outputFile = baseDir+"MS-Dial_negative\\002_liver2-1_Orbitrap_CID_neg_comp_generated.xlsx";
+    
 
     performMSDialComparisonOfNaturalProbes(lipidClasses,lipidClassInfo,chromFile,quantFile,ldaFile,msDialFile,outputFile,msDialVersion);
   }
@@ -19801,10 +19845,17 @@ public void testTabFile() throws Exception {
    * @return int[0] nr of C atoms; int[1] nr of dbs; int[2] nr of OH
    * @throws HydroxylationEncodingException 
    */
-  private int[] decodeAnalyte(String analyte) throws HydroxylationEncodingException {
+  private int[] decodeAnalyte(String analyteFull) throws HydroxylationEncodingException {
     int[] result = new int[3];
-    result[2] = Settings.getLcbHydroxyEncoding().getHydroxyNumber(analyte.substring(0,1));
-    analyte = analyte.substring(1);
+    String analyte = new String (analyteFull);
+//    System.out.println("analyteFull: "+analyteFull);
+    if (analyte.startsWith("O-")||analyte.startsWith("P-"))
+    	analyte = analyte.substring(2);
+    if (Character.isAlphabetic(analyte.substring(0,1).toCharArray()[0])) {
+    	result[2] = Settings.getLcbHydroxyEncoding().getHydroxyNumber(analyte.substring(0,1));
+    	analyte = analyte.substring(1);
+    }else
+    	result[2] = 0;
     result[0] = Integer.parseInt(analyte.substring(0,analyte.indexOf(":")));
     result[1] = Integer.parseInt(analyte.substring(analyte.indexOf(":")+1));
     return result;
