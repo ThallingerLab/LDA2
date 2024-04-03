@@ -115,7 +115,7 @@ public class MSDialEntry
       return;
     if (dialMs1Name_.length()<(dialClassName_.length()+2))
       return;
-    char subsequentToEmptySpace = dialMs1Name_.substring(dialClassName_.length()+2,dialClassName_.length()+3).toCharArray()[0];
+    char subsequentToEmptySpace = dialMs1Name_.substring(dialClassName_.length()+1,dialClassName_.length()+2).toCharArray()[0];
     //the character subsequent to the empty space must start with a digit for the supported naming convention
     if (!Character.isDigit(subsequentToEmptySpace)) {
       if (dialMs1Name_.length()<=(dialClassName_.length()+4))

@@ -10407,7 +10407,7 @@ public void testTabFile() throws Exception {
     adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("Cer", FoundBiologicalSpecies.getCerSpeciesOrbitrap());
     //original version
-    adducts.put("-H", false);
+    //adducts.put("-H", false);
     //MS-DIAL comparison
     adducts.put("HCOO", false);
     lipidClassInfo.put("Cer", new LipidClassInfoVO(1,true,0.7d,adducts));
