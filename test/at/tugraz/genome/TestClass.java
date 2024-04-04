@@ -232,6 +232,7 @@ import at.tugraz.genome.maspectras.quantification.RawToChromatogramTranslator;
 import at.tugraz.genome.maspectras.utils.Calculator;
 import at.tugraz.genome.maspectras.utils.StringUtils;
 import at.tugraz.genome.parsers.LipidBLASTParser;
+import at.tugraz.genome.parsers.MSDialResultsCombiner;
 import at.tugraz.genome.parsers.MSDialTxtParser;
 import at.tugraz.genome.parsers.MSFinderStructureParser;
 import at.tugraz.genome.util.FloatMatrix;
@@ -468,7 +469,7 @@ public class TestClass extends JApplet implements AddScan
     //this.compareLDABMSDialControlledPositiveProbes();
     //this.compareLDABMSDialControlledNegativeProbes();
     //this.compareLDAMSDialNaturalProbesPositive();
-    this.compareLDAMSDialNaturalProbesNegative();
+    //this.compareLDAMSDialNaturalProbesNegative();
     //parseMSFinderStructure();
     //this.generateDetailsSphingosBiologicalExperiment();
     //this.generateDetailsSphingosControlExperiment();
@@ -498,6 +499,7 @@ public class TestClass extends JApplet implements AddScan
     //this.mixtureModelWithDecoySearch();
     //this.mixtureModelWithDecoySearchAddFunction();
     //this.validateHitsBasedOnRetentionTime();
+  	this.validateMSDIALHitsBasedOnRetentionTime();
     //this.generateCodeForSpeciesEvaluation();
   }
 
@@ -10411,6 +10413,10 @@ public void testTabFile() throws Exception {
     //MS-DIAL comparison
     adducts.put("HCOO", false);
     lipidClassInfo.put("Cer", new LipidClassInfoVO(1,true,0.7d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("LPS", new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>());
+    adducts.put("-H", false);
+    lipidClassInfo.put("LPS", new LipidClassInfoVO(1,true,0.7d,adducts));
   }
   
   private void getValid4000QTRAPSpeciesNegative(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
@@ -17152,7 +17158,8 @@ public void testTabFile() throws Exception {
   	String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_9;
 
     //MSDialTxtParser dialParser = new MSDialTxtParser("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\MS-Dial_Mix1\\export\\Mix1_neg_1.txt");
-    MSDialTxtParser dialParser = new MSDialTxtParser("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\MS-Dial_Mix1\\export\\Mix1_1.txt");
+  	File msDialFile = new File("E:\\Lipidomics\\data\\BiologicalExperiment\\Orbitrap_CID\\MS-Dial_positive\\export\\002_liver2-1_Orbitrap_CID_pos.txt");
+    MSDialTxtParser dialParser = new MSDialTxtParser(msDialFile.getAbsolutePath(),msDialFile.getName());
     try {
       dialParser.parse(msDialVersion);
       Vector<MSDialEntry> entries = dialParser.getResults();
@@ -17346,7 +17353,8 @@ public void testTabFile() throws Exception {
       CellStyle ms1FoundStyle = getMS1FoundStyle(resultWorkbook);
       CellStyle notFoundStyle = getNotFoundStyle(resultWorkbook);
       Hashtable<String,Vector<LipidParameterSet>> resultsLDA = LDAResultReader.readResultFile(ldaFile, new Hashtable<String,Boolean>()).getIdentifications();
-      MSDialTxtParser msdialParser = new MSDialTxtParser(msdialFile);
+      File msDialF = new File(msdialFile);
+      MSDialTxtParser msdialParser = new MSDialTxtParser(msDialF.getAbsolutePath(),msDialF.getName());
       msdialParser.parse(msDialVersion);
       //MSFinderStructureParser finderParser = new MSFinderStructureParser(msfinderFile);
       //finderParser.parse();
@@ -18872,11 +18880,11 @@ public void testTabFile() throws Exception {
     this.getValidOrbitrapCIDSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
     ////this.getValid4000QTRAPSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
  
-    String chromFile = baseDir+"negative\\002_liver2-1_Orbitrap_CID_neg.chrom";
+    String chromFile = baseDir+"negative\\015_liver2-3_Orbitrap_CID_neg.chrom";
     String quantFile = baseDir+"negative\\quant\\negative.xlsx";
-    String ldaFile = baseDir+"negative\\002_liver2-1_Orbitrap_CID_neg_negative.xlsx";
-    String msDialFile = baseDir+"MS-Dial_negative\\export\\002_liver2-1_Orbitrap_CID_neg.txt";
-    String outputFile = baseDir+"MS-Dial_negative\\002_liver2-1_Orbitrap_CID_neg_comp_generated.xlsx";
+    String ldaFile = baseDir+"negative\\015_liver2-3_Orbitrap_CID_neg_negative.xlsx";
+    String msDialFile = baseDir+"MS-Dial_negative\\export\\015_liver2-3_Orbitrap_CID_neg.txt";
+    String outputFile = baseDir+"MS-Dial_negative\\015_liver2-3_Orbitrap_CID_neg_comp_generated.xlsx";
     
 
     performMSDialComparisonOfNaturalProbes(lipidClasses,lipidClassInfo,chromFile,quantFile,ldaFile,msDialFile,outputFile,msDialVersion);
@@ -18905,7 +18913,8 @@ public void testTabFile() throws Exception {
       leftHeaderStyle.cloneStyleFrom(headerStyle);
       leftHeaderStyle.setAlignment(CellStyle.ALIGN_LEFT);
       Hashtable<String,Vector<LipidParameterSet>> resultsLDA = LDAResultReader.readResultFile(ldaFile, new Hashtable<String,Boolean>()).getIdentifications();
-      MSDialTxtParser msdialParser = new MSDialTxtParser(msDialFile);
+      File msDialF = new File(msDialFile);
+      MSDialTxtParser msdialParser = new MSDialTxtParser(msDialF.getAbsolutePath(),msDialF.getName());
       msdialParser.parse(msDialVersion);
       //Hashtable<String,Hashtable<String,Hashtable<String,LipidBLASTIdentificationVO>>> resultsLB = lBlastParser.getResults_();
       Hashtable<String,Hashtable<String,Hashtable<String,Vector<MSDialEntry>>>> resultsDial = msdialParser.getStructuredResults();
@@ -19857,7 +19866,10 @@ public void testTabFile() throws Exception {
     }else
     	result[2] = 0;
     result[0] = Integer.parseInt(analyte.substring(0,analyte.indexOf(":")));
-    result[1] = Integer.parseInt(analyte.substring(analyte.indexOf(":")+1));
+    String dbsString = analyte.substring(analyte.indexOf(":")+1);
+    if (dbsString.indexOf("(")!=-1)
+    	dbsString = dbsString.substring(0,dbsString.indexOf("("));
+    result[1] = Integer.parseInt(dbsString);
     return result;
   }
   
@@ -23596,6 +23608,139 @@ public void testTabFile() throws Exception {
       }
     }
    }
+   
+   private void validateMSDIALHitsBasedOnRetentionTime() {
+     //this is for LC-MS liver
+  	 String filePrevAssign = "E:\\Lipidomics\\data\\Christer\\20220119_decoyLCMS-liver\\LCMSdata_liver_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_combRemovalAll.xlsx";
+  	 String baseDir = "E:\\Lipidomics\\data\\BiologicalExperiment\\Orbitrap_CID\\";
+  	 //this is just for the sequence of the hits
+  	 //String quantFile = baseDir+"quant\\positive.xlsx";
+  	 String posIonModeMSDIALResultsDir = baseDir+"MS-Dial_positive\\export\\";
+  	 String negIonModeMSDIALResultsDir = baseDir+"MS-Dial_negative\\export\\";
+  	 //TODO: this has to be replaced with the MS-DIAL identifications (post grouping)
+  	 ////String alexIdentificationFile = decoyBaseDir+"LCMSdata_liver_targetsearch_PE_O-5frag.tab";
+  	 String outFile = baseDir+"LCMSdata_liver_MSDIALsearch_rtChecked.tab";
+  	 
+  	 
+     String lookupClass;
+     String lookupSpecies;
+     String lookupMolSpecies;
+     String refMolSpecies;
+     LipidClassInfoVO info;
+     LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> speciesAll;
+     LinkedHashMap<String,ReferenceInfoVO> molSpecInfo;
+     double rt;
+     double refRt;
+     String tpString;
+     BufferedOutputStream out = null;
+     short nrOh;
+     String[] twoChains;
+     HashMap<String,Set<String>> relevantClasses = getRelevantClassesForMSDialComparison();
+    
+     LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>>();
+     Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
+     //LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
+     //this is for LC-MS liver
+     getValidOrbitrapCIDMouseLiverSpecies(lipidClasses, lipidClassInfo, new LinkedHashMap<String,Boolean>());
+
+     try {
+       Hashtable<String,Hashtable<String,Vector<RTCheckedVO>>> previousAssignments = null;
+       if (filePrevAssign!=null && filePrevAssign.length()>0) {
+         previousAssignments = parsePreviousAssignements(filePrevAssign);
+       }
+     	//this is just for the sequence of the hits
+       //Vector quantValues = QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f, true);
+       //LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantValues.get(1);
+       ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>) quantValues.get(4);
+       //TODO: now, I have to read the MS-DIAL results and combine them
+       MSDialResultsCombiner resultsCombiner = new MSDialResultsCombiner(posIonModeMSDIALResultsDir, negIonModeMSDIALResultsDir, relevantClasses/*, analyteSequence*/);
+       resultsCombiner.parseAndCombine();
+       
+       ////List<AlexScoreVO> resultsAll = new ArrayList<AlexScoreVO>(readAlexScoreResults(alexIdentificationFile));
+
+     }catch (Exception e) {
+       // TODO Auto-generated catch block
+       e.printStackTrace();
+     }finally {
+       try {
+         if (out!=null) out.close();
+       }catch(Exception ex) {
+         ex.printStackTrace();
+       }
+     }
+   }
+   
+   private HashMap<String,Set<String>> getRelevantClassesForMSDialComparison(){
+     HashMap<String,Set<String>> relevantClasses = new HashMap<String,Set<String>>();
+     Set<String> posAndNeg = new HashSet<String>();
+     posAndNeg.add("+");
+     posAndNeg.add("-");
+     Set<String> pos = new HashSet<String>();
+     pos.add("+");
+     Set<String> neg = new HashSet<String>();
+     neg.add("-");
+     
+     relevantClasses.put("Cer", neg);
+     relevantClasses.put("DG", pos);
+     relevantClasses.put("LPC", posAndNeg);
+     relevantClasses.put("LPE", posAndNeg);
+     relevantClasses.put("LPS", neg);
+     relevantClasses.put("O-PE", posAndNeg);
+     relevantClasses.put("P-PE", posAndNeg);
+     relevantClasses.put("PC", posAndNeg);
+     relevantClasses.put("PE", posAndNeg);
+     relevantClasses.put("PG", neg);
+     relevantClasses.put("PI", neg);
+     relevantClasses.put("PS", neg);
+     relevantClasses.put("SM", posAndNeg);
+     relevantClasses.put("TG", pos);
+ 
+     return relevantClasses;
+   }
+   
+   private void getValidOrbitrapCIDMouseLiverSpecies(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
+       Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
+     getValidOrbitrapCIDSpeciesNegative(lipidClasses, lipidClassInfo, adducts);    
+     lipidClasses.put("P-PC", FoundBiologicalSpecies.getPPCSpeciesOrbitrap());
+     lipidClassInfo.get("P-PE").getAdducts().put("H", true);
+     lipidClassInfo.get("P-PE").getAdducts().put("Na", true);
+     lipidClassInfo.get("LPE").getAdducts().put("H", true);
+     lipidClassInfo.get("LPE").getAdducts().put("Na", true);
+     lipidClassInfo.get("PS").getAdducts().put("H", true);
+     lipidClassInfo.put("PS", new LipidClassInfoVO(2,false,-1,adducts));
+     lipidClassInfo.get("PC").getAdducts().put("H", true);
+     lipidClassInfo.get("PC").getAdducts().put("Na", true);
+     lipidClassInfo.get("PE").getAdducts().put("H", true);
+     lipidClassInfo.get("PE").getAdducts().put("Na", true);
+     //this is for the MSDIAL comparison
+     lipidClassInfo.get("Cer").getAdducts().put("H", true);
+     //this was the original version
+     //lipidClassInfo.get("Cer").getAdducts().put("Na", true);
+     
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("LPC", FoundBiologicalSpecies.getLPCSpeciesOrbitrap());
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     adducts.put("HCOO", false);
+     lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,1.2d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("DG", FoundBiologicalSpecies.getDGSpeciesOrbitrap());
+     adducts.put("Na", true);
+     adducts.put("NH4", true);
+     lipidClassInfo.put("DG", new LipidClassInfoVO(3,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("TG", FoundBiologicalSpecies.getTGSpeciesOrbitrap());
+     adducts.put("NH4", true);
+     adducts.put("Na", true);
+     lipidClassInfo.put("TG", new LipidClassInfoVO(3,true,0.7d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("SM", FoundBiologicalSpecies.getSMSpeciesOrbitrap());
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     adducts.put("HCOO", false);
+     lipidClassInfo.put("SM", new LipidClassInfoVO(1,true,0.7d,adducts));
+   }
+   
    
    
    private void getValidOrbitrapCIDCtrlExp1SpeciesPositive(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,

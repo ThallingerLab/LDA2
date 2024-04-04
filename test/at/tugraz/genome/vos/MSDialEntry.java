@@ -23,10 +23,15 @@
 package at.tugraz.genome.vos;
 
 import java.util.Hashtable;
+import java.util.Vector;
 
 import at.tugraz.genome.exception.MSDialException;
 import at.tugraz.genome.lda.LipidomicsConstants;
+import at.tugraz.genome.lda.Settings;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
+import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
+import at.tugraz.genome.lda.utils.StaticUtils;
 
 /**
  * 
@@ -40,7 +45,12 @@ public class MSDialEntry
   public final static String MSDIAL_VERSION_4_9 = "4.9";
 
   
-  private static Hashtable<String,String> adductLookup_ = new Hashtable<String,String>(){{
+  private static Hashtable<String,String> adductLookup_ = new Hashtable<String,String>(){/**
+		 * 
+		 */
+		private static final long serialVersionUID = -7013582827307024456L;
+
+	{
     put("[M-H]-","-H");
     put("[M+HCOO]-","HCOO");
     put("[M+H]+","H");
@@ -50,6 +60,7 @@ public class MSDialEntry
   }};
 
   private String id_;
+  private String fileId_;
   private String name_;
   private String dialClassName_;
   private String dialMs1Name_;
@@ -57,6 +68,9 @@ public class MSDialEntry
   private String ldaClassName_;
   private String ldaMs1Name_;
   private String ldaMs2Name_;
+  private String alexClassName_;
+  private String alexMs1Name_;
+  private String alexMs2Name_;
   private int scans_;
   private float rtStart_;
   private float rt_;
@@ -66,15 +80,23 @@ public class MSDialEntry
   private String adduct_;
   private String isotope_;
   private float score_;
+  private float dotProduct_;
+  private float weightedDotProduct_;
+  private float reverseDotProduct_;
+  private int matchedPeaks_;
+  private float matchedPeaksPercentage_;     
   private float signalNoise_;
   private String msmsSpectrum_;
   
   
-  public MSDialEntry(String id, String name, int scans, float rtStart, float rt, float rtStop, double mz,
-      float area, String adduct, String isotope, float score, float signalNoise, String msmsSpectrum, String msDialVersion) throws MSDialException
+  public MSDialEntry(String id, String fileId, String name, int scans, float rtStart, float rt, float rtStop, double mz,
+      float area, String adduct, String isotope, float score, float dotProduct, float weightedDotProduct,
+      float reverseDotProduct, int matchedPeaks, float matchedPeaksPercentage, float signalNoise, String msmsSpectrum,
+      String msDialVersion) throws MSDialException, LipidCombinameEncodingException
   {
     super();
     this.id_ = id;
+    this.fileId_ = fileId;
     this.name_ = name;
     if (msDialVersion.equalsIgnoreCase(MSDIAL_VERSION_4_0))
     	this.categorizeNameVersion_4_0(mz,rt);
@@ -92,17 +114,24 @@ public class MSDialEntry
       throw new MSDialException("The adduct \""+adduct+"\" cannot be found in the lookup table at MSDialEntry.java - please add it!");
     this.isotope_ = isotope;
     this.score_ = score;
+    this.dotProduct_ = dotProduct;
+    this.weightedDotProduct_ = weightedDotProduct;
+    this.reverseDotProduct_ = reverseDotProduct;
+    this.matchedPeaks_ = matchedPeaks;
+    this.matchedPeaksPercentage_ = matchedPeaksPercentage;  
     this.signalNoise_ = signalNoise;
     this.msmsSpectrum_ = msmsSpectrum;
   }
   
   
-  private void categorizeNameVersion_4_9(double mz, float rt) throws MSDialException{
+  private void categorizeNameVersion_4_9(double mz, float rt) throws MSDialException, LipidCombinameEncodingException{
     dialClassName_ = null;
     dialMs2Name_ = null;
     ldaClassName_ = null;
     ldaMs1Name_ = null;
     ldaMs2Name_ = null;
+    alexClassName_ = null;
+    alexMs2Name_ = null;
     dialMs1Name_ = name_;
     String prefix = null;
     if (dialMs1Name_.startsWith("w/o MS2:"))
@@ -161,6 +190,8 @@ public class MSDialEntry
         throw new MSDialException("For a correct MSDIAL-name, for the first chain, there must be an \"O\" subsequent to the \";\"");
       int nrOh = 1;
       oh = oh.substring(1);
+      if (oh.indexOf("(")!=-1)
+      	oh = oh.substring(0,oh.indexOf("("));
       if (oh.length()>0) {
         try {
           nrOh = Integer.parseInt(oh);
@@ -228,7 +259,7 @@ public class MSDialEntry
         FattyAcidVO secondFA = getSecondMSDialFattyAcid(secondFAString,dialMs2Name_);
         if (hEncoding!=null && hEncoding.length()>0)
         	ldaMs2Name_ += (secondFA.getOhNumber()==1 ? "h" : "n");
-        ldaMs2Name_ += String.valueOf(secondFA.getcAtoms())+":"+String.valueOf(secondFA.getDoubleBonds());
+        ldaMs2Name_ += String.valueOf(secondFA.getcAtoms())+":"+String.valueOf(secondFA.getDoubleBonds())+(secondFA.getPrefix()!=null ? secondFA.getPrefix() : "");
       }
       if (thirdFAString!=null) {
         if (dialMs2Name_.contains("/"))
@@ -243,13 +274,82 @@ public class MSDialEntry
       ldaClassName_ = "Cer1P";
     } else if (dialClassName_.equalsIgnoreCase("SPB")) {
       ldaClassName_ = "SphBase";
-    } else if (ldaClassName_.equalsIgnoreCase("O-PC")) {
-      ldaClassName_ = "P-PC";
-    }
-
+    } //else if (ldaClassName_.equalsIgnoreCase("O-PC")) {
+      //ldaClassName_ = "P-PC";
+    //}
+    this.createAlexNamesFromLDANames();
 //    System.out.println(dialClassName_+" ! "+dialMs1Name_+" ! "+dialMs2Name_);
 //    System.out.println(ldaClassName_+" ! "+ldaMs1Name_+" ! "+ldaMs2Name_);
     
+  }
+  
+  private void createAlexNamesFromLDANames() throws LipidCombinameEncodingException {
+  	this.alexClassName_ = ldaClassName_;
+  	boolean useSlash = false;
+  	String ldaPrefix = "";
+  	if (ldaClassName_.equalsIgnoreCase("Cer") || ldaClassName_.equalsIgnoreCase("HexCer") || ldaClassName_.equalsIgnoreCase("SM")) {
+  		useSlash = true;
+  	}		
+  	if (ldaClassName_.equalsIgnoreCase("DG"))
+  		alexClassName_ = "DAG";
+  	else if (ldaClassName_.equalsIgnoreCase("O-PC") || ldaClassName_.equalsIgnoreCase("P-PC")) {
+  		alexClassName_ = "PC O-";
+  		useSlash = true;
+  		ldaPrefix = ldaClassName_.substring(0,2);
+  	} else if (ldaClassName_.equalsIgnoreCase("O-PE") || ldaClassName_.equalsIgnoreCase("P-PE")) {
+  		alexClassName_ = "PE O-";
+  		useSlash = true;
+  		ldaPrefix = ldaClassName_.substring(0,2);
+  	} else if (ldaClassName_.equalsIgnoreCase("TG"))
+  		alexClassName_ = "TAG";
+		else if (ldaClassName_.equalsIgnoreCase("CAR"))
+			alexClassName_ = "ACar";
+  	String sumString = new String(ldaMs1Name_);
+  	String suffix = "";
+  	if (ldaMs1Name_.indexOf("(")!=-1) {
+  		sumString = ldaMs1Name_.substring(0,ldaMs1Name_.indexOf("("));
+  		suffix = ldaMs1Name_.substring(ldaMs1Name_.indexOf("("));
+  	}
+  	FattyAcidVO sumComp = StaticUtils.decodeHumanReadableChain(ldaPrefix+sumString, Settings.getFaHydroxyEncoding(),
+        Settings.getLcbHydroxyEncoding(), false, LipidomicsConstants.getInstance());
+  	this.alexMs1Name_ = this.alexClassName_+((sumComp.getChainType()!=LipidomicsConstants.CHAIN_TYPE_FA_ALKYL && sumComp.getChainType()!=LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL) ? " " : "")
+  			+sumComp.getPrefix()+sumComp.getcAtoms()+":"+(sumComp.getChainType()==LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL ? (sumComp.getDoubleBonds()+1) : sumComp.getDoubleBonds())
+  			+(sumComp.getOhNumber()>0 ? ";"+String.valueOf(sumComp.getOhNumber()) : "")+suffix;
+//		if (suffix!=null && suffix.length()>0)
+//			System.out.println("1. "+this.dialMs1Name_+" ; "+this.ldaMs2Name_+ " ; "+this.dialMs2Name_);
+
+  	if (this.ldaMs2Name_!=null) {
+  		this.alexMs2Name_ = this.alexClassName_+((sumComp.getChainType()!=LipidomicsConstants.CHAIN_TYPE_FA_ALKYL && sumComp.getChainType()!=LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL) ? " " : "");  		
+      String toSplit = StaticUtils.sortFASequenceUnassigned(ldaMs2Name_.toString(),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS).replaceAll(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS, LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
+      String[] hrChains = toSplit.split(LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
+  		//Vector<FattyAcidVO> fas = StaticUtils.decodeFAsFromHumanReadableName(StaticUtils.sortFASequenceUnassigned(ldaMs2Name_.toString(),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS), Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), false, LipidomicsConstants.getInstance());
+  		for (String hrChain : hrChains) {
+  			String faSuffix = "";
+  			String faString = hrChain;
+  			if (hrChain.indexOf("(")!=-1) {
+  				faString = hrChain.substring(0,hrChain .indexOf("("));
+  	  		faSuffix = hrChain.substring(hrChain .indexOf("("));
+  	  	}
+  			FattyAcidVO fa = StaticUtils.decodeHumanReadableChain(faString, Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), false, LipidomicsConstants.getInstance());
+  			if (fa.getChainType()==LipidomicsConstants.CHAIN_TYPE_FA_ALKYL && !alexMs2Name_.endsWith(LipidomicsConstants.ALKYL_PREFIX))
+  				this.alexMs2Name_+=LipidomicsConstants.ALKYL_PREFIX;
+  			//here, we have to change the prefix
+  			else if (fa.getChainType()==LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL && !alexMs2Name_.endsWith(LipidomicsConstants.ALKYL_PREFIX))
+  				this.alexMs2Name_+=LipidomicsConstants.ALKENYL_PREFIX;
+  			this.alexMs2Name_ += fa.getPrefix()+fa.getcAtoms()+":"+(fa.getChainType()==LipidomicsConstants.CHAIN_TYPE_FA_ALKENYL ? (fa.getDoubleBonds()+1) : fa.getDoubleBonds())
+  					+(fa.getOhNumber()>0 ? ";"+String.valueOf(fa.getOhNumber()) : "")+faSuffix+(useSlash ? "/" : "-");
+  			
+  		}
+  		this.alexMs2Name_ = this.alexMs2Name_.substring(0,this.alexMs2Name_.length()-1);
+  	}else if (alexClassName_.equalsIgnoreCase("LPC") || alexClassName_.equalsIgnoreCase("LPE") || alexClassName_.equalsIgnoreCase("LPS")){
+  		this.alexMs2Name_ = this.alexMs1Name_;
+  	}
+  	
+  	//System.out.println("1. "+this.dialMs1Name_+" ; "+this.ldaMs2Name_+ " ; "+this.dialMs2Name_+ " ; "+this.alexMs1Name_+ " ; "+this.alexMs2Name_);
+
+//  	System.out.println("1. "+name_);
+//  	System.out.println("2. "+this.alexClassName_+" ; "+this.alexMs1Name_+" ; "+this.alexMs2Name_);
+  	
   }
   
   
@@ -516,12 +616,39 @@ public class MSDialEntry
     return isotope_;
   }
 
-
-  public float getScore()
+	public float getScore()
   {
     return score_;
-  }
+  }  
 
+  public float getDotProduct()
+	{
+		return dotProduct_;
+	}
+
+
+	public float getWeightedDotProduct()
+	{
+		return weightedDotProduct_;
+	}
+
+
+	public float getReverseDotProduct()
+	{
+		return reverseDotProduct_;
+	}
+
+
+	public int getMatchedPeaks()
+	{
+		return matchedPeaks_;
+	}
+
+
+	public float getMatchedPeaksPercentage()
+	{
+		return matchedPeaksPercentage_;
+	}
 
   public float getSignalNoise()
   {
@@ -570,6 +697,10 @@ public class MSDialEntry
     return msmsSpectrum_;
   }
 
-  
+
+	public String getFileId()
+	{
+		return fileId_;
+	}
   
 }
