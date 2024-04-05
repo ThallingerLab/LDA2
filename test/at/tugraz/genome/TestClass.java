@@ -248,6 +248,7 @@ import at.tugraz.genome.vos.LdaLbStandardsEvidence;
 import at.tugraz.genome.vos.LipidBLASTDetectionVO;
 import at.tugraz.genome.vos.LipidBLASTIdentificationVO;
 import at.tugraz.genome.vos.LipidClassInfoVO;
+import at.tugraz.genome.vos.MSDialCombinedEntry;
 import at.tugraz.genome.vos.MSDialEntry;
 import at.tugraz.genome.vos.MSFinderEntry;
 import at.tugraz.genome.vos.MSFinderHitVO;
@@ -23657,6 +23658,13 @@ public void testTabFile() throws Exception {
        //TODO: now, I have to read the MS-DIAL results and combine them
        MSDialResultsCombiner resultsCombiner = new MSDialResultsCombiner(posIonModeMSDIALResultsDir, negIonModeMSDIALResultsDir, relevantClasses,rtGroupingTolerance/*, analyteSequence*/);
        resultsCombiner.parseAndCombine();
+       List<MSDialCombinedEntry> resultsAll = resultsCombiner.getResults();
+       //for debugging
+//       Collections.sort(resultsAll,new GeneralComparator("at.tugraz.genome.vos.MSDialCombinedEntry", "getTotalScoreAvg", "java.lang.Float"));
+//       for (int i=(resultsAll.size()-1); i!=-1; i--) {
+//      	 MSDialCombinedEntry combined = resultsAll.get(i);
+//      	 System.out.println(combined.getAlexMs2Name()+"_"+combined.getGroupingRt()+"_"+combined.getAdduct()+": "+combined.getTotalScoreAvg());
+//       }
        
        ////List<AlexScoreVO> resultsAll = new ArrayList<AlexScoreVO>(readAlexScoreResults(alexIdentificationFile));
 

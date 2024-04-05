@@ -15,6 +15,7 @@ import at.tugraz.genome.exception.MSDialException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.maspectras.utils.Calculator;
+import at.tugraz.genome.vos.MSDialCombinedEntry;
 import at.tugraz.genome.vos.MSDialEntry;
 import at.tugraz.genome.voutils.GeneralComparator;
 
@@ -40,6 +41,9 @@ public class MSDialResultsCombiner
 	private HashMap<String,HashMap<String,Set<String>>> analytesForRtGroupingPos_;
 	//first key: class; second key: MS1 species; set entries: mod
 	private HashMap<String,HashMap<String,Set<String>>> analytesForRtGroupingNeg_;
+	
+	private List<MSDialCombinedEntry> combinedResults_; 
+	
 	//private LinkedHashMap<String,Vector<String>> analyteSequence_;
 	
 	//private Hashtable<String,Vector<String>> notCoveredAnalytes_; 
@@ -140,11 +144,12 @@ public class MSDialResultsCombiner
 	
 	private void combineResults() throws MSDialException {
 		System.out.println("Now I have to combine the results");
-		this.identifyRTGroupingTimes(this.analytesForRtGroupingPos_,this.posResults_);
-		this.identifyRTGroupingTimes(this.analytesForRtGroupingNeg_, this.negResults_);
+		combinedResults_ = new ArrayList<MSDialCombinedEntry>(); 
+		this.identifyRTGroupingTimesAndCalculateResults(this.analytesForRtGroupingPos_,this.posResults_);
+		this.identifyRTGroupingTimesAndCalculateResults(this.analytesForRtGroupingNeg_, this.negResults_);
 	}
 	
-	private void identifyRTGroupingTimes(HashMap<String,HashMap<String,Set<String>>> analytesForRtGrouping,
+	private void identifyRTGroupingTimesAndCalculateResults(HashMap<String,HashMap<String,Set<String>>> analytesForRtGrouping,
 			LinkedHashMap<String,Hashtable<String,Hashtable<String,Hashtable<String,Vector<MSDialEntry>>>>> results) throws MSDialException {
 		for (String lClass : analytesForRtGrouping.keySet()) {
 			System.out.println("LipidClass: "+lClass);
@@ -164,10 +169,33 @@ public class MSDialResultsCombiner
 							hitsForAnalyteModAllSearches.addAll(entries);
 					}
 					this.groupByRetentionTime(hitsForAnalyteModAllSearches);
+					this.buildCombinedMSDialEntryOnMolSpeciesLevel(hitsForAnalyteModAllSearches);
 					//System.out.println(mod+" - "+analyte+" - "+hitsForAnalyteModAllSearches.size());
 				}
 			}
 		}
+	}
+	
+	
+	private void buildCombinedMSDialEntryOnMolSpeciesLevel(List<MSDialEntry> ms1RtGrouped) {
+		HashMap<String,Vector<MSDialEntry>> groupsForCombining = new HashMap<String,Vector<MSDialEntry>>();
+		for (MSDialEntry entry : ms1RtGrouped) {
+			if (entry.getAlexMs2Name()==null||entry.getAlexMs2Name().length()==0)
+				continue;
+			String combiningId = createIdForCombining(entry);
+			if (!groupsForCombining.containsKey(combiningId))
+				groupsForCombining.put(combiningId, new Vector<MSDialEntry>());
+			groupsForCombining.get(combiningId).add(entry);
+		}
+		for (String id : groupsForCombining.keySet()) {
+			MSDialCombinedEntry combined = new MSDialCombinedEntry(groupsForCombining.get(id));
+			combinedResults_.add(combined);
+			//System.out.println(id+":    "+groupsForCombining.size());
+		}
+	}
+	
+	private String createIdForCombining(MSDialEntry entry) {
+		return entry.getAlexMs2Name()+"_"+entry.getAdduct()+"_"+entry.getGroupingRt();
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -217,8 +245,6 @@ public class MSDialResultsCombiner
     for (int i=(list.size()-1); i!=-1; i--) {
     	MSDialEntry entry =  list.get(i);
     	entry.setGroupingRt(rtClusterStrings.get(entry.getRtClusterId()));
-			System.out.println("ClusterId: "+entry.getRtClusterId()+" ; "+entry.getFileId()+" ; "+entry.getAlexClassName()+" ; "+entry.getAlexMs1Name()+" ; "+entry.getAlexMs2Name()+" ; "+entry.getRt()+": "+entry.getGroupingRt());
-
     }
 
 	}
@@ -432,9 +458,11 @@ public class MSDialResultsCombiner
     return StaticUtils.isWithinTolerance(rtGroupingTolerance_, refTime, rt);
   }
 	
-
-  
-  private String createUniqueClusterRtString(float rt) {
+  public static String createUniqueClusterRtString(float rt) {
   	return Calculator.FormatNumberToString(Calculator.roundFloat(rt,3),3d);
+  }
+  
+  public List<MSDialCombinedEntry> getResults(){
+  	return combinedResults_;
   }
 }
