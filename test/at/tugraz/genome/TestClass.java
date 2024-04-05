@@ -23659,14 +23659,90 @@ public void testTabFile() throws Exception {
        MSDialResultsCombiner resultsCombiner = new MSDialResultsCombiner(posIonModeMSDIALResultsDir, negIonModeMSDIALResultsDir, relevantClasses,rtGroupingTolerance/*, analyteSequence*/);
        resultsCombiner.parseAndCombine();
        List<MSDialCombinedEntry> resultsAll = resultsCombiner.getResults();
+       Collections.sort(resultsAll,new GeneralComparator("at.tugraz.genome.vos.MSDialCombinedEntry", "getTotalScoreAvg", "java.lang.Float"));
+       //start: these lines perform a second sorting by the ALEX molecular species name
+       List<MSDialCombinedEntry> resultsSortedAlsoBySecondScore = new ArrayList<MSDialCombinedEntry>();
+       List<MSDialCombinedEntry> sublist = new ArrayList<MSDialCombinedEntry>();
+       double lastScore = -1;
+       for (int i=resultsAll.size()-1; i!=-1; i--) {
+      	 MSDialCombinedEntry result = resultsAll.get(i);
+         if (i==resultsAll.size()-1) lastScore = result.getTotalScoreAvg();
+         if (lastScore!=result.getTotalScoreAvg()) {
+           Collections.sort(sublist,new GeneralComparator("at.tugraz.genome.vos.MSDialCombinedEntry", "getAlexMs2Name", "java.lang.String"));
+           for (int j=sublist.size()-1; j!=-1; j--)
+             resultsSortedAlsoBySecondScore.add(sublist.get(j));
+           sublist = new ArrayList<MSDialCombinedEntry>();   
+           lastScore = result.getTotalScoreAvg();
+         }
+         sublist.add(result);
+       }
+       if (sublist.size()>0) {
+      	 Collections.sort(sublist,new GeneralComparator("at.tugraz.genome.vos.MSDialCombinedEntry", "getAlexMs2Name", "java.lang.String"));
+         for (int j=sublist.size()-1; j!=-1; j--)
+           resultsSortedAlsoBySecondScore.add(sublist.get(j));
+         sublist = new ArrayList<MSDialCombinedEntry>();
+       }
+       resultsAll = resultsSortedAlsoBySecondScore;
+       //end: these lines perform a second sorting by the combined ALEX score
+
        //for debugging
-//       Collections.sort(resultsAll,new GeneralComparator("at.tugraz.genome.vos.MSDialCombinedEntry", "getTotalScoreAvg", "java.lang.Float"));
-//       for (int i=(resultsAll.size()-1); i!=-1; i--) {
-//      	 MSDialCombinedEntry combined = resultsAll.get(i);
+//       for (int i=0; i!=resultsSortedAlsoBySecondScore.size(); i++) {
+//      	 MSDialCombinedEntry combined = resultsSortedAlsoBySecondScore.get(i);
 //      	 System.out.println(combined.getAlexMs2Name()+"_"+combined.getGroupingRt()+"_"+combined.getAdduct()+": "+combined.getTotalScoreAvg());
 //       }
        
-       ////List<AlexScoreVO> resultsAll = new ArrayList<AlexScoreVO>(readAlexScoreResults(alexIdentificationFile));
+       for (int i=0; i!=resultsAll.size(); i++) {
+      	 //TODO: the validation has to be implemented
+//      	 MSDialCombinedEntry result = resultsAll.get(i);
+//         if (previousAssignments!=null && previousAssignments.containsKey(result.getLipidClass()) && previousAssignments.get(result.getLipidClass()).containsKey(result.getLipidSpecies())) {
+//           if (result.getLipidClass().startsWith("IS ")) {
+//             refRt = -1000d;  
+//           }else
+//             refRt = Double.parseDouble(result.getRtGroup());
+//           boolean found = false;
+//           for (RTCheckedVO rtChecked : previousAssignments.get(result.getLipidClass()).get(result.getLipidSpecies())){
+//             if (rtChecked.getMolSpec().equalsIgnoreCase(result.getMolSpecies()) && rtChecked.getAdduct().equalsIgnoreCase(result.getAdduct())) {
+//               if (result.getLipidClass().startsWith("IS ")) {
+//                 rt = -1000d;
+//               }else
+//                 rt = Double.parseDouble(rtChecked.getRtGroup());
+//               if ((refRt-0.1d)<=rt && rt<=(refRt+0.1d)) {
+//                 //System.out.println("I have found this one in the results: "+result.getLipidClass()+" "+result.getLipidSpecies()+" "+result.getMolSpecies());
+//                 result.setTp(rtChecked.getTruePos());
+////                 if (rtChecked.getComment()!=null && rtChecked.getComment().length()>0)
+////                   System.out.println(rtChecked.getComment()+" ; "+rtChecked.getTruePos());
+//                 result.setComment((rtChecked.getComment()!=null && rtChecked.getComment().length()>0) ? rtChecked.getComment() : "");
+//                 if (found)
+//                   System.out.println("I have found it more than one time");
+//
+//                 found = true;
+//                 countFound++;
+//               }
+//             }
+//           }
+//           if (found)
+//             continue;
+//         }
+         
+         
+         
+       }
+       ////System.out.println("Found: "+countFound);
+       String line;
+       out = new BufferedOutputStream(new FileOutputStream(outFile));
+       line = COLUMN_HEADER_ADDUCT+"\t"+COLUMN_HEADER_SCORE+"\t"+COLUMN_HEADER_CLASS+"\t"+COLUMN_HEADER_SPECIES+"\t"+COLUMN_HEADER_MOL_SPECIES
+         +"\t"+COLUMN_HEADER_RT_GROUP+"\t"+COLUMN_HEADER_TP+"\t"+COLUMN_HEADER_COMMENT+"\n";
+       out.write(line.getBytes());
+//       for (AlexScoreVO result : resultsAll) {
+       //for (int i=resultsAll.size()-1; i!=-1; i--) {
+       for (int i=0; i!=resultsAll.size(); i++) {
+      	 MSDialCombinedEntry result = resultsAll.get(i);
+             line = result.getAdduct()+"\t"+String.valueOf(result.getTotalScoreAvg())+"\t"
+                 +result.getAlexClassName()+"\t"+result.getAlexMs1Name()+"\t"+result.getDialMs2Name()
+                 +"\t"+result.getGroupingRt()+"\t"+""+"\t"+"";
+             line += "\n";
+             out.write(line.toString().getBytes());
+       }
 
      }catch (Exception e) {
        // TODO Auto-generated catch block
