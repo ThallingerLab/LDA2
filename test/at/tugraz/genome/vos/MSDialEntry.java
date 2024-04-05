@@ -23,13 +23,11 @@
 package at.tugraz.genome.vos;
 
 import java.util.Hashtable;
-import java.util.Vector;
 
 import at.tugraz.genome.exception.MSDialException;
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
-import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.utils.StaticUtils;
 
@@ -75,6 +73,8 @@ public class MSDialEntry
   private float rtStart_;
   private float rt_;
   private float rtStop_;
+  private Integer rtClusterId;
+  private String groupingRt_;
   private double mz_;
   private float area_;
   private String adduct_;
@@ -121,6 +121,8 @@ public class MSDialEntry
     this.matchedPeaksPercentage_ = matchedPeaksPercentage;  
     this.signalNoise_ = signalNoise;
     this.msmsSpectrum_ = msmsSpectrum;
+    this.rtClusterId = null;
+    this.groupingRt_ = null;
   }
   
   
@@ -702,5 +704,47 @@ public class MSDialEntry
 	{
 		return fileId_;
 	}
+
+	public Integer getRtClusterId()
+	{
+		return rtClusterId;
+	}
+
+	public void setRtClusterId(Integer rtClusterId)
+	{
+		this.rtClusterId = rtClusterId;
+	}
+
+
+	public String getGroupingRt()
+	{
+		return groupingRt_;
+	}
+
+
+	public void setGroupingRt(String groupingRt)
+	{
+		this.groupingRt_ = groupingRt;
+	}
+
+
+	public String getAlexClassName()
+	{
+		return alexClassName_;
+	}
+
+
+	public String getAlexMs1Name()
+	{
+		return alexMs1Name_;
+	}
+
+
+	public String getAlexMs2Name()
+	{
+		return alexMs2Name_;
+	}
+	
+	
   
 }

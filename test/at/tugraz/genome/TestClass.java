@@ -23610,6 +23610,8 @@ public void testTabFile() throws Exception {
    }
    
    private void validateMSDIALHitsBasedOnRetentionTime() {
+  	 double rtGroupingTolerance = 0.4d;
+  	 
      //this is for LC-MS liver
   	 String filePrevAssign = "E:\\Lipidomics\\data\\Christer\\20220119_decoyLCMS-liver\\LCMSdata_liver_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_combRemovalAll.xlsx";
   	 String baseDir = "E:\\Lipidomics\\data\\BiologicalExperiment\\Orbitrap_CID\\";
@@ -23653,7 +23655,7 @@ public void testTabFile() throws Exception {
        //LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantValues.get(1);
        ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>) quantValues.get(4);
        //TODO: now, I have to read the MS-DIAL results and combine them
-       MSDialResultsCombiner resultsCombiner = new MSDialResultsCombiner(posIonModeMSDIALResultsDir, negIonModeMSDIALResultsDir, relevantClasses/*, analyteSequence*/);
+       MSDialResultsCombiner resultsCombiner = new MSDialResultsCombiner(posIonModeMSDIALResultsDir, negIonModeMSDIALResultsDir, relevantClasses,rtGroupingTolerance/*, analyteSequence*/);
        resultsCombiner.parseAndCombine();
        
        ////List<AlexScoreVO> resultsAll = new ArrayList<AlexScoreVO>(readAlexScoreResults(alexIdentificationFile));
