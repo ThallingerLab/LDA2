@@ -2,6 +2,7 @@ package at.tugraz.genome.vos;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
@@ -35,7 +36,7 @@ public class MSDialCombinedEntry
   private String groupingRt_;
   private String adduct_;
 
-	private double mz_;
+	  private double mz_;
   private float totalScoreAvg_;
   private float totalScoreMax_;
   private String detectedTotalScoresMax_;
@@ -45,6 +46,18 @@ public class MSDialCombinedEntry
   private String detectedWeightedDotProductMax_;
   private float reverseDotProductAvg_;
   private String detectedreverseDotProductMax_;
+  
+  private static HashMap<String, String> alexAdductLookup_ = new HashMap<String, String>(){
+    private static final long serialVersionUID = -876010361435525395L;
+
+    {
+      put("H", "+H+");
+      put("Na", "+Na+");
+      put("NH4", "+NH4+");
+      put("-H", "-H+");
+      put("HCOO", "+HCOO-");
+    }
+  };
   
 	
 	public MSDialCombinedEntry(Vector<MSDialEntry> entries) {
@@ -150,6 +163,10 @@ public class MSDialCombinedEntry
 			reverseDotProducts[i] = highest.getReverseDotProduct();
 		}
 		this.detectedRts_ = rts.toString();
+this.detectedTotalScoresMax_ = totalSs.toString();
+this.detectedDotProductMax_ = dotPs.toString();
+this.detectedWeightedDotProductMax_ = weightedDotPs.toString();
+this.detectedreverseDotProductMax_ = reverseDotPs.toString();
 		this.mz_ = Calculator.mean(mzs);
 		this.totalScoreAvg_ = Calculator.mean(totalScores);
 		this.dotProductAvg_ = Calculator.mean(dotProducts);
@@ -220,7 +237,15 @@ public class MSDialCombinedEntry
 		return adduct_;
 	}
 
-	public double getMz_()
+  public String getAlexAdduct(){
+    if (alexAdductLookup_.containsKey(adduct_))
+      return alexAdductLookup_.get(adduct_);
+    else
+      return adduct_;
+  }
+
+
+	public double getMz()
 	{
 		return mz_;
 	}
@@ -265,7 +290,7 @@ public class MSDialCombinedEntry
 		return reverseDotProductAvg_;
 	}
 
-	public String getDetectedreverseDotProductMax()
+	public String getDetectedReverseDotProductMax()
 	{
 		return detectedreverseDotProductMax_;
 	}

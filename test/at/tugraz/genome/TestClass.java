@@ -356,6 +356,19 @@ public class TestClass extends JApplet implements AddScan
   private final String COLUMN_HEADER_SCORE_UNCORRECTED = "ALEX score uncorr.";
   private final String COLUMN_HEADER_AMBIGUOUS = "Ambiguous partner";
 
+  private final String COLUMN_HEADER_DIAL_SCORE = "MSDIAL score (avg)";
+  private final String COLUMN_HEADER_DIAL_SCORE_MAX = "MSDIAL score (max)";
+  private final String COLUMN_HEADER_MOL_SPECIES_ALEX = "ALEX annotation";
+  private final String COLUMN_HEADER_MOL_SPECIES_MZ = "m/z";
+  private final String COLUMN_HEADER_DOT_PRODUCT_AVG = "Dot product (avg)";
+  private final String COLUMN_HEADER_WEIGHTED_DOT_PRODUCT_AVG = "Weighted dot product (avg)";
+  private final String COLUMN_HEADER_REVERSE_DOT_PRODUCT_AVG = "Reverse dot product (avg)";
+  private final String COLUMN_HEADER_RETENTION_TIMES = "Retention times";
+  private final String COLUMN_HEADER_DIAL_SCORE_INDIVIDUAL = "Total score (individual)";
+  private final String COLUMN_HEADER_DOT_PRODUCT_INDIVIDUAL = "Dot product (individual)";
+  private final String COLUMN_HEADER_WEIGHTED_DOT_PRODUCT_INDIVIDUAL = "Weighted dot product (individual)";
+  private final String COLUMN_HEADER_REVERSE_DOT_PRODUCT_INDIVIDUAL = "Reverse dot product (individual)";
+
   
   private final String TYPE_SPECIES = "Species-level identification";
   private final String TYPE_SPECIES_ABBREV = "LCSF";
@@ -23614,8 +23627,8 @@ public void testTabFile() throws Exception {
   	 double rtGroupingTolerance = 0.4d;
   	 
      //this is for LC-MS liver
-  	 String filePrevAssign = "E:\\Lipidomics\\data\\Christer\\20220119_decoyLCMS-liver\\LCMSdata_liver_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_combRemovalAll.xlsx";
-  	 String baseDir = "E:\\Lipidomics\\data\\BiologicalExperiment\\Orbitrap_CID\\";
+  	 String filePrevAssign = "C:\\data\\Christer\\20220119_decoyLCMS-liver\\LCMSdata_liver_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_combRemovalAll.xlsx";
+  	 String baseDir = "C:\\data\\BiologicalExperiment\\Orbitrap_CID\\";
   	 //this is just for the sequence of the hits
   	 //String quantFile = baseDir+"quant\\positive.xlsx";
   	 String posIonModeMSDIALResultsDir = baseDir+"MS-Dial_positive\\export\\";
@@ -23668,7 +23681,7 @@ public void testTabFile() throws Exception {
       	 MSDialCombinedEntry result = resultsAll.get(i);
          if (i==resultsAll.size()-1) lastScore = result.getTotalScoreAvg();
          if (lastScore!=result.getTotalScoreAvg()) {
-           Collections.sort(sublist,new GeneralComparator("at.tugraz.genome.vos.MSDialCombinedEntry", "getAlexMs2Name", "java.lang.String"));
+           Collections.sort(sublist,new GeneralComparator("at.tugraz.genome.vos.MSDialCombinedEntry", "getTotalScoreMax", "java.lang.Float"));
            for (int j=sublist.size()-1; j!=-1; j--)
              resultsSortedAlsoBySecondScore.add(sublist.get(j));
            sublist = new ArrayList<MSDialCombinedEntry>();   
@@ -23677,7 +23690,7 @@ public void testTabFile() throws Exception {
          sublist.add(result);
        }
        if (sublist.size()>0) {
-      	 Collections.sort(sublist,new GeneralComparator("at.tugraz.genome.vos.MSDialCombinedEntry", "getAlexMs2Name", "java.lang.String"));
+      	 Collections.sort(sublist,new GeneralComparator("at.tugraz.genome.vos.MSDialCombinedEntry", "getTotalScoreMax", "java.lang.Float"));
          for (int j=sublist.size()-1; j!=-1; j--)
            resultsSortedAlsoBySecondScore.add(sublist.get(j));
          sublist = new ArrayList<MSDialCombinedEntry>();
@@ -23730,19 +23743,29 @@ public void testTabFile() throws Exception {
        ////System.out.println("Found: "+countFound);
        String line;
        out = new BufferedOutputStream(new FileOutputStream(outFile));
-       line = COLUMN_HEADER_ADDUCT+"\t"+COLUMN_HEADER_SCORE+"\t"+COLUMN_HEADER_CLASS+"\t"+COLUMN_HEADER_SPECIES+"\t"+COLUMN_HEADER_MOL_SPECIES
-         +"\t"+COLUMN_HEADER_RT_GROUP+"\t"+COLUMN_HEADER_TP+"\t"+COLUMN_HEADER_COMMENT+"\n";
+       line = COLUMN_HEADER_ADDUCT+"\t"+COLUMN_HEADER_DIAL_SCORE+"\t"+COLUMN_HEADER_DIAL_SCORE_MAX+"\t"+COLUMN_HEADER_CLASS+"\t"+COLUMN_HEADER_SPECIES
+           +"\t"+COLUMN_HEADER_MOL_SPECIES+"\t"+COLUMN_HEADER_MOL_SPECIES_ALEX+"\t"+COLUMN_HEADER_MOL_SPECIES_MZ
+         +"\t"+COLUMN_HEADER_RT_GROUP+"\t"+COLUMN_HEADER_TP+"\t"+COLUMN_HEADER_COMMENT+"\t"+"\t"+"\t"+"\t"+COLUMN_HEADER_DOT_PRODUCT_AVG+"\t"
+         +COLUMN_HEADER_WEIGHTED_DOT_PRODUCT_AVG+"\t"+COLUMN_HEADER_REVERSE_DOT_PRODUCT_AVG+"\t"+COLUMN_HEADER_RETENTION_TIMES
+         +"\t"+COLUMN_HEADER_DIAL_SCORE_INDIVIDUAL+"\t"+COLUMN_HEADER_DOT_PRODUCT_INDIVIDUAL+"\t"+COLUMN_HEADER_WEIGHTED_DOT_PRODUCT_INDIVIDUAL+"\t"
+         +COLUMN_HEADER_REVERSE_DOT_PRODUCT_INDIVIDUAL+"\n";
        out.write(line.getBytes());
+       
+       
+       
 //       for (AlexScoreVO result : resultsAll) {
        //for (int i=resultsAll.size()-1; i!=-1; i--) {
        for (int i=0; i!=resultsAll.size(); i++) {
       	 MSDialCombinedEntry result = resultsAll.get(i);
-             line = result.getAdduct()+"\t"+String.valueOf(result.getTotalScoreAvg())+"\t"
-                 +result.getAlexClassName()+"\t"+result.getAlexMs1Name()+"\t"+result.getDialMs2Name()
-                 +"\t"+result.getGroupingRt()+"\t"+""+"\t"+"";
+             line = result.getAlexAdduct()+"\t"+String.valueOf(result.getTotalScoreAvg())+"\t"+String.valueOf(result.getTotalScoreMax())+"\t"
+                 +result.getDialClassName()+"\t"+result.getDialClassName()+" "+result.getDialMs1Name()+"\t"+(result.getDialMs2Name()!=null ? (result.getDialClassName()+" "+result.getDialMs2Name()) : result.getAlexMs2Name())
+                 +"\t"+result.getAlexMs2Name()+"\t"+result.getMz()+"\t"+result.getGroupingRt()+"\t"+""+"\t"+""+"\t"+"\t"+"\t"+"\t"+result.getDotProductAvg()+"\t"+result.getWeightedDotProductAvg()
+                 +"\t"+result.getReverseDotProductAvg()+"\t"+result.getDetectedRts()+"\t"+result.getDetectedTotalScoresMax()+"\t"+result.getDetectedDotProductMax()+"\t"+result.getDetectedWeightedDotProductMax()
+                 +"\t"+result.getDetectedReverseDotProductMax();
              line += "\n";
              out.write(line.toString().getBytes());
        }
+
 
      }catch (Exception e) {
        // TODO Auto-generated catch block

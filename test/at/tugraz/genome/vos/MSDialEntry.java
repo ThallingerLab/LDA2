@@ -43,7 +43,7 @@ public class MSDialEntry
   public final static String MSDIAL_VERSION_4_9 = "4.9";
 
   
-  private static Hashtable<String,String> adductLookup_ = new Hashtable<String,String>(){/**
+  private final static Hashtable<String,String> adductLookup_ = new Hashtable<String,String>(){/**
 		 * 
 		 */
 		private static final long serialVersionUID = -7013582827307024456L;
