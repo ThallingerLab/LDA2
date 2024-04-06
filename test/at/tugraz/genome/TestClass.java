@@ -23705,8 +23705,9 @@ public void testTabFile() throws Exception {
 //       }
        
        for (int i=0; i!=resultsAll.size(); i++) {
-      	 //TODO: the validation has to be implemented
-//      	 MSDialCombinedEntry result = resultsAll.get(i);
+      	 MSDialCombinedEntry result = resultsAll.get(i);
+       //TODO: the validation has to be implemented
+
 //         if (previousAssignments!=null && previousAssignments.containsKey(result.getLipidClass()) && previousAssignments.get(result.getLipidClass()).containsKey(result.getLipidSpecies())) {
 //           if (result.getLipidClass().startsWith("IS ")) {
 //             refRt = -1000d;  
@@ -23737,6 +23738,138 @@ public void testTabFile() throws Exception {
 //             continue;
 //         }
          
+         result.setTp("false");
+         lookupClass = result.getLdaClassName();
+//         if (lookupClass.equalsIgnoreCase("DAG"))
+//           lookupClass = "DG";
+//         if (lookupClass.equalsIgnoreCase("TAG"))
+//           lookupClass = "TG";
+         if (lookupClass.equalsIgnoreCase("O-PC"))
+           lookupClass = "P-PC";
+         if (lookupClass.equalsIgnoreCase("O-PE"))
+           lookupClass = "P-PE";
+         if (!lipidClasses.containsKey(lookupClass)) {
+           //System.out.println(result.getLipidClass());
+           continue;
+         }
+         info = lipidClassInfo.get(lookupClass);
+         speciesAll = lipidClasses.get(lookupClass);
+         lookupSpecies = result.getLdaMs1Name();
+         if (result.getLdaClassName().equalsIgnoreCase("O-PE") || result.getLdaClassName().equalsIgnoreCase("O-PC")) {
+           //lookupSpecies = result.getLipidSpecies().substring("PE O-".length());
+           int nrDbs = Integer.parseInt(lookupSpecies.substring(lookupSpecies.indexOf(":")+1));
+           nrDbs--;
+           lookupSpecies = lookupSpecies.substring(0,lookupSpecies.indexOf(":")+1)+String.valueOf(nrDbs);
+           //System.out.println("Lookup-Species "+lookupSpecies);
+         }// else if (result.getLipidClass().equalsIgnoreCase("Cer") || result.getLipidClass().equalsIgnoreCase("HexCer") || result.getLipidClass().equalsIgnoreCase("SM")) {
+//           nrOh = Short.parseShort(lookupSpecies.substring(lookupSpecies.indexOf(";")+1));
+//           //this line is for the new LDA version supporting different LCB backbones and different numbers of hydroxylation
+//           ////lookupSpecies = Settings.getLcbHydroxyEncoding().getEncodedPrefix(nrOh)+lookupSpecies.substring(0,lookupSpecies.indexOf(";"));
+//           //the next 5 lines are for the old LDA version (before 2.8)
+//           int nrCarbons = Integer.parseInt(lookupSpecies.substring(0,lookupSpecies.indexOf(":")))-18;
+//           int doubleBonds = Integer.parseInt(lookupSpecies.substring(lookupSpecies.indexOf(":")+1,lookupSpecies.indexOf(";")))-1;
+//           if (doubleBonds<0)
+//             lookupSpecies = "---";
+//           lookupSpecies = nrCarbons+":"+doubleBonds;
+//         }
+         if (!speciesAll.containsKey(lookupSpecies))
+           continue;
+         molSpecInfo = speciesAll.get(lookupSpecies);
+         lookupMolSpecies = result.getLdaMs2Name();
+         if (lookupMolSpecies==null && result.getAlexMs2Name()!=null)
+           lookupMolSpecies=result.getAlexMs2Name();
+         lookupMolSpecies = lookupMolSpecies.replace("/", "_");
+         //result.getMolSpecies().substring((result.getLipidClass().length()+1)).replaceAll("-", "_");
+         if ((result.getLdaClassName().equalsIgnoreCase("o-PE") || result.getLdaClassName().equalsIgnoreCase("P-PC"))) {
+           String firstPart = "P"+lookupMolSpecies.substring(1,lookupMolSpecies.indexOf("_"));
+           int nrDbs = Integer.parseInt(firstPart.substring(firstPart.indexOf(":")+1));
+           nrDbs--;
+           firstPart = firstPart.substring(0,firstPart.indexOf(":")+1)+String.valueOf(nrDbs);
+           lookupMolSpecies = firstPart+lookupMolSpecies.substring(lookupMolSpecies.indexOf("_"));
+           System.out.println("Lookup-Species "+lookupSpecies);
+           System.out.println("Lookup-Mol-Species "+lookupMolSpecies);
+         }// else if ((result.getLipidClass().equalsIgnoreCase("Cer") || result.getLipidClass().equalsIgnoreCase("HexCer") || result.getLipidClass().equalsIgnoreCase("SM"))
+//             && result.getIdentificationType()==AlexScoreVO.IDENT_TYPE_MOL_SPECIES) {
+//           twoChains = lookupMolSpecies.split("/");
+//           nrOh = Short.parseShort(twoChains[0].substring(twoChains[0].indexOf(";")+1));
+//           lookupMolSpecies = Settings.getLcbHydroxyEncoding().getEncodedPrefix(nrOh)+twoChains[0].substring(0,twoChains[0].indexOf(";"))+"/n"+twoChains[1];
+////           System.out.println(lookupMolSpecies);
+//         }
+//         lookupMolSpecies = lookupMolSpecies.replaceAll("/", "_");
+         rt = Double.parseDouble(result.getGroupingRt());
+         //I have to add here a check of the retention time
+         tpString = "false";
+         for (ReferenceInfoVO refMolSpec : molSpecInfo.values()) {
+           for (double refAsFixed : refMolSpec.getCorrectRts()) {
+             refRt = refAsFixed;
+             //this is for LC-MS Exp1 data
+//             if (!result.isPositive()) {
+//               if (lookupClass.startsWith("L"))
+//                 refRt = refRt-0.2d;
+//               else
+//                 refRt = refRt-0.6d;
+//             }
+             //this is for LC-MS liver
+//             if (result.isPositive() && (lookupClass.equalsIgnoreCase("P-PC") || lookupClass.equalsIgnoreCase("P-PE") || lookupClass.equalsIgnoreCase("LPE") ||
+//                 lookupClass.equalsIgnoreCase("PS") || lookupClass.equalsIgnoreCase("PC") || lookupClass.equalsIgnoreCase("PE") || lookupClass.equalsIgnoreCase("Cer"))) {
+//               refRt = refRt-0.2d;
+//             }            
+           //this is for LC-MS Exp1 brain
+//             if (result.isPositive()) {
+//               refRt = refRt-0.05d;
+//             }
+             if ((refRt-info.getRtTolerance())<rt && rt<(refRt+info.getRtTolerance())) {
+               tpString = "true";
+             //this lead of too many hits to check
+             //}else if (!tpString.equalsIgnoreCase("true") && ((refRt-2d*info.getRtTolerance())<rt && rt<(refRt+2d*info.getRtTolerance()))) {
+             //thus, I take only 1.5 times the RT tolerance
+             }else if (!tpString.equalsIgnoreCase("true") && ((refRt-1.5d*info.getRtTolerance())<rt && rt<(refRt+1.5d*info.getRtTolerance()))) {
+               tpString = String.valueOf(refRt);
+             }
+//             if (lookupClass.equalsIgnoreCase("SM") && lookupSpecies.equalsIgnoreCase("36:2;2")) {
+//               System.out.println(result.getLipidSpecies()+" ; "+result.getMolSpecies()+" ; "+rt+"-"+refRt+" ; "+tpString);
+//             }
+           }
+         }
+         if (tpString.equalsIgnoreCase("false"))
+           continue;
+         tpString = "this mol species is not in lookup";
+         for (ReferenceInfoVO refMolSpec : molSpecInfo.values()) {
+           boolean correctMolSpecies = false;
+           refMolSpecies = refMolSpec.getMS2Name().replaceAll("/", "_");
+           if (lookupClass.equalsIgnoreCase("P-PE"))
+             System.out.println(refMolSpecies);
+//             if (lookupClass.equalsIgnoreCase("Cer")) {
+//               System.out.println(lookupMolSpecies+" & "+refMolSpecies);
+//             }
+           if (lookupMolSpecies.equalsIgnoreCase(refMolSpecies) || StaticUtils.isAPermutedVersion(lookupMolSpecies, refMolSpecies, "_")) {
+             for (double refAsFixed : refMolSpec.getCorrectRts()) {
+                 refRt = refAsFixed;
+//                 if (!result.isPositive()) {
+//                   if (lookupClass.startsWith("L"))
+//                     refRt = refRt-0.2d;
+//                   else
+//                     refRt = refRt-0.6d;
+//                 }
+               if ((refRt-info.getRtTolerance())<rt && rt<(refRt+info.getRtTolerance())) {
+                 tpString = "true";
+               }else if (!tpString.equalsIgnoreCase("true") && ((refRt-2d*info.getRtTolerance())<rt && rt<(refRt+2d*info.getRtTolerance()))) {
+                 tpString = String.valueOf(refRt);
+               }
+             }
+           }
+//             if (lookupClass.equalsIgnoreCase("PC") && lookupSpecies.equalsIgnoreCase("40:0")) {
+//               System.out.println(result.getLipidSpecies()+" ; "+result.getMolSpecies()+" ; "+tpString);
+//             }
+
+         } 
+         result.setTp(tpString);
+         
+         
+//         if (lookupClass.equalsIgnoreCase("Cer") && speciesAll.containsKey(lookupSpecies)) {
+//           
+//           System.out.println(result.getLipidSpecies()+"; "+lookupMolSpecies);
+//         }
          
          
        }
@@ -23759,7 +23892,7 @@ public void testTabFile() throws Exception {
       	 MSDialCombinedEntry result = resultsAll.get(i);
              line = result.getAlexAdduct()+"\t"+String.valueOf(result.getTotalScoreAvg())+"\t"+String.valueOf(result.getTotalScoreMax())+"\t"
                  +result.getDialClassName()+"\t"+result.getDialClassName()+" "+result.getDialMs1Name()+"\t"+(result.getDialMs2Name()!=null ? (result.getDialClassName()+" "+result.getDialMs2Name()) : result.getAlexMs2Name())
-                 +"\t"+result.getAlexMs2Name()+"\t"+result.getMz()+"\t"+result.getGroupingRt()+"\t"+""+"\t"+""+"\t"+"\t"+"\t"+"\t"+result.getDotProductAvg()+"\t"+result.getWeightedDotProductAvg()
+                 +"\t"+result.getAlexMs2Name()+"\t"+result.getMz()+"\t"+result.getGroupingRt()+"\t"+result.getTp()+"\t"+(result.getComment()!=null ? result.getComment() : "")+"\t"+"\t"+"\t"+"\t"+result.getDotProductAvg()+"\t"+result.getWeightedDotProductAvg()
                  +"\t"+result.getReverseDotProductAvg()+"\t"+result.getDetectedRts()+"\t"+result.getDetectedTotalScoresMax()+"\t"+result.getDetectedDotProductMax()+"\t"+result.getDetectedWeightedDotProductMax()
                  +"\t"+result.getDetectedReverseDotProductMax();
              line += "\n";
@@ -23831,7 +23964,10 @@ public void testTabFile() throws Exception {
      adducts.put("H", false);
      adducts.put("Na", false);
      adducts.put("HCOO", false);
-     lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,1.2d,adducts));
+     //new comparison
+     lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,0.7d,adducts));
+     //old comparison
+     //lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,1.2d,adducts));
      adducts = new LinkedHashMap<String,Boolean>();
      lipidClasses.put("DG", FoundBiologicalSpecies.getDGSpeciesOrbitrap());
      adducts.put("Na", true);

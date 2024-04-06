@@ -47,6 +47,9 @@ public class MSDialCombinedEntry
   private float reverseDotProductAvg_;
   private String detectedreverseDotProductMax_;
   
+  private String tp_;
+  private String comment_;
+  
   private static HashMap<String, String> alexAdductLookup_ = new HashMap<String, String>(){
     private static final long serialVersionUID = -876010361435525395L;
 
@@ -65,6 +68,8 @@ public class MSDialCombinedEntry
 		//this.entries_ = entries;
 		this.setCommonSettings();
 		this.calculateCombinedValues();
+  this.tp_ = "false";
+  this.comment_ = null;
 	}
 	
 	private void addEntriesToHash(Vector<MSDialEntry> entries) {
@@ -294,5 +299,26 @@ this.detectedreverseDotProductMax_ = reverseDotPs.toString();
 	{
 		return detectedreverseDotProductMax_;
 	}
+
+  public String getTp()
+  {
+    return tp_;
+  }
+
+  public void setTp(String tp)
+  {
+    this.tp_ = tp;
+  }
+
+  public String getComment()
+  {
+    return comment_;
+  }
+
+  public void setComment_(String comment)
+  {
+    this.comment_ = comment;
+  }
 	
+  
 }
