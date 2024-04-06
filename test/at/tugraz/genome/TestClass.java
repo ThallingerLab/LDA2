@@ -10433,6 +10433,51 @@ public void testTabFile() throws Exception {
     lipidClassInfo.put("LPS", new LipidClassInfoVO(1,true,0.7d,adducts));
   }
   
+  
+  private void getValidOrbitrapCIDSpeciesNegativeMSDIAL(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
+      Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
+    lipidClasses.put("PI", FoundBiologicalSpecies.getPISpeciesOrbitrap());
+    adducts.put("-H", true);
+    lipidClassInfo.put("PI", new LipidClassInfoVO(2,true,0.5d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("P-PE", FoundBiologicalSpecies.getPPESpeciesOrbitrap());
+    adducts.put("-H", true);
+    lipidClassInfo.put("P-PE", new LipidClassInfoVO(2,true,0.5d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("LPE", FoundBiologicalSpecies.getLPESpeciesOrbitrap());
+    adducts.put("-H", false);
+    lipidClassInfo.put("LPE", new LipidClassInfoVO(1,true,0.5,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("PS", FoundBiologicalSpecies.getPSSpeciesOrbitrap());
+    adducts.put("-H", true);
+    lipidClassInfo.put("PS", new LipidClassInfoVO(2,false,1.2,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("PC", FoundBiologicalSpecies.getPCSpeciesOrbitrap());
+    adducts.put("HCOO", true);
+    adducts.put("-CH3", true);
+    lipidClassInfo.put("PC", new LipidClassInfoVO(2,true,0.5d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("PE", FoundBiologicalSpecies.getPESpeciesOrbitrap());
+    adducts.put("-H", true);
+    lipidClassInfo.put("PE", new LipidClassInfoVO(2,true,0.5d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("PG", FoundBiologicalSpecies.getPGSpeciesOrbitrap());
+    adducts.put("-H", true);
+    lipidClassInfo.put("PG", new LipidClassInfoVO(2,true,0.5d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("Cer", FoundBiologicalSpecies.getCerSpeciesOrbitrap());
+    //original version
+    //adducts.put("-H", false);
+    //MS-DIAL comparison
+    adducts.put("HCOO", false);
+    lipidClassInfo.put("Cer", new LipidClassInfoVO(1,true,0.5d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("LPS", new LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>());
+    adducts.put("-H", false);
+    lipidClassInfo.put("LPS", new LipidClassInfoVO(1,true,0.7d,adducts));
+  }
+
+  
   private void getValid4000QTRAPSpeciesNegative(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
       Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
     lipidClasses.put("PI", FoundBiologicalSpecies.getPISpecies4000QTRAP());
@@ -23657,7 +23702,7 @@ public void testTabFile() throws Exception {
      Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
      //LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
      //this is for LC-MS liver
-     getValidOrbitrapCIDMouseLiverSpecies(lipidClasses, lipidClassInfo, new LinkedHashMap<String,Boolean>());
+     getValidOrbitrapCIDMouseLiverSpeciesMSDIAL(lipidClasses, lipidClassInfo, new LinkedHashMap<String,Boolean>());
 
      try {
        Hashtable<String,Hashtable<String,Vector<RTCheckedVO>>> previousAssignments = null;
@@ -23777,17 +23822,17 @@ public void testTabFile() throws Exception {
          molSpecInfo = speciesAll.get(lookupSpecies);
          lookupMolSpecies = result.getLdaMs2Name();
          if (lookupMolSpecies==null && result.getAlexMs2Name()!=null)
-           lookupMolSpecies=result.getAlexMs2Name();
+           lookupMolSpecies=result.getAlexMs2Name().substring(result.getAlexClassName().length()+1);
          lookupMolSpecies = lookupMolSpecies.replace("/", "_");
          //result.getMolSpecies().substring((result.getLipidClass().length()+1)).replaceAll("-", "_");
-         if ((result.getLdaClassName().equalsIgnoreCase("o-PE") || result.getLdaClassName().equalsIgnoreCase("P-PC"))) {
+         if ((result.getLdaClassName().equalsIgnoreCase("O-PE") || result.getLdaClassName().equalsIgnoreCase("P-PC"))) {
            String firstPart = "P"+lookupMolSpecies.substring(1,lookupMolSpecies.indexOf("_"));
            int nrDbs = Integer.parseInt(firstPart.substring(firstPart.indexOf(":")+1));
            nrDbs--;
            firstPart = firstPart.substring(0,firstPart.indexOf(":")+1)+String.valueOf(nrDbs);
            lookupMolSpecies = firstPart+lookupMolSpecies.substring(lookupMolSpecies.indexOf("_"));
-           System.out.println("Lookup-Species "+lookupSpecies);
-           System.out.println("Lookup-Mol-Species "+lookupMolSpecies);
+//           System.out.println("Lookup-Species "+lookupSpecies);
+//           System.out.println("Lookup-Mol-Species "+lookupMolSpecies);
          }// else if ((result.getLipidClass().equalsIgnoreCase("Cer") || result.getLipidClass().equalsIgnoreCase("HexCer") || result.getLipidClass().equalsIgnoreCase("SM"))
 //             && result.getIdentificationType()==AlexScoreVO.IDENT_TYPE_MOL_SPECIES) {
 //           twoChains = lookupMolSpecies.split("/");
@@ -23837,11 +23882,14 @@ public void testTabFile() throws Exception {
          for (ReferenceInfoVO refMolSpec : molSpecInfo.values()) {
            boolean correctMolSpecies = false;
            refMolSpecies = refMolSpec.getMS2Name().replaceAll("/", "_");
-           if (lookupClass.equalsIgnoreCase("P-PE"))
-             System.out.println(refMolSpecies);
-//             if (lookupClass.equalsIgnoreCase("Cer")) {
-//               System.out.println(lookupMolSpecies+" & "+refMolSpecies);
-//             }
+//         if (lookupClass.equalsIgnoreCase("LPE"))
+//           System.out.println(lookupMolSpecies+" & "+refMolSpecies);
+//         System.out.println(refMolSpecies);
+//          if (lookupClass.equalsIgnoreCase("P-PE"))
+//             System.out.println(refMolSpecies);
+//           if (lookupClass.equalsIgnoreCase("TG") && !lookupMolSpecies.equalsIgnoreCase(refMolSpecies)) {
+//             System.out.println(lookupMolSpecies+" & "+refMolSpecies);
+//           }
            if (lookupMolSpecies.equalsIgnoreCase(refMolSpecies) || StaticUtils.isAPermutedVersion(lookupMolSpecies, refMolSpecies, "_")) {
              for (double refAsFixed : refMolSpec.getCorrectRts()) {
                  refRt = refAsFixed;
@@ -23964,10 +24012,7 @@ public void testTabFile() throws Exception {
      adducts.put("H", false);
      adducts.put("Na", false);
      adducts.put("HCOO", false);
-     //new comparison
-     lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,0.7d,adducts));
-     //old comparison
-     //lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,1.2d,adducts));
+     lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,1.2d,adducts));
      adducts = new LinkedHashMap<String,Boolean>();
      lipidClasses.put("DG", FoundBiologicalSpecies.getDGSpeciesOrbitrap());
      adducts.put("Na", true);
@@ -23984,6 +24029,50 @@ public void testTabFile() throws Exception {
      adducts.put("Na", false);
      adducts.put("HCOO", false);
      lipidClassInfo.put("SM", new LipidClassInfoVO(1,true,0.7d,adducts));
+   }
+   
+   
+   private void getValidOrbitrapCIDMouseLiverSpeciesMSDIAL(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
+       Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
+     getValidOrbitrapCIDSpeciesNegativeMSDIAL(lipidClasses, lipidClassInfo, adducts);    
+     lipidClasses.put("P-PC", FoundBiologicalSpecies.getPPCSpeciesOrbitrap());
+     lipidClassInfo.get("P-PE").getAdducts().put("H", true);
+     lipidClassInfo.get("P-PE").getAdducts().put("Na", true);
+     lipidClassInfo.get("LPE").getAdducts().put("H", true);
+     lipidClassInfo.get("LPE").getAdducts().put("Na", true);
+     lipidClassInfo.get("PS").getAdducts().put("H", true);
+     lipidClassInfo.put("PS", new LipidClassInfoVO(2,false,1.2,adducts));
+     lipidClassInfo.get("PC").getAdducts().put("H", true);
+     lipidClassInfo.get("PC").getAdducts().put("Na", true);
+     lipidClassInfo.get("PE").getAdducts().put("H", true);
+     lipidClassInfo.get("PE").getAdducts().put("Na", true);
+     //this is for the MSDIAL comparison
+     lipidClassInfo.get("Cer").getAdducts().put("H", true);
+     //this was the original version
+     //lipidClassInfo.get("Cer").getAdducts().put("Na", true);
+     
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("LPC", FoundBiologicalSpecies.getLPCSpeciesOrbitrap());
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     adducts.put("HCOO", false);
+     lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,0.5d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("DG", FoundBiologicalSpecies.getDGSpeciesOrbitrap());
+     adducts.put("Na", true);
+     adducts.put("NH4", true);
+     lipidClassInfo.put("DG", new LipidClassInfoVO(3,true,0.5d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("TG", FoundBiologicalSpecies.getTGSpeciesOrbitrap());
+     adducts.put("NH4", true);
+     adducts.put("Na", true);
+     lipidClassInfo.put("TG", new LipidClassInfoVO(3,true,0.5d,adducts));
+     adducts = new LinkedHashMap<String,Boolean>();
+     lipidClasses.put("SM", FoundBiologicalSpecies.getSMSpeciesOrbitrap());
+     adducts.put("H", false);
+     adducts.put("Na", false);
+     adducts.put("HCOO", false);
+     lipidClassInfo.put("SM", new LipidClassInfoVO(1,true,0.5d,adducts));
    }
    
    
