@@ -23742,7 +23742,7 @@ public void testTabFile() throws Exception {
        }
        resultsAll = resultsSortedAlsoBySecondScore;
        //end: these lines perform a second sorting by the combined ALEX score
-
+       int countFound = 0;
        //for debugging
 //       for (int i=0; i!=resultsSortedAlsoBySecondScore.size(); i++) {
 //      	 MSDialCombinedEntry combined = resultsSortedAlsoBySecondScore.get(i);
@@ -23750,41 +23750,40 @@ public void testTabFile() throws Exception {
 //       }
        
        for (int i=0; i!=resultsAll.size(); i++) {
-      	 MSDialCombinedEntry result = resultsAll.get(i);
-       //TODO: the validation has to be implemented
+         MSDialCombinedEntry result = resultsAll.get(i);
 
-//         if (previousAssignments!=null && previousAssignments.containsKey(result.getLipidClass()) && previousAssignments.get(result.getLipidClass()).containsKey(result.getLipidSpecies())) {
-//           if (result.getLipidClass().startsWith("IS ")) {
-//             refRt = -1000d;  
-//           }else
-//             refRt = Double.parseDouble(result.getRtGroup());
-//           boolean found = false;
-//           for (RTCheckedVO rtChecked : previousAssignments.get(result.getLipidClass()).get(result.getLipidSpecies())){
-//             if (rtChecked.getMolSpec().equalsIgnoreCase(result.getMolSpecies()) && rtChecked.getAdduct().equalsIgnoreCase(result.getAdduct())) {
-//               if (result.getLipidClass().startsWith("IS ")) {
-//                 rt = -1000d;
-//               }else
-//                 rt = Double.parseDouble(rtChecked.getRtGroup());
-//               if ((refRt-0.1d)<=rt && rt<=(refRt+0.1d)) {
-//                 //System.out.println("I have found this one in the results: "+result.getLipidClass()+" "+result.getLipidSpecies()+" "+result.getMolSpecies());
-//                 result.setTp(rtChecked.getTruePos());
-////                 if (rtChecked.getComment()!=null && rtChecked.getComment().length()>0)
-////                   System.out.println(rtChecked.getComment()+" ; "+rtChecked.getTruePos());
-//                 result.setComment((rtChecked.getComment()!=null && rtChecked.getComment().length()>0) ? rtChecked.getComment() : "");
-//                 if (found)
-//                   System.out.println("I have found it more than one time");
-//
-//                 found = true;
-//                 countFound++;
-//               }
-//             }
-//           }
-//           if (found)
-//             continue;
-//         }
+         if (previousAssignments!=null && previousAssignments.containsKey(result.getAlexClassName()) && previousAssignments.get(result.getAlexClassName()).containsKey(result.getAlexMs1Name())) {
+           if (result.getAlexClassName().startsWith("IS ")) {
+             refRt = -1000d;  
+           }else
+             refRt = Double.parseDouble(result.getGroupingRt());
+           boolean found = false;
+           for (RTCheckedVO rtChecked : previousAssignments.get(result.getAlexClassName()).get(result.getAlexMs1Name())){
+             if ((rtChecked.getMolSpec().equalsIgnoreCase(result.getAlexMs2Name()) || StaticUtils.isAPermutedVersion(rtChecked.getMolSpec(), result.getAlexMs2Name(), "-")) && rtChecked.getAdduct().equalsIgnoreCase(result.getAlexAdduct())) {
+               if (result.getAlexClassName().startsWith("IS ")) {
+                 rt = -1000d;
+               }else
+                 rt = Double.parseDouble(rtChecked.getRtGroup());
+               if ((refRt-0.4d)<=rt && rt<=(refRt+0.4d)) {
+                 //System.out.println("I have found this one in the results: "+result.getLipidClass()+" "+result.getLipidSpecies()+" "+result.getMolSpecies());
+                 result.setTp(rtChecked.getTruePos());
+//               if (rtChecked.getComment()!=null && rtChecked.getComment().length()>0)
+//                 System.out.println(rtChecked.getComment()+" ; "+rtChecked.getTruePos());
+                 result.setComment((rtChecked.getComment()!=null && rtChecked.getComment().length()>0) ? rtChecked.getComment() : "");
+                 if (found)
+                   System.out.println("I have found it more than one time");
+
+                 found = true;
+                 countFound++;
+               }
+             }
+           }
+           if (found)
+             continue;
+         }
          
          result.setTp("false");
-         lookupClass = result.getLdaClassName();
+        lookupClass = result.getLdaClassName();
 //         if (lookupClass.equalsIgnoreCase("DAG"))
 //           lookupClass = "DG";
 //         if (lookupClass.equalsIgnoreCase("TAG"))
@@ -23868,7 +23867,7 @@ public void testTabFile() throws Exception {
              //this lead of too many hits to check
              //}else if (!tpString.equalsIgnoreCase("true") && ((refRt-2d*info.getRtTolerance())<rt && rt<(refRt+2d*info.getRtTolerance()))) {
              //thus, I take only 1.5 times the RT tolerance
-             }else if (!tpString.equalsIgnoreCase("true") && ((refRt-1.5d*info.getRtTolerance())<rt && rt<(refRt+1.5d*info.getRtTolerance()))) {
+             }else if (!tpString.equalsIgnoreCase("true") && ((refRt-3d*info.getRtTolerance())<rt && rt<(refRt+3d*info.getRtTolerance()))) {
                tpString = String.valueOf(refRt);
              }
 //             if (lookupClass.equalsIgnoreCase("SM") && lookupSpecies.equalsIgnoreCase("36:2;2")) {
@@ -23901,7 +23900,7 @@ public void testTabFile() throws Exception {
 //                 }
                if ((refRt-info.getRtTolerance())<rt && rt<(refRt+info.getRtTolerance())) {
                  tpString = "true";
-               }else if (!tpString.equalsIgnoreCase("true") && ((refRt-2d*info.getRtTolerance())<rt && rt<(refRt+2d*info.getRtTolerance()))) {
+               }else if (!tpString.equalsIgnoreCase("true") && ((refRt-3d*info.getRtTolerance())<rt && rt<(refRt+3d*info.getRtTolerance()))) {
                  tpString = String.valueOf(refRt);
                }
              }
@@ -23910,7 +23909,7 @@ public void testTabFile() throws Exception {
 //               System.out.println(result.getLipidSpecies()+" ; "+result.getMolSpecies()+" ; "+tpString);
 //             }
 
-         } 
+         }
          result.setTp(tpString);
          
          
@@ -23921,7 +23920,7 @@ public void testTabFile() throws Exception {
          
          
        }
-       ////System.out.println("Found: "+countFound);
+       System.out.println("Found: "+countFound);
        String line;
        out = new BufferedOutputStream(new FileOutputStream(outFile));
        line = COLUMN_HEADER_ADDUCT+"\t"+COLUMN_HEADER_DIAL_SCORE+"\t"+COLUMN_HEADER_DIAL_SCORE_MAX+"\t"+COLUMN_HEADER_CLASS+"\t"+COLUMN_HEADER_SPECIES

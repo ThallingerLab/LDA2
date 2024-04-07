@@ -315,7 +315,7 @@ this.detectedreverseDotProductMax_ = reverseDotPs.toString();
     return comment_;
   }
 
-  public void setComment_(String comment)
+  public void setComment(String comment)
   {
     this.comment_ = comment;
   }
