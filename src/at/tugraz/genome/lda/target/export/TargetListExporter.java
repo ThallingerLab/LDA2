@@ -190,7 +190,7 @@ public class TargetListExporter
 			LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantInfo.get(1);
 			Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(4);
 		  
-      new ElementConfigParser("elementconfig.xml").parse();
+      new ElementConfigParser(Settings.getElementConfigPath()).parse();
       
       for (String cName : classSequence.keySet()) 
       {

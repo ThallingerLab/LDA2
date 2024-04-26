@@ -131,6 +131,7 @@ import at.tugraz.genome.lda.export.ExcelAndTextExporter;
 import at.tugraz.genome.lda.export.LDAExporter;
 import at.tugraz.genome.lda.export.OmegaCollector;
 import at.tugraz.genome.lda.export.QuantificationResultExporter;
+import at.tugraz.genome.lda.fragai.ExcelTargetListParser;
 import at.tugraz.genome.lda.interfaces.ColorChangeListener;
 import at.tugraz.genome.lda.listeners.AnnotationThresholdListener;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
@@ -251,6 +252,12 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JPanel settingsPanel_;
   private JPanel licensePanel_;
   private JTargetFileWizard targetFilePanel_;
+  private JPanel aIPanel_;
+  
+  /**
+   * what do I want and need? I need to read in 
+   */
+  
   private JPanel helpPanel_;
   private JPanel aboutPanel_;
   private JPanel displayTopMenu;
@@ -512,7 +519,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private boolean combineOxWithNonOx_;
   
   private int statisticsViewMode_ = 0;
-  //TODO: set to false for users
+  //TODO: set to false for production version
   private boolean exportChromatogramsFromDRView_ = false;
 
   
@@ -579,6 +586,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     initSettingsPanel();
     licensePanel_ = new JPanel();
     targetFilePanel_ = new JTargetFileWizard();
+    aIPanel_ = new JPanel();
     helpPanel_ = new JPanel();
     initHelpPanel();
     aboutPanel_ = new JPanel();
@@ -597,6 +605,15 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     {
     	mainTabs.addTab("LC=CL", targetFilePanel_);
       mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(targetFilePanel_), TooltipTexts.TABS_MAIN_TARGET);
+    }
+    if (Settings.SHOW_AI_TOOLS)
+    {
+    	JButton startAIButton = new JButton("Start");
+    	startAIButton.setActionCommand("Start AI");
+    	startAIButton.addActionListener(this);
+    	aIPanel_.add(startAIButton);
+    	mainTabs.addTab("AI FragRule Generator", aIPanel_);
+      mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(aIPanel_), TooltipTexts.TABS_MAIN_TARGET);
     }
     mainTabs.addTab("Settings", settingsPanel_);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(settingsPanel_), TooltipTexts.TABS_MAIN_SETTINGS);
@@ -3289,6 +3306,19 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       exportSettings_.setVisible(false);
       if (exportSettingsGroup_!=null)
         exportSettingsGroup_.setVisible(false);
+    }
+    if (command.equalsIgnoreCase("Start AI"))
+    {
+    	File file = new File("D:\\Collaborator_Files\\Kathi\\Paper3\\LDA_extension\\Description\\Gangliosides_targets\\Target_list_gangliosides_adducts_shortened.xlsx");
+    	ExcelTargetListParser parser = new ExcelTargetListParser(file);
+    	try
+    	{
+    		parser.parse();
+    	}
+    	catch (IOException ex)
+    	{
+    		ex.printStackTrace();
+    	}
     }
   }
   
