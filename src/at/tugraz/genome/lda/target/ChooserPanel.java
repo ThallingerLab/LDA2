@@ -48,7 +48,7 @@ public class ChooserPanel extends JOptionPanel
 	private JTargetFileWizard jTargetFileWizard_;
   
   public ChooserPanel(JDefaultComponents wizardComponents, JTargetFileWizard jTargetFileWizard) {
-      super(wizardComponents, "Create a new target file with information for \u03C9-C=C position identification.");
+      super(wizardComponents, "Create a new RT-DB with information for \u03C9-position identification.");
       this.jTargetFileWizard_ = jTargetFileWizard;
       init();
   }
