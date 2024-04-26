@@ -75,16 +75,16 @@ public class ExportPanel extends JOptionPanel implements ActionListener
   
 	
   public ExportPanel(JDefaultComponents wizardComponents) {
-    super(wizardComponents, "Export your new C=C target list.");
+    super(wizardComponents, "RT-DB export");
     init();
   }
   
   private void init() 
   {
-  	exportField_ = instantiateJTextField(PLACEHOLDER_PREFIX + "path and file name for the new C=C target file.");
+  	exportField_ = instantiateJTextField(PLACEHOLDER_PREFIX + "path and file name for the new RT-DB.");
   	JButton exportButton = instantiateJButton(COMMAND_OPEN_EXPORT, BROWSE);
   	
-  	JPanel exportPanel = instantiateExportPanel(exportField_, exportButton, "New C=C target file");
+  	JPanel exportPanel = instantiateExportPanel(exportField_, exportButton, "New RT-DB");
   	
   	this.add(exportPanel, 
   			new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
@@ -148,7 +148,7 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 		{
 			case COMMAND_OPEN_EXPORT:
 				filter = new FileNameExtensionFilter("Only .xlsx", "xlsx");
-				selectPath(JFileChooser.FILES_ONLY, this.exportField_, filter, "Select the path and file name for the new C=C target file (.xlsx file)");
+				selectPath(JFileChooser.FILES_ONLY, this.exportField_, filter, "Select the path and file name for the new RT-DB(.xlsx file)");
 				break;
 			default:
 				break;

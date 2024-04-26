@@ -87,12 +87,12 @@ public class CalibrationGraphPanel extends JOptionPanel
 	private Double predictionThreshold_;
 	public static final String PLOT_ALL = "Combined";
 	private static final Dimension PLOT_DIMENSION = new Dimension(825,650);
-	private static final String TABLE_FRAME_TITLE = "Recalibrate the \u03C9-C=C target list";
+	private static final String TABLE_FRAME_TITLE = "RT-DB mapping";
 	
 	
   
   public CalibrationGraphPanel(JDefaultComponents wizardComponents) {
-      super(wizardComponents, "Recalibrate an omega C=C target list to your chromatographic conditions.");
+      super(wizardComponents, "Map a RT-DB to your chromatographic conditions.");
       init(generateLoadingPanel());
   }
   
@@ -137,7 +137,7 @@ public class CalibrationGraphPanel extends JOptionPanel
   	JPanel panel = new JPanel();
   	panel.setLayout(new GridBagLayout());
   	
-  	classSpecificJCheckBox_ = new JCheckBox("Calibrate lipid classes separately.", true); //other code relies on this being initialized with true
+  	classSpecificJCheckBox_ = new JCheckBox("Calibrate lipid classes individually.", true); //other code relies on this being initialized with true
   	classSpecificJCheckBox_.addActionListener(new ActionListener() {
 		  public void actionPerformed(ActionEvent e) 
 		  {

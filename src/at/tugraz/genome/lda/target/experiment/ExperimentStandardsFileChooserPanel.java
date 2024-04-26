@@ -41,7 +41,7 @@ public class ExperimentStandardsFileChooserPanel extends ExperimentFileChooserPa
 	
   
   public ExperimentStandardsFileChooserPanel(JDefaultComponents wizardComponents, ExperimentTableInputPanel experimentDefinitionPanel) {
-      super(wizardComponents, "Use stable isotope labels specific for \u03C9-C=C positions.", "Enter data of authentic standards here.");
+      super(wizardComponents, "Use stable isotope labels specific for \u03C9-positions.", "Enter data of authentic standards here.");
       this.experimentDefinitionPanel_ = experimentDefinitionPanel;
   }
   

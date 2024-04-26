@@ -56,14 +56,14 @@ public class ExperimentLabelDefinitionPanel extends ExperimentTableInputPanel
   
   public ExperimentLabelDefinitionPanel(JDefaultComponents wizardComponents, ExperimentResultFileChooserPanel experimentFileChooserPanel) {
       super(wizardComponents, experimentFileChooserPanel, 
-      		"Use stable isotope labels specific for \u03C9-C=C positions.", "Enter the \u03C9-C=C position associated with each detected stable isotope label.");
+      		"Use stable isotope labels specific for \u03C9-positions.", "Enter the \u03C9-position associated with each detected stable isotope label.");
   }
   
   @Override
   public void initDataDisplay()
   {
   	cleanPanels();
-  	String[] columnNames = { "Label ID", "Isotope", "Amount of isotope atoms", "Enter \u03C9-C=C position here!"};
+  	String[] columnNames = { "Label ID", "Isotope", "Amount of isotope atoms", "Enter \u03C9-position here!"};
     Object[][] tableData = generateTableData();
   	getDefaultComponents().updateComponents();
   	init(generateDisplayPanel(columnNames, tableData, EDITABLE_COLUMN));
@@ -324,7 +324,7 @@ public class ExperimentLabelDefinitionPanel extends ExperimentTableInputPanel
   	}
   	else
   	{
-  		new WarningMessage(new JFrame(), "Warning", "You must specify the \u03C9-C=C position for at least one label before continuing!");
+  		new WarningMessage(new JFrame(), "Warning", "You must specify the \u03C9-position for at least one label before continuing!");
   	}
   }
   

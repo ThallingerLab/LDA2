@@ -40,7 +40,7 @@ public class ExperimentResultFileChooserPanel extends ExperimentFileChooserPanel
 	
   
   public ExperimentResultFileChooserPanel(JDefaultComponents wizardComponents) {
-      super(wizardComponents, "Use stable isotope labels specific for \u03C9-C=C positions.", "Enter data of stable isotope labeled experiments here.");
+      super(wizardComponents, "Use stable isotope labels specific for \u03C9-positions.", "Enter data of stable isotope labeled experiments here.");
   }
   
   @Override

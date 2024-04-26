@@ -79,7 +79,7 @@ public class ChooserPanel extends JOptionPanel
   {
   	JPanel calibrationPanel = new JPanel();
   	calibrationPanel.setLayout(new GridBagLayout());
-    JLabel title = new JLabel("<html>Calibrate a C=C target file to your chromatographic conditions.</html>");
+    JLabel title = new JLabel("<html>Map a RT-DB to your chromatographic conditions.</html>");
     title.setFont(new Font("Arial",Font.BOLD, 24));
     title.setPreferredSize(new Dimension(sizeTextOneLine.width,sizeTextOneLine.height*4));
     title.setMinimumSize(new Dimension(title.getPreferredSize().width/2, title.getPreferredSize().height));
@@ -88,7 +88,7 @@ public class ChooserPanel extends JOptionPanel
     requirementsHeader.setPreferredSize(new Dimension(sizeTextOneLine.width,sizeTextOneLine.height*2));
     requirementsHeader.setMinimumSize(new Dimension(requirementsHeader.getPreferredSize().width/2, requirementsHeader.getPreferredSize().height));
     JLabel requirements= new JLabel("<html> <ul style=\"list-style-type:circle;\"> "
-    		+ "<li> A C=C target file created by LDA </li>"
+    		+ "<li> A RT-DB in LDA-format </li>"
     		+ "<li> Experimental data (analyzed with LDA) of a standard mix measured with the exact same chromatographic conditions as the data the omega target list is based on </li>"
     		+ "<li> Experimental data (analyzed with LDA) of the same standard mix measured with your chromatography </li>"
     		+ "</html>");
@@ -117,7 +117,7 @@ public class ChooserPanel extends JOptionPanel
   {
   	JPanel experimentsPanel = new JPanel();
   	experimentsPanel.setLayout(new GridBagLayout());
-    JLabel title = new JLabel("<html>Use stable isotope labels specific for \u03C9-C=C positions.</html>");
+    JLabel title = new JLabel("<html>Use stable isotope labels specific for \u03C9-positions.</html>");
     title.setFont(new Font("Arial",Font.BOLD, 24));
     title.setPreferredSize(new Dimension(sizeTextOneLine.width,sizeTextOneLine.height*4));
     title.setMinimumSize(new Dimension(title.getPreferredSize().width/2, title.getPreferredSize().height));
@@ -126,8 +126,8 @@ public class ChooserPanel extends JOptionPanel
     requirementsHeader.setPreferredSize(new Dimension(sizeTextOneLine.width,sizeTextOneLine.height*2));
     requirementsHeader.setMinimumSize(new Dimension(requirementsHeader.getPreferredSize().width/2, requirementsHeader.getPreferredSize().height));
     JLabel requirements= new JLabel("<html> <ul style=\"list-style-type:circle;\"> "
-    		+ "<li> Experimental data (analyzed with LDA) of analytes with stable isotope labels specific for omega C=C positions. </li>"
-    		+ "<li> If deuterium labels are used: experimental data (analyzed with LDA) of unlabeled authentic standards with known omega C=C positions. <br>"
+    		+ "<li> Experimental data (analyzed with LDA) of analytes with stable isotope labels specific for \u03C9-positions. </li>"
+    		+ "<li> If deuterium labels are used: experimental data (analyzed with LDA) of unlabeled authentic standards with known \u03C9-positions. <br>"
     		+ "The labeled analogue of each standard needs to be identified in the stable isotope labeled data. <br>"
     		+ "(For <sup>13</sup>C labels experimental data of unlabeled authentic standards is not needed.) </li>"
     		+ "</ul> </html>");

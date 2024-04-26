@@ -48,7 +48,7 @@ public class ExperimentStandardsDefinitionPanel extends ExperimentTableInputPane
   
   public ExperimentStandardsDefinitionPanel(JDefaultComponents wizardComponents, ExperimentFileChooserPanel standardsFileChooserPanel) {
       super(wizardComponents, standardsFileChooserPanel,
-      		"Use stable isotope labels specific for \u03C9-C=C positions.", "Enter the \u03C9-C=C position associated with each authentic standard file.");
+      		"Use stable isotope labels specific for \u03C9-positions.", "Enter the \u03C9-position associated with each authentic standard file.");
   }
   
   @Override
@@ -56,7 +56,7 @@ public class ExperimentStandardsDefinitionPanel extends ExperimentTableInputPane
   {
   	cleanPanels();
   	positions_ = new Vector<UpdatablePair<ResultFileVO, Integer>>();
-  	String[] columnNames = { "File Name", "Directory", "Enter \u03C9-C=C position here!"};
+  	String[] columnNames = { "File Name", "Directory", "Enter \u03C9-position here!"};
   	Object[][] tableData = generateTableData();
   	getDefaultComponents().updateComponents();
   	init(generateDisplayPanel(columnNames, tableData, EDITABLE_COLUMN));
@@ -149,7 +149,7 @@ public class ExperimentStandardsDefinitionPanel extends ExperimentTableInputPane
   	}
   	else
   	{
-  		new WarningMessage(new JFrame(), "Warning", "You must specify the \u03C9-C=C position for at least one authentic standard file before continuing!");
+  		new WarningMessage(new JFrame(), "Warning", "You must specify the \u03C9-position for at least one authentic standard file before continuing!");
   	}
   }
 }

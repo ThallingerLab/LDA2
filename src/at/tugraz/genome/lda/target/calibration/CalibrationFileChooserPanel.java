@@ -89,7 +89,7 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
   
   
   public CalibrationFileChooserPanel(JDefaultComponents wizardComponents) {
-      super(wizardComponents, "Calibrate a C=C target file to your chromatographic conditions.");
+      super(wizardComponents, "Map a RT-DB to your chromatographic conditions.");
       init();
   }
   
@@ -97,9 +97,9 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
   {
   	this.setLayout(new GridBagLayout());
   	
-  	targetFileField_ = instantiateJTextField(PLACEHOLDER_PREFIX + "path and file name of the original C=C target file.");
+  	targetFileField_ = instantiateJTextField(PLACEHOLDER_PREFIX + "path and file name of the original RT-DB.");
   	JButton targetFileButton = instantiateJButton(COMMAND_OPEN_TARGET_FILE, BROWSE);
-  	JPanel targetFilePanel = instantiatePanel(targetFileField_, targetFileButton, "Original C=C target file");
+  	JPanel targetFilePanel = instantiatePanel(targetFileField_, targetFileButton, "Original RT-DB");
 
   	inputPanelOriginal_ = new SelectionTable("Original chromatographic conditions.");
   	inputPanelNew_ = new SelectionTable("New chromatographic conditions.");
@@ -182,7 +182,7 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
 		if (arg0.getActionCommand().equals(COMMAND_OPEN_TARGET_FILE))
 		{
 			FileNameExtensionFilter filter = new FileNameExtensionFilter("Only .xlsx", "xlsx");
-			selectPath(JFileChooser.FILES_ONLY, this.targetFileField_, filter, "Select the C=C target file (.xlsx file)");
+			selectPath(JFileChooser.FILES_ONLY, this.targetFileField_, filter, "Select the RT-DB (.xlsx file)");
 		}
 	} 
 	
@@ -248,7 +248,7 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
   {
   	if (isPlaceholder(targetFileField_) || inputPanelOriginal_.getUniqueFiles().isEmpty() || inputPanelNew_.getUniqueFiles().isEmpty())
   	{
-  		new WarningMessage(new JFrame(), "Warning", "Specify paths and file names of the original C=C target file as well as for the reference files of the original and new chromatographic conditions before continuing!");
+  		new WarningMessage(new JFrame(), "Warning", "Specify paths and file names of the original RT-DB as well as for the reference files of the original and new chromatographic conditions before continuing!");
   	}
   	else
   	{

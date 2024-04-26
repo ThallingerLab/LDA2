@@ -595,7 +595,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(displayPanel_), TooltipTexts.TABS_MAIN_DISPLAY);
     if (Settings.SHOW_OMEGA_TOOLS)
     {
-    	mainTabs.addTab("C=C Target File", targetFilePanel_);
+    	mainTabs.addTab("LC=CL", targetFilePanel_);
       mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(targetFilePanel_), TooltipTexts.TABS_MAIN_TARGET);
     }
     mainTabs.addTab("Settings", settingsPanel_);

@@ -84,7 +84,7 @@ public class ExperimentGraphPanel extends JOptionPanel
 	private TotalIsotopeEffectPlot plot_;
   
   public ExperimentGraphPanel(JDefaultComponents wizardComponents) {
-      super(wizardComponents, "Use stable isotope labels specific for \u03C9-C=C positions.");
+      super(wizardComponents, "Use stable isotope labels specific for \u03C9-positions.");
       this.loadingPanel_ = new LoadingPanel("<html>Computing data, please wait...</html>");
       init(this.loadingPanel_);
   }
