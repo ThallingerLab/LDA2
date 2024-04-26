@@ -2856,62 +2856,14 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       }
     }
     if (command.equalsIgnoreCase("startDisplay")){
-      if (selectedChromFile.getText()!=null)
-        selectedChromFile.setText(selectedChromFile.getText().trim());
-      if (selectedResultFile.getText()!=null)
+    	if (selectedResultFile.getText()!=null)
         selectedResultFile.setText(selectedResultFile.getText().trim());
-      if (selectedChromFile.getText()!=null&&selectedChromFile.getText().length()>0 &&
-          selectedResultFile.getText()!=null&&selectedResultFile.getText().length()>0){
-        String[] chromPaths = StringUtils.getChromFilePaths(selectedChromFile.getText());
-        String pureFile = chromPaths[0].substring(0,selectedChromFile.getText().lastIndexOf("."));
-        if (StaticUtils.existChromFiles(pureFile) && StaticUtils.existsFile(selectedResultFile.getText())){
-          try {
-            reader_ = new ChromatogramReader(chromPaths[1], chromPaths[2], chromPaths[3],  chromPaths[0],LipidomicsConstants.isSparseData(),LipidomicsConstants.getChromSmoothRange());
-            analyzer_ = new LipidomicsAnalyzer(chromPaths[1], chromPaths[2], chromPaths[3],  chromPaths[0],false);           
-            
-            currentSelected_ = -1;
-            currentSelectedSheet_ = "";
-            QuantificationThread.setAnalyzerProperties(analyzer_);
-            analyzer_.setGeneralBasePeakCutoff(0f);
-            this.readResultFile(selectedResultFile.getText());
-            
-            Component[] components = tablePanel_.getComponents();
-            for (Component component : components) {
-              if (component.equals(displayTolerancePanel_)) {
-                tablePanel_.remove(component);
-              }
-            }
-            boolean showOmegaEditingTools = LipidParameterSet.isOmegaInformationAvailable() || Settings.getAlwaysEditOmega();
-            displayTolerancePanel_ = new DisplayTolerancePanel(this,showOmegaEditingTools);
-            tablePanel_.add(displayTolerancePanel_,BorderLayout.SOUTH);
-            this.updateSheetSelectionList();
-            this.params_ = null;
-            RuleDefinitionInterface.clearCacheDir();
-            lockRangeUpdateRequired_ = true;
-            displayTolerancePanel_.getShowMSnEvidence().setSelected(false);
-            displayTolerancePanel_.getShowChainEvidence().setSelected(false);
-            displayTolerancePanel_.getShowChainEvidence().setEnabled(false);
-          }
-          catch (CgException e) {
-            @SuppressWarnings("unused")
-            WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The chrom file you specified is not valid");
-            e.printStackTrace();
-          } catch (ExcelInputFileException e) {
-            
-          }
-        } else {
-          if (!StaticUtils.existsFile(selectedResultFile.getText()))
-            new WarningMessage(new JFrame(), "Warning", "The results file \""+StaticUtils.extractFileName(selectedResultFile.getText())+"\" does not exist!");
-        }
-      }else{
-        if (selectedChromFile.getText()==null||selectedChromFile.getText().length()<1){
-          @SuppressWarnings("unused")
-          WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a chrom file");
-        }else if (selectedResultFile.getText()==null||selectedResultFile.getText().length()<1){
-          @SuppressWarnings("unused")
-          WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a result file");
-        }
-      }
+    	try
+    	{
+    		this.readResultFile(selectedResultFile.getText());
+    	}
+    	catch (ExcelInputFileException ex){}
+    	startDisplay();
     }
     if (command.equalsIgnoreCase(DisplayTolerancePanel.UPDATE_QUANT_TOL_OF_CURRENTLY_SELECTED)){
       if (params_!=null){
@@ -3340,6 +3292,61 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     }
   }
   
+  private void startDisplay()
+  {
+  	if (selectedChromFile.getText()!=null)
+      selectedChromFile.setText(selectedChromFile.getText().trim());
+    if (selectedChromFile.getText()!=null&&selectedChromFile.getText().length()>0 &&
+        selectedResultFile.getText()!=null&&selectedResultFile.getText().length()>0){
+      String[] chromPaths = StringUtils.getChromFilePaths(selectedChromFile.getText());
+      String pureFile = chromPaths[0].substring(0,selectedChromFile.getText().lastIndexOf("."));
+      if (StaticUtils.existChromFiles(pureFile) && StaticUtils.existsFile(selectedResultFile.getText())){
+        try {
+          reader_ = new ChromatogramReader(chromPaths[1], chromPaths[2], chromPaths[3],  chromPaths[0],LipidomicsConstants.isSparseData(),LipidomicsConstants.getChromSmoothRange());
+          analyzer_ = new LipidomicsAnalyzer(chromPaths[1], chromPaths[2], chromPaths[3],  chromPaths[0],false);           
+          
+          currentSelected_ = -1;
+          currentSelectedSheet_ = "";
+          QuantificationThread.setAnalyzerProperties(analyzer_);
+          analyzer_.setGeneralBasePeakCutoff(0f);
+          
+          Component[] components = tablePanel_.getComponents();
+          for (Component component : components) {
+            if (component.equals(displayTolerancePanel_)) {
+              tablePanel_.remove(component);
+            }
+          }
+          boolean showOmegaEditingTools = LipidParameterSet.isOmegaInformationAvailable() || Settings.getAlwaysEditOmega();
+          displayTolerancePanel_ = new DisplayTolerancePanel(this,showOmegaEditingTools);
+          tablePanel_.add(displayTolerancePanel_,BorderLayout.SOUTH);
+          this.updateSheetSelectionList();
+          this.params_ = null;
+          RuleDefinitionInterface.clearCacheDir();
+          lockRangeUpdateRequired_ = true;
+          displayTolerancePanel_.getShowMSnEvidence().setSelected(false);
+          displayTolerancePanel_.getShowChainEvidence().setSelected(false);
+          displayTolerancePanel_.getShowChainEvidence().setEnabled(false);
+        }
+        catch (CgException e) {
+          @SuppressWarnings("unused")
+          WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The chrom file you specified is not valid");
+          e.printStackTrace();
+        }
+      } else {
+        if (!StaticUtils.existsFile(selectedResultFile.getText()))
+          new WarningMessage(new JFrame(), "Warning", "The results file \""+StaticUtils.extractFileName(selectedResultFile.getText())+"\" does not exist!");
+      }
+    }else{
+      if (selectedChromFile.getText()==null||selectedChromFile.getText().length()<1){
+        @SuppressWarnings("unused")
+        WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a chrom file");
+      }else if (selectedResultFile.getText()==null||selectedResultFile.getText().length()<1){
+        @SuppressWarnings("unused")
+        WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a result file");
+      }
+    }
+  }
+  
   public void showExportSettingsDialog(boolean grouped){
     if (grouped)
       exportSettingsGroup_.setVisible(true);
@@ -3625,16 +3632,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     
     mSnResult_ = LDAResultReader.readResultFile(filePath,  resultsShowModification_);
     chainResult_ = LDAResultReader.readResultFile(filePath,  resultsShowModification_);
-    Hashtable<String,Vector<LipidParameterSet>> MSnHash = new Hashtable<String,Vector<LipidParameterSet>>();
+    Hashtable<String,Vector<LipidParameterSet>> mSnHash = new Hashtable<String,Vector<LipidParameterSet>>();
     Hashtable<String,Vector<LipidParameterSet>> chainHash = new Hashtable<String,Vector<LipidParameterSet>>();
     
     for (String lipidClass : result_.getIdentifications().keySet()) {
     	Vector<LipidParameterSet> params = result_.getIdentifications().get(lipidClass);
-    	Vector<LipidParameterSet> MSnSets = new Vector<LipidParameterSet>();
+    	Vector<LipidParameterSet> mSnSets = new Vector<LipidParameterSet>();
     	Vector<LipidParameterSet> chainSets = new Vector<LipidParameterSet>();
     	for (LipidParameterSet param  : params){
   			if (param instanceof LipidomicsMSnSet) {
-  				MSnSets.add(param);
+  				mSnSets.add(param);
   				LipidomicsMSnSet msn_param = (LipidomicsMSnSet) param;
   				if(!msn_param.getChainFragments().isEmpty())
   				{
@@ -3642,10 +3649,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   				}
   			}
   		}
-    	MSnHash.put(lipidClass, MSnSets);
+    	mSnHash.put(lipidClass, mSnSets);
     	chainHash.put(lipidClass, chainSets);
     }
-    mSnResult_.setIdentifications(MSnHash);
+    mSnResult_.setIdentifications(mSnHash);
     chainResult_.setIdentifications(chainHash);
     //end: added via the oxidized lipids extension
     
@@ -4614,10 +4621,17 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     if (resultsFile.exists()&&resultsFile.isFile()){
       selectedResultFile.setText(compVO.getAbsoluteFilePath());
       String chromFileBase = StaticUtils.extractChromBaseName(compVO.getAbsoluteFilePath(),experimentName);
-      String tlPath = "_negative";
-      if (chromFileBase == null && compVO.getAbsoluteFilePath().contains(tlPath)) //TODO: delete and replace with String in "About" tab
+    	try
+    	{
+    		this.readResultFile(selectedResultFile.getText());
+    	}
+    	catch (ExcelInputFileException ex){}
+    	
+      if (chromFileBase == null)
       {
-      	chromFileBase = compVO.getAbsoluteFilePath().substring(0,compVO.getAbsoluteFilePath().indexOf(tlPath));
+      	String rawName = result_.getConstants().getRawFileName();
+      	String filePath = resultsFile.getParentFile().toString();
+      	chromFileBase = filePath+"\\"+rawName.substring(0,rawName.indexOf("."));
       }
       boolean chromFileExists = false;
       if (chromFileBase!=null && chromFileBase.length()>0){
@@ -4630,7 +4644,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         String chromFilePath = chromFileBase+".chrom";
         System.out.println("chromFilePath: "+chromFilePath);
         this.selectedChromFile.setText(chromFilePath);      
-        startDisplay.doClick();
+        startDisplay();
         String sheetToSelect = resultTabs_.getTitleAt(resultTabs_.getSelectedIndex());
         selectedSheet_.setSelectedItem(sheetToSelect);
         displayTolerancePanel_.getShowMSnNames().setSelected(showMSn);

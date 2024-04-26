@@ -997,7 +997,13 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
       	Vector<LipidParameterSet> mSnSets = new Vector<LipidParameterSet>();
       	Vector<LipidParameterSet> chainSets = new Vector<LipidParameterSet>();
       	for (LipidParameterSet param  : params){
-    			if (param instanceof LipidomicsMSnSet) {
+      		if ((isSelectionPrefix_!=null && param.getName().startsWith(isSelectionPrefix_)) ||
+    					(esSelectionPrefix_!=null && param.getName().startsWith(esSelectionPrefix_)))
+      		{
+      			mSnSets.add(param);
+        		chainSets.add(param);
+      		}
+      		else if (param instanceof LipidomicsMSnSet) {
     				mSnSets.add(param);
     				LipidomicsMSnSet msn_param = (LipidomicsMSnSet) param;
     				if(!msn_param.getChainFragments().isEmpty())

@@ -1931,7 +1931,7 @@ public class StaticUtils
   public static FattyAcidVO decodeHumanReadableChain(String humanReadable, HydroxyEncoding faHydroxyEncoding,
       HydroxyEncoding lcbHydroxyEncoding, boolean isAlexOhEncodingname, LipidomicsConstants lipidomicsConstants) throws LipidCombinameEncodingException {
 	  
-	humanReadable = removeSNPositions(humanReadable);
+  	humanReadable = removeSNPositions(humanReadable);
 	  
     short chainType = LipidomicsConstants.CHAIN_TYPE_FA_ACYL;
     String prefix = "";

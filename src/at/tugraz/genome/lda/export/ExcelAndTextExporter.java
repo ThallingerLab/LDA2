@@ -906,7 +906,7 @@ public class ExcelAndTextExporter extends LDAExporter
 			Vector<String> columnNames, Hashtable<String,String> expNames, LinkedHashMap<String,Vector<String>> expsOfGroup,
 			ExportOptionsVO expVO, ArrayList<String> modifications, String rowName, Boolean omegaSuggestionAvailable)
   {
-  	if (lClass.equals("Cer") || lClass.equals("SM") || !rowName.contains("_")) return; //TODO: we ignore these for now
+  	if (lClass.equals("Cer") || lClass.equals("SM") || !rowName.contains("_")) return; //TODO: we ignore these for now, if rowName does not contain "_" it is an internal standard
   	
   	int numFA = 2;
   	if (lClass.startsWith("L")) //lysos have 1 FA
@@ -1023,11 +1023,34 @@ public class ExcelAndTextExporter extends LDAExporter
       			}
       		}
       		
-      		Collections.sort(sameChainType); //ensuring that a pair will always be in the same order
+      		
+      		//ensuring that the first entry 
+      		if (sameChainType.size() > 1)
+      		{
+      			FattyAcidVO first = sameChainType.get(0);
+      			FattyAcidVO second = sameChainType.get(1);
+      			if (first.getDoubleBonds() < second.getDoubleBonds())
+      			{
+      				sameChainType.clear();
+      				sameChainType.add(second);
+      				sameChainType.add(first);
+      			}
+      		}
+      		
+      		boolean bothAssigned = true;
+      		for (FattyAcidVO chain : sameChainType)
+      		{
+      			if (chain.getDoubleBonds() > 0 && chain.getOmegaPosition()<1) bothAssigned = false;
+      		}
       		
       		//filling partner info. mol dependent on num of FA, as that's also part of the total calculation.
-          omegaCollector.addToFAContentToPartnerContent(experimentName, lClass, sameChainType.get(0).getCarbonDbsId(),
-          		sameChainType.size()>1 ? sameChainType.get(1).getCarbonDbsId() : "", area*numFA);
+      		if (bothAssigned)
+      		{
+      			omegaCollector.addToFAContentToPartnerContent(experimentName, lClass, 
+            		sameChainType.size()>1 ? StaticUtils.getHumanReadableChainName(sameChainType.get(1), Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), sameChainType.get(0).getOhNumber()>0) : "",
+            		StaticUtils.getHumanReadableChainName(sameChainType.get(0), Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), sameChainType.get(0).getOhNumber()>0),
+            		area*numFA);
+      		}
           if (molName.contains("/"))
           {
           	omegaCollector.addToSn1ContentToSn2Content(experimentName, lClass, sameChainType.get(0).getCarbonDbsId(), sameChainType.get(1).getCarbonDbsId(), area*numFA);
@@ -1061,8 +1084,8 @@ public class ExcelAndTextExporter extends LDAExporter
 	    CellStyle numberStyle = TargetListExporter.getNumberStyle(workbook);
   		
 //  		if (!experimentName.startsWith("F")) continue; //testing with just unsupplemented
-	  	Sheet sheetB = workbook.createSheet("HeatMap LC"+experimentName.charAt(0));
-	  	Sheet sheetC = workbook.createSheet("HeatMap FA"+experimentName.charAt(0));
+	  	Sheet sheetB = workbook.createSheet("HeatMap LC"+experimentName);
+	  	Sheet sheetC = workbook.createSheet("HeatMap FA"+experimentName);
 	  	
 	    Row headerRowB = sheetB.createRow(0);
 	    Row headerRowC = sheetC.createRow(0);
@@ -1497,12 +1520,12 @@ public class ExcelAndTextExporter extends LDAExporter
   private static void writeFAvsFAHeatmap(
   		OmegaCollector omegaCollector, String experimentName, Sheet sheetC, Row headerRowC, CellStyle headerStyle, CellStyle numberStyle, Double totalFAContent)
   {
-//  	LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>> faContentToPartnerContent = omegaCollector.getFAContentToPartnerContent(experimentName);
-  	LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>> faContentToPartnerContent = omegaCollector.getSn1ContentToSn2Content(experimentName);
+  	LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>> faContentToPartnerContent = omegaCollector.getFAContentToPartnerContent(experimentName);
+//  	LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>> faContentToPartnerContent = omegaCollector.getSn1ContentToSn2Content(experimentName);
 		//just want the total fa to fa, so summing up over classes
 		LinkedHashMap<String,LinkedHashMap<String,Double>> totalFAFA = new LinkedHashMap<String,LinkedHashMap<String,Double>>();
-		Set<String> allFASet1 = new HashSet<String>(); //to figure out rows and columns
-		Set<String> allFASet2 = new HashSet<String>(); //to figure out rows and columns
+		Set<String> allFASet1 = new HashSet<String>(); //to figure out rows and columns, this are the species with less double bonds if applicable
+		Set<String> allFASet2 = new HashSet<String>(); //to figure out rows and columns, this are the species with more double bonds if applicable
 		for (String lClass : faContentToPartnerContent.keySet())
 		{
 			LinkedHashMap<String,LinkedHashMap<String,Double>> fafaForClass = faContentToPartnerContent.get(lClass);
@@ -1516,11 +1539,19 @@ public class ExcelAndTextExporter extends LDAExporter
 				for (String partnerFA : partnerFAs.keySet())
 				{
 					Double value = partnerFAs.get(partnerFA);
+					
+					if (value > 0 && (fa.equals("22:0") || partnerFA.equals("22:0") || fa.equals("24:0") || partnerFA.equals("24:0")))
+					{
+						System.out.println("hi");
+					}
+					
 					if (value>0 && 
 							(fa.contains(LipidomicsConstants.OMEGA_POSITION_START) || partnerFA.contains(LipidomicsConstants.OMEGA_POSITION_START) || fa.length() <=1 ))  //one of the FA has to have an omega pos, or lyso
 					{
 						allFASet1.add(fa);
 						allFASet2.add(partnerFA);
+						allFASet2.add(fa);
+						allFASet1.add(partnerFA);
 					}
 					if (!totalFAFA.get(fa).containsKey(partnerFA))
   				{
@@ -1528,6 +1559,19 @@ public class ExcelAndTextExporter extends LDAExporter
   				}
 					Double before = totalFAFA.get(fa).get(partnerFA);
 					totalFAFA.get(fa).put(partnerFA, before+value);
+				}
+			}
+		}
+		
+		Double maxFAContent = 0.0;
+		
+		for (String fa : totalFAFA.keySet())
+		{
+			for (String partnerFA : totalFAFA.get(fa).keySet())
+			{
+				if (totalFAFA.get(fa).get(partnerFA) > maxFAContent)
+				{
+					maxFAContent = totalFAFA.get(fa).get(partnerFA);
 				}
 			}
 		}
@@ -1569,42 +1613,52 @@ public class ExcelAndTextExporter extends LDAExporter
 		sortFAs(allFAs2);
 		
 		//writing fafa to sheet
-		for (int i=0; i<allFAs1.size();i++)
+		try 
 		{
-			int columnNr = i+1;
-			String key1 = allFAs1.get(i) == null ? "" : allFAs1.get(i).getCarbonDbsId();
-			
-			Cell cell = headerRowC.createCell(columnNr,Cell.CELL_TYPE_STRING);
-			cell.setCellValue(key1.length() <= 1 ? "lyso" : key1);
-			cell.setCellStyle(headerStyle);
-			
-			for (int j=0; j<allFAs2.size();j++)
+			for (int i=0; i<allFAs1.size();i++)
 			{
-				String key2 = allFAs2.get(j) == null ? "" : allFAs2.get(j).getCarbonDbsId();
+				int columnNr = i+1;
+				String key1 = allFAs1.get(i) == null ? "" : StaticUtils.getHumanReadableChainName(allFAs1.get(i), Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), allFAs1.get(i).getOhNumber()>0);
 				
-				int rowNr = j+1;
-				Row row;
-				if (i==0) 
-				{
-					row = sheetC.createRow(rowNr);
-					cell = row.createCell(0,Cell.CELL_TYPE_STRING);
-    			cell.setCellValue(key2.length() <= 1 ? "lyso" : key2);
-    			cell.setCellStyle(headerStyle);
-				}
-				else 
-				{
-					row = sheetC.getRow(rowNr);
-				}
+				Cell cell = headerRowC.createCell(columnNr,Cell.CELL_TYPE_STRING);
+				cell.setCellValue(key1.length() <= 1 ? "lyso" : key1);
+				cell.setCellStyle(headerStyle);
 				
-				cell = row.createCell(columnNr, Cell.CELL_TYPE_NUMERIC);
-				double number = 0.0;
-				if (totalFAFA.containsKey(key1) && totalFAFA.get(key1).containsKey(key2))
+				for (int j=0; j<allFAs2.size();j++)
 				{
-					number = totalFAFA.get(key1).get(key2) /totalFAContent;
+					String key2 = allFAs2.get(j) == null ? "" : StaticUtils.getHumanReadableChainName(allFAs2.get(j), Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), allFAs2.get(j).getOhNumber()>0);
+					
+					int rowNr = j+1;
+					Row row;
+					if (i==0) 
+					{
+						row = sheetC.createRow(rowNr);
+						cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+	    			cell.setCellValue(key2.length() <= 1 ? "lyso" : key2);
+	    			cell.setCellStyle(headerStyle);
+					}
+					else 
+					{
+						row = sheetC.getRow(rowNr);
+					}
+					
+					cell = row.createCell(columnNr, Cell.CELL_TYPE_NUMERIC);
+					double number = 0.0;
+					if (
+//							columnNr <= rowNr && 
+							totalFAFA.containsKey(key1) && totalFAFA.get(key1).containsKey(key2))
+					{
+						number = totalFAFA.get(key1).get(key2) /totalFAContent;
+//						number = totalFAFA.get(key1).get(key2) /maxFAContent; //normalizing to highest occurrence
+					}
+					cell.setCellValue(number);
+	  			cell.setCellStyle(numberStyle);
 				}
-				cell.setCellValue(number);
-  			cell.setCellStyle(numberStyle);
 			}
+		}
+		catch (Exception ex)
+		{
+			ex.printStackTrace();
 		}
   }
   
@@ -1617,10 +1671,16 @@ public class ExcelAndTextExporter extends LDAExporter
       	else if (fa1 == null) return 1;
       	else if (fa2 == null) return -1;
       	
-      	return Comparator.comparing(FattyAcidVO::getOmegaPosition)
-      			.thenComparing(FattyAcidVO::getcAtoms)
+      	return Comparator.comparing(FattyAcidVO::getcAtoms)
       			.thenComparing(FattyAcidVO::getDoubleBonds)
+      			.thenComparing(FattyAcidVO::getOmegaPosition)
+      			.thenComparing(FattyAcidVO::getChainType)
 						.compare(fa1, fa2);
+      	
+//      	return Comparator.comparing(FattyAcidVO::getOmegaPosition)
+//      			.thenComparing(FattyAcidVO::getcAtoms)
+//      			.thenComparing(FattyAcidVO::getDoubleBonds)
+//						.compare(fa1, fa2);
       }
 		});
   }
