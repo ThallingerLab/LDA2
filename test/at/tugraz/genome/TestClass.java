@@ -21270,9 +21270,9 @@ public void testTabFile() throws Exception {
  
  private void filterOnlyRelevantLipidClasses() {
    //for filtering LC-MS liver
-//   String baseDir = "C:\\data\\Christer\\20220119_decoyLCMS-liver\\";
-//   String alexIdentificationFile = baseDir+"21_LCMSdata_Liver_allALEXscores_targetsearch_v220303.tab";
-//   String output = baseDir+"LCMSdata_liver_targetsearch.tab";
+   String baseDir = "E:\\Lipidomics\\data\\Christer\\20220119_decoyLCMS-liver\\";
+   String alexIdentificationFile = baseDir+"21_LCMSdata_liver_allALEXscores_targetsearch_v240306.tab";
+   String output = baseDir+"LP_LCMSliver_target_240306-1_allScore_Na_12.5_lessHarsh_combRemovalAll.tab";
    //for filtering LC-MS Exp 1
 //   String baseDir = "C:\\data\\Christer\\20220204_decoyLCMS-Exp1\\";
 //   String alexIdentificationFile = baseDir+"13_LCMSdata_CtrlEx1_allALEXscores_targetDB_v220305.tab";
@@ -21280,13 +21280,13 @@ public void testTabFile() throws Exception {
 	 
 	 
 	 //for LCMS mouse brain
-	 String baseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
-	 //String baseDir = "E:\\Lipidomics\\data\\Christer\\LProphet-TestFiles\\LC_MS\\brain\\result\\";
-//   String alexIdentificationFile = baseDir+"21_LCMSdata_brain_allALEXscores_targetsearch_v220303.tab";
-//   String output = baseDir+"LCMSdata_brain_targetsearch.tab";
-
-   String alexIdentificationFile = baseDir+"02_LP_ALEXscores_LCMSbrain_target_230720-1_lessHarsh_ethylamine_wLPE-LPC_ext_lessHarsh.tab";
-   String output = baseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext.tab";
+//	 String baseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
+//	 //String baseDir = "E:\\Lipidomics\\data\\Christer\\LProphet-TestFiles\\LC_MS\\brain\\result\\";
+////   String alexIdentificationFile = baseDir+"21_LCMSdata_brain_allALEXscores_targetsearch_v220303.tab";
+////   String output = baseDir+"LCMSdata_brain_targetsearch.tab";
+//
+//   String alexIdentificationFile = baseDir+"02_LP_ALEXscores_LCMSbrain_target_230720-1_lessHarsh_ethylamine_wLPE-LPC_ext_lessHarsh.tab";
+//   String output = baseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext.tab";
 
    //for NIST human plasma
 //   String baseDir = "C:\\Collaborator_Files\\Christer\\20220610_decoyLCMS-plasma\\";
@@ -23379,9 +23379,9 @@ public void testTabFile() throws Exception {
    
    private void validateHitsBasedOnRetentionTime() {
      //this is for LC-MS liver
-//     String decoyBaseDir = "C:\\data\\Christer\\20220119_decoyLCMS-liver\\";
-//     String alexIdentificationFile = decoyBaseDir+"LCMSdata_liver_targetsearch_PE_O-5frag.tab";
-//     String outFile = decoyBaseDir+"LCMSdata_liver_targetsearch_rtChecked_13_PE_O-5frag.tab";
+     String decoyBaseDir = "E:\\Lipidomics\\data\\Christer\\20220119_decoyLCMS-liver\\";
+     String alexIdentificationFile = decoyBaseDir+"LP_LCMSliver_target_240306-1_allScore_Na_12.5_lessHarsh_combRemovalAll.tab";
+     String outFile = decoyBaseDir+"LCMSdata_liver_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_combRemovalAll_generated.tab";
 
      //this is for LC-MS Exp1
 //     String decoyBaseDir = "C:\\data\\Christer\\20220204_decoyLCMS-Exp1\\";
@@ -23390,20 +23390,20 @@ public void testTabFile() throws Exception {
   	 
   	 
      //this is for LC-MS mouse brain
-     String decoyBaseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
-     //String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_Na_12.5.tab";
-     //String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_Na_12.5_generated.tab";
-     																							 
-     String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext.tab";
-     String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext_generated.tab";
+//     String decoyBaseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
+//     //String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_Na_12.5.tab";
+//     //String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_Na_12.5_generated.tab";
+//     																							 
+//     String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext.tab";
+//     String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext_generated.tab";
      
      //this is for LC-MS human plasma
 //     String decoyBaseDir = "C:\\data\\Christer\\20220610_decoyLCMS-plasma\\";
 //     String alexIdentificationFile = decoyBaseDir+"LCMSdata_serum_targetsearch_13_PE_O-5frag.tab";
 //     String outFile = decoyBaseDir+"LCMSdata_serum_targetsearch_rtChecked_13_PE_O-5frag.tab";
      
-     //String filePrevAssign = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_PE_O-5frag.xlsx";
-     String filePrevAssign = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_combiCorrected.xlsx";
+     String filePrevAssign = decoyBaseDir+"LCMSdata_liver_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_combRemovalAll_old.xlsx";
+     //String filePrevAssign = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext_old.xlsx";
      
      String lookupClass;
      String lookupSpecies;
@@ -23424,11 +23424,11 @@ public void testTabFile() throws Exception {
      Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
      //LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
      //this is for LC-MS liver
-     //getValidOrbitrapCIDMouseLiverSpecies(lipidClasses, lipidClassInfo, new LinkedHashMap<String,Boolean>());
+     getValidOrbitrapCIDMouseLiverSpecies(lipidClasses, lipidClassInfo, new LinkedHashMap<String,Boolean>());
      //this is for LC-MS Exp1
      //getValidOrbitrapCIDCtrlExp1SpeciesPositive(lipidClasses, lipidClassInfo, adducts);
      //this is for LC-MS mouse brain
-     getValidOrbitrapCIDMouseBrainSpecies(lipidClasses, lipidClassInfo);
+     //getValidOrbitrapCIDMouseBrainSpecies(lipidClasses, lipidClassInfo);
      //this is for LC-MS human plasma
      //getValidOrbitrapCIDHumanPlasmaSpecies(lipidClasses, lipidClassInfo);
 
@@ -23571,10 +23571,10 @@ public void testTabFile() throws Exception {
 //                refRt = refRt-0.6d;
 //            }
             //this is for LC-MS liver
-//            if (result.isPositive() && (lookupClass.equalsIgnoreCase("P-PC") || lookupClass.equalsIgnoreCase("P-PE") || lookupClass.equalsIgnoreCase("LPE") ||
-//                lookupClass.equalsIgnoreCase("PS") || lookupClass.equalsIgnoreCase("PC") || lookupClass.equalsIgnoreCase("PE") || lookupClass.equalsIgnoreCase("Cer"))) {
-//              refRt = refRt-0.2d;
-//            }            
+            if (result.isPositive() && (lookupClass.equalsIgnoreCase("P-PC") || lookupClass.equalsIgnoreCase("P-PE") || lookupClass.equalsIgnoreCase("LPE") ||
+                lookupClass.equalsIgnoreCase("PS") || lookupClass.equalsIgnoreCase("PC") || lookupClass.equalsIgnoreCase("PE") || lookupClass.equalsIgnoreCase("Cer"))) {
+              refRt = refRt-0.2d;
+            }            
           //this is for LC-MS Exp1 brain
 //            if (result.isPositive()) {
 //              refRt = refRt-0.05d;
@@ -23672,8 +23672,8 @@ public void testTabFile() throws Exception {
   	 double rtGroupingTolerance = 0.4d;
   	 
      //this is for LC-MS liver
-  	 String filePrevAssign = "C:\\data\\Christer\\20220119_decoyLCMS-liver\\LCMSdata_liver_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_combRemovalAll.xlsx";
-  	 String baseDir = "C:\\data\\BiologicalExperiment\\Orbitrap_CID\\";
+  	 String filePrevAssign = "E:\\Lipidomics\\data\\Christer\\20220119_decoyLCMS-liver\\LCMSdata_liver_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_combRemovalAll.xlsx";
+  	 String baseDir = "E:\\Lipidomics\\data\\BiologicalExperiment\\Orbitrap_CID\\";
   	 //this is just for the sequence of the hits
   	 //String quantFile = baseDir+"quant\\positive.xlsx";
   	 String posIonModeMSDIALResultsDir = baseDir+"MS-Dial_positive\\export\\";
