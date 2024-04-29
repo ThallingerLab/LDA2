@@ -132,6 +132,7 @@ import at.tugraz.genome.lda.export.LDAExporter;
 import at.tugraz.genome.lda.export.OmegaCollector;
 import at.tugraz.genome.lda.export.QuantificationResultExporter;
 import at.tugraz.genome.lda.fragai.ExcelTargetListParser;
+import at.tugraz.genome.lda.fragai.SpectraIdentifier;
 import at.tugraz.genome.lda.interfaces.ColorChangeListener;
 import at.tugraz.genome.lda.listeners.AnnotationThresholdListener;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
@@ -3309,11 +3310,13 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     }
     if (command.equalsIgnoreCase("Start AI"))
     {
-    	File file = new File("D:\\Collaborator_Files\\Kathi\\Paper3\\LDA_extension\\Description\\Gangliosides_targets\\Target_list_gangliosides_adducts_shortened.xlsx");
+    	File file = new File("D:\\Collaborator_Files\\Kathi\\Paper3\\LDA_extension\\Description\\Gangliosides_targets\\TestTL\\Target_list_gangliosides_adducts_shortened.xlsx");
     	ExcelTargetListParser parser = new ExcelTargetListParser(file);
+    	SpectraIdentifier identifier = new SpectraIdentifier();
     	try
     	{
     		parser.parse();
+    		identifier.translateAllToChrom();
     	}
     	catch (IOException ex)
     	{
