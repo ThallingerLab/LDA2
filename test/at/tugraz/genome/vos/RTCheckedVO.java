@@ -1,6 +1,9 @@
 package at.tugraz.genome.vos;
 
-public class RTCheckedVO
+import java.util.Comparator;
+import java.util.Objects;
+
+public class RTCheckedVO implements Comparable<RTCheckedVO>
 {
 
   private String adduct_;
@@ -32,10 +35,20 @@ public class RTCheckedVO
     this.truePos_ = truePos;
     this.comment_ = comment;
   }
+  
+  
+  public RTCheckedVO(RTCheckedVO other)
+	{
+  	this(other.getAdduct(), other.getScore(), other.getFragType(),
+        other.getlClass(), other.getSpecies(), other.getMolSpec(), other.getPolarity(),
+        other.getRtGroup(), other.getTruePos(), other.getComment());
+	}
 
 
 
-  public String getAdduct()
+
+
+	public String getAdduct()
   {
     return adduct_;
   }
@@ -52,6 +65,13 @@ public class RTCheckedVO
   public String getScore()
   {
     return score_;
+  }
+  
+  
+  
+  private Double getScoreDouble()
+  {
+  	return Double.parseDouble(score_);
   }
 
 
@@ -172,7 +192,53 @@ public class RTCheckedVO
   {
     this.comment_ = comment;
   }
-  
+
+
+	@Override
+	public int hashCode()
+	{
+		return Objects.hash(adduct_, comment_, fragType_, lClass_, molSpec_,
+				polarity_, rtGroup_, score_, species_, truePos_);
+	}
+
+
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		RTCheckedVO other = (RTCheckedVO) obj;
+		return Objects.equals(adduct_, other.adduct_)
+				&& Objects.equals(comment_, other.comment_)
+				&& Objects.equals(fragType_, other.fragType_)
+				&& Objects.equals(lClass_, other.lClass_)
+				&& Objects.equals(molSpec_, other.molSpec_)
+				&& Objects.equals(polarity_, other.polarity_)
+				&& Objects.equals(rtGroup_, other.rtGroup_)
+				&& Objects.equals(score_, other.score_)
+				&& Objects.equals(species_, other.species_)
+				&& Objects.equals(truePos_, other.truePos_);
+	}
+
+
+	@Override
+	public int compareTo(RTCheckedVO o)
+	{
+		return Comparator
+  			.comparing(RTCheckedVO::getScoreDouble).reversed()
+  			.thenComparing(RTCheckedVO::getlClass)
+  			.thenComparing(RTCheckedVO::getSpecies)
+  			.thenComparing(RTCheckedVO::getAdduct)
+  			.thenComparing(RTCheckedVO::getMolSpec)
+  			.thenComparing(RTCheckedVO::getFragType)
+  			.thenComparing(RTCheckedVO::getRtGroup)
+  			.thenComparing(RTCheckedVO::getTruePos)
+  			.compare(this,o);
+	}
   
   
 }
