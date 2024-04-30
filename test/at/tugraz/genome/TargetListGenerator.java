@@ -27,8 +27,14 @@ public class TargetListGenerator
 {
 	String chainListLabelCombi_ = "D";
 	ArrayList<String> lipidClasses_ = new ArrayList<String>(Arrays.asList("PC","O-PC","P-PC","LPC","PE","P-PE","LPE","PS","LPS","PI","LPI","PG","LPG","SM","Cer"));
-	String chainListPath_ = String.format("D:\\Collaborator_Files\\SILDA\\SILDA_final\\masslists_all_labels\\new_TL_D\\chainLists\\fattyAcidChains_%s.xlsx", chainListLabelCombi_);
-	String outFile_ = String.format("D:\\Collaborator_Files\\SILDA\\SILDA_final\\masslists_all_labels\\new_TL_D\\negative_%s.xlsx", chainListLabelCombi_);
+	ArrayList<String> lipidClassesGanglio_ = new ArrayList<String>(Arrays.asList("GM1", "GM2", "GM3", "GM4", "GD1", "GD2", "GD3", "GT1","GT2","GT3", "GQ1","GP1", "GH1", "GS1", "GO1", "LacCer"));
+	String chainListPath_ = "D:\\Collaborator_Files\\Kathi\\Paper2\\newTL\\Ganglio_chains\\fattyAcidChains.xlsx";
+	String lcbListPath_ = "D:\\Collaborator_Files\\Kathi\\Paper2\\newTL\\Ganglio_chains\\dLCB_Ganglio.xlsx";
+	String outFile_ = "D:\\Collaborator_Files\\Kathi\\Paper2\\newTL\\Ganglio_negative_new.xlsx";
+	
+	
+//	String chainListPath_ = String.format("D:\\Collaborator_Files\\SILDA\\SILDA_final\\masslists_all_labels\\new_TL_D\\chainLists\\fattyAcidChains_%s.xlsx", chainListLabelCombi_);
+//	String outFile_ = String.format("D:\\Collaborator_Files\\SILDA\\SILDA_final\\masslists_all_labels\\new_TL_D\\negative_%s.xlsx", chainListLabelCombi_);
 	
 	public static void main(String[] args)
   {
@@ -37,7 +43,311 @@ public class TargetListGenerator
 	
 	private TargetListGenerator()
 	{
-		generateIsoLabeledMassListNew(lipidClasses_, chainListPath_, outFile_);
+		generateMassListGanglio(lipidClassesGanglio_, chainListPath_, lcbListPath_, outFile_);
+//		generateIsoLabeledMassListNew(lipidClasses_, chainListPath_, outFile_);
+	}
+	
+	
+	private void generateMassListGanglio(ArrayList<String> lipidClasses, String chainListPath, String lcbListPath, String outFile)
+	{
+		try {
+			ElementConfigParser parser = new ElementConfigParser("elementconfig.xml");
+      parser.parse();
+      
+      BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outFile));
+      XSSFWorkbook resultWorkbook = new XSSFWorkbook();
+      CellStyle headerStyle = getHeaderStyle(resultWorkbook);
+      for (String lipidClass : lipidClasses)
+      {
+      	XSSFSheet resultSheet = resultWorkbook.createSheet(lipidClass);
+    		int rowCount = 1;
+    		XSSFRow headerRow = resultSheet.createRow(rowCount);
+        Cell cell = headerRow.createCell(10,HSSFCell.CELL_TYPE_STRING);
+        cell.setCellValue("OH-Number: 2");
+        cell = headerRow.createCell(11,HSSFCell.CELL_TYPE_STRING);
+        cell.setCellValue("OH-Range: 2-3");
+        cell = headerRow.createCell(12,HSSFCell.CELL_TYPE_STRING);
+        cell.setCellValue("adductInsensitiveRtFilter");
+        
+      	rowCount = 4;
+        headerRow = resultSheet.createRow(rowCount);
+        cell = headerRow.createCell(0,HSSFCell.CELL_TYPE_STRING);
+        cell.setCellValue("Name");
+        cell.setCellStyle(headerStyle);
+        cell = headerRow.createCell(2,HSSFCell.CELL_TYPE_STRING);
+        cell.setCellValue("dbs");
+        cell.setCellStyle(headerStyle);
+        cell = headerRow.createCell(3,HSSFCell.CELL_TYPE_STRING);
+        cell.setCellValue("C");
+        cell.setCellStyle(headerStyle);
+        cell = headerRow.createCell(4,HSSFCell.CELL_TYPE_STRING);
+        cell.setCellValue("H");
+        cell.setCellStyle(headerStyle);
+        cell = headerRow.createCell(5,HSSFCell.CELL_TYPE_STRING);
+        cell.setCellValue("O");
+        cell.setCellStyle(headerStyle);
+        cell = headerRow.createCell(6,HSSFCell.CELL_TYPE_STRING);
+        cell.setCellValue("N");
+        cell.setCellStyle(headerStyle);
+        cell = headerRow.createCell(7,HSSFCell.CELL_TYPE_STRING);
+        cell.setCellValue("M");
+        cell.setCellStyle(headerStyle);
+        
+        final String formH1 = "mass(form[-H] name[-H])";
+        final String formH2 = "mass(form[-H2] name[-H2] charge=2)";
+        final String formH3 = "mass(form[-H3] name[-H3] charge=3)";
+        final String formH4 = "mass(form[-H4] name[-H4] charge=4)";
+        final String formH5 = "mass(form[-H5] name[-H5] charge=5)";
+        final String formH6 = "mass(form[-H6] name[-H6] charge=6)";
+        final String formH7 = "mass(form[-H7] name[-H7] charge=7)";
+        final String formH8 = "mass(form[-H8] name[-H8] charge=8)";
+        
+        int lastColumn = 7;
+        if (lipidClass.equals("LacCer"))
+        {
+        	cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH1);
+          cell.setCellStyle(headerStyle);
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH2);
+          cell.setCellStyle(headerStyle);
+        }
+        else if (lipidClass.equals("GM1") || lipidClass.equals("GM2") || lipidClass.equals("GM3") || lipidClass.equals("GM4"))
+        {
+        	cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH1);
+          cell.setCellStyle(headerStyle);
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH2);
+          cell.setCellStyle(headerStyle);
+        }
+        else if (lipidClass.equals("GD1") || lipidClass.equals("GD2") || lipidClass.equals("GD3"))
+        {
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH2);
+          cell.setCellStyle(headerStyle);
+        }
+        else if (lipidClass.equals("GT1") || lipidClass.equals("GT2") || lipidClass.equals("GT3"))
+        {
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH2);
+          cell.setCellStyle(headerStyle);
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH3);
+          cell.setCellStyle(headerStyle);
+        }
+        else if (lipidClass.equals("GQ1"))
+        {
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH3);
+          cell.setCellStyle(headerStyle);
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH4);
+          cell.setCellStyle(headerStyle);
+        }
+        else if (lipidClass.equals("GP1"))
+        {
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH4);
+          cell.setCellStyle(headerStyle);
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH5);
+          cell.setCellStyle(headerStyle);
+        }
+        else if (lipidClass.equals("GS1"))
+        {
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH4);
+          cell.setCellStyle(headerStyle);
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH5);
+          cell.setCellStyle(headerStyle);
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH6);
+          cell.setCellStyle(headerStyle);
+        }
+        else if (lipidClass.equals("GH1"))
+        {
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH4);
+          cell.setCellStyle(headerStyle);
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH5);
+          cell.setCellStyle(headerStyle);
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH6);
+          cell.setCellStyle(headerStyle);
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH7);
+          cell.setCellStyle(headerStyle);
+        }
+        else if (lipidClass.equals("GO1"))
+        {
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH4);
+          cell.setCellStyle(headerStyle);
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH5);
+          cell.setCellStyle(headerStyle);
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH6);
+          cell.setCellStyle(headerStyle);
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH7);
+          cell.setCellStyle(headerStyle);
+          cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
+          cell.setCellValue(formH8);
+          cell.setCellStyle(headerStyle);
+        }
+        
+        cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);
+        cell.setCellValue("tR (min)");
+        cell.setCellStyle(headerStyle);
+        rowCount++;
+        
+        int minFattyAcidC = 30;
+        int maxFattyAcidC = 51;
+        int maxDB=6;
+        Hashtable<Integer,Integer> cDbsCombi = new Hashtable<Integer,Integer>();
+        
+      	for (int i=minFattyAcidC; i<=maxFattyAcidC; i++) 
+      	{
+          for (int j=0; j<=maxDB; j++) 
+          {
+            if (j>4 && i<30)
+              continue;
+            else if (j>6 && i<36)
+              continue;
+            else if (j>8 && i<38)
+              continue;
+            else if (j>10 && i<40)
+              continue;
+            cDbsCombi.put(i, j);
+          }
+        }
+        
+        for (int fattyAcidC=minFattyAcidC; fattyAcidC<maxFattyAcidC; fattyAcidC+=1)
+        {
+          int dbs = 0;
+          int dbsMax = cDbsCombi.get(fattyAcidC)+1;
+          while (dbs<dbsMax){        
+            Hashtable<String,Hashtable<String,Integer>> allElements = new Hashtable<String,Hashtable<String,Integer>>();
+            allElements = fillUnlabeledElements(allElements, fattyAcidC, dbs, lipidClass);
+              
+            for (String current : allElements.keySet())
+            {
+            	Hashtable<String,Integer> elements = allElements.get(current);
+              double massNeutral = 
+              		parser.getElementDetails("C").getMonoMass()*elements.get("C")+
+              		parser.getElementDetails("Cc").getMonoMass()*elements.get("Cc")+
+              		parser.getElementDetails("H").getMonoMass()*elements.get("H")+
+              		parser.getElementDetails("D").getMonoMass()*elements.get("D")+
+                  parser.getElementDetails("O").getMonoMass()*elements.get("O")+
+                  parser.getElementDetails("P").getMonoMass()*elements.get("P")+
+                  parser.getElementDetails("N").getMonoMass()*elements.get("N");
+              
+              XSSFRow outRow = resultSheet.createRow(rowCount);
+              cell = outRow.createCell(0,HSSFCell.CELL_TYPE_NUMERIC);
+              cell.setCellValue(current+fattyAcidC);
+              cell = outRow.createCell(1,HSSFCell.CELL_TYPE_STRING);
+              cell.setCellValue(":");       
+              cell = outRow.createCell(2,HSSFCell.CELL_TYPE_NUMERIC);
+              cell.setCellValue(dbs);
+              cell = outRow.createCell(3,HSSFCell.CELL_TYPE_NUMERIC);
+              cell.setCellValue(elements.get("C"));
+              cell = outRow.createCell(4,HSSFCell.CELL_TYPE_NUMERIC);
+              cell.setCellValue(elements.get("H"));
+              cell = outRow.createCell(5,HSSFCell.CELL_TYPE_NUMERIC);
+              cell.setCellValue(elements.get("O"));
+              cell = outRow.createCell(6,HSSFCell.CELL_TYPE_NUMERIC);
+              cell.setCellValue(elements.get("N"));
+              cell = outRow.createCell(7,HSSFCell.CELL_TYPE_NUMERIC);
+              cell.setCellValue(massNeutral);
+              
+              for (int i=8;i<=lastColumn;i++)
+              {
+              	double massAdduct = massNeutral;
+              	if (headerRow.getCell(i).getStringCellValue().equalsIgnoreCase(formH1))
+              	{
+              		massAdduct = massNeutral-parser.getElementDetails("h").getMonoMass();
+              		cell = outRow.createCell(i,HSSFCell.CELL_TYPE_NUMERIC);
+                  cell.setCellValue(massAdduct);
+              	}
+              	else if (headerRow.getCell(i).getStringCellValue().equalsIgnoreCase(formH2))
+              	{
+              		massAdduct = (massNeutral-2*parser.getElementDetails("h").getMonoMass())/2;
+              		cell = outRow.createCell(i,HSSFCell.CELL_TYPE_NUMERIC);
+                  cell.setCellValue(massAdduct);
+              	}
+              	else if (headerRow.getCell(i).getStringCellValue().equalsIgnoreCase(formH3))
+              	{
+              		massAdduct = (massNeutral-3*parser.getElementDetails("h").getMonoMass())/3;
+              		cell = outRow.createCell(i,HSSFCell.CELL_TYPE_NUMERIC);
+                  cell.setCellValue(massAdduct);
+              	}
+              	else if (headerRow.getCell(i).getStringCellValue().equalsIgnoreCase(formH4))
+              	{
+              		massAdduct = (massNeutral-4*parser.getElementDetails("h").getMonoMass())/4;
+              		cell = outRow.createCell(i,HSSFCell.CELL_TYPE_NUMERIC);
+                  cell.setCellValue(massAdduct);
+              	}
+              	else if (headerRow.getCell(i).getStringCellValue().equalsIgnoreCase(formH5))
+              	{
+              		massAdduct = (massNeutral-5*parser.getElementDetails("h").getMonoMass())/5;
+              		cell = outRow.createCell(i,HSSFCell.CELL_TYPE_NUMERIC);
+                  cell.setCellValue(massAdduct);
+              	}
+              	else if (headerRow.getCell(i).getStringCellValue().equalsIgnoreCase(formH6))
+              	{
+              		massAdduct = (massNeutral-6*parser.getElementDetails("h").getMonoMass())/6;
+              		cell = outRow.createCell(i,HSSFCell.CELL_TYPE_NUMERIC);
+                  cell.setCellValue(massAdduct);
+              	}
+              	else if (headerRow.getCell(i).getStringCellValue().equalsIgnoreCase(formH7))
+              	{
+              		massAdduct = (massNeutral-7*parser.getElementDetails("h").getMonoMass())/7;
+              		cell = outRow.createCell(i,HSSFCell.CELL_TYPE_NUMERIC);
+                  cell.setCellValue(massAdduct);
+              	}
+              	else if (headerRow.getCell(i).getStringCellValue().equalsIgnoreCase(formH8))
+              	{
+              		massAdduct = (massNeutral-8*parser.getElementDetails("h").getMonoMass())/8;
+              		cell = outRow.createCell(i,HSSFCell.CELL_TYPE_NUMERIC);
+                  cell.setCellValue(massAdduct);
+              	}
+                
+              }
+              
+              rowCount++;
+            }
+            dbs++;
+          }
+        }
+      }
+      resultWorkbook.write(out);
+      out.close();
+    } catch (Exception ex){
+      ex.printStackTrace();
+    }
+    System.out.println("workbook written!");
+	}
+	
+	private Vector<FattyAcidVO> getChains(String path) throws Exception
+	{
+		Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
+		FALibParser faParser = new FALibParser(path);
+    faParser.parseFile();
+    Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> fas = faParser.getFattyAcids().get("n");
+    for (Integer cAtoms : fas.keySet()) {
+      for (Integer dbs : fas.get(cAtoms).keySet()) {
+        for (String pref : fas.get(cAtoms).get(dbs).keySet()) {
+      	  for (String oxState : fas.get(cAtoms).get(dbs).get(pref).keySet()) {
+      	  	chains.add(fas.get(cAtoms).get(dbs).get(pref).get(oxState));
+      	  }
+        }
+      }
+    }
+    return chains;
 	}
 	
 	
@@ -55,7 +365,6 @@ public class TargetListGenerator
         	  for (String oxState : fas.get(cAtoms).get(dbs).get(pref).keySet()) {
         		  chains.add(fas.get(cAtoms).get(dbs).get(pref).get(oxState));
         	  }
-            
           }
         }
       }
@@ -197,19 +506,6 @@ public class TargetListGenerator
             		continue;
             	}
             	Hashtable<String,Integer> elements = labelElements.get(label);
-            	try {
-            		double massNeutral = 
-                		parser.getElementDetails("C").getMonoMass()*elements.get("C")+
-                		parser.getElementDetails("Cc").getMonoMass()*elements.get("Cc")+
-                		parser.getElementDetails("H").getMonoMass()*elements.get("H")+
-                		parser.getElementDetails("D").getMonoMass()*elements.get("D")+
-                    parser.getElementDetails("O").getMonoMass()*elements.get("O")+
-                    parser.getElementDetails("P").getMonoMass()*elements.get("P")+
-                    parser.getElementDetails("N").getMonoMass()*elements.get("N");
-            	} catch (Exception ex)
-            	{
-            		ex.printStackTrace();
-            	}
               double massNeutral = 
               		parser.getElementDetails("C").getMonoMass()*elements.get("C")+
               		parser.getElementDetails("Cc").getMonoMass()*elements.get("Cc")+
@@ -408,19 +704,6 @@ public class TargetListGenerator
             for (String label : labelElements.keySet())
             { 
             	Hashtable<String,Integer> elements = labelElements.get(label);
-            	try {
-            		double massNeutral = 
-                		parser.getElementDetails("C").getMonoMass()*elements.get("C")+
-                		parser.getElementDetails("Cc").getMonoMass()*elements.get("Cc")+
-                		parser.getElementDetails("H").getMonoMass()*elements.get("H")+
-                		parser.getElementDetails("D").getMonoMass()*elements.get("D")+
-                    parser.getElementDetails("O").getMonoMass()*elements.get("O")+
-                    parser.getElementDetails("P").getMonoMass()*elements.get("P")+
-                    parser.getElementDetails("N").getMonoMass()*elements.get("N");
-            	} catch (Exception ex)
-            	{
-            		ex.printStackTrace();
-            	}
               double massNeutral = 
               		parser.getElementDetails("C").getMonoMass()*elements.get("C")+
               		parser.getElementDetails("Cc").getMonoMass()*elements.get("Cc")+
@@ -540,7 +823,7 @@ public class TargetListGenerator
   	return labelElements;
   }
 	
-	private Hashtable<String,Hashtable<String,Integer>> fillUnlabeledElements(Hashtable<String,Hashtable<String,Integer>>labelElements, 
+	private Hashtable<String,Hashtable<String,Integer>> fillUnlabeledElements(Hashtable<String,Hashtable<String,Integer>> labelElements, 
   		int fattyAcidC, int dbs, String lipidClass)
   {
   	String label = "";
@@ -691,6 +974,150 @@ public class TargetListGenerator
   			elements.put("P", 0);
   			elements.put("N", 1);
   			break;
+  		case "GM1": //done
+  			elements.put("C", fattyAcidC+37);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-13);
+  			elements.put("D", 0);
+  			elements.put("O", 31);
+  			elements.put("P", 0);
+  			elements.put("N", 3);
+  			break;
+  		case "GM2": //done
+  			elements.put("C", fattyAcidC+31);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-11);
+  			elements.put("D", 0);
+  			elements.put("O", 26);
+  			elements.put("P", 0);
+  			elements.put("N", 3);
+  			break;
+  		case "GM3": //done
+  			elements.put("C", fattyAcidC+23);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-8);
+  			elements.put("D", 0);
+  			elements.put("O", 21);
+  			elements.put("P", 0);
+  			elements.put("N", 2);
+  			break;
+  		case "GM4": //done
+  			elements.put("C", fattyAcidC+17);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-8);
+  			elements.put("D", 0);
+  			elements.put("O", 16);
+  			elements.put("P", 0);
+  			elements.put("N", 2);
+  			break;
+  		case "GD1": //done
+  			elements.put("C", fattyAcidC+48);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-18);
+  			elements.put("D", 0);
+  			elements.put("O", 39);
+  			elements.put("P", 0);
+  			elements.put("N", 4);
+  			break;
+  		case "GD2": //done
+  			elements.put("C", fattyAcidC+42);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-16);
+  			elements.put("D", 0);
+  			elements.put("O", 34);
+  			elements.put("P", 0);
+  			elements.put("N", 4);
+  			break;
+  		case "GD3": //done
+  			elements.put("C", fattyAcidC+34);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-13);
+  			elements.put("D", 0);
+  			elements.put("O", 29);
+  			elements.put("P", 0);
+  			elements.put("N", 3);
+  			break;
+  		case "GT1": //done
+  			elements.put("C", fattyAcidC+59);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-23);
+  			elements.put("D", 0);
+  			elements.put("O", 47);
+  			elements.put("P", 0);
+  			elements.put("N", 5);
+  			break;
+  		case "GT2": //done
+  			elements.put("C", fattyAcidC+53);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-21);
+  			elements.put("D", 0);
+  			elements.put("O", 42);
+  			elements.put("P", 0);
+  			elements.put("N", 5);
+  			break;
+  		case "GT3": //done
+  			elements.put("C", fattyAcidC+45);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-18);
+  			elements.put("D", 0);
+  			elements.put("O", 37);
+  			elements.put("P", 0);
+  			elements.put("N", 4);
+  			break;
+  		case "GQ1": //done
+  			elements.put("C", fattyAcidC+70);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-28);
+  			elements.put("D", 0);
+  			elements.put("O", 55);
+  			elements.put("P", 0);
+  			elements.put("N", 6);
+  			break;
+  		case "GP1": //done
+  			elements.put("C", fattyAcidC+81);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-33);
+  			elements.put("D", 0);
+  			elements.put("O", 63);
+  			elements.put("P", 0);
+  			elements.put("N", 7);
+  			break;
+  		case "GH1": //done
+  			elements.put("C", fattyAcidC+92);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-38);
+  			elements.put("D", 0);
+  			elements.put("O", 71);
+  			elements.put("P", 0);
+  			elements.put("N", 8);
+  			break;
+  		case "GS1": //done
+  			elements.put("C", fattyAcidC+103);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-43);
+  			elements.put("D", 0);
+  			elements.put("O", 79);
+  			elements.put("P", 0);
+  			elements.put("N", 9);
+  			break;
+  		case "GO1": //done
+  			elements.put("C", fattyAcidC+114);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-48);
+  			elements.put("D", 0);
+  			elements.put("O", 87);
+  			elements.put("P", 0);
+  			elements.put("N", 10);
+  			break;
+  		case "LacCer": //done
+  			elements.put("C", fattyAcidC+12);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-3);
+  			elements.put("D", 0);
+  			elements.put("O", 13);
+  			elements.put("P", 0);
+  			elements.put("N", 1);
+  			break;
   		default:
   			break;
   	}
@@ -709,12 +1136,7 @@ public class TargetListGenerator
           combis.addAll(combis2);
         }
       }else{
-        //System.out.println(toAdd.size());
         if (checkTotalCDbsValid(toAdd,cAtoms,dbs)) {
-          String comb = "";
-          for (FattyAcidVO fax : toAdd)
-            comb += fax.getCarbonDbsId()+"_";
-          //System.out.println(cAtoms+":"+dbs+": "+comb);
           combis.add(toAdd);
         }
       }
