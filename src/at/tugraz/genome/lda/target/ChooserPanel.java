@@ -117,7 +117,7 @@ public class ChooserPanel extends JOptionPanel
   {
   	JPanel experimentsPanel = new JPanel();
   	experimentsPanel.setLayout(new GridBagLayout());
-    JLabel title = new JLabel("<html>Use stable isotope labels specific for \u03C9-positions.</html>");
+    JLabel title = new JLabel("<html>RT-DB creation using stable isotope labels (SIL).</html>");
     title.setFont(new Font("Arial",Font.BOLD, 24));
     title.setPreferredSize(new Dimension(sizeTextOneLine.width,sizeTextOneLine.height*4));
     title.setMinimumSize(new Dimension(title.getPreferredSize().width/2, title.getPreferredSize().height));
@@ -126,9 +126,9 @@ public class ChooserPanel extends JOptionPanel
     requirementsHeader.setPreferredSize(new Dimension(sizeTextOneLine.width,sizeTextOneLine.height*2));
     requirementsHeader.setMinimumSize(new Dimension(requirementsHeader.getPreferredSize().width/2, requirementsHeader.getPreferredSize().height));
     JLabel requirements= new JLabel("<html> <ul style=\"list-style-type:circle;\"> "
-    		+ "<li> Experimental data (analyzed with LDA) of analytes with stable isotope labels specific for \u03C9-positions. </li>"
+    		+ "<li> Experimental data (analyzed with LDA) of analytes with SIL specific for \u03C9-positions. </li>"
     		+ "<li> If deuterium labels are used: experimental data (analyzed with LDA) of unlabeled authentic standards with known \u03C9-positions. <br>"
-    		+ "The labeled analogue of each standard needs to be identified in the stable isotope labeled data. <br>"
+    		+ "The labeled isotopologue of each standard needs to be identified in the SIL data. <br>"
     		+ "(For <sup>13</sup>C labels experimental data of unlabeled authentic standards is not needed.) </li>"
     		+ "</ul> </html>");
     requirements.setFont(new Font("Arial", Font.PLAIN, 12));
