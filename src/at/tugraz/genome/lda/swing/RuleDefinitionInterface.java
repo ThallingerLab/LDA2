@@ -3383,8 +3383,8 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
   private MSnAnalyzer updateMSnAnalyzerToCurrentSettings(int specNumber) throws RulesException, NoRuleException, IOException, SpectrummillParserException, CgException, HydroxylationEncodingException, ChemicalFormulaException, LipidCombinameEncodingException{
    FragmentCalculator fragCalc_ = new FragmentCalculator(CACHE_DIR,lipidClassName_,lipidAdduct_,data_.getNameStringWithoutRt(),data_.getChemicalFormula(),
         data_.getChemicalFormulaWODeducts(),data_.Mz[0],data_.getCharge(),data_.getOhNumber(),data_.getOxState());
-    analyzer_.prepareMSnSpectraCache(data_.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), data_.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance(),
-        LipidomicsConstants.getMs2MinIntsForNoiseRemoval());
+   	float tol = LipidomicsConstants.getMs2PrecursorTolerance(data_.Mz[0]);
+    analyzer_.prepareMSnSpectraCache(data_.Mz[0]-tol, data_.Mz[0]+tol, LipidomicsConstants.getMs2MinIntsForNoiseRemoval());
     Vector<Range> ranges = analyzer_.findSingleSpectraRanges(fragCalc_.getSpectrumLevelRange());     
     Vector<CgProbe> probes = new Vector<CgProbe>();
     if (specNumber<0 || specNumber>=ranges.size()){

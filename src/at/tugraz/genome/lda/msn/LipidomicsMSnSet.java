@@ -68,8 +68,6 @@ public class LipidomicsMSnSet extends LipidParameterSet
   
   /** the achieved status by MSn checks */
   private int status_;
-  /** the allowed m/z tolerance for the fragment detection */
-  private float mzTolerance_;
   /** the detected head group fragments, the key is the fragment name */
   private Hashtable<String,CgProbe> headGroupFragments_;
   /** the intensity rules that were fulfilled by the head group fragments */
@@ -129,7 +127,6 @@ public class LipidomicsMSnSet extends LipidParameterSet
    * all the required information for this VO has to be provided in the constructor - later adaptions are not possible
    * @param set the MS1 evidence
    * @param status indicator for possible lipid identification
-   * @param mzTolerance the m/z range for MSn identification
    * @param headGroupFragments the identified head group fragments
    * @param headIntensityRules the head intensity rules that where fulfilled
    * @param chainFragments the identified chain fragments
@@ -143,14 +140,13 @@ public class LipidomicsMSnSet extends LipidParameterSet
    * @param msnRetentionTimes the retention times of the used MSn spectra; the first key is the msLevel; second key scan number; value: retention time
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
-  private LipidomicsMSnSet(LipidParameterSet set, int status, float mzTolerance, Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,IntensityRuleVO> headIntensityRules,
+  private LipidomicsMSnSet(LipidParameterSet set, int status, Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,IntensityRuleVO> headIntensityRules,
       Hashtable<String,Hashtable<String,CgProbe>> chainFragments, Hashtable<String,Hashtable<String,IntensityChainVO>> chainIntensityRules,
       Vector<String> validChainCombinations, Hashtable<String,Double> relativeIntensityOfCombination, Hashtable<String,Hashtable<Integer,Integer>> positionDefinition,
       Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>> positionEvidence, int numberOfPositions, 
       Hashtable<Integer,Float> basePeakValues, Hashtable<Integer,LinkedHashMap<Integer,Float>> msnRetentionTimes) throws LipidCombinameEncodingException{
     super(set);
     status_ = status;
-    mzTolerance_ = mzTolerance;
     msLevels_ = new Hashtable<String,Set<Integer>>();
     involvedFAs_ = new Hashtable<String,FattyAcidVO>();
     Set<Integer> headLevel = new HashSet<Integer>();
@@ -209,7 +205,6 @@ public class LipidomicsMSnSet extends LipidParameterSet
    * all the required information for this VO has to be provided in the constructor - later adaptions are not possible
    * @param set the MS1 evidence
    * @param status indicator for possible lipid identification
-   * @param mzTolerance the m/z range for MSn identification
    * @param headGroupFragments the identified head group fragments
    * @param headIntensityRules the head intensity rules that where fulfilled
    * @param chainFragments the identified chain fragments
@@ -226,13 +221,13 @@ public class LipidomicsMSnSet extends LipidParameterSet
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
    */
   @SuppressWarnings("unchecked")
-  public LipidomicsMSnSet(LipidParameterSet set, int status, float mzTolerance, Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,IntensityRuleVO> headIntensityRules,
+  public LipidomicsMSnSet(LipidParameterSet set, int status, Hashtable<String,CgProbe> headGroupFragments, Hashtable<String,IntensityRuleVO> headIntensityRules,
       Hashtable<String,Hashtable<String,CgProbe>> chainFragments, Hashtable<String,Hashtable<String,IntensityChainVO>> chainIntensityRules,
       Vector<String> validChainCombinations, Hashtable<String,Double> relativeIntensityOfCombination, Hashtable<String,Hashtable<Integer,Integer>> positionDefinition,
       Hashtable<String,Hashtable<Integer,Vector<IntensityPositionVO>>> positionEvidence, int numberOfPositions, 
       Hashtable<Integer,Float> basePeakValues, Hashtable<Integer,LinkedHashMap<Integer,Float>> msnRetentionTimes,
       HydroxyEncoding faEncoding, HydroxyEncoding lcbEncoding) throws LipidCombinameEncodingException{
-    this(set, status, mzTolerance, headGroupFragments, headIntensityRules, chainFragments, chainIntensityRules, validChainCombinations, relativeIntensityOfCombination, positionDefinition,
+    this(set, status, headGroupFragments, headIntensityRules, chainFragments, chainIntensityRules, validChainCombinations, relativeIntensityOfCombination, positionDefinition,
         positionEvidence, numberOfPositions, basePeakValues, msnRetentionTimes);
     //generate the human readable lookup and the combination relative areas;
     nameLookupHumReadableToPositionInsensitve_ = new LinkedHashMap<String,String>();
@@ -317,7 +312,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
   
     
   public LipidomicsMSnSet(LipidomicsMSnSet set) throws LipidCombinameEncodingException{
-    this(set,set.status_,set.mzTolerance_,set.headGroupFragments_,set.headIntensityRules_,set.chainFragments_,set.chainIntensityRules_,
+    this(set,set.status_,set.headGroupFragments_,set.headIntensityRules_,set.chainFragments_,set.chainIntensityRules_,
         set.validChainCombinations_,set.relativeIntensityOfCombination_,set.positionDefinition_,set.positionEvidence_,set.numberOfPositions_,set.basePeakValues_,
         set.getMsnRetentionTimes());
     this.nameLookupHumReadableToPositionInsensitve_ = set.nameLookupHumReadableToPositionInsensitve_;
@@ -750,13 +745,6 @@ public class LipidomicsMSnSet extends LipidParameterSet
     return status_;
   }
   
-  /**
-   * 
-   * @return the allowed m/z tolerance for the fragment detection
-   */
-  public float getMSnMzTolerance(){
-    return mzTolerance_;
-  }
   
   /**
    * @return the retention times of the used MSn spectra; the first key is the msLevel; second key scan number; value: retention time
@@ -918,8 +906,6 @@ public class LipidomicsMSnSet extends LipidParameterSet
         && Objects.equals(involvedFAs_, other.involvedFAs_)
         && Objects.equals(msLevels_, other.msLevels_)
         && Objects.equals(msnRetentionTimes_, other.msnRetentionTimes_)
-        && Float.floatToIntBits(mzTolerance_) == Float
-            .floatToIntBits(other.mzTolerance_)
 //        && Objects.equals(nameLookupHumReadableToPositionInsensitve_,
 //            other.nameLookupHumReadableToPositionInsensitve_)
 //        && Objects.equals(nameLookupPositionInsensitve_,

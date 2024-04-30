@@ -609,7 +609,7 @@ public class LDAResultReader
 //        for (positionDefinition)
         positionDefinition = cleanPositionDefinition(positionDefinition);
         if (isDefinitionPresent(positionDefinition)) status = LipidomicsMSnSet.POSITION_DETECTED;
-        addingMSnEvidence = new LipidomicsMSnSet(addingMSnEvidence, status, mzTolerance,headGroupFragments, headIntensityRules,
+        addingMSnEvidence = new LipidomicsMSnSet(addingMSnEvidence, status, headGroupFragments, headIntensityRules,
         chainFragments, chainIntensityRules, validChainCombinations, relativeAreas,  positionDefinition,positionEvidence, numberOfPositions, basePeakValues,
         msnRetentionTimes, faHydroxyEncoding_, lcbHydroxyEncoding_);
         msHash.put(speciesName,addingMSnEvidence);
@@ -944,7 +944,7 @@ public class LDAResultReader
       String speciesName = addingMSnEvidence.getNamePlusModHumanReadable();
       positionDefinition = cleanPositionDefinition(positionDefinition);
       if (isDefinitionPresent(positionDefinition)) status = LipidomicsMSnSet.POSITION_DETECTED;
-      addingMSnEvidence = new LipidomicsMSnSet(addingMSnEvidence, status, mzTolerance, headGroupFragments, headIntensityRules,
+      addingMSnEvidence = new LipidomicsMSnSet(addingMSnEvidence, status, headGroupFragments, headIntensityRules,
       chainFragments, chainIntensityRules, validChainCombinations, relativeAreas, positionDefinition,positionEvidence, numberOfPositions, basePeakValues,
       msnRetentionTimes, faHydroxyEncoding_, lcbHydroxyEncoding_);
       msHash.put(speciesName,addingMSnEvidence);

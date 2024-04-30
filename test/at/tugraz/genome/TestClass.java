@@ -2992,7 +2992,7 @@ public class TestClass extends JApplet implements AddScan
         LipidomicsConstants.getRelativeFarAreaCutoff(),LipidomicsConstants.getRelativeFarAreaTimeSpace(),
         LipidomicsConstants.getRelativeIsoInBetweenCutoff(),LipidomicsConstants.getClosePeakTimeTolerance(),
         LipidomicsConstants.getTwinInBetweenCutoff(), LipidomicsConstants.getUnionInBetweenCutoff(),
-        LipidomicsConstants.getMs2MzTolerance());
+        LipidomicsConstants.getMs2MzTolerance(),LipidomicsConstants.getMs2MzToleranceUnit());
   }
   
   private Metadata getMetadata() throws Exception {
@@ -8493,7 +8493,8 @@ public void testTabFile() throws Exception {
   private boolean areThereAnyMSnSpectra(LipidomicsAnalyzer analyzer,LipidParameterSet lda,QuantVO quantVO) throws CgException{
     boolean spectraThere = false;
     if (lda!=null){
-      Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache((float)(lda.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance()), (float)(lda.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance()),100);
+    	float tol = LipidomicsConstants.getMs2PrecursorTolerance(lda.Mz[0]);
+      Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache((float)(lda.Mz[0]-tol), (float)(lda.Mz[0]+tol),100);
       for (CgProbe probe : lda.getIsotopicProbes().get(0)){
         if (analyzer.areMSnSpectraInThisRegion(probe.LowerValley,probe.UpperValley,2)){
           spectraThere = true;
@@ -8501,7 +8502,8 @@ public void testTabFile() throws Exception {
         }
       }
     }else{
-      Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache((float)(quantVO.getAnalyteMass()-LipidomicsConstants.getMs2PrecursorTolerance()), (float)(quantVO.getAnalyteMass()+LipidomicsConstants.getMs2PrecursorTolerance()),100);
+    	float tol = LipidomicsConstants.getMs2PrecursorTolerance((float)(quantVO.getAnalyteMass()));
+      Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache((float)(quantVO.getAnalyteMass()-tol), (float)(quantVO.getAnalyteMass()+tol),100);
       if (analyzer.areMSnSpectraInThisRegion(0f,Float.MAX_VALUE,2)){
         spectraThere = true;
       }
@@ -8511,7 +8513,8 @@ public void testTabFile() throws Exception {
 
   private boolean areThereAnyMSnSpectra(LipidomicsAnalyzer analyzer, float mz, LipidClassInfoVO info, LinkedHashMap<String,ReferenceInfoVO> species) throws CgException{
     boolean spectraThere = false;
-    Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache(mz-LipidomicsConstants.getMs2PrecursorTolerance(), mz+LipidomicsConstants.getMs2PrecursorTolerance(),100);
+    float tol = LipidomicsConstants.getMs2PrecursorTolerance(mz);
+    Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache(mz-tol, mz+tol,100);
     if (info.checkRt() && msLevels!=null && msLevels.containsKey(2) && msLevels.get(2)){
       for (ReferenceInfoVO ref : species.values()){
         for (int i=0; i!=ref.getCorrectRts().length; i++) {
