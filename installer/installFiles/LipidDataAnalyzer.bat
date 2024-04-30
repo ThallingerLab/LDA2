@@ -1,1 +1,1 @@
-${installer:javaBinLocation} -Xms1024m -Xmx10240m -Djava.ext.dirs=./ -jar LipidDataAnalyzer.jar
+${installer:javaBinLocation} -Xms${installer:xms}m -Xmx${installer:xmx}m -jar LipidDataAnalyzer.jar
