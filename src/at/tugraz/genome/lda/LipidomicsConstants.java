@@ -280,6 +280,8 @@ public class LipidomicsConstants
   private boolean useMostOverlappingIsotopeOnly_;
   
   private float ms2PrecursorTolerance_;
+  /** the unit for the MS2 precursor tolerance; allowed are ppm and Da*/
+  private short ms2PrecursorToleranceUnit_;
   private int ms2ChromMultiplicationFactorForInt_;
   private String threeDViewerMs2DefaultTimeResolution_;
   private String threeDViewerMs2DefaultMZResolution_;
@@ -324,6 +326,8 @@ public class LipidomicsConstants
   //the following parameters are for MSn spectral analysis
   /** the +/- m/z tolerance for peak detection */
   private float ms2MzTolerance_;
+  /** the unit for the m/z tolerance for peak detection */
+  private float ms2MzToleranceUnit_;
   /** the +/- m/z tolerance for peak detection */  
   private int ms2MinIntsForNoiseRemoval_;
   /** relative cutoff threshold for fatty acid chain detection - it is in relation to the most intense chain */
@@ -500,6 +504,7 @@ public class LipidomicsConstants
   private final static String MS2_DEFAULT = "false";
   private final static String MS2_PRECURSOR_TOL = "ms2PrecursorTolerance";
   private final static String MS2_PRECURSOR_TOL_DEFAULT = "0.01";
+  private final static String MS2_PRECURSOR_TOL_UNIT = "ms2PrecursorToleranceUnit";
   private final static String MS2_CHROM_MULT_FOR_INT = "ms2ChromMultiplicationFactorForInt";
   private final static String MS2_CHROM_MULT_FOR_INT_DEFAULT = "10";
   private final static String MS2_VIEWER_TIME_RESOLUTION = "threeDViewerMs2DefaultTimeResolution";
@@ -507,6 +512,7 @@ public class LipidomicsConstants
   private final static String MS2_VIEWER_MZ_RESOLUTION = "threeDViewerMs2DefaultMZResolution";
   private final static String MS2_VIEWER_MZ_RESOLUTION_DEFAULT = "1";
   private final static String MS2_MZ_TOL = "ms2MzTolerance";
+  private final static String MS2_MZ_TOL_UNIT = "ms2MzToleranceUnit";
   private final static String MS2_MIN_NOISE_REMOVAL = "ms2MinIntsForNoiseRemoval";
   private final static String MS2_ISOBAR_RATIO = "ms2IsobarSCExclusionRatio";
   private final static String MS2_ISOBAR_FAR_RATIO = "ms2IsobarSCFarExclusionRatio";
@@ -551,6 +557,9 @@ public class LipidomicsConstants
   private final static String MZUNIT_TH = "Th";
   /** possible input parameter for MZUNIT*/
   private final static String MZUNIT_MZ = "m/z";
+  
+  public final static short MZUNIT_DA_ID = 0;
+  public final static short MZUNIT_PPM_ID = 1;
   
   /** possible input parameter for SHOTGUN_PROCESSING*/
   private final static String SHOTGUN_PROCESSING_MEAN = "mean";
@@ -728,6 +737,10 @@ public class LipidomicsConstants
     if (ms2String!=null&&(ms2String.equalsIgnoreCase("true")||ms2String.equalsIgnoreCase("yes")))
       ms2_ = true;
     ms2PrecursorTolerance_ = Float.parseFloat(properties.getProperty(MS2_PRECURSOR_TOL,MS2_PRECURSOR_TOL_DEFAULT));
+    String ms2PrecursorToleranceUnitString = properties.getProperty(MS2_PRECURSOR_TOL_UNIT,MZUNIT_DA);
+    ms2PrecursorToleranceUnit_ = MZUNIT_DA_ID;
+    if (ms2PrecursorToleranceUnitString.equalsIgnoreCase(MZUNIT_PPM))
+      ms2PrecursorToleranceUnit_ = MZUNIT_PPM_ID;
     ms2ChromMultiplicationFactorForInt_ = Integer.parseInt(properties.getProperty(MS2_CHROM_MULT_FOR_INT,MS2_CHROM_MULT_FOR_INT_DEFAULT));
     threeDViewerMs2DefaultTimeResolution_ = properties.getProperty(MS2_VIEWER_TIME_RESOLUTION ,MS2_VIEWER_TIME_RESOLUTION_DEFAULT);
     try{
@@ -738,6 +751,10 @@ public class LipidomicsConstants
       Float.parseFloat(threeDViewerMs2DefaultMZResolution_);
     } catch (NumberFormatException nfx){threeDViewerMs2DefaultMZResolution_ = MS2_VIEWER_MZ_RESOLUTION_DEFAULT;}
     ms2MzTolerance_ = Float.parseFloat(properties.getProperty(MS2_MZ_TOL,MS2_MZ_TOL_DEFAULT));
+    String ms2MzToleranceString = properties.getProperty(MS2_MZ_TOL_UNIT,MZUNIT_DA);
+    ms2MzToleranceUnit_ = MZUNIT_DA_ID;
+    if (ms2MzToleranceString.equalsIgnoreCase(MZUNIT_PPM))
+      ms2MzToleranceUnit_ = MZUNIT_PPM_ID;
     try {
       ms2MinIntsForNoiseRemoval_ = Integer.parseInt(properties.getProperty(MS2_MIN_NOISE_REMOVAL,MS2_MIN_NOISE_REMOVAL_DEFAULT));
     } catch (NumberFormatException nfx) {
@@ -1407,6 +1424,11 @@ public class LipidomicsConstants
     return instance_.ms2PrecursorTolerance_;
   }
   
+  public static float getMs2PrecursorToleranceUnit(){
+    getInstance();
+    return instance_.ms2PrecursorToleranceUnit_;
+  }
+  
   public static int getMs2ChromMultiplicationFactorForInt(){
     getInstance();
     return instance_.ms2ChromMultiplicationFactorForInt_;
@@ -1435,6 +1457,11 @@ public class LipidomicsConstants
   public static float getMs2MzTolerance(){
     getInstance();
     return instance_.ms2MzTolerance_;
+  }
+  
+  public static float getMs2MzToleranceUnit(){
+    getInstance();
+    return instance_.ms2MzToleranceUnit_;
   }
   
   /**
@@ -1917,7 +1944,15 @@ public class LipidomicsConstants
     propertyRows.add(new Pair<String,String>(VIEWER_TIME_RESOLUTION,String.valueOf(threeDViewerDefaultTimeResolution_)));
     propertyRows.add(new Pair<String,String>(VIEWER_MZ_RESOLUTION,String.valueOf(threeDViewerDefaultMZResolution_)));
     propertyRows.add(new Pair<String,String>(MS2_PRECURSOR_TOL,String.valueOf(ms2PrecursorTolerance_)));
+    String ms2PrecursorToleranceString = MZUNIT_DA;
+    if (this.ms2PrecursorToleranceUnit_ == MZUNIT_PPM_ID)
+      ms2PrecursorToleranceString = MZUNIT_PPM;
+    propertyRows.add(new Pair<String,String>(MS2_PRECURSOR_TOL_UNIT,String.valueOf(ms2PrecursorToleranceString)));    
     propertyRows.add(new Pair<String,String>(MS2_MZ_TOL,String.valueOf(ms2MzTolerance_)));
+    String ms2MzToleranceString = MZUNIT_DA;
+    if (ms2MzToleranceUnit_ == MZUNIT_PPM_ID)
+      ms2MzToleranceString = MZUNIT_PPM;
+    propertyRows.add(new Pair<String,String>(MS2_MZ_TOL_UNIT,String.valueOf(ms2MzToleranceString)));
     propertyRows.add(new Pair<String,String>(MS2_MIN_NOISE_REMOVAL,String.valueOf(ms2MinIntsForNoiseRemoval_)));
     propertyRows.add(new Pair<String,String>(MS2_ISOBAR_RATIO,String.valueOf(ms2IsobarSCExclusionRatio_)));
     propertyRows.add(new Pair<String,String>(MS2_ISOBAR_FAR_RATIO,String.valueOf(ms2IsobarSCFarExclusionRatio_)));
@@ -2220,6 +2255,8 @@ public class LipidomicsConstants
             .floatToIntBits(other.ms2MzTolerance_)
         && Float.floatToIntBits(ms2PrecursorTolerance_) == Float
             .floatToIntBits(other.ms2PrecursorTolerance_)
+        && ms2MzToleranceUnit_ == other.ms2MzToleranceUnit_
+        && ms2PrecursorToleranceUnit_ == other.ms2PrecursorToleranceUnit_
         && ms2_ == other.ms2_
         && Objects.equals(mzTabInstrumentAnalyzer_,
             other.mzTabInstrumentAnalyzer_)
