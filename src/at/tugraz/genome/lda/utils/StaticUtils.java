@@ -3056,4 +3056,13 @@ public class StaticUtils
     return splitString;
   }
   
+	public static float calculatedMzTolValue(float mz, float tolerance, short tolUnit) {
+		float tol = 0f;
+		if (tolUnit==LipidomicsConstants.MZUNIT_DA_ID)
+			tol = tolerance;
+		else if (tolUnit==LipidomicsConstants.MZUNIT_PPM_ID)
+			tol = mz*0.000001f*tolerance;
+		return tol;
+	}
+  
 }

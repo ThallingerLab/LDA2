@@ -62,6 +62,7 @@ import at.tugraz.genome.lda.msn.FragmentCalculator;
 import at.tugraz.genome.lda.msn.vos.FragmentRuleVO;
 import at.tugraz.genome.lda.msn.vos.FragmentVO;
 import at.tugraz.genome.lda.swing.Range;
+import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.maspectras.quantification.CgChromatogram;
 import at.tugraz.genome.maspectras.quantification.CgDefines;
 import at.tugraz.genome.maspectras.quantification.CgException;
@@ -205,6 +206,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
 //  private Vector<CgProbe> broadProbes_;
   
   private float msnMzTolerance_ = 0.2f;
+  private short msnMzToleranceUnit_ = LipidomicsConstants.MZUNIT_DA_ID;
 
   /** the shotgun intensity value is a mean of the scans*/
   public final static int SHOTGUN_TYPE_MEAN = 0;
@@ -276,6 +278,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     this.unionInBetweenCutoff_ = 0.8f;
     
     this.msnMzTolerance_ = 0.2f;
+    this.msnMzToleranceUnit_ = LipidomicsConstants.MZUNIT_DA_ID;
   }
   
   public void set3DParameters(float chromSmoothRange, int chromSmoothRepeats, boolean removeIfOtherIsotopePresent,
@@ -291,7 +294,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
       int isotopeInBetweenTime,  float isoInBetweenAreaFactor, int isoInBetweenMaxTimeDistance, int isoNearNormalProbeTime,
       float relativeAreaCutoff, float relativeFarAreaCutoff, int relativeFarAreaTimeSpace,
       float relativeIsoInBetweenCutoff, int closePeakTimeTolerance, float twinInBetweenCutoff, float unionInBetweenCutoff,
-      float msnMzTolerance){
+      float msnMzTolerance, short msnMzToleranceUnit){
     this.chromSmoothRange_= chromSmoothRange;
     this.removeIfOtherIsotopePresent_ = removeIfOtherIsotopePresent;
     this.chromSmoothRepeats_ = chromSmoothRepeats;
@@ -345,7 +348,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     this.closePeakTimeTolerance_ = closePeakTimeTolerance;
     this.twinInBetweenCutoff_ = twinInBetweenCutoff;
     this.unionInBetweenCutoff_ = unionInBetweenCutoff;
-    this.msnMzTolerance_ = msnMzTolerance;
+    setMSnMzTolerance(msnMzTolerance, msnMzToleranceUnit);
   }
   
   /**
@@ -357,26 +360,38 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
    * @param relativeFarAreaCutoff a factor for discarding peaks that are farer away from the strongest peak after all checks were performed, e.g. 0.1 corresponds to removal of peaks that are smaller than 10% of the strongest peak in the chromatogram
    * @param relativeFarAreaTimeSpace the time space in seconds to decide whether a peak is farer away from the strongest peak or not
    * @param msnMzTolerance the m/z tolerance in MSn spectra
+   * @param msnMzToleranceUnit the unit for the MSn-m/z tolerance - valid encodings can be found in the LipidomicsConstants
    */
   public void setPrmParameters(float chromSmoothRange, int chromSmoothRepeats, int peakDiscardingAreaFactor, float relativeAreaCutoff,
-      float relativeFarAreaCutoff, int relativeFarAreaTimeSpace, float msnMzTolerance){
+      float relativeFarAreaCutoff, int relativeFarAreaTimeSpace, float msnMzTolerance, short msnMzToleranceUnit){
     this.chromSmoothRange_= chromSmoothRange;
     this.chromSmoothRepeats_ = chromSmoothRepeats;
     this.peakDiscardingAreaFactor_ = peakDiscardingAreaFactor;
     this.relativeAreaCutoff_ = relativeAreaCutoff;
     this.relativeFarAreaCutoff_ = relativeFarAreaCutoff;
     this.relativeFarAreaTimeSpace_ = relativeFarAreaTimeSpace;
-    this.msnMzTolerance_ = msnMzTolerance;
+    setMSnMzTolerance(msnMzTolerance, msnMzToleranceUnit);
   }
   
-  
+  /**
+   * sets the global variables for the MSn m/z tolerance
+   * @param msnMzTolerance the value of the MSn m/z tolerance
+   * @param msnMzToleranceUnit the unit for the MSn-m/z tolerance - valid encodings can be found in the LipidomicsConstants
+   */
+  private void setMSnMzTolerance(float msnMzTolerance, short msnMzToleranceUnit) {
+    this.msnMzTolerance_ = msnMzTolerance;
+    this.msnMzToleranceUnit_ = msnMzToleranceUnit;
+  }
   
   /**
    * sets the parameters necessary for processing shotgun data
    * @param mzTolerance the mzTolerance
+   * @param msnMzTolerance the value of the MSn m/z tolerance
+   * @param msnMzToleranceUnit the unit for the MSn-m/z tolerance - valid encodings can be found in the LipidomicsConstants
    */
-  public void setShotgunParameters(int shotgunType){
+  public void setShotgunParameters(int shotgunType, float msnMzTolerance, short msnMzToleranceUnit){
     this.shotgunType_ = shotgunType;
+    setMSnMzTolerance(msnMzTolerance, msnMzToleranceUnit);
   }
     
 
@@ -508,8 +523,8 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
       for (FragmentVO frag : mandHeadFragments){
         if (frag.isMandatory()!=FragmentRuleVO.MANDATORY_QUANT)
           continue;
-        
-        LipidomicsChromatogram chrom = new LipidomicsChromatogram(this.readJustIntensitiesOfInterest((float)frag.getMass()-msnMzTolerance_,(float)frag.getMass()+msnMzTolerance_,
+        float tol = StaticUtils.calculatedMzTolValue((float)frag.getMass(), msnMzTolerance_, msnMzToleranceUnit_);
+        LipidomicsChromatogram chrom = new LipidomicsChromatogram(this.readJustIntensitiesOfInterest((float)frag.getMass()-tol,(float)frag.getMass()+tol,
             0f,Float.MAX_VALUE,msLevel));
         chrom.Smooth(chromSmoothRange_, this.chromSmoothRepeats_);
         chrom.GetMaximumAndAverage();
@@ -4494,7 +4509,8 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     //mzRange has to be read from the properties
     //this was the old code before the improved spectral caching
     //LipidomicsChromatogram chrom = new LipidomicsChromatogram(this.readAChromatogram((float)fragmentMass, msnMzTolerance_, msnMzTolerance_, msLevel,0f,0,0f,0,-1f,Float.MAX_VALUE));
-    LipidomicsChromatogram chrom = new LipidomicsChromatogram(this.readJustIntensitiesOfInterest((float)fragmentMass-msnMzTolerance_,(float)fragmentMass+msnMzTolerance_,lowestRt,highestRt,msLevel));
+    float tol = StaticUtils.calculatedMzTolValue((float)fragmentMass, msnMzTolerance_, msnMzToleranceUnit_);
+    LipidomicsChromatogram chrom = new LipidomicsChromatogram(this.readJustIntensitiesOfInterest((float)fragmentMass-tol,(float)fragmentMass+tol,lowestRt,highestRt,msLevel));
     float area = 0f;
     CgProbe result = new CgProbe(0,charge,msLevel,fragmentFormula);
     float peakRt = 0f;
@@ -4523,8 +4539,8 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
       result.LowerValley = lowestRt;
       result.UpperValley = highestRt;
       result.Mz = (float)fragmentMass;
-      result.LowerMzBand = msnMzTolerance_;
-      result.UpperMzBand = msnMzTolerance_;
+      result.LowerMzBand = tol;
+      result.UpperMzBand = tol;
       result.isotopeNumber = 0;
       result.setFromOtherSpecies(isFromOtherSpecies);
     }
@@ -4827,6 +4843,14 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
   public float getMsnMzTolerance()
   {
     return msnMzTolerance_;
+  }
+  
+  /**
+   * @return the unit for the MSn-m/z tolerance - valid encodings can be found in the LipidomicsConstants
+   */
+  public short getMsnMzToleranceUnit()
+  {
+    return msnMzToleranceUnit_;
   }
   
   public boolean getUseCuda()

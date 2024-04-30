@@ -327,7 +327,7 @@ public class LipidomicsConstants
   /** the +/- m/z tolerance for peak detection */
   private float ms2MzTolerance_;
   /** the unit for the m/z tolerance for peak detection */
-  private float ms2MzToleranceUnit_;
+  private short ms2MzToleranceUnit_;
   /** the +/- m/z tolerance for peak detection */  
   private int ms2MinIntsForNoiseRemoval_;
   /** relative cutoff threshold for fatty acid chain detection - it is in relation to the most intense chain */
@@ -851,7 +851,9 @@ public class LipidomicsConstants
         throw new SettingsException("Invalid input for "+SHOTGUN_ZERO_HANDLING+"! The following values are allowed: true, false, or any float format that might be followed by % or \u2030!");
       }
     }
-      
+//    System.out.println("Precursor tolerance: "+this.ms2PrecursorTolerance_+" "+this.ms2PrecursorToleranceUnit_);
+//    System.out.println("Fragment tolerance: "+this.ms2MzTolerance_+" "+this.ms2MzToleranceUnit_);
+
   }
   
   /**
@@ -1419,12 +1421,12 @@ public class LipidomicsConstants
     return instance_.ms2_;
   }
   
-  public static float getMs2PrecursorTolerance(){
+  private static float getMs2PrecursorTolerance(){
     getInstance();
     return instance_.ms2PrecursorTolerance_;
   }
   
-  public static float getMs2PrecursorToleranceUnit(){
+  public static short getMs2PrecursorToleranceUnit(){
     getInstance();
     return instance_.ms2PrecursorToleranceUnit_;
   }
@@ -1459,7 +1461,7 @@ public class LipidomicsConstants
     return instance_.ms2MzTolerance_;
   }
   
-  public static float getMs2MzToleranceUnit(){
+  public static short getMs2MzToleranceUnit(){
     getInstance();
     return instance_.ms2MzToleranceUnit_;
   }
@@ -2501,5 +2503,14 @@ public class LipidomicsConstants
     else
       return tolerance;
   }
+  
+  /**
+   * precursor tolerance in Dalton
+   * @param refMz the m/z value the precursor tolerance should be calculated for
+   * @return precursor tolerance in Dalton
+   */
+  public static float getMs2PrecursorTolerance(float refMz){
+  	return StaticUtils.calculatedMzTolValue(refMz, LipidomicsConstants.getMs2PrecursorTolerance(), LipidomicsConstants.getMs2PrecursorToleranceUnit());
+ }
   
 }

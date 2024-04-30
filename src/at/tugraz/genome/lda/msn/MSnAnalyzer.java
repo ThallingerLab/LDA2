@@ -2013,7 +2013,7 @@ public class MSnAnalyzer
         if (!msLevels_.get(msLevel) || !this.probesWithMSnSpectra_.containsKey(msLevel)) continue;
         msnRetentionTimes.put(msLevel, analyzer_.getMSnSpectraRetentionTimes(msLevel,probesWithMSnSpectra_.get(msLevel)));
       }
-      set_ = new LipidomicsMSnSet(set_,status_,LipidomicsConstants.getMs2MzTolerance(),headGroupFragments_,fulfilledHeadIntensityRules_,
+      set_ = new LipidomicsMSnSet(set_,status_,headGroupFragments_,fulfilledHeadIntensityRules_,
           chainFragments_, fulfilledChainIntensityRules_, validChainCombinations_,relativeIntensityOfCombination_,positionDefinition_, posEvidenceAccordToProposedDefinition_,
           fragCalc_!=null ? fragCalc_.getAllowedChainPositions() : 1, basePeakValues_, msnRetentionTimes, Settings.getFaHydroxyEncoding(),
               Settings.getLcbHydroxyEncoding());
@@ -2306,8 +2306,9 @@ public class MSnAnalyzer
         
         for (String key: allOfQuant.keySet()){
           LipidomicsChromatogram chrom = new LipidomicsChromatogram(new CgChromatogram(scansSorted.size()));
-          chrom.LowerMzBand = analyzer.getMsnMzTolerance();
-          chrom.UpperMzBand = analyzer.getMsnMzTolerance();
+          float tol = StaticUtils.calculatedMzTolValue(allOfQuant.get(key).Mz,analyzer.getMsnMzTolerance(),analyzer.getMsnMzToleranceUnit());
+          chrom.LowerMzBand = tol;
+          chrom.UpperMzBand = tol;
           LipidomicsChromatogram chromRelative = new LipidomicsChromatogram(new CgChromatogram(scansSorted.size()));
           for (int i=0; i!=scansSorted.size(); i++){
             chrom.Value[i][0] = rts.get(scansSorted.get(i));
@@ -2349,7 +2350,7 @@ public class MSnAnalyzer
               for (QuantVO quant : mzsForChroms.keySet()){
                 Hashtable<String,CgProbe> mzs = mzsForChroms.get(quant);
                 for (String key : mzs.keySet()){
-                  CgProbe probe = mzs.get(key);
+                  CgProbe probe = mzs.get(key);           
                   if ((probe.Mz-probe.LowerMzBand)<mz && mz<(probe.Mz+probe.UpperMzBand)){
                     chromsForMzs.get(quant).get(key).get(0).Value[i][1] = intensity;
                   }
@@ -2715,10 +2716,11 @@ public class MSnAnalyzer
   }
   
   public static Hashtable<Integer,Boolean> prepareCachedSpectra(LipidomicsAnalyzer analyzer, LipidParameterSet set, boolean readMSnSpectra) throws CgException{
-    if (readMSnSpectra)
-      return analyzer.prepareMSnSpectraCache(set.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), set.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance(),
+    if (readMSnSpectra) {
+    	float tol = LipidomicsConstants.getMs2PrecursorTolerance(set.Mz[0]);
+      return analyzer.prepareMSnSpectraCache(set.Mz[0]-tol, set.Mz[0]+tol,
           LipidomicsConstants.getMs2MinIntsForNoiseRemoval());
-    else{
+    } else{
       return analyzer.checkMSnLevels();
     }
   }

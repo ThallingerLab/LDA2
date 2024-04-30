@@ -253,12 +253,12 @@ public class QuantificationThread extends Thread
   
   public static void setAnalyzerProperties(LipidomicsAnalyzer analyzer){
     if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
-      analyzer.setShotgunParameters(LipidomicsConstants.getShogunProcessing());
+      analyzer.setShotgunParameters(LipidomicsConstants.getShogunProcessing(),LipidomicsConstants.getMs2MzTolerance(),LipidomicsConstants.getMs2MzToleranceUnit());
     }else if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_PRM){
       analyzer.setPrmParameters(LipidomicsConstants.getChromSmoothRange(),LipidomicsConstants.getChromSmoothRepeats(),
           LipidomicsConstants.getPeakDiscardingAreaFactor(),LipidomicsConstants.getRelativeAreaCutoff(),
           LipidomicsConstants.getRelativeFarAreaCutoff(),LipidomicsConstants.getRelativeFarAreaTimeSpace(),
-          LipidomicsConstants.getMs2MzTolerance());
+          LipidomicsConstants.getMs2MzTolerance(),LipidomicsConstants.getMs2MzToleranceUnit());
     }else{
       analyzer.set3DParameters(LipidomicsConstants.getChromSmoothRange(),LipidomicsConstants.getChromSmoothRepeats(),
         LipidomicsConstants.removeIfOtherIsotopePresent(),LipidomicsConstants.useNoiseCutoff(), LipidomicsConstants.getNoiseCutoffDeviationValue(),
@@ -286,7 +286,7 @@ public class QuantificationThread extends Thread
         LipidomicsConstants.getRelativeFarAreaCutoff(),LipidomicsConstants.getRelativeFarAreaTimeSpace(),
         LipidomicsConstants.getRelativeIsoInBetweenCutoff(),LipidomicsConstants.getClosePeakTimeTolerance(),
         LipidomicsConstants.getTwinInBetweenCutoff(), LipidomicsConstants.getUnionInBetweenCutoff(),
-        LipidomicsConstants.getMs2MzTolerance());
+        LipidomicsConstants.getMs2MzTolerance(),LipidomicsConstants.getMs2MzToleranceUnit());
     }
   }
   
