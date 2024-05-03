@@ -79,20 +79,27 @@ public class AdductRTMerger
 					for (String molSpecies : sameMolSpecies.keySet())
 					{
 						Vector<RTCheckedVO> sameMolecularSpecies = sameMolSpecies.get(molSpecies);
-						if (sameMolecularSpecies.size()>1)
+						if (sameMolecularSpecies.get(0).getFragType().equalsIgnoreCase("MLSSF"))
 						{
-							Vector<RTCheckedVO> consensusRT = getConsensusRT(sameMolecularSpecies);
-							for (RTCheckedVO vo : consensusRT)
+							if (sameMolecularSpecies.size()>1)
 							{
-								sameMolRt.add(vo);
+								Vector<RTCheckedVO> consensusRT = getConsensusRT(sameMolecularSpecies);
+								for (RTCheckedVO vo : consensusRT)
+								{
+									sameMolRt.add(vo); //"merged adducts"
+								}
+								RTCheckedVO consensusTP = getConsensus(sameMolecularSpecies, true);
+								if (consensusTP != null)
+									sameMol.add(consensusTP);
+								RTCheckedVO consensusFP = getConsensus(sameMolecularSpecies, false);
+								if (consensusFP != null)
+									sameMol.add(consensusFP);
 							}
-							RTCheckedVO consensus = getConsensus(sameMolecularSpecies);
-							sameMol.add(consensus);
-						}
-						else
-						{
-							sameMolRt.add(sameMolecularSpecies.get(0));
-							sameMol.add(sameMolecularSpecies.get(0));
+							else
+							{
+								sameMolRt.add(sameMolecularSpecies.get(0));
+								sameMol.add(sameMolecularSpecies.get(0));
+							}
 						}
 					}
 				}
@@ -163,7 +170,7 @@ public class AdductRTMerger
 	{
 		HashSet<RTCheckedVO> unique = new HashSet<RTCheckedVO>();
 		Vector<Pair<Double,RTCheckedVO>> allRts = new Vector<Pair<Double,RTCheckedVO>>();
-		Hashtable<Double,Vector<RTCheckedVO>> clusteredRTs = new Hashtable<Double,Vector<RTCheckedVO>>();
+		Hashtable<Integer,Vector<RTCheckedVO>> clusteredRTs = new Hashtable<Integer,Vector<RTCheckedVO>>();
 		Vector<Pair<Double,RTCheckedVO>> currentCluster = new Vector<Pair<Double,RTCheckedVO>>();
 		for (RTCheckedVO vo : sameMolecularSpecies)
 		{
@@ -173,50 +180,44 @@ public class AdductRTMerger
 		Collections.sort(allRts,new SortByDouble()); //compare by Double
 		currentCluster.add(allRts.get(0));
 		
-		
+		int count = 0;
 		for (int i = 1; i < allRts.size(); i++) 
 		{
 			Pair<Double,RTCheckedVO> current = allRts.get(i);
 			Pair<Double,RTCheckedVO> lastInCluster = currentCluster.get(currentCluster.size() - 1);
 			
-			if (current.getKey() - lastInCluster.getKey() <= RT_GROUPING) 
+			//if is within the grouping parameter and the 
+			if ((current.getKey() - lastInCluster.getKey() <= RT_GROUPING) && (current.getValue().getTruePos().equals(lastInCluster.getValue().getTruePos()))) 
 			{
 				currentCluster.add(allRts.get(i));
-				if (i == allRts.size()-1)
-				{
-					Double sum = 0.0; //not actually used
-					Vector<RTCheckedVO> clustered = new Vector<RTCheckedVO>();
-					for (Pair<Double,RTCheckedVO> member : currentCluster)
-					{
-						sum+=member.getKey();
-						clustered.add(member.getValue());
-					}
-					clusteredRTs.put(sum/currentCluster.size(), clustered);
-			    currentCluster = new Vector<Pair<Double,RTCheckedVO>>();
-			    currentCluster.add(allRts.get(i));
-				}
 			}
-			else
+			else //start new cluster
 			{
-				Double sum = 0.0; //not actually used
 				Vector<RTCheckedVO> clustered = new Vector<RTCheckedVO>();
 				for (Pair<Double,RTCheckedVO> member : currentCluster)
 				{
-					sum+=member.getKey();
 					clustered.add(member.getValue());
 				}
-				clusteredRTs.put(sum/currentCluster.size(), clustered);
+				clusteredRTs.put(count++, clustered);
 		    currentCluster = new Vector<Pair<Double,RTCheckedVO>>();
 		    currentCluster.add(allRts.get(i));
 			}
 		}
 		
-		for (Double averaged : clusteredRTs.keySet())
+		Vector<RTCheckedVO> clustered = new Vector<RTCheckedVO>();
+		for (Pair<Double,RTCheckedVO> member : currentCluster)
 		{
-			Vector<RTCheckedVO> clusterMembers = clusteredRTs.get(averaged);
+			clustered.add(member.getValue());
+		}
+		clusteredRTs.put(count++, clustered);
+		
+		
+		for (Integer num : clusteredRTs.keySet())
+		{
+			Vector<RTCheckedVO> clusterMembers = clusteredRTs.get(num);
 			if (clusterMembers.size()>1)
 			{
-				unique.add(getConsensus(clusterMembers));
+				unique.add(getConsensus(clusterMembers, clusterMembers.get(0).getTruePos().equals("true")));
 			}
 			else
 			{
@@ -233,40 +234,45 @@ public class AdductRTMerger
 		public int compare(Pair<Double,RTCheckedVO> arg0,
 				Pair<Double,RTCheckedVO> arg1)
 		{
-			return Double.compare(arg0.getKey(), arg1.getKey());
+			return Comparator.comparing((Pair<Double,RTCheckedVO> arg) -> arg.getKey())
+					.thenComparing((Pair<Double,RTCheckedVO> arg) -> arg.getValue().getTruePos())
+					.compare(arg0,arg1);
 		}
 	}
 	
-	private RTCheckedVO getConsensus(Vector<RTCheckedVO> sameMolecularSpecies)
+	private RTCheckedVO getConsensus(Vector<RTCheckedVO> sameMolecularSpecies, boolean tp)
 	{
 		String highestScoreString = "";
 		Double highestScore = -1.0;
 		String highestScoreRT = "";
-		String tp = "false";
-//		Double rtSum = 0.0;
 		HashSet<String> adducts = new HashSet<String>();
+		RTCheckedVO first = null;
 		
 		for (RTCheckedVO vo : sameMolecularSpecies)
 		{
-			tp = vo.getTruePos().equalsIgnoreCase("true") ? "true" : tp; //if any one of them is true, then it is true
-			Double score = Double.parseDouble(vo.getScore());
-//			rtSum += Double.parseDouble(vo.getRtGroup());
-			if (score > highestScore)
+			if ( (tp && vo.getTruePos().equalsIgnoreCase("true")) || (!tp && !vo.getTruePos().equalsIgnoreCase("true")) )
 			{
-				highestScore = score;
-				highestScoreString = vo.getScore();
-				highestScoreRT = vo.getRtGroup();
+				first = vo;
+				Double score = Double.parseDouble(vo.getScore());
+				if (score > highestScore)
+				{
+					highestScore = score;
+					highestScoreString = vo.getScore();
+					highestScoreRT = vo.getRtGroup();
+				}
+				adducts.add(vo.getAdduct());
 			}
-			adducts.add(vo.getAdduct());
 		}
-		
-		RTCheckedVO consensus = new RTCheckedVO(sameMolecularSpecies.get(0));
-		consensus.setAdduct(generateAdductString(adducts));
-		consensus.setScore(highestScoreString);
-		consensus.setRtGroup_(highestScoreRT);
-		consensus.setTruePos_(tp);
-//		consensus.setRtGroup_(new Double(Precision.round(rtSum/sameMolecularSpecies.size(), 3)).toString()); //averages all RTs
-		return consensus;
+		if (first != null)
+		{
+			RTCheckedVO vo = new RTCheckedVO(first);
+			vo.setAdduct(generateAdductString(adducts));
+			vo.setScore(highestScoreString);
+			vo.setRtGroup_(highestScoreRT);
+			vo.setTruePos_(tp ? "true" : "false");
+			return vo;
+		}
+		return null;
 	}
 	
 	private String generateAdductString(HashSet<String> adducts)
