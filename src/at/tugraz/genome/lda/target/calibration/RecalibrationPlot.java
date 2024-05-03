@@ -77,8 +77,8 @@ public class RecalibrationPlot extends JPanel
     Font fontLabel = new Font("Dialog", Font.PLAIN, 20);
     Font tickLabel = new Font("Dialog", Font.PLAIN, 14);
     
-    plot_.setDomainAxis(0, getAxis("Retention time original target list /min", fontLabel, tickLabel));
-    plot_.setRangeAxis(0, getAxis("Retention time difference original vs new target list /min", fontLabel, tickLabel));
+    plot_.setDomainAxis(0, getAxis("Retention time original RT-DB /min", fontLabel, tickLabel));
+    plot_.setRangeAxis(0, getAxis("Retention time difference original vs new RT-DB /min", fontLabel, tickLabel));
     
     if (previousPlot != null)
     {
@@ -100,7 +100,7 @@ public class RecalibrationPlot extends JPanel
     plot_.setDataset(2, this.scatterPlotDataset_);
     plot_.setRenderer(2, getScatterRenderer(fontLabel, new Color(153, 204, 255)));
 
-    JFreeChart chart = new JFreeChart("Target list recalibration curve",
+    JFreeChart chart = new JFreeChart("RT-DB mapping",
     		fontTitle, plot_, true);
     ChartPanel chartPanel = new ChartPanel(chart);
     chartPanel.addChartMouseListener(new RecalibrationPlotMouseListener(this));
@@ -152,7 +152,7 @@ public class RecalibrationPlot extends JPanel
   {
   	int num = 10000;
   	XYSeriesCollection dataset = new XYSeriesCollection();
-  	XYSeries dataSeries = new XYSeries("Fitted recalibration curve");
+  	XYSeries dataSeries = new XYSeries("Fit");
   	double upperLimit = regression.getUpperRTLimit();
   	double lowerLimit = regression.getLowerRTLimit();
   	double step = (upperLimit-lowerLimit)/num;

@@ -65,7 +65,8 @@ import javafx.util.Pair;
 /**
  * 
  * @author Leonida M. Lamp
- *
+ *	TODO: differences should be an object that also holds information about the lipid class and lipid species, so that the calibration graph panel can delete data points by just looking in the combined regression!!! 
+ *(otherwise there will be some issues when trying to delete stuff that belongs to a lipid class that has too few data points and has it's specific regression removed for this reason).
  */
 public class CalibrationGraphPanel extends JOptionPanel
 {
@@ -137,7 +138,7 @@ public class CalibrationGraphPanel extends JOptionPanel
   	JPanel panel = new JPanel();
   	panel.setLayout(new GridBagLayout());
   	
-  	classSpecificJCheckBox_ = new JCheckBox("Calibrate lipid classes individually.", true); //other code relies on this being initialized with true
+  	classSpecificJCheckBox_ = new JCheckBox("Map lipid classes individually.", true); //other code relies on this being initialized with true
   	classSpecificJCheckBox_.addActionListener(new ActionListener() {
 		  public void actionPerformed(ActionEvent e) 
 		  {
