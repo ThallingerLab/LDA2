@@ -1204,9 +1204,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
       }
       
       
-      
-      
-      
+
       for (String groupName : groupAndMols.keySet()){
         for (String molName : groupAndMols.get(groupName).keySet()){
           //standards should not run through this process

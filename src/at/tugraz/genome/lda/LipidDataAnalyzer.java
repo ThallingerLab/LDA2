@@ -1661,7 +1661,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     
     separateHitsByRT_  = new JCheckBox();
-    separateHitsByRT_.setSelected(true);
+    separateHitsByRT_.setSelected(LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE);
     separateHitsByRT_.setActionCommand(CHANGE_SEPARATE_RT_STATUS);
     separateHitsByRT_.addActionListener(this);
     separateHitsByRT_.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
@@ -1676,11 +1676,13 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     rtGroupingTime_.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
     groupRtPanel.add(rtGroupingTime_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    rtGroupingTime_.setEnabled(separateHitsByRT_.isSelected());
     
     rtTimeUnit_ = new JLabel("min");
     rtTimeUnit_.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
     groupRtPanel.add(rtTimeUnit_,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    rtTimeUnit_.setEnabled(separateHitsByRT_.isSelected());
     
     //start: added via the oxidized lipids extension
     JSeparator js = new JSeparator(SwingConstants.VERTICAL);
@@ -3218,8 +3220,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       return;
     }
     if (command.equalsIgnoreCase(CHANGE_SEPARATE_RT_STATUS)){
-      rtGroupingTime_.setEnabled(separateHitsByRT_.isSelected());
-      rtTimeUnit_.setEnabled(separateHitsByRT_.isSelected());
+    	if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE&&separateHitsByRT_.isSelected())
+    	{
+    		new WarningMessage(new JFrame(), "Warning", "Shotgun settings are selected. RT grouping is not enabled for shotgun data!");
+    		separateHitsByRT_.setSelected(false);
+    	}
+    	else
+    	{
+    		rtGroupingTime_.setEnabled(separateHitsByRT_.isSelected());
+        rtTimeUnit_.setEnabled(separateHitsByRT_.isSelected());
+    	}
     } else if  (command.equalsIgnoreCase(ExportPanel.EXPORT_PNG)){
       exportFileChooser_.setFileFilter(new FileNameExtensionFilter("PNG (*.png)","png"));
       int returnVal = exportFileChooser_.showSaveDialog(new JFrame());
