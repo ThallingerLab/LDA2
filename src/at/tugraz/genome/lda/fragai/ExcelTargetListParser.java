@@ -21,6 +21,7 @@ import at.tugraz.genome.lda.utils.StaticUtils;
 public class ExcelTargetListParser
 {
 	private final static String HEADER_CLASS = "Class";
+	private final static String HEADER_SPECIES = "Species";
 	private final static String HEADER_SUM_FORMULA = "Sum Formula";
 	private final static String HEADER_ADDUCTS= "Adducts";
 	private final static String HEADER_RETENTION_TIME = "Retention Time";
@@ -31,7 +32,7 @@ public class ExcelTargetListParser
 	private final static int HEADER_ROW = 0;
 	private File directory_;
 	private List<String> headerTitles_;
-  private List<TargetListEntry> targetListEntries_;
+  private ArrayList<TargetListEntry> targetListEntries_;
   
   /**
 	 * Constructor specifying the directory containing the target list in excel format.
@@ -67,7 +68,7 @@ public class ExcelTargetListParser
         }
     if (headerTitles_ == null)
     {
-    	throw new IOException(String.format("The file '%s' was not parsed successfully. Ensure the required worksheet(s) and headers are named according to the template.\n", directory_.toString()));
+    	throw new IOException(String.format("The file '%s' was not parsed successfully. Ensure the required worksheet(s) and headers are named according to the template and entries are in the correct format.\n", directory_.toString()));
     }
   }
   
@@ -93,6 +94,7 @@ public class ExcelTargetListParser
   private void readContentRows(List<Row> contentRows) throws IOException
   {
   	if (headerTitles_.contains(HEADER_CLASS) && 
+  			headerTitles_.contains(HEADER_SPECIES) && 
   			headerTitles_.contains(HEADER_SUM_FORMULA) &&
   			headerTitles_.contains(HEADER_ADDUCTS) && 
   			headerTitles_.contains(HEADER_RETENTION_TIME) && 
@@ -103,8 +105,9 @@ public class ExcelTargetListParser
 			{
 	      List<Cell> cells = collectRowCells(row);
 	      String lipidClass = null;
+	      String species = null;
 	    	Hashtable<String,Integer> sumFormula = null;
-	    	List<Adduct> adducts = null;
+	    	ArrayList<Adduct> adducts = null;
 	    	Double retentionTime = null;
 	    	Double tolerance = null;
 	    	
@@ -117,6 +120,8 @@ public class ExcelTargetListParser
 	        
 	        if (index == headerTitles_.indexOf(HEADER_CLASS)) {
 	        	lipidClass = rawValue;
+	        } else if (index == headerTitles_.indexOf(HEADER_SPECIES)) {
+	        	species = rawValue;
 	        } else if (index == headerTitles_.indexOf(HEADER_SUM_FORMULA)) {
 						try {sumFormula = StaticUtils.categorizeFormula(rawValue);} catch (Exception ex) {}
 	        } else if (index == headerTitles_.indexOf(HEADER_ADDUCTS)) {
@@ -134,7 +139,7 @@ public class ExcelTargetListParser
 	      }
 	      if (lipidClass != null && sumFormula != null && adducts != null && retentionTime != null && tolerance != null)
 	      {
-	      	targetListEntries_.add(new TargetListEntry(lipidClass, sumFormula, adducts, retentionTime, tolerance));
+	      	targetListEntries_.add(new TargetListEntry(lipidClass, species, sumFormula, adducts, retentionTime, tolerance));
 	      }
 	      else
 	      {
@@ -168,4 +173,11 @@ public class ExcelTargetListParser
   {
   	return row.stream().filter((c) -> !(c==null || c.getType().equals(CellType.ERROR))).collect(Collectors.toList());
   }
+  
+  public ArrayList<TargetListEntry> getTargetListEntries()
+  {
+  	return this.targetListEntries_;
+  }
+  
+  
 }

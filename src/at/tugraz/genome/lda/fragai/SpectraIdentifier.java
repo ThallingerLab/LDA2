@@ -1,6 +1,7 @@
 package at.tugraz.genome.lda.fragai;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
@@ -13,12 +14,18 @@ import javax.swing.JTextField;
 import at.tugraz.genome.lda.BatchQuantThread;
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.MzxmlToChromThread;
+import at.tugraz.genome.lda.QuantificationThread;
 import at.tugraz.genome.lda.RawToMzxmlThread;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.TooltipTexts;
 import at.tugraz.genome.lda.WarningMessage;
+import at.tugraz.genome.lda.exception.QuantificationException;
+import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.xml.AbstractXMLSpectraReader;
+import at.tugraz.genome.maspectras.quantification.CgException;
+import at.tugraz.genome.maspectras.quantification.CgProbe;
+import at.tugraz.genome.maspectras.quantification.ChromatogramReader;
 import at.tugraz.genome.maspectras.utils.StringUtils;
 
 public class SpectraIdentifier extends Thread
@@ -31,23 +38,148 @@ public class SpectraIdentifier extends Thread
 		rawDirectoryJTextField_ = new JTextField(62);
 		rawDirectoryJTextField_.setMinimumSize(rawDirectoryJTextField_.getPreferredSize());
 		rawDirectoryJTextField_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_RAW_FILE);
-		rawDirectoryJTextField_.setText("D:\\Collaborator_Files\\Kathi\\Paper3\\LDA_extension\\Description\\Gangliosides_targets\\TestChrom");
+		rawDirectoryJTextField_.setText("D:\\Collaborator_Files\\Kathi\\Paper3\\LDA_extension\\data\\LCMS_STD_Glycolipids_data\\GM1");
 	}
 	
-	public void identifySpectra()
+	public ArrayList<SpectrumContainer> identifySpectra(ExcelTargetListParser parser) throws QuantificationException
 	{
+		ArrayList<SpectrumContainer> spectra = new ArrayList<SpectrumContainer>();
 		translateAllToChrom();
+		ArrayList<TargetListEntry> entries = parser.getTargetListEntries();
 		
-		
-		
+		File rawDir = new File(this.rawDirectoryJTextField_.getText());
+    if (rawDir.exists()&&rawDir.isDirectory())
+    {
+    	File[] chromCandidates = rawDir.listFiles();
+    	for (int i=0; i!=chromCandidates.length;i++){
+        if (chromCandidates[i].isDirectory() && chromCandidates[i].getAbsolutePath().endsWith("chrom"))
+        {
+        	String[] chromPaths = StringUtils.getChromFilePaths(chromCandidates[i].getAbsolutePath());
+        	ChromatogramReader reader = null;
+        	LipidomicsAnalyzer analyzer = null;
+        	
+        	System.out.println(chromPaths[1]);
+        	
+        	try
+        	{
+        		reader = new ChromatogramReader(chromPaths[1], chromPaths[2], chromPaths[3],chromPaths[0],LipidomicsConstants.isSparseData(),LipidomicsConstants.getChromSmoothRange());
+          	analyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false); //TODO: one for each thread?
+        	}
+        	catch (CgException ex)
+        	{
+        		continue; //move on to the next chrom file
+        	}
+        	
+        	QuantificationThread.setAnalyzerProperties(analyzer);
+        	analyzer.setGeneralBasePeakCutoff(0f);
+//        	Hashtable<Integer,Float> rtTimes = reader.getRetentionTimesOriginal();
+        	int msLevel = 1; //TODO probs edit that at some point
+        	float mzTolerance = 0.02f;
+        	
+        	for (TargetListEntry entry : entries)
+        	{
+        		Hashtable<String,Integer> formula = entry.getSumFormula();
+        		float fullMz = 0f;
+      			for (String element : formula.keySet())
+      			{
+      				fullMz += Settings.getElementParser().getElementDetails(element).getMonoMass()*formula.get(element);
+      			}
+      			System.out.println(fullMz);
+        		ArrayList<Adduct> adducts = entry.getAdducts();
+        		for (Adduct adduct : adducts)
+        		{
+        			float adductMz = fullMz;
+        			for (String element : adduct.getAddModifier().keySet())
+        			{
+        				adductMz += Settings.getElementParser().getElementDetails(element).getMonoMass()*adduct.getAddModifier().get(element);
+        			}
+        			for (String element : adduct.getRemoveModifier().keySet())
+        			{
+        				adductMz -= Settings.getElementParser().getElementDetails(element).getMonoMass()*adduct.getRemoveModifier().get(element);
+        			}
+        			
+        			float targetMz = Math.abs(adductMz/adduct.getCharge());
+        			
+//        			System.out.println(targetMz);
+//        			String[] rawLines2D = reader.getRawLines(targetMz-mzTolerance, targetMz+mzTolerance, msLevel);
+//        			LipidomicsChromatogram cr = extractChromatogram(targetMz-mzTolerance, targetMz+mzTolerance, rawLines2D, rtTimes, mzTolerance, reader.getMultiplicationFactorForInt_()/reader.getLowestResolution_());
+//        			CgProbe probe = analyzer.detectPeakThreeD(cr,LipidomicsAnalyzer.findIndexByTime(new Float(entry.getRetentionTime()*60), cr),false,adduct.getCharge(),msLevel);
+        			
+        			try
+        			{
+        				CgProbe probe = analyzer.calculatePeakAtExactTimePosition(new Float(entry.getRetentionTime()*60), targetMz, mzTolerance, mzTolerance, adduct.getCharge(), msLevel);
+        				Hashtable<Integer,Vector<String>> spectraRaw = reader.getMsMsSpectra(
+          					probe.Mz-LipidomicsConstants.getMs2PrecursorTolerance(), probe.Mz+LipidomicsConstants.getMs2PrecursorTolerance(),probe.LowerValley,probe.UpperValley);
+          			
+          			@SuppressWarnings("rawtypes")
+                Vector<Hashtable> rtNrSpectraAndPrecursor = reader.getRtNrSpectrumHash(spectraRaw);
+                @SuppressWarnings("unchecked")
+                Hashtable<Integer,String> scanNrSpectrumHash = (Hashtable<Integer,String>)rtNrSpectraAndPrecursor.get(0);
+                @SuppressWarnings("unchecked")
+                Hashtable<Integer,Vector<Double>> scanNrPrecursorHash = (Hashtable<Integer,Vector<Double>>)rtNrSpectraAndPrecursor.get(1);
+                @SuppressWarnings("unchecked")
+                Hashtable<Integer,Integer> scanNrLevelHash = (Hashtable<Integer,Integer>)rtNrSpectraAndPrecursor.get(2);
+                
+                spectra.add(new SpectrumContainer(entry, adduct, probe, chromCandidates[i], scanNrSpectrumHash, scanNrPrecursorHash, scanNrLevelHash));
+        			}
+              catch (CgException ex)
+        			{
+              	//do nothing, it is expected that some probes will not have any spectra.
+        			}
+        		}
+        	}
+        }
+    	}
+    }
+    return spectra;
 	}
 	
 	
+
 	
 	
+//	private LipidomicsChromatogram extractChromatogram(float start, float stop, String[] rawLines2D, Hashtable<Integer,Float> rts, float mzTolerance, float resolutionFactor){
+//    int startIndex = this.getDataIndex(start, start, resolutionFactor);
+//    if (startIndex<1)
+//      startIndex = 0;
+//    int stopIndex = this.getDataIndex(stop, start, resolutionFactor);
+//    if (stopIndex>=rawLines2D.length)
+//      stopIndex = rawLines2D.length;
+//    LipidomicsChromatogram chrom = new LipidomicsChromatogram(rts.size());
+//    chrom.LowerMzBand = mzTolerance;
+//    chrom.UpperMzBand = mzTolerance;
+//    chrom.Mz = (start+stop)/2;
+//    for (int i=0;i!=rts.size();i++){
+//      chrom.Value[i][0] = (rts.get(new Integer(i))).floatValue();
+//      chrom.Value[i][1] = 0;
+//    }
+//    if (rawLines2D!=null){
+//      if (startIndex<0)
+//        startIndex=0;
+//      for (int i=startIndex; i<stopIndex && i!=rawLines2D.length; i++){
+//        if (rawLines2D[i]!=null&&rawLines2D[i].length()>0){
+//          ByteBuffer buffer = ByteBuffer.wrap(Base64.decode(rawLines2D[i]));
+//          while (buffer.hasRemaining()){
+//            int scanNumber = buffer.getInt();
+//            float intensity = buffer.getFloat();
+//            chrom.Value[scanNumber][1] += intensity;
+//          }
+//        }
+//      }
+//    }
+//    chrom.Smooth(LipidomicsConstants.getChromSmoothRange(),
+//        LipidomicsConstants.getChromSmoothRepeats());
+//    chrom.GetMaximumAndAverage();
+//    return chrom;
+//  }
+//	
+//	private int getDataIndex(float mzValue, float start, float resolutionFactor){
+//    String toCut = String.valueOf(Calculator.roundFloat((mzValue - start)*resolutionFactor,0));
+//    return Integer.parseInt(toCut.substring(0,toCut.indexOf(".")));
+//  }
 	
 	
-	public void translateAllToChrom()
+	private void translateAllToChrom()
 	{
     if (rawDirectoryJTextField_.getText()!=null&&rawDirectoryJTextField_.getText().length()>0)
     {

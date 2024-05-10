@@ -1,6 +1,7 @@
 package at.tugraz.genome.lda.fragai;
 
 import java.util.Hashtable;
+import java.util.Objects;
 
 import at.tugraz.genome.lda.utils.StaticUtils;
 
@@ -59,6 +60,49 @@ public class Adduct
     }
 
     return new String[]{part1, part2};
-}
+	}
+
+	public String getAdductName()
+	{
+		return adductName_;
+	}
+
+	public int getCharge()
+	{
+		return charge_;
+	}
+
+	public Hashtable<String,Integer> getAddModifier()
+	{
+		return addModifier_ == null ? new Hashtable<String,Integer>() : addModifier_;
+	}
+
+	public Hashtable<String,Integer> getRemoveModifier()
+	{
+		return removeModifier_ == null ? new Hashtable<String,Integer>() : removeModifier_;
+	}
+
+	@Override
+	public int hashCode()
+	{
+		return Objects.hash(addModifier_, adductName_, charge_, removeModifier_);
+	}
+
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Adduct other = (Adduct) obj;
+		return Objects.equals(addModifier_, other.addModifier_)
+				&& Objects.equals(adductName_, other.adductName_)
+				&& charge_ == other.charge_
+				&& Objects.equals(removeModifier_, other.removeModifier_);
+	}
+	
 	
 }

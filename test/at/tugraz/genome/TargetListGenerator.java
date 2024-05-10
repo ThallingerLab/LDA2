@@ -27,10 +27,15 @@ public class TargetListGenerator
 {
 	String chainListLabelCombi_ = "D";
 	ArrayList<String> lipidClasses_ = new ArrayList<String>(Arrays.asList("PC","O-PC","P-PC","LPC","PE","P-PE","LPE","PS","LPS","PI","LPI","PG","LPG","SM","Cer"));
-	ArrayList<String> lipidClassesGanglio_ = new ArrayList<String>(Arrays.asList("GM1", "GM2", "GM3", "GM4", "GD1", "GD2", "GD3", "GT1","GT2","GT3", "GQ1","GP1", "GH1", "GS1", "GO1", "LacCer"));
+//	ArrayList<String> lipidClassesGanglio_ = new ArrayList<String>(Arrays.asList("GM1", "GM2", "GM3", "GM4", "GD1", "GD2", "GD3", "GT1","GT2","GT3", "GQ1","GP1", "GH1", "GS1", "GO1", "LacCer"));
+	ArrayList<String> lipidClassesGanglio_ = new ArrayList<String>(Arrays.asList(
+			"GM1", "GM1-Ac", "GM1-Fuc", "GM2", "GM3", "GM4", 
+			"GD1", "GD1-Ac", "GD1-Fuc", "GD1-Fuc-Ac", "GD2", "GD3", "GD3-Ac", 
+			"GT1", "GT1-Ac", "GT1-Fuc", "GT2", "GT3", "GT3-Ac", "GT3-Fuc", 
+			"GQ1","GP1", "GH1", "GS1", "GS1-Fuc", "GO1", "GQ1-Ac", "GQ1-Fuc", "LacCer"));
 	String chainListPath_ = "D:\\Collaborator_Files\\Kathi\\Paper2\\newTL\\Ganglio_chains\\fattyAcidChains.xlsx";
 	String lcbListPath_ = "D:\\Collaborator_Files\\Kathi\\Paper2\\newTL\\Ganglio_chains\\dLCB_Ganglio.xlsx";
-	String outFile_ = "D:\\Collaborator_Files\\Kathi\\Paper2\\newTL\\Ganglio_negative_new.xlsx";
+	String outFile_ = "D:\\Collaborator_Files\\Kathi\\Paper2\\newTL\\Ganglio_negative_FucAc.xlsx";
 	
 	
 //	String chainListPath_ = String.format("D:\\Collaborator_Files\\SILDA\\SILDA_final\\masslists_all_labels\\new_TL_D\\chainLists\\fattyAcidChains_%s.xlsx", chainListLabelCombi_);
@@ -112,7 +117,7 @@ public class TargetListGenerator
           cell.setCellValue(formH2);
           cell.setCellStyle(headerStyle);
         }
-        else if (lipidClass.equals("GM1") || lipidClass.equals("GM2") || lipidClass.equals("GM3") || lipidClass.equals("GM4"))
+        else if (lipidClass.contains("GM1") || lipidClass.contains("GM2") || lipidClass.contains("GM3") || lipidClass.contains("GM4"))
         {
         	cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
           cell.setCellValue(formH1);
@@ -121,13 +126,13 @@ public class TargetListGenerator
           cell.setCellValue(formH2);
           cell.setCellStyle(headerStyle);
         }
-        else if (lipidClass.equals("GD1") || lipidClass.equals("GD2") || lipidClass.equals("GD3"))
+        else if (lipidClass.contains("GD1") || lipidClass.contains("GD2") || lipidClass.contains("GD3"))
         {
           cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
           cell.setCellValue(formH2);
           cell.setCellStyle(headerStyle);
         }
-        else if (lipidClass.equals("GT1") || lipidClass.equals("GT2") || lipidClass.equals("GT3"))
+        else if (lipidClass.contains("GT1") || lipidClass.contains("GT2") || lipidClass.contains("GT3"))
         {
           cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
           cell.setCellValue(formH2);
@@ -136,7 +141,7 @@ public class TargetListGenerator
           cell.setCellValue(formH3);
           cell.setCellStyle(headerStyle);
         }
-        else if (lipidClass.equals("GQ1"))
+        else if (lipidClass.contains("GQ1"))
         {
           cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
           cell.setCellValue(formH3);
@@ -145,7 +150,7 @@ public class TargetListGenerator
           cell.setCellValue(formH4);
           cell.setCellStyle(headerStyle);
         }
-        else if (lipidClass.equals("GP1"))
+        else if (lipidClass.contains("GP1"))
         {
           cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
           cell.setCellValue(formH4);
@@ -154,7 +159,7 @@ public class TargetListGenerator
           cell.setCellValue(formH5);
           cell.setCellStyle(headerStyle);
         }
-        else if (lipidClass.equals("GS1"))
+        else if (lipidClass.contains("GS1"))
         {
           cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
           cell.setCellValue(formH4);
@@ -166,7 +171,7 @@ public class TargetListGenerator
           cell.setCellValue(formH6);
           cell.setCellStyle(headerStyle);
         }
-        else if (lipidClass.equals("GH1"))
+        else if (lipidClass.contains("GH1"))
         {
           cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
           cell.setCellValue(formH4);
@@ -181,7 +186,7 @@ public class TargetListGenerator
           cell.setCellValue(formH7);
           cell.setCellStyle(headerStyle);
         }
-        else if (lipidClass.equals("GO1"))
+        else if (lipidClass.contains("GO1"))
         {
           cell = headerRow.createCell(++lastColumn,HSSFCell.CELL_TYPE_STRING);      
           cell.setCellValue(formH4);
@@ -983,6 +988,24 @@ public class TargetListGenerator
   			elements.put("P", 0);
   			elements.put("N", 3);
   			break;
+  		case "GM1-Ac": //done
+  			elements.put("C", fattyAcidC+37+2);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-13-2);
+  			elements.put("D", 0);
+  			elements.put("O", 31+1);
+  			elements.put("P", 0);
+  			elements.put("N", 3);
+  			break;
+  		case "GM1-Fuc": //done
+  			elements.put("C", fattyAcidC+37+12);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-13-4);
+  			elements.put("D", 0);
+  			elements.put("O", 31+9);
+  			elements.put("P", 0);
+  			elements.put("N", 3);
+  			break;
   		case "GM2": //done
   			elements.put("C", fattyAcidC+31);
   			elements.put("Cc", 0);
@@ -1019,6 +1042,33 @@ public class TargetListGenerator
   			elements.put("P", 0);
   			elements.put("N", 4);
   			break;
+  		case "GD1-Ac": //done
+  			elements.put("C", fattyAcidC+48+2);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-18-2);
+  			elements.put("D", 0);
+  			elements.put("O", 39+1);
+  			elements.put("P", 0);
+  			elements.put("N", 4);
+  			break;
+  		case "GD1-Fuc": //done
+  			elements.put("C", fattyAcidC+48+12);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-18-4);
+  			elements.put("D", 0);
+  			elements.put("O", 39+9);
+  			elements.put("P", 0);
+  			elements.put("N", 4);
+  			break;
+  		case "GD1-Fuc-Ac": //done
+  			elements.put("C", fattyAcidC+48+8);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-18-4);
+  			elements.put("D", 0);
+  			elements.put("O", 39+5);
+  			elements.put("P", 0);
+  			elements.put("N", 4);
+  			break;
   		case "GD2": //done
   			elements.put("C", fattyAcidC+42);
   			elements.put("Cc", 0);
@@ -1037,12 +1087,39 @@ public class TargetListGenerator
   			elements.put("P", 0);
   			elements.put("N", 3);
   			break;
+  		case "GD3-Ac": //done
+  			elements.put("C", fattyAcidC+34+2);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-13-2);
+  			elements.put("D", 0);
+  			elements.put("O", 29+1);
+  			elements.put("P", 0);
+  			elements.put("N", 3);
+  			break;
   		case "GT1": //done
   			elements.put("C", fattyAcidC+59);
   			elements.put("Cc", 0);
   			elements.put("H", elements.get("C")*2-2*dbs-23);
   			elements.put("D", 0);
   			elements.put("O", 47);
+  			elements.put("P", 0);
+  			elements.put("N", 5);
+  			break;
+  		case "GT1-Ac": //done
+  			elements.put("C", fattyAcidC+59+2);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-23-2);
+  			elements.put("D", 0);
+  			elements.put("O", 47+1);
+  			elements.put("P", 0);
+  			elements.put("N", 5);
+  			break;
+  		case "GT1-Fuc": //done
+  			elements.put("C", fattyAcidC+59+12);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-23-4);
+  			elements.put("D", 0);
+  			elements.put("O", 47+9);
   			elements.put("P", 0);
   			elements.put("N", 5);
   			break;
@@ -1064,12 +1141,48 @@ public class TargetListGenerator
   			elements.put("P", 0);
   			elements.put("N", 4);
   			break;
+  		case "GT3-Ac": //done
+  			elements.put("C", fattyAcidC+45+2);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-18-2);
+  			elements.put("D", 0);
+  			elements.put("O", 37+1);
+  			elements.put("P", 0);
+  			elements.put("N", 4);
+  			break;
+  		case "GT3-Fuc": //done
+  			elements.put("C", fattyAcidC+45+12);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-18-4);
+  			elements.put("D", 0);
+  			elements.put("O", 37+9);
+  			elements.put("P", 0);
+  			elements.put("N", 4);
+  			break;
   		case "GQ1": //done
   			elements.put("C", fattyAcidC+70);
   			elements.put("Cc", 0);
   			elements.put("H", elements.get("C")*2-2*dbs-28);
   			elements.put("D", 0);
   			elements.put("O", 55);
+  			elements.put("P", 0);
+  			elements.put("N", 6);
+  			break;
+  		case "GQ1-Ac": //done
+  			elements.put("C", fattyAcidC+70+2);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-28-2);
+  			elements.put("D", 0);
+  			elements.put("O", 55+1);
+  			elements.put("P", 0);
+  			elements.put("N", 6);
+  			break;
+  		case "GQ1-Fuc": //done
+  			elements.put("C", fattyAcidC+70+12);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-28-4);
+  			elements.put("D", 0);
+  			elements.put("O", 55+9);
   			elements.put("P", 0);
   			elements.put("N", 6);
   			break;
@@ -1097,6 +1210,15 @@ public class TargetListGenerator
   			elements.put("H", elements.get("C")*2-2*dbs-43);
   			elements.put("D", 0);
   			elements.put("O", 79);
+  			elements.put("P", 0);
+  			elements.put("N", 9);
+  			break;
+  		case "GS1-Fuc": //done
+  			elements.put("C", fattyAcidC+103+12);
+  			elements.put("Cc", 0);
+  			elements.put("H", elements.get("C")*2-2*dbs-43-4);
+  			elements.put("D", 0);
+  			elements.put("O", 79+9);
   			elements.put("P", 0);
   			elements.put("N", 9);
   			break;

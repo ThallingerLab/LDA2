@@ -23,12 +23,14 @@
 
 package at.tugraz.genome.lda.vos;
 
+import java.util.Comparator;
+
 /**
  * 
  * @author Juergen Hartler
  *
  */
-public class SpectrumPointVO
+public class SpectrumPointVO implements Comparable<SpectrumPointVO>
 {
   private String mzOriginal_;
   private float mz_;
@@ -60,6 +62,13 @@ public class SpectrumPointVO
   public void addIntensity(float intensity){
     intensity_ += intensity;
   }
+
+	@Override
+	public int compareTo(SpectrumPointVO arg0)
+	{
+		return Comparator.comparing(SpectrumPointVO::getMz)
+				.compare(this, arg0);
+	}
   
   
 }

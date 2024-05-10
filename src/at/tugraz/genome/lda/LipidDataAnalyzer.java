@@ -123,6 +123,7 @@ import at.tugraz.genome.lda.exception.ExportException;
 import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.NoRuleException;
+import at.tugraz.genome.lda.exception.QuantificationException;
 import at.tugraz.genome.lda.exception.RdbWriterException;
 import at.tugraz.genome.lda.exception.RetentionTimeGroupingException;
 import at.tugraz.genome.lda.exception.RulesException;
@@ -133,6 +134,9 @@ import at.tugraz.genome.lda.export.OmegaCollector;
 import at.tugraz.genome.lda.export.QuantificationResultExporter;
 import at.tugraz.genome.lda.fragai.ExcelTargetListParser;
 import at.tugraz.genome.lda.fragai.SpectraIdentifier;
+import at.tugraz.genome.lda.fragai.SpectraInterpreter;
+import at.tugraz.genome.lda.fragai.SpectraTextExporter;
+import at.tugraz.genome.lda.fragai.SpectrumContainer;
 import at.tugraz.genome.lda.interfaces.ColorChangeListener;
 import at.tugraz.genome.lda.listeners.AnnotationThresholdListener;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
@@ -1661,7 +1665,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     
     separateHitsByRT_  = new JCheckBox();
-    separateHitsByRT_.setSelected(LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE);
+    separateHitsByRT_.setSelected(true);
     separateHitsByRT_.setActionCommand(CHANGE_SEPARATE_RT_STATUS);
     separateHitsByRT_.addActionListener(this);
     separateHitsByRT_.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
@@ -1676,13 +1680,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     rtGroupingTime_.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
     groupRtPanel.add(rtGroupingTime_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    rtGroupingTime_.setEnabled(separateHitsByRT_.isSelected());
     
     rtTimeUnit_ = new JLabel("min");
     rtTimeUnit_.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
     groupRtPanel.add(rtTimeUnit_,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    rtTimeUnit_.setEnabled(separateHitsByRT_.isSelected());
     
     //start: added via the oxidized lipids extension
     JSeparator js = new JSeparator(SwingConstants.VERTICAL);
@@ -3220,16 +3222,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       return;
     }
     if (command.equalsIgnoreCase(CHANGE_SEPARATE_RT_STATUS)){
-    	if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE&&separateHitsByRT_.isSelected())
-    	{
-    		new WarningMessage(new JFrame(), "Warning", "Shotgun settings are selected. RT grouping is not enabled for shotgun data!");
-    		separateHitsByRT_.setSelected(false);
-    	}
-    	else
-    	{
-    		rtGroupingTime_.setEnabled(separateHitsByRT_.isSelected());
-        rtTimeUnit_.setEnabled(separateHitsByRT_.isSelected());
-    	}
+      rtGroupingTime_.setEnabled(separateHitsByRT_.isSelected());
+      rtTimeUnit_.setEnabled(separateHitsByRT_.isSelected());
     } else if  (command.equalsIgnoreCase(ExportPanel.EXPORT_PNG)){
       exportFileChooser_.setFileFilter(new FileNameExtensionFilter("PNG (*.png)","png"));
       int returnVal = exportFileChooser_.showSaveDialog(new JFrame());
@@ -3320,15 +3314,24 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     }
     if (command.equalsIgnoreCase("Start AI"))
     {
-    	File file = new File("D:\\Collaborator_Files\\Kathi\\Paper3\\LDA_extension\\Description\\Gangliosides_targets\\TestTL\\Target_list_gangliosides_adducts_shortened.xlsx");
+    	String suffix = "_shortened.xlsx";
+    	File file = new File("D:\\Collaborator_Files\\Kathi\\Paper3\\LDA_extension\\Description\\Gangliosides_targets\\Target_list_gangliosides_adducts"+suffix);
+    	String outPath = "D:\\Collaborator_Files\\Kathi\\Paper3\\LDA_extension\\Description\\Gangliosides_targets\\TestChrom\\spectra"+suffix;
+    	String outPathMerged = "D:\\Collaborator_Files\\Kathi\\Paper3\\LDA_extension\\Description\\Gangliosides_targets\\TestChrom\\spectra_merged"+suffix;
     	ExcelTargetListParser parser = new ExcelTargetListParser(file);
     	SpectraIdentifier identifier = new SpectraIdentifier();
     	try
     	{
     		parser.parse();
-    		identifier.translateAllToChrom();
+    		ArrayList<SpectrumContainer> spectra = identifier.identifySpectra(parser);
+//    		SpectraTextExporter exporter = new SpectraTextExporter(spectra, outPath);
+//    		exporter.exportSpectra();
+    		SpectraInterpreter interpreter = new SpectraInterpreter(spectra);
+    		ArrayList<SpectrumContainer> mergedSpectra = interpreter.interpretSpectra();
+    		SpectraTextExporter exporter = new SpectraTextExporter(spectra, outPathMerged);
+    		exporter.exportSpectra();
     	}
-    	catch (IOException ex)
+    	catch (IOException | QuantificationException ex)
     	{
     		ex.printStackTrace();
     	}
@@ -5692,20 +5695,17 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
 
       
     }catch (CgException cgx) {
-      @SuppressWarnings("unused")
-      WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "The MS/MS cannot be displayed: "+cgx.getMessage());
+      new WarningMessage(new JFrame(), "Error", "The MS/MS cannot be displayed: "+cgx.getMessage());
       this.displaysMs2_ = false;
       return false;
     }catch (LipidCombinameEncodingException cgx) {
-      @SuppressWarnings("unused")
-      WarningMessage dlg = new WarningMessage(new JFrame(), "Error", "The molecular species name cannot be decoded: "+cgx.getMessage());
+      new WarningMessage(new JFrame(), "Error", "The molecular species name cannot be decoded: "+cgx.getMessage());
       this.displaysMs2_ = false;
       return false;
 
     }catch (Exception cgx) {
       cgx.printStackTrace();
-        @SuppressWarnings("unused")
-        WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The 3D Viewer cannot be started: "+cgx.getMessage());
+      new WarningMessage(new JFrame(), "Warning", "The 3D Viewer cannot be started: "+cgx.getMessage());
     }
     return true;
   }

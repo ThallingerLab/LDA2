@@ -4371,6 +4371,32 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     return results;
   }
   
+  public CgProbe calculatePeakAtExactTimePosition(float rt, float mz, float lowerMzBand, float upperMzBand, int charge, int msLevel) throws CgException, QuantificationException {
+  	CgProbe probe = null;
+    //if (timeType == LipidomicsDefines.MINUTES) mainRt = mainRt*60f;
+    LipidomicsChromatogram chrom = new LipidomicsChromatogram(readAChromatogram(mz, lowerMzBand, upperMzBand, msLevel, chromSmoothRange_,chromSmoothRepeats_));
+    chrom.GetMaximumAndAverage();
+    int mainScan = LipidomicsAnalyzer.findIndexByTime(rt, chrom);
+    
+    try{probe = detectPeakThreeD(chrom,mainScan,false,charge,msLevel);}catch(QuantificationException qex){}
+    if (probe!=null && probe.AreaStatus == CgAreaStatus.OK){
+      return probe;
+    }
+    probe = LipidomicsAnalyzer.calculateOneArea(chrom, mainScan, LipidomicsDefines.GreedySteepnessReductionMethod,charge);
+    if (probe.AreaStatus == CgAreaStatus.OK){
+    	return probe;
+    }
+    probe = LipidomicsAnalyzer.calculateOneArea(chrom, mainScan, LipidomicsDefines.EnhancedValleyMethod,charge);
+    if (probe.AreaStatus == CgAreaStatus.OK){
+    	return probe;
+    }
+    probe = LipidomicsAnalyzer.calculateOneArea(chrom, mainScan, LipidomicsDefines.StandardValleyMethod,charge);
+    if (probe.AreaStatus == CgAreaStatus.OK){
+    	return probe;
+    }
+    return probe;
+  }
+  
   public Vector<Vector<CgProbe>> calculatePeakAtExactProbePosition(LipidParameterSet templateParam, int maxIsotope,int charge, int msLevel) throws CgException {
     Vector<Vector<CgProbe>> results = new Vector<Vector<CgProbe>>();
     for (int i=0;i!=maxIsotope; i++){
