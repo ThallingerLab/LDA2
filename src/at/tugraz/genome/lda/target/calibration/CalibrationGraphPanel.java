@@ -148,7 +148,7 @@ public class CalibrationGraphPanel extends JOptionPanel
   	panel.add(classSpecificJCheckBox_, new GridBagConstraints(0, 0, 0, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 0, 5, 0), 0, 0));
   	
-  	defineSubgroupsJButton_ = new JButton("Define Subgroups");
+  	defineSubgroupsJButton_ = new JButton("Define Groups");
   	defineSubgroupsJButton_.setEnabled(classSpecificJCheckBox_.isSelected());
   	defineSubgroupsJButton_.addActionListener(new ActionListener() {
 		  public void actionPerformed(ActionEvent e) 

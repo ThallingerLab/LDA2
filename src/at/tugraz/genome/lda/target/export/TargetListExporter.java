@@ -24,7 +24,10 @@
 package at.tugraz.genome.lda.target.export;
 
 import java.io.BufferedOutputStream;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -34,6 +37,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.swing.JFrame;
 
 import org.apache.commons.math3.exception.OutOfRangeException;
 import org.apache.poi.hssf.usermodel.HSSFCell;
@@ -45,10 +52,13 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.dhatim.fastexcel.reader.CellType;
+import org.dhatim.fastexcel.reader.ReadableWorkbook;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.QuantificationThread;
 import at.tugraz.genome.lda.Settings;
+import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExportException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
@@ -108,6 +118,7 @@ public class TargetListExporter
   
   //TODO: just for development! for comparing target lists - remove later (first cName, second: original rt, third recalibr. doublebondPositionVO)
   Hashtable<String,Set<Pair<Double,DoubleBondPositionVO>>> beforeAfter_ = new Hashtable<String,Set<Pair<Double,DoubleBondPositionVO>>>(); 
+  Hashtable<String,Vector<Pair<Double,DoubleBondPositionVO>>> comparisonPairsOfClass_ = new Hashtable<String,Vector<Pair<Double,DoubleBondPositionVO>>>();
   
   
   /**
@@ -1191,16 +1202,93 @@ public class TargetListExporter
 		return this.beforeAfter_;
 	}
   
+  //TODO: just for development, remove later!
+  private Hashtable<String,Vector<Pair<Double,DoubleBondPositionVO>>> parseComparisonSheet(org.dhatim.fastexcel.reader.Sheet sheet) throws Exception
+  {
+  	Hashtable<String,Vector<Pair<Double,DoubleBondPositionVO>>> allowedPairsOfClass = new Hashtable<String,Vector<Pair<Double,DoubleBondPositionVO>>>();
+  	List<org.dhatim.fastexcel.reader.Row> rows = null;
+  	rows = sheet.read();
+  	Integer rowNr = 0;
+    org.dhatim.fastexcel.reader.Row headerRow = rows.get(rowNr++);
+    List<String> headerTitles = null;
+		try (Stream<org.dhatim.fastexcel.reader.Cell> cells = headerRow.stream();) {
+			headerTitles = cells.map((c) -> (!(c==null || c.getType().equals(CellType.ERROR)) ? c.getText() : "null")).collect(Collectors.toList());
+    }
+		if (headerTitles == null) throw new IOException("No headertitles...");
+		
+    List<org.dhatim.fastexcel.reader.Row> contentRows = rows.subList(rowNr, rows.size());
+    
+    String lClass = null;
+    String molecularSpecies = null;
+    float targetRT = 0f;
+    float originalRT = 0f;
+    int index;
+    String rawValue;
+    
+    for (org.dhatim.fastexcel.reader.Row row : contentRows) {
+      List<org.dhatim.fastexcel.reader.Cell> cells = row.stream().filter((c) -> !(c==null || c.getType().equals(CellType.ERROR))).collect(Collectors.toList());
+      for (org.dhatim.fastexcel.reader.Cell cell : cells) {
+        index = cell.getColumnIndex();
+        rawValue = cell.getRawValue();
+        
+        if (index == headerTitles.indexOf("Lipid Class")) {
+        	lClass = rawValue;
+        } else if (index == headerTitles.indexOf("Lipid Molecular Species")) {
+          molecularSpecies = rawValue;
+        } else if (index == headerTitles.indexOf("RT Target DB /min")) {
+        	targetRT = Float.parseFloat(rawValue);
+        } else if (index == headerTitles.indexOf("RT Original DB /min")) {
+        	originalRT = Float.parseFloat(rawValue);
+        }
+        
+      }
+      Vector<FattyAcidVO> chainCombination = StaticUtils.decodeFAsFromHumanReadableName(
+      		molecularSpecies, Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), false, null);
+      DoubleBondPositionVO vo = new DoubleBondPositionVO(chainCombination, targetRT, 0, molecularSpecies);
+      if (!allowedPairsOfClass.containsKey(lClass))
+      {
+      	allowedPairsOfClass.put(lClass, new Vector<Pair<Double,DoubleBondPositionVO>>());
+      }
+      allowedPairsOfClass.get(lClass).add(new Pair<Double,DoubleBondPositionVO>(new Double(originalRT), vo));
+    }
+  	return allowedPairsOfClass;
+  }
+  
   /**
    * 
    * @param targetPath		file created with the new conditions.
    * @param outPath
+   * @param outPath				if there is a comparison template to adhere to
    * @throws ExportException
    */
   //TODO: just for development, remove later!
   @SuppressWarnings("unchecked")
-	public void exportBeforeAfter(String targetPath, String outPath) throws ExportException
+	public void exportBeforeAfter(String targetPath, String outPath, String comparisonPath) throws ExportException
   {
+  	comparisonPairsOfClass_ = new Hashtable<String,Vector<Pair<Double,DoubleBondPositionVO>>>();
+  	String sheetName = "RTDB_A_to_B1";
+  	if (comparisonPath != null)
+  	{
+  		try (InputStream is = new FileInputStream(comparisonPath);
+  				ReadableWorkbook wb = new ReadableWorkbook(is);
+          Stream<org.dhatim.fastexcel.reader.Sheet> sheets = wb.getSheets();) {
+        sheets.forEach((s) -> {
+        				if (s.getName().equalsIgnoreCase(sheetName)) 
+        				{
+        					try {
+                  	comparisonPairsOfClass_ = parseComparisonSheet(s);
+                  } catch (Exception ex) {
+                    new WarningMessage(new JFrame(), "ERROR", ex.getMessage());
+                  }
+        				}
+              });
+        
+      } catch (IOException ex){
+        ex.printStackTrace();
+      }
+  	}
+  	
+  	
   	try (	BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outPath));
 				XSSFWorkbook workbook = new XSSFWorkbook();)
   	{
@@ -1222,15 +1310,38 @@ public class TargetListExporter
 	  		Hashtable<DoubleBondPositionVO,Pair<Double,Pair<Double,DoubleBondPositionVO>>> matchedTargetToRecalibrated =
 	  				new Hashtable<DoubleBondPositionVO,Pair<Double,Pair<Double,DoubleBondPositionVO>>>();
 	  		
+	  		Vector<Pair<Double,DoubleBondPositionVO>> pairsOfClassPriority = new Vector<Pair<Double,DoubleBondPositionVO>>();
+	  		if (!comparisonPairsOfClass_.isEmpty())
+	  		{
+	  			pairsOfClassPriority = comparisonPairsOfClass_.get(cName);
+	  			if (pairsOfClassPriority == null) pairsOfClassPriority = new Vector<Pair<Double,DoubleBondPositionVO>>();
+	  		}
 	  		
-	  		
-	  		Set<Pair<Double,DoubleBondPositionVO>> pairsOfClass = getBeforeAfter().get(cName);
-	  		if (pairsOfClass==null) continue;
+	  		Set<Pair<Double,DoubleBondPositionVO>> beforeAfter = getBeforeAfter().get(cName);
+	  		Vector<Pair<Double,DoubleBondPositionVO>> pairsOfClass = new Vector<Pair<Double,DoubleBondPositionVO>>();
+	  		if (beforeAfter != null)
+	  		{
+	  			pairsOfClass = new Vector<Pair<Double,DoubleBondPositionVO>>(beforeAfter);
+	  		}
+	  		if (!comparisonPairsOfClass_.isEmpty())
+	  		{
+	  			pairsOfClass = pairsOfClassPriority;
+	  		}
+	  		if (pairsOfClass.isEmpty()) continue;
+	  			
 	  		Vector<Object> elModCharge = getAvailableElementsAndModificationsPlusCharge(quantObjects.get(cName));
 		    LinkedHashMap<String,String> mods = (LinkedHashMap<String,String>)elModCharge.get(1);
 		    
 		    for (Pair<Double,DoubleBondPositionVO> pair : pairsOfClass) //iterating over the original TG entries first to limit false matches.
 		    {
+		    	boolean pairAdded = false;
+		    	for (Pair<Double,DoubleBondPositionVO> original : beforeAfter)
+		    	{
+		    		if (original.getKey().equals(pair.getKey()) && original.getValue().getChainCombination().equals(pair.getValue().getChainCombination()))
+		    		{
+		    			pair = original;
+		    		}
+		    	}
 		    	for (String analyte : analyteSequence.get(cName)) 
 			    {
 			    	Hashtable<String,QuantVO> quantAnalytes = quantObjects.get(cName).get(analyte);
@@ -1258,6 +1369,7 @@ public class TargetListExporter
 			        			{
 			        				matchedRecalibratedToTarget.put(pair, new Pair<Double,DoubleBondPositionVO>(rtError,vo));
 				        			matchedTargetToRecalibrated.put(vo, new Pair<Double,Pair<Double,DoubleBondPositionVO>>(rtError,pair));
+				        			pairAdded = true;
 			        			}
 			        		}
 			        		
@@ -1270,7 +1382,7 @@ public class TargetListExporter
 			        					Pair<Double,DoubleBondPositionVO> toRemove = null;
 					        			for (Pair<Double,DoubleBondPositionVO> previous : matchedRecalibratedToTarget.keySet())
 					        			{
-					        				if (matchedRecalibratedToTarget.get(previous).getValue().equals(vo))
+					        				if (matchedRecalibratedToTarget.get(previous).getValue().equals(vo) && comparisonPairsOfClass_.isEmpty())
 					        				{
 					        					toRemove = previous;
 					        				}
@@ -1279,11 +1391,16 @@ public class TargetListExporter
 					        		}
 			        				matchedRecalibratedToTarget.put(pair, new Pair<Double,DoubleBondPositionVO>(rtError,vo));
 			        				matchedTargetToRecalibrated.put(vo, new Pair<Double,Pair<Double,DoubleBondPositionVO>>(rtError,pair));
+			        				pairAdded = true;
 			        			}
 			        		}
 		        		}
 			        }
 			      }
+			    }
+		    	if (!pairAdded && !comparisonPairsOfClass_.isEmpty())
+			    {
+			    	matchedRecalibratedToTarget.put(pair, pair);
 			    }
 		    }
 		    if (!matchedRecalibratedToTarget.isEmpty())
@@ -1293,14 +1410,14 @@ public class TargetListExporter
 		    	{
 		    		//first double: rtError, second double: originalRT, vo: recalibrated
 		    		Pair<Double,DoubleBondPositionVO> targetPair = matchedRecalibratedToTarget.get(originalPair);
-		    		if (usedVOs.contains(targetPair.getValue())) continue;
+		    		if (usedVOs.contains(targetPair.getValue()) && comparisonPairsOfClass_.isEmpty()) continue;
 		    		usedVOs.add(targetPair.getValue());
 		    		
 		    		String molName = targetPair.getValue().getDoubleBondPositionsHumanReadable();
 		    		double targetRT = targetPair.getValue().getExpectedRetentionTime();
         		double originalRT = originalPair.getKey();
         		double recalibratedRT = originalPair.getValue().getExpectedRetentionTime();
-        		double rtError = targetPair.getKey();
+        		double rtError = targetPair.getKey()>1.0 ? 0.0 : targetPair.getKey();
         		
         		Row row = sheet.createRow(rowCount);
       			cell = row.createCell(0,HSSFCell.CELL_TYPE_STRING);

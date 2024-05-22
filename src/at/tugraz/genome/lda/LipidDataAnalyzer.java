@@ -4694,7 +4694,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         String sheetToSelect = resultTabs_.getTitleAt(resultTabs_.getSelectedIndex());
         selectedSheet_.setSelectedItem(sheetToSelect);
         displayTolerancePanel_.getShowMSnNames().setSelected(showMSn);
-        displayTolerancePanel_.getShowOmegaNames().setSelected(displayTolerancePanel_.isShowOmegaEditingTools());
+        displayTolerancePanel_.getShowOmegaNames().setSelected(displayTolerancePanel_.isShowOmegaEditingTools() && displayTolerancePanel_.getShowMSnNames().isSelected());
         String moleculeInTableName = null;
         int selection = -1;
         for (int i=0;i!=this.displayTable_.getRowCount();i++){
@@ -7101,7 +7101,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
             frame.setLocationRelativeTo(frame_);
             molecularSpecies = (String) JOptionPane.showInputDialog(frame, 
                 "Select a molecular species!",
-                "\u03C9 - double bond assignment.",
+                "\u03C9-C=C assignment",
                 JOptionPane.QUESTION_MESSAGE, 
                 null, 
                 molecularSpeciesArray, 

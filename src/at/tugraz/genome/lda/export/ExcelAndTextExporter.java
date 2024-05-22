@@ -27,14 +27,18 @@ import java.awt.Color;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.Vector;
 
+import org.apache.commons.math3.util.Pair;
+import org.apache.commons.math3.util.Precision;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
@@ -62,6 +66,7 @@ import at.tugraz.genome.lda.swing.LipidomicsTableCellRenderer;
 import at.tugraz.genome.lda.target.export.TargetListExporter;
 import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.lda.vos.ExportOptionsVO;
 import at.tugraz.genome.lda.vos.ResultAreaVO;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
@@ -613,13 +618,13 @@ public class ExcelAndTextExporter extends LDAExporter
     //extract the values according to the molecular species
     boolean rtGroupingUsed = isRtGrouped;
     LinkedHashMap<String,SummaryVO> molSpeciesDetails = new LinkedHashMap<String,SummaryVO>();
-    LinkedHashMap<String,Boolean> omegaSuggestionAvailable = new LinkedHashMap<String,Boolean>();
+    LinkedHashMap<String,Vector<DoubleBondPositionVO>> omegaSuggestionAvailable = new LinkedHashMap<String,Vector<DoubleBondPositionVO>>();
     //Quantification
     for (String molName : molNames){
+    	if (!omegaSuggestionAvailable.containsKey(molName)) omegaSuggestionAvailable.put(molName, new Vector<DoubleBondPositionVO>());
       Hashtable<String,Hashtable<String,Vector<LipidParameterSet>>> relevantOriginals = null;
       if (includeResultFiles){
         relevantOriginals = new Hashtable<String,Hashtable<String,Vector<LipidParameterSet>>>();
-        boolean omegaSuggestion = false;
         for (String expId : expFullPaths.keySet()){
           ResultAreaVO areaVO = compLookup.getResultAreaVO(sheet.getSheetName(),molName,expId);
           for (String mod : modifications)
@@ -627,7 +632,10 @@ public class ExcelAndTextExporter extends LDAExporter
           	if (areaVO == null) continue;
           	for (LipidParameterSet set : areaVO.getLipidParameterSets(mod))
           	{
-          		if (!set.getOmegaInformation().isEmpty()) omegaSuggestion = true;
+          		if (!set.getOmegaInformation().isEmpty())
+          		{
+          			omegaSuggestionAvailable.get(molName).addAll(set.getOmegaInformation());
+          		}
           	}
           }
           if (!isGrouped && !expNames.containsKey(expId))
@@ -639,7 +647,6 @@ public class ExcelAndTextExporter extends LDAExporter
             relevantOriginals.put(expId, sets);
           }
         }
-        omegaSuggestionAvailable.put(molName, omegaSuggestion);
       }
       SpeciesExportVO exportVO = LDAExporter.extractExportableSummaryInformation(speciesType, exportDoubleBondPositionsForClass, false, 0, 0, false, 0, 0, rtGroupingUsed, adductsSorted, new Vector<String>(expFullPaths.keySet()),
         expsOfGroup,  molName, results.get(molName), relevantOriginals, maxIsotope, faEncoding, lcbEncoding);
@@ -662,7 +669,7 @@ public class ExcelAndTextExporter extends LDAExporter
   //TODO: maybe just write out the summary part and not the stuff that's already done in the normal excel sheet.
   private static void writeExcelSheetToFile(OmegaCollector omegaCollector, Sheet sheet, XSSFWorkbook workbook, OutputStream out, LinkedHashMap<String,SummaryVO> molSpeciesDetails,
       boolean isGrouped, Vector<String> expIdNames, Hashtable<String,String> expNames, LinkedHashMap<String,Vector<String>> expsOfGroup,
-      String preferredUnit, ExportOptionsVO expVO, ArrayList<String> modifications, LinkedHashMap<String,Boolean> omegaSuggestionAvailable) throws IOException{  
+      String preferredUnit, ExportOptionsVO expVO, ArrayList<String> modifications, LinkedHashMap<String,Vector<DoubleBondPositionVO>> omegaSuggestionAvailable) throws IOException{  
     CellStyle headerStyle = getHeaderStyle(workbook);
     CellStyle numberStyle = TargetListExporter.getNumberStyle(workbook);
     CellStyle normalStyle = getNormalStyle(workbook);
@@ -710,8 +717,39 @@ public class ExcelAndTextExporter extends LDAExporter
     }
     row = sheet.createRow(++rowCount);
     double area;
+    LinkedHashMap<String,ArrayList<Pair<Double,Double>>> weightedRTCollector = new LinkedHashMap<String,ArrayList<Pair<Double,Double>>>();
     for (String rowName : rowNames){
-//    	if (!rowName.contains(LipidomicsConstants.OMEGA_POSITION_START)) continue; //TODO: change if this is not relevant... this will be essential for the omegacollector!
+    	double areaSum = 0.0;
+    	String molNameForWeightedCollector = rowName;
+    	
+    	if ((rowName.contains("|") || rowName.startsWith("L")) && !rowName.contains("IntS") && expVO.isExportRT()) //this means there's a molecular species and we export RTs
+      {
+      	if (rowName.contains("|"))
+      	{
+      		molNameForWeightedCollector = rowName.substring(rowName.indexOf("|")+2);
+      	}
+      	else if (rowName.startsWith("L"))
+      	{
+      		molNameForWeightedCollector = rowName.substring(rowName.indexOf(" ")+1, rowName.indexOf("_"));
+      	}
+      	
+      	ArrayList<String> insensitive = new ArrayList<String>();
+      	insensitive.add(molNameForWeightedCollector);
+      	if (molNameForWeightedCollector.contains("/"))
+      	{
+      		insensitive = new ArrayList<String>(Arrays.asList(molNameForWeightedCollector.split("/")));
+      	}
+      	else if (molNameForWeightedCollector.contains("_"))
+      	{
+      		insensitive = new ArrayList<String>(Arrays.asList(molNameForWeightedCollector.split("_")));
+      	}
+      	molNameForWeightedCollector = insensitive.toString();
+      	
+      	if (!weightedRTCollector.containsKey(molNameForWeightedCollector))
+      	{
+      		weightedRTCollector.put(molNameForWeightedCollector, new ArrayList<Pair<Double,Double>>());
+      	}
+      }
     	
     	//extract omega collector info
     	fillOmegaCollector(omegaCollector, sheet.getSheetName(), molSpeciesDetails,
@@ -753,7 +791,7 @@ public class ExcelAndTextExporter extends LDAExporter
         else
           area = sumVO.getArea(expName);
         
-        
+      	areaSum += area;
         valuesForOmega.get(columnName).get(omegaId).addArea(area);
         toWrite = StaticUtils.extractDisplayValue(area,expVO.getCommaPositions());   
         
@@ -841,6 +879,13 @@ public class ExcelAndTextExporter extends LDAExporter
               rt = sumVO.getMeanRetentionTime(modName, expName);
             else
               rt = sumVO.getRetentionTime(modName, expName);
+            
+            Double rtForWeighted = rt!=null && !Double.isInfinite(rt) && !Double.isNaN(rt) ? rt : 0.0;
+            if (weightedRTCollector.containsKey(molNameForWeightedCollector))
+            {
+            	weightedRTCollector.get(molNameForWeightedCollector).add(new Pair<Double,Double>(areaSum, rtForWeighted));
+            }
+            
             if (rt!=null && !Double.isInfinite(rt) && !Double.isNaN(rt))
                 toWrite = StaticUtils.extractDisplayValue(rt);
             CellStyle style = null;
@@ -892,6 +937,30 @@ public class ExcelAndTextExporter extends LDAExporter
         }
       }      
     }
+    
+    rowCount += 3;
+    for (String molName : weightedRTCollector.keySet())
+    {
+    	row = sheet.createRow(++rowCount); 
+    	Cell cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+    	cell.setCellValue(molName);
+	    cell = row.createCell(1,Cell.CELL_TYPE_NUMERIC);
+	    Double weightedRT = 0.0;
+	    Double sum = 0.0;
+	    Double sumWeights = 0.0;
+	    Integer num = 0;
+	    for (Pair<Double,Double> pair : weightedRTCollector.get(molName))
+	    {
+	    	if (pair.getFirst()>0 && pair.getSecond()>0)
+	    	{
+	    		sum += pair.getFirst()*pair.getSecond();
+	    		sumWeights += pair.getFirst();
+	    		num++;
+	    	}
+	    }
+	    weightedRT = sum/sumWeights;
+	    cell.setCellValue(Precision.round(weightedRT, 2));
+    }
 
     writeValuesForOmega(valuesForOmega, sheet, workbook, out, rowCount+3, headerStyle, numberStyle);
 
@@ -904,7 +973,7 @@ public class ExcelAndTextExporter extends LDAExporter
   
   private static void fillOmegaCollector(OmegaCollector omegaCollector, String lClass, LinkedHashMap<String,SummaryVO> molSpeciesDetails,
 			Vector<String> columnNames, Hashtable<String,String> expNames, LinkedHashMap<String,Vector<String>> expsOfGroup,
-			ExportOptionsVO expVO, ArrayList<String> modifications, String rowName, Boolean omegaSuggestionAvailable)
+			ExportOptionsVO expVO, ArrayList<String> modifications, String rowName, Vector<DoubleBondPositionVO> vector)
   {
   	if (lClass.equals("Cer") || lClass.equals("SM") || !rowName.contains("_")) return; //TODO: we ignore these for now, if rowName does not contain "_" it is an internal standard
   	
@@ -973,7 +1042,7 @@ public class ExcelAndTextExporter extends LDAExporter
       				// go into further detail
       				if (description.equals(OmegaCollector.DESCRIPTION_UNASSIGNED))
       				{
-      					if (omegaSuggestionAvailable)
+      					if (!vector.isEmpty())
       					{
       						omegaCollector.addToTotalFAPerDescription(experimentName, OmegaCollector.DESCRIPTION_UNASSIGNED_SUGGESTED, area);
       					}
@@ -1071,7 +1140,11 @@ public class ExcelAndTextExporter extends LDAExporter
   	Row headerRowA = sheetA.createRow(0);
   	Sheet sheetD = workbook.createSheet("Description Count");
   	Row headerRowD = sheetD.createRow(0);
+  	Sheet sheetE = workbook.createSheet("FAvsFA Combined");
+  	CellStyle headerStyle = getHeaderStyle(workbook);
+    CellStyle numberStyle = TargetListExporter.getNumberStyle(workbook);
   	
+  	ArrayList<LinkedHashMap<String,LinkedHashMap<String,Double>>> fafaData = new ArrayList<LinkedHashMap<String,LinkedHashMap<String,Double>>>();
   	Vector<String> experimentNames = omegaCollector.getExperimentNames();
   	String experimentNameUnsuppl = "F) RAW264.7 unsupplemented"; //ensure this is named this way
   	for (int i=0;i<experimentNames.size();i++)
@@ -1080,8 +1153,6 @@ public class ExcelAndTextExporter extends LDAExporter
   		String experimentName = experimentNames.get(i);
   		System.out.println(experimentName);
   		Double totalFAContent = omegaCollector.getTotalFA(experimentName);
-  		CellStyle headerStyle = getHeaderStyle(workbook);
-	    CellStyle numberStyle = TargetListExporter.getNumberStyle(workbook);
   		
 //  		if (!experimentName.startsWith("F")) continue; //testing with just unsupplemented
 	  	Sheet sheetB = workbook.createSheet("HeatMap LC"+experimentName);
@@ -1089,9 +1160,6 @@ public class ExcelAndTextExporter extends LDAExporter
 	  	
 	    Row headerRowB = sheetB.createRow(0);
 	    Row headerRowC = sheetC.createRow(0);
-	    
-	    
-	    
   		
   		
   		//for validation
@@ -1101,16 +1169,159 @@ public class ExcelAndTextExporter extends LDAExporter
   		writeFAvsLClassHeatmap(omegaCollector, experimentName, sheetB, headerRowB, headerStyle, numberStyle, totalFAContent);
   		
   		//for fa to fa heatmap
-  		writeFAvsFAHeatmap(omegaCollector, experimentName, sheetC, headerRowC, headerStyle, numberStyle, totalFAContent);
+  		fafaData.add(writeFAvsFAHeatmap(omegaCollector, experimentName, sheetC, headerRowC, headerStyle, numberStyle, totalFAContent));
   		
   		//for description
   		writeDescription(omegaCollector, experimentName, columnNr, i, sheetD, headerRowD, headerStyle, numberStyle, totalFAContent);
   		
   	}
   	
+  	writeFAvsFABarChartData(fafaData, sheetE, headerStyle, numberStyle);
   	
-  	//TODO: do something
   }
+  
+  private static void writeFAvsFABarChartData(ArrayList<LinkedHashMap<String,LinkedHashMap<String,Double>>> fafaData,
+  		Sheet sheet, CellStyle headerStyle, CellStyle numberStyle)
+  {
+  	LinkedHashSet<String> set = new LinkedHashSet<String>();
+  	for (LinkedHashMap<String,LinkedHashMap<String,Double>> data : fafaData)
+  	{
+  		set.addAll(data.keySet());
+  	}
+  	Hashtable<String,Hashtable<String,ArrayList<Double>>> valueStd = new Hashtable<String,Hashtable<String,ArrayList<Double>>>();
+  	for (String fa : set)
+  	{
+  		valueStd.put(fa, new Hashtable<String,ArrayList<Double>>());
+  		for (LinkedHashMap<String,LinkedHashMap<String,Double>> data : fafaData)
+    	{
+    		if (data.containsKey(fa))
+    		{
+    			for (String partner : data.get(fa).keySet())
+    			{
+    				if (!valueStd.get(fa).containsKey(partner))
+    				{
+    					valueStd.get(fa).put(partner, new ArrayList<Double>());
+    				}
+    				valueStd.get(fa).get(partner).add(data.get(fa).get(partner));
+    			}
+    		}
+    	}
+  	}
+  	
+  	ArrayList<String> fas = new ArrayList<String>(set);
+  	int rowNr = 0;
+  	Row headerRow = sheet.createRow(rowNr);
+  	for (int i=0; i<fas.size(); i++)
+  	{
+  		String fa = fas.get(i);
+  		Hashtable<String,ArrayList<Double>> values = valueStd.get(fa);
+  		int columnNr = i+1;
+  		Cell cell = headerRow.createCell(columnNr,Cell.CELL_TYPE_STRING);
+  		cell.setCellValue(fa);
+  		cell.setCellStyle(headerStyle);
+  		
+  		for (int j=0; j<fas.size(); j++)
+    	{
+  			String partner = fas.get(j);
+  			rowNr = j+1;
+  			Row row;
+  			if (i==0) 
+  			{
+  				row = sheet.createRow(rowNr);
+  				cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+    			cell.setCellValue(partner);
+    			cell.setCellStyle(headerStyle);
+  			}
+  			else 
+  			{
+  				row = sheet.getRow(rowNr);
+  			}
+  			
+  			cell = row.createCell(columnNr, Cell.CELL_TYPE_NUMERIC);
+  			double number = 0.0;
+  			
+  			if (values.containsKey(partner))
+  			{
+  				ArrayList<Double> nonZero = values.get(partner);
+  				nonZero.removeAll(Collections.singleton(0.0));
+  				if (!nonZero.isEmpty())
+  				{
+  					for (double x : nonZero)
+      			{
+      				number += x;
+      			}
+      			number = number / nonZero.size();
+  				}
+  			} 			
+  			cell.setCellValue(number);
+  			cell.setCellStyle(numberStyle);
+    		
+    	}
+  	}
+  	
+  	rowNr += 3;
+  	headerRow = sheet.createRow(rowNr);
+  	int rowNrLocal = rowNr;
+  	for (int i=0; i<fas.size(); i++)
+  	{
+  		String fa = fas.get(i);
+  		Hashtable<String,ArrayList<Double>> values = valueStd.get(fa);
+  		int columnNr = i+1;
+  		Cell cell = headerRow.createCell(columnNr,Cell.CELL_TYPE_STRING);
+  		cell.setCellValue(fa);
+  		cell.setCellStyle(headerStyle);
+  		
+  		for (int j=0; j<fas.size(); j++)
+    	{
+  			String partner = fas.get(j);
+  			rowNr = rowNrLocal+j+1;
+  			Row row;
+  			if (i==0) 
+  			{
+  				row = sheet.createRow(rowNr);
+  				cell = row.createCell(0,Cell.CELL_TYPE_STRING);
+    			cell.setCellValue(partner);
+    			cell.setCellStyle(headerStyle);
+  			}
+  			else 
+  			{
+  				row = sheet.getRow(rowNr);
+  			}
+  			
+  			cell = row.createCell(columnNr, Cell.CELL_TYPE_NUMERIC);
+  			
+  			double standardDeviation = 0.0;
+  			if (values.containsKey(partner) && values.get(partner).size() > 2)
+  			{
+  				ArrayList<Double> nonZero = values.get(partner);
+  				nonZero.removeAll(Collections.singleton(0.0));
+  				if (nonZero.size() > 2)
+  				{
+  					double sum = 0.0;
+    				for (double x : nonZero)
+      			{
+      				sum += x;
+      			}
+    				
+    				if (sum > 0)
+    				{
+    					double mean = sum / nonZero.size();
+    					sum = 0.0;
+      				for (double x : nonZero)
+        			{
+      					sum += Math.pow(x-mean, 2);
+        			}
+      				standardDeviation = Math.sqrt(sum / (nonZero.size()-1));
+    				}
+    				cell.setCellValue(standardDeviation);
+      			cell.setCellStyle(numberStyle);
+  				}
+  			}
+    	}
+  	}
+  	
+  }
+  
   
   private static void writeValuesForOmega(Hashtable<String,Hashtable<String,OmegaSummary>> valuesForOmega, 
   		Sheet sheet, XSSFWorkbook workbook, OutputStream out, int rowCount, CellStyle headerStyle, CellStyle normalStyle)
@@ -1517,9 +1728,22 @@ public class ExcelAndTextExporter extends LDAExporter
 		}
   }
   
-  private static void writeFAvsFAHeatmap(
+  /**
+   * 
+   * @param omegaCollector
+   * @param experimentName
+   * @param sheetC
+   * @param headerRowC
+   * @param headerStyle
+   * @param numberStyle
+   * @param totalFAContent
+   * @return a map with: key1: faName, key2: partnerFAName; list of intensities.
+   */
+  private static LinkedHashMap<String,LinkedHashMap<String,Double>> writeFAvsFAHeatmap(
   		OmegaCollector omegaCollector, String experimentName, Sheet sheetC, Row headerRowC, CellStyle headerStyle, CellStyle numberStyle, Double totalFAContent)
   {
+  	LinkedHashMap<String,LinkedHashMap<String,Double>> collection = new LinkedHashMap<String,LinkedHashMap<String,Double>>();
+  	
   	LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>> faContentToPartnerContent = omegaCollector.getFAContentToPartnerContent(experimentName);
 //  	LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,Double>>> faContentToPartnerContent = omegaCollector.getSn1ContentToSn2Content(experimentName);
 		//just want the total fa to fa, so summing up over classes
@@ -1539,11 +1763,6 @@ public class ExcelAndTextExporter extends LDAExporter
 				for (String partnerFA : partnerFAs.keySet())
 				{
 					Double value = partnerFAs.get(partnerFA);
-					
-					if (value > 0 && (fa.equals("22:0") || partnerFA.equals("22:0") || fa.equals("24:0") || partnerFA.equals("24:0")))
-					{
-						System.out.println("hi");
-					}
 					
 					if (value>0 && 
 							(fa.contains(LipidomicsConstants.OMEGA_POSITION_START) || partnerFA.contains(LipidomicsConstants.OMEGA_POSITION_START) || fa.length() <=1 ))  //one of the FA has to have an omega pos, or lyso
@@ -1619,14 +1838,17 @@ public class ExcelAndTextExporter extends LDAExporter
 			{
 				int columnNr = i+1;
 				String key1 = allFAs1.get(i) == null ? "" : StaticUtils.getHumanReadableChainName(allFAs1.get(i), Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), allFAs1.get(i).getOhNumber()>0);
+				String faName = key1.length() <= 1 ? "lyso" : key1;
+				collection.put(faName, new LinkedHashMap<String,Double>());
 				
 				Cell cell = headerRowC.createCell(columnNr,Cell.CELL_TYPE_STRING);
-				cell.setCellValue(key1.length() <= 1 ? "lyso" : key1);
+				cell.setCellValue(faName);
 				cell.setCellStyle(headerStyle);
 				
 				for (int j=0; j<allFAs2.size();j++)
 				{
 					String key2 = allFAs2.get(j) == null ? "" : StaticUtils.getHumanReadableChainName(allFAs2.get(j), Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), allFAs2.get(j).getOhNumber()>0);
+					String faNamePartner = key2.length() <= 1 ? "lyso" : key2;
 					
 					int rowNr = j+1;
 					Row row;
@@ -1634,7 +1856,7 @@ public class ExcelAndTextExporter extends LDAExporter
 					{
 						row = sheetC.createRow(rowNr);
 						cell = row.createCell(0,Cell.CELL_TYPE_STRING);
-	    			cell.setCellValue(key2.length() <= 1 ? "lyso" : key2);
+	    			cell.setCellValue(faNamePartner);
 	    			cell.setCellStyle(headerStyle);
 					}
 					else 
@@ -1651,6 +1873,8 @@ public class ExcelAndTextExporter extends LDAExporter
 						number = totalFAFA.get(key1).get(key2) /totalFAContent;
 //						number = totalFAFA.get(key1).get(key2) /maxFAContent; //normalizing to highest occurrence
 					}
+					collection.get(faName).put(faNamePartner, number);
+					
 					cell.setCellValue(number);
 	  			cell.setCellStyle(numberStyle);
 				}
@@ -1660,6 +1884,8 @@ public class ExcelAndTextExporter extends LDAExporter
 		{
 			ex.printStackTrace();
 		}
+		System.out.println("hihi");
+		return collection;
   }
   
   private static void sortFAs(Vector<FattyAcidVO> fas)

@@ -73,7 +73,7 @@ public class Settings
   
   public final static boolean SHOW_OMEGA_TOOLS = true; //TODO: set to false before publication and remove altogether when the version is published
   
-  public final static boolean SHOW_AI_TOOLS = true; //TODO: set to false before publication and remove altogether when the version is published
+  public final static boolean SHOW_AI_TOOLS = false; //TODO: set to false before publication and remove altogether when the version is published
   
   private static String operatingSystem_;
   private static String ldaUserHomePath_;

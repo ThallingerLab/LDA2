@@ -52,7 +52,7 @@ public class RTDB_Analysis
 //	private static final String OUT_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min_final\\TL_analysis\\SILDA_30min_count.xlsx";
 	
 	private static final String TARGET_LIST_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\final_TL\\SILDA_60min.xlsx";
-	private static final String OUT_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\final_TL\\TL_Analysis\\SILDA_60min_count.xlsx";
+	private static final String OUT_PATH = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\final_TL\\TL_Analysis\\SILDA_60min_analysis.xlsx";
 	
 	private final static int TOTALS_ROW = 0;
 	private final static int HEADER_ROW = 1;
@@ -60,10 +60,20 @@ public class RTDB_Analysis
 	private final static String HEADER_UNIQUE_MOL = "Unique molecular species with assigned C=C positions";
 	private final static String HEADER_ALL_MOL = "All RT-DB entries";
   private final static String HEADER_ALL_FA = "All FA with assigned C=C positions";
+  
+  private static ArrayList<Double> diffPerOmega_ = new ArrayList<Double>();
 	
   public static void main(String[] args)
   {
   	analyseTargetList();
+  	printDiffPerOmega();
+  }
+  
+  private static void printDiffPerOmega()
+  {
+  	Double sum = 0.0;
+  	for (Double rt : diffPerOmega_) sum += rt;
+  	System.out.println(sum/diffPerOmega_.size());
   }
   
 	@SuppressWarnings("unchecked")
@@ -361,6 +371,7 @@ public class RTDB_Analysis
 			countUniqueCC += uniqueNamesList.size();
 			countUniqueMol += uniqueMolList.size();
 			
+			analyzeRTDiffs(allNames, uniqueMolList);
 			
 			if (cName.contains("-")) // O- or P- prefix is part of the mol species name
 			{
@@ -395,6 +406,66 @@ public class RTDB_Analysis
 		cell.setCellValue(String.format("Total: %s", countUniqueMol));
 	}
 	
+	private static void analyzeRTDiffs(ArrayList<String> allNames, ArrayList<String> uniqueMolList)
+	{
+		Hashtable<String,ArrayList<String>> grouped = new Hashtable<String,ArrayList<String>>();
+		for (String name : uniqueMolList)
+		{
+			grouped.put(name, new ArrayList<String>());
+		}
+		for (String name : allNames)
+		{
+			grouped.get(name.substring(0, name.indexOf(";")).replaceAll("\\([^)]*\\)", "")).add(name);
+		}
+		for (String name : grouped.keySet())
+		{
+			ArrayList<String> allMolsOfName = grouped.get(name);
+			if (allMolsOfName.size() > 1)
+			{
+				Hashtable<Integer,ArrayList<Double>> groupedMols = new Hashtable<Integer,ArrayList<Double>>();
+				ArrayList<Integer> omegas = new ArrayList<Integer>();
+				for (String molName : allMolsOfName)
+				{
+					Double rt = Double.parseDouble(molName.substring(molName.indexOf("RT=")+3, molName.indexOf(" min")));
+					Integer sumOmega = Integer.parseInt(molName.substring(molName.indexOf("(n-")+3, molName.indexOf(")")));
+					String lessOmega = molName.replaceFirst("\\([^)]*\\)", "");
+					String temp = molName.replaceAll(":", "");
+					if (temp.length()<molName.length()-1 && !molName.contains(":0") && !lessOmega.contains("(n-")) 
+					{
+						continue;
+					}
+					if (lessOmega.contains("(n-"))
+					{
+						sumOmega += Integer.parseInt(lessOmega.substring(lessOmega.indexOf("(n-")+3, lessOmega.indexOf(")")));
+					}
+					if (!groupedMols.containsKey(sumOmega)) 
+					{
+						groupedMols.put(sumOmega, new ArrayList<Double>());
+						omegas.add(sumOmega);
+					}
+					groupedMols.get(sumOmega).add(rt);
+				}
+				if (omegas.size()>1)
+				{
+					Collections.sort(omegas);
+					Integer previousOmega = omegas.get(0);
+					Double sumRts = 0.0;
+					for (Double rt : groupedMols.get(previousOmega)) sumRts += rt;
+					Double previousRTs = sumRts / groupedMols.get(previousOmega).size();
+					
+					for (int i=1; i<omegas.size();i++)
+					{
+						Integer omegadiff = omegas.get(i)-previousOmega;
+						Double sumRtsNew = 0.0;
+						for (Double rt : groupedMols.get(omegas.get(i))) sumRtsNew += rt;
+						Double rtsNew = sumRtsNew / groupedMols.get(omegas.get(i)).size();
+						Double rtDiff = Math.abs(previousRTs-rtsNew);
+						diffPerOmega_.add(rtDiff/omegadiff);
+					}
+				}
+			}
+		}
+	}
 	
 	
 	private static ArrayList<String> removeOmegaIDs(ArrayList<String> uniqueNamesList)

@@ -70,7 +70,7 @@ public class EditOmegaAssignmentJTable extends JFrame implements ActionListener
   /** the parent action listener */
   private ActionListener parent_;
   /** the title String */
-  private final static String TITLE = "Edit \u03C9 - double bond assignment";
+  private final static String TITLE = "Edit \u03C9-C=C assignment";
   /** button and respective command Strings */
   private final static String BUTTON_CHANGE_SELECTED_SPECIES = "Change Selected";
   private final static String COMMAND_CHANGE_SELECTED_SPECIES = "changeSelectedSpecies";

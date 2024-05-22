@@ -65,7 +65,7 @@ import at.tugraz.genome.lda.verifier.StringVerifier;
 public class SubgroupDefinitionPanel extends JFrame
 {
 	private static final long serialVersionUID = 1L;
-	private static final String TITLE = "Define subgroups to be calibrated together";
+	private static final String TITLE = "Define groups of lipid classes for combined RT-mapping";
 	private final static String BUTTON_CANCEL = "Cancel";
 	private final static String BUTTON_SAVE_RETURN = "Save and Close";
 	
@@ -209,7 +209,7 @@ public class SubgroupDefinitionPanel extends JFrame
 	        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(5, 5, 5, 5), 0, 0));
 		}
 		
-		definedGroupsPanel_.setBorder(JOptionPanel.getTitledPanelBorder("Current subgroups"));
+		definedGroupsPanel_.setBorder(JOptionPanel.getTitledPanelBorder("Current groups"));
 		
 		contentsPanel_.add(definedGroupsPanel_, new GridBagConstraints(0, 0, 0, 1, 0.0, 0.0
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(10, 25, 0, 25), 0, 0));
@@ -263,7 +263,7 @@ public class SubgroupDefinitionPanel extends JFrame
 		defineNewGroupPanel_.add(groupNameField_, new GridBagConstraints(2, 1, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(5, 5, 5, 5), 0, 0));
 		
-		JButton button = new JButton("Save Subgroup");
+		JButton button = new JButton("Save Group");
 		button.addActionListener(new ActionListener() {
 		  public void actionPerformed(ActionEvent e) 
 		  {
@@ -273,7 +273,7 @@ public class SubgroupDefinitionPanel extends JFrame
 		defineNewGroupPanel_.add(button, new GridBagConstraints(2, 3, 1, 1, 0.0, 0.0
         ,GridBagConstraints.SOUTHEAST, GridBagConstraints.NONE, new Insets(5, 5, 5, 5), 0, 0));
 		
-		defineNewGroupPanel_.setBorder(JOptionPanel.getTitledPanelBorder("Define new subgroup"));
+		defineNewGroupPanel_.setBorder(JOptionPanel.getTitledPanelBorder("Define new group"));
 		contentsPanel_.add(defineNewGroupPanel_, new GridBagConstraints(0, 1, 0, 1, 0.0, 0.0
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(25, 25, 25, 25), 0, 0));
 	}
@@ -284,7 +284,7 @@ public class SubgroupDefinitionPanel extends JFrame
 	 */
 	private DefaultTableModel initDefinedGroupsTableModel()
 	{
-		String[] headers = { "Defined subgroups ", "Actions" };
+		String[] headers = { "Defined groups ", "Actions" };
 		DefaultTableModel model = new DefaultTableModel()
 		{
       private static final long serialVersionUID = 1L;
