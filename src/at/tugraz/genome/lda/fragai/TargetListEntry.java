@@ -2,8 +2,9 @@ package at.tugraz.genome.lda.fragai;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.List;
 import java.util.Objects;
+
+import at.tugraz.genome.lda.Settings;
 
 public class TargetListEntry
 {
@@ -49,7 +50,37 @@ public class TargetListEntry
 	{
 		return adducts_;
 	}
-
+	
+	/**
+	 * Computes the theoretical precursor mz value considering the adduct and the charge
+	 * @param adductName 		the name of the relevant adduct
+	 * @return
+	 */
+	public Double computeTheoreticalPrecursorMZValue(String adductName)
+	{
+		for (Adduct adduct : adducts_)
+		{
+			if (adduct.getAdductName().equalsIgnoreCase(adductName))
+			{
+				Double fullMz = 0.0;
+				for (String element : getSumFormula().keySet())
+				{
+					fullMz += Settings.getElementParser().getElementDetails(element).getMonoMass()*getSumFormula().get(element);
+				}
+				Double adductMz = fullMz;
+				for (String element : adduct.getAddModifier().keySet())
+				{
+					adductMz += Settings.getElementParser().getElementDetails(element).getMonoMass()*adduct.getAddModifier().get(element);
+				}
+				for (String element : adduct.getRemoveModifier().keySet())
+				{
+					adductMz -= Settings.getElementParser().getElementDetails(element).getMonoMass()*adduct.getRemoveModifier().get(element);
+				}
+				return Math.abs(adductMz/adduct.getCharge());
+			}
+		}
+		return null;
+	}
 
 	public Double getRetentionTime()
 	{

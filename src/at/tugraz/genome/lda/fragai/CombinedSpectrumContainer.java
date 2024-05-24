@@ -1,0 +1,207 @@
+package at.tugraz.genome.lda.fragai;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+
+import org.apache.commons.math3.util.Pair;
+
+import at.tugraz.genome.lda.Settings;
+import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
+import at.tugraz.genome.lda.vos.SpectrumPointVO;
+
+
+/**
+ * 
+ * @author Leonida M. Lamp
+ *
+ */
+public class CombinedSpectrumContainer implements Comparable<CombinedSpectrumContainer>
+{
+	private String lipidClass_;
+	private String adduct_;
+	private Integer mzTolerance_;
+	private ArrayList<SpectrumContainer> containers_;
+	
+	public CombinedSpectrumContainer(String lipidClass, String adduct, Integer mzTolerance)
+	{
+		this.lipidClass_ = lipidClass;
+		this.adduct_ = adduct;
+		this.mzTolerance_ = mzTolerance;
+		this.containers_ = new ArrayList<SpectrumContainer>();
+	}
+	
+	/**
+	 * Checks if there are scans of at least 2 different precursor masses are available for ms level == 2.
+	 * There must be a total of at least 3 scans.
+	 * @return true if the criteria are fulfilled.
+	 */
+	protected boolean isViableData()
+	{
+		HashSet<Double> uniqueMolMasses = new HashSet<Double>();
+		Integer count = 0;
+		for (SpectrumContainer container : containers_)
+		{
+			uniqueMolMasses.add(container.getEntry().computeTheoreticalPrecursorMZValue(adduct_));
+			for (Integer level : container.getScanNrLevelHash().values())
+			{
+				if (level == 2) count ++;
+			}
+		}
+		if (count>2 && uniqueMolMasses.size()>1)
+			return true;
+		return false;
+	}
+	
+	/**
+	 * Adds a copy of the container clearing the spectra data up. Only the peak maxima for each accumulation of intensities are saved.
+	 * For now: only MS2 scans are used.
+	 * @param container
+	 */
+	protected void addContainerCopy(SpectrumContainer container)
+	{
+		if (container.getEntry().getLipidClass().equalsIgnoreCase(lipidClass_) && container.getAdduct().getAdductName().equalsIgnoreCase(adduct_))
+		{
+			SpectrumContainer newContainer = new SpectrumContainer(container);
+			for (Integer scanNr : newContainer.getScanNrLevelHash().keySet())
+			{
+				ArrayList<Integer> scans = new ArrayList<Integer>();
+				scans.add(scanNr);
+				ArrayList<SpectrumPointVO> dataPoints = clearData(newContainer.getProcessedSpectrum(scanNr));
+				newContainer.setProcessedSpectrum(scanNr, dataPoints);
+			}
+			this.containers_.add(newContainer);
+		}
+	}
+	
+	private ArrayList<SpectrumPointVO> clearData(ArrayList<SpectrumPointVO> dataPoints)
+	{
+		ArrayList<SpectrumPointVO> clearedData = new ArrayList<SpectrumPointVO>();
+		SpectrumPointVO max = new SpectrumPointVO("", 0.0f);
+		for (SpectrumPointVO vo : dataPoints)
+		{
+			if (vo.getIntensity()>0)
+			{
+				if (vo.getIntensity() > max.getIntensity())
+				{
+					max = vo;
+				}
+			}
+			else if (max.getIntensity()>0)
+			{
+				clearedData.add(max);
+				max = new SpectrumPointVO("", 0.0f);
+			}
+		}
+		return clearedData;
+	}
+	
+	/**
+	 * Returns a cumulative spectrum for this container.
+	 * First, all data points in common are added to the cumulative spectrum (with relative intensities.. do we care about intensities?)
+	 * Then, the precursorcleared option is added (the precursor is removed for all fragements)
+	 * @return sorted datapoints of the cumulative spectrum.
+	 */
+	protected ArrayList<SpectrumPointVO> computeCombinedSpectrum()
+	{
+		ArrayList<SpectrumPointVO> combined = new ArrayList<SpectrumPointVO>();
+		HashMap<Pair<Double,Double>,ArrayList<SpectrumPointVO>> groups = new HashMap<Pair<Double,Double>,ArrayList<SpectrumPointVO>>();
+		for (SpectrumContainer container : containers_)
+		{
+			for (Integer scanNr : container.getScanNrLevelHash().keySet())
+			{
+				if (container.getScanNrLevelHash().get(scanNr) == 2)
+				{
+					ArrayList<SpectrumPointVO> processedSpectrum = container.getProcessedSpectrum(scanNr);
+					boolean added = false;
+					for (SpectrumPointVO point : processedSpectrum)
+					{
+						for (Pair<Double,Double> bin : groups.keySet())
+						{
+							if (bin.getFirst() <= point.getMz() && bin.getSecond() >= point.getMz())
+							{
+								addPointToBin(bin, groups, point);
+								added = true;
+							}
+						}
+						if (!added)
+						{
+							addPointToBin(null, groups, point);
+						}
+					}
+					System.out.println("HI!");
+				}
+			}
+			for (Pair<Double,Double> bin : groups.keySet())
+			{
+				ArrayList<SpectrumPointVO> points = groups.get(bin);
+				if (points.size() >1)
+				{
+					System.out.println("HI!");
+				}
+			}
+			System.out.println("HI");
+		}
+		return combined;
+	}
+	
+	private void addPointToBin(Pair<Double,Double> bin, HashMap<Pair<Double,Double>,ArrayList<SpectrumPointVO>> groups, SpectrumPointVO newPoint)
+	{
+		if (bin != null)
+		{
+			ArrayList<SpectrumPointVO> points = groups.get(bin);
+			groups.remove(bin);
+			points.add(newPoint);
+			float sumMz = 0f;
+			for (SpectrumPointVO point : points)
+			{
+				sumMz += point.getMz();
+			}
+			float averageMz = sumMz/points.size();
+			Pair<Double,Double> newBin = computeLowerUpperPair(averageMz);
+			groups.put(newBin, points);
+		}
+		else
+		{
+			ArrayList<SpectrumPointVO> points = new ArrayList<SpectrumPointVO>();
+			points.add(newPoint);
+			Pair<Double,Double> newBin = computeLowerUpperPair(newPoint.getMz());
+			groups.put(newBin, points);
+		}
+	}
+	
+	private Pair<Double,Double> computeLowerUpperPair(float mz)
+	{
+		Double tolerance = computeTolerance(mz);
+		Double lowerLimit = mz-tolerance;
+		Double upperLimit = mz+tolerance;
+		return new Pair<Double,Double>(lowerLimit,upperLimit);
+	}
+	
+	private Double computeTolerance(float mz)
+	{
+		return (double) (mz/1000000*mzTolerance_);
+	}
+
+	public String getLipidClass()
+	{
+		return lipidClass_;
+	}
+
+	public String getAdduct()
+	{
+		return adduct_;
+	}
+	
+
+	@Override
+	public int compareTo(CombinedSpectrumContainer other)
+	{
+		return Comparator
+  			.comparing(CombinedSpectrumContainer::getLipidClass)
+  			.thenComparing(CombinedSpectrumContainer::getAdduct)
+  			.compare(this, other);
+	}
+	
+}

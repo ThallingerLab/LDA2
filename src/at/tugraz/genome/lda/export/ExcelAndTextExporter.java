@@ -1155,8 +1155,8 @@ public class ExcelAndTextExporter extends LDAExporter
   		Double totalFAContent = omegaCollector.getTotalFA(experimentName);
   		
 //  		if (!experimentName.startsWith("F")) continue; //testing with just unsupplemented
-	  	Sheet sheetB = workbook.createSheet("HeatMap LC"+experimentName);
-	  	Sheet sheetC = workbook.createSheet("HeatMap FA"+experimentName);
+	  	Sheet sheetB = workbook.createSheet("HeatMap LC "+experimentName.substring(0,2)); //TODO: change for other data types.
+	  	Sheet sheetC = workbook.createSheet("HeatMap FA "+experimentName.substring(0,2));
 	  	
 	    Row headerRowB = sheetB.createRow(0);
 	    Row headerRowC = sheetC.createRow(0);

@@ -141,7 +141,7 @@ public class SpectrumContainer implements Comparable<SpectrumContainer>
 	
 	public void setProcessedSpectrum(Integer scanNumber, ArrayList<SpectrumPointVO> spectrum)
 	{
-		
+		scanNrProcessedSpectrumHash_.put(scanNumber, spectrum);
 	}
 	
 	

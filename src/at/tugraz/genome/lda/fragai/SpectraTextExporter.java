@@ -19,13 +19,21 @@ public class SpectraTextExporter
 {
 	private final static String HEADER_MZ = "mz Value";
 	private final static String HEADER_INTENSITY = "Intensity";
-	private ArrayList<SpectrumContainer> spectra_;
+	private ArrayList<SpectrumContainer> spectra_ = null;
+	private ArrayList<CombinedSpectrumContainer> combinedSpectra_ = null;
 	private String path_;
 
 	public SpectraTextExporter(ArrayList<SpectrumContainer> spectra, String path)
 	{
 		this.spectra_ = spectra;
 		Collections.sort(this.spectra_);
+		this.path_ = path;
+	}
+	
+	public SpectraTextExporter(String path, ArrayList<CombinedSpectrumContainer> combinedSpectra)
+	{
+		this.combinedSpectra_ = combinedSpectra;
+		Collections.sort(this.combinedSpectra_);
 		this.path_ = path;
 	}
 	
@@ -37,44 +45,13 @@ public class SpectraTextExporter
 			// the constructor can only take a version number in the format xx.yyyy
 			Workbook wb = new Workbook(out, "Lipid Data Analyzer",
 					s.substring(0, s.indexOf(".", s.indexOf(".") + 1)));
-			int count = 0;
-			for (SpectrumContainer spectrum : spectra_)
+			if (this.spectra_ != null)
 			{
-				Hashtable<Integer,Integer> scanNrLevelHash = spectrum.getScanNrLevelHash();
-				for (Integer scanNr : scanNrLevelHash.keySet())
-				{
-					String sheetName = String.format("%s_%s_%s_%s", spectrum.getEntry().getLipidClass(), spectrum.getAdduct().getAdductName(), scanNrLevelHash.get(scanNr), count++);
-					Worksheet ws = wb.newWorksheet(sheetName);
-					int rowNumber = 0;
-					ws.value(rowNumber, 0, "Lipid class:");
-					ws.value(rowNumber, 1, spectrum.getEntry().getLipidClass());
-					ws.value(++rowNumber, 0, "Lipid species:");
-					ws.value(rowNumber, 1, spectrum.getEntry().getSpecies());
-					ws.value(++rowNumber, 0, "Adduct:");
-					ws.value(rowNumber, 1, spectrum.getAdduct().getAdductName());
-					ws.value(++rowNumber, 0, "Precursor mz:");
-					ws.value(rowNumber, 1, spectrum.getScanNrPrecursorHash().get(scanNr).get(0));
-					ws.value(++rowNumber, 0, "MS Level:");
-					ws.value(rowNumber, 1, scanNrLevelHash.get(scanNr));
-					ws.value(++rowNumber, 0, "Scan Number:");
-					ws.value(rowNumber, 1, scanNr);
-					ws.value(++rowNumber, 0, "Chrom File Name:");
-					ws.value(rowNumber, 1, spectrum.getChromFile().getName());
-					rowNumber++;
-					List<String> headerTitles = new ArrayList<String>();
-					headerTitles.add(HEADER_MZ);
-					headerTitles.add(HEADER_INTENSITY);
-					createHeader(ws, headerTitles, ++rowNumber);
-					
-					ArrayList<SpectrumPointVO> dataPoints = spectrum.getProcessedSpectrum(scanNr);
-					
-					for (SpectrumPointVO dataPoint : dataPoints)
-					{
-						++rowNumber;
-						ws.value(rowNumber, headerTitles.indexOf(HEADER_MZ), dataPoint.getMz());
-						ws.value(rowNumber, headerTitles.indexOf(HEADER_INTENSITY), dataPoint.getIntensity());
-					}
-				}
+				exportRawSpectra(wb);
+			}
+			else if (this.combinedSpectra_ != null)
+			{
+				exportCombinedSpectra(wb);
 			}
 			wb.finish();
 			System.out.println("finished");
@@ -87,9 +64,79 @@ public class SpectraTextExporter
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		
-		
+	}
+	
+	private void exportCombinedSpectra(Workbook wb)
+	{
+		int count = 0;
+		for (CombinedSpectrumContainer spectrum : combinedSpectra_)
+		{
+			String sheetName = String.format("%s_%s_%s", spectrum.getLipidClass(), spectrum.getAdduct(), count++);
+			Worksheet ws = wb.newWorksheet(sheetName);
+			int rowNumber = 0;
+			ws.value(rowNumber, 0, "Lipid class:");
+			ws.value(rowNumber, 1, spectrum.getLipidClass());
+			ws.value(++rowNumber, 0, "Adduct:");
+			ws.value(rowNumber, 1, spectrum.getAdduct());
+			rowNumber++;
+			
+			List<String> headerTitles = new ArrayList<String>();
+			headerTitles.add(HEADER_MZ);
+			headerTitles.add(HEADER_INTENSITY);
+			createHeader(ws, headerTitles, ++rowNumber);
+			
+			ArrayList<SpectrumPointVO> dataPoints = spectrum.computeCombinedSpectrum();
+			
+			for (SpectrumPointVO dataPoint : dataPoints)
+			{
+				++rowNumber;
+				ws.value(rowNumber, headerTitles.indexOf(HEADER_MZ), dataPoint.getMz());
+				ws.value(rowNumber, headerTitles.indexOf(HEADER_INTENSITY), dataPoint.getIntensity());
+			}
+		}
+	}
+	
+	private void exportRawSpectra(Workbook wb)
+	{
+		int count = 0;
+		for (SpectrumContainer spectrum : spectra_)
+		{
+			Hashtable<Integer,Integer> scanNrLevelHash = spectrum.getScanNrLevelHash();
+			for (Integer scanNr : scanNrLevelHash.keySet())
+			{
+				String sheetName = String.format("%s_%s_%s_%s", spectrum.getEntry().getLipidClass(), spectrum.getAdduct().getAdductName(), scanNrLevelHash.get(scanNr), count++);
+				Worksheet ws = wb.newWorksheet(sheetName);
+				int rowNumber = 0;
+				ws.value(rowNumber, 0, "Lipid class:");
+				ws.value(rowNumber, 1, spectrum.getEntry().getLipidClass());
+				ws.value(++rowNumber, 0, "Lipid species:");
+				ws.value(rowNumber, 1, spectrum.getEntry().getSpecies());
+				ws.value(++rowNumber, 0, "Adduct:");
+				ws.value(rowNumber, 1, spectrum.getAdduct().getAdductName());
+				ws.value(++rowNumber, 0, "Precursor mz:");
+				ws.value(rowNumber, 1, spectrum.getScanNrPrecursorHash().get(scanNr).get(0));
+				ws.value(++rowNumber, 0, "MS Level:");
+				ws.value(rowNumber, 1, scanNrLevelHash.get(scanNr));
+				ws.value(++rowNumber, 0, "Scan Number:");
+				ws.value(rowNumber, 1, scanNr);
+				ws.value(++rowNumber, 0, "Chrom File Name:");
+				ws.value(rowNumber, 1, spectrum.getChromFile() == null ? "combined" : spectrum.getChromFile().getName());
+				rowNumber++;
+				List<String> headerTitles = new ArrayList<String>();
+				headerTitles.add(HEADER_MZ);
+				headerTitles.add(HEADER_INTENSITY);
+				createHeader(ws, headerTitles, ++rowNumber);
+				
+				ArrayList<SpectrumPointVO> dataPoints = spectrum.getProcessedSpectrum(scanNr);
+				
+				for (SpectrumPointVO dataPoint : dataPoints)
+				{
+					++rowNumber;
+					ws.value(rowNumber, headerTitles.indexOf(HEADER_MZ), dataPoint.getMz());
+					ws.value(rowNumber, headerTitles.indexOf(HEADER_INTENSITY), dataPoint.getIntensity());
+				}
+			}
+		}
 	}
 	
 	

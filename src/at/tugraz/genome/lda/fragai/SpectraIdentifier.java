@@ -78,27 +78,10 @@ public class SpectraIdentifier extends Thread
         	
         	for (TargetListEntry entry : entries)
         	{
-        		Hashtable<String,Integer> formula = entry.getSumFormula();
-        		float fullMz = 0f;
-      			for (String element : formula.keySet())
-      			{
-      				fullMz += Settings.getElementParser().getElementDetails(element).getMonoMass()*formula.get(element);
-      			}
-      			System.out.println(fullMz);
         		ArrayList<Adduct> adducts = entry.getAdducts();
         		for (Adduct adduct : adducts)
         		{
-        			float adductMz = fullMz;
-        			for (String element : adduct.getAddModifier().keySet())
-        			{
-        				adductMz += Settings.getElementParser().getElementDetails(element).getMonoMass()*adduct.getAddModifier().get(element);
-        			}
-        			for (String element : adduct.getRemoveModifier().keySet())
-        			{
-        				adductMz -= Settings.getElementParser().getElementDetails(element).getMonoMass()*adduct.getRemoveModifier().get(element);
-        			}
-        			
-        			float targetMz = Math.abs(adductMz/adduct.getCharge());
+        			float targetMz = new Float(entry.computeTheoreticalPrecursorMZValue(adduct.getAdductName()));
         			
 //        			System.out.println(targetMz);
 //        			String[] rawLines2D = reader.getRawLines(targetMz-mzTolerance, targetMz+mzTolerance, msLevel);

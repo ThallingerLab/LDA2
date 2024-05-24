@@ -137,6 +137,7 @@ import at.tugraz.genome.lda.fragai.SpectraIdentifier;
 import at.tugraz.genome.lda.fragai.SpectraInterpreter;
 import at.tugraz.genome.lda.fragai.SpectraTextExporter;
 import at.tugraz.genome.lda.fragai.SpectrumContainer;
+import at.tugraz.genome.lda.fragai.CombinedSpectrumContainer;
 import at.tugraz.genome.lda.interfaces.ColorChangeListener;
 import at.tugraz.genome.lda.listeners.AnnotationThresholdListener;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
@@ -3324,11 +3325,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     	{
     		parser.parse();
     		ArrayList<SpectrumContainer> spectra = identifier.identifySpectra(parser);
-//    		SpectraTextExporter exporter = new SpectraTextExporter(spectra, outPath);
-//    		exporter.exportSpectra();
+    		SpectraTextExporter exporter = new SpectraTextExporter(spectra, outPath);
+    		exporter.exportSpectra();
     		SpectraInterpreter interpreter = new SpectraInterpreter(spectra);
-    		ArrayList<SpectrumContainer> mergedSpectra = interpreter.interpretSpectra();
-    		SpectraTextExporter exporter = new SpectraTextExporter(spectra, outPathMerged);
+    		ArrayList<CombinedSpectrumContainer> mergedSpectra = interpreter.interpretSpectra();
+    		exporter = new SpectraTextExporter(outPathMerged, mergedSpectra);
     		exporter.exportSpectra();
     	}
     	catch (IOException | QuantificationException ex)
