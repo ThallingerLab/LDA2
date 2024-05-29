@@ -1,14 +1,13 @@
 package at.tugraz.genome.lda.fragai;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 
 import org.apache.commons.math3.util.Pair;
 
-import at.tugraz.genome.lda.Settings;
-import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.lda.vos.SpectrumPointVO;
 
 
@@ -99,7 +98,8 @@ public class CombinedSpectrumContainer implements Comparable<CombinedSpectrumCon
 	
 	/**
 	 * Returns a cumulative spectrum for this container.
-	 * First, all data points in common are added to the cumulative spectrum (with relative intensities.. do we care about intensities?)
+	 * First, all data points in common are added to the cumulative spectrum 
+	 * With intensities relative to the overall maximum intensity for each scan. (Anther idea reasonable?)
 	 * Then, the precursorcleared option is added (the precursor is removed for all fragements)
 	 * @return sorted datapoints of the cumulative spectrum.
 	 */
@@ -107,52 +107,140 @@ public class CombinedSpectrumContainer implements Comparable<CombinedSpectrumCon
 	{
 		ArrayList<SpectrumPointVO> combined = new ArrayList<SpectrumPointVO>();
 		HashMap<Pair<Double,Double>,ArrayList<SpectrumPointVO>> groups = new HashMap<Pair<Double,Double>,ArrayList<SpectrumPointVO>>();
+		int countScan = 0;
 		for (SpectrumContainer container : containers_)
 		{
 			for (Integer scanNr : container.getScanNrLevelHash().keySet())
 			{
 				if (container.getScanNrLevelHash().get(scanNr) == 2)
 				{
+					countScan++;
 					ArrayList<SpectrumPointVO> processedSpectrum = container.getProcessedSpectrum(scanNr);
-					boolean added = false;
+					float highestInt = 0f;
 					for (SpectrumPointVO point : processedSpectrum)
 					{
-						for (Pair<Double,Double> bin : groups.keySet())
+						highestInt = highestInt < point.getIntensity() ? point.getIntensity() : highestInt;
+					}
+					
+					boolean added = false;
+					
+					for (SpectrumPointVO point : processedSpectrum)
+					{
+						ArrayList<Pair<Double, Double>> bins = new ArrayList<Pair<Double, Double>>(groups.keySet());
+						for (int i=0; i<bins.size(); i++)
 						{
+							Pair<Double,Double> bin = bins.get(i);
 							if (bin.getFirst() <= point.getMz() && bin.getSecond() >= point.getMz())
 							{
-								addPointToBin(bin, groups, point);
+								addPointToBin(bin, groups, point, highestInt);
 								added = true;
 							}
 						}
 						if (!added)
 						{
-							addPointToBin(null, groups, point);
+							addPointToBin(null, groups, point, highestInt);
 						}
 					}
-					System.out.println("HI!");
 				}
 			}
-			for (Pair<Double,Double> bin : groups.keySet())
-			{
-				ArrayList<SpectrumPointVO> points = groups.get(bin);
-				if (points.size() >1)
-				{
-					System.out.println("HI!");
-				}
-			}
-			System.out.println("HI");
 		}
+		System.out.println(countScan);System.out.println(countScan/2+1);
+		for (Pair<Double,Double> bin : groups.keySet())
+		{
+			ArrayList<SpectrumPointVO> points = groups.get(bin);
+			if (points.size() > countScan/2+1)
+			{
+				float averageMZ = 0f;
+				float averageIntensity = 0f;
+				
+				for (SpectrumPointVO point : points)
+				{
+					averageMZ += point.getMz();
+					averageIntensity += point.getIntensity();
+				}
+				averageMZ /= points.size();
+				averageIntensity /= points.size();
+				
+				SpectrumPointVO averaged = new SpectrumPointVO(averageMZ, averageIntensity);
+				combined.add(averaged);
+			}
+		}
+		Collections.sort(combined);
+		
+		ArrayList<SpectrumPointVO> combinedTemp = new ArrayList<SpectrumPointVO>();
+		HashMap<Pair<Double,Double>,ArrayList<SpectrumPointVO>> groupsTemp = new HashMap<Pair<Double,Double>,ArrayList<SpectrumPointVO>>();
+		for (SpectrumContainer container : containers_)
+		{
+			float precursorMz = new Float(container.getEntry().computeTheoreticalPrecursorMZValue(adduct_));
+			for (Integer scanNr : container.getScanNrLevelHash().keySet())
+			{
+				if (container.getScanNrLevelHash().get(scanNr) == 2)
+				{
+					ArrayList<SpectrumPointVO> processedSpectrum = container.getProcessedSpectrum(scanNr);
+					float highestInt = 0f;
+					for (SpectrumPointVO point : processedSpectrum)
+					{
+						highestInt = highestInt < point.getIntensity() ? point.getIntensity() : highestInt;
+					}
+					
+					boolean added = false;
+					
+					for (SpectrumPointVO pointUnadjusted : processedSpectrum)
+					{
+						SpectrumPointVO point = new SpectrumPointVO(precursorMz-pointUnadjusted.getMz(), pointUnadjusted.getIntensity());
+						ArrayList<Pair<Double, Double>> bins = new ArrayList<Pair<Double, Double>>(groupsTemp.keySet());
+						for (int i=0; i<bins.size(); i++)
+						{
+							Pair<Double,Double> bin = bins.get(i);
+							if (bin.getFirst() <= point.getMz() && bin.getSecond() >= point.getMz())
+							{
+								addPointToBin(bin, groupsTemp, point, highestInt);
+								added = true;
+							}
+						}
+						if (!added)
+						{
+							addPointToBin(null, groupsTemp, point, highestInt);
+						}
+					}
+				}
+			}
+		}
+		System.out.println(countScan);System.out.println(countScan/2+1);
+		for (Pair<Double,Double> bin : groupsTemp.keySet())
+		{
+			ArrayList<SpectrumPointVO> points = groupsTemp.get(bin);
+			if (points.size() > countScan/2+1)
+			{
+				float averageMZ = 0f;
+				float averageIntensity = 0f;
+				
+				for (SpectrumPointVO point : points)
+				{
+					averageMZ += point.getMz();
+					averageIntensity += point.getIntensity();
+				}
+				averageMZ /= points.size();
+				averageIntensity /= points.size();
+				
+				SpectrumPointVO averaged = new SpectrumPointVO(averageMZ, averageIntensity);
+				combinedTemp.add(averaged);
+			}
+		}
+		Collections.sort(combinedTemp);
+		combined.addAll(combinedTemp);
+		
 		return combined;
 	}
 	
-	private void addPointToBin(Pair<Double,Double> bin, HashMap<Pair<Double,Double>,ArrayList<SpectrumPointVO>> groups, SpectrumPointVO newPoint)
+	private void addPointToBin(Pair<Double,Double> bin, HashMap<Pair<Double,Double>,ArrayList<SpectrumPointVO>> groups, SpectrumPointVO newPoint, float highestInt)
 	{
+		SpectrumPointVO adjustedInt = new SpectrumPointVO(newPoint.getMz(), newPoint.getIntensity()/highestInt);
 		if (bin != null)
 		{
 			ArrayList<SpectrumPointVO> points = groups.get(bin);
 			groups.remove(bin);
-			points.add(newPoint);
+			points.add(adjustedInt);
 			float sumMz = 0f;
 			for (SpectrumPointVO point : points)
 			{
@@ -165,8 +253,8 @@ public class CombinedSpectrumContainer implements Comparable<CombinedSpectrumCon
 		else
 		{
 			ArrayList<SpectrumPointVO> points = new ArrayList<SpectrumPointVO>();
-			points.add(newPoint);
-			Pair<Double,Double> newBin = computeLowerUpperPair(newPoint.getMz());
+			points.add(adjustedInt);
+			Pair<Double,Double> newBin = computeLowerUpperPair(adjustedInt.getMz());
 			groups.put(newBin, points);
 		}
 	}

@@ -32,7 +32,6 @@ public class SpectraInterpreter
 			if (combined.isViableData())
 			{
 				combinedSpectra.add(combined);
-				combined.computeCombinedSpectrum();
 			}
 		}
 		return combinedSpectra;

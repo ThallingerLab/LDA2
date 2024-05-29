@@ -43,6 +43,14 @@ public class SpectrumPointVO implements Comparable<SpectrumPointVO>
     this.mz_ = mz;
     this.intensity_ = 0;
   }
+  
+  public SpectrumPointVO(float mz, float intensity)
+  {
+    super();
+    this.mzOriginal_ = null;
+    this.mz_ = mz;
+    this.intensity_ = intensity;
+  }
 
   public String getMzOriginal()
   {

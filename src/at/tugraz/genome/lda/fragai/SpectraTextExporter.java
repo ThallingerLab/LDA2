@@ -68,32 +68,37 @@ public class SpectraTextExporter
 	
 	private void exportCombinedSpectra(Workbook wb)
 	{
-		int count = 0;
 		for (CombinedSpectrumContainer spectrum : combinedSpectra_)
 		{
-			String sheetName = String.format("%s_%s_%s", spectrum.getLipidClass(), spectrum.getAdduct(), count++);
-			Worksheet ws = wb.newWorksheet(sheetName);
-			int rowNumber = 0;
-			ws.value(rowNumber, 0, "Lipid class:");
-			ws.value(rowNumber, 1, spectrum.getLipidClass());
-			ws.value(++rowNumber, 0, "Adduct:");
-			ws.value(rowNumber, 1, spectrum.getAdduct());
-			rowNumber++;
-			
-			List<String> headerTitles = new ArrayList<String>();
-			headerTitles.add(HEADER_MZ);
-			headerTitles.add(HEADER_INTENSITY);
-			createHeader(ws, headerTitles, ++rowNumber);
-			
 			ArrayList<SpectrumPointVO> dataPoints = spectrum.computeCombinedSpectrum();
 			
-			for (SpectrumPointVO dataPoint : dataPoints)
+			if (!dataPoints.isEmpty())
 			{
-				++rowNumber;
-				ws.value(rowNumber, headerTitles.indexOf(HEADER_MZ), dataPoint.getMz());
-				ws.value(rowNumber, headerTitles.indexOf(HEADER_INTENSITY), dataPoint.getIntensity());
+				String sheetName = String.format("%s_%s", spectrum.getLipidClass(), spectrum.getAdduct());
+				Worksheet ws = wb.newWorksheet(sheetName);
+				int rowNumber = 0;
+				ws.value(rowNumber, 0, "Lipid class:");
+				ws.value(rowNumber, 1, spectrum.getLipidClass());
+				ws.value(++rowNumber, 0, "Adduct:");
+				ws.value(rowNumber, 1, spectrum.getAdduct());
+				rowNumber++;
+				
+				List<String> headerTitles = new ArrayList<String>();
+				headerTitles.add(HEADER_MZ);
+				headerTitles.add(HEADER_INTENSITY);
+				createHeader(ws, headerTitles, ++rowNumber);
+				
+				
+				
+				for (SpectrumPointVO dataPoint : dataPoints)
+				{
+					++rowNumber;
+					ws.value(rowNumber, headerTitles.indexOf(HEADER_MZ), dataPoint.getMz());
+					ws.value(rowNumber, headerTitles.indexOf(HEADER_INTENSITY), dataPoint.getIntensity());
+				}
 			}
 		}
+		System.out.println("done?");
 	}
 	
 	private void exportRawSpectra(Workbook wb)

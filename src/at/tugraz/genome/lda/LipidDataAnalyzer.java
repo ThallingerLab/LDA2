@@ -3315,12 +3315,13 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     }
     if (command.equalsIgnoreCase("Start AI"))
     {
-    	String suffix = "_shortened.xlsx";
+//    	String suffix = "_shortened.xlsx";
+    	String suffix = ".xlsx";
     	File file = new File("D:\\Collaborator_Files\\Kathi\\Paper3\\LDA_extension\\Description\\Gangliosides_targets\\Target_list_gangliosides_adducts"+suffix);
     	String outPath = "D:\\Collaborator_Files\\Kathi\\Paper3\\LDA_extension\\Description\\Gangliosides_targets\\TestChrom\\spectra"+suffix;
     	String outPathMerged = "D:\\Collaborator_Files\\Kathi\\Paper3\\LDA_extension\\Description\\Gangliosides_targets\\TestChrom\\spectra_merged"+suffix;
     	ExcelTargetListParser parser = new ExcelTargetListParser(file);
-    	SpectraIdentifier identifier = new SpectraIdentifier();
+    	SpectraIdentifier identifier = new SpectraIdentifier("D:\\Collaborator_Files\\Kathi\\Paper3\\LDA_extension\\data\\LCMS_STD_Glycolipids_data");
     	try
     	{
     		parser.parse();

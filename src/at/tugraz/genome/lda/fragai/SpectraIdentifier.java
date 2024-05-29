@@ -33,12 +33,12 @@ public class SpectraIdentifier extends Thread
 	private JTextField rawDirectoryJTextField_;
 	
 	
-	public SpectraIdentifier()
+	public SpectraIdentifier(String path)
 	{
 		rawDirectoryJTextField_ = new JTextField(62);
 		rawDirectoryJTextField_.setMinimumSize(rawDirectoryJTextField_.getPreferredSize());
 		rawDirectoryJTextField_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_RAW_FILE);
-		rawDirectoryJTextField_.setText("D:\\Collaborator_Files\\Kathi\\Paper3\\LDA_extension\\data\\LCMS_STD_Glycolipids_data\\GM1");
+		rawDirectoryJTextField_.setText(path);
 	}
 	
 	public ArrayList<SpectrumContainer> identifySpectra(ExcelTargetListParser parser) throws QuantificationException
