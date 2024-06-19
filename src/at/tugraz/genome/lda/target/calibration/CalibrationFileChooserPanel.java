@@ -58,6 +58,7 @@ import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.target.JDefaultComponents;
 import at.tugraz.genome.lda.target.JOptionPanel;
 import at.tugraz.genome.lda.target.JTargetFileWizard;
+import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.verifier.DoubleVerifier;
 
@@ -511,7 +512,7 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
 							previousSelection_ = Paths.get(fileCandidates[i].getAbsolutePath());
 							String fileName = StaticUtils.extractFileName(fileCandidates[i].getAbsolutePath());
 							String suffix = fileName.substring(fileName.lastIndexOf(".")+1);
-							if (suffix.equalsIgnoreCase("xlsx"))
+							if (suffix.equalsIgnoreCase("xlsx") && !fileName.startsWith(ExcelUtils.EXCEL_TEMP_PREFIX)) //only listing xlsx files that do not start with the temporary prefix
 							{
 								avoidDuplicates.put(fileCandidates[i].getAbsolutePath(),fileCandidates[i]);
 								this.uniqueFiles_.add(fileCandidates[i]);

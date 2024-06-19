@@ -41,6 +41,8 @@ public class CCTargetListCombiner
 	static Pair<String,Integer> description_SILDA_II_b_ = new Pair<String,Integer>("SILDA_II_b", 2);
 	static Pair<String,Integer> description_SILDA_60min_ = new Pair<String,Integer>("SILDA_60min", 3);
 	
+	
+	@SuppressWarnings("unchecked")
 	public static void main(String[] args)
   {
 		
@@ -137,6 +139,7 @@ public class CCTargetListCombiner
 	    headerTitles.add(description_SILDA_II_b_.getKey());
 	    headerTitles.add(description_SILDA_60min_.getKey());
 	    
+	    //TODO: read this in from relevant files
 	    if (cName.equals("SM") || cName.equals("Cer"))
 	    {
 	    	int rowCount = 0;

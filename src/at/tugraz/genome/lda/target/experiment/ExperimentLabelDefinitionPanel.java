@@ -56,7 +56,7 @@ public class ExperimentLabelDefinitionPanel extends ExperimentTableInputPanel
   
   public ExperimentLabelDefinitionPanel(JDefaultComponents wizardComponents, ExperimentResultFileChooserPanel experimentFileChooserPanel) {
       super(wizardComponents, experimentFileChooserPanel, 
-      		"Use stable isotope labels specific for \u03C9-positions.", "Enter the \u03C9-position associated with each detected stable isotope label.");
+      		"Create RT-DB using experimental data of SIL specific for \u03C9-positions.", "Enter the \u03C9-position associated with each detected SIL.");
   }
   
   @Override

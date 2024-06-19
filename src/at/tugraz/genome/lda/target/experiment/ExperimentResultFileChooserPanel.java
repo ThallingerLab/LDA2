@@ -40,7 +40,7 @@ public class ExperimentResultFileChooserPanel extends ExperimentFileChooserPanel
 	
   
   public ExperimentResultFileChooserPanel(JDefaultComponents wizardComponents) {
-      super(wizardComponents, "RT-DB creation using stable isotope labels (SIL) specific for \u03C9-positions.", "Enter data of stable isotope labeled experiments here.");
+      super(wizardComponents, "Create RT-DB using experimental data of SIL specific for \u03C9-positions.", "Enter LDA result files of SIL experiments here.");
   }
   
   @Override

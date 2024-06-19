@@ -40,6 +40,8 @@ public class ExcelUtils
   /** the Excel width is declared by (# of letters)/256 - this value can be used to calculate an ideal cell width*/
   public final static int CHAR_MULT = 256;
   
+  public final static String EXCEL_TEMP_PREFIX = "~$";
+  
   /**
    * parses an Excel row and returns the entries in an hash, where the key is the column index - if numeric: Double is returned, else: String
    * @param row Excel row to be parsed

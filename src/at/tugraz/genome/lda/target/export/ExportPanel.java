@@ -58,6 +58,7 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 	private TargetListExporter exporter_;
 	private ExportOptionsPanel exportOptionsPanel_;
 	private JTextField exportField_;
+	private JTextField templateField_;
 	
 
 //  String currentMachine = LipidomicsConstants.getCurrentMSMachine();
@@ -69,6 +70,7 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 	private static final String PLACEHOLDER_PREFIX = "Enter ";
 	private static final String BROWSE = "Browse";
 	private static final String COMMAND_OPEN_EXPORT= "Open export";
+	private static final String COMMAND_OPEN_TEMPLATE= "Open template";
 	private static final Dimension ENTER_FIELD_DIMENSION_MIN = new Dimension(300,15);
 	private static final Dimension ENTER_FIELD_DIMENSION = new Dimension(775,30);
 	private static final Dimension DEFAULT_FILE_CHOOSER_DIMENSION = new Dimension(750,750);
@@ -81,13 +83,22 @@ public class ExportPanel extends JOptionPanel implements ActionListener
   
   private void init() 
   {
+  	templateField_ = instantiateJTextField(PLACEHOLDER_PREFIX + "path and file name for the template LDA mass list the new RT-DB should be based on.");
+  	JButton templateButton = instantiateJButton(COMMAND_OPEN_TEMPLATE, BROWSE);
+  	
   	exportField_ = instantiateJTextField(PLACEHOLDER_PREFIX + "path and file name for the new RT-DB.");
   	JButton exportButton = instantiateJButton(COMMAND_OPEN_EXPORT, BROWSE);
   	
-  	JPanel exportPanel = instantiateExportPanel(exportField_, exportButton, "New RT-DB");
+  	JPanel templatePanel = instantiatePanel(templateField_, templateButton, "Template LDA mass list");
+  	JPanel exportPanel = instantiatePanel(exportField_, exportButton, "New RT-DB");
+  	
+  	this.add(templatePanel, 
+  			new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        , GridBagConstraints.CENTER, GridBagConstraints.NONE
+        , new Insets(0, 0, 0, 0), 0, 0));
   	
   	this.add(exportPanel, 
-  			new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+  			new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
         , GridBagConstraints.CENTER, GridBagConstraints.NONE
         , new Insets(100, 0, 0, 0), 0, 0));
   }
@@ -146,9 +157,13 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 		FileNameExtensionFilter filter;
 		switch (arg0.getActionCommand())
 		{
+			case COMMAND_OPEN_TEMPLATE:
+				filter = new FileNameExtensionFilter("Only .xlsx", "xlsx");
+				selectPath(JFileChooser.FILES_ONLY, this.templateField_, filter, "Select the path and file name for the template LDA mass list (.xlsx file)");
+				break;
 			case COMMAND_OPEN_EXPORT:
 				filter = new FileNameExtensionFilter("Only .xlsx", "xlsx");
-				selectPath(JFileChooser.FILES_ONLY, this.exportField_, filter, "Select the path and file name for the new RT-DB(.xlsx file)");
+				selectPath(JFileChooser.FILES_ONLY, this.exportField_, filter, "Select the path and file name for the new RT-DB (.xlsx file)");
 				break;
 			default:
 				break;
@@ -186,7 +201,7 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 		}
 	}
 	
-	private JPanel instantiateExportPanel(JTextField textfield, JButton button, String borderTitle)
+	private JPanel instantiatePanel(JTextField textfield, JButton button, String borderTitle)
 	{
 		JPanel panel = new JPanel();
   	panel.setLayout(new GridBagLayout());
@@ -213,6 +228,19 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 	}
 	
 	/**
+   * Checks if the template JTextfield has an entry different from the placeholder.
+   * @return true if the export field contains the placeholder
+   */
+  public boolean isPlaceholderTemplate()
+  {
+		if (templateField_.getText().startsWith(PLACEHOLDER_PREFIX))
+		{
+			return true;
+		}
+		return false;
+  }
+	
+	/**
    * Checks if the export JTextfield has an entry different from the placeholder.
    * @return true if the export field contains the placeholder
    */
@@ -235,6 +263,11 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 		return this.exportField_.getText();
 	}
 	
+	public String getTemplatePath()
+	{
+		return this.templateField_.getText();
+	}
+	
 	public ExportOptionsPanel getExportOptions()
 	{
 		return this.exportOptionsPanel_;
@@ -254,14 +287,14 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 	public void export()
 	{
 		//TODO: write a fully new masslist without requiring the template.
-		String templatePath = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\masslists_all_labels\\negative.xlsx";
+//		String templatePath = "D:\\Collaborator_Files\\SILDA\\SILDA_final\\masslists_all_labels\\negative.xlsx";
 		try
 		{
-			if (exporter_.getTemplatePath() != null) //TODO: if not writing a fully new target list: add field to allow to enter a template
-			{
-				templatePath = exporter_.getTemplatePath();
-			}
-			exporter_.export(templatePath, this);
+//			if (exporter_.getTemplatePath() != null) //TODO: if not writing a fully new target list: add field to allow to enter a template
+//			{
+//				templatePath = exporter_.getTemplatePath();
+//			}
+			exporter_.export(this);
 			//TODO: this is to create figures to compare target lists; remove after
 			exporter_.exportBeforeAfter(
 					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\Publication\\SI\\SupplementaryData\\Table03_RTDB_B1.xlsx",

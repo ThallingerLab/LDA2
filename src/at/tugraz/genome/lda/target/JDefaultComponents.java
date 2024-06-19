@@ -169,9 +169,9 @@ public class JDefaultComponents
   	{
   		JOptionPanel panel = getCurrentPanel();
   		ExportPanel exporter = (ExportPanel) panel;
-  		if (exporter.isPlaceholderExport())
+  		if (exporter.isPlaceholderExport() || exporter.isPlaceholderTemplate())
     	{
-    		new WarningMessage(new JFrame(), "Warning", "The path and file name to write the C=C target list to must be specified before the export!");
+    		new WarningMessage(new JFrame(), "Warning", "The path and file name of the template LDA mass list and the new RT-DB must be specified before the export!");
     	}
     	else
     	{

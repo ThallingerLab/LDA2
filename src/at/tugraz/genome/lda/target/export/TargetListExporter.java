@@ -74,25 +74,12 @@ import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.lda.vos.ResultFileVO;
-import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
 import javafx.util.Pair;
 
 
 /**
- * !!!!!!!!!!!! needs a template masslist for now !!!!!!
  * 
- * ...locate the template masslist somewhere in the filesystem and give it a default path for now.
- * 
- * then we go through the class and correct analyte sequence and just write the masslist out. 
- * group hits together if they are below a certain threshold apart
- * otherwise this should be relatively straightforward
- * 
- * we first iterate through the classes: the analytes in correctAnalyteSequence and get the quantObjects for each;
- * we iterate over all resultfiles and labeled species are added as new QuantVO to the analyte sequence;
- * if there is already an identical analyte with just a different RT: maybe just add the RTs of all to the quantVO, or an average if they are close enough?
- * add them all as doublebondpositionVOs, 
- * when we iterate over this for the export we can do a median over identical ones.
- * as a final step we just export the QuantVOs.
+ * Writes RTDBs either newly generated from experimental data or mapped to chromatographic conditions.
  * 
  * @author Leonida M. Lamp
  *
@@ -122,8 +109,8 @@ public class TargetListExporter
   
   
   /**
-   * Constructor for omega MassList Recalibration
-   * The recalibration regressions are retrieved from @param calibrationGraphPanel depending on @param calibrateSeparately.
+   * Constructor for RTDB mapping
+   * The regressions for RT mapping are retrieved from @param calibrationGraphPanel depending on @param calibrateSeparately.
    * @param templatePath
    * @param calibrateSeparately
    * @param calibrationGraphPanel
@@ -137,11 +124,9 @@ public class TargetListExporter
   }
   
   
-	//TODO: create MassList dynamically
   /**
-   * Constructor for omega MassList creation with stable isotope labeled standards
+   * Constructor for RTDB creation with stable isotope labeled standards
    * @param isotopeEffectRegression
-   * @param resultIndices
    * @param resultFileVO
    * @param labels
    */
@@ -152,105 +137,119 @@ public class TargetListExporter
 		this.resultFileVO_ = resultFileVO;
 		this.labels_ = labels;
 	}
-
-
+	
 	/**
-	 * How do we do this....
-	 * we go through all result files, 
-	 * > filter for only analytes with MSn info
 	 * 
-	 * > Hashtable className, new java class: 
-	 * 				saves labeled and unlabeled species of class separately
-	 * 				method getlabeled ( position ind. mol species)
-	 * 				method getunlabeled ( position ind. mol species) ...probably not needed anymore
-	 * 				method getlabeledmolecularspecies
-	 * 				2x field hashtable pos ind mol species, vector lipidomicsmsnset
-	 * 				
-	 * iterate over labeledmolecularspecies.
-	 * get labeled -> expected RT is calculated, then species are clustered
-	 * get unlabeled -> species are clustered
-	 * 
-	 * for the calculation of the expected RT, only the number of deuteriums in the chemical formula is considered
-	 * for adding of the omega position, the prefix of the fatty acid chain is considered (can only have one prefix)
-	 * 
-	 * for each labeled cluster 
-	 * 		if within our cluster we have deuterated species with more labels but matching expected RT, add omega pos to all in the cluster 
-	 * 		(and expected sn position if all species in the cluster have identical ones?), 
-	 * 		
-	 * 		we then see if within threshold there's a matching partner with same mol. species, if so adjust RT
-	 * 		then add the doublebondpositionVOs to the quants
-	 * 		then export
-	 * 	
+	 * @param templatePath
+	 * @param exportPanel
 	 * @throws ExportException
 	 */
-	@SuppressWarnings("unchecked")
-	protected void export(String templatePath, ExportPanel exportPanel) throws ExportException
+	protected void export(ExportPanel exportPanel) throws ExportException
 	{		
 		try (	BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(exportPanel.getOutPath()));
 					XSSFWorkbook workbook = new XSSFWorkbook();)
 		{
-			GradientAdjuster adjuster = null;
-			if (!isRecalibration())
+			if (isRTMapping())
 			{
-				adjuster = GradientParser.parseGradient(exportPanel.getExportOptions().getSelectedGradient());
-				if (adjuster == null) throw new ExportException("The gradient file could not be read!");
+				this.exportRTMappedDB(workbook);
 			}
-			
-			Vector<?> quantInfo = QuantificationThread.getCorrectAnalyteSequence(templatePath,false);
-			LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)quantInfo.get(0);
-			LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantInfo.get(1);
-			Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(4);
-		  
-      new ElementConfigParser(Settings.getElementConfigPath()).parse();
-      
-      for (String cName : classSequence.keySet()) 
-      {
-      	System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+ cName + "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-      	Vector<DoubleBondPositionVO> allLabeledVOsToAdd = new Vector<DoubleBondPositionVO>();
-      	if (!isRecalibration())
-      	{
-      		Double clusteringThreshold = exportPanel.getExportOptions().getSelectedClustering();
-      		MolecularSpeciesContainer container = new MolecularSpeciesContainer();
-        	fillContainerForClass(cName, container, adjuster);
-        	for (String molecularSpecies : container.getSingleLabeledMolecularSpecies())
-        	{
-        		Vector<DoubleBondPositionVO> singleLabeledVOs = container.getSingleLabeledSpecies(molecularSpecies);
-        		Vector<DoubleBondPositionVO> multiLabeledVOs = container.getMultiLabeledSpecies(molecularSpecies); //TODO: here we only take those that were also found as single labels, this can be expanded later
-        		
-        		//add multi labeled info to single label vos before clustering them.
-        		if (multiLabeledVOs != null)
-        		{
-        			Vector<DoubleBondPositionVO> clusteredMultiLabeledVOs = clusterMolecularSpecies(multiLabeledVOs, true, clusteringThreshold);
-        			for (DoubleBondPositionVO voMulti : clusteredMultiLabeledVOs)
-        			{
-        				double multiRT = voMulti.getExpectedRetentionTime();
-        				RangeDouble range = new RangeDouble(multiRT-clusteringThreshold/60.0, multiRT+clusteringThreshold/60.0);
-        				for (DoubleBondPositionVO voSingle : singleLabeledVOs)
-        				{
-        					double singleRT = voSingle.getExpectedRetentionTime();
-        					if (range.insideRange(singleRT) && computeCombinedPattern(voMulti, voSingle).equals(voMulti.getPositionAssignmentPattern()))
-        					{
-        						voSingle.setChainCombination(voMulti.getChainCombination());
-        					}
-        				}
-        			}
-        		}
-        		
-        		Vector<DoubleBondPositionVO> clusteredSingleLabeledVOs = clusterMolecularSpecies(singleLabeledVOs, true, clusteringThreshold);
-        		
-        		allLabeledVOsToAdd.addAll(clusteredSingleLabeledVOs); 	
-        	}
-      	}
-        Sheet sheet = workbook.createSheet(cName);
-        writeMassListForSheet(sheet, getHeaderStyle(workbook), getNumberStyle(workbook), analyteSequence.get(cName), quantObjects.get(cName), cName, allLabeledVOsToAdd);
-      }
-      workbook.write(out);
-      System.out.println("workbook written!");
+			else
+			{
+				this.exportNewRTDB(workbook, exportPanel);
+			}
+			workbook.write(out);
+	    System.out.println("workbook written!");
     } 
 		catch (Exception e) 
 		{
       throw new ExportException(e);
     } 
+	}
+	
+	/**
+	 * Exports a RTDB mapped to provided chromatographic conditions
+	 * @param workbook
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	private void exportRTMappedDB(XSSFWorkbook workbook) throws Exception
+	{
+		Vector<?> quantInfo = QuantificationThread.getCorrectAnalyteSequence(this.getTemplatePath(),false);
+		LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)quantInfo.get(0);
+		LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantInfo.get(1);
+		Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(4);
+    
+    for (String cName : classSequence.keySet()) 
+    {
+    	Vector<DoubleBondPositionVO> allLabeledVOsToAdd = new Vector<DoubleBondPositionVO>();
+      Sheet sheet = workbook.createSheet(cName);
+      writeMassListForSheet(sheet, getHeaderStyle(workbook), getNumberStyle(workbook), analyteSequence.get(cName), quantObjects.get(cName), cName, allLabeledVOsToAdd);
+    }
+	}
+	
+	/**
+	 * Exports a RTDB generated from experiments
+	 * For the calculation of the expected RT, aTIE is computed based on the gradient chosen in @param exportPanel and the TIE parameters identified.
+	 * For adding the omega position information, the prefix of the fatty acid chain is considered (can only have one prefix)
+	 * Based on the user provided clustering threshold in @param exportPanel, identifications are grouped.
+	 * If within a group we have species with only one different deuterium label each and the labels are compatible, add omega pos to all in the cluster 
+	 * For more than one deuterium label in one species, the TIE is corrected additively for each label, and if a singly labeled species with matching expected RT exists, 
+	 * the species is assigned and given the expected RT of the singly labeled species as that is deemed more reliable.
+	 * 
+	 * @param workbook
+	 * @param exportPanel
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	private void exportNewRTDB(XSSFWorkbook workbook, ExportPanel exportPanel) throws Exception
+	{
+		Vector<?> quantInfo = QuantificationThread.getCorrectAnalyteSequence(exportPanel.getTemplatePath(),false);
+		LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)quantInfo.get(0);
+		LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantInfo.get(1);
+		Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(4);
+		
+		GradientAdjuster adjuster = GradientParser.parseGradient(exportPanel.getExportOptions().getSelectedGradient());
+		if (adjuster == null && exportPanel.getExportOptions().isGradientSelected()) throw new ExportException("The gradient file could not be read!");
+    
+    for (String cName : classSequence.keySet()) 
+    {
+    	Vector<DoubleBondPositionVO> allLabeledVOsToAdd = new Vector<DoubleBondPositionVO>();
+    	
+    	Double clusteringThreshold = exportPanel.getExportOptions().getSelectedClustering();
+  		MolecularSpeciesContainer container = new MolecularSpeciesContainer();
+    	fillContainerForClass(cName, container, adjuster);
+    	for (String molecularSpecies : container.getSingleLabeledMolecularSpecies())
+    	{
+    		Vector<DoubleBondPositionVO> singleLabeledVOs = container.getSingleLabeledSpecies(molecularSpecies);
+    		Vector<DoubleBondPositionVO> multiLabeledVOs = container.getMultiLabeledSpecies(molecularSpecies); //TODO: here we only take those that were also found as single labels, this can be expanded later
+    		
+    		//add multi labeled info to single label vos before clustering them.
+    		if (multiLabeledVOs != null)
+    		{
+    			Vector<DoubleBondPositionVO> clusteredMultiLabeledVOs = clusterMolecularSpecies(multiLabeledVOs, true, clusteringThreshold);
+    			for (DoubleBondPositionVO voMulti : clusteredMultiLabeledVOs)
+    			{
+    				double multiRT = voMulti.getExpectedRetentionTime();
+    				RangeDouble range = new RangeDouble(multiRT-clusteringThreshold/60.0, multiRT+clusteringThreshold/60.0);
+    				for (DoubleBondPositionVO voSingle : singleLabeledVOs)
+    				{
+    					double singleRT = voSingle.getExpectedRetentionTime();
+    					if (range.insideRange(singleRT) && computeCombinedPattern(voMulti, voSingle).equals(voMulti.getPositionAssignmentPattern()))
+    					{
+    						voSingle.setChainCombination(voMulti.getChainCombination());
+    					}
+    				}
+    			}
+    		}
+    		
+    		Vector<DoubleBondPositionVO> clusteredSingleLabeledVOs = clusterMolecularSpecies(singleLabeledVOs, true, clusteringThreshold);
+    		
+    		allLabeledVOsToAdd.addAll(clusteredSingleLabeledVOs); 	
+    	}
+    	
+      Sheet sheet = workbook.createSheet(cName);
+      writeMassListForSheet(sheet, getHeaderStyle(workbook), getNumberStyle(workbook), analyteSequence.get(cName), quantObjects.get(cName), cName, allLabeledVOsToAdd);
+    }
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -271,6 +270,8 @@ public class TargetListExporter
 	    Hashtable<String,Integer> modToCharge = (Hashtable<String,Integer>)elModCharge.get(2);
 	    
 	    List<String> headerTitles = createHeaderTitles(elements, mods, modToCharge);
+	    
+	    //TODO: read this from reference file.
 	    if (cName.equals("SM") || cName.equals("Cer"))
 	    {
 	    	int rowCount = 0;
@@ -297,7 +298,7 @@ public class TargetListExporter
 	      for (String mod : mods.keySet()) 
 	      {
 	        QuantVO quant = quantAnalytes.get(mod);
-	        if (!isRecalibration() && quant.getDbs() > 0) //only species with double bonds are relevant
+	        if (!isRTMapping() && quant.getDbs() > 0) //only species with double bonds are relevant
 	        {
 	        	for (DoubleBondPositionVO doubleBondPositionVO : allLabeledVOsToAdd)
 		        {
@@ -311,7 +312,7 @@ public class TargetListExporter
 	        doubleBondPositionVOs = quant.getInfoForOmegaAssignment();
 	      }
 	      
-	      if (isRecalibration())
+	      if (isRTMapping())
 	      {
 	      	RecalibrationRegression regression = calibrationGraphPanel_.getRegressionByFields(CalibrationGraphPanel.PLOT_ALL, 
       				calibrateSeparately_ ? calibrationGraphPanel_.getRelevantRegressionName(cName) : CalibrationGraphPanel.PLOT_ALL);
@@ -486,7 +487,7 @@ public class TargetListExporter
 			Hashtable<Vector<Integer>,Vector<DoubleBondPositionVO>> patternLookup = computePatternLookup(doubleBondPositionVOs);
 			for (Vector<Integer> pattern : patternLookup.keySet()) //cluster elements for each pattern
 			{
-				Vector<DoubleBondPositionVO> averageElements = computeClusters(patternLookup.get(pattern),clusteringThreshold);
+				Vector<DoubleBondPositionVO> averageElements = computeGroups(patternLookup.get(pattern),clusteringThreshold);
 				patternLookup.put(pattern, averageElements);
 			}
 			
@@ -594,7 +595,7 @@ public class TargetListExporter
 			/**
 			 * we calculate the clusters, then these are transformed into a Vector of vos and returned
 			 */	
-			return computeClusters(doubleBondPositionVOs,clusteringThreshold);
+			return computeGroups(doubleBondPositionVOs,clusteringThreshold);
 		}
 	}
 	
@@ -870,36 +871,12 @@ public class TargetListExporter
 	}
 	
 	/**
-	 * just for verifying the clustering is ok
-	 * TODO: delete later
+	 * Groups identifications based on the provided @param clusteringThreshold
 	 * @param doubleBondPositionVOs
+	 * @param clusteringThreshold
+	 * @return
 	 */
-//	private void calculateDistanceMatrix(Vector<DoubleBondPositionVO> doubleBondPositionVOs)
-//	{
-//		Vector<Vector<Float>> distanceMatrix = new Vector<Vector<Float>>();
-//		for (DoubleBondPositionVO vo1 : doubleBondPositionVOs)
-//		{
-//			Float retentionTime1 = (float)vo1.getExpectedRetentionTime();
-//			Vector<Float> distances = new Vector<Float>();
-//			for (DoubleBondPositionVO vo2 : doubleBondPositionVOs)
-//			{
-//				distances.add(Math.abs(retentionTime1-(float)vo2.getExpectedRetentionTime()));
-//			}
-//			distanceMatrix.add(distances);
-//			System.out.println(distances);
-//		}
-//	}
-	
-	/**
-	 * what we do is the following: 
-	 * fist make a hashtable of clusters (key index, value cluster)
-	 * if a species is not in a cluster yet, add species to new cluster, add it to hashtable with index
-	 * else add cluster to hashtable with index
-	 * check for each other species that is within threshold if it is in a cluster, if so if it is the same cluster, if not, merge clusters
-	 * merging of clusters works as follows: new cluster with elements of both, assign this new cluster to the initial clusters
-	 * @param doubleBondPositionVOs
-	 */
-	private Vector<DoubleBondPositionVO> computeClusters(Vector<DoubleBondPositionVO> doubleBondPositionVOs, double clusteringThreshold)
+	private Vector<DoubleBondPositionVO> computeGroups(Vector<DoubleBondPositionVO> doubleBondPositionVOs, double clusteringThreshold)
 	{
 		Vector<DoubleBondPositionVO> averageElements = new Vector<DoubleBondPositionVO>();
 		//first index of vo, second number of cluster
@@ -999,7 +976,9 @@ public class TargetListExporter
 												}
 												else
 												{
-													expectedRetentionTime = adjuster.getGradientAdjustedValue(isotopeEffectRegression_.getIsotopeEffect(num), expectedRetentionTime);
+													expectedRetentionTime = adjuster != null ? 
+															adjuster.getGradientAdjustedValue(isotopeEffectRegression_.getIsotopeEffect(num), expectedRetentionTime) :
+															isotopeEffectRegression_.getIsotopeEffect(num);
 												}
 												continue;
 											}
@@ -1009,7 +988,9 @@ public class TargetListExporter
 							}
 							else
 							{
-								expectedRetentionTime = adjuster.getGradientAdjustedValue(isotopeEffectRegression_.getIsotopeEffect(numberDeuterium), analyte.getPreciseRT());
+								expectedRetentionTime = adjuster != null ? 
+										adjuster.getGradientAdjustedValue(isotopeEffectRegression_.getIsotopeEffect(numberDeuterium), analyte.getPreciseRT()) :
+										isotopeEffectRegression_.getIsotopeEffect(numberDeuterium);
 							}
 						}					
 						
@@ -1186,12 +1167,12 @@ public class TargetListExporter
     return result;
   }
   
-  public String getTemplatePath()
+  private String getTemplatePath()
   {
   	return this.templatePath_;
   }
   
-  private boolean isRecalibration()
+  private boolean isRTMapping()
 	{
 		return this.calibrationGraphPanel_ != null;
 	}
@@ -1582,11 +1563,6 @@ public class TargetListExporter
   		{
   			return null;
   		}
-  	}
-  	
-  	private Set<String> getMultiLabeledMolecularSpecies()
-  	{
-  		return multiLabeledSpecies_.keySet();
   	}
   	
   	private Vector<DoubleBondPositionVO> getMultiLabeledSpecies(String molecularSpecies)

@@ -48,7 +48,7 @@ public class ExperimentStandardsDefinitionPanel extends ExperimentTableInputPane
   
   public ExperimentStandardsDefinitionPanel(JDefaultComponents wizardComponents, ExperimentFileChooserPanel standardsFileChooserPanel) {
       super(wizardComponents, standardsFileChooserPanel,
-      		"Use stable isotope labels specific for \u03C9-positions.", "Enter the \u03C9-position associated with each authentic standard file.");
+      		"Create RT-DB using experimental data of SIL specific for \u03C9-positions.", "Enter the \u03C9-position associated with each authentic standard file.");
   }
   
   @Override

@@ -34,6 +34,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.verifier.DoubleVerifier;
 
@@ -51,6 +52,7 @@ public class ExportOptionsPanel extends JPanel
 	private final static String DEFAULT_GRADIENTS_DIR = "gradients";
 	private final static String EXCEL_SUFFIX = ".xlsx";
 	private final static Double DEFAULT_THRESHOLD = 5.0;
+	public final static String NO_ADJUSTMENT = "No adjustment";
 	
 	/**
 	 * Constructs a panel responsible for export options.
@@ -64,14 +66,14 @@ public class ExportOptionsPanel extends JPanel
   		selectedGradient_ = instantiateSelectedGradient();
   		thresholdClustering_ = instantiateThresholdClustering();
   		
-  		this.add(new JLabel("Gradient definition: "), new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+  		this.add(new JLabel("Gradient adjustment (optional): "), new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(25, 0, 0, 0), 0, 0));
   		this.add(selectedGradient_, new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(25, 0, 0, 0), 0, 0));
   		this.add(new JLabel("Time tolerance: "), new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(25, 0, 0, 0), 0, 0));
   		this.add(thresholdClustering_, new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0
-          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(25, 0, 0, 0), 0, 0));
+          ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(25, 0, 0, 0), 0, 0));
   		this.add(new JLabel(" sec"), new GridBagConstraints(2, 1, 1, 1, 0.0, 0.0
           ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(25, 0, 0, 0), 0, 0));
   	}
@@ -92,6 +94,7 @@ public class ExportOptionsPanel extends JPanel
   	{
   		jComboBox.addItem(gradient);
   	}
+  	jComboBox.addItem(NO_ADJUSTMENT);
   	return jComboBox;
   }
   
@@ -104,7 +107,7 @@ public class ExportOptionsPanel extends JPanel
     LinkedHashMap<String,File> gradientFiles = new LinkedHashMap<String,File>();
     for (int i=0; i!=files.length;i++){
       String fileName = StaticUtils.extractFileName(files[i].getAbsolutePath());
-      if (fileName.endsWith(EXCEL_SUFFIX))
+      if (fileName.endsWith(EXCEL_SUFFIX) && !fileName.startsWith(ExcelUtils.EXCEL_TEMP_PREFIX))
       {
       	String gradientName = fileName.substring(0,fileName.indexOf(EXCEL_SUFFIX));
       	gradientFiles.put(gradientName, files[i]);
@@ -115,13 +118,23 @@ public class ExportOptionsPanel extends JPanel
   
   public File getSelectedGradient()
   {
-  	LinkedHashMap<String,File> gradientsFiles = getGradientsFiles();
-  	return gradientsFiles.get(selectedGradient_.getSelectedItem());
+  	File selected = null;
+  	if (!selectedGradient_.getSelectedItem().equals(NO_ADJUSTMENT))
+  	{
+  		LinkedHashMap<String,File> gradientsFiles = getGradientsFiles();
+  		selected = gradientsFiles.get(selectedGradient_.getSelectedItem());
+  	}
+  	return selected;
   }
   
   public Double getSelectedClustering()
   {
   	return Double.parseDouble(thresholdClustering_.getText());
+  }
+  
+  public boolean isGradientSelected()
+  {
+  	return selectedGradient_.getSelectedItem().equals(NO_ADJUSTMENT);
   }
 	
 }
