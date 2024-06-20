@@ -182,14 +182,14 @@ public class CCTargetListCombiner
 		      	QuantVO quant = quantAnalytes.get(mod);
 		      	
 		      	//the following lines only affect Cer, SM (classes with hydroxylation sites).
-		      	if ((i<0 && usedQuantIDs.contains(exporter.computeQuantID(quant, false)) ||
-		      			(i>-1 && !usedQuantIDs.contains(exporter.computeQuantID(quant, true)))))
+		      	if ((i<0 && usedQuantIDs.contains(computeQuantID(quant, false)) ||
+		      			(i>-1 && !usedQuantIDs.contains(computeQuantID(quant, true)))))
 		        {
 		      		rowCount--;
 		        	continue;
 		        }
-		        usedQuantIDs.add(exporter.computeQuantID(quant, true));
-		        usedQuantIDs.add(exporter.computeQuantID(quant, false));
+		        usedQuantIDs.add(computeQuantID(quant, true));
+		        usedQuantIDs.add(computeQuantID(quant, false));
 		      	
 		      	if (modCount==0) 
 		        {   	
@@ -242,6 +242,13 @@ public class CCTargetListCombiner
 		{
 			ex.printStackTrace();
 		}
+	}
+	
+	
+	private static String computeQuantID(QuantVO quant, boolean includeOH)
+	{
+		return String.format("%s, %s, %s, %s", 
+				quant.getCarbons(), quant.getDbs(), quant.getModName(), includeOH ? quant.getOhNumber() : "");
 	}
 	
 	

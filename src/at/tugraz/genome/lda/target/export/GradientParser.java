@@ -53,11 +53,15 @@ public class GradientParser
 	
 	protected static GradientAdjuster parseGradient(File gradientFile) throws Exception
 	{
-		try (InputStream is = new FileInputStream(gradientFile.getAbsolutePath());
-        ReadableWorkbook wb = new ReadableWorkbook(is);) 
+		if (gradientFile != null)
 		{
-			return new GradientAdjuster(parseGradientSheet(wb.getFirstSheet()));
+			try (InputStream is = new FileInputStream(gradientFile.getAbsolutePath());
+	        ReadableWorkbook wb = new ReadableWorkbook(is);) 
+			{
+				return new GradientAdjuster(parseGradientSheet(wb.getFirstSheet()));
+			}
 		}
+		return null;
 	}
 	
 	/**

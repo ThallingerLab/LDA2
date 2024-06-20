@@ -185,6 +185,7 @@ import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
 import at.tugraz.genome.lda.msn.vos.MSnDebugVO;
 import at.tugraz.genome.lda.parser.LDAResultReader;
 import at.tugraz.genome.lda.parser.MzXMLMergerForWaters;
+import at.tugraz.genome.lda.parser.MassListParser;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.quantification.LipidomicsChromatogram;
@@ -589,7 +590,7 @@ public class TestClass extends JApplet implements AddScan
               } 
 
               else if (contents.startsWith("mass")&&contents.contains("(")&&contents.contains(")")){
-                String[] formulaAndName = QuantificationThread.extractFormulaAndAdductName(contents);
+                String[] formulaAndName = StaticUtils.extractFormulaAndAdductName(contents);
                 adductComposition.put(formulaAndName[1],StaticUtils.categorizeFormula(formulaAndName[0]));
                 massOfInterestColumns.put(i,formulaAndName[1]);
               }
@@ -1541,7 +1542,7 @@ public class TestClass extends JApplet implements AddScan
 
   private void plus2IsotopicRelationXls(){
     try{
-//      Vector contents = QuantificationThread.parseQuantExcelFile("E:\\lipidomics\\Niki\\20140515_BMP_pos.xls", 2f, 3f, 3, 1, true, 0.0001f, 0f, -1f, -1f);
+//      Vector contents = (new TargetListParser()).parseQuantExcelFile("E:\\lipidomics\\Niki\\20140515_BMP_pos.xls", 2f, 3f, 3, 1, true, 0.0001f, 0f, -1f, -1f);
 //      LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)contents.get(0);
 //      Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)contents.get(1);
 //      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)contents.get(2);
@@ -1608,7 +1609,7 @@ public class TestClass extends JApplet implements AddScan
   
   private void readQuantExcel(){
     try{
-////      Vector excelContent = QuantificationThread.parseQuantExcelFile("D:\\Kim\\SL_massLists\\SL_negative.xlsx", -1f, -1f, 2, 1, true, 0f, 0f, -1f, -1f);
+////      Vector excelContent = (new TargetListParser()).parseQuantExcelFile("D:\\Kim\\SL_massLists\\SL_negative.xlsx", -1f, -1f, 2, 1, true, 0f, 0f, -1f, -1f);
       Vector excelContent = null;
       System.out.println("Hallo");
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)excelContent.get(3);
@@ -3198,7 +3199,7 @@ public void testTabFile() throws Exception {
   private void createN15MassList(){
 
 /*    try {
-      Vector excelContent = QuantificationThread.parseQuantExcelFile("E:\\Dancy\\20131217\\PE Values.xls", 0f, 0f, 2, 1, true, 0f, 0f, 0f, 0f);
+      Vector excelContent = (new TargetListParser()).parseQuantExcelFile("E:\\Dancy\\20131217\\PE Values.xls", 0f, 0f, 2, 1, true, 0f, 0f, 0f, 0f);
       LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)excelContent.get(0);
       Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)excelContent.get(1);
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)excelContent.get(2);
@@ -5846,7 +5847,7 @@ public void testTabFile() throws Exception {
   private void performComparisonOfNaturalProbes(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses, 
       Hashtable<String,LipidClassInfoVO> lipidClassInfo, String chromFile, String quantFile, String ldaFile, String lbFile, String outputFile){
     try{
-      //Vector quantValues = QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f);
+      //Vector quantValues = (new TargetListParser()).parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f);
       Vector quantValues = null;
       String[] chromPaths = StringUtils.getChromFilePaths(chromFile);   
       LipidomicsAnalyzer analyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
@@ -6946,7 +6947,7 @@ public void testTabFile() throws Exception {
       Hashtable<String,Hashtable<String,Hashtable<String,LipidBLASTIdentificationVO>>> resultsLB = lBlastParser.getResults_();
       String[] chromPaths = StringUtils.getChromFilePaths(chromFile);   
       LipidomicsAnalyzer analyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
-      ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f).get(3);
+      ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new TargetListParser()).parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f).get(3);
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = null;
       Sheet summarySheet = resultWorkbook.createSheet("Summary");
       Sheet detailsSheet = resultWorkbook.createSheet("Details");
@@ -9345,7 +9346,7 @@ public void testTabFile() throws Exception {
     files[0] = new File("D:\\Experiment1\\SanDiego\\negative\\10022015 Hartler (4 Samples) EMS IDA neg and pos mode 5x replicates-Standard 1 5uM neg_Ex1_neg.xlsx");
 
     try {
-      ////Vector allInfo = QuantificationThread.parseQuantExcelFile("D:\\Experiment1\\massLists\\quant\\Ex1_pos.xlsx",  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f);
+      ////Vector allInfo = (new TargetListParser()).parseQuantExcelFile("D:\\Experiment1\\massLists\\quant\\Ex1_pos.xlsx",  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f);
       Vector allInfo = null;
       Set<String> classes = ((LinkedHashMap<String,Integer>)allInfo.get(0)).keySet();
       Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)allInfo.get(1);
@@ -9658,7 +9659,7 @@ public void testTabFile() throws Exception {
     
     try{
       Vector<String> tgSpecies = null;
-      ////tgSpecies = ((Hashtable<String,Vector<String>>)QuantificationThread.parseQuantExcelFile("D:\\BiologicalExperiment\\massLists\\positive\\TG.xlsx",  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f).get(1)).get("TG");
+      ////tgSpecies = ((Hashtable<String,Vector<String>>)(new TargetListParser()).parseQuantExcelFile("D:\\BiologicalExperiment\\massLists\\positive\\TG.xlsx",  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f).get(1)).get("TG");
       Workbook workbook = null;
       BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(basePath+"Orbitrap_CID_TG_species_MSMS.xlsx"));
       Workbook wb = new XSSFWorkbook();
@@ -10500,7 +10501,7 @@ public void testTabFile() throws Exception {
     try{
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();          
       for (String quantFile : quantitationFiles){
-        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
+        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new MassListParser(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f,false)).getResultsVector().get(3);
         ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = null;
         for (String className : oneFile.keySet()){
           Hashtable<String,Hashtable<String,QuantVO>> oneClass= oneFile.get(className);
@@ -10888,7 +10889,7 @@ public void testTabFile() throws Exception {
     try{
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();          
       for (String quantFile : quantitationFiles){
-        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
+        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new MassListParser(quantFile, 0f, 0f, 0, 0, true, 0f, 0f, 0f,false)).getResultsVector().get(3);
         ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = null;
         for (String className : oneFile.keySet()){
           Hashtable<String,Hashtable<String,QuantVO>> oneClass= oneFile.get(className);
@@ -11291,7 +11292,7 @@ public void testTabFile() throws Exception {
     try{
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();          
       for (String quantFile : quantitationFiles){
-        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
+        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new MassListParser(quantFile, 0f, 0f, 0, 0, true, 0f, 0f, 0f,false)).getResultsVector().get(3);
         ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = null;
         for (String className : oneFile.keySet()){
           Hashtable<String,Hashtable<String,QuantVO>> oneClass= oneFile.get(className);
@@ -11559,7 +11560,7 @@ public void testTabFile() throws Exception {
     try{
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();          
       for (String quantFile : quantitationFiles){
-        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
+        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new MassListParser(quantFile, 0f, 0f, 0, 0, true, 0f, 0f, 0f,false)).getResultsVector().get(3);
         ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = null;
         for (String className : oneFile.keySet()){
           Hashtable<String,Hashtable<String,QuantVO>> oneClass= oneFile.get(className);
@@ -11850,7 +11851,7 @@ public void testTabFile() throws Exception {
     try{
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();          
       for (String quantFile : quantitationFiles){
-        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
+        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new MassListParser(quantFile, 0f, 0f, 0, 0, true, 0f, 0f, 0f,false)).getResultsVector().get(3);
         ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = null;
         for (String className : oneFile.keySet()){
           Hashtable<String,Hashtable<String,QuantVO>> oneClass= oneFile.get(className);
@@ -13124,7 +13125,7 @@ public void testTabFile() throws Exception {
       String novelFile = "D:\\BiologicalExperiment\\NovelSpecies.xlsx";
       
       LinkedHashMap<String,Hashtable<String,LinkedHashMap<String,Vector<SingleAdductIdentificationVO>>>> resultDetails = readDetailsOfSeveralPlatforms(detailsFileName);
-      Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)QuantificationThread.parseQuantExcelFile(speciesSequenceFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(1);
+      Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)(new MassListParser(speciesSequenceFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f,false)).getResultsVector().get(1);
       Vector<String> classSequence = new Vector<String>();
       classSequence.add("PI");
       classSequence.add("P-PC");
@@ -14323,7 +14324,7 @@ public void testTabFile() throws Exception {
     String file = "D:\\Christer\\20170606\\NP MS1 R450k\\pos\\NP_MS1_pos_01_positive_LPC_PC_PE_TG.xlsx";
     try{
       ElementConfigParser aaParser = Settings.getElementParser();
-//      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> idealMasses = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile("D:\\Christer\\20170531\\quant\\positive_LPC_PC_PE_TG.xlsx",  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
+//      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> idealMasses = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new TargetListParser()).parseQuantExcelFile("D:\\Christer\\20170531\\quant\\positive_LPC_PC_PE_TG.xlsx",  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
       aaParser.parse();
       Hashtable<String,Vector<LipidParameterSet>> classes = LDAResultReader.readResultFile(file,new Hashtable<String,Boolean>()).getIdentifications();
       List<IsotopicRatioDeviationVO> ratios = new ArrayList<IsotopicRatioDeviationVO>();
@@ -17330,7 +17331,7 @@ public void testTabFile() throws Exception {
       //Vector<MSFinderEntry> resultsFinder = finderParser.getResults();
       String[] chromPaths = StringUtils.getChromFilePaths(chromFile);   
       LipidomicsAnalyzer analyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
-      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,true).get(3);
+      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new MassListParser(quantFile, 0f, 0f, 0, 0, true, 0f, 0f, 0f,true)).getResultsVector().get(3);
 
       ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = null;
       Sheet summarySheet = resultWorkbook.createSheet("Summary");
@@ -18809,7 +18810,7 @@ public void testTabFile() throws Exception {
   private void  performMSDialComparisonOfNaturalProbes(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses, 
       Hashtable<String,LipidClassInfoVO> lipidClassInfo, String chromFile, String quantFile, String ldaFile, String msDialFile, String outputFile){
     try{
-      Vector quantValues = QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f, true);
+      Vector quantValues = (new MassListParser(quantFile, 0f, 0f, 0, 0, true, 0f, 0f, 0f,true)).getResultsVector();
       ////Vector quantValues = null;
       String[] chromPaths = StringUtils.getChromFilePaths(chromFile);   
       LipidomicsAnalyzer analyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
@@ -20326,7 +20327,7 @@ public void testTabFile() throws Exception {
     try{
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();          
       for (String quantFile : quantitationFiles){
-        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
+        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new MassListParser(quantFile, 0f, 0f, 0, 0, true, 0f, 0f, 0f,false)).getResultsVector().get(3);
         ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = null;
         for (String className : oneFile.keySet()){
           Hashtable<String,Hashtable<String,QuantVO>> oneClass= oneFile.get(className);

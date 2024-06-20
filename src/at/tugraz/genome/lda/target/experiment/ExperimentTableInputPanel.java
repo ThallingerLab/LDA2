@@ -211,7 +211,6 @@ public abstract class ExperimentTableInputPanel extends JOptionPanel
 			new WarningMessage(new JFrame(), "Warning", "An error occured while parsing the provided Excel files: "+ex.getMessage());
 			goBack();
 		}
-  	System.out.println("Data loaded!");
   }
   
   protected ExperimentFileChooserPanel getFileChooserPanel()

@@ -54,6 +54,7 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import at.tugraz.genome.lda.TooltipTexts;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.target.JDefaultComponents;
 import at.tugraz.genome.lda.target.JOptionPanel;
@@ -90,7 +91,7 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
   
   
   public CalibrationFileChooserPanel(JDefaultComponents wizardComponents) {
-      super(wizardComponents, "Map a RT-DB to your chromatographic conditions.");
+      super(wizardComponents, "Map an RT-DB to your chromatographic conditions.");
       init();
   }
   
@@ -126,14 +127,19 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
   {
   	JPanel panel = new JPanel();
   	panel.setLayout(new GridBagLayout());
+  	JLabel labelText = new JLabel("Maximum allowed deviation from standards-curve: ");
+  	labelText.setToolTipText(TooltipTexts.LCCL_MAX_DEVIATION);
+  	panel.add(labelText, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
   	predictionThresholdField_ = new JTextField(DEFAULT_THRESHOLD.toString(), 5);
   	predictionThresholdField_.setInputVerifier(new DoubleVerifier(true,true));
   	predictionThresholdField_.setHorizontalAlignment(JTextField.RIGHT);
-  	panel.add(new JLabel("Maximum allowed deviation from standards-curve: "), new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+  	predictionThresholdField_.setToolTipText(TooltipTexts.LCCL_MAX_DEVIATION);
   	panel.add(predictionThresholdField_, new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
-  	panel.add(new JLabel(" min"), new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+  	JLabel labelUnit = new JLabel(" min");
+  	labelUnit.setToolTipText(TooltipTexts.LCCL_MAX_DEVIATION);
+  	panel.add(labelUnit, new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
   	return panel;
   }

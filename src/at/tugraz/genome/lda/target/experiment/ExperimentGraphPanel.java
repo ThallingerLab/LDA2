@@ -481,7 +481,7 @@ public class ExperimentGraphPanel extends JOptionPanel
   		try
   		{
   			ExportPanel panel = (ExportPanel)getDefaultComponents().getCurrentPanel();
-  			panel.addExportOptionsPanel(new ExportOptionsPanel(true));
+  			panel.addNewRTDBCreationOptions(new ExportOptionsPanel(true));
   			panel.setExporter(new TargetListExporter(isotopeEffectRegression_, labelDefinitionPanel_.getResultFiles(), labelDefinitionPanel_.getAssignedIsotopeLabels()));
   		} catch (Exception ex) {}
   	}

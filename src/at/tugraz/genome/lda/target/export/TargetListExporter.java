@@ -36,13 +36,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.swing.JFrame;
 
 import org.apache.commons.math3.exception.OutOfRangeException;
+import org.apache.commons.math3.util.Precision;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFFont;
@@ -63,6 +63,7 @@ import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExportException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
+import at.tugraz.genome.lda.parser.MassListParser;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.target.IsotopeLabelVO;
@@ -70,6 +71,7 @@ import at.tugraz.genome.lda.target.calibration.CalibrationGraphPanel;
 import at.tugraz.genome.lda.target.calibration.RecalibrationRegression;
 import at.tugraz.genome.lda.target.experiment.IsotopeEffectRegression;
 import at.tugraz.genome.lda.utils.RangeDouble;
+import at.tugraz.genome.lda.utils.RangeInteger;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.lda.vos.QuantVO;
@@ -92,7 +94,7 @@ public class TargetListExporter
   public final static String HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS = "mol. species";
   public final static String HEADER_RETENTION_TIME = "tR (min)";
   
-  public final static int HEADER_ROW = 1;
+  public final static int HEADER_ROW = 1; //important: must not be 0 as there might be some important general info in row 0.
   
 //  private Hashtable<String, RecalibrationRegression> recalibrationRegressionsForClass_;
 //  private RecalibrationRegression recalibrationRegression_;
@@ -171,19 +173,15 @@ public class TargetListExporter
 	 * @param workbook
 	 * @throws Exception
 	 */
-	@SuppressWarnings("unchecked")
 	private void exportRTMappedDB(XSSFWorkbook workbook) throws Exception
 	{
-		Vector<?> quantInfo = QuantificationThread.getCorrectAnalyteSequence(this.getTemplatePath(),false);
-		LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)quantInfo.get(0);
-		LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantInfo.get(1);
-		Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(4);
-    
-    for (String cName : classSequence.keySet()) 
+		MassListParser massListParser = new MassListParser(this.getTemplatePath());
+		
+    for (String cName : massListParser.getClassSequence().keySet()) 
     {
     	Vector<DoubleBondPositionVO> allLabeledVOsToAdd = new Vector<DoubleBondPositionVO>();
       Sheet sheet = workbook.createSheet(cName);
-      writeMassListForSheet(sheet, getHeaderStyle(workbook), getNumberStyle(workbook), analyteSequence.get(cName), quantObjects.get(cName), cName, allLabeledVOsToAdd);
+      writeMassListForSheet(sheet, getHeaderStyle(workbook), getNumberStyle(workbook), massListParser, cName, allLabeledVOsToAdd);
     }
 	}
 	
@@ -200,18 +198,14 @@ public class TargetListExporter
 	 * @param exportPanel
 	 * @throws Exception
 	 */
-	@SuppressWarnings("unchecked")
 	private void exportNewRTDB(XSSFWorkbook workbook, ExportPanel exportPanel) throws Exception
 	{
-		Vector<?> quantInfo = QuantificationThread.getCorrectAnalyteSequence(exportPanel.getTemplatePath(),false);
-		LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)quantInfo.get(0);
-		LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantInfo.get(1);
-		Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(4);
+		MassListParser templateParser = new MassListParser(exportPanel.getTemplatePath());
 		
 		GradientAdjuster adjuster = GradientParser.parseGradient(exportPanel.getExportOptions().getSelectedGradient());
 		if (adjuster == null && exportPanel.getExportOptions().isGradientSelected()) throw new ExportException("The gradient file could not be read!");
     
-    for (String cName : classSequence.keySet()) 
+    for (String cName : templateParser.getClassSequence().keySet()) 
     {
     	Vector<DoubleBondPositionVO> allLabeledVOsToAdd = new Vector<DoubleBondPositionVO>();
     	
@@ -248,7 +242,7 @@ public class TargetListExporter
     	}
     	
       Sheet sheet = workbook.createSheet(cName);
-      writeMassListForSheet(sheet, getHeaderStyle(workbook), getNumberStyle(workbook), analyteSequence.get(cName), quantObjects.get(cName), cName, allLabeledVOsToAdd);
+      writeMassListForSheet(sheet, getHeaderStyle(workbook), getNumberStyle(workbook), templateParser, cName, allLabeledVOsToAdd);
     }
 	}
 	
@@ -257,42 +251,66 @@ public class TargetListExporter
 			Sheet sheet, 
 			XSSFCellStyle headerStyle, 
 			XSSFCellStyle numberStyle,
-			Vector<String> analytes, 
-			Hashtable<String,Hashtable<String,QuantVO>> quantObjects, 
+			MassListParser templateParser,
 			String cName,
 			Vector<DoubleBondPositionVO> allLabeledVOsToAdd)
 	{
 		try 
 		{
-			Vector<Object> elModCharge = getAvailableElementsAndModificationsPlusCharge(quantObjects);
+			Vector<Object> elModCharge = getAvailableElementsAndModificationsPlusCharge(templateParser.getQuantObjects().get(cName));
 	    Vector<String> elements = (Vector<String>)elModCharge.get(0);
 	    LinkedHashMap<String,String> mods = (LinkedHashMap<String,String>)elModCharge.get(1);
 	    Hashtable<String,Integer> modToCharge = (Hashtable<String,Integer>)elModCharge.get(2);
+	    Integer ohNumber = 0;
 	    
-	    List<String> headerTitles = createHeaderTitles(elements, mods, modToCharge);
-	    
-	    //TODO: read this from reference file.
-	    if (cName.equals("SM") || cName.equals("Cer"))
+	    if (templateParser.isFirstRowRelevant(cName))
 	    {
 	    	int rowCount = 0;
     		Row outRow = sheet.createRow(rowCount);
-        Cell cell = outRow.createCell(9,HSSFCell.CELL_TYPE_STRING);
-        cell.setCellValue("OH-Number: 2");
-        cell = outRow.createCell(10,HSSFCell.CELL_TYPE_STRING);
-        cell.setCellValue("OH-Range: 2-3");
-        cell = outRow.createCell(11,HSSFCell.CELL_TYPE_STRING);
-        cell.setCellValue("adductInsensitiveRtFilter");
+    		if (templateParser.getAdductInsensitiveRtFilter().get(cName) != null && templateParser.getAdductInsensitiveRtFilter().get(cName) == true)
+    		{
+    			Cell cell = outRow.createCell(3,HSSFCell.CELL_TYPE_STRING);
+          cell.setCellValue("adductInsensitiveRtFilter");
+    		}
+    		if (templateParser.getBestMatchBySpectrumCoverage().get(cName) != null && templateParser.getBestMatchBySpectrumCoverage().get(cName) == true)
+    		{
+    			Cell cell = outRow.createCell(4,HSSFCell.CELL_TYPE_STRING);
+          cell.setCellValue("pickBestMatchBySpectrumCoverage");
+    		}
+    		if (templateParser.getFixedStartTime().get(cName) != null)
+    		{
+    			Cell cell = outRow.createCell(5,HSSFCell.CELL_TYPE_STRING);
+          cell.setCellValue("Start-RT: "+Precision.round(templateParser.getFixedStartTime().get(cName), 2));
+    		}
+    		if (templateParser.getFixedStopTime().get(cName) != null)
+    		{
+    			Cell cell = outRow.createCell(6,HSSFCell.CELL_TYPE_STRING);
+    			cell.setCellValue("Stop-RT: "+Precision.round(templateParser.getFixedStopTime().get(cName), 2));
+    		}
+    		if (templateParser.getOHNumber().get(cName) != null)
+    		{
+    			ohNumber = templateParser.getOHNumber().get(cName);
+    			Cell cell = outRow.createCell(7,HSSFCell.CELL_TYPE_STRING);
+    			cell.setCellValue("OH-Number: "+ohNumber);
+    		}
+    		if (templateParser.getOHRange().get(cName) != null)
+    		{
+    			RangeInteger ohRange = templateParser.getOHRange().get(cName);
+    			Cell cell = outRow.createCell(8,HSSFCell.CELL_TYPE_STRING);
+    			cell.setCellValue("OH-Range: "+ohRange.getStart()+"-"+ohRange.getStop());
+    		}
 	    }
+	    
+	    List<String> headerTitles = createHeaderTitles(elements, mods, modToCharge);
 	    createHeader(sheet, headerTitles, headerStyle);
 	    
-	    ArrayList<String> usedQuantIDs = new ArrayList<String>();
 	    int firstModColumn = headerTitles.indexOf(headerTitles.stream().filter((s)->(s).startsWith("mass(form[")).findFirst().get());
 	    int rowCount = HEADER_ROW+1;
-	    for (String analyte : analytes) 
+	    for (String analyte : templateParser.getAnalyteSequence().get(cName)) 
 	    {
 	    	Cell cell;
 	    	
-	    	Hashtable<String,QuantVO> quantAnalytes = quantObjects.get(analyte);
+	    	Hashtable<String,QuantVO> quantAnalytes = templateParser.getQuantObjects().get(cName).get(analyte);
 	      Hashtable<String,Integer> formula = new Hashtable<String,Integer>();
 	      Vector<DoubleBondPositionVO> doubleBondPositionVOs = new Vector<DoubleBondPositionVO>(); //they will be identical for all mods..
 	      for (String mod : mods.keySet()) 
@@ -345,19 +363,16 @@ public class TargetListExporter
 	      {
 	      	int modCount = 0;
 	      	Row row = sheet.createRow(rowCount);
+	      	boolean increaseRowCount = true; //relevant if there is e.g. more than one ohNumber
 	      	for (String mod : mods.keySet()) 
 		      {
 		      	QuantVO quant = quantAnalytes.get(mod);
 		      	
-		      	//the following lines only affect Cer, SM (classes with hydroxylation sites).
-		      	if ((i<0 && usedQuantIDs.contains(computeQuantID(quant, false)) ||
-		      			(i>-1 && !usedQuantIDs.contains(computeQuantID(quant, true)))))
-		        {
-		      		rowCount--;
-		        	continue;
-		        }
-		        usedQuantIDs.add(computeQuantID(quant, true));
-		        usedQuantIDs.add(computeQuantID(quant, false));
+		      	if (ohNumber > 0 && quant.getOhNumber() != ohNumber) //only write out the relevant ohNumber
+		      	{
+		      		increaseRowCount = false;
+		      		continue;
+		      	}
 		      	
 		      	if (modCount==0) 
 		        {   	
@@ -388,7 +403,8 @@ public class TargetListExporter
 		          cell.setCellStyle(numberStyle);
 	          }
 		      }
-	      	rowCount++;
+	      	if (increaseRowCount)
+	      		rowCount++;
 	      }
 	    }
 		}
@@ -398,11 +414,11 @@ public class TargetListExporter
 		}
 	}
 	
-	public String computeQuantID(QuantVO quant, boolean includeOH)
-	{
-		return String.format("%s, %s, %s, %s", 
-				quant.getCarbons(), quant.getDbs(), quant.getModName(), includeOH ? quant.getOhNumber() : "");
-	}
+//	public String computeQuantID(QuantVO quant, boolean includeOH)
+//	{
+//		return String.format("%s, %s, %s, %s", 
+//				quant.getCarbons(), quant.getDbs(), quant.getModName(), includeOH ? quant.getOhNumber() : "");
+//	}
 	
 	private void computeExpectedRetentionTime(DoubleBondPositionVO vo, RecalibrationRegression regression, String cName)
 	{
@@ -420,11 +436,11 @@ public class TargetListExporter
 		}
 		
 		//TODO: just for development, remove after!
-		if (!beforeAfter_.containsKey(cName))
-		{
-			beforeAfter_.put(cName, ConcurrentHashMap.newKeySet());
-		}
-		beforeAfter_.get(cName).add(new Pair<Double,DoubleBondPositionVO>(before,vo));
+//		if (!beforeAfter_.containsKey(cName))
+//		{
+//			beforeAfter_.put(cName, ConcurrentHashMap.newKeySet());
+//		}
+//		beforeAfter_.get(cName).add(new Pair<Double,DoubleBondPositionVO>(before,vo));
 	}
 	
 	/**
@@ -935,6 +951,11 @@ public class TargetListExporter
 				QuantificationResult quantRes = resultFileVO.getQuantificationResult();
 				Vector<LipidParameterSet> analytes = quantRes.getIdentifications().get(cName);
 				
+				if (analytes == null)
+				{
+					return;
+				}
+				
 				for (LipidParameterSet analyte : analytes)
 				{
 					//TODO: if only one chain for a class, MSn is not necessary. However, some methods would have to be rewritten and identifications are usually more accurate, if there is MSn info available
@@ -978,7 +999,7 @@ public class TargetListExporter
 												{
 													expectedRetentionTime = adjuster != null ? 
 															adjuster.getGradientAdjustedValue(isotopeEffectRegression_.getIsotopeEffect(num), expectedRetentionTime) :
-															isotopeEffectRegression_.getIsotopeEffect(num);
+															isotopeEffectRegression_.getIsotopeEffect(num)*expectedRetentionTime;
 												}
 												continue;
 											}
@@ -990,7 +1011,7 @@ public class TargetListExporter
 							{
 								expectedRetentionTime = adjuster != null ? 
 										adjuster.getGradientAdjustedValue(isotopeEffectRegression_.getIsotopeEffect(numberDeuterium), analyte.getPreciseRT()) :
-										isotopeEffectRegression_.getIsotopeEffect(numberDeuterium);
+										isotopeEffectRegression_.getIsotopeEffect(numberDeuterium)*analyte.getPreciseRT();
 							}
 						}					
 						

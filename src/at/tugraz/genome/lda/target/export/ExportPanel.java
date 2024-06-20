@@ -59,12 +59,7 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 	private ExportOptionsPanel exportOptionsPanel_;
 	private JTextField exportField_;
 	private JTextField templateField_;
-	
-
-//  String currentMachine = LipidomicsConstants.getCurrentMSMachine();
-//  msMachineTypes_.setSelectedItem(currentMachine);
-//  msMachineTypes_.setToolTipText(TooltipTexts.SETTINGS_MS_MACHINE);
-	
+	private JPanel templatePanel_;
 	
 	private Path previousSelection_ = null;
 	private static final String PLACEHOLDER_PREFIX = "Enter ";
@@ -83,31 +78,37 @@ public class ExportPanel extends JOptionPanel implements ActionListener
   
   private void init() 
   {
-  	templateField_ = instantiateJTextField(PLACEHOLDER_PREFIX + "path and file name for the template LDA mass list the new RT-DB should be based on.");
-  	JButton templateButton = instantiateJButton(COMMAND_OPEN_TEMPLATE, BROWSE);
-  	
   	exportField_ = instantiateJTextField(PLACEHOLDER_PREFIX + "path and file name for the new RT-DB.");
   	JButton exportButton = instantiateJButton(COMMAND_OPEN_EXPORT, BROWSE);
-  	
-  	JPanel templatePanel = instantiatePanel(templateField_, templateButton, "Template LDA mass list");
   	JPanel exportPanel = instantiatePanel(exportField_, exportButton, "New RT-DB");
-  	
-  	this.add(templatePanel, 
-  			new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        , GridBagConstraints.CENTER, GridBagConstraints.NONE
-        , new Insets(0, 0, 0, 0), 0, 0));
-  	
   	this.add(exportPanel, 
-  			new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+  			new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
         , GridBagConstraints.CENTER, GridBagConstraints.NONE
         , new Insets(100, 0, 0, 0), 0, 0));
   }
   
-  public void addExportOptionsPanel(ExportOptionsPanel panel)
+  public void addNewRTDBCreationOptions(ExportOptionsPanel panel)
+  {
+  	addTemplatePanel();
+  	addExportOptionsPanel(panel);
+  }
+  
+  private void addTemplatePanel()
+  {
+  	templateField_ = instantiateJTextField(PLACEHOLDER_PREFIX + "path and file name for the template LDA mass list the new RT-DB should be based on.");
+  	JButton templateButton = instantiateJButton(COMMAND_OPEN_TEMPLATE, BROWSE);
+  	templatePanel_ = instantiatePanel(templateField_, templateButton, "Template LDA mass list");
+  	this.add(templatePanel_, 
+  			new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        , GridBagConstraints.CENTER, GridBagConstraints.NONE
+        , new Insets(0, 0, 0, 0), 0, 0));
+  }
+  
+  private void addExportOptionsPanel(ExportOptionsPanel panel)
   {
   	this.exportOptionsPanel_ = panel;
   	this.add(this.exportOptionsPanel_,
-  			new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+  			new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0
         , GridBagConstraints.WEST, GridBagConstraints.NONE
         , new Insets(50, 0, 0, 0), 0, 0));
   }
@@ -228,12 +229,12 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 	}
 	
 	/**
-   * Checks if the template JTextfield has an entry different from the placeholder.
+   * Checks if the template JTextfield has an entry different from the placeholder if it is not null.
    * @return true if the export field contains the placeholder
    */
   public boolean isPlaceholderTemplate()
   {
-		if (templateField_.getText().startsWith(PLACEHOLDER_PREFIX))
+		if (templateField_ != null && templateField_.getText().startsWith(PLACEHOLDER_PREFIX))
 		{
 			return true;
 		}
@@ -281,6 +282,11 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 			this.remove(exportOptionsPanel_);
 			exportOptionsPanel_ = null;
 		}
+		if (templatePanel_ != null)
+		{
+			this.remove(templatePanel_);
+			templatePanel_ = null;
+		}
 		goBack();
   }
 	
@@ -296,14 +302,14 @@ public class ExportPanel extends JOptionPanel implements ActionListener
 //			}
 			exporter_.export(this);
 			//TODO: this is to create figures to compare target lists; remove after
-			exporter_.exportBeforeAfter(
-					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\Publication\\SI\\SupplementaryData\\Table03_RTDB_B1.xlsx",
-					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min_final\\Recalibrations\\comparison_RTDB_A_to_B1_USO.xlsx",
-					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\Publication\\SI\\SupplementaryData\\Table06_RT_mapping_plus1837.xlsx"); 
+//			exporter_.exportBeforeAfter(
+//					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\Publication\\SI\\SupplementaryData\\Table03_RTDB_B1.xlsx",
+//					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\SILDA_30min_final\\Recalibrations\\comparison_RTDB_A_to_B1_USO.xlsx",
+//					"D:\\Collaborator_Files\\SILDA\\SILDA_final\\Publication\\SI\\SupplementaryData\\Table06_RT_mapping_plus1837.xlsx"); 
 		}
 		catch (Exception ex)
 		{
-			new WarningMessage(new JFrame(), "Error", "An error occurred during the before after export: "+ex.getMessage());
+			new WarningMessage(new JFrame(), "Error", "An error occurred during the export: "+ex.getMessage());
 		}
 	}
 	

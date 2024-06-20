@@ -79,7 +79,7 @@ public class ChooserPanel extends JOptionPanel
   {
   	JPanel calibrationPanel = new JPanel();
   	calibrationPanel.setLayout(new GridBagLayout());
-    JLabel title = new JLabel("<html>Map a RT-DB to your chromatographic conditions.</html>");
+    JLabel title = new JLabel("<html>Map an RT-DB to your chromatographic conditions.</html>");
     title.setFont(new Font("Arial",Font.BOLD, 24));
     title.setPreferredSize(new Dimension(sizeTextOneLine.width,sizeTextOneLine.height*4));
     title.setMinimumSize(new Dimension(title.getPreferredSize().width/2, title.getPreferredSize().height));
@@ -88,7 +88,7 @@ public class ChooserPanel extends JOptionPanel
     requirementsHeader.setPreferredSize(new Dimension(sizeTextOneLine.width,sizeTextOneLine.height*2));
     requirementsHeader.setMinimumSize(new Dimension(requirementsHeader.getPreferredSize().width/2, requirementsHeader.getPreferredSize().height));
     JLabel requirements= new JLabel("<html> <ul style=\"list-style-type:circle;\"> "
-    		+ "<li> A RT-DB in LDA-format </li>"
+    		+ "<li> An RT-DB in LDA-format </li>"
     		+ "<li> Experimental data (analyzed with LDA) of a standard mix measured with the exact same chromatographic conditions as the data the omega target list is based on </li>"
     		+ "<li> Experimental data (analyzed with LDA) of the same standard mix measured with your chromatography </li>"
     		+ "</html>");

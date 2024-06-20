@@ -334,6 +334,13 @@ public class TooltipTexts
   public final static String DISPLAY_REMOVE_SELECTED_DB_SPECIES = "<html>Remove selected molecular species.</html>";
   public final static String DISPLAY_SAVE_CHANGES = "<html>Save changes to result file.</html>";
   
+  public final static String LCCL_MAX_DEVIATION = "<html>Use this setting to define a maximum allowed deviation from the standards-curve.<br/>" +
+  		"for anchor points derived from biological data.<br/>" +
+  		"A higher threshold will require more manual removal of visual outliers.</html>";
+  
+  
+  
+  
   public final static String DIALOG_ADD_PEAK_START_TIME = "<html>The lower time border in minutes.</html>";
   public final static String DIALOG_ADD_PEAK_STOP_TIME = "<html>The upper time border in minutes.</html>";
   public final static String DIALOG_ADD_PEAK_START_MZ= "<html>The lower m/z border in Da.</html>";

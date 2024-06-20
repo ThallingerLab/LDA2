@@ -2593,7 +2593,62 @@ public class StaticUtils
     return parts;
   }
   
+  public static String[] extractFormulaAndAdductName(String contents) {
+    String[] formulaAndName = new String[4];
+    String formula = "";
+    String adductName = "";
+    String charge = "1";
+    String multi = "1";
+    String formNameString = contents.substring(contents.indexOf("(")+1,contents.indexOf(")"));
+    if (formNameString.indexOf("form")!=-1&&formNameString.indexOf("name")!=-1){
+      String nearFormString = formNameString.substring(formNameString.indexOf("form"));
+      formula = nearFormString.substring(nearFormString.indexOf("[")+1,nearFormString.indexOf("]")).trim();
+      String nearNameString = formNameString.substring(formNameString.indexOf("name"));
+      adductName = nearNameString.substring(nearNameString.indexOf("[")+1,nearNameString.indexOf("]")).trim();
+      if (formNameString.indexOf("charge=")!=-1){
+        char[] afterChargeString = formNameString.substring(formNameString.indexOf("charge=")+"charge=".length()).toCharArray();
+        try{
+          charge = String.valueOf(extractDigitsAfterEqualSign(afterChargeString));
+          if (Integer.parseInt(charge)<1){
+            charge = "1";
+            System.out.println("Warning: The charge entry in the column header \""+contents+"\" is smaller than 1! Setting it to \"1\"");
+          }
+        }catch (NumberFormatException nfx){
+          System.out.println("Warning: The charge entry in the column header \""+contents+"\" is not integer format! Setting it to \"1\"");
+        }
+      }
+      if (formNameString.indexOf("mult=")!=-1){
+        char[] afterMultiString = formNameString.substring(formNameString.indexOf("mult=")+"mult=".length()).toCharArray();
+        try{
+          multi = String.valueOf(extractDigitsAfterEqualSign(afterMultiString));
+          if (Integer.parseInt(charge)<1){
+            multi = "1";
+            System.out.println("Warning: The mult entry in the column header \""+contents+"\" is smaller than 1! Setting it to \"1\"");
+          }
+        }catch (NumberFormatException nfx){
+          System.out.println("Warning: The mult entry in the column header \""+contents+"\" is not integer format! Setting it to \"1\"");
+        }
+
+      }
+    } else{
+      adductName = formNameString;
+    }
+    formulaAndName[0] = formula;
+    formulaAndName[1] = adductName;
+    formulaAndName[2] = charge;
+    formulaAndName[3] = multi;
+    return formulaAndName;
+  }
   
+  private static int extractDigitsAfterEqualSign(char[] afterString){
+    int i=0;
+    String digitsString = "";
+    while (i<afterString.length&&Character.isDigit(afterString[i])){
+      digitsString+=String.valueOf(afterString[i]);
+      i++;
+    }
+    return Integer.parseInt(digitsString);
+  }
   
   
   

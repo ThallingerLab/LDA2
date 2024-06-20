@@ -65,8 +65,7 @@ import javafx.util.Pair;
 /**
  * 
  * @author Leonida M. Lamp
- *	TODO: differences should be an object that also holds information about the lipid class and lipid species, so that the calibration graph panel can delete data points by just looking in the combined regression!!! 
- *(otherwise there will be some issues when trying to delete stuff that belongs to a lipid class that has too few data points and has it's specific regression removed for this reason).
+ * 
  */
 public class CalibrationGraphPanel extends JOptionPanel
 {
@@ -255,9 +254,9 @@ public class CalibrationGraphPanel extends JOptionPanel
   private void initPlot()
   {
   	RecalibrationRegression regression = getRegressionByFields(PLOT_ALL, PLOT_ALL);
-  	ArrayList<Pair<Double,Double>> data = regression == null ? new ArrayList<Pair<Double,Double>>() : regression.getDifferences();
+  	ArrayList<AnchorPoint> data = regression == null ? new ArrayList<AnchorPoint>() : regression.getDifferences();
   	RecalibrationRegression regressionStandards = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, PLOT_ALL);
-  	ArrayList<Pair<Double,Double>> dataStandards = regressionStandards == null ? new ArrayList<Pair<Double,Double>>() : regressionStandards.getDifferences();
+  	ArrayList<AnchorPoint> dataStandards = regressionStandards == null ? new ArrayList<AnchorPoint>() : regressionStandards.getDifferences();
     plot_ = new RecalibrationPlot(data, dataStandards, regression, PLOT_DIMENSION, this, null);
     addPlotToDisplayPanel();
   }
@@ -433,8 +432,8 @@ public class CalibrationGraphPanel extends JOptionPanel
   {
   	for (SubGroup group : subGroups)
   	{
-  		ArrayList<Pair<Double,Double>> differencesStandards = new ArrayList<Pair<Double,Double>>();
-  		ArrayList<Pair<Double,Double>> differences = new ArrayList<Pair<Double,Double>>();
+  		ArrayList<AnchorPoint> differencesStandards = new ArrayList<AnchorPoint>();
+  		ArrayList<AnchorPoint> differences = new ArrayList<AnchorPoint>();
   		for (String lipidClass : group.getLipidClasses())
   		{
   			RecalibrationRegression regressionStandards = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, lipidClass);
@@ -461,9 +460,9 @@ public class CalibrationGraphPanel extends JOptionPanel
   	}
   	fillMissingDataPoints(regressions_);
   	RecalibrationRegression regression = getRegressionByFields(PLOT_ALL, className);
-  	ArrayList<Pair<Double,Double>> data = regression == null ? new ArrayList<Pair<Double,Double>>() : regression.getDifferences();
+  	ArrayList<AnchorPoint> data = regression == null ? new ArrayList<AnchorPoint>() : regression.getDifferences();
   	RecalibrationRegression regressionStandards = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, className);
-  	ArrayList<Pair<Double,Double>> dataStandards = regressionStandards == null ? new ArrayList<Pair<Double,Double>>() : regressionStandards.getDifferences();
+  	ArrayList<AnchorPoint> dataStandards = regressionStandards == null ? new ArrayList<AnchorPoint>() : regressionStandards.getDifferences();
   	plot_ = new RecalibrationPlot(data, dataStandards, regression, PLOT_DIMENSION, this, plot_.getXYPlot());
   	addPlotToDisplayPanel();
   	displayPanel_.invalidate();
@@ -503,8 +502,8 @@ public class CalibrationGraphPanel extends JOptionPanel
   	ArrayList<IdentificationVO> originalIdentifications = parseResultFiles(originalMix);
 		ArrayList<IdentificationVO> newIdentifications = parseResultFiles(newMix);
 		ArrayList<MatchedIdentificationVO> matches = computeMatches(originalIdentifications, originalMix.size(), newIdentifications, newMix.size());
-		Hashtable<String, ArrayList<Pair<Double,Double>>> differencesForClass = computeDifferencesForClass(matches, 0);
-		ArrayList<Pair<Double,Double>> differences = new ArrayList<Pair<Double,Double>>();
+		Hashtable<String, ArrayList<AnchorPoint>> differencesForClass = computeDifferencesForClass(matches, 0);
+		ArrayList<AnchorPoint> differences = new ArrayList<AnchorPoint>();
 		
 		lipidClasses_ = new String[differencesForClass.keySet().size()];
 		int count = 0;
@@ -650,8 +649,8 @@ public class CalibrationGraphPanel extends JOptionPanel
   {
     //in case we have valid regressions for additional lipid classes, we need to redefine the lipidClasses_ array
   	HashSet<String> uniqueLipidClasses = new HashSet<String>();
-  	Hashtable<String, ArrayList<Pair<Double,Double>>> differencesForClass = computeDifferencesForClass(matches, 1);
-  	ArrayList<Pair<Double,Double>> differencesAll = new ArrayList<Pair<Double,Double>>();
+  	Hashtable<String, ArrayList<AnchorPoint>> differencesForClass = computeDifferencesForClass(matches, 1);
+  	ArrayList<AnchorPoint> differencesAll = new ArrayList<AnchorPoint>();
 		for (String lipidClass : differencesForClass.keySet()) //there might be different lipid classes here than in the standard mix
 		{
 			addCombinedRegression(differencesForClass.get(lipidClass), lipidClass, uniqueLipidClasses, regressions);
@@ -671,7 +670,7 @@ public class CalibrationGraphPanel extends JOptionPanel
 		{
 			if (!uniqueLipidClasses.contains(lipidClasses_[i]))
 			{
-				addCombinedRegression(new ArrayList<Pair<Double,Double>>(), lipidClasses_[i], uniqueLipidClasses, regressions);
+				addCombinedRegression(new ArrayList<AnchorPoint>(), lipidClasses_[i], uniqueLipidClasses, regressions);
 			}
 		}
 		return uniqueLipidClasses;
@@ -683,9 +682,9 @@ public class CalibrationGraphPanel extends JOptionPanel
    * @param targetResults
    * @return
    */
-  private Hashtable<String, ArrayList<Pair<Double,Double>>> computeDifferencesForClass(ArrayList<MatchedIdentificationVO> matches, int acceptedConfidence)
+  private Hashtable<String, ArrayList<AnchorPoint>> computeDifferencesForClass(ArrayList<MatchedIdentificationVO> matches, int acceptedConfidence)
   {
-  	Hashtable<String, ArrayList<Pair<Double,Double>>> differencesForClass = new Hashtable<String, ArrayList<Pair<Double,Double>>>();
+  	Hashtable<String, ArrayList<AnchorPoint>> differencesForClass = new Hashtable<String, ArrayList<AnchorPoint>>();
   	
   	for (MatchedIdentificationVO match : matches)
 		{
@@ -702,14 +701,14 @@ public class CalibrationGraphPanel extends JOptionPanel
   		}
   		if (!differencesForClass.containsKey(lipidClass))
   		{
-  			differencesForClass.put(lipidClass, new ArrayList<Pair<Double,Double>>());
+  			differencesForClass.put(lipidClass, new ArrayList<AnchorPoint>());
   		}
   		
   		for (Pair<IdentificationVO,IdentificationVO> matchedPair : acceptedMatches)
   		{
   			Double original = matchedPair.getKey().getAverageRT();
   			Double difference = original - matchedPair.getValue().getAverageRT();
-  			differencesForClass.get(lipidClass).add(new Pair<Double,Double>(original, difference));
+  			differencesForClass.get(lipidClass).add(new AnchorPoint(lipidClass, matchedPair.getKey().getLipidSpecies(), original, difference));
   		}
 		}
   	return differencesForClass;
@@ -724,7 +723,7 @@ public class CalibrationGraphPanel extends JOptionPanel
    * @param regressions
    * @return true if a valid regression was successfully added, otherwise false.
    */
-  private boolean addCombinedRegression(ArrayList<Pair<Double,Double>> differences, String lipidClass, HashSet<String> uniqueLipidClasses, ArrayList<RecalibrationRegression> regressions)
+  private boolean addCombinedRegression(ArrayList<AnchorPoint> differences, String lipidClass, HashSet<String> uniqueLipidClasses, ArrayList<RecalibrationRegression> regressions)
   {
 		RecalibrationRegression regressionStandards = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, lipidClass);
 		if (regressionStandards != null)
@@ -893,21 +892,24 @@ public class CalibrationGraphPanel extends JOptionPanel
   	return null;
   }
   
-  public String findLipidClassForDataPoint(Pair<Double,Double> dataPoint)
+  public AnchorPoint findLipidClassForDataPoint(Pair<Double,Double> dataPoint)
   {
   	for (int i=0; i<lipidClasses_.length; i++) 
 		{
   		if (lipidClasses_[i].equals(PLOT_ALL)) continue;
   		RecalibrationRegression regressionForClass = getRegressionByFields(PLOT_ALL, lipidClasses_[i]);
-  		if (regressionForClass.getDifferences().contains(dataPoint))
-  		{
-  			return lipidClasses_[i];
-  		}
+  		for (AnchorPoint point : regressionForClass.getDifferences())
+			{
+				if (point.getxValue().equals(dataPoint.getKey()) && point.getyValue().equals(dataPoint.getValue()))
+				{
+					return point;
+				}
+			}
 		}
   	return null;
   }
   
-  private boolean removeDataPointFromRegression(RecalibrationRegression regression, Pair<Double,Double> dataPoint)
+  private boolean removeDataPointFromRegression(RecalibrationRegression regression, AnchorPoint dataPoint)
   {
   	if (regression.getClusteredWithoutDataPointSize(dataPoint) > 2)
   	{
@@ -917,11 +919,11 @@ public class CalibrationGraphPanel extends JOptionPanel
   	return false;
   }
   
-  protected void removeDataPoint(String lipidClass, Pair<Double,Double> dataPoint)
+  protected void removeDataPoint(AnchorPoint dataPoint)
   {
   	RecalibrationRegression regressionAll = getRegressionByFields(PLOT_ALL, PLOT_ALL);
-  	RecalibrationRegression regressionClass = getRegressionByFields(PLOT_ALL, lipidClass);
-  	RecalibrationRegression regressionSubGroup = getRegressionByFields(PLOT_ALL, getRelevantRegressionName(lipidClass));
+  	RecalibrationRegression regressionClass = getRegressionByFields(PLOT_ALL, dataPoint.getLipidClass());
+  	RecalibrationRegression regressionSubGroup = getRegressionByFields(PLOT_ALL, getRelevantRegressionName(dataPoint.getLipidClass()));
   	if (removeDataPointFromRegression(regressionAll, dataPoint)) //assumption that there will not be too few data points in such cases.
   	{
   		if (!regressionClass.equals(regressionSubGroup))
@@ -930,9 +932,9 @@ public class CalibrationGraphPanel extends JOptionPanel
   		}
   		if (!removeDataPointFromRegression(regressionClass, dataPoint))
   		{
-  			new WarningMessage(new JFrame(), "Warning", String.format("Class specific calibration of %s is not possible anymore due to the removed data point!", getRelevantRegressionName(lipidClass)));
+  			new WarningMessage(new JFrame(), "Warning", String.format("Class specific calibration of %s is not possible anymore due to the removed data point!", getRelevantRegressionName(dataPoint.getLipidClass())));
     		List<String> lipidClasses = new ArrayList<String>(Arrays.asList(lipidClasses_));
-    		lipidClasses.remove(lipidClass);
+    		lipidClasses.remove(dataPoint.getLipidClass());
     		lipidClasses_ = lipidClasses.toArray(new String[lipidClasses.size()]);
     		regressions_.remove(regressionClass);
     		displayPanel_.remove(jComboBoxPanel_);

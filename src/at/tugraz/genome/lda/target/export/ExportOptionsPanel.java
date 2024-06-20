@@ -134,7 +134,7 @@ public class ExportOptionsPanel extends JPanel
   
   public boolean isGradientSelected()
   {
-  	return selectedGradient_.getSelectedItem().equals(NO_ADJUSTMENT);
+  	return !selectedGradient_.getSelectedItem().equals(NO_ADJUSTMENT);
   }
 	
 }

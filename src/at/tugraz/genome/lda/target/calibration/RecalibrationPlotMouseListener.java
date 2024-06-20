@@ -71,16 +71,16 @@ public class RecalibrationPlotMouseListener implements ChartMouseListener
         Double yValue = ce.getDataset().getY(ce.getSeriesIndex(),ce.getItem()).doubleValue();
         Pair<Double,Double> dataPoint = new Pair<Double,Double>(xValue,yValue);
         
-        String lipidClass = plot_.getPanel().findLipidClassForDataPoint(dataPoint);
-        System.out.println(lipidClass);
+        AnchorPoint originalAnchorPoint = plot_.getPanel().findLipidClassForDataPoint(dataPoint);
+        System.out.println(originalAnchorPoint.getLipidSpecies());
         
         String dataType = CalibrationGraphPanel.PLOT_ALL;
-        if (plot_.getDataStandards().contains(dataPoint))
+        if (plot_.getDataStandards().contains(originalAnchorPoint))
         {
         	dataType = CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX;
         }
         
-        new DataPointDialog(new JFrame(), "Data point selected", lipidClass, dataPoint, dataType, plot_);
+        new DataPointDialog(new JFrame(), "Data point selected", originalAnchorPoint, dataType, plot_);
 			}
 		}
 	}
@@ -94,27 +94,29 @@ public class RecalibrationPlotMouseListener implements ChartMouseListener
 		private static final long serialVersionUID = 1L;
 		
 		private RecalibrationPlot plot_;
-		private String lipidClass_;
-		private Pair<Double,Double> dataPoint_;
+		private AnchorPoint dataPoint_;
 		
 
-		public DataPointDialog(JFrame parent, String title, String lipidClass, Pair<Double,Double> dataPoint, String dataType, RecalibrationPlot plot) 
+		public DataPointDialog(JFrame parent, String title, AnchorPoint dataPoint, String dataType, RecalibrationPlot plot) 
 		{
 	    super(parent, title, true);
 	    this.plot_ = plot;
-	    this.lipidClass_ = lipidClass;
 	    this.dataPoint_ = dataPoint;
 	    
 	    this.setLocationRelativeTo(plot);
 	    
 	    getContentPane().setLayout(new GridBagLayout());
 	    
-	    getContentPane().add(new JLabel("Lipid class of this calibrant: "), generateDefaultConstraints(0, 0));
-	    getContentPane().add(new JLabel(lipidClass), generateDefaultConstraints(7, 0));
-	    getContentPane().add(new JLabel("Retention time in original target list: "), generateDefaultConstraints(0, 1));
-	    getContentPane().add(new JLabel(String.format("%s min", Precision.round(dataPoint.getKey(), 2))), generateDefaultConstraints(7, 1));
-	    getContentPane().add(new JLabel("Retention time difference to new experimental conditions: "), generateDefaultConstraints(0, 2));
-	    getContentPane().add(new JLabel(String.format("%s min", Precision.round(dataPoint.getValue(), 2))), generateDefaultConstraints(7, 2));
+	    getContentPane().add(new JLabel("Lipid class: "), generateDefaultConstraints(0, 0));
+	    getContentPane().add(new JLabel(dataPoint.getLipidClass()), generateDefaultConstraints(7, 0));
+	    getContentPane().add(new JLabel("Lipid species: "), generateDefaultConstraints(0, 1));
+	    getContentPane().add(new JLabel(dataPoint.getLipidSpecies()), generateDefaultConstraints(7, 1));
+	    getContentPane().add(new JLabel("Retention time in original RT-DB: "), generateDefaultConstraints(0, 2));
+	    getContentPane().add(new JLabel(String.format("%s min", Precision.round(dataPoint.getxValue(), 2))), generateDefaultConstraints(7, 2));
+	    getContentPane().add(new JLabel("Retention time with new experimental conditions: "), generateDefaultConstraints(0, 3));
+	    getContentPane().add(new JLabel(String.format("%s min", Precision.round(dataPoint.getyValue()+dataPoint.getxValue(), 2))), generateDefaultConstraints(7, 3));
+	    getContentPane().add(new JLabel("Retention time difference: "), generateDefaultConstraints(0, 4));
+	    getContentPane().add(new JLabel(String.format("%s min", Precision.round(dataPoint.getyValue(), 2))), generateDefaultConstraints(7, 4));
 	    
 	    JPanel buttonPane = new JPanel();
 	    JButton cancelButton = new JButton("Cancel"); 
@@ -138,7 +140,7 @@ public class RecalibrationPlotMouseListener implements ChartMouseListener
 	    	deleteButton.setToolTipText("Data points derived from standards cannot be deleted.");
 	    }
 	    buttonPane.add(deleteButton, BorderLayout.EAST); 
-	    getContentPane().add(buttonPane, new GridBagConstraints(0, 3, 5, 1, 0.0, 0.0
+	    getContentPane().add(buttonPane, new GridBagConstraints(0, 5, 5, 1, 0.0, 0.0
 	        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(5, 10, 10, 5), 0, 0));
 	    setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 	    pack(); 
@@ -159,7 +161,7 @@ public class RecalibrationPlotMouseListener implements ChartMouseListener
 	  
 	  private void deleteButton_actionPerformed(ActionEvent e)
 	  {
-	  	this.plot_.getPanel().removeDataPoint(lipidClass_, dataPoint_);
+	  	this.plot_.getPanel().removeDataPoint(dataPoint_);
 	  	setVisible(false); 
 	    dispose();
 	  }

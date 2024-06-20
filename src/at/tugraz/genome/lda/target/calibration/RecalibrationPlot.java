@@ -42,8 +42,6 @@ import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
-import javafx.util.Pair;
-
 import org.jfree.chart.util.ShapeUtils;
 
 /**
@@ -55,8 +53,8 @@ public class RecalibrationPlot extends JPanel
 { 
 	private static final long serialVersionUID = 1L;
 	
-	ArrayList<Pair<Double,Double>> dataAll_;
-	ArrayList<Pair<Double,Double>> dataStandards_;
+	ArrayList<AnchorPoint> dataAll_;
+	ArrayList<AnchorPoint> dataStandards_;
 	CalibrationGraphPanel panel_;
 	XYPlot plot_;
 	XYDataset curveFitDataset_;
@@ -64,10 +62,10 @@ public class RecalibrationPlot extends JPanel
 	XYDataset scatterPlotDataset_;
 
 
-	public RecalibrationPlot(ArrayList<Pair<Double,Double>> data, ArrayList<Pair<Double,Double>> dataStandards, 
+	public RecalibrationPlot(ArrayList<AnchorPoint> data, ArrayList<AnchorPoint> dataStandards, 
 			RecalibrationRegression regression, Dimension dimension, CalibrationGraphPanel panel, XYPlot previousPlot)
   {
-		this.dataAll_ = new ArrayList<Pair<Double,Double>>(data);
+		this.dataAll_ = new ArrayList<AnchorPoint>(data);
 		this.dataStandards_ = dataStandards;
 		this.panel_ = panel;
 		this.dataAll_.removeAll(this.dataStandards_);
@@ -194,24 +192,24 @@ public class RecalibrationPlot extends JPanel
     return renderer;
 	}
   
-  private XYDataset getScatterPlotDataset(ArrayList<Pair<Double,Double>> data, String label)
+  private XYDataset getScatterPlotDataset(ArrayList<AnchorPoint> data, String label)
   {
     XYSeriesCollection dataset = new XYSeriesCollection();
     XYSeries dataSeries = new XYSeries(label);
-    for (Pair<Double,Double> dataPoint : data)
+    for (AnchorPoint dataPoint : data)
     {
-    	dataSeries.add(dataPoint.getKey(), dataPoint.getValue());
+    	dataSeries.add(dataPoint.getxValue(), dataPoint.getyValue());
     }
     dataset.addSeries(dataSeries);
     return dataset;
   }
 
-	public ArrayList<Pair<Double,Double>> getDataAll()
+	public ArrayList<AnchorPoint> getDataAll()
 	{
 		return dataAll_;
 	}
 
-	public ArrayList<Pair<Double,Double>> getDataStandards()
+	public ArrayList<AnchorPoint> getDataStandards()
 	{
 		return dataStandards_;
 	}
