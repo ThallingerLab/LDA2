@@ -329,8 +329,8 @@ public class MzXMLReader extends AbstractXMLSpectraReader
           case XMLStreamReader.START_ELEMENT:
             if (reader_.getLocalName() == TAG_PEAKS) {
               if (msLevel == 1) {
-                if (!foundMzBorders && (peaksCount>0)){
-                  float[] maxima = getMaximaFromBinaryDataArray();
+                if (!foundMzBorders){
+                  float[] maxima = getMaximaFromBinaryDataArray(peaksCount);
                   lowMz = maxima[0];
                   highMz = maxima[1];
                 }
@@ -388,9 +388,10 @@ public class MzXMLReader extends AbstractXMLSpectraReader
    * @return A float[] containing the lowest and highest m/z value
    * @throws CgException All internal exceptions are mapped to the CgException type.
    */
-  protected float[] getMaximaFromBinaryDataArray() throws CgException
+  private float[] getMaximaFromBinaryDataArray(int peaksCount) throws CgException
   {
     float[] maxima = new float[]{Float.MAX_VALUE,0f};
+    if (peaksCount<1) return maxima;
     int precision = -1;
     String compressionType = null;
     CgBase64 cgb = new CgBase64();
@@ -813,7 +814,7 @@ public class MzXMLReader extends AbstractXMLSpectraReader
       // =================================================    
       byte[] decoded = cgb.decode(s);
       if (compressionType!=null && compressionType.equalsIgnoreCase(ENTRY_ZLIB)){
-        decompressZLIB(decoded);
+        decoded = decompressZLIB(decoded);
       }
       
       ByteBuffer byteBuf = ByteBuffer.wrap(decoded);
