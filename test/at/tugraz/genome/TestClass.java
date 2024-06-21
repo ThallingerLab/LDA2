@@ -17155,7 +17155,7 @@ public void testTabFile() throws Exception {
   	String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_9;
 
     //MSDialTxtParser dialParser = new MSDialTxtParser("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\MS-Dial_Mix1\\export\\Mix1_neg_1.txt");
-    MSDialTxtParser dialParser = new MSDialTxtParser("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\MS-Dial_Mix1\\export\\Mix1_1.txt");
+    MSDialTxtParser dialParser = new MSDialTxtParser("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\MS-Dial_Mix1\\export\\Mix1_1.txt", null);
     try {
       dialParser.parse(msDialVersion);
       Vector<MSDialEntry> entries = dialParser.getResults();
@@ -17349,7 +17349,7 @@ public void testTabFile() throws Exception {
       CellStyle ms1FoundStyle = getMS1FoundStyle(resultWorkbook);
       CellStyle notFoundStyle = getNotFoundStyle(resultWorkbook);
       Hashtable<String,Vector<LipidParameterSet>> resultsLDA = LDAResultReader.readResultFile(ldaFile, new Hashtable<String,Boolean>()).getIdentifications();
-      MSDialTxtParser msdialParser = new MSDialTxtParser(msdialFile);
+      MSDialTxtParser msdialParser = new MSDialTxtParser(msdialFile, null);
       msdialParser.parse(msDialVersion);
       //MSFinderStructureParser finderParser = new MSFinderStructureParser(msfinderFile);
       //finderParser.parse();
@@ -18909,7 +18909,7 @@ public void testTabFile() throws Exception {
       leftHeaderStyle.cloneStyleFrom(headerStyle);
       leftHeaderStyle.setAlignment(CellStyle.ALIGN_LEFT);
       Hashtable<String,Vector<LipidParameterSet>> resultsLDA = LDAResultReader.readResultFile(ldaFile, new Hashtable<String,Boolean>()).getIdentifications();
-      MSDialTxtParser msdialParser = new MSDialTxtParser(msDialFile);
+      MSDialTxtParser msdialParser = new MSDialTxtParser(msDialFile, null);
       msdialParser.parse(msDialVersion);
       //Hashtable<String,Hashtable<String,Hashtable<String,LipidBLASTIdentificationVO>>> resultsLB = lBlastParser.getResults_();
       Hashtable<String,Hashtable<String,Hashtable<String,Vector<MSDialEntry>>>> resultsDial = msdialParser.getStructuredResults();

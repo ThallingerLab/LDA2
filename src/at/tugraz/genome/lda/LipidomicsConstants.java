@@ -1421,7 +1421,7 @@ public class LipidomicsConstants
     return instance_.ms2_;
   }
   
-  private static float getMs2PrecursorTolerance(){
+  public static float getMs2PrecursorTolerance(){
     getInstance();
     return instance_.ms2PrecursorTolerance_;
   }
