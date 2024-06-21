@@ -63,7 +63,6 @@ import at.tugraz.genome.lda.parser.LDAResultReader;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.swing.LipidomicsTableCellRenderer;
-import at.tugraz.genome.lda.target.export.TargetListExporter;
 import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
@@ -671,7 +670,7 @@ public class ExcelAndTextExporter extends LDAExporter
       boolean isGrouped, Vector<String> expIdNames, Hashtable<String,String> expNames, LinkedHashMap<String,Vector<String>> expsOfGroup,
       String preferredUnit, ExportOptionsVO expVO, ArrayList<String> modifications, LinkedHashMap<String,Vector<DoubleBondPositionVO>> omegaSuggestionAvailable) throws IOException{  
     CellStyle headerStyle = getHeaderStyle(workbook);
-    CellStyle numberStyle = TargetListExporter.getNumberStyle(workbook);
+    CellStyle numberStyle = ExcelUtils.getMassListNumberStyle(workbook);
     CellStyle normalStyle = getNormalStyle(workbook);
     CellStyle zeroStyle = getZeroStyle(workbook);
     CellStyle ms2Unambiguous = getMs2UnambiguousStyle((XSSFWorkbook)workbook);
@@ -1142,7 +1141,7 @@ public class ExcelAndTextExporter extends LDAExporter
   	Row headerRowD = sheetD.createRow(0);
   	Sheet sheetE = workbook.createSheet("FAvsFA Combined");
   	CellStyle headerStyle = getHeaderStyle(workbook);
-    CellStyle numberStyle = TargetListExporter.getNumberStyle(workbook);
+    CellStyle numberStyle = ExcelUtils.getMassListNumberStyle(workbook);
   	
   	ArrayList<LinkedHashMap<String,LinkedHashMap<String,Double>>> fafaData = new ArrayList<LinkedHashMap<String,LinkedHashMap<String,Double>>>();
   	Vector<String> experimentNames = omegaCollector.getExperimentNames();

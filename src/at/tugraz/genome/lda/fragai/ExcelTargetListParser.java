@@ -17,6 +17,7 @@ import org.dhatim.fastexcel.reader.Row;
 import org.dhatim.fastexcel.reader.Sheet;
 
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.vos.AdductVO;
 
 public class ExcelTargetListParser
 {
@@ -32,7 +33,7 @@ public class ExcelTargetListParser
 	private final static int HEADER_ROW = 0;
 	private File directory_;
 	private List<String> headerTitles_;
-  private ArrayList<TargetListEntry> targetListEntries_;
+  private ArrayList<FragTargetListEntry> targetListEntries_;
   
   /**
 	 * Constructor specifying the directory containing the target list in excel format.
@@ -41,7 +42,7 @@ public class ExcelTargetListParser
 	public ExcelTargetListParser(File directory)
 	{
 		this.directory_ = directory;
-		this.targetListEntries_ = new ArrayList<TargetListEntry>();
+		this.targetListEntries_ = new ArrayList<FragTargetListEntry>();
 		
 	}
 	
@@ -107,7 +108,7 @@ public class ExcelTargetListParser
 	      String lipidClass = null;
 	      String species = null;
 	    	Hashtable<String,Integer> sumFormula = null;
-	    	ArrayList<Adduct> adducts = null;
+	    	ArrayList<AdductVO> adducts = null;
 	    	Double retentionTime = null;
 	    	Double tolerance = null;
 	    	
@@ -125,11 +126,11 @@ public class ExcelTargetListParser
 	        } else if (index == headerTitles_.indexOf(HEADER_SUM_FORMULA)) {
 						try {sumFormula = StaticUtils.categorizeFormula(rawValue);} catch (Exception ex) {}
 	        } else if (index == headerTitles_.indexOf(HEADER_ADDUCTS)) {
-	        	adducts = new ArrayList<Adduct>();
+	        	adducts = new ArrayList<AdductVO>();
 	        	String[] split = rawValue.split(ADDUCT_REGEX);
 	        	for (int i=0;i<split.length;i++)
 	        	{
-	        		adducts.add(new Adduct(split[i].replace(ADDUCT_START, "").replace(ADDUCT_END, "")));
+	        		adducts.add(new AdductVO(split[i].replace(ADDUCT_START, "").replace(ADDUCT_END, "")));
 	        	}
 	        } else if (index == headerTitles_.indexOf(HEADER_RETENTION_TIME)) {
 	        	retentionTime = Double.parseDouble(rawValue);
@@ -139,7 +140,7 @@ public class ExcelTargetListParser
 	      }
 	      if (lipidClass != null && sumFormula != null && adducts != null && retentionTime != null && tolerance != null)
 	      {
-	      	targetListEntries_.add(new TargetListEntry(lipidClass, species, sumFormula, adducts, retentionTime, tolerance));
+	      	targetListEntries_.add(new FragTargetListEntry(lipidClass, species, sumFormula, adducts, retentionTime, tolerance));
 	      }
 	      else
 	      {
@@ -174,7 +175,7 @@ public class ExcelTargetListParser
   	return row.stream().filter((c) -> !(c==null || c.getType().equals(CellType.ERROR))).collect(Collectors.toList());
   }
   
-  public ArrayList<TargetListEntry> getTargetListEntries()
+  public ArrayList<FragTargetListEntry> getTargetListEntries()
   {
   	return this.targetListEntries_;
   }

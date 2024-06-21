@@ -1,27 +1,40 @@
-package at.tugraz.genome.lda.fragai;
+package at.tugraz.genome.lda.vos;
 
 import java.util.Hashtable;
 import java.util.Objects;
 
 import at.tugraz.genome.lda.utils.StaticUtils;
 
-public class Adduct
+public class AdductVO
 {
 	private final static String ADDUCT_SEPARATOR = ";";
 	private final static String ADDUCT_ADD = "+";
 	private final static String ADDUCT_REMOVE = "-";
 	private String adductName_;
+	private String formulaString_;
 	private int charge_;
 	private Hashtable<String,Integer> addModifier_;
 	private Hashtable<String,Integer> removeModifier_;
 	
-	public Adduct(String composite)
+	public AdductVO(String name, String formula, int charge)
+	{
+		this.adductName_ = name;
+		this.formulaString_ = formula;
+		this.assignAddRemoveModifier(splitFormula(formula));
+		this.charge_ = charge;
+	}
+	
+	public AdductVO(String composite)
 	{
 		String[] split = composite.split(ADDUCT_SEPARATOR);
 		this.adductName_ = split[0];
-		String[] adductFormula = splitFormula(split[1]);
+		this.formulaString_ = split[1];
+		this.assignAddRemoveModifier(splitFormula(split[1]));
 		this.charge_ = Integer.parseInt(split[2]);
-		
+	}
+	
+	private void assignAddRemoveModifier(String[] adductFormula)
+	{
 		for (int i=0; i<adductFormula.length;i++)
 		{
 			if (adductFormula[i].startsWith(ADDUCT_ADD))
@@ -58,13 +71,17 @@ public class Adduct
     	part1 = formula;
       part2 = "";
     }
-
     return new String[]{part1, part2};
 	}
 
 	public String getAdductName()
 	{
 		return adductName_;
+	}
+	
+	public String getFormulaString()
+	{
+		return formulaString_;
 	}
 
 	public int getCharge()
@@ -97,7 +114,7 @@ public class Adduct
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		Adduct other = (Adduct) obj;
+		AdductVO other = (AdductVO) obj;
 		return Objects.equals(addModifier_, other.addModifier_)
 				&& Objects.equals(adductName_, other.adductName_)
 				&& charge_ == other.charge_

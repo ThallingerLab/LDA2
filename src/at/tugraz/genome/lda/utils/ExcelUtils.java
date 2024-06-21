@@ -25,12 +25,18 @@ package at.tugraz.genome.lda.utils;
 
 import java.util.Hashtable;
 
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.hssf.usermodel.HSSFFont;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 /**
  * 
  * @author Juergen Hartler
+ * @author Leonida M. Lamp
  *
  */
 public class ExcelUtils
@@ -72,6 +78,24 @@ public class ExcelUtils
     return rowEntries;
   }
   
+  public static XSSFCellStyle getMassListHeaderStyle(XSSFWorkbook wb)
+	{
+    XSSFCellStyle arial12style = wb.createCellStyle();
+    XSSFFont arial12font = wb.createFont();
+    arial12font.setBoldweight(HSSFFont.BOLDWEIGHT_BOLD);
+    arial12font.setFontName("Arial");
+    arial12font.setFontHeightInPoints((short)12);
+    arial12style.setFont(arial12font);
+    arial12style.setAlignment(HSSFCellStyle.ALIGN_CENTER);
+    return arial12style;
+  }
+  
+  public static XSSFCellStyle getMassListNumberStyle(XSSFWorkbook wb)
+  {
+  	XSSFCellStyle numberStyle = wb.createCellStyle();
+  	numberStyle.setDataFormat(2);
+  	return numberStyle;
+  }
 
 
 }

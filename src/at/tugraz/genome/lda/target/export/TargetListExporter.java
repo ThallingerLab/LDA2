@@ -44,13 +44,10 @@ import javax.swing.JFrame;
 import org.apache.commons.math3.exception.OutOfRangeException;
 import org.apache.commons.math3.util.Precision;
 import org.apache.poi.hssf.usermodel.HSSFCell;
-import org.apache.poi.hssf.usermodel.HSSFCellStyle;
-import org.apache.poi.hssf.usermodel.HSSFFont;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
-import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.dhatim.fastexcel.reader.CellType;
 import org.dhatim.fastexcel.reader.ReadableWorkbook;
@@ -61,6 +58,7 @@ import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExportException;
+import at.tugraz.genome.lda.masslist.MassListExporter;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.parser.MassListParser;
@@ -70,6 +68,7 @@ import at.tugraz.genome.lda.target.IsotopeLabelVO;
 import at.tugraz.genome.lda.target.calibration.CalibrationGraphPanel;
 import at.tugraz.genome.lda.target.calibration.RecalibrationRegression;
 import at.tugraz.genome.lda.target.experiment.IsotopeEffectRegression;
+import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.RangeDouble;
 import at.tugraz.genome.lda.utils.RangeInteger;
 import at.tugraz.genome.lda.utils.StaticUtils;
@@ -87,17 +86,10 @@ import javafx.util.Pair;
  *
  */
 public class TargetListExporter
-{	
-	public final static String HEADER_NAME = "Name";
-	public final static String HEADER_COLON = "";
-	public final static String HEADER_DBS = "dbs";
-  public final static String HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS = "mol. species";
-  public final static String HEADER_RETENTION_TIME = "tR (min)";
-  
+{
+	public final static String HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS = "mol. species";
   public final static int HEADER_ROW = 1; //important: must not be 0 as there might be some important general info in row 0.
   
-//  private Hashtable<String, RecalibrationRegression> recalibrationRegressionsForClass_;
-//  private RecalibrationRegression recalibrationRegression_;
   private IsotopeEffectRegression isotopeEffectRegression_;
   private Vector<ResultFileVO> resultFileVO_;
   private Vector<IsotopeLabelVO> labels_;
@@ -181,7 +173,7 @@ public class TargetListExporter
     {
     	Vector<DoubleBondPositionVO> allLabeledVOsToAdd = new Vector<DoubleBondPositionVO>();
       Sheet sheet = workbook.createSheet(cName);
-      writeMassListForSheet(sheet, getHeaderStyle(workbook), getNumberStyle(workbook), massListParser, cName, allLabeledVOsToAdd);
+      writeMassListForSheet(sheet, ExcelUtils.getMassListHeaderStyle(workbook), ExcelUtils.getMassListNumberStyle(workbook), massListParser, cName, allLabeledVOsToAdd);
     }
 	}
 	
@@ -242,7 +234,7 @@ public class TargetListExporter
     	}
     	
       Sheet sheet = workbook.createSheet(cName);
-      writeMassListForSheet(sheet, getHeaderStyle(workbook), getNumberStyle(workbook), templateParser, cName, allLabeledVOsToAdd);
+      writeMassListForSheet(sheet, ExcelUtils.getMassListHeaderStyle(workbook), ExcelUtils.getMassListNumberStyle(workbook), templateParser, cName, allLabeledVOsToAdd);
     }
 	}
 	
@@ -270,34 +262,34 @@ public class TargetListExporter
     		if (templateParser.getAdductInsensitiveRtFilter().get(cName) != null && templateParser.getAdductInsensitiveRtFilter().get(cName) == true)
     		{
     			Cell cell = outRow.createCell(3,HSSFCell.CELL_TYPE_STRING);
-          cell.setCellValue("adductInsensitiveRtFilter");
+          cell.setCellValue(MassListExporter.OPTION_ADDUCT_INSENSITIVE_RT_FILTER);
     		}
     		if (templateParser.getBestMatchBySpectrumCoverage().get(cName) != null && templateParser.getBestMatchBySpectrumCoverage().get(cName) == true)
     		{
     			Cell cell = outRow.createCell(4,HSSFCell.CELL_TYPE_STRING);
-          cell.setCellValue("pickBestMatchBySpectrumCoverage");
+          cell.setCellValue(MassListExporter.OPTION_PICK_BEST_MATCH_BY_SPECTRUM_COVERAGE);
     		}
     		if (templateParser.getFixedStartTime().get(cName) != null)
     		{
     			Cell cell = outRow.createCell(5,HSSFCell.CELL_TYPE_STRING);
-          cell.setCellValue("Start-RT: "+Precision.round(templateParser.getFixedStartTime().get(cName), 2));
+          cell.setCellValue(MassListExporter.OPTION_START_RT+Precision.round(templateParser.getFixedStartTime().get(cName), 2));
     		}
     		if (templateParser.getFixedStopTime().get(cName) != null)
     		{
     			Cell cell = outRow.createCell(6,HSSFCell.CELL_TYPE_STRING);
-    			cell.setCellValue("Stop-RT: "+Precision.round(templateParser.getFixedStopTime().get(cName), 2));
+    			cell.setCellValue(MassListExporter.OPTION_STOP_RT+Precision.round(templateParser.getFixedStopTime().get(cName), 2));
     		}
     		if (templateParser.getOHNumber().get(cName) != null)
     		{
     			ohNumber = templateParser.getOHNumber().get(cName);
     			Cell cell = outRow.createCell(7,HSSFCell.CELL_TYPE_STRING);
-    			cell.setCellValue("OH-Number: "+ohNumber);
+    			cell.setCellValue(MassListExporter.OPTION_OH_NUMBER+ohNumber);
     		}
     		if (templateParser.getOHRange().get(cName) != null)
     		{
     			RangeInteger ohRange = templateParser.getOHRange().get(cName);
     			Cell cell = outRow.createCell(8,HSSFCell.CELL_TYPE_STRING);
-    			cell.setCellValue("OH-Range: "+ohRange.getStart()+"-"+ohRange.getStop());
+    			cell.setCellValue(MassListExporter.OPTION_OH_RANGE+ohRange.getStart()+"-"+ohRange.getStop());
     		}
 	    }
 	    
@@ -375,12 +367,12 @@ public class TargetListExporter
 		      	}
 		      	
 		      	if (modCount==0) 
-		        {   	
-		          cell = row.createCell(headerTitles.indexOf(HEADER_NAME),HSSFCell.CELL_TYPE_STRING);
+		        {  
+		          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_NAME),HSSFCell.CELL_TYPE_STRING);
 		          cell.setCellValue(quant.getCarbons());
-		          cell = row.createCell(headerTitles.indexOf(HEADER_COLON),HSSFCell.CELL_TYPE_STRING);
+		          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_COLON),HSSFCell.CELL_TYPE_STRING);
 		          cell.setCellValue(":");
-		          cell = row.createCell(headerTitles.indexOf(HEADER_DBS),HSSFCell.CELL_TYPE_NUMERIC);
+		          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_DBS),HSSFCell.CELL_TYPE_NUMERIC);
 		          cell.setCellValue(quant.getDbs());
 		          if (i>=0)
 		          {
@@ -398,7 +390,7 @@ public class TargetListExporter
 		        modCount++;
 		        if (i>=0)
 	          {
-	          	cell = row.createCell(headerTitles.indexOf(HEADER_RETENTION_TIME),HSSFCell.CELL_TYPE_NUMERIC);
+	          	cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_RETENTION_TIME),HSSFCell.CELL_TYPE_NUMERIC);
 		          cell.setCellValue(doubleBondPositionVOs.get(i).getExpectedRetentionTime());
 		          cell.setCellStyle(numberStyle);
 	          }
@@ -1085,11 +1077,11 @@ public class TargetListExporter
   		cell.setCellValue(headerTitles.get(i));
   		cell.setCellStyle(headerStyle);
   	}
-    sheet.setColumnWidth(headerTitles.indexOf(HEADER_NAME), 10 * 256);
-    sheet.setColumnWidth(headerTitles.indexOf(HEADER_COLON), 2 * 256);
-    sheet.setColumnWidth(headerTitles.indexOf(HEADER_DBS), 10 * 256);
+    sheet.setColumnWidth(headerTitles.indexOf(MassListExporter.HEADER_NAME), 10 * 256);
+    sheet.setColumnWidth(headerTitles.indexOf(MassListExporter.HEADER_COLON), 2 * 256);
+    sheet.setColumnWidth(headerTitles.indexOf(MassListExporter.HEADER_DBS), 10 * 256);
   	sheet.setColumnWidth(headerTitles.indexOf(HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS), 30 * 256);
-  	sheet.setColumnWidth(headerTitles.indexOf(HEADER_RETENTION_TIME), 10 * 256);
+  	sheet.setColumnWidth(headerTitles.indexOf(MassListExporter.HEADER_RETENTION_TIME), 10 * 256);
   }
 	
 	/**
@@ -1102,9 +1094,9 @@ public class TargetListExporter
   		Vector<String> elements, LinkedHashMap<String,String> mods, Hashtable<String,Integer> modToCharge) 
   {
     List<String> headerTitles = new ArrayList<String>();
-    headerTitles.add(HEADER_NAME);
-    headerTitles.add(HEADER_COLON);
-    headerTitles.add(HEADER_DBS);
+    headerTitles.add(MassListExporter.HEADER_NAME);
+    headerTitles.add(MassListExporter.HEADER_COLON);
+    headerTitles.add(MassListExporter.HEADER_DBS);
     headerTitles.add(HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS);
     
     for (String element : elements) 
@@ -1121,28 +1113,9 @@ public class TargetListExporter
     	headerTitles.add(modHeader);
     }
     
-    headerTitles.add(HEADER_RETENTION_TIME);
+    headerTitles.add(MassListExporter.HEADER_RETENTION_TIME);
     
     return headerTitles;
-  }
-	
-  public static XSSFCellStyle getNumberStyle(XSSFWorkbook wb)
-  {
-  	XSSFCellStyle numberStyle = wb.createCellStyle();
-  	numberStyle.setDataFormat(2);
-  	return numberStyle;
-  }
-  
-	public static XSSFCellStyle getHeaderStyle(XSSFWorkbook wb)
-	{
-    XSSFCellStyle arial12style = wb.createCellStyle();
-    XSSFFont arial12font = wb.createFont();
-    arial12font.setBoldweight(HSSFFont.BOLDWEIGHT_BOLD);
-    arial12font.setFontName("Arial");
-    arial12font.setFontHeightInPoints((short)12);
-    arial12style.setFont(arial12font);
-    arial12style.setAlignment(HSSFCellStyle.ALIGN_CENTER);
-    return arial12style;
   }
 	
 	/**

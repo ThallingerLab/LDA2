@@ -36,7 +36,9 @@ public class TooltipTexts
   public final static String TABS_MAIN_BATCH = "<html>Batch Quantitation of a experiments</html>";
   public final static String TABS_MAIN_STATISTICS = "<html>Analysis of quantified results</html>";
   public final static String TABS_MAIN_DISPLAY = "<html>Manual verification of results with 3D viewer</html>";
-  public final static String TABS_MAIN_TARGET = "<html>Creation of target files with information for \u03C9-C=C position identification</html>";
+  public final static String TABS_MAIN_MASSLIST_CREATOR = "<html>Creation of LDA mass lists</html>";
+  public final static String TABS_MAIN_TARGET = "<html>Creation of RT-DBs with information for \u03C9-C=C position identification</html>";
+  public final static String TABS_MAIN_FRAGRULE_GENERATOR = "<html>Generation of fragmentation rules from experimental data</html>";
   public final static String TABS_MAIN_SETTINGS = "<html>Default LDA settings; e.g. type of mass spectrometer</html>";
   public final static String TABS_MAIN_LICENSE = "<html>Information about the current licensing status</html>";
   public final static String TABS_MAIN_HELP = "<html>Help component</html>";

@@ -140,6 +140,7 @@ import at.tugraz.genome.lda.fragai.SpectrumContainer;
 import at.tugraz.genome.lda.fragai.CombinedSpectrumContainer;
 import at.tugraz.genome.lda.interfaces.ColorChangeListener;
 import at.tugraz.genome.lda.listeners.AnnotationThresholdListener;
+import at.tugraz.genome.lda.masslist.MassListCreatorPanel;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.MSnAnalyzer;
 import at.tugraz.genome.lda.msn.RulesContainer;
@@ -257,6 +258,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JPanel resultsPanel_;
   private JPanel settingsPanel_;
   private JPanel licensePanel_;
+  private MassListCreatorPanel massListPanel_;
   private JTargetFileWizard targetFilePanel_;
   private JPanel aIPanel_;
   
@@ -591,6 +593,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     settingsPanel_ = new JPanel();
     initSettingsPanel();
     licensePanel_ = new JPanel();
+    massListPanel_ = new MassListCreatorPanel();
     targetFilePanel_ = new JTargetFileWizard();
     aIPanel_ = new JPanel();
     helpPanel_ = new JPanel();
@@ -609,6 +612,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(displayPanel_), TooltipTexts.TABS_MAIN_DISPLAY);
     if (Settings.SHOW_OMEGA_TOOLS)
     {
+    	mainTabs.addTab("MassList Creator", massListPanel_);
+      mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(massListPanel_), TooltipTexts.TABS_MAIN_MASSLIST_CREATOR);
+    }
+    if (Settings.SHOW_OMEGA_TOOLS)
+    {
     	mainTabs.addTab("LC=CL", targetFilePanel_);
       mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(targetFilePanel_), TooltipTexts.TABS_MAIN_TARGET);
     }
@@ -619,7 +627,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     	startAIButton.addActionListener(this);
     	aIPanel_.add(startAIButton);
     	mainTabs.addTab("AI FragRule Generator", aIPanel_);
-      mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(aIPanel_), TooltipTexts.TABS_MAIN_TARGET);
+      mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(aIPanel_), TooltipTexts.TABS_MAIN_FRAGRULE_GENERATOR);
     }
     mainTabs.addTab("Settings", settingsPanel_);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(settingsPanel_), TooltipTexts.TABS_MAIN_SETTINGS);

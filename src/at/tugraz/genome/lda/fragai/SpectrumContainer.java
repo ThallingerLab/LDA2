@@ -12,13 +12,14 @@ import java.util.Objects;
 import java.util.Vector;
 
 import at.tugraz.genome.dbutilities.Base64;
+import at.tugraz.genome.lda.vos.AdductVO;
 import at.tugraz.genome.lda.vos.SpectrumPointVO;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 
 public class SpectrumContainer implements Comparable<SpectrumContainer>
 {
-	TargetListEntry entry_;
-	Adduct adduct_;
+	FragTargetListEntry entry_;
+	AdductVO adduct_;
 	CgProbe probe_;
 	File chromFile_;
 	/** key is the scan number, value the spectrum in Base64 encoding */
@@ -30,7 +31,7 @@ public class SpectrumContainer implements Comparable<SpectrumContainer>
 	/** key is the scan number, value the ms level */
 	Hashtable<Integer,Integer> scanNrLevelHash_;
 	
-	public SpectrumContainer(TargetListEntry entry, Adduct adduct,
+	public SpectrumContainer(FragTargetListEntry entry, AdductVO adduct,
 			CgProbe probe, File chromFile, Hashtable<Integer,String> scanNrSpectrumHash,
 			Hashtable<Integer,Vector<Double>> scanNrPrecursorHash,
 			Hashtable<Integer,Integer> scanNrLevelHash)
@@ -93,13 +94,13 @@ public class SpectrumContainer implements Comparable<SpectrumContainer>
 	
 	
 
-	public TargetListEntry getEntry()
+	public FragTargetListEntry getEntry()
 	{
 		return entry_;
 	}
 
 
-	public Adduct getAdduct()
+	public AdductVO getAdduct()
 	{
 		return adduct_;
 	}

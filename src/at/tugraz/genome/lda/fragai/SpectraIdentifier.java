@@ -22,6 +22,7 @@ import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.exception.QuantificationException;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.vos.AdductVO;
 import at.tugraz.genome.lda.xml.AbstractXMLSpectraReader;
 import at.tugraz.genome.maspectras.quantification.CgException;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
@@ -45,7 +46,7 @@ public class SpectraIdentifier extends Thread
 	{
 		ArrayList<SpectrumContainer> spectra = new ArrayList<SpectrumContainer>();
 		translateAllToChrom();
-		ArrayList<TargetListEntry> entries = parser.getTargetListEntries();
+		ArrayList<FragTargetListEntry> entries = parser.getTargetListEntries();
 		
 		File rawDir = new File(this.rawDirectoryJTextField_.getText());
     if (rawDir.exists()&&rawDir.isDirectory())
@@ -76,10 +77,10 @@ public class SpectraIdentifier extends Thread
         	int msLevel = 1; //TODO probs edit that at some point
         	float mzTolerance = 0.02f;
         	
-        	for (TargetListEntry entry : entries)
+        	for (FragTargetListEntry entry : entries)
         	{
-        		ArrayList<Adduct> adducts = entry.getAdducts();
-        		for (Adduct adduct : adducts)
+        		ArrayList<AdductVO> adducts = entry.getAdducts();
+        		for (AdductVO adduct : adducts)
         		{
         			float targetMz = new Float(entry.computeTheoreticalPrecursorMZValue(adduct.getAdductName()));
         			

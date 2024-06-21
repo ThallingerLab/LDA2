@@ -491,7 +491,7 @@ public class TargetListGenerator
           }
         }
         
-        for (int fattyAcidC=minFattyAcidC; fattyAcidC<maxFattyAcidC; fattyAcidC+=1)
+        for (int fattyAcidC=minFattyAcidC; fattyAcidC<maxFattyAcidC; fattyAcidC++)
         {
           int dbs = 0;
           int dbsMax = cDbsCombi.get(fattyAcidC)+1;

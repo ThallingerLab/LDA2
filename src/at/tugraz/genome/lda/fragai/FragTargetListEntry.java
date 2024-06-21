@@ -5,19 +5,20 @@ import java.util.Hashtable;
 import java.util.Objects;
 
 import at.tugraz.genome.lda.Settings;
+import at.tugraz.genome.lda.vos.AdductVO;
 
-public class TargetListEntry
+public class FragTargetListEntry
 {
 	private String lipidClass_;
 	private String species_;
 	private Hashtable<String,Integer> sumFormula_;
-	private ArrayList<Adduct> adducts_;
+	private ArrayList<AdductVO> adducts_;
 	private Double retentionTime_;
 	private Double tolerance_;
 	
 	
-	public TargetListEntry(String lipidClass, String species,
-			Hashtable<String,Integer> sumFormula, ArrayList<Adduct> adducts,
+	public FragTargetListEntry(String lipidClass, String species,
+			Hashtable<String,Integer> sumFormula, ArrayList<AdductVO> adducts,
 			Double retentionTime, Double tolerance)
 	{
 		this.lipidClass_ = lipidClass;
@@ -46,7 +47,7 @@ public class TargetListEntry
 	}
 
 
-	public ArrayList<Adduct> getAdducts()
+	public ArrayList<AdductVO> getAdducts()
 	{
 		return adducts_;
 	}
@@ -58,7 +59,7 @@ public class TargetListEntry
 	 */
 	public Double computeTheoreticalPrecursorMZValue(String adductName)
 	{
-		for (Adduct adduct : adducts_)
+		for (AdductVO adduct : adducts_)
 		{
 			if (adduct.getAdductName().equalsIgnoreCase(adductName))
 			{
@@ -111,7 +112,7 @@ public class TargetListEntry
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		TargetListEntry other = (TargetListEntry) obj;
+		FragTargetListEntry other = (FragTargetListEntry) obj;
 		return Objects.equals(adducts_, other.adducts_)
 				&& Objects.equals(lipidClass_, other.lipidClass_)
 				&& Objects.equals(species_, other.species_)

@@ -31,6 +31,7 @@ import java.util.Vector;
 import javax.swing.JFrame;
 
 import at.tugraz.genome.lda.WarningMessage;
+import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.target.JDefaultComponents;
@@ -105,7 +106,7 @@ public class ExperimentLabelDefinitionPanel extends ExperimentTableInputPanel
     return tableData;
   }
   
-  protected void parseDataForLabels()
+  protected void parseDataForLabels() throws ChemicalFormulaException
   {
   	Hashtable<String, IsotopeLabelVO> isotopeLabels = new Hashtable<String, IsotopeLabelVO>();
   	Set<String> ambiguousLabels = new HashSet<String>();
@@ -122,9 +123,7 @@ public class ExperimentLabelDefinitionPanel extends ExperimentTableInputPanel
 					{
 						String labelID = analyteName.substring(0, 1);
 						IsotopeLabelVO labelVO;
-						Hashtable<String,Integer> categorized = null;
-						try {categorized = StaticUtils.categorizeFormula(analyte.getAnalyteFormula());} catch (Exception ex) {}
-						
+						Hashtable<String,Integer> categorized = StaticUtils.categorizeFormula(analyte.getAnalyteFormula());
 						if (isotopeLabels.containsKey(labelID))
 						{
 							labelVO = isotopeLabels.get(labelID);

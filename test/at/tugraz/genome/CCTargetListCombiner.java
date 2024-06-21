@@ -20,7 +20,9 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.QuantificationThread;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
+import at.tugraz.genome.lda.masslist.MassListExporter;
 import at.tugraz.genome.lda.target.export.TargetListExporter;
+import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.lda.vos.QuantVO;
@@ -103,7 +105,7 @@ public class CCTargetListCombiner
 		      }
 		    }
 				Sheet sheet = workbook.createSheet(cName);
-        writeMassListForSheet(sheet, TargetListExporter.getHeaderStyle(workbook), TargetListExporter.getNumberStyle(workbook), 
+        writeMassListForSheet(sheet, ExcelUtils.getMassListHeaderStyle(workbook), ExcelUtils.getMassListNumberStyle(workbook), 
         		analyteSequence.get(cName), toExport, cName);
 	    }
 			workbook.write(out);
@@ -193,11 +195,11 @@ public class CCTargetListCombiner
 		      	
 		      	if (modCount==0) 
 		        {   	
-		          cell = row.createCell(headerTitles.indexOf(TargetListExporter.HEADER_NAME),HSSFCell.CELL_TYPE_STRING);
+		          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_NAME),HSSFCell.CELL_TYPE_STRING);
 		          cell.setCellValue(quant.getCarbons());
-		          cell = row.createCell(headerTitles.indexOf(TargetListExporter.HEADER_COLON),HSSFCell.CELL_TYPE_STRING);
+		          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_COLON),HSSFCell.CELL_TYPE_STRING);
 		          cell.setCellValue(":");
-		          cell = row.createCell(headerTitles.indexOf(TargetListExporter.HEADER_DBS),HSSFCell.CELL_TYPE_NUMERIC);
+		          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_DBS),HSSFCell.CELL_TYPE_NUMERIC);
 		          cell.setCellValue(quant.getDbs());
 		          if (i>=0)
 		          {
@@ -215,7 +217,7 @@ public class CCTargetListCombiner
 		        modCount++;
 		        if (i>=0)
 	          {
-	          	cell = row.createCell(headerTitles.indexOf(TargetListExporter.HEADER_RETENTION_TIME),HSSFCell.CELL_TYPE_NUMERIC);
+	          	cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_RETENTION_TIME),HSSFCell.CELL_TYPE_NUMERIC);
 		          cell.setCellValue(doubleBondPositionVOs.get(i).getExpectedRetentionTime());
 		          cell.setCellStyle(numberStyle);
 		          
