@@ -552,8 +552,24 @@ public class StaticUtils
    * this splits the chemical formula string in its components
    * the components can be additive '+' or subtractive '-"
    * an empty space is interpreted as '+' -> do not leave any empty spaces between the element and the amount
+   * @param formula
+   * @return
+   * @throws ChemicalFormulaException
    */
   public static Hashtable<String,Integer> categorizeFormula(String formula) throws ChemicalFormulaException {
+  	return categorizeFormula(formula, false);
+  }
+  
+  /**
+   * this splits the chemical formula string in its components
+   * the components can be additive '+' or subtractive '-"
+   * an empty space is interpreted as '+' -> do not leave any empty spaces between the element and the amount
+   * @param formula									the chemical formula
+   * @param allowLowerCase					true if lower case elements should be allowed, e.g. 'h' for a proton
+   * @return
+   * @throws ChemicalFormulaException
+   */
+  public static Hashtable<String,Integer> categorizeFormula(String formula, boolean allowLowerCase) throws ChemicalFormulaException {
     Hashtable<String,Integer> categorized = new Hashtable<String,Integer>();
     if (formula==null || formula.length()==0) return categorized;
     boolean add = true;
@@ -582,7 +598,7 @@ public class StaticUtils
         currentElement = "";
         currentAmountString = "";
       }else if (Character.isLetter(chars[i])){
-        if (Character.isUpperCase(chars[i])){
+        if (Character.isUpperCase(chars[i]) || (allowLowerCase && Settings.getElementParser().isElementAvailable(String.valueOf(chars[i])))){
           if (currentElement.length()==0) currentElement+=String.valueOf(chars[i]);
           else{
             addFormulaPartToHash(categorized, currentElement, currentAmountString, null, add);
@@ -2606,25 +2622,17 @@ public class StaticUtils
       String nearNameString = formNameString.substring(formNameString.indexOf("name"));
       adductName = nearNameString.substring(nearNameString.indexOf("[")+1,nearNameString.indexOf("]")).trim();
       if (formNameString.indexOf("charge=")!=-1){
-        char[] afterChargeString = formNameString.substring(formNameString.indexOf("charge=")+"charge=".length()).toCharArray();
+        String afterChargeString = formNameString.substring(formNameString.indexOf("charge=")+"charge=".length());
         try{
           charge = String.valueOf(extractDigitsAfterEqualSign(afterChargeString));
-          if (Integer.parseInt(charge)<1){
-            charge = "1";
-            System.out.println("Warning: The charge entry in the column header \""+contents+"\" is smaller than 1! Setting it to \"1\"");
-          }
         }catch (NumberFormatException nfx){
           System.out.println("Warning: The charge entry in the column header \""+contents+"\" is not integer format! Setting it to \"1\"");
         }
       }
       if (formNameString.indexOf("mult=")!=-1){
-        char[] afterMultiString = formNameString.substring(formNameString.indexOf("mult=")+"mult=".length()).toCharArray();
+      	String afterMultiString = formNameString.substring(formNameString.indexOf("mult=")+"mult=".length());
         try{
           multi = String.valueOf(extractDigitsAfterEqualSign(afterMultiString));
-          if (Integer.parseInt(charge)<1){
-            multi = "1";
-            System.out.println("Warning: The mult entry in the column header \""+contents+"\" is smaller than 1! Setting it to \"1\"");
-          }
         }catch (NumberFormatException nfx){
           System.out.println("Warning: The mult entry in the column header \""+contents+"\" is not integer format! Setting it to \"1\"");
         }
@@ -2640,14 +2648,9 @@ public class StaticUtils
     return formulaAndName;
   }
   
-  private static int extractDigitsAfterEqualSign(char[] afterString){
-    int i=0;
-    String digitsString = "";
-    while (i<afterString.length&&Character.isDigit(afterString[i])){
-      digitsString+=String.valueOf(afterString[i]);
-      i++;
-    }
-    return Integer.parseInt(digitsString);
+  private static int extractDigitsAfterEqualSign(String afterString){
+  	afterString.trim();
+    return Math.abs(Integer.parseInt(afterString));
   }
   
   

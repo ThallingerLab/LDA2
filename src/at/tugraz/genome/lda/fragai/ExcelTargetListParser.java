@@ -16,6 +16,7 @@ import org.dhatim.fastexcel.reader.ReadableWorkbook;
 import org.dhatim.fastexcel.reader.Row;
 import org.dhatim.fastexcel.reader.Sheet;
 
+import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.AdductVO;
 
@@ -62,7 +63,7 @@ public class ExcelTargetListParser
         Stream<Sheet> sheets = wb.getSheets();) {
       			sheets.forEach((s) -> { 
             				try { readSheet(s); } 
-            				catch (IOException ex) 
+            				catch (IOException | ChemicalFormulaException ex) 
             				{
             					headerTitles_ = null; //this indicates that the parsing was not successful
             				} });     
@@ -77,8 +78,9 @@ public class ExcelTargetListParser
 	 * Read the excel sheet.
 	 * @param sheet					the excel sheet to be read
 	 * @throws IOException	if there is something wrong with the excel sheet.
+   * @throws ChemicalFormulaException if there is something wrong with formulas in the excel sheet.
 	 */
-  private void readSheet(Sheet sheet) throws IOException
+  private void readSheet(Sheet sheet) throws IOException, ChemicalFormulaException
 	{
 		List<Row> rows = null;
     rows = sheet.read();
@@ -91,8 +93,10 @@ public class ExcelTargetListParser
   /**
    * Reads all rows except the header.
    * @param contentRows
+   * @throws IOException
+   * @throws ChemicalFormulaException
    */
-  private void readContentRows(List<Row> contentRows) throws IOException
+  private void readContentRows(List<Row> contentRows) throws IOException, ChemicalFormulaException
   {
   	if (headerTitles_.contains(HEADER_CLASS) && 
   			headerTitles_.contains(HEADER_SPECIES) && 

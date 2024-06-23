@@ -71,7 +71,7 @@ public class RecalibrationPlotMouseListener implements ChartMouseListener
         Double yValue = ce.getDataset().getY(ce.getSeriesIndex(),ce.getItem()).doubleValue();
         Pair<Double,Double> dataPoint = new Pair<Double,Double>(xValue,yValue);
         
-        AnchorPoint originalAnchorPoint = plot_.getPanel().findLipidClassForDataPoint(dataPoint);
+        AnchorPointVO originalAnchorPoint = plot_.getPanel().findLipidClassForDataPoint(dataPoint);
         System.out.println(originalAnchorPoint.getLipidSpecies());
         
         String dataType = CalibrationGraphPanel.PLOT_ALL;
@@ -94,10 +94,10 @@ public class RecalibrationPlotMouseListener implements ChartMouseListener
 		private static final long serialVersionUID = 1L;
 		
 		private RecalibrationPlot plot_;
-		private AnchorPoint dataPoint_;
+		private AnchorPointVO dataPoint_;
 		
 
-		public DataPointDialog(JFrame parent, String title, AnchorPoint dataPoint, String dataType, RecalibrationPlot plot) 
+		public DataPointDialog(JFrame parent, String title, AnchorPointVO dataPoint, String dataType, RecalibrationPlot plot) 
 		{
 	    super(parent, title, true);
 	    this.plot_ = plot;

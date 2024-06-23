@@ -9,6 +9,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
+import at.tugraz.genome.lda.parser.MassListParser;
 import at.tugraz.genome.lda.vos.AdductVO;
 
 /**
@@ -56,13 +57,17 @@ public class MassListCreatorPanel extends JPanel
 		{
 			ArrayList<AdductVO> allDefinedAdducts = (new AdductParser()).parse();
 			ArrayList<LipidClassVO> allDefinedLipidClasses = (new LipidClassParser(allDefinedAdducts)).parse();
-			MassListExporter exporter = new MassListExporter("D:\\Development\\eclipse_workspace\\LDA2_private\\massListCreation\\test2.xlsx", allDefinedLipidClasses);
+			MassListExporter exporter = new MassListExporter("D:\\Development\\eclipse_workspace\\LDA2_private\\massListCreation\\test.xlsx", allDefinedLipidClasses);
 			exporter.export();
-			
+			MassListParser parser = new MassListParser("D:\\Development\\eclipse_workspace\\LDA2_private\\massListCreation\\test.xlsx");
 		}
 		catch (IOException | ChemicalFormulaException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
+		}
+		catch (Exception ex)
+		{
+			
 		}
 	}
 	

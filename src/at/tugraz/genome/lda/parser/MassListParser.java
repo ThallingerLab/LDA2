@@ -51,6 +51,7 @@ import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
+import at.tugraz.genome.lda.masslist.MassListExporter;
 import at.tugraz.genome.lda.msn.RulesContainer;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.target.export.TargetListExporter;
@@ -313,11 +314,11 @@ public class MassListParser
           if (contents!=null)
             contents = contents.trim();
           if (!foundColumns){
-            if (contents.equalsIgnoreCase("Seitenkette")||contents.equalsIgnoreCase("Name")){
+            if (contents.equalsIgnoreCase("Seitenkette")||contents.equalsIgnoreCase(MassListExporter.HEADER_NAME)){
               sideChainColumn = i;
             } 
             
-            else if (contents.equalsIgnoreCase("dbs")||contents.equalsIgnoreCase("dbs_TAG")){
+            else if (contents.equalsIgnoreCase(MassListExporter.HEADER_DBS)||contents.equalsIgnoreCase("dbs_TAG")){
               doubleBondColumn = i;
             } else if (contents.equalsIgnoreCase(LipidomicsConstants.CHAIN_MOD_COLUMN_NAME)){
               oxStateColumn = i;
@@ -325,26 +326,26 @@ public class MassListParser
 
             else if (contents.startsWith("mass")&&contents.contains("(")&&contents.contains(")")){
               String[] formulaAndName = StaticUtils.extractFormulaAndAdductName(contents);
-              adductComposition.put(formulaAndName[1],StaticUtils.categorizeFormula(formulaAndName[0]));
+              adductComposition.put(formulaAndName[1],StaticUtils.categorizeFormula(formulaAndName[0], true));
               massOfInterestColumns.put(i,formulaAndName[1]);
               charges.put(formulaAndName[1], Integer.parseInt(formulaAndName[2]));
               multi.put(formulaAndName[1], Integer.parseInt(formulaAndName[3]));
             }
             
-            else if (contents.equalsIgnoreCase("tR (min)")){
+            else if (contents.equalsIgnoreCase(MassListExporter.HEADER_RETENTION_TIME)){
               retTimeColumn = i;
             }
             
-            else if (contents.startsWith("Start-RT:")){
+            else if (contents.startsWith(MassListExporter.OPTION_START_RT)){
               try{
-                fixedStartTime = Float.parseFloat(contents.substring("Start-RT:".length()).trim().replaceAll(",", "."));
+                fixedStartTime = Float.parseFloat(contents.substring(MassListExporter.OPTION_START_RT.length()).trim().replaceAll(",", "."));
                 fixedStartTime_.put(sheet.getSheetName(), fixedStartTime);
               }catch(NumberFormatException nfx){nfx.printStackTrace();};
             }
             
-            else if (contents.startsWith("Stop-RT:")){
+            else if (contents.startsWith(MassListExporter.OPTION_STOP_RT)){
               try{
-                fixedEndTime = Float.parseFloat(contents.substring("Stop-RT:".length()).trim().replaceAll(",", "."));
+                fixedEndTime = Float.parseFloat(contents.substring(MassListExporter.OPTION_STOP_RT.length()).trim().replaceAll(",", "."));
                 fixedStopTime_.put(sheet.getSheetName(), fixedEndTime);
               }catch(NumberFormatException nfx){};
             }
@@ -373,10 +374,10 @@ public class MassListParser
                   }
                 }
               }
-            } else if (contents.trim().equalsIgnoreCase("adductInsensitiveRtFilter")) {
+            } else if (contents.trim().equalsIgnoreCase(MassListExporter.OPTION_ADDUCT_INSENSITIVE_RT_FILTER)) {
             	rtFilterInsensitive = true;
-            } else if (contents.startsWith("OH-Number:")){
-              String ohString = contents.substring("OH-Number:".length()).trim().replaceAll(",", ".");
+            } else if (contents.startsWith(MassListExporter.OPTION_OH_NUMBER)){
+              String ohString = contents.substring(MassListExporter.OPTION_OH_NUMBER.length()).trim().replaceAll(",", ".");
               try{
                 ohNumber = Integer.parseInt(ohString);
               //this value need not necessarily to be a number - it might be the hydroxy encoded string
@@ -384,8 +385,8 @@ public class MassListParser
                 ohNumber = Settings.getLcbHydroxyEncoding().getHydroxyNumber(ohString);
               }
               ohNumber_.put(sheet.getSheetName(), ohNumber);
-            } else if (contents.startsWith("OH-Range:")){
-              String ohRangeString = contents.substring("OH-Range:".length()).trim().replaceAll(",", ".");
+            } else if (contents.startsWith(MassListExporter.OPTION_OH_RANGE)){
+              String ohRangeString = contents.substring(MassListExporter.OPTION_OH_RANGE.length()).trim().replaceAll(",", ".");
               String[] ohRangeParts = ohRangeString.split("-");
               boolean error = false;
               try{
@@ -400,7 +401,7 @@ public class MassListParser
                 throw new HydroxylationEncodingException("The value \"OH-Range\" must be a single integer, or a range in the format $lower$-$higher$; the value \""+ohRangeString+"\" in sheet "+sheet.getSheetName()+" does not comply!");
               else
               	ohRange_.put(sheet.getSheetName(), ohRange);
-            } else if (contents.trim().equalsIgnoreCase("pickBestMatchBySpectrumCoverage")) {
+            } else if (contents.trim().equalsIgnoreCase(MassListExporter.OPTION_PICK_BEST_MATCH_BY_SPECTRUM_COVERAGE)) {
             	pickBestMatchBySpectrumCoverage = true;
             } else if (contents.equalsIgnoreCase(TargetListExporter.HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS)){
               molecularSpeciesWithDoubleBondPositionsColumn = i;

@@ -106,7 +106,7 @@ public class TargetListFPAnalysis
 	        }
 	      }
 	    }
-	    System.out.println("hi");
+	    System.out.println("done");
 		}
 		catch (Exception ex)
 		{

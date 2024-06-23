@@ -1,5 +1,5 @@
 ## The parameter 'name' defines the name of this lipid class.
-name=PC
+name=P-PC
 ## When set to 'true', the parameter 'adductInsensitiveRtFilter' forces the RT filter to be calculated based on all modifications
 adductInsensitiveRtFilter=false
 ## When set to 'true', the parameter 'pickBestMatchBySpectrumCoverage' the best matches are picked from duplicates (same lipid class and scan number) by spectrum coverage.
@@ -24,7 +24,7 @@ Ox_range_to=0
 ## Multiple names are separated with a comma and no spaces, e.g. adductName1,adductName2,adductName3
 adducts=+HCOO
 ## The parameter 'headgroup_formula' defines the chemical formula of the headgroup (without chains)
-headgroup_formula=C8H16O8P1N1
+headgroup_formula=C8H16O7P1N1
 ## The parameters 'min_chain_C' and 'max_chain_C' describe the minimum and maximum total number of C atoms in chains to be included in the mass list
 min_chain_C=20
 max_chain_C=48

@@ -1,5 +1,5 @@
 ## The parameter 'name' defines the name of this lipid class.
-name=PC
+name=LPG
 ## When set to 'true', the parameter 'adductInsensitiveRtFilter' forces the RT filter to be calculated based on all modifications
 adductInsensitiveRtFilter=false
 ## When set to 'true', the parameter 'pickBestMatchBySpectrumCoverage' the best matches are picked from duplicates (same lipid class and scan number) by spectrum coverage.
@@ -22,17 +22,17 @@ Ox_range_to=0
 ## The parameter 'adducts' allows for the definition of adducts relevant for this lipid class.
 ## The given names must correspond to names (parameter 'name') of adducts defined in .txt files in the folder ./massListCreation/adducts
 ## Multiple names are separated with a comma and no spaces, e.g. adductName1,adductName2,adductName3
-adducts=+HCOO
+adducts=-H
 ## The parameter 'headgroup_formula' defines the chemical formula of the headgroup (without chains)
-headgroup_formula=C8H16O8P1N1
+headgroup_formula=C6H13O9P1
 ## The parameters 'min_chain_C' and 'max_chain_C' describe the minimum and maximum total number of C atoms in chains to be included in the mass list
-min_chain_C=20
-max_chain_C=48
+min_chain_C=12
+max_chain_C=26
 ## The parameters 'min_chain_DB' and 'max_chain_DB' describe the minimum and maximum total number of double bonds in chains to be considered in the mass list
 min_chain_DB=0
-max_chain_DB=12
+max_chain_DB=8
 ## The parameter 'number_of_chains' allows for the definition of the number of FA and/or LCB chains present in this lipid class.
-number_of_chains=2
+number_of_chains=1
 ## The parameter 'FA_chain_list_name' allows for the definition of a FA chain list name (without suffix, must be present in the folder ./fattyAcids) to base the mass list on.
 ## Only compounds that are possible given the entries in the provided chain list will be included in the resulting mass list.
 ## If the chain list includes stable isotope labeled chains, those will be included in all possible combinations in the generated mass list file.

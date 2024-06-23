@@ -38,7 +38,7 @@ import javafx.util.Pair;
  */
 public class RecalibrationRegression
 {
-	private ArrayList<AnchorPoint> differences_;
+	private ArrayList<AnchorPointVO> differences_;
 	private double grouping_;
 	private ArrayList<Pair<Double,Double>> clustered_;
 	private PolynomialSplineFunction function_;
@@ -51,7 +51,7 @@ public class RecalibrationRegression
 	 * @param dataType
 	 * @param lipidClass
 	 */
-	protected RecalibrationRegression(ArrayList<AnchorPoint> differences, double grouping, String dataType, String lipidClass)
+	protected RecalibrationRegression(ArrayList<AnchorPointVO> differences, double grouping, String dataType, String lipidClass)
 	{
 		this(differences, grouping);
 		this.dataType_ = dataType;
@@ -62,7 +62,7 @@ public class RecalibrationRegression
 	 * @param differences
 	 * @param grouping
 	 */
-	private RecalibrationRegression(ArrayList<AnchorPoint> differences, double grouping)
+	private RecalibrationRegression(ArrayList<AnchorPointVO> differences, double grouping)
 	{
 		this.differences_ = differences;
 		this.grouping_ = grouping;
@@ -106,7 +106,7 @@ public class RecalibrationRegression
 		}
 	}
 	
-  private ArrayList<Pair<Double,Double>> clusterKeys(ArrayList<AnchorPoint> differences)
+  private ArrayList<Pair<Double,Double>> clusterKeys(ArrayList<AnchorPointVO> differences)
   {
   	ArrayList<Pair<Double,Double>> clustered = new ArrayList<Pair<Double,Double>>();
   	ArrayList<Double> xValues = new ArrayList<Double>();
@@ -119,7 +119,7 @@ public class RecalibrationRegression
   			int count = 0;
   			double xSum = 0.0;
     		double ySum = 0.0;
-    		for (AnchorPoint dataPoint : differences)
+    		for (AnchorPointVO dataPoint : differences)
       	{
       		if (dataPoint.getxValue()>=intervals.get(i-1) && dataPoint.getxValue()<=intervals.get(i))
       		{
@@ -139,7 +139,7 @@ public class RecalibrationRegression
   	return clustered;
   }
 	
-	private double getMin(ArrayList<AnchorPoint> data){  
+	private double getMin(ArrayList<AnchorPointVO> data){  
     double min = Integer.MAX_VALUE;  
     for(int i=0; i<data.size(); i++){  
       if(data.get(i).getxValue()<min)  
@@ -148,7 +148,7 @@ public class RecalibrationRegression
     return min;  
   } 
 	
-	private double getMax(ArrayList<AnchorPoint> data){  
+	private double getMax(ArrayList<AnchorPointVO> data){  
     double max = Integer.MIN_VALUE;  
     for(int i=0; i<data.size(); i++){  
       if(data.get(i).getxValue()>max)  
@@ -175,7 +175,7 @@ public class RecalibrationRegression
     return max;  
   }
 	
-	protected void removeDataPoint(AnchorPoint dataPoint)
+	protected void removeDataPoint(AnchorPointVO dataPoint)
 	{
 		this.differences_.remove(dataPoint);
 		initRegression();
@@ -186,7 +186,7 @@ public class RecalibrationRegression
 		return referenceRT-function_.value(referenceRT);
 	}
 	
-	protected ArrayList<AnchorPoint> getDifferences()
+	protected ArrayList<AnchorPointVO> getDifferences()
 	{
 		return differences_;
 	}
@@ -197,9 +197,9 @@ public class RecalibrationRegression
 	 * @param dataPoint
 	 * @return
 	 */
-	protected int getClusteredWithoutDataPointSize(AnchorPoint dataPoint)
+	protected int getClusteredWithoutDataPointSize(AnchorPointVO dataPoint)
 	{
-		ArrayList<AnchorPoint> differences = new ArrayList<AnchorPoint>(differences_);
+		ArrayList<AnchorPointVO> differences = new ArrayList<AnchorPointVO>(differences_);
 		differences.remove(dataPoint);
 		ArrayList<Pair<Double,Double>> clustered = clusterKeys(differences);
 		return clustered.size();

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Properties;
 
+import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.vos.AdductVO;
 
 public class AdductParser
@@ -16,7 +17,7 @@ public class AdductParser
 	
 	public AdductParser(){}
 	
-	public ArrayList<AdductVO> parse() throws FileNotFoundException, IOException
+	public ArrayList<AdductVO> parse() throws FileNotFoundException, IOException, ChemicalFormulaException
 	{
 		ArrayList<AdductVO> allDefinedAdducts = new ArrayList<AdductVO>();
 		

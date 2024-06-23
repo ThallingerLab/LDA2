@@ -65,7 +65,7 @@ public class LipidClassParser
 					if (name != null && adducts != null && headgroupFormula != null && faChainList != null)
 					{
 						ArrayList<AdductVO> selectedAdducts = matchSelectedAdducts(adducts, fileCandidates[i].getName());
-						Hashtable<String,Integer> headgroupFormulaTranslated = StaticUtils.categorizeFormula(headgroupFormula);
+						Hashtable<String,Integer> headgroupFormulaTranslated = StaticUtils.categorizeFormula(headgroupFormula, true);
 						String chainListPath = CHAIN_LIST_FOLDER+"/"+faChainList+CHAIN_LIST_SUFFIX;
 						
 						LipidClassVO vo = new LipidClassVO(name,

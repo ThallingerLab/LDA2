@@ -3,6 +3,7 @@ package at.tugraz.genome.lda.vos;
 import java.util.Hashtable;
 import java.util.Objects;
 
+import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.utils.StaticUtils;
 
 public class AdductVO
@@ -13,65 +14,23 @@ public class AdductVO
 	private String adductName_;
 	private String formulaString_;
 	private int charge_;
-	private Hashtable<String,Integer> addModifier_;
-	private Hashtable<String,Integer> removeModifier_;
+	private Hashtable<String,Integer> formula_;
 	
-	public AdductVO(String name, String formula, int charge)
+	public AdductVO(String name, String formula, int charge) throws ChemicalFormulaException
 	{
 		this.adductName_ = name;
 		this.formulaString_ = formula;
-		this.assignAddRemoveModifier(splitFormula(formula));
+		this.formula_ = StaticUtils.categorizeFormula(formula, true);
 		this.charge_ = charge;
 	}
 	
-	public AdductVO(String composite)
+	public AdductVO(String composite) throws ChemicalFormulaException
 	{
 		String[] split = composite.split(ADDUCT_SEPARATOR);
 		this.adductName_ = split[0];
 		this.formulaString_ = split[1];
-		this.assignAddRemoveModifier(splitFormula(split[1]));
+		this.formula_ = StaticUtils.categorizeFormula(split[1], true);
 		this.charge_ = Integer.parseInt(split[2]);
-	}
-	
-	private void assignAddRemoveModifier(String[] adductFormula)
-	{
-		for (int i=0; i<adductFormula.length;i++)
-		{
-			if (adductFormula[i].startsWith(ADDUCT_ADD))
-			{
-				try {addModifier_ = StaticUtils.categorizeFormula(adductFormula[i].replace(ADDUCT_ADD,""));} catch (Exception ex) {}
-			}
-			else if (adductFormula[i].startsWith(ADDUCT_REMOVE))
-			{
-				try {removeModifier_ = StaticUtils.categorizeFormula(adductFormula[i].replace(ADDUCT_REMOVE,""));} catch (Exception ex) {}
-			}
-		}
-	}
-	
-	public static String[] splitFormula(String formula) {
-    int plusIndex = formula.indexOf(ADDUCT_ADD);
-    int minusIndex = formula.indexOf(ADDUCT_REMOVE);
-
-    String part1, part2;
-    if (plusIndex != -1 && minusIndex != -1)
-    {
-    	if (plusIndex > minusIndex)
-      {
-      	part1 = formula.substring(minusIndex, plusIndex);
-      	part2 = formula.substring(plusIndex);
-      }
-      else
-      {
-      	part1 = formula.substring(plusIndex, minusIndex);
-      	part2 = formula.substring(minusIndex);
-      }
-    }
-    else
-    {
-    	part1 = formula;
-      part2 = "";
-    }
-    return new String[]{part1, part2};
 	}
 
 	public String getAdductName()
@@ -88,21 +47,16 @@ public class AdductVO
 	{
 		return charge_;
 	}
-
-	public Hashtable<String,Integer> getAddModifier()
+	
+	public Hashtable<String,Integer> getFormula()
 	{
-		return addModifier_ == null ? new Hashtable<String,Integer>() : addModifier_;
-	}
-
-	public Hashtable<String,Integer> getRemoveModifier()
-	{
-		return removeModifier_ == null ? new Hashtable<String,Integer>() : removeModifier_;
+		return this.formula_;
 	}
 
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(addModifier_, adductName_, charge_, removeModifier_);
+		return Objects.hash(adductName_, charge_, formula_);
 	}
 
 	@Override
@@ -115,10 +69,9 @@ public class AdductVO
 		if (getClass() != obj.getClass())
 			return false;
 		AdductVO other = (AdductVO) obj;
-		return Objects.equals(addModifier_, other.addModifier_)
-				&& Objects.equals(adductName_, other.adductName_)
+		return Objects.equals(adductName_, other.adductName_)
 				&& charge_ == other.charge_
-				&& Objects.equals(removeModifier_, other.removeModifier_);
+				&& Objects.equals(formula_, other.formula_);
 	}
 	
 	

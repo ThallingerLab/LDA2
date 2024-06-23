@@ -69,13 +69,9 @@ public class FragTargetListEntry
 					fullMz += Settings.getElementParser().getElementDetails(element).getMonoMass()*getSumFormula().get(element);
 				}
 				Double adductMz = fullMz;
-				for (String element : adduct.getAddModifier().keySet())
+				for (String element : adduct.getFormula().keySet())
 				{
-					adductMz += Settings.getElementParser().getElementDetails(element).getMonoMass()*adduct.getAddModifier().get(element);
-				}
-				for (String element : adduct.getRemoveModifier().keySet())
-				{
-					adductMz -= Settings.getElementParser().getElementDetails(element).getMonoMass()*adduct.getRemoveModifier().get(element);
+					adductMz += Settings.getElementParser().getElementDetails(element).getMonoMass()*adduct.getFormula().get(element);
 				}
 				return Math.abs(adductMz/adduct.getCharge());
 			}

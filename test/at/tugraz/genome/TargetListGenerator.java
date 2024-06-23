@@ -797,7 +797,7 @@ public class TargetListGenerator
     		if (fa.getPrefix().length()>0) 
     		{
     			labels.add(fa.getPrefix());
-    			Hashtable<String,Integer> formula = StaticUtils.categorizeFormula(fa.getFormula());
+    			Hashtable<String,Integer> formula = StaticUtils.categorizeFormula(fa.getFormula(), true);
     			if (formula.containsKey("D"))
     			{
     				classElements.put("D", classElements.get("D")+formula.get("D"));

@@ -53,8 +53,8 @@ public class RecalibrationPlot extends JPanel
 { 
 	private static final long serialVersionUID = 1L;
 	
-	ArrayList<AnchorPoint> dataAll_;
-	ArrayList<AnchorPoint> dataStandards_;
+	ArrayList<AnchorPointVO> dataAll_;
+	ArrayList<AnchorPointVO> dataStandards_;
 	CalibrationGraphPanel panel_;
 	XYPlot plot_;
 	XYDataset curveFitDataset_;
@@ -62,10 +62,10 @@ public class RecalibrationPlot extends JPanel
 	XYDataset scatterPlotDataset_;
 
 
-	public RecalibrationPlot(ArrayList<AnchorPoint> data, ArrayList<AnchorPoint> dataStandards, 
+	public RecalibrationPlot(ArrayList<AnchorPointVO> data, ArrayList<AnchorPointVO> dataStandards, 
 			RecalibrationRegression regression, Dimension dimension, CalibrationGraphPanel panel, XYPlot previousPlot)
   {
-		this.dataAll_ = new ArrayList<AnchorPoint>(data);
+		this.dataAll_ = new ArrayList<AnchorPointVO>(data);
 		this.dataStandards_ = dataStandards;
 		this.panel_ = panel;
 		this.dataAll_.removeAll(this.dataStandards_);
@@ -192,11 +192,11 @@ public class RecalibrationPlot extends JPanel
     return renderer;
 	}
   
-  private XYDataset getScatterPlotDataset(ArrayList<AnchorPoint> data, String label)
+  private XYDataset getScatterPlotDataset(ArrayList<AnchorPointVO> data, String label)
   {
     XYSeriesCollection dataset = new XYSeriesCollection();
     XYSeries dataSeries = new XYSeries(label);
-    for (AnchorPoint dataPoint : data)
+    for (AnchorPointVO dataPoint : data)
     {
     	dataSeries.add(dataPoint.getxValue(), dataPoint.getyValue());
     }
@@ -204,12 +204,12 @@ public class RecalibrationPlot extends JPanel
     return dataset;
   }
 
-	public ArrayList<AnchorPoint> getDataAll()
+	public ArrayList<AnchorPointVO> getDataAll()
 	{
 		return dataAll_;
 	}
 
-	public ArrayList<AnchorPoint> getDataStandards()
+	public ArrayList<AnchorPointVO> getDataStandards()
 	{
 		return dataStandards_;
 	}

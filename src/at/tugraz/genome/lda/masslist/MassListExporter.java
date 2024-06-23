@@ -32,10 +32,10 @@ public class MassListExporter
 {
 	public final static String OPTION_ADDUCT_INSENSITIVE_RT_FILTER = "adductInsensitiveRtFilter";
 	public final static String OPTION_PICK_BEST_MATCH_BY_SPECTRUM_COVERAGE = "pickBestMatchBySpectrumCoverage";
-	public final static String OPTION_START_RT = "Start-RT: ";
-	public final static String OPTION_STOP_RT = "Stop-RT: ";
-	public final static String OPTION_OH_NUMBER = "OH-Number: ";
-	public final static String OPTION_OH_RANGE = "OH-Range: ";
+	public final static String OPTION_START_RT = "Start-RT:";
+	public final static String OPTION_STOP_RT = "Stop-RT:";
+	public final static String OPTION_OH_NUMBER = "OH-Number:";
+	public final static String OPTION_OH_RANGE = "OH-Range:";
 	
 	private final static int OPTIONS_ROW = 0;
 	
@@ -125,7 +125,6 @@ public class MassListExporter
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		System.out.println("hi");
 	}
 	
 	/**
@@ -200,7 +199,7 @@ public class MassListExporter
     		if (fa.getPrefix().length()>0) 
     		{
     			labels.add(fa.getPrefix());
-    			Hashtable<String,Integer> formula = StaticUtils.categorizeFormula(fa.getFormula());
+    			Hashtable<String,Integer> formula = StaticUtils.categorizeFormula(fa.getFormula(), true);
     			if (formula.containsKey("D"))
     			{
     				classElements.put("D", classElements.get("D")+formula.get("D"));
@@ -257,13 +256,9 @@ public class MassListExporter
 	private double computeAdductMass(double neutralMass, AdductVO adduct)
 	{
 		double massAdduct = neutralMass;
-  	for (String element : adduct.getAddModifier().keySet())
+  	for (String element : adduct.getFormula().keySet())
 		{
-  		massAdduct += Settings.getElementParser().getElementDetails(element).getMonoMass()*adduct.getAddModifier().get(element);
-		}
-		for (String element : adduct.getRemoveModifier().keySet())
-		{
-			massAdduct -= Settings.getElementParser().getElementDetails(element).getMonoMass()*adduct.getRemoveModifier().get(element);
+  		massAdduct += Settings.getElementParser().getElementDetails(element).getMonoMass()*adduct.getFormula().get(element);
 		}
 		return Math.abs(massAdduct/adduct.getCharge());
 	}
@@ -292,7 +287,7 @@ public class MassListExporter
 	
 	private String getAdductHeader(AdductVO adduct)
 	{
-		return String.format("mass(form[%s] name[%s] charge=%s)", adduct.getAdductName(), adduct.getFormulaString(), adduct.getCharge());
+		return String.format("mass(form[%s] name[%s] charge=%s)", adduct.getFormulaString(), adduct.getAdductName(), adduct.getCharge());
 	}
 	
 	private List<String> createOptionsTitles(LipidClassVO lClassVO) 

@@ -5,14 +5,14 @@ package at.tugraz.genome.lda.target.calibration;
  * @author Leonida M. Lamp
  *
  */
-public class AnchorPoint
+public class AnchorPointVO
 {
 	private String lipidClass_;
 	private String lipidSpecies_;
 	private Double xValue_;
 	private Double yValue_;
 	
-	public AnchorPoint(String lipidClass, String lipidSpecies, Double xValue, Double yValue)
+	public AnchorPointVO(String lipidClass, String lipidSpecies, Double xValue, Double yValue)
 	{
 		super();
 		this.lipidClass_ = lipidClass;
