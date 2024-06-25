@@ -4,20 +4,35 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.Properties;
 
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
-import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.AdductVO;
 
 public class LipidClassParser
 {
-	private final static String LIPID_CLASS_FOLDER = "./massListCreation/lipidClasses";
-	private final static String LIPID_CLASS_SUFFIX = ".txt";
-	private final static String ADDUCT_SEPARATOR = ",";
-	private final static String CHAIN_LIST_FOLDER = "./fattyAcids";
-	private final static String CHAIN_LIST_SUFFIX = ".xlsx";
+	public final static String LIPID_CLASS_FOLDER = "./massListCreation/lipidClasses";
+	public final static String LIPID_CLASS_SUFFIX = ".txt";
+	public final static String ADDUCT_SEPARATOR = ",";
+	public final static String LIPID_CLASS_NAME = "name";
+	public final static String LIPID_CLASS_RT_FILTER = "adductInsensitiveRtFilter";
+	public final static String LIPID_CLASS_PICK_BEST = "pickBestMatchBySpectrumCoverage";
+	public final static String LIPID_CLASS_OH_NUMBER = "OH_number";
+	public final static String LIPID_CLASS_OH_RANGE_FROM = "OH_range_from";
+	public final static String LIPID_CLASS_OH_RANGE_TO = "OH_range_to";
+	public final static String LIPID_CLASS_RT_RANGE_FROM = "RT_range_from";
+	public final static String LIPID_CLASS_RT_RANGE_TO = "RT_range_to";
+	public final static String LIPID_CLASS_OX_RANGE_FROM = "Ox_range_from";
+	public final static String LIPID_CLASS_OX_RANGE_TO = "Ox_range_to";
+	public final static String LIPID_CLASS_ADDUCTS = "adducts";
+	public final static String LIPID_CLASS_FORMULA = "headgroup_formula";
+	public final static String LIPID_CLASS_MIN_CHAIN_C = "min_chain_C";
+	public final static String LIPID_CLASS_MAX_CHAIN_C = "max_chain_C";
+	public final static String LIPID_CLASS_MIN_CHAIN_DB = "min_chain_DB";
+	public final static String LIPID_CLASS_MAX_CHAIN_DB = "max_chain_DB";
+	public final static String LIPID_NUMBER_CHAINS = "number_of_chains";
+	public final static String FA_LIST_NAME = "FA_chain_list_name";
+	
 	private ArrayList<AdductVO> allDefinedAdducts_;
 	
 	public LipidClassParser(ArrayList<AdductVO> allDefinedAdducts)
@@ -43,35 +58,33 @@ public class LipidClassParser
 				{
 					Properties properties = new Properties();
 					properties.load(in);
-					String name = properties.getProperty("name", null);
-					boolean adductInsensitiveRtFilter = Boolean.parseBoolean(properties.getProperty("adductInsensitiveRtFilter", null));
-					boolean pickBestMatchBySpectrumCoverage = Boolean.parseBoolean(properties.getProperty("pickBestMatchBySpectrumCoverage", null));
-					int ohNumber = Integer.parseInt(properties.getProperty("OH_number", null));
-					int ohRangeFrom = Integer.parseInt(properties.getProperty("OH_range_from", null));
-					int ohRangeTo = Integer.parseInt(properties.getProperty("OH_range_to", null));
-					int rtRangeFrom = Integer.parseInt(properties.getProperty("RT_range_from", null));
-					int rtRangeTo = Integer.parseInt(properties.getProperty("RT_range_to", null));
-					int oxRangeFrom = Integer.parseInt(properties.getProperty("Ox_range_from", null));
-					int oxRangeTo = Integer.parseInt(properties.getProperty("Ox_range_to", null));
-					String adducts = properties.getProperty("adducts", null);
-					String headgroupFormula = properties.getProperty("headgroup_formula", null);
-					int minChainC = Integer.parseInt(properties.getProperty("min_chain_C", null));
-					int maxChainC = Integer.parseInt(properties.getProperty("max_chain_C", null));
-					int minChainDB = Integer.parseInt(properties.getProperty("min_chain_DB", null));
-					int maxChainDB = Integer.parseInt(properties.getProperty("max_chain_DB", null));
-					int numberOfChains = Integer.parseInt(properties.getProperty("number_of_chains", null));
-					String faChainList = properties.getProperty("FA_chain_list_name", null);
+					String name = properties.getProperty(LIPID_CLASS_NAME, null);
+					boolean adductInsensitiveRtFilter = Boolean.parseBoolean(properties.getProperty(LIPID_CLASS_RT_FILTER, null));
+					boolean pickBestMatchBySpectrumCoverage = Boolean.parseBoolean(properties.getProperty(LIPID_CLASS_PICK_BEST, null));
+					int ohNumber = Integer.parseInt(properties.getProperty(LIPID_CLASS_OH_NUMBER, null));
+					int ohRangeFrom = Integer.parseInt(properties.getProperty(LIPID_CLASS_OH_RANGE_FROM, null));
+					int ohRangeTo = Integer.parseInt(properties.getProperty(LIPID_CLASS_OH_RANGE_TO, null));
+					double rtRangeFrom = Double.parseDouble(properties.getProperty(LIPID_CLASS_RT_RANGE_FROM, null));
+					double rtRangeTo = Double.parseDouble(properties.getProperty(LIPID_CLASS_RT_RANGE_FROM, null));
+					int oxRangeFrom = Integer.parseInt(properties.getProperty(LIPID_CLASS_OX_RANGE_FROM, null));
+					int oxRangeTo = Integer.parseInt(properties.getProperty(LIPID_CLASS_OX_RANGE_TO, null));
+					String adducts = properties.getProperty(LIPID_CLASS_ADDUCTS, null);
+					String headgroupFormula = properties.getProperty(LIPID_CLASS_FORMULA, null);
+					int minChainC = Integer.parseInt(properties.getProperty(LIPID_CLASS_MIN_CHAIN_C, null));
+					int maxChainC = Integer.parseInt(properties.getProperty(LIPID_CLASS_MAX_CHAIN_C, null));
+					int minChainDB = Integer.parseInt(properties.getProperty(LIPID_CLASS_MIN_CHAIN_DB, null));
+					int maxChainDB = Integer.parseInt(properties.getProperty(LIPID_CLASS_MAX_CHAIN_DB, null));
+					int numberOfChains = Integer.parseInt(properties.getProperty(LIPID_NUMBER_CHAINS, null));
+					String faChainList = properties.getProperty(FA_LIST_NAME, null);
 					
 					if (name != null && adducts != null && headgroupFormula != null && faChainList != null)
 					{
 						ArrayList<AdductVO> selectedAdducts = matchSelectedAdducts(adducts, fileCandidates[i].getName());
-						Hashtable<String,Integer> headgroupFormulaTranslated = StaticUtils.categorizeFormula(headgroupFormula, true);
-						String chainListPath = CHAIN_LIST_FOLDER+"/"+faChainList+CHAIN_LIST_SUFFIX;
 						
 						LipidClassVO vo = new LipidClassVO(name,
 								adductInsensitiveRtFilter, pickBestMatchBySpectrumCoverage, ohNumber, ohRangeFrom, ohRangeTo, 
-								rtRangeFrom, rtRangeTo, oxRangeFrom, oxRangeTo, selectedAdducts, 
-								headgroupFormulaTranslated, minChainC, maxChainC, minChainDB, maxChainDB, numberOfChains, chainListPath);
+								rtRangeFrom, rtRangeTo, oxRangeFrom, oxRangeTo, selectedAdducts, headgroupFormula,
+								minChainC, maxChainC, minChainDB, maxChainDB, numberOfChains, faChainList);
 						
 						allDefinedLipidClasses.add(vo);
 					}

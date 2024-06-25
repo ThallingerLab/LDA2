@@ -3,6 +3,8 @@ package at.tugraz.genome.lda.masslist;
 import java.util.ArrayList;
 import java.util.Hashtable;
 
+import at.tugraz.genome.lda.exception.ChemicalFormulaException;
+import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.AdductVO;
 
 public class LipidClassVO
@@ -13,27 +15,28 @@ public class LipidClassVO
 	private int ohNumber_;
 	private int ohRangeFrom_;
 	private int ohRangeTo_;
-	private int rtRangeFrom_;
-	private int rtRangeTo_;
+	private double rtRangeFrom_;
+	private double rtRangeTo_;
 	private int oxRangeFrom_;
 	private int oxRangeTo_;
 	private ArrayList<AdductVO> adducts_;
+	private String headGroupFormulaString_;
 	private Hashtable<String,Integer> headgroupFormula_;
 	private int minChainC_;
 	private int maxChainC_;
 	private int minChainDB_;
 	private int maxChainDB_;
 	private int numberOfChains_;
-	private String faChainListPath_;
+	private String faChainList_;
 	
 	
 	public LipidClassVO(String lClass, boolean adductInsensitiveRtFilter,
 			boolean pickBestMatchBySpectrumCoverage, int ohNumber, int ohRangeFrom,
-			int ohRangeTo, int rtRangeFrom, int rtRangeTo, int oxRangeFrom,
+			int ohRangeTo, double rtRangeFrom, double rtRangeTo, int oxRangeFrom,
 			int oxRangeTo, ArrayList<AdductVO> adducts,
-			Hashtable<String,Integer> headgroupFormula, int minChainC,
+			String headgroupFormula, int minChainC,
 			int maxChainC, int minChainDB, int maxChainDB, int numberOfChains,
-			String faChainListPath)
+			String faChainList) throws ChemicalFormulaException
 	{
 		super();
 		this.lClass_ = lClass;
@@ -47,13 +50,14 @@ public class LipidClassVO
 		this.oxRangeFrom_ = oxRangeFrom;
 		this.oxRangeTo_ = oxRangeTo;
 		this.adducts_ = adducts;
-		this.headgroupFormula_ = headgroupFormula;
+		this.headGroupFormulaString_ = headgroupFormula;
+		this.headgroupFormula_ = StaticUtils.categorizeFormula(headgroupFormula, true);
 		this.minChainC_ = minChainC;
 		this.maxChainC_ = maxChainC;
 		this.minChainDB_ = minChainDB;
 		this.maxChainDB_ = maxChainDB;
 		this.numberOfChains_ = numberOfChains;
-		this.faChainListPath_ = faChainListPath;
+		this.faChainList_ = faChainList;
 	}
 
 	public String getLipidClass()
@@ -91,13 +95,13 @@ public class LipidClassVO
 	}
 
 
-	public int getRtRangeFrom()
+	public double getRtRangeFrom()
 	{
 		return rtRangeFrom_;
 	}
 
 
-	public int getRtRangeTo()
+	public double getRtRangeTo()
 	{
 		return rtRangeTo_;
 	}
@@ -120,6 +124,10 @@ public class LipidClassVO
 		return adducts_;
 	}
 
+	public String getHeadGroupFormulaString()
+	{
+		return headGroupFormulaString_;
+	}
 
 	public Hashtable<String,Integer> getHeadgroupFormula()
 	{
@@ -156,10 +164,107 @@ public class LipidClassVO
 		return numberOfChains_;
 	}
 
+	public String getFaChainList()
+	{
+		return faChainList_;
+	}
 
 	public String getFaChainListPath()
 	{
-		return faChainListPath_;
+		return MassListCreatorPanel.CHAIN_LIST_FOLDER+faChainList_+MassListCreatorPanel.CHAIN_LIST_SUFFIX;
+	}
+
+	public void setLipidClass(String lClass)
+	{
+		this.lClass_ = lClass;
+	}
+
+	public void setAdductInsensitiveRtFilter(boolean adductInsensitiveRtFilter)
+	{
+		this.adductInsensitiveRtFilter_ = adductInsensitiveRtFilter;
+	}
+
+	public void setPickBestMatchBySpectrumCoverage(
+			boolean pickBestMatchBySpectrumCoverage)
+	{
+		this.pickBestMatchBySpectrumCoverage_ = pickBestMatchBySpectrumCoverage;
+	}
+
+	public void setOhNumber(int ohNumber)
+	{
+		this.ohNumber_ = ohNumber;
+	}
+
+	public void setOhRangeFrom(int ohRangeFrom)
+	{
+		this.ohRangeFrom_ = ohRangeFrom;
+	}
+
+	public void setOhRangeTo(int ohRangeTo)
+	{
+		this.ohRangeTo_ = ohRangeTo;
+	}
+
+	public void setRtRangeFrom(double rtRangeFrom)
+	{
+		this.rtRangeFrom_ = rtRangeFrom;
+	}
+
+	public void setRtRangeTo(double rtRangeTo)
+	{
+		this.rtRangeTo_ = rtRangeTo;
+	}
+
+	public void setOxRangeFrom(int oxRangeFrom)
+	{
+		this.oxRangeFrom_ = oxRangeFrom;
+	}
+
+	public void setOxRangeTo(int oxRangeTo)
+	{
+		this.oxRangeTo_ = oxRangeTo;
+	}
+
+	public void setAdducts(ArrayList<AdductVO> adducts)
+	{
+		this.adducts_ = adducts;
+	}
+
+	public void setHeadGroupFormulaString(String headGroupFormulaString) throws ChemicalFormulaException
+	{
+		this.headGroupFormulaString_ = headGroupFormulaString;
+		this.headgroupFormula_ = null;
+		this.headgroupFormula_ = StaticUtils.categorizeFormula(headGroupFormulaString, true);
+	}
+	
+	public void setMinChainC(int minChainC)
+	{
+		this.minChainC_ = minChainC;
+	}
+
+	public void setMaxChainC(int maxChainC)
+	{
+		this.maxChainC_ = maxChainC;
+	}
+
+	public void setMinChainDB(int minChainDB)
+	{
+		this.minChainDB_ = minChainDB;
+	}
+
+	public void setMaxChainDB(int maxChainDB)
+	{
+		this.maxChainDB_ = maxChainDB;
+	}
+
+	public void setNumberOfChains(int numberOfChains)
+	{
+		this.numberOfChains_ = numberOfChains;
+	}
+
+	public void setFaChainList(String faChainList)
+	{
+		this.faChainList_ = faChainList;
 	}
 	
 	

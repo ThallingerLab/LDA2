@@ -12,14 +12,19 @@ import at.tugraz.genome.lda.vos.AdductVO;
 
 public class AdductParser
 {
-	private final static String ADDUCT_FOLDER = "./massListCreation/adducts";
-	private final static String ADDUCT_SUFFIX = ".txt";
+	public final static String ADDUCT_FOLDER = "./massListCreation/adducts";
+	public final static String ADDUCT_SUFFIX = ".txt";
+	
+	public final static String PROPERTY_NAME = "name";
+	public final static String PROPERTY_FORMULA = "formula";
+	public final static String PROPERTY_CHARGE = "charge";
 	
 	public AdductParser(){}
 	
 	public ArrayList<AdductVO> parse() throws FileNotFoundException, IOException, ChemicalFormulaException
 	{
 		ArrayList<AdductVO> allDefinedAdducts = new ArrayList<AdductVO>();
+		ArrayList<String> uniqueNames = new ArrayList<String>();
 		
 		File folder = new File(ADDUCT_FOLDER);
 		if (!folder.exists())
@@ -35,12 +40,17 @@ public class AdductParser
 				{
 					Properties properties = new Properties();
 					properties.load(in);
-					String name = properties.getProperty("name", null);
-					String formula = properties.getProperty("formula", null);
-					int charge = Integer.parseInt(properties.getProperty("charge", "0"));
+					String name = properties.getProperty(PROPERTY_NAME, null);
+					String formula = properties.getProperty(PROPERTY_FORMULA, null);
+					int charge = Integer.parseInt(properties.getProperty(PROPERTY_CHARGE, "0"));
 					if (name != null && formula != null && charge != 0)
 					{
-						AdductVO adduct = new AdductVO(name, formula, charge);
+						if (uniqueNames.contains(name))
+							throw new IOException(String.format("Duplicate name definition '%s' detected in '%s'!", name, ADDUCT_FOLDER));
+						else
+							uniqueNames.add(name);
+						
+						AdductVO adduct = new AdductVO(name, formula, charge, fileCandidates[i].getName());
 						allDefinedAdducts.add(adduct);
 					}
 					else
@@ -49,7 +59,7 @@ public class AdductParser
 					}
 				}
 			}
-		}	
+		}
 		return allDefinedAdducts;
 	}
 	

@@ -9,15 +9,15 @@ import at.tugraz.genome.lda.utils.StaticUtils;
 public class AdductVO
 {
 	private final static String ADDUCT_SEPARATOR = ";";
-	private final static String ADDUCT_ADD = "+";
-	private final static String ADDUCT_REMOVE = "-";
 	private String adductName_;
 	private String formulaString_;
-	private int charge_;
 	private Hashtable<String,Integer> formula_;
+	private int charge_;
+	private String fileName_;
 	
-	public AdductVO(String name, String formula, int charge) throws ChemicalFormulaException
+	public AdductVO(String name, String formula, int charge, String fileName) throws ChemicalFormulaException
 	{
+		this.fileName_=fileName;
 		this.adductName_ = name;
 		this.formulaString_ = formula;
 		this.formula_ = StaticUtils.categorizeFormula(formula, true);
@@ -42,21 +42,48 @@ public class AdductVO
 	{
 		return formulaString_;
 	}
-
-	public int getCharge()
-	{
-		return charge_;
-	}
 	
 	public Hashtable<String,Integer> getFormula()
 	{
 		return this.formula_;
 	}
 
+	public int getCharge()
+	{
+		return charge_;
+	}
+	
+	public String getFileName()
+	{
+		return fileName_;
+	}
+
+	public void setAdductName(String adductName)
+	{
+		this.adductName_ = adductName;
+	}
+
+	public void setFormulaString(String formulaString) throws ChemicalFormulaException
+	{
+		this.formulaString_ = formulaString;
+		this.formula_ = null;
+		this.formula_ = StaticUtils.categorizeFormula(formulaString, true);
+	}
+
+	public void setCharge(int charge)
+	{
+		this.charge_ = charge;
+	}
+
+	public void setFileName(String filePath)
+	{
+		this.fileName_ = filePath;
+	}
+
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(adductName_, charge_, formula_);
+		return Objects.hash(adductName_, charge_, formula_, fileName_);
 	}
 
 	@Override
@@ -71,7 +98,8 @@ public class AdductVO
 		AdductVO other = (AdductVO) obj;
 		return Objects.equals(adductName_, other.adductName_)
 				&& charge_ == other.charge_
-				&& Objects.equals(formula_, other.formula_);
+				&& Objects.equals(formula_, other.formula_)
+				&& Objects.equals(fileName_, other.fileName_);
 	}
 	
 	
