@@ -350,7 +350,7 @@ public class TestClass extends JApplet implements AddScan
   private final String COLUMN_HEADER_COMMENT= "Comment";
   private final String COLUMN_HEADER_MAX_FRAGS= "MS2_Max_fragments_expected";
   private final String COLUMN_HEADER_MAX_ALL_FRAGS = "MS2_Max_fragments_expected combined";
-  private final String COLUMN_HEADER_SCORE_UNCORRECTED = "ALEX score corr.";
+  private final String COLUMN_HEADER_SCORE_UNCORRECTED = "ALEX score uncorr.";
   private final String COLUMN_HEADER_AMBIGUOUS = "Ambiguous partner";
 
   
@@ -2992,7 +2992,7 @@ public class TestClass extends JApplet implements AddScan
         LipidomicsConstants.getRelativeFarAreaCutoff(),LipidomicsConstants.getRelativeFarAreaTimeSpace(),
         LipidomicsConstants.getRelativeIsoInBetweenCutoff(),LipidomicsConstants.getClosePeakTimeTolerance(),
         LipidomicsConstants.getTwinInBetweenCutoff(), LipidomicsConstants.getUnionInBetweenCutoff(),
-        LipidomicsConstants.getMs2MzTolerance());
+        LipidomicsConstants.getMs2MzTolerance(),LipidomicsConstants.getMs2MzToleranceUnit());
   }
   
   private Metadata getMetadata() throws Exception {
@@ -8493,7 +8493,8 @@ public void testTabFile() throws Exception {
   private boolean areThereAnyMSnSpectra(LipidomicsAnalyzer analyzer,LipidParameterSet lda,QuantVO quantVO) throws CgException{
     boolean spectraThere = false;
     if (lda!=null){
-      Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache((float)(lda.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance()), (float)(lda.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance()),100);
+    	float tol = LipidomicsConstants.getMs2PrecursorTolerance(lda.Mz[0]);
+      Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache((float)(lda.Mz[0]-tol), (float)(lda.Mz[0]+tol),100);
       for (CgProbe probe : lda.getIsotopicProbes().get(0)){
         if (analyzer.areMSnSpectraInThisRegion(probe.LowerValley,probe.UpperValley,2)){
           spectraThere = true;
@@ -8501,7 +8502,8 @@ public void testTabFile() throws Exception {
         }
       }
     }else{
-      Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache((float)(quantVO.getAnalyteMass()-LipidomicsConstants.getMs2PrecursorTolerance()), (float)(quantVO.getAnalyteMass()+LipidomicsConstants.getMs2PrecursorTolerance()),100);
+    	float tol = LipidomicsConstants.getMs2PrecursorTolerance((float)(quantVO.getAnalyteMass()));
+      Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache((float)(quantVO.getAnalyteMass()-tol), (float)(quantVO.getAnalyteMass()+tol),100);
       if (analyzer.areMSnSpectraInThisRegion(0f,Float.MAX_VALUE,2)){
         spectraThere = true;
       }
@@ -8511,7 +8513,8 @@ public void testTabFile() throws Exception {
 
   private boolean areThereAnyMSnSpectra(LipidomicsAnalyzer analyzer, float mz, LipidClassInfoVO info, LinkedHashMap<String,ReferenceInfoVO> species) throws CgException{
     boolean spectraThere = false;
-    Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache(mz-LipidomicsConstants.getMs2PrecursorTolerance(), mz+LipidomicsConstants.getMs2PrecursorTolerance(),100);
+    float tol = LipidomicsConstants.getMs2PrecursorTolerance(mz);
+    Hashtable<Integer,Boolean> msLevels =  analyzer.prepareMSnSpectraCache(mz-tol, mz+tol,100);
     if (info.checkRt() && msLevels!=null && msLevels.containsKey(2) && msLevels.get(2)){
       for (ReferenceInfoVO ref : species.values()){
         for (int i=0; i!=ref.getCorrectRts().length; i++) {
@@ -10371,7 +10374,6 @@ public void testTabFile() throws Exception {
     lipidClassInfo.put("SM", new LipidClassInfoVO(1,true,0.7d,adducts));
 
   }
-
   private void getValidOrbitrapCIDSpeciesNegative(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
       Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
     lipidClasses.put("PI", FoundBiologicalSpecies.getPISpeciesOrbitrap());
@@ -18712,6 +18714,44 @@ public void testTabFile() throws Exception {
     return (totC==cAtoms && totD==dbs);
   }
   
+  private void getValidOrbitrapCIDMouseLiverSpecies(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
+      Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
+    getValidOrbitrapCIDSpeciesNegative(lipidClasses, lipidClassInfo, adducts);    
+    lipidClasses.put("P-PC", FoundBiologicalSpecies.getPPCSpeciesOrbitrap());
+    lipidClassInfo.get("P-PE").getAdducts().put("H", true);
+    lipidClassInfo.get("P-PE").getAdducts().put("Na", true);
+    lipidClassInfo.get("LPE").getAdducts().put("H", true);
+    lipidClassInfo.get("LPE").getAdducts().put("Na", true);
+    lipidClassInfo.get("PS").getAdducts().put("H", true);
+    lipidClassInfo.put("PS", new LipidClassInfoVO(2,false,-1,adducts));
+    lipidClassInfo.get("PC").getAdducts().put("H", true);
+    lipidClassInfo.get("PC").getAdducts().put("Na", true);
+    lipidClassInfo.get("PE").getAdducts().put("H", true);
+    lipidClassInfo.get("PE").getAdducts().put("Na", true);
+    lipidClassInfo.get("Cer").getAdducts().put("Na", true);
+    
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("LPC", FoundBiologicalSpecies.getLPCSpeciesOrbitrap());
+    adducts.put("H", false);
+    adducts.put("Na", false);
+    lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,1.2d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("DG", FoundBiologicalSpecies.getDGSpeciesOrbitrap());
+    adducts.put("Na", true);
+    adducts.put("NH4", true);
+    lipidClassInfo.put("DG", new LipidClassInfoVO(3,true,0.7d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("TG", FoundBiologicalSpecies.getTGSpeciesOrbitrap());
+    adducts.put("NH4", true);
+    adducts.put("Na", true);
+    lipidClassInfo.put("TG", new LipidClassInfoVO(3,true,0.7d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("SM", FoundBiologicalSpecies.getSMSpeciesOrbitrap());
+    adducts.put("H", false);
+    adducts.put("Na", false);
+    lipidClassInfo.put("SM", new LipidClassInfoVO(1,true,0.7d,adducts));
+  }
+  
   
   private void getValidSphingoOrbitrapCIDSpeciesPositive(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
       Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
@@ -21132,12 +21172,22 @@ public void testTabFile() throws Exception {
 //   String output = baseDir+"LCMSdata_CtrlEx1_targetsearch.tab";
 	 //for mouse brain
 	 //String baseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
-	 String baseDir = "E:\\Lipidomics\\data\\Christer\\LProphet-TestFiles\\LC_MS\\brain\\result\\";
-//   String alexIdentificationFile = baseDir+"21_LCMSdata_brain_allALEXscores_targetsearch_v220303.tab";
-//   String output = baseDir+"LCMSdata_brain_targetsearch.tab";
 
-   String alexIdentificationFile = baseDir+"02_LP_ALEXscores_LCMSbrain_target_230720-1_harshest.tab";
-   String output = baseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_harshest.tab";
+   //for LCMS-liver
+   String baseDir = "C:\\data\\Christer\\20220119_decoyLCMS-liver\\";
+   String alexIdentificationFile = baseDir+"21_LCMSdata_liver_allALEXscores_targetsearch_v240306.tab";
+   String output = baseDir+"LP_LCMSliver_target_240306-1_allScore_Na_12.5_lessHarsh_combRemovalAll.tab";
+
+   
+   
+   //for LCMS-brain
+//   String baseDir = "C:\\data\\Christer\\20220222_decoyLCMS-brain\\";
+//
+//   String alexIdentificationFile = baseDir+"02_LP_ALEXscores_LCMSbrain_target_230720-1_lessHarsh_ethylamine_wLPE-LPC_ext_lessHarsh.tab";
+//   String output = baseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext.tab";
+   
+   
+
 
    //for NIST human plasma
 //   String baseDir = "C:\\Collaborator_Files\\Christer\\20220610_decoyLCMS-plasma\\";
@@ -23238,13 +23288,23 @@ public void testTabFile() throws Exception {
 //     String decoyBaseDir = "C:\\data\\Christer\\20220204_decoyLCMS-Exp1\\";
 //     String alexIdentificationFile = decoyBaseDir+"LCMSdata_CtrlEx1targetsearch.tab";
 //     String outFile = decoyBaseDir+"LCMSdata_CtrlEx1targetsearch_rtChecked.tab";
+     
+     //this is for LC-MS mouse liver
+     String decoyBaseDir = "C:\\data\\Christer\\20220119_decoyLCMS-liver\\";
+      
+     String alexIdentificationFile = decoyBaseDir+"LP_LCMSliver_target_240306-1_allScore_Na_12.5_lessHarsh_combRemovalAll.tab";
+     String outFile = decoyBaseDir+"LCMSdata_liver_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_combRemovalAll_generated.tab";
+     String filePrevAssign = decoyBaseDir+"LCMSdata_liver_targetsearch_rtChecked_verifiedBigger0.325.xlsx";
+     
      //this is for LC-MS mouse brain
-     String decoyBaseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
-     //String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_Na_12.5.tab";
-     //String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_Na_12.5_generated.tab";
-     																							 
-     String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_harshest_forBetterComparison.tab";
-     String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_harshest_generated_forBetterComparison.tab";
+//     String decoyBaseDir = "C:\\data\\Christer\\20220222_decoyLCMS-brain\\";
+//     //String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_Na_12.5.tab";
+//     //String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_Na_12.5_generated.tab";
+//     																							 
+//     String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext.tab";
+//     String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext_generated.tab";
+//     String filePrevAssign = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_combiCorrected.xlsx";
+                                    
      
      //this is for LC-MS human plasma
 //     String decoyBaseDir = "C:\\data\\Christer\\20220610_decoyLCMS-plasma\\";
@@ -23252,8 +23312,8 @@ public void testTabFile() throws Exception {
 //     String outFile = decoyBaseDir+"LCMSdata_serum_targetsearch_rtChecked_13_PE_O-5frag.tab";
      
      //String filePrevAssign = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_PE_O-5frag.xlsx";
-     String filePrevAssign = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_combiCorrected.xlsx";
-     
+          
+          
      String lookupClass;
      String lookupSpecies;
      String lookupMolSpecies;
@@ -23273,11 +23333,10 @@ public void testTabFile() throws Exception {
      Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
      //LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
      //this is for LC-MS liver
-     //getValidOrbitrapCIDMouseLiverSpecies(lipidClasses, lipidClassInfo, new LinkedHashMap<String,Boolean>());
+     getValidOrbitrapCIDMouseLiverSpecies(lipidClasses, lipidClassInfo, new LinkedHashMap<String,Boolean>());
      //this is for LC-MS Exp1
      //getValidOrbitrapCIDCtrlExp1SpeciesPositive(lipidClasses, lipidClassInfo, adducts);
      //this is for LC-MS mouse brain
-     getValidOrbitrapCIDMouseBrainSpecies(lipidClasses, lipidClassInfo);
      //this is for LC-MS human plasma
      //getValidOrbitrapCIDHumanPlasmaSpecies(lipidClasses, lipidClassInfo);
 
@@ -23420,10 +23479,10 @@ public void testTabFile() throws Exception {
 //                refRt = refRt-0.6d;
 //            }
             //this is for LC-MS liver
-//            if (result.isPositive() && (lookupClass.equalsIgnoreCase("P-PC") || lookupClass.equalsIgnoreCase("P-PE") || lookupClass.equalsIgnoreCase("LPE") ||
-//                lookupClass.equalsIgnoreCase("PS") || lookupClass.equalsIgnoreCase("PC") || lookupClass.equalsIgnoreCase("PE") || lookupClass.equalsIgnoreCase("Cer"))) {
-//              refRt = refRt-0.2d;
-//            }            
+            if (result.isPositive() && (lookupClass.equalsIgnoreCase("P-PC") || lookupClass.equalsIgnoreCase("P-PE") || lookupClass.equalsIgnoreCase("LPE") ||
+                lookupClass.equalsIgnoreCase("PS") || lookupClass.equalsIgnoreCase("PC") || lookupClass.equalsIgnoreCase("PE") || lookupClass.equalsIgnoreCase("Cer"))) {
+              refRt = refRt-0.2d;
+            }            
           //this is for LC-MS Exp1 brain
 //            if (result.isPositive()) {
 //              refRt = refRt-0.05d;

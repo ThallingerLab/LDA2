@@ -142,7 +142,8 @@ public class SingleQuantThread extends Thread
         Vector<Float> rts = new Vector<Float>();
         MSnAnalyzer msnAnalyzer = null;
         for (QuantVO oneSet : quantVOs){
-          msnAnalyzer = new MSnAnalyzer(oneSet.getAnalyteClass(),oneSet.getModName(),oneSet.getAnalyteMass(),(double)LipidomicsConstants.getMs2PrecursorTolerance(),
+        	float tol = LipidomicsConstants.getMs2PrecursorTolerance((float)oneSet.getAnalyteMass());
+          msnAnalyzer = new MSnAnalyzer(oneSet.getAnalyteClass(),oneSet.getModName(),oneSet.getAnalyteMass(),(double)tol,
               oneSet.getAnalyteName(),oneSet.getDbs(),oneSet.getOhNumber(),oneSet.getAnalyteFormula(), oneSet.getModFormula(),oneSet.getCharge(),analyzer,false,
               quantVOs.size()>1);
           rts.addAll(msnAnalyzer.getFoundMatchingSpectraTimes());
@@ -219,8 +220,9 @@ public class SingleQuantThread extends Thread
       if (LipidomicsConstants.isMS2()){
         Hashtable<QuantVO,Hashtable<Integer,LipidParameterSet>> foundForQuantVO = new Hashtable<QuantVO,Hashtable<Integer,LipidParameterSet>>();
         for (QuantVO oneSet : quantVOs){
-          float startMz = (float)oneSet.getAnalyteMass()-LipidomicsConstants.getMs2PrecursorTolerance();
-          float stopMz = (float)oneSet.getAnalyteMass()+LipidomicsConstants.getMs2PrecursorTolerance();
+        	float tol = LipidomicsConstants.getMs2PrecursorTolerance((float)oneSet.getAnalyteMass());
+          float startMz = (float)oneSet.getAnalyteMass()-tol;
+          float stopMz = (float)oneSet.getAnalyteMass()+tol;
           float lowestTime = Float.MAX_VALUE;
           float highestTime = 0f;
           if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){

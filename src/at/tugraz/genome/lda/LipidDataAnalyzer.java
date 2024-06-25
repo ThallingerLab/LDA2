@@ -5455,7 +5455,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       Hashtable<Integer,Vector<RangeColor>> rangeColors = StaticUtils.createRangeColorVOs(params,((LipidomicsTableModel)displayTable_.getModel()).getMSnIdentificationName(currentSelected_),
           result_.getFaHydroxyEncoding(), result_.getLcbHydroxyEncoding(), areTheseAlex123MsnFragments());
       int threeDMsLevel = 2;
-      Hashtable<Integer,Vector<String>> spectraRaw = reader_.getMsMsSpectra(params.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), params.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance(),-1f,-1f);
+      float tol = LipidomicsConstants.getMs2PrecursorTolerance(params.Mz[0]);
+      Hashtable<Integer,Vector<String>> spectraRaw = reader_.getMsMsSpectra(params.Mz[0]-tol, params.Mz[0]+tol,-1f,-1f);
 
       float peakRt = 0f;
       if (params.getRt()!=null && params.getRt().length()>0)
@@ -5510,7 +5511,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         int extendedStart = (borders[0]*9)/10;
         int extendedStop = (borders[1]*21)/20;
         Lipidomics2DSpectraChromPainter spectrumPainter = new Lipidomics2DSpectraChromPainter(analyzer_,scanNrSpectrumHash, scanNrPrecursorHash, scanNrLevelHash, allRetTimes,
-            peakRt, extendedStart,extendedStop,LipidomicsConstants.getMs2ChromMultiplicationFactorForInt(),LipidomicsConstants.getMs2PrecursorTolerance()*2,this,
+            peakRt, extendedStart,extendedStop,LipidomicsConstants.getMs2ChromMultiplicationFactorForInt(),tol*2,this,
             extendedStart,extendedStop, true,new Vector<CgProbe>(),new Vector<CgProbe>(),1,1, this.relAbund_.isSelected(),
             params,rangeColors, new Double(annotationThreshold_.getText()),shotgunIsDisplayed_);
 
@@ -6481,7 +6482,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       float m2dGain = spectrumPainter_.getM2dGain();   
       spectrumPanel_.remove(spectrumPainter_);   
       //int msLevel = 2;
-      Hashtable<Integer,Vector<String>> spectraRaw = reader_.getMsMsSpectra(params.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), params.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance(), -1f, -1f);
+      float tol = LipidomicsConstants.getMs2PrecursorTolerance(params.Mz[0]);
+      Hashtable<Integer,Vector<String>> spectraRaw = reader_.getMsMsSpectra(params.Mz[0]-tol, params.Mz[0]+tol, -1f, -1f);
       int[] borders = null;
       for (Integer level : spectraRaw.keySet()){
         //TODO: a dummy call to set the values for getBordersOfLastMs2Extraction()
@@ -6515,7 +6517,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       int extendedStart = (borders[0]*9)/10;
       int extendedStop = (borders[1]*21)/20;
       Lipidomics2DSpectraChromPainter spectrumPainter = new Lipidomics2DSpectraChromPainter(analyzer_,rtNrSpectrumHash, rtNrPrecursorHash, scanNrLevelHash, retTimes,
-          peakRt, extendedStart,extendedStop,LipidomicsConstants.getMs2ChromMultiplicationFactorForInt(),LipidomicsConstants.getMs2PrecursorTolerance()*2,this,
+          peakRt, extendedStart,extendedStop,LipidomicsConstants.getMs2ChromMultiplicationFactorForInt(),tol*2,this,
           extendedStart,extendedStop, true,new Vector<CgProbe>(),new Vector<CgProbe>(),1,1, this.relAbund_.isSelected(),
           params,new Hashtable<Integer,Vector<RangeColor>>(),new Double(annotationThreshold_.getText()),false);      
 
