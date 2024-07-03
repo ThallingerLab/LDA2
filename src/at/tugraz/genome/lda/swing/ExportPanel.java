@@ -30,7 +30,7 @@ import java.awt.event.ActionListener;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import at.tugraz.genome.lda.Settings;
+//import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.TooltipTexts;
 
 /**
@@ -141,16 +141,18 @@ public class ExportPanel extends JPanel
       chrom.setToolTipText(TooltipTexts.EXPORT_CHROMS);
       this.add(chrom);      
     }
-    if (Settings.SHOW_OMEGA_TOOLS) //TODO: for SILDA analysis, remove when done
-    {
-      label = new JLabel(" | ");
-      label.setForeground(font);
-      label.setFont(textFont);
-      this.add(label); 
-      ExportButton summary = new ExportButton("Summary",EXPORT_SUMMARY,font,background,parent_);
-      this.add(summary);      
-    }
     
+    //this has to be removed in the default LDA version; START!
+//    if (Settings.SHOW_OMEGA_TOOLS) //TODO: for SILDA analysis, remove when done
+//    {
+//      label = new JLabel(" | ");
+//      label.setForeground(font);
+//      label.setFont(textFont);
+//      this.add(label); 
+//      ExportButton summary = new ExportButton("Summary",EXPORT_SUMMARY,font,background,parent_);
+//      this.add(summary);      
+//    }
+    //this has to be removed in the default LDA version; END!
     
 
     //// this has to be removed in the default LDA version; START!
