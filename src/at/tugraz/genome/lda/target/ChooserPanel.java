@@ -88,9 +88,9 @@ public class ChooserPanel extends JOptionPanel
     requirementsHeader.setPreferredSize(new Dimension(sizeTextOneLine.width,sizeTextOneLine.height*2));
     requirementsHeader.setMinimumSize(new Dimension(requirementsHeader.getPreferredSize().width/2, requirementsHeader.getPreferredSize().height));
     JLabel requirements= new JLabel("<html> <ul style=\"list-style-type:circle;\"> "
-    		+ "<li> An RT-DB in LDA-format </li>"
-    		+ "<li> Experimental data (analyzed with LDA) of a standard mix measured with the exact same chromatographic conditions as the data the omega target list is based on </li>"
-    		+ "<li> Experimental data (analyzed with LDA) of the same standard mix measured with your chromatography </li>"
+    		+ "<li> An RT-DB in LDA-format. </li>"
+    		+ "<li> Experimental data (analyzed with LDA) of an (internal) standard mix and/or biological samples measured with the exact same chromatographic conditions the RT-DB was created with. </li>"
+    		+ "<li> Experimental data (analyzed with LDA) of the same standard mix and/or biological samples measured with your chromatography. </li>"
     		+ "</html>");
     requirements.setFont(new Font("Arial",Font.PLAIN, 12));
     requirements.setPreferredSize(new Dimension(sizeTextOneLine.width,sizeTextOneLine.height*5));

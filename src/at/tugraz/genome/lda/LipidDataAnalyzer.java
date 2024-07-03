@@ -1345,11 +1345,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     selectionPanel.setLayout(new GridBagLayout());
     batchQuantMenu_.add(selectionPanel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel batchMzXMLLabel = new JLabel("Raw files: ");
+    JLabel batchMzXMLLabel = new JLabel("Folder with raw file(s): ");
     batchMzXMLLabel.setToolTipText(TooltipTexts.QUANTITATION_BATCH_RAW_FILE);
     selectionPanel.add(batchMzXMLLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    this.selectedMzxmlDirectory_ = new JTextField(62);
+    this.selectedMzxmlDirectory_ = new JTextField(54);
     selectedMzxmlDirectory_.setMinimumSize(selectedMzxmlDirectory_.getPreferredSize());
     selectedMzxmlDirectory_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_RAW_FILE);
     selectionPanel.add(selectedMzxmlDirectory_,new GridBagConstraints(1, 0, 6, 1, 0.0, 0.0
@@ -1360,7 +1360,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     jButtonMxXMLDirOpen_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_RAW_FILE);
     selectionPanel.add(jButtonMxXMLDirOpen_,new GridBagConstraints(7, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel quantChromLabel = new JLabel("Quant. files: ");
+    JLabel quantChromLabel = new JLabel("Folder with mass list or RT-DB file(s): ");
     quantChromLabel.setToolTipText(TooltipTexts.QUANTITATION_BATCH_MASS_LIST);
     selectionPanel.add(quantChromLabel,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
@@ -1370,7 +1370,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     jBatchQuantOpen_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_MASS_LIST);
     selectionPanel.add(jBatchQuantOpen_,new GridBagConstraints(7, 1, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    this.selectedQuantDir_ = new JTextField(62);
+    this.selectedQuantDir_ = new JTextField(54);
     selectedQuantDir_.setMinimumSize(selectedQuantDir_.getPreferredSize());
     selectedQuantDir_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_MASS_LIST);
     selectionPanel.add(selectedQuantDir_,new GridBagConstraints(1, 1, 6, 1, 0.0, 0.0
@@ -1942,7 +1942,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     jButtonMxXMLOpen.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_RAW_FILE);
     selectionPanel.add(jButtonMxXMLOpen,new GridBagConstraints(7, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    chromLabel = new JLabel("Quantitation: ");
+    chromLabel = new JLabel("Mass list or RT-DB file: ");
     chromLabel.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_MASS_LIST);
     this.selectedQuantFile = new JTextField(62);
     selectedQuantFile.setMinimumSize(selectedQuantFile.getPreferredSize());

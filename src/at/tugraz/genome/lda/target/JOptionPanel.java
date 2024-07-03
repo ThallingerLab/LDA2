@@ -24,6 +24,7 @@
 package at.tugraz.genome.lda.target;
 
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
@@ -36,6 +37,7 @@ import javax.swing.border.TitledBorder;
 public class JOptionPanel extends JPanel
 {
   private static final long serialVersionUID = 1L;
+  public final static String ICON_LCCL_PATH = "/images/Logo.png"; 
   
   protected JDefaultComponents defaultComponents_;
   private String panelTitle_;
@@ -113,6 +115,21 @@ public class JOptionPanel extends JPanel
   {
     panelTitle_ = title;
   }
+  
+  protected ImageIcon getDefaultImageIcon(String path,
+      String description) 
+  {
+		java.net.URL imgURL = JOptionPanel.class.getResource(path);
+		if (imgURL != null) 
+		{
+			return new ImageIcon(imgURL, description);
+		} 
+		else 
+		{
+			System.err.println("Couldn't find file: " + path);
+			return null;
+		}
+  }	
   
   protected void switchPanel(int panelIndex) 
   {

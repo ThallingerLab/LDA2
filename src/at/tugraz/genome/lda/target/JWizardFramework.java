@@ -27,10 +27,12 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Image;
 import java.awt.Insets;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
+import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
@@ -118,8 +120,17 @@ public class JWizardFramework extends JPanel
     panelTitleLabel_ = new JLabel();
     panelTitleLabel_.setFont(new Font("Arial",Font.BOLD, 24));
     panelTitleLabel_.setHorizontalAlignment(SwingConstants.LEADING);
+    panelTitleLabel_.setIcon(getLCCLIcon());
     panel.add(panelTitleLabel_);
     return panel;
+  }
+  
+  private ImageIcon getLCCLIcon()
+  {
+  	ImageIcon icon = new ImageIcon(getClass().getResource(JOptionPanel.ICON_LCCL_PATH));
+  	Image image = icon.getImage(); // transform it 
+  	Image scaledImg = image.getScaledInstance(60, 50, java.awt.Image.SCALE_SMOOTH); // scale it the smooth way  
+  	return new ImageIcon(scaledImg);
   }
   
   protected JPanel createButtonPanel() 
