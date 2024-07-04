@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp  
+ * Copyright (c) 2024 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.swing;
 
@@ -70,7 +70,7 @@ public class EditOmegaAssignmentJTable extends JFrame implements ActionListener
   /** the parent action listener */
   private ActionListener parent_;
   /** the title String */
-  private final static String TITLE = "Edit \u03C9 - double bond assignment";
+  private final static String TITLE = "Edit \u03C9-C=C assignment";
   /** button and respective command Strings */
   private final static String BUTTON_CHANGE_SELECTED_SPECIES = "Change Selected";
   private final static String COMMAND_CHANGE_SELECTED_SPECIES = "changeSelectedSpecies";
@@ -85,7 +85,7 @@ public class EditOmegaAssignmentJTable extends JFrame implements ActionListener
   private final static String BUTTON_CANCEL = "Cancel";
   private final static String COMMAND_CANCEL = "cancel";
   /** Strings to indicate the accuracy of retention time matches */
-  private final static String[] accuracy_ = { "low", "medium", "high" };
+  private final String[] accuracy_ = { "low", "medium", "high" };
   /** Textfields for user input */
   private JTextField positionChainFirst_, positionChainSecond_, positionChainThird_, expectedRT_;
   /** local lipidParameterSet for use within this class and lipidParameterSet for saving the changes */
@@ -233,12 +233,12 @@ public class EditOmegaAssignmentJTable extends JFrame implements ActionListener
   
   /**
    * Converts a float to a String with two decimals
-   * @param floatValue the float Object
+   * @param d the float Object
    * @return String with two decimals
    */
-  private String getStringWithTwoDecimals(float floatValue) 
+  private String getStringWithTwoDecimals(double d) 
   {
-    return String.format("%.2f", floatValue);
+    return String.format("%.2f", d);
   }
     
   /**
@@ -290,7 +290,7 @@ public class EditOmegaAssignmentJTable extends JFrame implements ActionListener
         if (selectedRow > -1) 
         {
           DoubleBondPositionVO selected = localDoubleBondPositionVOs_.get(selectedRow);
-          float currentRT = selected.getExpectedRetentionTime();
+          double currentRT = selected.getExpectedRetentionTime();
           try 
           {
             expectedRT = Float.parseFloat(expectedRT_.getText());
@@ -404,6 +404,7 @@ public class EditOmegaAssignmentJTable extends JFrame implements ActionListener
         {
           for (int i=0; i < table_.getRowCount(); i++) 
           {
+          	localDoubleBondPositionVOs_.get(i).setIsAssigned(false);
             model_.setValueAt(false, i, 4);
           }
           localDoubleBondPositionVOs_.get(selectedRow).setIsAssigned(true);
@@ -492,28 +493,28 @@ public class EditOmegaAssignmentJTable extends JFrame implements ActionListener
       }
       
       DoubleBondPositionVO newDoubleBondPositionVO = new DoubleBondPositionVO(
-          chainCombination, expectedRT, 0, molecularSpecies_, false);
+          chainCombination, expectedRT, DoubleBondPositionVO.ACCURACY_LOW, molecularSpecies_, false);
       return newDoubleBondPositionVO;
     }
     
     /**
-     * Determines the accuracy of a double bond position based on it's expected retention time
+     * Determines the accuracy of a double bond position based on its expected retention time
      * @param doubleBondPositionVO the double bond position value object
      * @throws NumberOutOfRangeException when the given expected retention time is outside the peak range
      */
     private void determineAccuracy(DoubleBondPositionVO doubleBondPositionVO) throws NumberOutOfRangeException 
     {
-      float expectedRT = doubleBondPositionVO.getExpectedRetentionTime();
+      double expectedRT = doubleBondPositionVO.getExpectedRetentionTime();
       Range[] peakRanges = StaticUtils.determinePeakRanges(localLipidParameterSet_);
       Range peakLimits = peakRanges[0];
       Range mediumAccuracy = peakRanges[1];
       Range highAccuracy = peakRanges[2];
       
-      doubleBondPositionVO.setAccuracy(0);
+      doubleBondPositionVO.setAccuracy(DoubleBondPositionVO.ACCURACY_LOW);
       if (peakLimits.insideRange(expectedRT)) 
       {
-        if (mediumAccuracy.insideRange(expectedRT)) doubleBondPositionVO.setAccuracy(1);
-        if (highAccuracy.insideRange(expectedRT)) doubleBondPositionVO.setAccuracy(2);
+        if (mediumAccuracy.insideRange(expectedRT)) doubleBondPositionVO.setAccuracy(DoubleBondPositionVO.ACCURACY_MEDIUM);
+        if (highAccuracy.insideRange(expectedRT)) doubleBondPositionVO.setAccuracy(DoubleBondPositionVO.ACCURACY_HIGH);
       } 
       else 
       {
@@ -531,12 +532,12 @@ public class EditOmegaAssignmentJTable extends JFrame implements ActionListener
     
     /**
      * Calculates the time difference of the measured and expected retention times in seconds
-     * @param expectedRT the expected retention time
+     * @param d the expected retention time
      * @return the retention time difference as float object
      */
-    private float getDeltaRT(float expectedRT) 
+    private double getDeltaRT(double d) 
     {
-      return Math.abs(getMeasuredRT() - expectedRT) *60;
+      return Math.abs(getMeasuredRT() - d) *60;
     }
     
     /**

@@ -20,6 +20,7 @@
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
  */
+
 package at.tugraz.genome.lda.parser;
 
 import java.io.FileInputStream;
@@ -126,7 +127,7 @@ public class LDAResultReader
             .forEach((s) -> {
               try {
                 readSheet(s, showModifications);
-              } catch (SettingsException | RulesException | LipidCombinameEncodingException ex) {
+              } catch (SettingsException | RulesException | LipidCombinameEncodingException | IOException ex) {
                 new WarningMessage(new JFrame(), "ERROR", ex.getMessage());
               }
             });
@@ -150,27 +151,16 @@ public class LDAResultReader
    * @throws LipidCombinameEncodingException
    */
   private static void readSheet(Sheet sheet, Hashtable<String,Boolean> showModifications) 
-      throws SettingsException, RulesException, LipidCombinameEncodingException {
+      throws SettingsException, RulesException, LipidCombinameEncodingException, IOException {
     String name = sheet.getName();
-
     if (name.equals(QuantificationResultExporter.SHEET_CONSTANTS)){
-      try {
-        Object[] settings = readSettingsFromExcel(sheet);
-        lipidomicsConstants_ = (LipidomicsConstants)settings[0];
-        faHydroxyEncoding_ = (HydroxyEncoding)settings[1];
-        lcbHydroxyEncoding_ = (HydroxyEncoding)settings[2];
-      } catch (SettingsException ex) {
-        throw new SettingsException("Failed to read the Settings!");
-      }
+      Object[] settings = readSettingsFromExcel(sheet);
+      lipidomicsConstants_ = (LipidomicsConstants)settings[0];
+      faHydroxyEncoding_ = (HydroxyEncoding)settings[1];
+      lcbHydroxyEncoding_ = (HydroxyEncoding)settings[2];
       
     } else if (name.endsWith(QuantificationResultExporter.ADDUCT_MSN_SHEET)) {
-      try {
-        readMSnSheet(sheet);
-      } catch (RulesException ex) {
-        throw new RulesException(ex);
-      } catch (LipidCombinameEncodingException ex) {
-        throw new LipidCombinameEncodingException(ex);
-      }
+      readMSnSheet(sheet);
       
     } else if (name.endsWith(QuantificationResultExporter.ADDUCT_OMEGA_SHEET)) {
       readOmegaSheet(sheet);
@@ -1032,16 +1022,15 @@ public class LDAResultReader
    * @param sheet MS1 Excel sheet
    * @param showModifications this hash is filled by the method and gives information whether there are more than one modifications present; key: lipid class
    */
-  private static void readMS1Sheet(Sheet sheet, Hashtable<String,Boolean> showModifications) {
+  private static void readMS1Sheet(Sheet sheet, Hashtable<String,Boolean> showModifications) throws IOException
+  {
     int msLevel=1;
     Vector<LipidParameterSet> resultParams = new Vector<LipidParameterSet>();
     LipidParameterSet params = null;
     boolean showModification = false;
     Hashtable<String,String> analyteNames = new Hashtable<String,String>();
     List<Row> rows = null;
-    try {
-      rows = sheet.read();
-    } catch (IOException ex) {}
+    rows = sheet.read();
     Row headerRow = rows.get(QuantificationResultExporter.HEADER_ROW);
     List<String> headerTitles = readSheetHeaderTitles(headerRow);
     for (String title : headerTitles) {
@@ -1053,7 +1042,8 @@ public class LDAResultReader
     List<Row> contentRows = rows.subList(QuantificationResultExporter.HEADER_ROW+1, rows.size());
     
     for (Row row : contentRows) {
-      List<Cell> cells = row.stream().filter((c) -> !(c==null || c.getType().equals(CellType.ERROR))).collect(Collectors.toList());
+      List<Cell> cells = row.stream()
+      		.filter((c) -> !(c==null || c.getType().equals(CellType.ERROR) || c.getType().equals(CellType.EMPTY))).collect(Collectors.toList());
       String name = null;
       int dbs = -1;
       int oh = LipidomicsConstants.EXCEL_NO_OH_INFO;
@@ -1190,7 +1180,8 @@ public class LDAResultReader
         if (headerTitles.indexOf(QuantificationResultExporter.HEADER_MODIFICATION) == -1 ||
             headerTitles.indexOf(QuantificationResultExporter.HEADER_FORMULA) == -1 || 
             headerTitles.indexOf(QuantificationResultExporter.HEADER_MOD_FORMULA) == -1){
-          Object[] components = ComparativeNameExtractor.splitOldNameStringToComponents(name);
+          @SuppressWarnings("deprecation")
+					Object[] components = ComparativeNameExtractor.splitOldNameStringToComponents(name);
           name = (String)components[0];
           dbs = (Integer)components[1];
           formula = (String)components[2];

@@ -1,29 +1,58 @@
+/* 
+ * This file is part of Lipid Data Analyzer
+ * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
+ * Copyright (c) 2023 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
+ *  
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *  
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details. 
+ *  
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Please contact lda@genome.tugraz.at if you need additional information or 
+ * have any questions.
+ */
+
 package at.tugraz.genome.lda.target.experiment;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Hashtable;
-import java.util.Set;
 import java.util.Vector;
 
-import org.apache.commons.math3.fitting.PolynomialCurveFitter;
-import org.apache.commons.math3.fitting.WeightedObservedPoints;
+import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
+import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
-import at.tugraz.genome.lda.target.AbstractRegression;
 import at.tugraz.genome.lda.target.IsotopeLabelVO;
 import at.tugraz.genome.lda.utils.StaticUtils;
 
-public class IsotopeEffectRegression extends AbstractRegression
+/**
+ * 
+ * @author Leonida M. Lamp
+ *
+ */
+public class IsotopeEffectRegression 
 {
 	private Vector<MatchedPartnerVO> matchedIsotopologues_;
+	private PolynomialSplineFunction function_;
 	private final int MAX_DEUTERIUM_ALLOWED;
-//	private static int MAX_DEUTERIUM_ALLOWED = 19; //TODO: this should be the highest label represented by an authentic standard, user input dependent!
 	
 	protected IsotopeEffectRegression(Vector<MatchedPartnerVO> matchedIsotopologues, Vector<IsotopeLabelVO> labels)
 	{
 		this.matchedIsotopologues_ = matchedIsotopologues;
 		MAX_DEUTERIUM_ALLOWED = findMaximumDeuteriumAllowed(labels);
-		super.setCoefficients(initRegression());
+		initRegression();
+//		super.setCoefficients(initRegression());
 	}
 	
 	private int findMaximumDeuteriumAllowed(Vector<IsotopeLabelVO> labels)
@@ -39,112 +68,67 @@ public class IsotopeEffectRegression extends AbstractRegression
 		return maxD;
 	}
 	
-	protected double[] initRegression()
+	protected void initRegression()
 	{
-		double[] coefficients = new double[3];
-		PolynomialCurveFitter fitter = PolynomialCurveFitter.create(2);
-		WeightedObservedPoints observations = new WeightedObservedPoints();
-		observations.add(10000, 0, 1.0); //with 0 isotopes the total isotope effect must be 1.0, enforcing this with a big weight
-		
+		SplineInterpolator interpolator = new SplineInterpolator();
+		Hashtable<Integer,ArrayList<Double>> dataPoints = new Hashtable<Integer,ArrayList<Double>>();
 		for (MatchedPartnerVO matched : matchedIsotopologues_)
 		{
 			if (!matched.isUseForCalibration()) continue;
 			
 			LipidomicsMSnSet standard = matched.getStandard();
 			double standardRT = standard.getPreciseRT();
-			//just printing out some stuff, remove later
-			System.out.println("standard: "+standard.getOmegaInformation().get(0).getDoubleBondPositionsHumanReadable()+" RT: "+standard.getPreciseRT());
 			LipidomicsMSnSet isotopologue = matched.getIsotopologue();
 			double isotopologueRT = isotopologue.getPreciseRT();
-			//just printing out some stuff, remove later
-	  	Set<String> names = isotopologue.getHumanReadableNameSet();
-	  	for (String name : names)
-	  	{
-	  		System.out.println("partner: "+name+" RT: "+isotopologueRT);
-	  	}
 	  	
 	  	try
 			{
 				Hashtable<String,Integer> chemicalFormula = StaticUtils.categorizeFormula(isotopologue.getChemicalFormula());
 				int numberDeuterium = chemicalFormula.get("D");
 				double totalIsotopeEffect = standardRT / isotopologueRT;
-				observations.add(numberDeuterium, totalIsotopeEffect);
+				if (!dataPoints.containsKey(numberDeuterium))
+				{
+					dataPoints.put(numberDeuterium, new ArrayList<Double>());
+				}
+				dataPoints.get(numberDeuterium).add(totalIsotopeEffect);
 			}
 			catch (ChemicalFormulaException ex)
 			{
 				ex.printStackTrace();
 			}
-	  	
-	  	coefficients = fitter.fit(observations.toList());
-			for (int i=0;i<coefficients.length-1;i++) {
-				System.out.println(coefficients[i]);
-			}
 		}
-		return coefficients;
-	}
 		
-//		for (String lipidClass : matchedIsotopologues_.keySet())
-//		{
-//			MatchedPartnersVO matched = matchedIsotopologues_.get(lipidClass);
-//			Vector<LipidParameterSet> standards = matched.getStandards();
-//			if (standards.size()>1) //to fit a 
-//			{
-//				for (LipidParameterSet standard : standards) 
-//				{
-//					double standardRT = standard.getPreciseRT();
-//					Vector<LipidParameterSet> partners = matched.getIsotopologuePartners(standard);
-//					
-//					//just printing out some stuff, remove later
-//					System.out.println("standard: "+standard.getOmegaInformation().get(0).getDoubleBondPositionsHumanReadable()+" RT: "+standard.getPreciseRT());
-//					
-//					//TODO: partners size requirement is only there to avoid an issue with a wrong sn assignment of one standard, fix in the future
-//					if (!partners.isEmpty() && partners.size()>1) 
-//					{
-//						for (LipidParameterSet partner : partners)
-//						{
-//							try
-//							{
-//								double partnerRT = partner.getPreciseRT();
-//								Hashtable<String,Integer> chemicalFormula = StaticUtils.categorizeFormula(partner.getChemicalFormula());
-//								if (chemicalFormula.containsKey("D"))
-//								{
-//									int numberDeuterium = chemicalFormula.get("D");
-//									double totalIsotopeEffect = standardRT / partnerRT;
-////									System.out.println(String.format("TIE: %s, standarRT: %s, deuteratedRT: %s",totalIsotopeEffect, standardRT, partnerRT));
-//									observations.add(numberDeuterium, totalIsotopeEffect);								
-//								}
-//								else 
-//								{
-//									throw new ChemicalFormulaException(
-//										String.format("The compound with the chemical formula '%s' should not have entered this method, as it does not contain any element 'D'!", 
-//												partner.getChemicalFormula()));
-//								}
-//							}
-//							catch (ChemicalFormulaException ex)
-//							{
-//								ex.printStackTrace();
-//							}
-//							
-//							//just printing out some stuff, remove later
-//							LipidomicsMSnSet partnermsn = (LipidomicsMSnSet)partner;
-//					  	Set<String> names = partnermsn.getHumanReadableNameSet();
-//					  	for (String name : names)
-//					  	{
-//					  		System.out.println("partner: "+name+" RT: "+partner.getPreciseRT());
-//					  	}
-//						}
-//					}
-//				}
-//				
-//				coefficients = fitter.fit(observations.toList());
-//				for (int i=0;i<coefficients.length-1;i++) {
-//					System.out.println(coefficients[i]);
-//				}
-//				
-//			}
-//		}
-//		return coefficients;
-//	}
+		ArrayList<Integer> numD = new ArrayList<Integer>();
+  	numD.addAll(dataPoints.keySet());
+  	Collections.sort(numD);
+  	
+  	double[] xValues = new double[numD.size()+1];
+		double[] yValues = new double[numD.size()+1];
+  	
+		xValues[0] = 0;
+		yValues[0] = 1;
+		
+  	for (int i=1; i<numD.size()+1; i++)
+  	{
+  		xValues[i] = numD.get(i-1);
+  		Double yValue = 0.0;
+  		for (Double value : dataPoints.get(numD.get(i-1)))
+  		{
+  			yValue += value;
+  		}
+  		yValue = yValue / dataPoints.get(numD.get(i-1)).size();
+  		yValues[i] = yValue;
+  	}
+		
+		if (dataPoints.size()>1) //less than two data points cannot be interpolated
+		{
+			this.function_ = interpolator.interpolate(xValues, yValues);
+		}
+		else
+		{
+			this.function_ = null;
+		}
+	}
 	
 	/**
 	 * For plotting purposes, therefore a double for the number of deuterium is used.
@@ -153,18 +137,21 @@ public class IsotopeEffectRegression extends AbstractRegression
 	 */
 	public double getIsotopeEffect(double numberDeuterium)
 	{
-		return super.getAdjustFactor(numberDeuterium);
+		return function_.value(numberDeuterium);
+//		return super.getAdjustFactor(numberDeuterium);
 	}
 	
 	public double getIsotopeEffect(int numberDeuterium)
 	{
-		return super.getAdjustFactor(numberDeuterium);
+		return function_.value(numberDeuterium);
+//		return super.getAdjustFactor(numberDeuterium);
 	}
 	
 	public double getRTofUnlabeledSpecies(int numberDeuterium, double retentionTime)
 	{
-		double isotopeEffect = super.getAdjustFactor(numberDeuterium);
-		return isotopeEffect*retentionTime;
+		return getIsotopeEffect(numberDeuterium) * retentionTime;
+//		double isotopeEffect = super.getAdjustFactor(numberDeuterium);
+//		return isotopeEffect*retentionTime;
 	}
 	
 	public int getMaxNumDeuteriumAllowed() {

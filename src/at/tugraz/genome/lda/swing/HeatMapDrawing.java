@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.swing;
 
@@ -46,6 +46,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
@@ -75,6 +76,8 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.batik.dom.GenericDOMImplementation;
 import org.apache.batik.svggen.SVGGraphics2D;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 
@@ -95,6 +98,7 @@ import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RetentionTimeGroupingException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.export.ExcelAndTextExporter;
+import at.tugraz.genome.lda.export.OmegaCollector;
 import at.tugraz.genome.lda.msn.RulesContainer;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.utils.StaticUtils;
@@ -464,7 +468,8 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     if (actionCommand.equalsIgnoreCase(CHANGE_IS_STATUS)||
         actionCommand.equalsIgnoreCase(CHANGE_ES_STATUS)||
         actionCommand.equalsIgnoreCase(CHANGE_DOUBLE_STATUS)||
-        actionCommand.equalsIgnoreCase("AcceptDisplaySettings")){
+        actionCommand.equalsIgnoreCase(ResultDisplaySettings.APPLY_DISPLAY_SETTINGS)||
+        actionCommand.equalsIgnoreCase(ResultDisplaySettings.APPLY_DISPLAY_SETTINGS_TO_ALL)){
       settingsVO_ = displaySettings_.getSettingsVO();
       selectionSettings_.setVisible(false);
       boolean update = true;    
@@ -499,8 +504,14 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         chromExport_.checkMolecules(getISs(),showInternalStandards_.isSelected());
       }else if (actionCommand.equalsIgnoreCase(CHANGE_ES_STATUS) && !isGrouped_){
         chromExport_.checkMolecules(getESs(),showExternalStandards_.isSelected());
-      } else if (actionCommand.equalsIgnoreCase("AcceptDisplaySettings") && !isGrouped_ ){
+      } else if (!isGrouped_ &&
+      		(actionCommand.equalsIgnoreCase(ResultDisplaySettings.APPLY_DISPLAY_SETTINGS)||
+      		actionCommand.equalsIgnoreCase(ResultDisplaySettings.APPLY_DISPLAY_SETTINGS_TO_ALL)) ){
         chromExport_.checkMolecules(getUnselectedMoleculeNames(),false);
+      }
+      if (actionCommand.equalsIgnoreCase(ResultDisplaySettings.APPLY_DISPLAY_SETTINGS_TO_ALL))
+      {
+      	heatMapListener_.applySettingsToAllClasses(displaySettings_);
       }
       if (actionCommand.equalsIgnoreCase(CHANGE_IS_STATUS) && parentAction_)
         heatMapListener_.changeISStatus(groupName_, isGrouped_, showInternalStandards_.isSelected());
@@ -559,6 +570,19 @@ public class HeatMapDrawing extends JPanel implements ActionListener
           }catch (IOException e){ new WarningMessage(new JFrame(), "Error", e.getMessage());}
         }
       }      
+    } else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_SUMMARY)) {
+    	exportFileChooser_.setFileFilter(new FileNameExtensionFilter("Microsoft Office Excel Woorkbook (*.xlsx)","xlsx"));
+      int returnVal = exportFileChooser_.showSaveDialog(new JFrame());
+      if (returnVal == JFileChooser.APPROVE_OPTION) {
+      	File fileToStore = exportFileChooser_.getSelectedFile();
+        @SuppressWarnings("rawtypes")
+        Vector results = checkFileStorage(fileToStore,"xlsx",this);
+        fileToStore = (File)results.get(0);
+        if ((Boolean)results.get(1))
+        {
+        	heatMapListener_.exportSummary(fileToStore,isGrouped_);
+        }	
+      }
     } else if (actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_EXCEL)||
         actionCommand.equalsIgnoreCase(ExportPanel.EXPORT_TEXT)){
       ExportOptionsVO expOptions = getExportOptions();
@@ -772,6 +796,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
               for (String mod : modsToUse) analsToExport.add(name+"_"+mod);
             }
           }
+          
         }
         if (expsToExport.size()>0 && analsToExport.size()>0 && chromsToUse.size()>0 && modsToUse.size()>0){
           exportFileChooser_.setSelectedFile(null);
@@ -1628,6 +1653,56 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       results.put(set.getModificationName(), ofOneMod);
     }
     return results;
+  }
+  
+  //TODO: for SILDA analysis, improve reusability or hide
+  public void exportSummary(OmegaCollector omegaCollector, Sheet sheet, XSSFWorkbook workbook, OutputStream out)
+  {
+  	ExportOptionsVO expOptions = getExportOptions();
+    LinkedHashMap<String,String> expFullPaths = heatMapListener_.getSampleResultFullPaths();
+    Hashtable<String,String> expIdToString = new Hashtable<String,String>();
+    for (String expId : experimentNames_)
+      expIdToString.put(expId, heatMapListener_.getDisplayName(expId));
+    try {
+      int maxIsotope = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
+      Hashtable<String,Hashtable<String,ResultCompVO>> compVOs = resultsOfOneGroup_;
+      if (isGrouped_)
+        compVOs = ungroupedPartner_.resultsOfOneGroup_;
+      String preferredUnit = heatmap_.extractPreferredUnitForExp();
+      Hashtable<String,Hashtable<String,Vector<Double>>> resultValues = HeatMapDrawing.extractValuesOfInterest(compVOs, maxIsotope, settingsVO_, preferredUnit, expOptions,modifications_);
+      preferredUnit = StaticUtils.getCorrespondingUnit(settingsVO_,preferredUnit,true);
+      boolean exportDoubleBondPositionsForClass = expOptions.isExportDoubleBondPositions();
+      short speciesType = expOptions.getSpeciesType();
+      if (exportDoubleBondPositionsForClass) {
+        int numberOfChains = 2;
+        try {
+          numberOfChains = Integer.parseInt(RulesContainer.getAmountOfChains(StaticUtils.getRuleName(groupName_, modifications_.get(0))));
+        } catch (RulesException | NoRuleException | IOException | SpectrummillParserException ex) {
+          ex.printStackTrace();
+        }
+        if (numberOfChains > 1 && speciesType == LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES) {
+          exportDoubleBondPositionsForClass = false;
+        //for lipid species with only one FA chain we export the double bond position information on species level
+        } else if (numberOfChains == 1 && speciesType != LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES) {
+          speciesType = LipidomicsConstants.EXPORT_ANALYTE_TYPE_SPECIES;
+        }
+      }
+      ExcelAndTextExporter.writeExcelSheetOmegaSummary(omegaCollector, sheet, workbook, out, true, speciesType, exportDoubleBondPositionsForClass, maxIsotope, getSelectedMoleculeNames(), 
+      		rtTolerance_!=null, isGrouped_, experimentNames_,expIdToString, expFullPaths, heatMapListener_.getSamplesOfGroups(),
+          resultValues, preferredUnit, StaticUtils.getAreaTypeString(settingsVO_), expOptions, heatMapListener_.getComparativeResultsLookup(), modifications_);
+    } 
+    catch (NumberFormatException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
+    catch (FileNotFoundException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
+    catch (IOException e) {new WarningMessage(new JFrame(), "Error", e.getMessage());}
+    catch (CalculationNotPossibleException | ExcelInputFileException | ExportException | SpectrummillParserException | LipidCombinameEncodingException | RetentionTimeGroupingException e) {
+      new WarningMessage(new JFrame(), "Error", e.getMessage());
+    }
+  }
+  
+  public void adjustDisplaySettings(ResultDisplaySettings settings)
+  {
+  	displaySettings_.copySettings(settings);
+  	actionPerformed(ResultDisplaySettings.APPLY_DISPLAY_SETTINGS);
   }
   
   

@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.swing;
 
@@ -30,6 +30,7 @@ import java.awt.event.ActionListener;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+//import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.TooltipTexts;
 
 /**
@@ -57,7 +58,9 @@ public class ExportPanel extends JPanel
   public static final String EXPORT_RDB = "exportRdb";
 
   public static final String EXPORT_MAF = "exportMAF";
-
+  
+  public static final String EXPORT_SUMMARY = "exportSummary";
+  
   
   private ActionListener parent_;
   
@@ -139,6 +142,17 @@ public class ExportPanel extends JPanel
       this.add(chrom);      
     }
     
+    //this has to be removed in the default LDA version; START!
+//    if (Settings.SHOW_OMEGA_TOOLS) //TODO: for SILDA analysis, remove when done
+//    {
+//      label = new JLabel(" | ");
+//      label.setForeground(font);
+//      label.setFont(textFont);
+//      this.add(label); 
+//      ExportButton summary = new ExportButton("Summary",EXPORT_SUMMARY,font,background,parent_);
+//      this.add(summary);      
+//    }
+    //this has to be removed in the default LDA version; END!
     
 
     //// this has to be removed in the default LDA version; START!

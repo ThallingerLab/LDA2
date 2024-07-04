@@ -61,7 +61,7 @@ import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.maspectras.quantification.CgAreaStatus;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.maspectras.quantification.Probe3D;
-import at.tugraz.genome.lda.utils.Pair;
+import javafx.util.Pair;
 
 /**
  * 
@@ -82,16 +82,16 @@ public class QuantificationResultExporter
 
 	// Header constants used in multiple sheets
 	public final static int HEADER_ROW = 0;
-
+	
 	public final static String HEADER_SPECIES = "Species";
-
+	
 	public final static String HEADER_AREA = "Area";
 
 	public final static String HEADER_ISOTOPE = "Isotope";
 
 	// MS1 Sheet Headers
 	public final static String HEADER_INDEX = "Index";
-
+	
 	public final static String HEADER_NAME = "Name";
 
 	public final static String HEADER_DBS = "Dbs";

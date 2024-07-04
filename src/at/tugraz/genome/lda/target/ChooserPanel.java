@@ -1,3 +1,26 @@
+/* 
+ * This file is part of Lipid Data Analyzer
+ * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
+ * Copyright (c) 2023 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
+ *  
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *  
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details. 
+ *  
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Please contact lda@genome.tugraz.at if you need additional information or 
+ * have any questions.
+ */
+
 package at.tugraz.genome.lda.target;
 
 import java.awt.Dimension;
@@ -14,14 +37,19 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.Border;
 
-
+/**
+ * 
+ * @author Leonida M. Lamp
+ *
+ */
 public class ChooserPanel extends JOptionPanel
 {
 	private static final long serialVersionUID = 1L;
 	private JTargetFileWizard jTargetFileWizard_;
   
   public ChooserPanel(JDefaultComponents wizardComponents, JTargetFileWizard jTargetFileWizard) {
-      super(wizardComponents, "Create a new target file with information for \u03C9-C=C position identification.");
+      super(wizardComponents, ""
+      		+ "Create a new RT-DB with information for \u03C9-position identification.");
       this.jTargetFileWizard_ = jTargetFileWizard;
       init();
   }
@@ -52,7 +80,7 @@ public class ChooserPanel extends JOptionPanel
   {
   	JPanel calibrationPanel = new JPanel();
   	calibrationPanel.setLayout(new GridBagLayout());
-    JLabel title = new JLabel("<html>Calibrate a C=C target file to your chromatographic conditions.</html>");
+    JLabel title = new JLabel("<html>RT-DB predictor - map an RT-DB to your chromatographic conditions.</html>");
     title.setFont(new Font("Arial",Font.BOLD, 24));
     title.setPreferredSize(new Dimension(sizeTextOneLine.width,sizeTextOneLine.height*4));
     title.setMinimumSize(new Dimension(title.getPreferredSize().width/2, title.getPreferredSize().height));
@@ -61,9 +89,9 @@ public class ChooserPanel extends JOptionPanel
     requirementsHeader.setPreferredSize(new Dimension(sizeTextOneLine.width,sizeTextOneLine.height*2));
     requirementsHeader.setMinimumSize(new Dimension(requirementsHeader.getPreferredSize().width/2, requirementsHeader.getPreferredSize().height));
     JLabel requirements= new JLabel("<html> <ul style=\"list-style-type:circle;\"> "
-    		+ "<li> A C=C target file created by LDA </li>"
-    		+ "<li> Experimental data (analyzed with LDA) of a standard mix measured with the exact same chromatographic conditions as the data the omega target list is based on </li>"
-    		+ "<li> Experimental data (analyzed with LDA) of the same standard mix measured with your chromatography </li>"
+    		+ "<li> An RT-DB in LDA-format. </li>"
+    		+ "<li> Experimental data (analyzed with LDA) of an (internal) standard mix and/or biological samples measured with the exact same chromatographic conditions the RT-DB was created with. </li>"
+    		+ "<li> Experimental data (analyzed with LDA) of the same standard mix and/or biological samples measured with your chromatography. </li>"
     		+ "</html>");
     requirements.setFont(new Font("Arial",Font.PLAIN, 12));
     requirements.setPreferredSize(new Dimension(sizeTextOneLine.width,sizeTextOneLine.height*5));
@@ -90,7 +118,7 @@ public class ChooserPanel extends JOptionPanel
   {
   	JPanel experimentsPanel = new JPanel();
   	experimentsPanel.setLayout(new GridBagLayout());
-    JLabel title = new JLabel("<html>Use stable isotope labels specific for \u03C9-C=C positions.</html>");
+    JLabel title = new JLabel("<html>RT-DB generator - create a new RT-DB.</html>");
     title.setFont(new Font("Arial",Font.BOLD, 24));
     title.setPreferredSize(new Dimension(sizeTextOneLine.width,sizeTextOneLine.height*4));
     title.setMinimumSize(new Dimension(title.getPreferredSize().width/2, title.getPreferredSize().height));
@@ -99,9 +127,9 @@ public class ChooserPanel extends JOptionPanel
     requirementsHeader.setPreferredSize(new Dimension(sizeTextOneLine.width,sizeTextOneLine.height*2));
     requirementsHeader.setMinimumSize(new Dimension(requirementsHeader.getPreferredSize().width/2, requirementsHeader.getPreferredSize().height));
     JLabel requirements= new JLabel("<html> <ul style=\"list-style-type:circle;\"> "
-    		+ "<li> Experimental data (analyzed with LDA) of analytes with stable isotope labels specific for omega C=C positions. </li>"
-    		+ "<li> If deuterium labels are used: experimental data (analyzed with LDA) of unlabeled authentic standards with known omega C=C positions. <br>"
-    		+ "The labeled analogue of each standard needs to be identified in the stable isotope labeled data. <br>"
+    		+ "<li> Experimental data (analyzed with LDA) of analytes with SIL specific for \u03C9-positions. </li>"
+    		+ "<li> If deuterium labels are used: experimental data (analyzed with LDA) of unlabeled authentic standards with known \u03C9-positions. <br>"
+    		+ "Ideally at least one standard for each deuterium label should be provided, with the respective labeled isotopologue identified in the SIL data. <br>"
     		+ "(For <sup>13</sup>C labels experimental data of unlabeled authentic standards is not needed.) </li>"
     		+ "</ul> </html>");
     requirements.setFont(new Font("Arial", Font.PLAIN, 12));

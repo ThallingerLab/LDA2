@@ -1,0 +1,50 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains_CD.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.01%
+RetentionTimePostprocessing=true
+SpectrumCoverage=15%
+IsobarSCExclusionRatio=0.4
+
+
+[HEAD]
+!FRAGMENTS
+Name=Precursor			Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=false
+Name=PL153			Formula=C3H6O5P			Charge=1	MSLevel=2	mandatory=false
+Name=PL171			Formula=C3H8O6P			Charge=1	MSLevel=2	mandatory=false
+Name=Diglycerolphosphate_227	Formula=C6H12O7P		Charge=1	MSLevel=2	mandatory=false
+Name=Diglycerolphosphate_209	Formula=C6H10O6P		Charge=1	MSLevel=2	mandatory=false
+Name=NL_PChead_60_WRONG		Formula=$PRECURSOR-C2O2H4	Charge=1	MSLevel=2	mandatory=other
+Name=PChead_168_WRONG		Formula=C4H11NO4P		Charge=1	MSLevel=2	mandatory=other
+Name=PChead_224_WRONG		Formula=C7H15O5NP		Charge=1	MSLevel=2	mandatory=other
+Name=PEhead_140_WRONG		Formula=C2H7NO4P		Charge=1	MSLevel=2	mandatory=other
+Name=PEhead_196_WRONG		Formula=C5H11O5PN		Charge=1	MSLevel=2	mandatory=other
+
+
+!INTENSITIES
+Equation=NL_PChead_60_WRONG<3*Precursor			mandatory=true
+Equation=PL153<3*Precursor				mandatory=true
+Equation=PL171<1.5*Precursor				mandatory=true
+Equation=Diglycerolphosphate_227<1.2*Precursor		mandatory=true
+Equation=Diglycerolphosphate_209<1.2*Precursor		mandatory=true
+Equation=PL153*2>PChead_168_WRONG+PL171			mandatory=true
+Equation=PL153>PEhead_140_WRONG+PEhead_196_WRONG	mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=Carboxy		Formula=$CHAIN-H		Charge=1	MSLevel=2	mandatory=class
+Name=NL_Carboxy		Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Ketene		Formula=$PRECURSOR-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Carboxy_Head	Formula=NL_Carboxy-C3H6O2	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Ketene_Head	Formula=NL_Ketene-C3H6O2	Charge=1	MSLevel=2	mandatory=false
+
+
+!INTENSITIES
+Equation=Carboxy>NL_Carboxy		mandatory=true
+Equation=Carboxy>NL_Ketene		mandatory=true
+Equation=Carboxy>NL_Carboxy_Head	mandatory=true
+Equation=Carboxy>NL_Ketene_Head		mandatory=true
+Equation=Carboxy>0.02*$BASEPEAK		mandatory=true

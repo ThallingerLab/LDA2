@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp  
+ * Copyright (c) 2023 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -24,8 +24,10 @@
 package at.tugraz.genome.lda.vos;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Vector;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
@@ -33,6 +35,7 @@ import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import javafx.util.Pair;
 
 /**
  * Value object holding data required for the assignment of a double bond position
@@ -42,16 +45,22 @@ import at.tugraz.genome.lda.utils.StaticUtils;
  */
 public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
 {
+	public static final int ACCURACY_LOW = 0;
+	public static final int ACCURACY_MEDIUM = 1;
+	public static final int ACCURACY_HIGH = 2;
+	
   /** Vector of FattyAcidVOs the molecular species is composed of */
   Vector<FattyAcidVO> chainCombination_;
   /** the expected retention time */
-  float expectedRetentionTime_;
+  double expectedRetentionTime_;
   /** the accuracy of this retention time match */
   int accuracy_;
   /** molecular species String without double bond positions */
   String molecularSpecies_;
   /** whether this double bond position is assigned */
   boolean isAssigned_;
+  /** To optionally add Exp, RT pairs TODO: only for analysis, remove after */
+  Hashtable<Pair<String,Integer>,Double> experimentRTLookup_ = new Hashtable<Pair<String,Integer>,Double>();
   
   /**
    * Constructor for a value object holding data required for the assignment of a double bond position
@@ -59,9 +68,9 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
    * @param expectedRetentionTime the expected retention time
    */
   public DoubleBondPositionVO(
-      Vector<FattyAcidVO> chainCombination, float expectedRetentionTime) 
+      Vector<FattyAcidVO> chainCombination, double expectedRetentionTime) 
   {
-    this(chainCombination, expectedRetentionTime,0,null);
+    this(chainCombination, expectedRetentionTime,ACCURACY_LOW,null);
   }
   
   /**
@@ -72,7 +81,7 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
    * @param molecularSpecies molecular species String without double bond positions
    */
   public DoubleBondPositionVO(
-      Vector<FattyAcidVO> chainCombination, float expectedRetentionTime, int accuracy, String molecularSpecies) 
+      Vector<FattyAcidVO> chainCombination, double expectedRetentionTime, int accuracy, String molecularSpecies) 
   {
     this(chainCombination, expectedRetentionTime, accuracy, molecularSpecies, false);
   }
@@ -86,7 +95,7 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
    * @param isAssigned whether this double bond position is assigned
    */
   public DoubleBondPositionVO(
-      Vector<FattyAcidVO> chainCombination, float expectedRetentionTime, int accuracy, String molecularSpecies, boolean isAssigned) 
+      Vector<FattyAcidVO> chainCombination, double expectedRetentionTime, int accuracy, String molecularSpecies, boolean isAssigned) 
   {
     this.chainCombination_ = chainCombination;
     this.expectedRetentionTime_ = expectedRetentionTime;
@@ -125,52 +134,22 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
   /**
    * Compares this object with the specified object for order. 
    * First, accuracy is compared (species with a higher accuracy are given priority)
-   * Objects with the same accuracy are compared by their molecular species.
+   * Objects with the same accuracy are compared by their molecular species without potential prefixes or double bond assignments
    * Objects with the same molecular species are compared by their expected retention time.
-   * Objects with the same expected retention time are compared by their double bond position pattern (rarely relevant):
-   * First the number of assigned double bond positions is compared (Objects with a higher number are given priority)
-   * If an equal number of double bond positions is assigned, the sum of double bond positions is calculated (Objects with a lower sum are given priority)
+   * Objects with the same expected retention time are then compared by the sum of their omega positions (Objects with a lower sum are given priority).
    */
   public int compareTo(DoubleBondPositionVO anotherVO) 
   {
-  	int defaultReturnValue = 0;
-    int accuracyComp = -Integer.compare(this.getAccuracy(), anotherVO.getAccuracy());
-    if (accuracyComp != 0) {return accuracyComp;}
-    if (this.getMolecularSpecies() != null && anotherVO.getMolecularSpecies() != null) //TODO: comparing fatty acids would be better
-    {
-    	int speciesComp = this.getMolecularSpecies().compareTo(anotherVO.getMolecularSpecies());
-      if (speciesComp != 0) {return speciesComp;}
-    }
-    int timeComp = Float.compare(this.getExpectedRetentionTime(), anotherVO.getExpectedRetentionTime());
-    if (timeComp != 0) {return timeComp;}
-    
-    Vector<Integer> pattern = this.getPositionAssignmentPattern();
-    Vector<Integer> anotherPattern = anotherVO.getPositionAssignmentPattern();
-    int numberAssigned = 0;
-    int anotherNumberAssigned = 0;
-    int sum = 0;
-    int anotherSum = 0;
-    for (int j=0; j<pattern.size(); j++) //no check for size matching necessary as species getting to this comparison are otherwise identical.
-    {
-    	if (pattern.get(j) == -1) {numberAssigned++;}
-    	else {sum += pattern.get(j);}
-    	if (anotherPattern.get(j) == -1) {anotherNumberAssigned++;}
-    	else {anotherSum += anotherPattern.get(j);}
-    }
-    if (!(numberAssigned == anotherNumberAssigned))
-    {
-    	return Integer.compare(numberAssigned, anotherNumberAssigned);
-    }
-    else if (!(numberAssigned == anotherNumberAssigned))
-    {
-    	return Integer.compare(sum, anotherSum);
-    }
-    
-    return defaultReturnValue;
+  	return Comparator
+  			.comparing(DoubleBondPositionVO::getAccuracy).reversed()
+  			.thenComparing((DoubleBondPositionVO vo) -> vo.getEncodedDetailed(false, false))
+  			.thenComparing(DoubleBondPositionVO::getExpectedRetentionTime)
+  			.thenComparing(DoubleBondPositionVO::getOmegaSum)
+  			.compare(this,anotherVO);
   }
   
   /**
-   * @return the molecular species including double bond position information as a human readable String
+   * @return the molecular species including double bond position information at the position level as a human readable String
    */
   public String getDoubleBondPositionsHumanReadable() 
   {
@@ -178,7 +157,8 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
   }
   
   /**
-   * @param snLevel only when this parameter equals LipidomicsConstants.EXPORT_ANALYTE_TYPE_POSITION will available sn position information be included in the String
+   * @param snLevel 		only when this parameter equals at least LipidomicsConstants.EXPORT_ANALYTE_TYPE_POSITION, 
+   * 										available sn position information is included in the molecular species String
    * @return the molecular species including double bond position information as a human readable String
    */
   public String getDoubleBondPositionsHumanReadable(int snLevel) 
@@ -210,37 +190,23 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
   {
     if ((molecularSpecies_ != null) && molecularSpecies_.contains(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS)) 
     {
-      String[] individualChains = molecularSpecies_.split(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS);
-      if (individualChains.length > 1) 
+      if (chainCombination_.size() > 1) 
       {
-        if (areDoubleBondPositionsAssignedForAllChains()) 
+      	Set<FattyAcidVO> assignedSet = new HashSet<FattyAcidVO>(chainCombination_);
+      	if (assignedSet.size() == 1) 
+      	{
+      		return true; //if all chains including the C=C assignment are equal, the chain positions remain fixed
+      	}
+      	
+      	String[] individualChains = molecularSpecies_.split(LipidomicsConstants.CHAIN_SEPARATOR_KNOWN_POS);
+        Set<String> unassignedSet = new HashSet<String>(Arrays.asList(individualChains));
+        if (individualChains.length == unassignedSet.size()) 
         {
-          return true;
-        }
-        Set<String> set = new HashSet<String>(Arrays.asList(individualChains));
-        Object[] uniqueChains = set.toArray();
-        if (individualChains.length == uniqueChains.length) 
-        {
-          return true;
+          return true; //if all chains without C=C assignment are different, the chain positions remain fixed
         }
       }
     }
     return false;
-  }
-  
-  /**
-   * @return whether all chains this molecular species is composed of have assigned double bond positions
-   */
-  public boolean areDoubleBondPositionsAssignedForAllChains() 
-  {
-    for (FattyAcidVO fattyAcid : chainCombination_) 
-    {
-      if (fattyAcid.getOmegaPosition() < 0) 
-      {
-        return false;
-      }
-    }
-    return true;
   }
   
   /**
@@ -254,6 +220,17 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
   		pattern.add(fattyAcid.getOmegaPosition());
     }
   	return pattern;
+  }
+  
+  private int getOmegaSum()
+  {
+  	Vector<Integer> pattern = this.getPositionAssignmentPattern();
+  	int sum = 0;
+  	for (int omega : pattern)
+  	{
+  		sum += omega;
+  	}
+  	return sum;
   }
   
   /**
@@ -270,9 +247,7 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
       {
   			if (fattyAcid1 != fattyAcid2) //we do not want to compare identical objects
   			{
-  				if ((fattyAcid1.getcAtoms() == fattyAcid2.getcAtoms()) && 
-  						(fattyAcid1.getDoubleBonds() == fattyAcid2.getDoubleBonds()) &&
-  						(fattyAcid1.getOhNumber() == fattyAcid2.getOhNumber()))
+  				if (fattyAcid1.equalsNotConsideringOmegaPosition(fattyAcid2))
   				{
   					pattern.setElementAt(true, i);
   				}
@@ -287,6 +262,11 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
   	return StaticUtils.encodeLipidCombi(chainCombination_);
   }
   
+  /**
+   * @param includePrefix						true if potential prefixes should be included in the encoded string
+   * @param includeOmegaPosition		true if potential omega positions should be included in the encoded string
+   * @return
+   */
   public String getEncodedDetailed(boolean includePrefix, boolean includeOmegaPosition)
   {
   	Vector<String> chainIds = new Vector<String>();
@@ -358,17 +338,17 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
   }
   
   /**
-   * @param expectedRetentionTime the expected retention time
+   * @param currentRT the expected retention time in minutes
    */
-  public void setExpectedRetentionTime(float expectedRetentionTime) 
+  public void setExpectedRetentionTime(double currentRT) 
   {
-    this.expectedRetentionTime_ = expectedRetentionTime;
+    this.expectedRetentionTime_ = currentRT;
   }
   
   /**
-   * @return the expected retention time
+   * @return the expected retention time in minutes
    */
-  public float getExpectedRetentionTime() 
+  public double getExpectedRetentionTime() 
   {
     return this.expectedRetentionTime_;
   }
@@ -404,4 +384,24 @@ public class DoubleBondPositionVO implements Comparable<DoubleBondPositionVO>
   {
     return this.accuracy_;
   }
+
+  /**
+   * TODO just for analysis, remove after
+   * @return
+   */
+	public Hashtable<Pair<String,Integer>,Double> getExperimentRTLookup()
+	{
+		return experimentRTLookup_;
+	}
+
+	/**
+	 * TODO just for analysis, remove after
+	 * @param experiment
+	 * @param d
+	 */
+	public void addToExperimentRTLookup(Pair<String,Integer> experiment, double d)
+	{
+		this.experimentRTLookup_.put(experiment, d);
+	}
+  
 }

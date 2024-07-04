@@ -1,3 +1,26 @@
+/* 
+ * This file is part of Lipid Data Analyzer
+ * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
+ * Copyright (c) 2023 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
+ *  
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *  
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details. 
+ *  
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Please contact lda@genome.tugraz.at if you need additional information or 
+ * have any questions.
+ */
+
 package at.tugraz.genome.lda.target.experiment;
 
 import java.util.HashSet;
@@ -8,6 +31,7 @@ import java.util.Vector;
 import javax.swing.JFrame;
 
 import at.tugraz.genome.lda.WarningMessage;
+import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.target.JDefaultComponents;
@@ -16,7 +40,11 @@ import at.tugraz.genome.lda.vos.ResultFileVO;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.target.IsotopeLabelVO;
 
-
+/**
+ * 
+ * @author Leonida M. Lamp
+ *
+ */
 public class ExperimentLabelDefinitionPanel extends ExperimentTableInputPanel
 {
 	private static final long serialVersionUID = 1L;
@@ -29,14 +57,14 @@ public class ExperimentLabelDefinitionPanel extends ExperimentTableInputPanel
   
   public ExperimentLabelDefinitionPanel(JDefaultComponents wizardComponents, ExperimentResultFileChooserPanel experimentFileChooserPanel) {
       super(wizardComponents, experimentFileChooserPanel, 
-      		"Use stable isotope labels specific for \u03C9-C=C positions.", "Enter the \u03C9-C=C position associated with each detected stable isotope label.");
+      		"Create RT-DB using experimental data of SIL specific for \u03C9-positions.", "Enter the \u03C9-position associated with each detected SIL.");
   }
   
   @Override
   public void initDataDisplay()
   {
   	cleanPanels();
-  	String[] columnNames = { "Label ID", "Isotope", "Amount of isotope atoms", "Enter \u03C9-C=C position here!"};
+  	String[] columnNames = { "Label ID", "Isotope", "Amount of isotope atoms", "Enter \u03C9-position here!"};
     Object[][] tableData = generateTableData();
   	getDefaultComponents().updateComponents();
   	init(generateDisplayPanel(columnNames, tableData, EDITABLE_COLUMN));
@@ -78,7 +106,7 @@ public class ExperimentLabelDefinitionPanel extends ExperimentTableInputPanel
     return tableData;
   }
   
-  protected void parseDataForLabels()
+  protected void parseDataForLabels() throws ChemicalFormulaException
   {
   	Hashtable<String, IsotopeLabelVO> isotopeLabels = new Hashtable<String, IsotopeLabelVO>();
   	Set<String> ambiguousLabels = new HashSet<String>();
@@ -95,9 +123,7 @@ public class ExperimentLabelDefinitionPanel extends ExperimentTableInputPanel
 					{
 						String labelID = analyteName.substring(0, 1);
 						IsotopeLabelVO labelVO;
-						Hashtable<String,Integer> categorized = null;
-						try {categorized = StaticUtils.categorizeFormula(analyte.getAnalyteFormula());} catch (Exception ex) {}
-						
+						Hashtable<String,Integer> categorized = StaticUtils.categorizeFormula(analyte.getAnalyteFormula());
 						if (isotopeLabels.containsKey(labelID))
 						{
 							labelVO = isotopeLabels.get(labelID);
@@ -297,7 +323,7 @@ public class ExperimentLabelDefinitionPanel extends ExperimentTableInputPanel
   	}
   	else
   	{
-  		new WarningMessage(new JFrame(), "Warning", "You must specify the \u03C9-C=C position for at least one label before continuing!");
+  		new WarningMessage(new JFrame(), "Warning", "You must specify the \u03C9-position for at least one label before continuing!");
   	}
   }
   
@@ -305,7 +331,6 @@ public class ExperimentLabelDefinitionPanel extends ExperimentTableInputPanel
   protected void updateValue(int row, int value)
 	{
   	unambiguousIsotopeLabels_.get(row).setOmegaPosition(value);
-  	System.out.println(unambiguousIsotopeLabels_.get(row).getOmegaPosition());
 	}
   
   public Vector<IsotopeLabelVO> getAssignedIsotopeLabels()

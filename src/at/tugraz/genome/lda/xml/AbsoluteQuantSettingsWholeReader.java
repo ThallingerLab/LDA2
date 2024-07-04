@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -110,7 +110,12 @@ public class AbsoluteQuantSettingsWholeReader extends XMLFileLoader
   private void parseClassesSettings(Element classSet){
     String className = classSet.getAttribute(XMLConstants.WHOLE_ABS_SET_CLASS_NAME);
     LipidClassSettingsPanel classPanel = quantSettingsPanel_.getClassSettings().get(className);
-    if (classPanel != null){
+    if (classPanel == null) return;
+    if (classPanel.getChosenClass()!=className)
+    {
+    	classPanel = quantSettingsPanel_.getClassSettings().get(classPanel.getChosenClass());
+    }
+    if (classPanel != null && classPanel.areStandardsAvailable()){
       NodeList nl1 = classSet.getChildNodes();
       for (int i=0; i!=nl1.getLength(); i++){
         String nodeName = nl1.item(i).getNodeName();

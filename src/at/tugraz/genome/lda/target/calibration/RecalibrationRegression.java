@@ -1,3 +1,26 @@
+/* 
+ * This file is part of Lipid Data Analyzer
+ * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
+ * Copyright (c) 2023 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
+ *  
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *  
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details. 
+ *  
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Please contact lda@genome.tugraz.at if you need additional information or 
+ * have any questions.
+ */
+
 package at.tugraz.genome.lda.target.calibration;
 
 import java.util.ArrayList;
@@ -6,11 +29,16 @@ import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.apache.commons.math3.exception.OutOfRangeException;
 
-import at.tugraz.genome.lda.utils.Pair;
+import javafx.util.Pair;
 
+/**
+ * 
+ * @author Leonida M. Lamp
+ *
+ */
 public class RecalibrationRegression
 {
-	private ArrayList<Pair<Double,Double>> differences_;
+	private ArrayList<AnchorPointVO> differences_;
 	private double grouping_;
 	private ArrayList<Pair<Double,Double>> clustered_;
 	private PolynomialSplineFunction function_;
@@ -23,7 +51,7 @@ public class RecalibrationRegression
 	 * @param dataType
 	 * @param lipidClass
 	 */
-	protected RecalibrationRegression(ArrayList<Pair<Double,Double>> differences, double grouping, String dataType, String lipidClass)
+	protected RecalibrationRegression(ArrayList<AnchorPointVO> differences, double grouping, String dataType, String lipidClass)
 	{
 		this(differences, grouping);
 		this.dataType_ = dataType;
@@ -34,7 +62,7 @@ public class RecalibrationRegression
 	 * @param differences
 	 * @param grouping
 	 */
-	private RecalibrationRegression(ArrayList<Pair<Double,Double>> differences, double grouping)
+	private RecalibrationRegression(ArrayList<AnchorPointVO> differences, double grouping)
 	{
 		this.differences_ = differences;
 		this.grouping_ = grouping;
@@ -78,9 +106,10 @@ public class RecalibrationRegression
 		}
 	}
 	
-  private ArrayList<Pair<Double,Double>> clusterKeys(ArrayList<Pair<Double,Double>> differences)
+  private ArrayList<Pair<Double,Double>> clusterKeys(ArrayList<AnchorPointVO> differences)
   {
   	ArrayList<Pair<Double,Double>> clustered = new ArrayList<Pair<Double,Double>>();
+  	ArrayList<Double> xValues = new ArrayList<Double>();
   	ArrayList<Double> intervals = new ArrayList<Double>();
   	for (int i=0; i<=(getMax(differences)-getMin(differences))/grouping_+1;i++)
   	{
@@ -90,27 +119,45 @@ public class RecalibrationRegression
   			int count = 0;
   			double xSum = 0.0;
     		double ySum = 0.0;
-    		for (Pair<Double,Double> dataPoint : differences)
+    		for (AnchorPointVO dataPoint : differences)
       	{
-      		if (dataPoint.getKey()>=intervals.get(i-1) && dataPoint.getKey()<=intervals.get(i))
+      		if (dataPoint.getxValue()>=intervals.get(i-1) && dataPoint.getxValue()<=intervals.get(i))
       		{
-      			xSum += dataPoint.getKey();
-      			ySum += dataPoint.getValue();
+      			xSum += dataPoint.getxValue();
+      			ySum += dataPoint.getyValue();
       			count += 1;
-//      			System.out.println("Point x: "+dataPoint.getKey()+" y: "+dataPoint.getValue());
       		}
       	}
-    		if (count > 0)
+    		if (count > 0 && 
+    				!xValues.contains(xSum/count)) //this can happen in very rare cases when the interval border coincides exactly with a value
     		{
     			clustered.add(new Pair<Double,Double>(xSum/count, ySum/count));
-//      		System.out.println("Cluster: "+new Pair<Double,Double>(xSum/count, ySum/count));
+    			xValues.add(xSum/count);
     		}
   		}
   	}
   	return clustered;
   }
 	
-	private double getMin(ArrayList<Pair<Double,Double>> data){  
+	private double getMin(ArrayList<AnchorPointVO> data){  
+    double min = Integer.MAX_VALUE;  
+    for(int i=0; i<data.size(); i++){  
+      if(data.get(i).getxValue()<min)  
+        min = data.get(i).getxValue();  
+    }  
+    return min;  
+  } 
+	
+	private double getMax(ArrayList<AnchorPointVO> data){  
+    double max = Integer.MIN_VALUE;  
+    for(int i=0; i<data.size(); i++){  
+      if(data.get(i).getxValue()>max)  
+        max = data.get(i).getxValue();  
+    }  
+    return max;  
+  }
+	
+	private double getMinClustered(ArrayList<Pair<Double,Double>> data){  
     double min = Integer.MAX_VALUE;  
     for(int i=0; i<data.size(); i++){  
       if(data.get(i).getKey()<min)  
@@ -119,7 +166,7 @@ public class RecalibrationRegression
     return min;  
   } 
 	
-	private double getMax(ArrayList<Pair<Double,Double>> data){  
+	private double getMaxClustered(ArrayList<Pair<Double,Double>> data){  
     double max = Integer.MIN_VALUE;  
     for(int i=0; i<data.size(); i++){  
       if(data.get(i).getKey()>max)  
@@ -128,7 +175,7 @@ public class RecalibrationRegression
     return max;  
   }
 	
-	protected void removeDataPoint(Pair<Double,Double> dataPoint)
+	protected void removeDataPoint(AnchorPointVO dataPoint)
 	{
 		this.differences_.remove(dataPoint);
 		initRegression();
@@ -139,7 +186,7 @@ public class RecalibrationRegression
 		return referenceRT-function_.value(referenceRT);
 	}
 	
-	protected ArrayList<Pair<Double,Double>> getDifferences()
+	protected ArrayList<AnchorPointVO> getDifferences()
 	{
 		return differences_;
 	}
@@ -147,17 +194,18 @@ public class RecalibrationRegression
 	/**
 	 * Removing a data point can lead to either one or two less cluster points.
 	 * This is relevant when checking if the minimum number of data points will be kept.
+	 * @param dataPoint
 	 * @return
 	 */
-	protected int getClusteredWithoutDataPointSize(Pair<Double,Double> dataPoint)
+	protected int getClusteredWithoutDataPointSize(AnchorPointVO dataPoint)
 	{
-		ArrayList<Pair<Double,Double>> differences = new ArrayList<Pair<Double,Double>>(differences_);
+		ArrayList<AnchorPointVO> differences = new ArrayList<AnchorPointVO>(differences_);
 		differences.remove(dataPoint);
 		ArrayList<Pair<Double,Double>> clustered = clusterKeys(differences);
 		return clustered.size();
 	}
 	
-	protected ArrayList<Pair<Double,Double>> getClustered()
+	public ArrayList<Pair<Double,Double>> getClustered()
 	{
 		return clustered_;
 	}
@@ -169,12 +217,12 @@ public class RecalibrationRegression
 	
 	protected double getLowerRTLimit()
 	{
-		return getMin(clustered_);
+		return getMinClustered(clustered_);
 	}
 	
 	protected double getUpperRTLimit()
 	{
-		return getMax(clustered_);
+		return getMaxClustered(clustered_);
 	}
 
 	public String getDataType()
