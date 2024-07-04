@@ -610,16 +610,10 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(resultsPanel_), TooltipTexts.TABS_MAIN_STATISTICS);
     mainTabs.addTab("Display Results", displayPanel_);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(displayPanel_), TooltipTexts.TABS_MAIN_DISPLAY);
-    if (Settings.SHOW_OMEGA_TOOLS)
-    {
-    	mainTabs.addTab("MassList Creator", massListPanel_);
-      mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(massListPanel_), TooltipTexts.TABS_MAIN_MASSLIST_CREATOR);
-    }
-    if (Settings.SHOW_OMEGA_TOOLS)
-    {
-    	mainTabs.addTab("LC=CL", targetFilePanel_);
-      mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(targetFilePanel_), TooltipTexts.TABS_MAIN_TARGET);
-    }
+  	mainTabs.addTab("MassList Creator", massListPanel_);
+    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(massListPanel_), TooltipTexts.TABS_MAIN_MASSLIST_CREATOR);
+  	mainTabs.addTab("LC=CL", targetFilePanel_);
+    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(targetFilePanel_), TooltipTexts.TABS_MAIN_TARGET);
     if (Settings.SHOW_AI_TOOLS)
     {
     	JButton startAIButton = new JButton("Start");

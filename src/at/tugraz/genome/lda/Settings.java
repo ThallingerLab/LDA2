@@ -63,16 +63,13 @@ import at.tugraz.genome.lda.xml.ModConfigParser;
 public class Settings
 {
   private static Settings instance_ = null;
-
-  public final static String VERSION = "2.9.0_6";
-//  public final static String VERSION = "2.11.0";
+  
+  public final static String VERSION = "2.11.0";
 
   public final static String SETTINGS_FILE = ".settings";
   
   /** property label for making empty entries when an analyte cannot by found by "Quant. anal. at not found" and "Take exact peak for others"*/
   public final static String EMPTY_ENTRY_FOR_QUANT_ANAL_NOT_FOUND = "EmptyEntriesForQuantAnalNotFound";
-  
-  public final static boolean SHOW_OMEGA_TOOLS = false; //TODO: set to false before publication and remove altogether when the version is published
   
   public final static boolean SHOW_AI_TOOLS = false; //TODO: set to false before publication and remove altogether when the version is published
   
