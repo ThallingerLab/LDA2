@@ -1,6 +1,6 @@
-# LDA2
+# LDA2 featuring LC=CL
 
-Lipid Data Analyzer 2
+Lipid Data Analyzer 2 LC=CL extension
 
 
 
@@ -29,9 +29,8 @@ corresponding directory (linux64, mac or windows64), and all jar files in this d
 library path.
 
 
-Code for MS/MS spectra interpretation:
-The code primarily responsible for the MS/MS spectra interpretation can be found in
-src/at/tugraz/genome/lda/msn
+Code for LC=CL:
+The code primarily responsible for the LC=CL can be found in
+src/at/tugraz/genome/lda/target
 
-Scripts for e.g. evaluation of experiment 3 and test cases can be found in:
-test/at/tugraz/genome
+
