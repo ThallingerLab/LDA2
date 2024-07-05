@@ -64,10 +64,10 @@ public class LicenseChecker
 	    }
 	  }
 	  ////this is for the demo license for the reviewers
-	  //if (!licenseFolder.exists()) {               
-	    //TODO: this license for reviewing is valid until the 30th of November 2021!
-	   //LicenseHandler.writeLicenseStringAndUserName(licenseFolder,"mG46-sSp]-[WSu-Ob8S-^7kF-4z@v-XO5r-K]^z","Test 2.8.1");
-	  //}
+	  if (!licenseFolder.exists()) {               
+	  	//TODO: this license for reviewing is valid until the 30th of November 2025!
+	  	LicenseHandler.writeLicenseStringAndUserName(licenseFolder,"mx44-sGS]-[WXu-Ob6S-^7kF-4Xnv-X65r-K]^z","Test 2.11.0");
+	  }
 	  LicenseHandler.checkLicenseInFolder(licenseFolder);
 	}
 	
