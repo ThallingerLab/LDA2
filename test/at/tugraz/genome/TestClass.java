@@ -14744,16 +14744,6 @@ public void testTabFile() throws Exception {
     // TODO Auto-generated method stub
     return 0;
   }
-
-  private void faSummaryConverter(){
-    LDAToFASummaryConverter converter = new LDAToFASummaryConverter("D:\\Experiment1\\Orbitrap_CID\\positive\\50");
-    try {
-      converter.convert();
-    }
-    catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
   
   private void mzTabValidation(){
 //    String filePath = "D:\\01-mztab.txt";
@@ -14967,15 +14957,6 @@ public void testTabFile() throws Exception {
           }
         }
 
-    }
-  }
-  
-  private void groupAlexResultsByRt() {
-    AlexRtGrouper grouper = new AlexRtGrouper("C:\\data\\Christer\\20190111\\positive",0.4d);
-    try {
-      grouper.groupTheEntries();
-    } catch (Exception e) {
-      e.printStackTrace();
     }
   }
   
