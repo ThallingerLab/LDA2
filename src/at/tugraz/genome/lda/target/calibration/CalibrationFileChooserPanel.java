@@ -452,7 +452,7 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
 			comboBox.addItem("group 1");
 			comboBox.addItem("group 2");
 			comboBox.addItem("group 3");
-			comboBox.setSelectedIndex(0);
+			comboBox.setSelectedIndex(1);
 			return comboBox;
 		}
 		

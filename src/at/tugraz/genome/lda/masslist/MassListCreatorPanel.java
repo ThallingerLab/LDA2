@@ -65,28 +65,13 @@ import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.target.JOptionPanel;
 import at.tugraz.genome.lda.target.JTargetFileWizard;
+import at.tugraz.genome.lda.target.LoadingPanel;
 import at.tugraz.genome.lda.vos.AdductVO;
+import javafx.util.Pair;
 
 /**
  * 
  * @author Leonida M. Lamp
- * 
- * 
- * We need... a folder with basic values for different classes
- * This would be... oh number, oh range, rt start, rt stop, adductinsensitivertfilter, bestMatchBySpectrumCoverage
- * (Also ox stuff)
- * Adducts (save in separate folder ..name,formula,charge)
- * Formula of headgroup (without chains)
- * 
- * Minimum number of chain carbon atoms
- * Maximum number of chain carbon atoms
- * Minimum number of chain double bonds
- * Maximum number of chain double bonds
- * 
- * General setting: SIL? path to fattyacidchainlist.xlsx, only if SIL desired (to compute possible combinations based on given params).
- * 
- * Show all lclasses as list, select if to be included or not, they can be maximized or minimized (or edit button).
- * 
  *
  */
 public class MassListCreatorPanel extends JPanel 
@@ -106,16 +91,11 @@ public class MassListCreatorPanel extends JPanel
 	private final static String COMMAND_CLASS_FA_CHAIN_LIST= "classFAChainList";
 	private final static String COMMAND_CLASS_ADDUCT_LIST= "classAdductList";
 	private final static String COMMAND_CLASS_CHAIN_C_MIN= "classChainMin";
-	private final static String COMMAND_CLASS_CHAIN_C_MAX= "classChainMax";
 	private final static String COMMAND_CLASS_DB_MIN= "classDBMin";
-	private final static String COMMAND_CLASS_DB_MAX= "classDBMax";
 	private final static String COMMAND_CLASS_RT_MIN= "classRtMin";
-	private final static String COMMAND_CLASS_RT_MAX= "classRtMax";
 	private final static String COMMAND_CLASS_OH= "classOH";
 	private final static String COMMAND_CLASS_OH_MIN= "classOhMin";
-	private final static String COMMAND_CLASS_OH_MAX= "classOhMax";
 	private final static String COMMAND_CLASS_OX_MIN= "classOxMin";
-	private final static String COMMAND_CLASS_OX_MAX= "classOxMax";
 	private final static String COMMAND_CLASS_ADDUCT_INSENSITIVE_RT_FILTER= "classRTFilter";
 	private final static String COMMAND_CLASS_PICK_BEST= "classPickBest";
 	private final static String COMMAND_CLASS_EXPORT= "classExport";
@@ -301,23 +281,18 @@ public class MassListCreatorPanel extends JPanel
 		addLabeledComboBox(panel, 3, new JLabel("Selected FA chain list: "), faChainList);
 		JScrollPane adductList = instantiateJListScrollPane(COMMAND_CLASS_ADDUCT_LIST, adductListNames_, vo, findSelectedAdductListIndices(vo));
 		addLabeledJListScrollPane(panel, 4, new JLabel("Selected adducts (hold CNTR for multiple selection): "), adductList);
-		JTextField chainNumMin = instantiateJTextField(COMMAND_CLASS_CHAIN_C_MIN, String.valueOf(vo.getMinChainC()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH);
-		JTextField chainNumMax = instantiateJTextField(COMMAND_CLASS_CHAIN_C_MAX, String.valueOf(vo.getMaxChainC()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH);
-		addLabeledRange(panel, 5, new JLabel("Total number of C atoms in the chains: "), chainNumMin, chainNumMax);
-		JTextField dbNumMin = instantiateJTextField(COMMAND_CLASS_DB_MIN, String.valueOf(vo.getMinChainDB()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH);
-		JTextField dbNumMax = instantiateJTextField(COMMAND_CLASS_DB_MAX, String.valueOf(vo.getMaxChainDB()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH);
-		addLabeledRange(panel, 6, new JLabel("Total number of double bonds (C=C) in the chains: "), dbNumMin, dbNumMax);
-		JTextField rtNumMin = instantiateJTextField(COMMAND_CLASS_RT_MIN, String.valueOf(vo.getRtRangeFrom()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH);
-		JTextField rtNumMax = instantiateJTextField(COMMAND_CLASS_RT_MAX, String.valueOf(vo.getRtRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH);
-		addLabeledRange(panel, 7, new JLabel("Retention time (RT) range in minutes (optional): "), rtNumMin, rtNumMax);
+		addLabeledRange(panel, 5, new JLabel("Total number of C atoms in the chains: "), 
+				instantiateJTextFieldRange(COMMAND_CLASS_CHAIN_C_MIN, String.valueOf(vo.getMinChainC()), String.valueOf(vo.getMaxChainC()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
+		addLabeledRange(panel, 6, new JLabel("Total number of double bonds (C=C) in the chains: "), 
+				instantiateJTextFieldRange(COMMAND_CLASS_DB_MIN, String.valueOf(vo.getMinChainDB()), String.valueOf(vo.getMaxChainDB()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
+		addLabeledRange(panel, 7, new JLabel("Retention time (RT) range in minutes (optional): "), 
+				instantiateJTextFieldRange(COMMAND_CLASS_RT_MIN, String.valueOf(vo.getRtRangeFrom()), String.valueOf(vo.getRtRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
 		JTextField ohField = instantiateJTextField(COMMAND_CLASS_OH, String.valueOf(vo.getOhNumber()));
 		addLabeledTextField(panel, 8, new JLabel("Sphingolipid OH number (optional): "), ohField);
-		JTextField ohNumMin = instantiateJTextField(COMMAND_CLASS_OH_MIN, String.valueOf(vo.getOhRangeFrom()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH);
-		JTextField ohNumMax = instantiateJTextField(COMMAND_CLASS_OH_MAX, String.valueOf(vo.getOhRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH);
-		addLabeledRange(panel, 9, new JLabel("Sphingolipid OH range (optional): "), ohNumMin, ohNumMax);
-		JTextField oxNumMin = instantiateJTextField(COMMAND_CLASS_OX_MIN, String.valueOf(vo.getOxRangeFrom()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH);
-		JTextField oxNumMax = instantiateJTextField(COMMAND_CLASS_OX_MAX, String.valueOf(vo.getOxRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH);
-		addLabeledRange(panel, 10, new JLabel("Oxidized lipid Ox range (optional): "), oxNumMin, oxNumMax);
+		addLabeledRange(panel, 9, new JLabel("Sphingolipid OH range (optional): "), 
+				instantiateJTextFieldRange(COMMAND_CLASS_OH_MIN, String.valueOf(vo.getOhRangeFrom()), String.valueOf(vo.getOhRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
+		addLabeledRange(panel, 10, new JLabel("Oxidized lipid Ox range (optional): "), 
+				instantiateJTextFieldRange(COMMAND_CLASS_OX_MIN, String.valueOf(vo.getOxRangeFrom()), String.valueOf(vo.getOxRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
 		JCheckBox rtFilter = instantiateCheckBox(COMMAND_CLASS_ADDUCT_INSENSITIVE_RT_FILTER);
 		addLabeledCheckBox(panel, 11, new JLabel("Enable adduct insensitive RT filter: "), rtFilter);
 		JCheckBox pickBest = instantiateCheckBox(COMMAND_CLASS_PICK_BEST);
@@ -469,6 +444,29 @@ public class MassListCreatorPanel extends JPanel
 		return instantiateJTextField(actionCommand, text, PREFERRED_DISPLAY_COMPONENT_WIDTH);
 	}
 	
+	private Pair<JTextField,JTextField> instantiateJTextFieldRange(String actionCommand, String textFrom, String textTo, Integer width)
+	{
+		JTextField textFieldFrom = new JTextField(textFrom);
+		textFieldFrom.setPreferredSize(new Dimension(width,20));
+		setDefaultTextFieldBorder(textFieldFrom);
+		JTextField textFieldTo = new JTextField(textTo);
+		textFieldTo.setPreferredSize(new Dimension(width,20));
+		setDefaultTextFieldBorder(textFieldTo);
+		
+		DocumentListener listener = new DocumentListener(){
+			@Override
+			public void insertUpdate(DocumentEvent e){textFieldChangeExecuterRange(actionCommand, textFieldFrom, textFieldTo);}
+			@Override
+			public void removeUpdate(DocumentEvent e){textFieldChangeExecuterRange(actionCommand, textFieldFrom, textFieldTo);}
+			@Override
+			public void changedUpdate(DocumentEvent e){textFieldChangeExecuterRange(actionCommand, textFieldFrom, textFieldTo);}
+    };
+    
+		textFieldFrom.getDocument().addDocumentListener(listener);
+		textFieldTo.getDocument().addDocumentListener(listener);
+		return new Pair<JTextField,JTextField>(textFieldFrom,textFieldTo);
+	}
+	
 	private JTextField instantiateJTextField(String actionCommand, String text, Integer width)
 	{
 		JTextField textField = new JTextField(text);
@@ -509,15 +507,15 @@ public class MassListCreatorPanel extends JPanel
 		panel.add(textField, getDefaultGridBagConstraints(2,yPos, GridBagConstraints.EAST, 3, 1));
 	}
 	
-	private void addLabeledRange(JPanel panel, Integer yPos, JLabel label, JTextField textField1, JTextField textField2)
+	private void addLabeledRange(JPanel panel, Integer yPos, JLabel label, Pair<JTextField,JTextField> range)
 	{
 		JLabel minField = new JLabel("From: ");
 		JLabel maxField = new JLabel("To: ");
 		panel.add(label, getDefaultGridBagConstraints(0,yPos, GridBagConstraints.WEST, 1, 1));
 		panel.add(minField, getDefaultGridBagConstraints(1,yPos, GridBagConstraints.EAST, 1, 1));
-		panel.add(textField1, getDefaultGridBagConstraints(2,yPos, GridBagConstraints.WEST, 1, 1));
+		panel.add(range.getKey(), getDefaultGridBagConstraints(2,yPos, GridBagConstraints.WEST, 1, 1));
 		panel.add(maxField, getDefaultGridBagConstraints(3,yPos, GridBagConstraints.EAST, 1, 1));
-		panel.add(textField2, getDefaultGridBagConstraints(4,yPos, GridBagConstraints.EAST, 1, 1));
+		panel.add(range.getValue(), getDefaultGridBagConstraints(4,yPos, GridBagConstraints.EAST, 1, 1));
 	}
 	
 	private GridBagConstraints getDefaultGridBagConstraints(int column, int row, int orientation, int width, int height, Insets insets)
@@ -539,6 +537,153 @@ public class MassListCreatorPanel extends JPanel
 	private GridBagConstraints getDefaultGridBagConstraints(int column, int row, int orientation, int width, int height)
 	{
 		return getDefaultGridBagConstraints(column, row, orientation, width, height, new Insets(2, 3, 2, 3));
+	}
+	
+	private void textFieldChangeExecuterRange(String actionCommand, JTextField textfieldFrom, JTextField textfieldTo)
+	{
+		switch (actionCommand)
+		{
+			case COMMAND_CLASS_CHAIN_C_MIN:
+				tempClass_.setMinChainC(-1);
+				tempClass_.setMaxChainC(-1);
+				try
+				{
+					int numFrom = Integer.parseInt(textfieldFrom.getText());
+					int numTo = Integer.parseInt(textfieldTo.getText());
+					
+					if (numFrom > 0 && numTo > 0 && numFrom < numTo)
+					{
+						setDefaultTextFieldBorder(textfieldFrom);
+						setDefaultTextFieldBorder(textfieldTo);
+					}	
+					else
+					{
+						setWarningTextFieldBorder(textfieldFrom);
+						setWarningTextFieldBorder(textfieldTo);
+					}
+					tempClass_.setMinChainC(numFrom);
+					tempClass_.setMaxChainC(numTo);
+				}
+				catch (NumberFormatException ex) 
+				{
+					setWarningTextFieldBorder(textfieldFrom);
+					setWarningTextFieldBorder(textfieldTo);
+				}
+				break;	
+			case COMMAND_CLASS_DB_MIN:
+				tempClass_.setMinChainDB(-1);
+				tempClass_.setMaxChainDB(-1);
+				try
+				{
+					int numFrom = Integer.parseInt(textfieldFrom.getText());
+					int numTo = Integer.parseInt(textfieldTo.getText());
+					
+					if ((numFrom < numTo) || (numFrom < 1 && numTo < 1))
+					{
+						setDefaultTextFieldBorder(textfieldFrom);
+						setDefaultTextFieldBorder(textfieldTo);
+					}	
+					else
+					{
+						setWarningTextFieldBorder(textfieldFrom);
+						setWarningTextFieldBorder(textfieldTo);
+					}
+					tempClass_.setMinChainDB(numFrom);
+					tempClass_.setMaxChainDB(numTo);
+				}
+				catch (NumberFormatException ex) 
+				{
+					setWarningTextFieldBorder(textfieldFrom);
+					setWarningTextFieldBorder(textfieldTo);
+				}
+				break;	
+			case COMMAND_CLASS_RT_MIN:
+				tempClass_.setRtRangeFrom(-1);
+				tempClass_.setRtRangeTo(-1);
+				try
+				{
+					int numFrom = Integer.parseInt(textfieldFrom.getText());
+					int numTo = Integer.parseInt(textfieldTo.getText());
+					
+					if ((numFrom < numTo) || (numFrom < 0 && numTo < 0))
+					{
+						setDefaultTextFieldBorder(textfieldFrom);
+						setDefaultTextFieldBorder(textfieldTo);
+					}	
+					else
+					{
+						setWarningTextFieldBorder(textfieldFrom);
+						setWarningTextFieldBorder(textfieldTo);
+					}
+					tempClass_.setRtRangeFrom(numFrom);
+					tempClass_.setRtRangeTo(numTo);
+				}
+				catch (NumberFormatException ex) 
+				{
+					setWarningTextFieldBorder(textfieldFrom);
+					setWarningTextFieldBorder(textfieldTo);
+				}
+				break;	
+
+			case COMMAND_CLASS_OH_MIN:
+				tempClass_.setOhRangeFrom(-1);
+				tempClass_.setOhRangeTo(-1);
+				try
+				{
+					int numFrom = Integer.parseInt(textfieldFrom.getText());
+					int numTo = Integer.parseInt(textfieldTo.getText());
+					
+					if ((numFrom < numTo) || (numFrom < 1 && numTo < 1))
+					{
+						setDefaultTextFieldBorder(textfieldFrom);
+						setDefaultTextFieldBorder(textfieldTo);
+					}	
+					else
+					{
+						setWarningTextFieldBorder(textfieldFrom);
+						setWarningTextFieldBorder(textfieldTo);
+					}
+					tempClass_.setOhRangeFrom(numFrom);
+					tempClass_.setOhRangeTo(numTo);
+				}
+				catch (NumberFormatException ex) 
+				{
+					setWarningTextFieldBorder(textfieldFrom);
+					setWarningTextFieldBorder(textfieldTo);
+				}
+				break;
+				
+			case COMMAND_CLASS_OX_MIN:
+				tempClass_.setOxRangeFrom(-1);
+				tempClass_.setOxRangeTo(-1);
+				try
+				{
+					int numFrom = Integer.parseInt(textfieldFrom.getText());
+					int numTo = Integer.parseInt(textfieldTo.getText());
+					
+					if ((numFrom < numTo) || (numFrom < 1 && numTo < 1))
+					{
+						setDefaultTextFieldBorder(textfieldFrom);
+						setDefaultTextFieldBorder(textfieldTo);
+					}	
+					else
+					{
+						setWarningTextFieldBorder(textfieldFrom);
+						setWarningTextFieldBorder(textfieldTo);
+					}
+					tempClass_.setOxRangeFrom(numFrom);
+					tempClass_.setOxRangeTo(numTo);
+				}
+				catch (NumberFormatException ex) 
+				{
+					setWarningTextFieldBorder(textfieldFrom);
+					setWarningTextFieldBorder(textfieldTo);
+				}
+				break;
+				
+			default:
+				break;
+		}
 	}
 	
 	private void textFieldChangeExecuter(String actionCommand, JTextField textfield)
@@ -597,84 +742,6 @@ public class MassListCreatorPanel extends JPanel
 				}
 				catch (ChemicalFormulaException ex) {setWarningTextFieldBorder(textfield);}
 				break;
-			case COMMAND_CLASS_CHAIN_C_MIN:
-				tempClass_.setMinChainC(-1);
-				try
-				{
-					int num = Integer.parseInt(textfield.getText());
-					if (num > 0 && num < selectedClass_.getMaxChainC())
-						setDefaultTextFieldBorder(textfield);
-					else
-						setWarningTextFieldBorder(textfield);
-					tempClass_.setMinChainC(num);
-				}
-				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
-				break;	
-			case COMMAND_CLASS_CHAIN_C_MAX:
-				tempClass_.setMaxChainC(-1);
-				try
-				{
-					int num = Integer.parseInt(textfield.getText());
-					if (num > 0 && num > selectedClass_.getMinChainC())
-						setDefaultTextFieldBorder(textfield);
-					else
-						setWarningTextFieldBorder(textfield);
-					tempClass_.setMaxChainC(num);
-				}
-				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
-				break;	
-			case COMMAND_CLASS_DB_MIN:
-				tempClass_.setMinChainDB(-1);
-				try
-				{
-					int num = Integer.parseInt(textfield.getText());
-					if (num >= 0 && num < selectedClass_.getMaxChainDB() || (num == 0 && selectedClass_.getMaxChainDB() == 0))
-						setDefaultTextFieldBorder(textfield);
-					else
-						setWarningTextFieldBorder(textfield);
-					tempClass_.setMinChainDB(num);
-				}
-				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
-				break;	
-			case COMMAND_CLASS_DB_MAX:
-				tempClass_.setMaxChainDB(-1);
-				try
-				{
-					int num = Integer.parseInt(textfield.getText());
-					if (num > 0 && num > selectedClass_.getMinChainDB() || (num == 0 && selectedClass_.getMinChainDB() == 0))
-						setDefaultTextFieldBorder(textfield);
-					else
-						setWarningTextFieldBorder(textfield);
-					tempClass_.setMaxChainDB(num);
-				}
-				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
-				break;	
-			case COMMAND_CLASS_RT_MIN:
-				tempClass_.setRtRangeFrom(-1);
-				try
-				{
-					double num = Double.parseDouble(textfield.getText());
-					if (num < selectedClass_.getRtRangeTo() || (num < 0 && selectedClass_.getRtRangeTo() < 0))
-						setDefaultTextFieldBorder(textfield);
-					else
-						setWarningTextFieldBorder(textfield);
-					tempClass_.setRtRangeFrom(num);
-				}
-				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
-				break;	
-			case COMMAND_CLASS_RT_MAX:
-				tempClass_.setRtRangeTo(-1);
-				try
-				{
-					double num = Double.parseDouble(textfield.getText());
-					if (num > selectedClass_.getRtRangeFrom() || (num < 0 && selectedClass_.getRtRangeFrom() < 0))
-						setDefaultTextFieldBorder(textfield);
-					else
-						setWarningTextFieldBorder(textfield);
-					tempClass_.setRtRangeTo(num);
-				}
-				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
-				break;
 			case COMMAND_CLASS_OH:
 				tempClass_.setOhNumber(-1);
 				try
@@ -688,58 +755,6 @@ public class MassListCreatorPanel extends JPanel
 				}
 				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
 				break;
-			case COMMAND_CLASS_OH_MIN:
-				tempClass_.setOhRangeFrom(-1);
-				try
-				{
-					int num = Integer.parseInt(textfield.getText());
-					if (num >= 0 && num < selectedClass_.getOhRangeTo() || (num == 0 && selectedClass_.getOhRangeTo() == 0))
-						setDefaultTextFieldBorder(textfield);
-					else
-						setWarningTextFieldBorder(textfield);
-					tempClass_.setOhRangeFrom(num);
-				}
-				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
-				break;	
-			case COMMAND_CLASS_OH_MAX:
-				tempClass_.setOhRangeTo(-1);
-				try
-				{
-					int num = Integer.parseInt(textfield.getText());
-					if (num > 0 && num > selectedClass_.getOhRangeFrom() || (num == 0 && selectedClass_.getOhRangeFrom() == 0))
-						setDefaultTextFieldBorder(textfield);
-					else
-						setWarningTextFieldBorder(textfield);
-					tempClass_.setOhRangeTo(num);
-				}
-				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
-				break;
-			case COMMAND_CLASS_OX_MIN:
-				tempClass_.setOxRangeFrom(-1);
-				try
-				{
-					int num = Integer.parseInt(textfield.getText());
-					if (num >= 0 && num < selectedClass_.getOxRangeTo() || (num == 0 && selectedClass_.getOxRangeTo() == 0))
-						setDefaultTextFieldBorder(textfield);
-					else
-						setWarningTextFieldBorder(textfield);
-					tempClass_.setOxRangeFrom(num);
-				}
-				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
-				break;	
-			case COMMAND_CLASS_OX_MAX:
-				tempClass_.setOxRangeTo(-1);
-				try
-				{
-					int num = Integer.parseInt(textfield.getText());
-					if (num > 0 && num > selectedClass_.getOxRangeFrom() || (num == 0 && selectedClass_.getOxRangeFrom() == 0))
-						setDefaultTextFieldBorder(textfield);
-					else
-						setWarningTextFieldBorder(textfield);
-					tempClass_.setOxRangeTo(num);
-				}
-				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
-				break;	
 				
 			default:
 				break;
@@ -855,12 +870,37 @@ public class MassListCreatorPanel extends JPanel
 				else
 				{
 					MassListExporter exporter = new MassListExporter(outPath, lipidClassTable_.getSelectedLipidClasses());
-					exporter.export();
+					
+					StringBuilder builder = new StringBuilder();
+					builder.append("<html>Writing the mass list to the specified file.<br>");
+					builder.append("Please wait... </html>");
+					
+					LoadingPanel waitPanel = new LoadingPanel(builder.toString());
+					
+					Thread thread = new Thread(new Runnable()
+		  		{
+		  			public void run()
+		  			{
+		  				updateUI(displayPanel_, waitPanel);
+		  				exporter.export();
+		  				updateUI(waitPanel, displayPanel_);
+		  			}
+		  		});
+		    	thread.start(); 
+		    	
 				}
 				break;
 			default:
 				break;
 		}
+	}
+	
+	private void updateUI(JPanel current, JPanel update)
+	{
+		this.remove(current);
+		this.add(update);
+		this.invalidate();
+		this.updateUI();
 	}
 	
 	/**
