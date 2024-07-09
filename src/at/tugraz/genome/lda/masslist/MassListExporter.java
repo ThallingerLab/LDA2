@@ -74,11 +74,13 @@ public class MassListExporter
 	
 	private String outPath_;
 	private ArrayList<LipidClassVO> lipidClasses_;
+	private String exportOption_;
 	
-	public MassListExporter(String outPath, ArrayList<LipidClassVO> lipidClasses)
+	public MassListExporter(String outPath, ArrayList<LipidClassVO> lipidClasses, String exportOption)
 	{
 		this.outPath_ = outPath;
 		this.lipidClasses_ = lipidClasses;
+		this.exportOption_ = exportOption;
 	}
 	
 	public void export()
@@ -130,9 +132,12 @@ public class MassListExporter
 		          cell.setCellValue(massNeutral);
               for (AdductVO adduct : lClassVO.getAdducts())
               {
-              	double massAdduct = computeAdductMass(massNeutral, adduct);
-              	cell = row.createCell(headerTitles.indexOf(getAdductHeader(adduct)),HSSFCell.CELL_TYPE_NUMERIC);
-                cell.setCellValue(massAdduct);
+              	if ( isAdductExport(adduct.getCharge()) )
+								{
+              		double massAdduct = computeAdductMass(massNeutral, adduct);
+                	cell = row.createCell(headerTitles.indexOf(getAdductHeader(adduct)),HSSFCell.CELL_TYPE_NUMERIC);
+                  cell.setCellValue(massAdduct);
+								}
               }
               cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_PSM),HSSFCell.CELL_TYPE_STRING);
 		          cell.setCellValue(psmString);
@@ -148,6 +153,17 @@ public class MassListExporter
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	private boolean isAdductExport(int charge)
+	{
+		if ( (exportOption_.equals(MassListCreatorPanel.EXPORT_OPTION_NEG) && charge < 0)
+    		|| (exportOption_.equals(MassListCreatorPanel.EXPORT_OPTION_POS) && charge > 0)
+    		|| (exportOption_.equals(MassListCreatorPanel.EXPORT_OPTION_BOTH) && charge != 0) )
+		{
+			return true;
+		}
+		return false;
 	}
 	
 	/**
@@ -299,7 +315,10 @@ public class MassListExporter
     headerTitles.add(MassListExporter.HEADER_MASS_NEUTRAL);
     for (AdductVO adduct : lClassVO.getAdducts())
     {
-    	headerTitles.add(getAdductHeader(adduct));
+    	if ( isAdductExport(adduct.getCharge()) )
+    	{
+    		headerTitles.add(getAdductHeader(adduct));
+    	}
     }
     
     headerTitles.add(MassListExporter.HEADER_PSM);

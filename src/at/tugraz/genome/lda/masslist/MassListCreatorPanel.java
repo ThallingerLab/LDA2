@@ -102,12 +102,18 @@ public class MassListCreatorPanel extends JPanel
 	
 	private final static String OUT_OPEN= "outOpen";
 	
-	private final static String EXPORT= "export";
+	public final static String EXPORT_OPTION_NEG = "negative ion mode";
+	public final static String EXPORT_OPTION_POS = "positive ion mode";
+	public final static String EXPORT_OPTION_BOTH = "both ion modes";
+	private final static String[] EXPORT_OPTIONS = new String[] {EXPORT_OPTION_NEG, EXPORT_OPTION_POS, EXPORT_OPTION_BOTH};
+	private final static String COMMAND_EXPORT_OPTIONS = "exportOptions";
+	private final static String EXPORT = "export";
+	
 	
 	private final static String PLACEHOLDER_OUT_PATH = "Enter path and file name for the mass list export.";
 	
-	private final static int PREFERRED_DISPLAY_COMPONENT_WIDTH= 150;
-	private final static int PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH= 50;
+	private final static int PREFERRED_DISPLAY_COMPONENT_WIDTH = 150;
+	private final static int PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH = 50;
 	
 	
 	private ArrayList<AdductVO> allDefinedAdducts_;
@@ -125,6 +131,7 @@ public class MassListCreatorPanel extends JPanel
 	private JPanel adductPanel_;
 	private JTextField outTextField_;
 	private Path previousSelection_ = null;
+	private JComboBox<String> exportOptions_;
 	
 	public MassListCreatorPanel()
 	{
@@ -238,14 +245,17 @@ public class MassListCreatorPanel extends JPanel
 	{
 		JPanel panel = new JPanel();
 		panel.setLayout(new GridBagLayout());
-				
-//				instantiateJTextField(OUT_EDIT, PLACEHOLDER_OUT_PATH, 825);
-		panel.add(outPathField, getDefaultGridBagConstraints(0,0, GridBagConstraints.WEST, 1, 1));
+		
+		panel.add(new JLabel("Export relevant adducts for (based on sign of adduct charge): "), getDefaultGridBagConstraints(0,0, GridBagConstraints.WEST, 1, 1));
+		exportOptions_ = instantiateJComboBox(COMMAND_EXPORT_OPTIONS, EXPORT_OPTIONS, 0);
+		panel.add(exportOptions_, getDefaultGridBagConstraints(1,0, GridBagConstraints.WEST, 1, 1));
+		
+		panel.add(outPathField, getDefaultGridBagConstraints(0,1, GridBagConstraints.WEST, 2, 1));
   	JButton outPathButton = instantiateJButton(OUT_OPEN, "Browse", true);
-		panel.add(outPathButton, getDefaultGridBagConstraints(1,0, GridBagConstraints.EAST, 1, 1, new Insets(10,10,10,10)));
-		TitledBorder border = JOptionPanel.getTitledPanelBorder("Mass list export path");
+		panel.add(outPathButton, getDefaultGridBagConstraints(2,1, GridBagConstraints.EAST, 1, 1, new Insets(10,10,10,10)));
+		TitledBorder border = JOptionPanel.getTitledPanelBorder("Mass list export");
 		panel.setBorder(border);
-		panel.setPreferredSize(new Dimension(975,75));
+		panel.setPreferredSize(new Dimension(975,125));
 		return panel;
 	}
 	
@@ -263,7 +273,7 @@ public class MassListCreatorPanel extends JPanel
 		panel.add(buttonPanel, getDefaultGridBagConstraints(0,13, GridBagConstraints.CENTER, 5, 1));
 		TitledBorder border = JOptionPanel.getTitledPanelBorder("Display / edit currently selected adduct definition");
 		panel.setBorder(border);
-		panel.setPreferredSize(new Dimension(550,200));
+		panel.setPreferredSize(new Dimension(550,175));
 		return panel;
 	}
 	
@@ -277,7 +287,7 @@ public class MassListCreatorPanel extends JPanel
 		addLabeledTextField(panel, 1, new JLabel("Number of FA and/or LCB chains: "), numberChainField);
 		JTextField chemicalFormula = instantiateJTextField(COMMAND_CLASS_FORMULA, vo.getHeadGroupFormulaString());
 		addLabeledTextField(panel, 2, new JLabel("Chemical formula without chains: "), chemicalFormula);
-		JComboBox<String> faChainList = instantiateJComboBox(COMMAND_CLASS_FA_CHAIN_LIST, faChainListNames_, vo, findSelectedFAChainListIndex(vo));
+		JComboBox<String> faChainList = instantiateJComboBox(COMMAND_CLASS_FA_CHAIN_LIST, faChainListNames_, findSelectedFAChainListIndex(vo));
 		addLabeledComboBox(panel, 3, new JLabel("Selected FA chain list: "), faChainList);
 		JScrollPane adductList = instantiateJListScrollPane(COMMAND_CLASS_ADDUCT_LIST, adductListNames_, vo, findSelectedAdductListIndices(vo));
 		addLabeledJListScrollPane(panel, 4, new JLabel("Selected adducts (hold CNTR for multiple selection): "), adductList);
@@ -293,16 +303,16 @@ public class MassListCreatorPanel extends JPanel
 				instantiateJTextFieldRange(COMMAND_CLASS_OH_MIN, String.valueOf(vo.getOhRangeFrom()), String.valueOf(vo.getOhRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
 		addLabeledRange(panel, 10, new JLabel("Oxidized lipid Ox range (optional): "), 
 				instantiateJTextFieldRange(COMMAND_CLASS_OX_MIN, String.valueOf(vo.getOxRangeFrom()), String.valueOf(vo.getOxRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
-		JCheckBox rtFilter = instantiateCheckBox(COMMAND_CLASS_ADDUCT_INSENSITIVE_RT_FILTER);
+		JCheckBox rtFilter = instantiateCheckBox(COMMAND_CLASS_ADDUCT_INSENSITIVE_RT_FILTER, vo.isAdductInsensitiveRtFilter());
 		addLabeledCheckBox(panel, 11, new JLabel("Enable adduct insensitive RT filter: "), rtFilter);
-		JCheckBox pickBest = instantiateCheckBox(COMMAND_CLASS_PICK_BEST);
+		JCheckBox pickBest = instantiateCheckBox(COMMAND_CLASS_PICK_BEST, vo.isPickBestMatchBySpectrumCoverage());
 		addLabeledCheckBox(panel, 12, new JLabel("Pick best match by spectrum coverage: "), pickBest);
 		JPanel buttonPanel = instantiateJButtonPanel(COMMAND_CLASS_EXPORT, "Override this definition", "Save as new lipid class definition");
 		panel.add(buttonPanel, getDefaultGridBagConstraints(0,13, GridBagConstraints.CENTER, 5, 1));
 		
 		TitledBorder border = JOptionPanel.getTitledPanelBorder("Display / edit currently selected lipid class definition");
 		panel.setBorder(border);
-		panel.setPreferredSize(new Dimension(550,525));
+		panel.setPreferredSize(new Dimension(550,500));
 		return panel;
 	}
 	
@@ -346,7 +356,7 @@ public class MassListCreatorPanel extends JPanel
 		return scrollPane;
 	}
 	
-	private JComboBox<String> instantiateJComboBox(String actionCommand, String[] entries, LipidClassVO vo, int index) throws IOException
+	private JComboBox<String> instantiateJComboBox(String actionCommand, String[] entries, int index)
 	{
 		JComboBox<String> jComboBox = new JComboBox<String>(entries);
 		jComboBox.addActionListener(new ActionListener() {
@@ -394,7 +404,7 @@ public class MassListCreatorPanel extends JPanel
 		return arr;
 	}
 	
-	private JCheckBox instantiateCheckBox(String actionCommand)
+	private JCheckBox instantiateCheckBox(String actionCommand, boolean selected)
 	{
 		JCheckBox checkBox = new JCheckBox();
 		checkBox.addActionListener(new ActionListener() {
@@ -404,6 +414,7 @@ public class MassListCreatorPanel extends JPanel
 		  	jCheckBoxChangeExecuter(actionCommand, checkBox);
 		  }
 	  });
+		checkBox.setSelected(selected);
 		return checkBox;
 	}
 	
@@ -867,9 +878,13 @@ public class MassListCreatorPanel extends JPanel
 				{
 					new WarningMessage(new JFrame(), "Error", "A filepath to write the mass list to must be defined prior to the export!");
 				}
+				else if (lipidClassTable_.getSelectedLipidClasses().isEmpty())
+				{
+					new WarningMessage(new JFrame(), "Error", "Please select at least one lipid class prior to the export!");
+				}
 				else
 				{
-					MassListExporter exporter = new MassListExporter(outPath, lipidClassTable_.getSelectedLipidClasses());
+					MassListExporter exporter = new MassListExporter(outPath, lipidClassTable_.getSelectedLipidClasses(), (String)exportOptions_.getSelectedItem());
 					
 					StringBuilder builder = new StringBuilder();
 					builder.append("<html>Writing the mass list to the specified file.<br>");
@@ -1186,7 +1201,7 @@ public class MassListCreatorPanel extends JPanel
     
     private AdductsTable(String title, String[] adductNames, String selected)
     {
-    	this.setPreferredSize(new Dimension(400,200));
+    	this.setPreferredSize(new Dimension(400,175));
     	selectionTablePanel_ = new JPanel();
     	generateSelectionTablePanel(initializeTableData(adductNames), selected);
     	this.setLayout(new GridBagLayout());
@@ -1248,7 +1263,7 @@ public class MassListCreatorPanel extends JPanel
     private LipidClassTable(String title, String[] lipidClassNames, String selected)
     {
     	this.lipidClassNames_ = lipidClassNames;
-    	this.setPreferredSize(new Dimension(400,525));
+    	this.setPreferredSize(new Dimension(400,500));
     	selectionTablePanel_ = new JPanel();
     	generateSelectionTablePanel(initializeTableData(lipidClassNames), selected);
     	this.setLayout(new GridBagLayout());
@@ -1262,7 +1277,7 @@ public class MassListCreatorPanel extends JPanel
     	model_ = new BooleanTableModel(tableData, columnNames);
     	displayTable_ = new JTable(model_);
     	scrollPane_ = new JScrollPane(displayTable_);
-    	scrollPane_.setPreferredSize(new Dimension(325,475));
+    	scrollPane_.setPreferredSize(new Dimension(325,450));
     	displayTable_.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     	ListSelectionModel selectionModel = displayTable_.getSelectionModel();
     	selectionModel.setAnchorSelectionIndex(model_.indexOf(selected,COLUMN_NAME));
