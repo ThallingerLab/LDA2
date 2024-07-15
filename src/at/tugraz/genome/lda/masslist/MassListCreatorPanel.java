@@ -63,6 +63,8 @@ import javax.swing.table.AbstractTableModel;
 
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
+import at.tugraz.genome.lda.msn.parser.FALibParser;
+import at.tugraz.genome.lda.msn.parser.LCBLibParser;
 import at.tugraz.genome.lda.target.JOptionPanel;
 import at.tugraz.genome.lda.target.JTargetFileWizard;
 import at.tugraz.genome.lda.target.LoadingPanel;
@@ -86,16 +88,17 @@ public class MassListCreatorPanel extends JPanel
 	private final static String COMMAND_ADDUCT_EXPORT= "adductExport";
 	
 	private final static String COMMAND_CLASS_NAME = "className";
-	private final static String COMMAND_CLASS_CHAIN_NUM= "classChainNum";
+	private final static String COMMAND_CLASS_FA_CHAIN_NUM= "classFAChainNum";
+	private final static String COMMAND_CLASS_LCB_CHAIN_NUM= "classLCBChainNum";
 	private final static String COMMAND_CLASS_FORMULA= "classFormula";
 	private final static String COMMAND_CLASS_FA_CHAIN_LIST= "classFAChainList";
+	private final static String COMMAND_CLASS_LCB_CHAIN_LIST= "classLCBChainList";
 	private final static String COMMAND_CLASS_ADDUCT_LIST= "classAdductList";
 	private final static String COMMAND_CLASS_CHAIN_C_MIN= "classChainMin";
 	private final static String COMMAND_CLASS_DB_MIN= "classDBMin";
 	private final static String COMMAND_CLASS_RT_MIN= "classRtMin";
 	private final static String COMMAND_CLASS_OH= "classOH";
 	private final static String COMMAND_CLASS_OH_MIN= "classOhMin";
-	private final static String COMMAND_CLASS_OX_MIN= "classOxMin";
 	private final static String COMMAND_CLASS_ADDUCT_INSENSITIVE_RT_FILTER= "classRTFilter";
 	private final static String COMMAND_CLASS_PICK_BEST= "classPickBest";
 	private final static String COMMAND_CLASS_EXPORT= "classExport";
@@ -119,6 +122,7 @@ public class MassListCreatorPanel extends JPanel
 	private ArrayList<AdductVO> allDefinedAdducts_;
 	private ArrayList<LipidClassVO> allDefinedLipidClasses_;
 	private String[] faChainListNames_;
+	private String[] lcbChainListNames_;
 	private String[] adductListNames_;
 	private AdductVO selectedAdduct_;
 	private AdductVO tempAdduct_;
@@ -132,6 +136,9 @@ public class MassListCreatorPanel extends JPanel
 	private JTextField outTextField_;
 	private Path previousSelection_ = null;
 	private JComboBox<String> exportOptions_;
+	private JTextField numberLCBChainField_;
+	private JComboBox<String> lcbChainList_;
+	private JTextField ohField_;
 	
 	public MassListCreatorPanel()
 	{
@@ -142,7 +149,8 @@ public class MassListCreatorPanel extends JPanel
 			allDefinedAdducts_ = (new AdductParser()).parse();
 			adductListNames_ = getAdductNames();
 			allDefinedLipidClasses_ = (new LipidClassParser(allDefinedAdducts_)).parse();
-			faChainListNames_ = getFAChainListNames();
+			faChainListNames_ = getChainListNames(true);
+			lcbChainListNames_ = getChainListNames(false);
 			selectedClass_ = allDefinedLipidClasses_.get(0);
 			tempClass_ = new LipidClassVO(selectedClass_);
 			selectedAdduct_ = allDefinedAdducts_.get(0);
@@ -184,7 +192,8 @@ public class MassListCreatorPanel extends JPanel
 	private void refreshLipidClassScrollPane(String selectedLipidClassName) throws FileNotFoundException, IOException, ChemicalFormulaException
 	{
 		allDefinedLipidClasses_ = (new LipidClassParser(allDefinedAdducts_)).parse();
-		faChainListNames_ = getFAChainListNames();
+		faChainListNames_ = getChainListNames(true);
+		lcbChainListNames_ = getChainListNames(false);
 		LipidClassVO vo = getVOfromName(selectedLipidClassName);
 		if (vo != null) 
 		{
@@ -281,28 +290,43 @@ public class MassListCreatorPanel extends JPanel
 	{
 		JPanel panel = new JPanel();
 		panel.setLayout(new GridBagLayout());
-		JTextField nameField = instantiateJTextField(COMMAND_CLASS_NAME, vo.getLipidClass());
-		addLabeledTextField(panel, 0, new JLabel("Lipid class name: "), nameField);
-		JTextField numberChainField = instantiateJTextField(COMMAND_CLASS_CHAIN_NUM, String.valueOf(vo.getNumberOfChains()));
-		addLabeledTextField(panel, 1, new JLabel("Number of FA and/or LCB chains: "), numberChainField);
-		JTextField chemicalFormula = instantiateJTextField(COMMAND_CLASS_FORMULA, vo.getHeadGroupFormulaString());
-		addLabeledTextField(panel, 2, new JLabel("Chemical formula without chains: "), chemicalFormula);
-		JComboBox<String> faChainList = instantiateJComboBox(COMMAND_CLASS_FA_CHAIN_LIST, faChainListNames_, findSelectedFAChainListIndex(vo));
+		addLabeledTextField(panel, 0, new JLabel("Lipid class name: "), 
+				instantiateJTextField(COMMAND_CLASS_NAME, vo.getLipidClass()));
+		addLabeledTextField(panel, 1, new JLabel("Chemical formula without chains: "), 
+				instantiateJTextField(COMMAND_CLASS_FORMULA, vo.getHeadGroupFormulaString()));
+		JComboBox<String> faChainList = instantiateJComboBox(COMMAND_CLASS_FA_CHAIN_LIST, faChainListNames_, findSelectedChainListIndex(vo.getFAChainList()));
+		
+		panel.add(new JLabel("Number of chains: "), getDefaultGridBagConstraints(0,2, GridBagConstraints.WEST, 1, 1));
+		panel.add(new JLabel("FA: "), getDefaultGridBagConstraints(1,2, GridBagConstraints.EAST, 1, 1));
+		JTextField numberFAChainField = instantiateJTextField(COMMAND_CLASS_FA_CHAIN_NUM, String.valueOf(vo.getNumberOfFAChains()));
+		numberFAChainField.setPreferredSize(new Dimension(PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH,20));
+		panel.add(numberFAChainField, getDefaultGridBagConstraints(2,2, GridBagConstraints.WEST, 1, 1));
+		panel.add(new JLabel("LCB: "), getDefaultGridBagConstraints(3,2, GridBagConstraints.EAST, 1, 1));
+		numberLCBChainField_ = instantiateJTextField(COMMAND_CLASS_LCB_CHAIN_NUM, String.valueOf(vo.getNumberOfLCBChains()));
+		numberLCBChainField_.setPreferredSize(new Dimension(PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH,20));
+		panel.add(numberLCBChainField_, getDefaultGridBagConstraints(4,2, GridBagConstraints.EAST, 1, 1));
+		
 		addLabeledComboBox(panel, 3, new JLabel("Selected FA chain list: "), faChainList);
-		JScrollPane adductList = instantiateJListScrollPane(COMMAND_CLASS_ADDUCT_LIST, adductListNames_, vo, findSelectedAdductListIndices(vo));
-		addLabeledJListScrollPane(panel, 4, new JLabel("Selected adducts (hold CNTR for multiple selection): "), adductList);
-		addLabeledRange(panel, 5, new JLabel("Total number of C atoms in the chains: "), 
-				instantiateJTextFieldRange(COMMAND_CLASS_CHAIN_C_MIN, String.valueOf(vo.getMinChainC()), String.valueOf(vo.getMaxChainC()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
-		addLabeledRange(panel, 6, new JLabel("Total number of double bonds (C=C) in the chains: "), 
-				instantiateJTextFieldRange(COMMAND_CLASS_DB_MIN, String.valueOf(vo.getMinChainDB()), String.valueOf(vo.getMaxChainDB()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
-		addLabeledRange(panel, 7, new JLabel("Retention time (RT) range in minutes (optional): "), 
-				instantiateJTextFieldRange(COMMAND_CLASS_RT_MIN, String.valueOf(vo.getRtRangeFrom()), String.valueOf(vo.getRtRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
-		JTextField ohField = instantiateJTextField(COMMAND_CLASS_OH, String.valueOf(vo.getOhNumber()));
-		addLabeledTextField(panel, 8, new JLabel("Sphingolipid OH number (optional): "), ohField);
-		addLabeledRange(panel, 9, new JLabel("Sphingolipid OH range (optional): "), 
+		lcbChainList_ = instantiateJComboBox(COMMAND_CLASS_LCB_CHAIN_LIST, lcbChainListNames_, findSelectedChainListIndex(vo.getLCBChainList()));
+		lcbChainList_.setEnabled(vo.getNumberOfLCBChains() > 0);
+		addLabeledComboBox(panel, 4, new JLabel("Selected LCB chain list: "), lcbChainList_);
+		addLabeledJListScrollPane(panel, 5, new JLabel("Selected adducts (hold CNTR for multiple selection): "), 
+				instantiateJListScrollPane(COMMAND_CLASS_ADDUCT_LIST, adductListNames_, vo, findSelectedAdductListIndices(vo)));
+		
+		ohField_ = instantiateJTextField(COMMAND_CLASS_OH, String.valueOf(vo.getOhNumber()));
+		ohField_.setEnabled(vo.getNumberOfLCBChains() > 0);
+		addLabeledTextField(panel, 6, new JLabel("Sphingolipid chain OH number: "), ohField_);
+		addLabeledRange(panel, 7, new JLabel("Chain OH / oxidation range: "), 
 				instantiateJTextFieldRange(COMMAND_CLASS_OH_MIN, String.valueOf(vo.getOhRangeFrom()), String.valueOf(vo.getOhRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
-		addLabeledRange(panel, 10, new JLabel("Oxidized lipid Ox range (optional): "), 
-				instantiateJTextFieldRange(COMMAND_CLASS_OX_MIN, String.valueOf(vo.getOxRangeFrom()), String.valueOf(vo.getOxRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
+		
+		addLabeledRange(panel, 8, new JLabel("Total number of chain C atoms: "), 
+				instantiateJTextFieldRange(COMMAND_CLASS_CHAIN_C_MIN, String.valueOf(vo.getMinChainC()), String.valueOf(vo.getMaxChainC()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
+		addLabeledRange(panel, 9, new JLabel("Total number of chain double bonds (C=C): "), 
+				instantiateJTextFieldRange(COMMAND_CLASS_DB_MIN, String.valueOf(vo.getMinChainDB()), String.valueOf(vo.getMaxChainDB()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
+		addLabeledRange(panel, 10, new JLabel("Retention time (RT) range in minutes: "), 
+				instantiateJTextFieldRange(COMMAND_CLASS_RT_MIN, String.valueOf(vo.getRtRangeFrom()), String.valueOf(vo.getRtRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
+//		addLabeledRange(panel, 11, new JLabel("Oxidized lipid Ox range (optional): "), 
+//				instantiateJTextFieldRange(COMMAND_CLASS_OX_MIN, String.valueOf(vo.getOxRangeFrom()), String.valueOf(vo.getOxRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
 		JCheckBox rtFilter = instantiateCheckBox(COMMAND_CLASS_ADDUCT_INSENSITIVE_RT_FILTER, vo.isAdductInsensitiveRtFilter());
 		addLabeledCheckBox(panel, 11, new JLabel("Enable adduct insensitive RT filter: "), rtFilter);
 		JCheckBox pickBest = instantiateCheckBox(COMMAND_CLASS_PICK_BEST, vo.isPickBestMatchBySpectrumCoverage());
@@ -370,16 +394,16 @@ public class MassListCreatorPanel extends JPanel
 		return jComboBox;
 	}
 	
-	private int findSelectedFAChainListIndex(LipidClassVO vo) throws IOException
+	private int findSelectedChainListIndex(String chainListName) throws IOException
 	{
 		for (int i=0; i<faChainListNames_.length; i++)
 		{
-			if (faChainListNames_[i].equalsIgnoreCase(vo.getFaChainList()))
+			if (faChainListNames_[i].equalsIgnoreCase(chainListName))
 			{
 				return i;
 			}
 		}
-		throw new IOException(String.format("The file defining the lipid class '%s' contains a FA chain list name that does not exist!", vo.getLipidClass()));
+		return 0;
 	}
 	
 	private int[] findSelectedAdductListIndices(LipidClassVO vo) throws IOException
@@ -644,7 +668,8 @@ public class MassListCreatorPanel extends JPanel
 					int numFrom = Integer.parseInt(textfieldFrom.getText());
 					int numTo = Integer.parseInt(textfieldTo.getText());
 					
-					if ((numFrom < numTo) || (numFrom < 1 && numTo < 1))
+					if ((tempClass_.getNumberOfLCBChains() > 0 && numFrom > 0 && (numFrom <= tempClass_.getOhNumber() && tempClass_.getOhNumber() <= numTo))
+							|| (tempClass_.getNumberOfLCBChains() == 0 && numFrom >= 0 && (numFrom <= numTo)))
 					{
 						setDefaultTextFieldBorder(textfieldFrom);
 						setDefaultTextFieldBorder(textfieldTo);
@@ -656,34 +681,6 @@ public class MassListCreatorPanel extends JPanel
 					}
 					tempClass_.setOhRangeFrom(numFrom);
 					tempClass_.setOhRangeTo(numTo);
-				}
-				catch (NumberFormatException ex) 
-				{
-					setWarningTextFieldBorder(textfieldFrom);
-					setWarningTextFieldBorder(textfieldTo);
-				}
-				break;
-				
-			case COMMAND_CLASS_OX_MIN:
-				tempClass_.setOxRangeFrom(-1);
-				tempClass_.setOxRangeTo(-1);
-				try
-				{
-					int numFrom = Integer.parseInt(textfieldFrom.getText());
-					int numTo = Integer.parseInt(textfieldTo.getText());
-					
-					if ((numFrom < numTo) || (numFrom < 1 && numTo < 1))
-					{
-						setDefaultTextFieldBorder(textfieldFrom);
-						setDefaultTextFieldBorder(textfieldTo);
-					}	
-					else
-					{
-						setWarningTextFieldBorder(textfieldFrom);
-						setWarningTextFieldBorder(textfieldTo);
-					}
-					tempClass_.setOxRangeFrom(numFrom);
-					tempClass_.setOxRangeTo(numTo);
 				}
 				catch (NumberFormatException ex) 
 				{
@@ -732,8 +729,21 @@ public class MassListCreatorPanel extends JPanel
 				else
 					setWarningTextFieldBorder(textfield);
 				break;
-			case COMMAND_CLASS_CHAIN_NUM:
-				tempClass_.setNumberOfChains(0);
+//			case COMMAND_CLASS_CHAIN_NUM:
+//				tempClass_.setNumberOfChains(0);
+//				try
+//				{
+//					int chainNum = Integer.parseInt(textfield.getText());
+//					if (chainNum > 0)
+//						setDefaultTextFieldBorder(textfield);
+//					else
+//						setWarningTextFieldBorder(textfield);
+//					tempClass_.setNumberOfChains(chainNum);
+//				}
+//				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
+//				break;
+			case COMMAND_CLASS_FA_CHAIN_NUM:
+				tempClass_.setNumberOfFAChains(0);
 				try
 				{
 					int chainNum = Integer.parseInt(textfield.getText());
@@ -741,7 +751,24 @@ public class MassListCreatorPanel extends JPanel
 						setDefaultTextFieldBorder(textfield);
 					else
 						setWarningTextFieldBorder(textfield);
-					tempClass_.setNumberOfChains(chainNum);
+					tempClass_.setNumberOfFAChains(chainNum);
+				}
+				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
+				break;
+			case COMMAND_CLASS_LCB_CHAIN_NUM:
+				tempClass_.setNumberOfLCBChains(0);
+				try
+				{
+					int chainNum = Integer.parseInt(textfield.getText());
+					if (chainNum >= 0)
+						setDefaultTextFieldBorder(textfield);
+					else
+						setWarningTextFieldBorder(textfield);
+					tempClass_.setNumberOfLCBChains(chainNum);
+					lcbChainList_.setEnabled(chainNum > 0);
+					tempClass_.setOhNumber(chainNum > 0 ? (tempClass_.getOhNumber()>0 ? tempClass_.getOhNumber() : 2) : 0);
+					ohField_.setText(String.valueOf(tempClass_.getOhNumber()));
+					ohField_.setEnabled(chainNum > 0);
 				}
 				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
 				break;
@@ -801,6 +828,9 @@ public class MassListCreatorPanel extends JPanel
 		{
 			case COMMAND_CLASS_FA_CHAIN_LIST:
 				tempClass_.setFaChainList((String)jComboBox.getSelectedItem());
+				break;
+			case COMMAND_CLASS_LCB_CHAIN_LIST:
+				tempClass_.setLCBChainList((String)jComboBox.getSelectedItem());
 				break;
 			default:
 				break;
@@ -948,18 +978,19 @@ public class MassListCreatorPanel extends JPanel
 	
 	private boolean isLipidClassOxDefinitionViable()
 	{
-		if (tempClass_.getOhNumber() == 0 && tempClass_.getOhRangeFrom() == 0 && tempClass_.getOhRangeTo() == 0 && tempClass_.getOxRangeFrom() == 0 && tempClass_.getOxRangeTo() == 0)
+		//default
+		if (tempClass_.getOhNumber() == 0 && tempClass_.getOhRangeFrom() == 0 && tempClass_.getOhRangeTo() == 0)
 		{
 			return true;
 		}
-		else if ((tempClass_.getOxRangeFrom() == 0 && tempClass_.getOxRangeTo() == 0)
-				&& (tempClass_.getOhNumber() > 0 && (tempClass_.getOhRangeFrom() >= 0 && tempClass_.getOhRangeFrom() < tempClass_.getOhRangeTo())
+		//sphingolipids
+		else if ((tempClass_.getOhNumber() > 0 && (tempClass_.getOhRangeFrom() > 0 && tempClass_.getOhRangeFrom() < tempClass_.getOhRangeTo())
 				&& (tempClass_.getOhRangeFrom() <= tempClass_.getOhNumber() && tempClass_.getOhRangeTo() >= tempClass_.getOhNumber())))
 		{
 			return true;
 		}
-		else if ( (tempClass_.getOhNumber() == 0 && tempClass_.getOhRangeFrom() == 0 && tempClass_.getOhRangeTo() == 0)
-				&& tempClass_.getOxRangeFrom() >= 0 && tempClass_.getOxRangeFrom() < tempClass_.getOxRangeTo())
+		//oxidized lipids
+		else if ((tempClass_.getOhNumber() == 0 && (tempClass_.getOhRangeFrom() >= 0 && tempClass_.getOhRangeFrom() < tempClass_.getOhRangeTo()))) 
 		{
 			return true;
 		}
@@ -969,14 +1000,13 @@ public class MassListCreatorPanel extends JPanel
 	private boolean isLipidClassViable()
 	{
 		if (isLipidClassNameAvailable(tempClass_.getLipidClass())
-				&& tempClass_.getNumberOfChains() != 0
+				&& (tempClass_.getNumberOfFAChains() + tempClass_.getNumberOfLCBChains() > 0)
 				&& tempClass_.getHeadgroupFormula() != null
 				&& tempClass_.getMinChainC() > 0 && tempClass_.getMinChainC() < tempClass_.getMaxChainC()
 				&& (tempClass_.getMinChainDB() >= 0 && tempClass_.getMinChainDB() < tempClass_.getMaxChainDB() || (tempClass_.getMinChainDB() == 0 && tempClass_.getMaxChainDB() == 0))
 				&& ((tempClass_.getRtRangeFrom() >= 0 && tempClass_.getRtRangeFrom() < tempClass_.getRtRangeTo()) || (tempClass_.getRtRangeFrom() < 0 && tempClass_.getRtRangeTo() < 0))
 				&& tempClass_.getOhNumber()>=0
 				&& (tempClass_.getOhRangeFrom() >= 0 && tempClass_.getOhRangeFrom() < tempClass_.getOhRangeTo() || (tempClass_.getOhRangeFrom() == 0 && tempClass_.getOhRangeTo() == 0))
-				&& (tempClass_.getOxRangeFrom() >= 0 && tempClass_.getOxRangeFrom() < tempClass_.getOxRangeTo() || (tempClass_.getOxRangeFrom() == 0 && tempClass_.getOxRangeTo() == 0))
 				&& !tempClass_.getAdducts().isEmpty()
 				)
 		{
@@ -1135,13 +1165,13 @@ public class MassListCreatorPanel extends JPanel
 		return toArray(names);
 	}
 	
-	private String[] getFAChainListNames() throws IOException
+	private String[] getChainListNames(boolean isFA) throws IOException
 	{
 		ArrayList<String> names = new ArrayList<String>();
 		File folder = new File(CHAIN_LIST_FOLDER);
 		if (!folder.exists())
 		{
-			throw new IOException(String.format("The FA chain list folder '%s' does not exist!", CHAIN_LIST_FOLDER));
+			throw new IOException(String.format("The chain list folder '%s' does not exist!", CHAIN_LIST_FOLDER));
 		}
 		File[] fileCandidates = folder.listFiles();
 		for (int i=0; i<fileCandidates.length;i++)
@@ -1149,7 +1179,18 @@ public class MassListCreatorPanel extends JPanel
 			String fileName = fileCandidates[i].getName(); 
 			if (fileName.endsWith(CHAIN_LIST_SUFFIX))
 			{
-				names.add(fileName.substring(0, fileName.indexOf(CHAIN_LIST_SUFFIX)));
+				try
+				{
+					if (isFA && new FALibParser(fileCandidates[i]).isFAFile())
+					{
+				    names.add(fileName.substring(0, fileName.indexOf(CHAIN_LIST_SUFFIX)));
+					}
+					else if (!isFA && new LCBLibParser(fileCandidates[i]).isLCBFile())
+					{
+				    names.add(fileName.substring(0, fileName.indexOf(CHAIN_LIST_SUFFIX)));
+					}
+				}
+				catch (Exception ex) {}
 			}
 		};
 		return toArray(names);

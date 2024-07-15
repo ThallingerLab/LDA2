@@ -24,6 +24,7 @@
 package at.tugraz.genome.lda.masslist;
 
 import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,10 +42,10 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
-import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.exception.SheetNotPresentException;
 import at.tugraz.genome.lda.msn.parser.FALibParser;
+import at.tugraz.genome.lda.msn.parser.LCBLibParser;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.StaticUtils;
@@ -65,7 +66,7 @@ public class MassListExporter
 	public final static String HEADER_NAME = "Name";
 	public final static String HEADER_COLON = "";
 	public final static String HEADER_DBS = "dbs";
-	public final static String HEADER_MASS_NEUTRAL = "M";
+	public final static String HEADER_MASS_NEUTRAL = "neutral mass";
   public final static String HEADER_PSM = "PSM";
   public final static String HEADER_RETENTION_TIME = "tR (min)";
   
@@ -96,21 +97,35 @@ public class MassListExporter
 				createHeader(OPTIONS_ROW, sheet, createOptionsTitles(lClassVO), headerStyle);
 				List<String> headerTitles = createHeaderTitles(lClassVO);
 				createHeader(HEADER_ROW, sheet, headerTitles, headerStyle);
-				FALibParser faParser = new FALibParser(lClassVO.getFaChainListPath());
-		    faParser.parseFile();
-		    ArrayList<FattyAcidVO> chains = faParser.getFattyAcidSet(Settings.getFaHydroxyEncoding().getEncodedPrefix((short) 0));
+				
+		  	ArrayList<FattyAcidVO> chainsFA = new ArrayList<FattyAcidVO>();
+		  	ArrayList<FattyAcidVO> chainsLCB = new ArrayList<FattyAcidVO>();
+		    if (lClassVO.getNumberOfFAChains() > 0)
+		    {
+		    	FALibParser faParser = new FALibParser(lClassVO.getFAChainListPath());
+			    faParser.parseFile();
+		    	chainsFA = faParser.getFattyAcidSet(false); //do not include the oxstate, as that is currently buggy
+		    }
+		    if (lClassVO.getNumberOfLCBChains() > 0)
+		    {
+		    	LCBLibParser faParser = new LCBLibParser(new File(lClassVO.getLCBChainListPath()));
+			    faParser.parseFile();
+		    	chainsLCB = faParser.getFattyAcidSet(false); //do not include the oxstate, as that is currently buggy
+		    }
+		    
 		    String psmString = getPSMString(lClassVO);
 		    int rowCount = FIRST_VALUE_ROW;
 				Row row;
 		    Cell cell;
-				for (int i=lClassVO.getMinChainC(); i<=lClassVO.getMaxChainC();i++)
+				for (int i=lClassVO.getMinChainC(); i<=lClassVO.getMaxChainC(); i++)
 				{
 					for (int j=lClassVO.getMinChainDB(); j<=lClassVO.getMaxChainDB(); j++)
 					{
-						ArrayList<ArrayList<FattyAcidVO>> filtered = getPossCombis(lClassVO.getNumberOfChains(),i,j,chains,new ArrayList<FattyAcidVO>()); 
+						ArrayList<ArrayList<FattyAcidVO>> filtered = getPossCombis(lClassVO.getNumberOfFAChains(),lClassVO.getNumberOfLCBChains(),i,j,lClassVO.getOhNumber(),
+								chainsFA,chainsLCB, new ArrayList<FattyAcidVO>()); 
 						if (filtered.isEmpty()) continue; //no combinations possible
 						Hashtable<String,Hashtable<String,Integer>> prefixElements = new Hashtable<String,Hashtable<String,Integer>>();
-						prefixElements = computeElementsFromFAChains(prefixElements,i,j,lClassVO,filtered);
+						prefixElements = computeElementsFromChains(prefixElements,lClassVO,filtered);
 						for (String label : prefixElements.keySet())
             {
 							row = sheet.createRow(rowCount);
@@ -122,10 +137,17 @@ public class MassListExporter
 		          cell.setCellValue(":");
 		          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_DBS),HSSFCell.CELL_TYPE_NUMERIC);
 		          cell.setCellValue(j);
-		          for (String element : elements.keySet())
+		          for (String element : determineHeaderElements())
 		          {
 		          	cell = row.createCell(headerTitles.indexOf(element),HSSFCell.CELL_TYPE_NUMERIC);
-	              cell.setCellValue(elements.get(element));
+		          	if (!elements.containsKey(element))
+		          	{
+		          		cell.setCellValue(0);
+		          	}
+		          	else
+		          	{
+		          		cell.setCellValue(elements.get(element));
+		          	}
 		          }
 		          double massNeutral = computeNeutralMass(elements);
 		          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_MASS_NEUTRAL),HSSFCell.CELL_TYPE_NUMERIC);
@@ -149,7 +171,7 @@ public class MassListExporter
 			workbook.write(out);
 	    System.out.println("workbook written!");
 		}
-		catch (IOException | RulesException | SheetNotPresentException | HydroxylationEncodingException | ChemicalFormulaException e) {
+		catch (IOException | RulesException | SheetNotPresentException | ChemicalFormulaException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -174,11 +196,11 @@ public class MassListExporter
 	private String getPSMString(LipidClassVO lClassVO)
 	{
 		StringBuilder builder = new StringBuilder();
-		if (lClassVO.getOxRangeFrom() < 1 && lClassVO.getOxRangeTo() < 1)
+		if (lClassVO.getNumberOfLCBChains() > 0)
 		{
 			return "";
 		}
-		for (int i=lClassVO.getOxRangeFrom(); i<=lClassVO.getOxRangeTo();i++)
+		for (int i=lClassVO.getOhRangeFrom(); i<=lClassVO.getOhRangeTo();i++)
 		{
 			if (i<1) continue;
 			builder.append(";O"+i);
@@ -186,33 +208,80 @@ public class MassListExporter
 		return builder.toString();
 	}
 	
-	private ArrayList<ArrayList<FattyAcidVO>> getPossCombis(int numberOfChains, int cAtoms, int dbs, ArrayList<FattyAcidVO> fas, ArrayList<FattyAcidVO> added){
+	private ArrayList<ArrayList<FattyAcidVO>> getPossCombis(int numberOfFAChains, int numberOfLCBChains, int cAtoms, int dbs, int oxNum, 
+			ArrayList<FattyAcidVO> fas, ArrayList<FattyAcidVO> lcbs, ArrayList<FattyAcidVO> added){
 		ArrayList<ArrayList<FattyAcidVO>> combis = new ArrayList<ArrayList<FattyAcidVO>>();
-    for (FattyAcidVO fa : fas) {
-    	ArrayList<FattyAcidVO> toAdd = new ArrayList<FattyAcidVO>(added);
-      toAdd.add(fa);
-      if (numberOfChains>1) {
-      	ArrayList<ArrayList<FattyAcidVO>> combis2 = getPossCombis(numberOfChains-1, cAtoms, dbs, fas, toAdd);
-        if (combis2.size()>0) {
+		int totalChains = numberOfFAChains + numberOfLCBChains;
+		
+		ArrayList<FattyAcidVO> toIterate = fas;
+		int faMinus = 1;
+		int lcbMinus = 0;
+		if (numberOfFAChains == 0 && totalChains>0)
+		{
+			toIterate = lcbs;
+			faMinus = 0;
+			lcbMinus = 1;
+		}
+		
+		int maxC = checkMaxCAvailable(added, cAtoms);
+		int maxD = checkMaxDBAvailable(added, dbs);
+		int maxO = checkMaxOxAvailable(added, oxNum);
+		
+    for (FattyAcidVO fa : toIterate) {
+    	if (fa.getcAtoms()<=maxC && fa.getDoubleBonds()<=maxD && fa.getOhNumber()<=maxO)
+    	{
+    		ArrayList<FattyAcidVO> toAdd = new ArrayList<FattyAcidVO>(added);
+        toAdd.add(fa);
+        if (totalChains>1) {
+        	ArrayList<ArrayList<FattyAcidVO>> combis2 = getPossCombis(numberOfFAChains-faMinus, numberOfLCBChains-lcbMinus, cAtoms, dbs, oxNum, fas, lcbs, toAdd);
           combis.addAll(combis2);
+        }else{
+          if (checkTotalCDbsOxValid(toAdd,cAtoms,dbs,oxNum)) {
+            combis.add(toAdd);
+          }
         }
-      }else{
-        if (checkTotalCDbsValid(toAdd,cAtoms,dbs)) {
-          combis.add(toAdd);
-        }
-      }
+    	}
     }
     return combis;
   }
 	
-	private boolean checkTotalCDbsValid(ArrayList<FattyAcidVO> toAdd, int cAtoms, int dbs) {
-    int totC = 0;
+	private int checkMaxCAvailable(ArrayList<FattyAcidVO> added, int cAtoms)
+	{
+		int tot = cAtoms;
+    for (FattyAcidVO fa : added) {
+    	tot -= fa.getcAtoms();
+    }
+    return tot;
+	}
+	
+	private int checkMaxDBAvailable(ArrayList<FattyAcidVO> added, int dbs)
+	{
+		int tot = dbs;
+    for (FattyAcidVO fa : added) {
+    	tot -= fa.getDoubleBonds();
+    }
+    return tot;
+	}
+	
+	private int checkMaxOxAvailable(ArrayList<FattyAcidVO> added, int ox)
+	{
+		int tot = ox;
+    for (FattyAcidVO fa : added) {
+    	tot -= fa.getOhNumber();
+    }
+    return tot;
+	}
+	
+	private boolean checkTotalCDbsOxValid(ArrayList<FattyAcidVO> toAdd, int cAtoms, int dbs, int oxNum) {
+		int totC = 0;
     int totD = 0;
+    int totO = 0;
     for (FattyAcidVO fa : toAdd) {
       totC += fa.getcAtoms();
       totD += fa.getDoubleBonds();
+      totO += fa.getOhNumber();
     }
-    return (totC==cAtoms && totD==dbs);
+    return (totC==cAtoms && totD==dbs && totO==oxNum);
   }
 	
 	/**
@@ -225,58 +294,42 @@ public class MassListExporter
 	 * @return
 	 * @throws ChemicalFormulaException
 	 */
-	private Hashtable<String,Hashtable<String,Integer>> computeElementsFromFAChains(Hashtable<String,Hashtable<String,Integer>>labelElements, 
-  		int fattyAcidC, int dbs, LipidClassVO lClassVO, ArrayList<ArrayList<FattyAcidVO>> filtered) throws ChemicalFormulaException
+	private Hashtable<String,Hashtable<String,Integer>> computeElementsFromChains(Hashtable<String,Hashtable<String,Integer>>labelElements, 
+  		LipidClassVO lClassVO, ArrayList<ArrayList<FattyAcidVO>> filtered) throws ChemicalFormulaException
   {
-  	labelElements = computeElementsFromUnlabeledChains(labelElements,fattyAcidC,dbs,lClassVO);
-  	for (ArrayList<FattyAcidVO> combs : filtered) 
+		for (ArrayList<FattyAcidVO> comb : filtered)
     {
     	Vector<String> labels = new Vector<String>();
-    	Hashtable<String,Integer> classElements = new Hashtable<String,Integer>(labelElements.get(""));
-    	for (FattyAcidVO fa : combs) 
+    	Hashtable<String,Integer> combElements = new Hashtable<String,Integer>(lClassVO.getHeadgroupFormula());
+    	for (FattyAcidVO fa : comb) 
     	{
-    		if (fa.getPrefix().length()>0) 
+    		Hashtable<String,Integer> formula = StaticUtils.categorizeFormula(fa.getFormula(), true);
+    		for (String element : formula.keySet())
     		{
-    			labels.add(fa.getPrefix());
-    			Hashtable<String,Integer> formula = StaticUtils.categorizeFormula(fa.getFormula(), true);
-    			if (formula.containsKey("D"))
+    			if (!combElements.containsKey(element))
     			{
-    				classElements.put("D", classElements.get("D")+formula.get("D"));
-    				classElements.put("H", classElements.get("H")-formula.get("D"));
+    				combElements.put(element, 0);
     			}
-    			if (formula.containsKey("Cc"))
-    			{
-    				classElements.put("Cc", classElements.get("Cc")+formula.get("Cc"));
-    				classElements.put("C", classElements.get("C")-formula.get("Cc"));
-    			}
+    			combElements.put(element, combElements.get(element) + formula.get(element));
     		}
+    		combElements.put("H", combElements.get("H")-1); //removing a hydrogen from each FA
+    		labels.add(fa.getPrefix());
     	}
-    	if (!labels.isEmpty()) 
+    	Collections.sort(labels);
+    	StringBuilder builder = new StringBuilder();
+    	for (String label : labels) 
+  		{
+  			builder.append(label);
+  		}
+    	String labelID = builder.toString();
+    	//removing a hydroxy group for each FA chain that is esterified to an LCB chain (a hydrogen is already removed earlier)
+    	if (lClassVO.getNumberOfLCBChains()>0)
     	{
-    		Collections.sort(labels);
-      	StringBuilder builder = new StringBuilder();
-      	for (String label : labels) 
-    		{
-    			builder.append(label);
-    		}
-      	String labelID = builder.toString();
-      	labelElements.put(labelID, classElements);
+    		combElements.put("H", combElements.get("H")-lClassVO.getNumberOfFAChains());
+    		combElements.put("O", combElements.get("O")-lClassVO.getNumberOfFAChains());
     	}
+    	labelElements.put(labelID, combElements);
     }
-  	return labelElements;
-  }
-	
-	private Hashtable<String,Hashtable<String,Integer>> computeElementsFromUnlabeledChains(Hashtable<String,Hashtable<String,Integer>> labelElements, 
-  		int chainC, int dbs, LipidClassVO lClassVO)
-  {
-  	Hashtable<String,Integer> elements = new Hashtable<String,Integer>(lClassVO.getHeadgroupFormula());
-  	Integer adjustedC = elements.get("C")+chainC;
-  	elements.put("C", adjustedC);
-  	Integer adjustedH = elements.get("H") + chainC*2-dbs*2;
-  	elements.put("H", adjustedH);
-  	elements.put("Cc", 0);
-  	elements.put("D", 0);
-  	labelElements.put("", elements);
   	return labelElements;
   }
 	
@@ -308,7 +361,7 @@ public class MassListExporter
     headerTitles.add(MassListExporter.HEADER_NAME);
     headerTitles.add(MassListExporter.HEADER_COLON);
     headerTitles.add(MassListExporter.HEADER_DBS);
-    for (String element : determineHeaderElements(lClassVO)) 
+    for (String element : determineHeaderElements()) 
     {
     	headerTitles.add(element);
     }
@@ -329,7 +382,8 @@ public class MassListExporter
 	
 	private String getAdductHeader(AdductVO adduct)
 	{
-		return String.format("mass(form[%s] name[%s] charge=%s)", adduct.getFormulaString(), adduct.getAdductName(), adduct.getCharge());
+		//TODO: absolute value for charge state for backward compatibility (12.07.2024)
+		return String.format("mass(form[%s] name[%s] charge=%s)", adduct.getFormulaString(), adduct.getAdductName(), Math.abs(adduct.getCharge()));
 	}
 	
 	private List<String> createOptionsTitles(LipidClassVO lClassVO) 
@@ -359,12 +413,17 @@ public class MassListExporter
     return titles;
   }
 	
-	private ArrayList<String> determineHeaderElements(LipidClassVO lClassVO)
+	//TODO: write out formula for each compound instead, this will be more flexible
+	private ArrayList<String> determineHeaderElements()
 	{
-		ArrayList<String> elements = new ArrayList<String>(lClassVO.getHeadgroupFormula().keySet());
+		ArrayList<String> elements = new ArrayList<String>();
+		elements.add("C");
 		elements.add("Cc");
+		elements.add("H");
 		elements.add("D");
-		Collections.sort(elements);
+		elements.add("N");
+		elements.add("O");
+		elements.add("P");
 		return elements;
 	}
 	

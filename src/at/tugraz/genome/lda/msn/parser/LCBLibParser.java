@@ -57,14 +57,6 @@ public class LCBLibParser extends FALibParser
   private final static String LCB_SHEET_SUFFIX = "LCB";
   /** the highest hydroxylation number available*/
   private short highestHydroxyNumber_ = 0;
-
-  
-  /** hash containing the result of the parsing
-   * the first String is the encoding of the number of hydroxylation sites
-   * the second integer is the amount of carbon atoms
-   * the third integer is the amount of double bonds
-   */
-  private Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> result_;
   
   
   /**
@@ -74,6 +66,21 @@ public class LCBLibParser extends FALibParser
    */
   public LCBLibParser (File file) throws IOException{
     super(file);
+  }
+  
+  public boolean isLCBFile()
+  {
+    try (InputStream myxls = new FileInputStream(inputFile_);
+    		Workbook workbook = new XSSFWorkbook(myxls);) 
+    {
+      for (int sheetNumber = 0; sheetNumber!=workbook.getNumberOfSheets(); sheetNumber++)
+      {
+        if (workbook.getSheetAt(sheetNumber).getSheetName().endsWith(LCB_SHEET_SUFFIX)) 
+        	return true;
+      }
+    }
+    catch (Exception ex) {return false;}
+    return false;
   }
 
   /**
@@ -95,9 +102,7 @@ public class LCBLibParser extends FALibParser
         highestHydroxyNumber_ = hydroxyKey;
     }
     //second, read all sheets whose tabs are named such as $HYDROXY_ENCODING$ followed by LCB_SHEET_SUFFIX, e.g. dLCB
-    InputStream myxls = null;
-    try{
-      myxls = new FileInputStream(inputFile_);
+    try (InputStream myxls = new FileInputStream(inputFile_);) {
       Workbook workbook = null;
       if (inputFile_.getAbsolutePath().endsWith(FattyAcidsContainer.FA_FILE_SUFFIX_NEW))
         workbook = new XSSFWorkbook(myxls);
@@ -158,7 +163,7 @@ public class LCBLibParser extends FALibParser
             }
           }
         }
-        // now, create a the new hash tables and calculate the mass differences according to the hydroxylation numbers
+        // now, create the new hash tables and calculate the mass differences according to the hydroxylation numbers
         Hashtable<Integer,Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> currentHydroxy = new Hashtable<Integer,Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>>();
         int hydroxyDifference = i-previousResultNumber;
         for (Integer cAtoms : otherHydroxyResults.keySet()) {
@@ -194,17 +199,7 @@ public class LCBLibParser extends FALibParser
     //the ChemicalFormulaException can never be thrown, since it is generated from an already checked FattyAcidVO
     }catch (ChemicalFormulaException e) { 
       e.printStackTrace();
-    }finally{
-      try{myxls.close();}catch(Exception ex){};
     }
-  }
-  
-  
-  /**
-   * @return hash containing the result of the parsing; first key: encoding of the number of hydroxylation sites; second key: number of carbon atoms; third key: number of double bonds
-   */
-  public Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> getResult(){
-    return result_;
   }
   
 }

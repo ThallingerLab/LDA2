@@ -417,8 +417,8 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
   }
 
   protected CgChromatogram readAChromatogram(float mz, float lowerMzBand, float upperMzBand,int msLevel,float smoothRange, int smoothRepeats, float meanSmoothRange, int meanSmoothRepeats, float startTime, float stopTime) throws CgException{
-//  long time = System.currentTimeMillis();
-	CgChromatogram cx = reader_.readChromatogram(mz - lowerMzBand,mz + upperMzBand,msLevel);
+  	//  long time = System.currentTimeMillis();
+  	CgChromatogram cx = reader_.readChromatogram(mz - lowerMzBand,mz + upperMzBand,msLevel);
     cx.Mz = mz;
     cx.LowerMzBand = lowerMzBand;
     cx.UpperMzBand = upperMzBand;

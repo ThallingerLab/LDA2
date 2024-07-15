@@ -1,6 +1,6 @@
 ## The name of the adduct.
-name=3H
+name=2H
 ## The chemical formula of the adduct. Chemical formulas prefixed with a '-' and '+' are subtracted from and added to the total mass, respectively. Syntax e.g. +Na-H2
-formula=+H3
+formula=+h2
 ## The charge state of the molecule with this adduct.
-charge=3
+charge=2

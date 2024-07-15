@@ -182,7 +182,7 @@ public class FattyAcidsContainer
         try {
           FALibParser parser = new FALibParser(file);
           parser.parseFile();
-          fattyAcids_.put(file.getName().substring(0,file.getName().length()), parser.getFattyAcids());
+          fattyAcids_.put(file.getName().substring(0,file.getName().length()), parser.getResult());
           availableLabels_.put(file.getName().substring(0,file.getName().length()),parser.getAvailableLabels());
         } catch (SheetNotPresentException ex){
           LCBLibParser parser = new LCBLibParser(file);

@@ -40,8 +40,6 @@ public class LipidClassVO
 	private int ohRangeTo_;
 	private double rtRangeFrom_;
 	private double rtRangeTo_;
-	private int oxRangeFrom_;
-	private int oxRangeTo_;
 	private ArrayList<AdductVO> adducts_;
 	private String headGroupFormulaString_;
 	private Hashtable<String,Integer> headgroupFormula_;
@@ -49,17 +47,18 @@ public class LipidClassVO
 	private int maxChainC_;
 	private int minChainDB_;
 	private int maxChainDB_;
-	private int numberOfChains_;
+	private int numberOfFAChains_;
+	private int numberOfLCBChains_;
 	private String faChainList_;
+	private String lcbChainList_;
 	
 	
 	public LipidClassVO(String lClass, boolean adductInsensitiveRtFilter,
 			boolean pickBestMatchBySpectrumCoverage, int ohNumber, int ohRangeFrom,
-			int ohRangeTo, double rtRangeFrom, double rtRangeTo, int oxRangeFrom,
-			int oxRangeTo, ArrayList<AdductVO> adducts,
-			String headgroupFormula, int minChainC,
-			int maxChainC, int minChainDB, int maxChainDB, int numberOfChains,
-			String faChainList) throws ChemicalFormulaException
+			int ohRangeTo, double rtRangeFrom, double rtRangeTo, 
+			ArrayList<AdductVO> adducts, String headgroupFormula, int minChainC,
+			int maxChainC, int minChainDB, int maxChainDB, int numberOfFAChains,
+			int numberOfLCBChains, String faChainList, String lcbChainList) throws ChemicalFormulaException
 	{
 		super();
 		this.lClass_ = lClass;
@@ -70,8 +69,6 @@ public class LipidClassVO
 		this.ohRangeTo_ = ohRangeTo;
 		this.rtRangeFrom_ = rtRangeFrom;
 		this.rtRangeTo_ = rtRangeTo;
-		this.oxRangeFrom_ = oxRangeFrom;
-		this.oxRangeTo_ = oxRangeTo;
 		this.adducts_ = adducts;
 		this.headGroupFormulaString_ = headgroupFormula;
 		this.headgroupFormula_ = StaticUtils.categorizeFormula(headgroupFormula, true);
@@ -79,15 +76,17 @@ public class LipidClassVO
 		this.maxChainC_ = maxChainC;
 		this.minChainDB_ = minChainDB;
 		this.maxChainDB_ = maxChainDB;
-		this.numberOfChains_ = numberOfChains;
+		this.numberOfFAChains_ = numberOfFAChains;
+		this.numberOfLCBChains_ = numberOfLCBChains;
 		this.faChainList_ = faChainList;
+		this.lcbChainList_ = lcbChainList;
 	}
 
 	public LipidClassVO(LipidClassVO other) throws ChemicalFormulaException
 	{
 		this(other.getLipidClass(), other.isAdductInsensitiveRtFilter(), other.isPickBestMatchBySpectrumCoverage(), other.getOhNumber(), other.getOhRangeFrom(), other.getOhRangeTo(),
-				other.getRtRangeFrom(), other.getRtRangeTo(), other.getOxRangeFrom(), other.getOxRangeTo(), other.getAdducts(), other.getHeadGroupFormulaString(), other.getMinChainC(),
-				other.getMaxChainC(), other.getMinChainDB(), other.getMaxChainDB(), other.getNumberOfChains(), other.getFaChainList());
+				other.getRtRangeFrom(), other.getRtRangeTo(), other.getAdducts(), other.getHeadGroupFormulaString(), other.getMinChainC(),
+				other.getMaxChainC(), other.getMinChainDB(), other.getMaxChainDB(), other.getNumberOfFAChains(), other.getNumberOfLCBChains(), other.getFAChainList(), other.getLCBChainList());
 	}
 
 	public String getLipidClass()
@@ -137,18 +136,6 @@ public class LipidClassVO
 	}
 
 
-	public int getOxRangeFrom()
-	{
-		return oxRangeFrom_;
-	}
-
-
-	public int getOxRangeTo()
-	{
-		return oxRangeTo_;
-	}
-
-
 	public ArrayList<AdductVO> getAdducts()
 	{
 		return adducts_;
@@ -187,21 +174,35 @@ public class LipidClassVO
 	{
 		return maxChainDB_;
 	}
-
-
-	public int getNumberOfChains()
+	
+	public int getNumberOfFAChains()
 	{
-		return numberOfChains_;
+		return numberOfFAChains_;
+	}
+	
+	public int getNumberOfLCBChains()
+	{
+		return numberOfLCBChains_;
 	}
 
-	public String getFaChainList()
+	public String getFAChainList()
 	{
 		return faChainList_;
 	}
+	
+	public String getLCBChainList()
+	{
+		return lcbChainList_;
+	}
 
-	public String getFaChainListPath()
+	public String getFAChainListPath()
 	{
 		return MassListCreatorPanel.CHAIN_LIST_FOLDER+faChainList_+MassListCreatorPanel.CHAIN_LIST_SUFFIX;
+	}
+	
+	public String getLCBChainListPath()
+	{
+		return MassListCreatorPanel.CHAIN_LIST_FOLDER+lcbChainList_+MassListCreatorPanel.CHAIN_LIST_SUFFIX;
 	}
 
 	public void setLipidClass(String lClass)
@@ -245,16 +246,6 @@ public class LipidClassVO
 		this.rtRangeTo_ = rtRangeTo;
 	}
 
-	public void setOxRangeFrom(int oxRangeFrom)
-	{
-		this.oxRangeFrom_ = oxRangeFrom;
-	}
-
-	public void setOxRangeTo(int oxRangeTo)
-	{
-		this.oxRangeTo_ = oxRangeTo;
-	}
-
 	public void setAdducts(ArrayList<AdductVO> adducts)
 	{
 		this.adducts_ = adducts;
@@ -287,14 +278,24 @@ public class LipidClassVO
 		this.maxChainDB_ = maxChainDB;
 	}
 
-	public void setNumberOfChains(int numberOfChains)
+	public void setNumberOfFAChains(int numberOfFAChains)
 	{
-		this.numberOfChains_ = numberOfChains;
+		this.numberOfFAChains_ = numberOfFAChains;
+	}
+	
+	public void setNumberOfLCBChains(int numberOfLCBChains)
+	{
+		this.numberOfLCBChains_ = numberOfLCBChains;
 	}
 
 	public void setFaChainList(String faChainList)
 	{
 		this.faChainList_ = faChainList;
+	}
+
+	public void setLCBChainList(String lcbChainList)
+	{
+		this.lcbChainList_ = lcbChainList;
 	}
 	
 	

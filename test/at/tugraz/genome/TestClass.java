@@ -18251,7 +18251,7 @@ public void testTabFile() throws Exception {
       parser.parse();
       FALibParser faParser = new FALibParser(faLibPath);
       faParser.parseFile();
-      Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> fas = faParser.getFattyAcids().get("n");
+      Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> fas = faParser.getResult().get("n");
       Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
       for (Integer cAtoms : fas.keySet()) {
         for (Integer dbs : fas.get(cAtoms).keySet()) {
@@ -20801,7 +20801,7 @@ public void testTabFile() throws Exception {
       parser.parse();
       FALibParser faParser = new FALibParser(faLibPath);
       faParser.parseFile();
-      Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> fas = faParser.getFattyAcids().get("n");
+      Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> fas = faParser.getResult().get("n");
       Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
       for (Integer cAtoms : fas.keySet()) {
           for (Integer dbs : fas.get(cAtoms).keySet()) {
