@@ -34,7 +34,7 @@ import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.exception.SheetNotPresentException;
 import at.tugraz.genome.lda.msn.parser.FALibParser;
-import at.tugraz.genome.lda.msn.parser.LCBLibParser;
+import at.tugraz.genome.lda.msn.parser.SPBLibParser;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 
 /**
@@ -185,7 +185,7 @@ public class FattyAcidsContainer
           fattyAcids_.put(file.getName().substring(0,file.getName().length()), parser.getResult());
           availableLabels_.put(file.getName().substring(0,file.getName().length()),parser.getAvailableLabels());
         } catch (SheetNotPresentException ex){
-          LCBLibParser parser = new LCBLibParser(file);
+          SPBLibParser parser = new SPBLibParser(file);
           parser.parseFile();
           lcbs_.put(file.getName().substring(0,file.getName().length()), parser.getResult());
           availableLabels_.put(file.getName().substring(0,file.getName().length()),parser.getAvailableLabels());

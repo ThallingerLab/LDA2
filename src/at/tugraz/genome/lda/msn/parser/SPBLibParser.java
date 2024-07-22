@@ -48,13 +48,14 @@ import at.tugraz.genome.lda.utils.StaticUtils;
 /**
  * Parser for the Long Chain Base Libraries stored in Excel format
  * @author Juergen Hartler
+ * @author Leonida M. Lamp
  *
  */
-public class LCBLibParser extends FALibParser
+public class SPBLibParser extends FALibParser
 {
   
-  /** the Excel file must contain a tab ending with "LCB"*/
-  private final static String LCB_SHEET_SUFFIX = "LCB";
+  /** the Excel file must contain a tab ending with "SPB"*/
+  private final static String SPB_SHEET_SUFFIX = "SPB";
   /** the highest hydroxylation number available*/
   private short highestHydroxyNumber_ = 0;
   
@@ -64,7 +65,7 @@ public class LCBLibParser extends FALibParser
    * @param file path to the Excel file
    * @throws IOException
    */
-  public LCBLibParser (File file) throws IOException{
+  public SPBLibParser (File file) throws IOException{
     super(file);
   }
   
@@ -75,7 +76,7 @@ public class LCBLibParser extends FALibParser
     {
       for (int sheetNumber = 0; sheetNumber!=workbook.getNumberOfSheets(); sheetNumber++)
       {
-        if (workbook.getSheetAt(sheetNumber).getSheetName().endsWith(LCB_SHEET_SUFFIX)) 
+        if (workbook.getSheetAt(sheetNumber).getSheetName().endsWith(SPB_SHEET_SUFFIX)) 
         	return true;
       }
     }
@@ -115,7 +116,7 @@ public class LCBLibParser extends FALibParser
         sheet = null;
         String hydrKey = null;
         for (String key : encodedHydroxyStrings.keySet()) {
-          if (sheetName.equalsIgnoreCase(key+LCB_SHEET_SUFFIX)) {
+          if (sheetName.equalsIgnoreCase(key+SPB_SHEET_SUFFIX)) {
             sheet = workbook.getSheetAt(sheetNumber);
             hydrKey = key;
             break;
@@ -135,7 +136,7 @@ public class LCBLibParser extends FALibParser
         }
 //        if (workbook.getSheetAt(sheetNumber).getSheetName().equalsIgnoreCase(FAS_SHEET_NAME)) sheet = workbook.getSheetAt(sheetNumber);
       }
-      if (result_.size()==0) throw new RulesException("A long chain base library must contain at least one sheet starting with the hydroxylation code, followed by \""+LCB_SHEET_SUFFIX+"\", e.g. d"+LCB_SHEET_SUFFIX+"! The lib "+inputFile_.getName()+" has not!");
+      if (result_.size()==0) throw new RulesException("A long chain base library must contain at least one sheet starting with the hydroxylation code, followed by \""+SPB_SHEET_SUFFIX+"\", e.g. d"+SPB_SHEET_SUFFIX+"! The lib "+inputFile_.getName()+" has not!");
      
       int previousResultNumber = 0;
       Hashtable<Integer,Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> otherHydroxyResults = null;

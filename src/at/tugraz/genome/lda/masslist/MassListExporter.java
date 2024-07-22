@@ -29,9 +29,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Set;
 import java.util.Vector;
+
+import javax.swing.JFrame;
 
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.ss.usermodel.Cell;
@@ -41,11 +45,12 @@ import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import at.tugraz.genome.lda.Settings;
+import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.exception.SheetNotPresentException;
 import at.tugraz.genome.lda.msn.parser.FALibParser;
-import at.tugraz.genome.lda.msn.parser.LCBLibParser;
+import at.tugraz.genome.lda.msn.parser.SPBLibParser;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.StaticUtils;
@@ -61,8 +66,6 @@ public class MassListExporter
 	public final static String OPTION_OH_NUMBER = "OH-Number:";
 	public final static String OPTION_OH_RANGE = "OH-Range:";
 	
-	private final static int OPTIONS_ROW = 0;
-	
 	public final static String HEADER_NAME = "Name";
 	public final static String HEADER_COLON = "";
 	public final static String HEADER_DBS = "dbs";
@@ -70,18 +73,29 @@ public class MassListExporter
   public final static String HEADER_PSM = "PSM";
   public final static String HEADER_RETENTION_TIME = "tR (min)";
   
-  private final static int HEADER_ROW = 2;
-  private final static int FIRST_VALUE_ROW = 3;
+  public final static String HEADER_CD_CLASS = "Lipid Class";
+  public final static String HEADER_CD_SPECIES = "Lipid Species";
+  public final static String HEADER_CD_FORMULA = "Chemical Formula";
+  public final static String HEADER_CD_MASS_NEUTRAL = "Neutral Mass";
+  public final static String HEADER_CD_ADDUCT_NAME = "Adduct Name";
+  public final static String HEADER_CD_ADDUCT_FORMULA = "Adduct Formula";
+  public final static String HEADER_CD_ADDUCT_MASS = "Adduct m/z";
+  
+  private final static int OPTIONS_ROW_LDA = 0;
+  private final static int HEADER_ROW_LDA = 2;
+  private final static int FIRST_VALUE_ROW_LDA = 3;
 	
 	private String outPath_;
 	private ArrayList<LipidClassVO> lipidClasses_;
-	private String exportOption_;
+	private String exportIonMode_;
+	private String exportFormat_;
 	
-	public MassListExporter(String outPath, ArrayList<LipidClassVO> lipidClasses, String exportOption)
+	public MassListExporter(String outPath, ArrayList<LipidClassVO> lipidClasses, String exportIonMode, String exportFormat)
 	{
 		this.outPath_ = outPath;
 		this.lipidClasses_ = lipidClasses;
-		this.exportOption_ = exportOption;
+		this.exportIonMode_ = exportIonMode;
+		this.exportFormat_ = exportFormat;
 	}
 	
 	public void export()
@@ -89,99 +103,199 @@ public class MassListExporter
 		try (	BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outPath_));
 				XSSFWorkbook workbook = new XSSFWorkbook();)
 		{
-			for (LipidClassVO lClassVO : lipidClasses_)
+			if (exportFormat_.equals(MassListCreatorPanel.EXPORT_FORMAT_LDA))
 			{
-				Sheet sheet = workbook.createSheet(lClassVO.getLipidClass());
-				
-				XSSFCellStyle headerStyle = ExcelUtils.getMassListHeaderStyle(workbook);
-				createHeader(OPTIONS_ROW, sheet, createOptionsTitles(lClassVO), headerStyle);
-				List<String> headerTitles = createHeaderTitles(lClassVO);
-				createHeader(HEADER_ROW, sheet, headerTitles, headerStyle);
-				
-		  	ArrayList<FattyAcidVO> chainsFA = new ArrayList<FattyAcidVO>();
-		  	ArrayList<FattyAcidVO> chainsLCB = new ArrayList<FattyAcidVO>();
-		    if (lClassVO.getNumberOfFAChains() > 0)
-		    {
-		    	FALibParser faParser = new FALibParser(lClassVO.getFAChainListPath());
-			    faParser.parseFile();
-		    	chainsFA = faParser.getFattyAcidSet(false); //do not include the oxstate, as that is currently buggy
-		    }
-		    if (lClassVO.getNumberOfLCBChains() > 0)
-		    {
-		    	LCBLibParser faParser = new LCBLibParser(new File(lClassVO.getLCBChainListPath()));
-			    faParser.parseFile();
-		    	chainsLCB = faParser.getFattyAcidSet(false); //do not include the oxstate, as that is currently buggy
-		    }
-		    
-		    String psmString = getPSMString(lClassVO);
-		    int rowCount = FIRST_VALUE_ROW;
-				Row row;
-		    Cell cell;
-				for (int i=lClassVO.getMinChainC(); i<=lClassVO.getMaxChainC(); i++)
-				{
-					for (int j=lClassVO.getMinChainDB(); j<=lClassVO.getMaxChainDB(); j++)
-					{
-						ArrayList<ArrayList<FattyAcidVO>> filtered = getPossCombis(lClassVO.getNumberOfFAChains(),lClassVO.getNumberOfLCBChains(),i,j,lClassVO.getOhNumber(),
-								chainsFA,chainsLCB, new ArrayList<FattyAcidVO>()); 
-						if (filtered.isEmpty()) continue; //no combinations possible
-						Hashtable<String,Hashtable<String,Integer>> prefixElements = new Hashtable<String,Hashtable<String,Integer>>();
-						prefixElements = computeElementsFromChains(prefixElements,lClassVO,filtered);
-						for (String label : prefixElements.keySet())
-            {
-							row = sheet.createRow(rowCount);
-            	Hashtable<String,Integer> elements = prefixElements.get(label);
-            	
-              cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_NAME),HSSFCell.CELL_TYPE_STRING);
-		          cell.setCellValue(label+i);
-		          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_COLON),HSSFCell.CELL_TYPE_STRING);
-		          cell.setCellValue(":");
-		          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_DBS),HSSFCell.CELL_TYPE_NUMERIC);
-		          cell.setCellValue(j);
-		          for (String element : determineHeaderElements())
-		          {
-		          	cell = row.createCell(headerTitles.indexOf(element),HSSFCell.CELL_TYPE_NUMERIC);
-		          	if (!elements.containsKey(element))
-		          	{
-		          		cell.setCellValue(0);
-		          	}
-		          	else
-		          	{
-		          		cell.setCellValue(elements.get(element));
-		          	}
-		          }
-		          double massNeutral = computeNeutralMass(elements);
-		          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_MASS_NEUTRAL),HSSFCell.CELL_TYPE_NUMERIC);
-		          cell.setCellValue(massNeutral);
-              for (AdductVO adduct : lClassVO.getAdducts())
-              {
-              	if ( isAdductExport(adduct.getCharge()) )
-								{
-              		double massAdduct = computeAdductMass(massNeutral, adduct);
-                	cell = row.createCell(headerTitles.indexOf(getAdductHeader(adduct)),HSSFCell.CELL_TYPE_NUMERIC);
-                  cell.setCellValue(massAdduct);
-								}
-              }
-              cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_PSM),HSSFCell.CELL_TYPE_STRING);
-		          cell.setCellValue(psmString);
-              rowCount++;
-            }
-					}
-				}
+				exportLDAFormat(workbook);
 			}
+			else if (exportFormat_.equals(MassListCreatorPanel.EXPORT_FORMAT_COMPOUND_DISCOVERER))
+			{
+				exportCDFormat(workbook);
+			}
+			
 			workbook.write(out);
 	    System.out.println("workbook written!");
 		}
-		catch (IOException | RulesException | SheetNotPresentException | ChemicalFormulaException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		catch (IOException | RulesException | SheetNotPresentException | ChemicalFormulaException ex) {
+			new WarningMessage(new JFrame(), "Error", "The following error occurred during the export: "+ex.getMessage());
 		}
 	}
 	
+	
+	private void exportCDFormat(XSSFWorkbook workbook) throws IOException, RulesException, SheetNotPresentException, ChemicalFormulaException
+	{
+		Sheet sheet = workbook.createSheet("Mass List");
+		XSSFCellStyle headerStyle = ExcelUtils.getMassListHeaderStyle(workbook);
+		List<String> headerTitles = createCDHeaderTitles();
+		createHeader(0, sheet, headerTitles, headerStyle);
+		int rowCount = 0;
+		Row row;
+    Cell cell;
+		for (LipidClassVO lClassVO : lipidClasses_)
+		{
+			ArrayList<FattyAcidVO> chainsFA = new ArrayList<FattyAcidVO>();
+	  	ArrayList<FattyAcidVO> chainsLCB = new ArrayList<FattyAcidVO>();
+	    if (lClassVO.getNumberOfFAChains() > 0)
+	    {
+	    	FALibParser faParser = new FALibParser(lClassVO.getFAChainListPath());
+		    faParser.parseFile();
+	    	chainsFA = faParser.getFattyAcidSet(false); //do not include the oxstate, as that is currently buggy
+	    }
+	    if (lClassVO.getNumberOfLCBChains() > 0)
+	    {
+	    	SPBLibParser faParser = new SPBLibParser(new File(lClassVO.getLCBChainListPath()));
+		    faParser.parseFile();
+	    	chainsLCB = faParser.getFattyAcidSet(false); //do not include the oxstate, as that is currently buggy
+	    }
+			
+	    for (int i=lClassVO.getMinChainC(); i<=lClassVO.getMaxChainC(); i++)
+			{
+				for (int j=lClassVO.getMinChainDB(); j<=lClassVO.getMaxChainDB(); j++)
+				{
+					for (int k=lClassVO.getOhRangeFrom(); k<=lClassVO.getOhRangeTo(); k++)
+					{
+						ArrayList<ArrayList<FattyAcidVO>> filtered = getPossCombis(lClassVO.getNumberOfFAChains(),lClassVO.getNumberOfLCBChains(),i,j,k,
+								chainsFA,chainsLCB, new ArrayList<FattyAcidVO>()); 
+						if (filtered.isEmpty()) continue; //no combinations possible
+						
+						Hashtable<String,Hashtable<String,Integer>> prefixElements = new Hashtable<String,Hashtable<String,Integer>>();
+						prefixElements = computeElementsFromChains(prefixElements,lClassVO,filtered);
+						for (String label : prefixElements.keySet())
+	          {
+							Hashtable<String,Integer> elements = prefixElements.get(label);
+							double massNeutral = computeNeutralMass(elements);
+							for (AdductVO adduct : lClassVO.getAdducts())
+	            {
+	            	if ( isAdductExport(adduct.getCharge()) )
+								{
+	            		double massAdduct = computeAdductMass(massNeutral, adduct);
+	            		row = sheet.createRow(++rowCount);
+	            		cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_CD_CLASS),HSSFCell.CELL_TYPE_STRING);
+	                cell.setCellValue(lClassVO.getLipidClass());
+	                cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_CD_SPECIES),HSSFCell.CELL_TYPE_STRING);
+	                cell.setCellValue(buildLipidSpeciesString(lClassVO, i,j,k));
+	                cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_CD_FORMULA),HSSFCell.CELL_TYPE_STRING);
+	                cell.setCellValue(StaticUtils.getFormulaInHillNotation(elements, false));
+	                cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_CD_MASS_NEUTRAL),HSSFCell.CELL_TYPE_NUMERIC);
+	                cell.setCellValue(massNeutral);
+	                cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_CD_ADDUCT_NAME),HSSFCell.CELL_TYPE_STRING);
+	                cell.setCellValue(adduct.getAdductName());
+	                cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_CD_ADDUCT_FORMULA),HSSFCell.CELL_TYPE_STRING);
+	                cell.setCellValue(StaticUtils.getFormulaInHillNotation(computeAdductFormula(elements, adduct), false));
+	                cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_CD_ADDUCT_MASS),HSSFCell.CELL_TYPE_NUMERIC);
+	                cell.setCellValue(massAdduct);
+								}
+	            }
+	          }
+					}
+				}
+			}
+		}
+	}
+	
+	private String buildLipidSpeciesString(LipidClassVO lClassVO, int cAtoms, int doubleBonds, int ohNumber)
+	{
+		String ohString = "";
+		if (ohNumber == 1)
+		{
+			ohString = ";O";
+		}
+		else if (ohNumber > 1)
+		{
+			ohString = ";O"+ohNumber;
+		}
+		
+		return String.format("%s %s:%s%s", lClassVO.getLipidClass(), cAtoms, doubleBonds, ohString);
+	}
+	
+	private void exportLDAFormat(XSSFWorkbook workbook) throws IOException, RulesException, SheetNotPresentException, ChemicalFormulaException
+	{
+		for (LipidClassVO lClassVO : lipidClasses_)
+		{
+			Sheet sheet = workbook.createSheet(lClassVO.getLipidClass());
+			
+			XSSFCellStyle headerStyle = ExcelUtils.getMassListHeaderStyle(workbook);
+			createHeader(OPTIONS_ROW_LDA, sheet, createLDAOptionsTitles(lClassVO), headerStyle);
+			List<String> headerTitles = createLDAHeaderTitles(lClassVO);
+			createHeader(HEADER_ROW_LDA, sheet, headerTitles, headerStyle);
+			
+	  	ArrayList<FattyAcidVO> chainsFA = new ArrayList<FattyAcidVO>();
+	  	ArrayList<FattyAcidVO> chainsLCB = new ArrayList<FattyAcidVO>();
+	    if (lClassVO.getNumberOfFAChains() > 0)
+	    {
+	    	FALibParser faParser = new FALibParser(lClassVO.getFAChainListPath());
+		    faParser.parseFile();
+	    	chainsFA = faParser.getFattyAcidSet(false); //do not include the oxstate, as that is currently buggy
+	    }
+	    if (lClassVO.getNumberOfLCBChains() > 0)
+	    {
+	    	SPBLibParser faParser = new SPBLibParser(new File(lClassVO.getLCBChainListPath()));
+		    faParser.parseFile();
+	    	chainsLCB = faParser.getFattyAcidSet(false); //do not include the oxstate, as that is currently buggy
+	    }
+	    
+	    String psmString = getPSMString(lClassVO);
+	    int rowCount = FIRST_VALUE_ROW_LDA;
+			Row row;
+	    Cell cell;
+			for (int i=lClassVO.getMinChainC(); i<=lClassVO.getMaxChainC(); i++)
+			{
+				for (int j=lClassVO.getMinChainDB(); j<=lClassVO.getMaxChainDB(); j++)
+				{
+					ArrayList<ArrayList<FattyAcidVO>> filtered = getPossCombis(lClassVO.getNumberOfFAChains(),lClassVO.getNumberOfLCBChains(),i,j,lClassVO.getOhNumber(),
+							chainsFA,chainsLCB, new ArrayList<FattyAcidVO>()); 
+					if (filtered.isEmpty()) continue; //no combinations possible
+					Hashtable<String,Hashtable<String,Integer>> prefixElements = new Hashtable<String,Hashtable<String,Integer>>();
+					prefixElements = computeElementsFromChains(prefixElements,lClassVO,filtered);
+					for (String label : prefixElements.keySet())
+          {
+						row = sheet.createRow(rowCount);
+          	Hashtable<String,Integer> elements = prefixElements.get(label);
+          	
+            cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_NAME),HSSFCell.CELL_TYPE_STRING);
+	          cell.setCellValue(label+i);
+	          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_COLON),HSSFCell.CELL_TYPE_STRING);
+	          cell.setCellValue(":");
+	          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_DBS),HSSFCell.CELL_TYPE_NUMERIC);
+	          cell.setCellValue(j);
+	          for (String element : determineLDAHeaderElements())
+	          {
+	          	cell = row.createCell(headerTitles.indexOf(element),HSSFCell.CELL_TYPE_NUMERIC);
+	          	if (!elements.containsKey(element))
+	          	{
+	          		cell.setCellValue(0);
+	          	}
+	          	else
+	          	{
+	          		cell.setCellValue(elements.get(element));
+	          	}
+	          }
+	          double massNeutral = computeNeutralMass(elements);
+	          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_MASS_NEUTRAL),HSSFCell.CELL_TYPE_NUMERIC);
+	          cell.setCellValue(massNeutral);
+            for (AdductVO adduct : lClassVO.getAdducts())
+            {
+            	if ( isAdductExport(adduct.getCharge()) )
+							{
+            		double massAdduct = computeAdductMass(massNeutral, adduct);
+              	cell = row.createCell(headerTitles.indexOf(getAdductHeader(adduct)),HSSFCell.CELL_TYPE_NUMERIC);
+                cell.setCellValue(massAdduct);
+							}
+            }
+            cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_PSM),HSSFCell.CELL_TYPE_STRING);
+	          cell.setCellValue(psmString);
+            rowCount++;
+          }
+				}
+			}
+		}
+	}
+	
+	
 	private boolean isAdductExport(int charge)
 	{
-		if ( (exportOption_.equals(MassListCreatorPanel.EXPORT_OPTION_NEG) && charge < 0)
-    		|| (exportOption_.equals(MassListCreatorPanel.EXPORT_OPTION_POS) && charge > 0)
-    		|| (exportOption_.equals(MassListCreatorPanel.EXPORT_OPTION_BOTH) && charge != 0) )
+		if ( (exportIonMode_.equals(MassListCreatorPanel.EXPORT_OPTION_NEG) && charge < 0)
+    		|| (exportIonMode_.equals(MassListCreatorPanel.EXPORT_OPTION_POS) && charge > 0)
+    		|| (exportIonMode_.equals(MassListCreatorPanel.EXPORT_OPTION_BOTH) && charge != 0) )
 		{
 			return true;
 		}
@@ -333,6 +447,21 @@ public class MassListExporter
   	return labelElements;
   }
 	
+	private Hashtable<String,Integer> computeAdductFormula(Hashtable<String,Integer> neutralElements, AdductVO adduct)
+	{
+		Hashtable<String,Integer> elements = new Hashtable<String,Integer>();
+		Hashtable<String,Integer> elementsAdduct = new Hashtable<String,Integer>(adduct.getFormula());
+		Set<String> allElements = new HashSet<String>(neutralElements.keySet());
+		allElements.addAll(elementsAdduct.keySet());
+		for (String element : allElements)
+		{
+			int neutralEle = neutralElements.get(element) != null ? neutralElements.get(element) : 0;
+			int adductEle = elementsAdduct.get(element) != null ? elementsAdduct.get(element) : 0;
+			elements.put(element, neutralEle+adductEle);
+		}
+		return elements;
+	}
+	
 	private double computeNeutralMass(Hashtable<String,Integer> elements)
 	{
 		double neutralMass = 0.0;
@@ -355,13 +484,13 @@ public class MassListExporter
 		return Math.abs(massAdduct/adduct.getCharge());
 	}
 	
-	private List<String> createHeaderTitles(LipidClassVO lClassVO) 
+	private List<String> createLDAHeaderTitles(LipidClassVO lClassVO) 
   {
     List<String> headerTitles = new ArrayList<String>();
     headerTitles.add(MassListExporter.HEADER_NAME);
     headerTitles.add(MassListExporter.HEADER_COLON);
     headerTitles.add(MassListExporter.HEADER_DBS);
-    for (String element : determineHeaderElements()) 
+    for (String element : determineLDAHeaderElements()) 
     {
     	headerTitles.add(element);
     }
@@ -380,13 +509,28 @@ public class MassListExporter
     return headerTitles;
   }
 	
+	private List<String> createCDHeaderTitles() 
+  {
+    List<String> headerTitles = new ArrayList<String>();
+    headerTitles.add(MassListExporter.HEADER_CD_CLASS);
+    headerTitles.add(MassListExporter.HEADER_CD_SPECIES);
+    headerTitles.add(MassListExporter.HEADER_CD_FORMULA);
+    headerTitles.add(MassListExporter.HEADER_CD_MASS_NEUTRAL);
+    headerTitles.add(MassListExporter.HEADER_CD_ADDUCT_NAME);
+    headerTitles.add(MassListExporter.HEADER_CD_ADDUCT_FORMULA);
+    headerTitles.add(MassListExporter.HEADER_CD_ADDUCT_MASS);
+    
+    return headerTitles;
+  }
+
+	
 	private String getAdductHeader(AdductVO adduct)
 	{
 		//TODO: absolute value for charge state for backward compatibility (12.07.2024)
 		return String.format("mass(form[%s] name[%s] charge=%s)", adduct.getFormulaString(), adduct.getAdductName(), Math.abs(adduct.getCharge()));
 	}
 	
-	private List<String> createOptionsTitles(LipidClassVO lClassVO) 
+	private List<String> createLDAOptionsTitles(LipidClassVO lClassVO) 
   {
     List<String> titles = new ArrayList<String>();
     if (lClassVO.isAdductInsensitiveRtFilter())
@@ -414,7 +558,7 @@ public class MassListExporter
   }
 	
 	//TODO: write out formula for each compound instead, this will be more flexible
-	private ArrayList<String> determineHeaderElements()
+	private ArrayList<String> determineLDAHeaderElements()
 	{
 		ArrayList<String> elements = new ArrayList<String>();
 		elements.add("C");

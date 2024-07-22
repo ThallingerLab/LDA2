@@ -177,7 +177,7 @@ import at.tugraz.genome.lda.msn.PostQuantificationProcessor;
 import at.tugraz.genome.lda.msn.RulesContainer;
 import at.tugraz.genome.lda.msn.parser.FALibParser;
 import at.tugraz.genome.lda.msn.parser.FragRuleParser;
-import at.tugraz.genome.lda.msn.parser.LCBLibParser;
+import at.tugraz.genome.lda.msn.parser.SPBLibParser;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.msn.vos.IntensityChainVO;
 import at.tugraz.genome.lda.msn.vos.IntensityPositionVO;
@@ -15351,7 +15351,7 @@ public void testTabFile() throws Exception {
   private void parseLCBList() {
     File lcbFile = new File("C:\\Development\\LipidDataAnalyzer\\fattyAcids\\dLCB.xlsx");
     try {
-      LCBLibParser parser = new LCBLibParser(lcbFile);
+      SPBLibParser parser = new SPBLibParser(lcbFile);
       parser.parseFile();
     }
     catch (IOException | RulesException e) {

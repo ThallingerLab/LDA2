@@ -26,6 +26,9 @@ package at.tugraz.genome.lda.parser;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
@@ -110,6 +113,8 @@ public class LDAResultReader
     lcbHydroxyEncoding_ = null;
     resultParameterSets_ = new Hashtable<String,Vector<LipidParameterSet>>();
     msLevels_ = new Hashtable<String,Integer>();
+    
+    
     String suffix = "";
     if (filePath!=null && filePath.length()>3)
       suffix = filePath.substring(filePath.lastIndexOf("."));
