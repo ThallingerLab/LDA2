@@ -468,10 +468,11 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
    * @param charge the charge of the analyte
    * @param msLevel the MS-level
    * @param nrOfIsotopes how many isotopes shall be quantified (starting with 0)
+   * @param mustMatchIsos the probabilities of the isotopes that have to match
    * @return the detected results
    * @throws CgException
    */
-  public Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> processShotgunData(float mz, int charge, int msLevel, int nrOfIsotopes) throws CgException{
+  public Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> processShotgunData(float mz, int charge, int msLevel, int nrOfIsotopes, Vector<Double> mustMatchIsos) throws CgException{
     float mzTolerance = LipidomicsConstants.getCoarseChromMzTolerance(mz);
     CgProbe probe = calculateAShotgunIntensity(mz,mzTolerance,charge,msLevel);
     if (!(probe.Area>0f))
@@ -484,9 +485,13 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     if (nrOfIsotopes>1){
       for (int i=1; i!=nrOfIsotopes; i++){
         probe = calculateAShotgunIntensity(mz+i*LipidomicsConstants.getNeutronMass()/(float)charge,mzTolerance,charge,msLevel);
-        if (probe.Area==0f)
+        if (probe.Area==0f) {
+          // in this case, less isotopes have been found than required -> the hit should be discarded
+          if (i<mustMatchIsos.size()) {
+            return null;
+          }
           break;
-        else{
+        } else{
           probes = new Vector<CgProbe>();
           probes.add(probe);
           oneResult.put(i, probes);

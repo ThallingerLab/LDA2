@@ -1,0 +1,48 @@
+[GENERAL]					
+AmountOfChains=2					
+AmountOfLCBs=1					
+ChainLibrary=fattyAcidChains.xlsx					
+LCBLibrary=dLCB_Ganglio.xlsx					
+CAtomsFromName=\D*(\d+):\d+					
+DoubleBondsFromName=\D*\d+:(\d+)					
+ChainCutoff=10%					
+FaHydroxylationRange=0-1					
+LcbHydroxylationRange=2-3					
+RetentionTimePostprocessing=true					
+SingleChainIdentification=true
+								
+[HEAD]					
+!FRAGMENTS					
+Name=Hex_161	Formula=C6H9O5	Charge=1	MSLevel=2	mandatory=false	
+Name=Hex-O_179	Formula=C6H11O6	Charge=1	MSLevel=2	mandatory=false	
+Name=Hex-Hex_323	Formula=C12H19O10	Charge=1	MSLevel=2	mandatory=false	
+Name=Hex-Hex-O_341	Formula=C12H21O11	Charge=1	MSLevel=2	mandatory=false	
+Name=Precursor	Formula=$PRECURSOR	Charge=2	MSLevel=2	mandatory=false	
+Name=PrecursorSingle	Formula=$PRECURSOR+H	Charge=1	MSLevel=2	mandatory=false	
+Name=M-Hex_M-162	Formula=PrecursorSingle-C6H10O5	Charge=1	MSLevel=2	mandatory=false	
+Name=M-Hex-O_M-180	Formula=PrecursorSingle-C6H12O6	Charge=1	MSLevel=2	mandatory=false	
+Name=M-Hex-Hex_M-324	Formula=PrecursorSingle-C12H20O10	Charge=1	MSLevel=2	mandatory=false	
+Name=M-Hex-Hex-O_M-342	Formula=PrecursorSingle-C12H22O11	Charge=1	MSLevel=2	mandatory=false	
+
+[CHAINS]					
+!FRAGMENTS					
+Name=FA_FA	Formula=$CHAIN	Charge=1	MSLevel=2	mandatory=false	
+Name=FA-H_FA-1	Formula=$CHAIN-H	Charge=1	MSLevel=2	mandatory=false	
+Name=FA-H2O_FA-18	Formula=$CHAIN-H2O	Charge=1	MSLevel=2	mandatory=false	
+Name=FA-H3O_FA-19	Formula=$CHAIN-H3O	Charge=1	MSLevel=2	mandatory=false	
+Name=LCB-H2O_LCB-18	Formula=$LCB-H3O	Charge=1	MSLevel=2	mandatory=false	
+Name=LCB-2H2O_LCB-36	Formula=$LCB-H5O2	Charge=1	MSLevel=2	mandatory=false	
+Name=LCB-H6ON_LCB-36	Formula=$LCB-H6ON	Charge=1	MSLevel=2	mandatory=false	oh=2
+Name=LCB-CH4O2_LCB-48	Formula=$LCB-CH5O2	Charge=1	MSLevel=2	mandatory=false	
+Name=LCB-H6ON_LCB-50	Formula=$LCB-CH8ON	Charge=1	MSLevel=2	mandatory=false	oh=3
+Name=G			Formula=PrecursorSingle-$CHAIN+CH2NO		Charge=1	MSLevel=2	mandatory=true
+Name=G-NeuAc_G-291	Formula=PrecursorSingle-$CHAIN+CH2NO-C11H17NO8		Charge=1	MSLevel=2	mandatory=false
+Name=G-NeuAc-NeuAc_G-582	Formula=PrecursorSingle-$CHAIN+CH2NO-C11H17NO8-C22H34N2O16		Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=G|G-NeuAc_G-291|G-NeuAc-NeuAc_G-582		mandatory=true
+
+
+[POSITION]
+!INTENSITIES
+Equation=G[2]>0*$BASEPEAK		mandatory=true
