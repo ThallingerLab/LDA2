@@ -883,7 +883,7 @@ public class QuantificationResultExporter
 				} else {
 					ws.value(row, headerTitles.indexOf(HEADER_AREA), new Double(0));
 				}
-				ws.value(row, headerTitles.indexOf(HEADER_MZ_MS1), getDoubleValue(probe.Mz));
+				ws.value(row, headerTitles.indexOf(HEADER_MZ_MS1), probe.Mz);
 			}
 
 			totalArea_ += totalIsoArea;
