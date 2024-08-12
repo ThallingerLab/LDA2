@@ -1,0 +1,161 @@
+[GENERAL]					
+AmountOfChains=2					
+AmountOfLCBs=1					
+ChainLibrary=fattyAcidChains.xlsx					
+LCBLibrary=dLCB_Ganglio.xlsx					
+CAtomsFromName=\D*(\d+):\d+					
+DoubleBondsFromName=\D*\d+:(\d+)					
+ChainCutoff=10%					
+FaHydroxylationRange=0-1					
+LcbHydroxylationRange=2-3					
+RetentionTimePostprocessing=true					
+SingleChainIdentification=true
+
+				
+[HEAD]					
+!FRAGMENTS					
+Name=NeuAcFrag_87	Formula=C3H3O3	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-H2O_272	Formula=C11H14NO7	Charge=1	MSLevel=2	mandatory=false	
+Name=Hex_161	Formula=C6H9O5	Charge=1	MSLevel=2	mandatory=false	
+Name=Hex-O_179	Formula=C6H11O6	Charge=1	MSLevel=2	mandatory=false	
+Name=HexNAc_202	Formula=C8H12NO5	Charge=1	MSLevel=2	mandatory=false	
+Name=HexNAc-O_220	Formula=C8H14NO6	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc_290	Formula=C11H16NO8	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-O_308	Formula=C11H18NO9	Charge=1	MSLevel=2	mandatory=false	
+Name=Hex-Hex_323	Formula=C12H19O10	Charge=1	MSLevel=2	mandatory=false	
+Name=Hex-Hex-O_341	Formula=C12H21O11	Charge=1	MSLevel=2	mandatory=false	
+Name=Hex-HexNAc_364	Formula=C14H22NO10	Charge=1	MSLevel=2	mandatory=false	
+Name=Hex-HexNAc-O_382	Formula=C14H24NO11	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-Hex_452	Formula=C17H26NO13	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-Hex-O_470	Formula=C17H28NO14	Charge=1	MSLevel=2	mandatory=false	
+Name=HexNAc-Hex-Hex_526	Formula=C20H32NO15	Charge=1	MSLevel=2	mandatory=false	
+Name=HexNAc-Hex-Hex-O_544	Formula=C20H34NO16	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc_581	Formula=C22H33N2O16	Charge=1	MSLevel=2	mandatory=false			
+Name=NeuAc-Hex-Hex_614	Formula=C23H36NO18	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-Hex-Hex-O_632	Formula=C23H38NO19	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-Hex-HexNAc_655	Formula=C25H39N2O18	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-Hex-HexNAc-O_673	Formula=C25H41N2O19	Charge=1	MSLevel=2	mandatory=false	
+Name=Hex-HexNAc-Hex-Hex_688	Formula=C26H42NO20	Charge=1	MSLevel=2	mandatory=false	
+Name=Hex-HexNAc-Hex-Hex-O_706	Formula=C26H44NO21	Charge=1	MSLevel=2	mandatory=false	
+Name=Hex-HexNAc-Hex-NeuAc_817	Formula=C31H49N2O23	Charge=1	MSLevel=2	mandatory=false	
+Name=Hex-HexNAc-Hex-NeuAc-O_835	Formula=C31H51N2O24	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-Hex-HexNAc-Hex-Hex_979	Formula=C37H59N2O28	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-Hex-HexNAc-Hex-Hex-O_997	Formula=C37H61N2O29	Charge=1	MSLevel=2	mandatory=false	
+Name=Precursor	Formula=$PRECURSOR	Charge=3	MSLevel=2	mandatory=false	
+Name=PrecursorSingle	Formula=$PRECURSOR+H2	Charge=1	MSLevel=2	mandatory=false	
+Name=M-Hex_M-162	Formula=PrecursorSingle-C6H10O5	Charge=1	MSLevel=2	mandatory=false	
+Name=M-Hex-O_M-180	Formula=PrecursorSingle-C6H12O6	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc_M-291	Formula=PrecursorSingle-C11H17NO8	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-O_M-309	Formula=PrecursorSingle-C11H19NO9	Charge=1	MSLevel=2	mandatory=false	
+Name=M-Hex-Hex_M-324	Formula=PrecursorSingle-C12H20O10	Charge=1	MSLevel=2	mandatory=false	
+Name=M-Hex-Hex-O_M-342	Formula=PrecursorSingle-C12H22O11	Charge=1	MSLevel=2	mandatory=false	
+Name=M-Hex-HexNAc_M-365	Formula=PrecursorSingle-C14H23NO10	Charge=1	MSLevel=2	mandatory=false	
+Name=M-Hex-HexNAc-O_M-383	Formula=PrecursorSingle-C14H25NO11	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-Hex_M-453	Formula=PrecursorSingle-C17H27NO13	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-Hex-O_M-471	Formula=PrecursorSingle-C17H29NO14	Charge=1	MSLevel=2	mandatory=false	
+Name=M-HexNAc-Hex-Hex_M-527	Formula=PrecursorSingle-C20H33NO15	Charge=1	MSLevel=2	mandatory=false	
+Name=M-HexNAc-Hex-Hex-O_M-545	Formula=PrecursorSingle-C20H35NO16	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-Hex-Hex_M-615	Formula=PrecursorSingle-C23H37NO18	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-Hex-Hex-O_M-633	Formula=PrecursorSingle-C23H39NO19	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-Hex-HexNAc_M-656	Formula=PrecursorSingle-C25H40N2O18	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-Hex-HexNAc-O_M-674	Formula=PrecursorSingle-C25H42N2O19	Charge=1	MSLevel=2	mandatory=false	
+Name=M-Hex-HexNAc-Hex-Hex_M-689	Formula=PrecursorSingle-C26H43NO20	Charge=1	MSLevel=2	mandatory=false	
+Name=M-Hex-HexNAc-Hex-Hex-O_M-707	Formula=PrecursorSingle-C26H45NO21	Charge=1	MSLevel=2	mandatory=false	
+Name=M-Hex-HexNAc-Hex-NeuAc_M-818	Formula=PrecursorSingle-C31H50N2O23	Charge=1	MSLevel=2	mandatory=false	
+Name=M-Hex-HexNAc-Hex-NeuAc-O_M-836	Formula=PrecursorSingle-C31H52N2O24	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-Hex-HexNAc-Hex-Hex_M-980	Formula=PrecursorSingle-C37H60N2O28	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-Hex-HexNAc-Hex-Hex-O_M-998	Formula=PrecursorSingle-C37H62N2O29	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc2_332	Formula=C13H18NO9	Charge=1	MSLevel=2	mandatory=true			
+Name=NeuAc2-O_350	Formula=C13H20NO10	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc2-Hex_494	Formula=C19H28NO14	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc2-Hex-Hex_656	Formula=C25H38NO19	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc2-Hex-Hex-O_674	Formula=C25H40NO20	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc2-Hex-O_512	Formula=C19H30NO15	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2_623	Formula=C24H35N2O17	Charge=1	MSLevel=2	mandatory=false			
+Name=NeuAc-NeuAc2-O_641	Formula=C24H37N2O18	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-Hex_785	Formula=C30H45N2O22	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-Hex-O_803	Formula=C30H47N2O23	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-Hex-Hex_947	Formula=C36H55N2O27	Charge=1	MSLevel=2	mandatory=false			
+Name=NeuAc-NeuAc2-Hex-Hex-O_965	Formula=C36H57N2O28	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-Hex-HexNAc_988	Formula=C38H58N3O27	Charge=1	MSLevel=2	mandatory=false			
+Name=NeuAc-NeuAc2-Hex-HexNAc-O_1006	Formula=C38H60N3O28	Charge=1	MSLevel=2	mandatory=false			
+Name=NeuAc-NeuAc2-Hex-HexNAc-Hex_1150	Formula=C44H68N3O32	Charge=1	MSLevel=2	mandatory=false			
+Name=NeuAc-NeuAc2-Hex-HexNAc-Hex-O_1168	Formula=C44H70N3O33	Charge=1	MSLevel=2	mandatory=false			
+Name=NeuAc-NeuAc2-Hex-HexNAc-Hex-Hex_1312	Formula=C50H78N3O37	Charge=1	MSLevel=2	mandatory=false			
+Name=NeuAc-NeuAc2-Hex-HexNAc-Hex-Hex-O_1330	Formula=C50H80N3O38	Charge=1	MSLevel=2	mandatory=false					
+Name=NeuAc-NeuAc2-NeuAc_914	Formula=C35H52N3O25	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-NeuAc-O_932	Formula=C35H54N3O26	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-NeuAc-Hex_1076	Formula=C41H62N3O30	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-NeuAc-Hex-O_1094	Formula=C41H64N3O31	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-NeuAc-NeuAc_1205	Formula=C46H69N4O33	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-NeuAc-NeuAc-O_1223	Formula=C46H71N4O34	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-NeuAc-Hex-Hex_1238	Formula=C47H72N3O35	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-NeuAc-Hex-Hex-O_1256	Formula=C47H74N3O36	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-NeuAc-HexNAc-Hex_1279	Formula=C49H75N4O35	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-NeuAc-HexNAc-Hex-O_1297	Formula=C49H77N4O36	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-NeuAc-HexNAc-Hex-Hex_1441	Formula=C55H85N4O40	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-NeuAc-HexNAc-Hex-Hex-O_1459	Formula=C55H87N4O41	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-NeuAc-Hex-HexNAc-Hex-Hex_1603	Formula=C61H95N4O45	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-NeuAc-Hex-HexNAc-Hex-Hex-O_1621	Formula=C61H97N4O46	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-NeuAc-NeuAc-Hex-HexNAc-Hex-Hex_1894	Formula=C72H112N5O53	Charge=1	MSLevel=2	mandatory=false	
+Name=NeuAc-NeuAc2-NeuAc-NeuAc-Hex-HexNAc-Hex-Hex-O_1912	Formula=C72H114N5O54	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc2_M-333	Formula=PrecursorSingle-C13H19NO9	Charge=1	MSLevel=2	mandatory=false			
+Name=M-NeuAc2-O_M-351	Formula=PrecursorSingle-C13H21NO10	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc2-Hex_M-495	Formula=PrecursorSingle-C19H29NO14	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc2-Hex-O_M-513	Formula=PrecursorSingle-C19H31NO15	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2_M-624	Formula=PrecursorSingle-C24H36N2O17	Charge=1	MSLevel=2	mandatory=false			
+Name=M-NeuAc-NeuAc2-O_M-642	Formula=PrecursorSingle-C24H38N2O18	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-Hex_M-786	Formula=PrecursorSingle-C30H46N2O22	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-Hex-O_M-804	Formula=PrecursorSingle-C30H48N2O23	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-Hex-Hex_M-948	Formula=PrecursorSingle-C36H56N2O27	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-Hex-Hex-O_M-966	Formula=PrecursorSingle-C36H58N2O28	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-Hex-HexNAc_M-989	Formula=PrecursorSingle-C38H59N3O27	Charge=1	MSLevel=2	mandatory=false			
+Name=M-NeuAc-NeuAc2-Hex-HexNAc-O_M-1007	Formula=PrecursorSingle-C38H61N3O28	Charge=1	MSLevel=2	mandatory=false			
+Name=M-NeuAc-NeuAc2-Hex-HexNAc-Hex_M-1151	Formula=PrecursorSingle-C44H69N3O32	Charge=1	MSLevel=2	mandatory=false			
+Name=M-NeuAc-NeuAc2-Hex-HexNAc-Hex-O_M-1169	Formula=PrecursorSingle-C44H71N3O33	Charge=1	MSLevel=2	mandatory=false			
+Name=M-NeuAc-NeuAc2-Hex-HexNAc-Hex-Hex_M-1313	Formula=PrecursorSingle-C50H79N3O37	Charge=1	MSLevel=2	mandatory=false			
+Name=M-NeuAc-NeuAc2-Hex-HexNAc-Hex-Hex-O_M-1331	Formula=PrecursorSingle-C50H81N3O38	Charge=1	MSLevel=2	mandatory=false			
+Name=M-NeuAc-NeuAc2-NeuAc_M-915	Formula=PrecursorSingle-C35H53N3O25	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-NeuAc-O_M-933	Formula=PrecursorSingle-C35H55N3O26	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-NeuAc-Hex_M-1077	Formula=PrecursorSingle-C41H63N3O30	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-NeuAc-Hex-O_M-1095	Formula=PrecursorSingle-C41H65N3O31	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-NeuAc-NeuAc_M-1206	Formula=PrecursorSingle-C46H70N4O33	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-NeuAc-NeuAc-M-O_1224	Formula=PrecursorSingle-C46H72N4O34	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-NeuAc-Hex-Hex_M-1239	Formula=PrecursorSingle-C47H73N3O35	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-NeuAc-Hex-Hex-O_M-1257	Formula=PrecursorSingle-C47H75N3O36	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-NeuAc-HexNAc-Hex_M-1280	Formula=PrecursorSingle-C49H76N4O35	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-NeuAc-HexNAc-Hex-O_M-1298	Formula=PrecursorSingle-C49H78N4O36	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-NeuAc-HexNAc-Hex-Hex_M-1442	Formula=PrecursorSingle-C55H86N4O40	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-NeuAc-HexNAc-Hex-Hex-O_M-1460	Formula=PrecursorSingle-C55H88N4O42	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-NeuAc-Hex-HexNAc-Hex-Hex_M-1604	Formula=PrecursorSingle-C61H96N4O45	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-NeuAc-Hex-HexNAc-Hex-Hex-O_M-1622	Formula=PrecursorSingle-C61H98N4O46	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc2-NeuAc-NeuAc-Hex-HexNAc-Hex-Hex_M-1895	Formula=PrecursorSingle-C72H113N5O53	Charge=1	MSLevel=2	mandatory=false	
+Name=M-NeuAc-NeuAc21-NeuAc-NeuAc-Hex-HexNAc-Hex-Hex-O_M-1913	Formula=PrecursorSingle-C72H115N5O54	Charge=1	MSLevel=2	mandatory=false	
+
+!INTENSITIES
+Equation=NeuAc_290|NeuAc-NeuAc_581|NeuAc2_332|NeuAc-NeuAc2_623		mandatory=true
+
+	
+[CHAINS]					
+!FRAGMENTS					
+Name=FA_FA	Formula=$CHAIN	Charge=1	MSLevel=2	mandatory=false	
+Name=FA-H_FA-1	Formula=$CHAIN-H	Charge=1	MSLevel=2	mandatory=false	
+Name=FA-H2O_FA-18	Formula=$CHAIN-H2O	Charge=1	MSLevel=2	mandatory=false	
+Name=FA-H3O_FA-19	Formula=$CHAIN-H3O	Charge=1	MSLevel=2	mandatory=false	
+Name=LCB-H2O_LCB-18	Formula=$LCB-H3O	Charge=1	MSLevel=2	mandatory=false	
+Name=LCB-2H2O_LCB-36	Formula=$LCB-H5O2	Charge=1	MSLevel=2	mandatory=false	
+Name=LCB-H6ON_LCB-36	Formula=$LCB-H6ON	Charge=1	MSLevel=2	mandatory=false	oh=2
+Name=LCB-CH4O2_LCB-48	Formula=$LCB-CH5O2	Charge=1	MSLevel=2	mandatory=false	
+Name=LCB-H6ON_LCB-50	Formula=$LCB-CH8ON	Charge=1	MSLevel=2	mandatory=false	oh=3
+Name=G			Formula=PrecursorSingle-$CHAIN+CH2NO		Charge=1	MSLevel=2	mandatory=false
+Name=G-NeuAc_G-291	Formula=PrecursorSingle-$CHAIN+CH2NO-C11H17NO8		Charge=1	MSLevel=2	mandatory=false
+Name=G-NeuAc2_G-333	Formula=PrecursorSingle-$CHAIN+CH2NO-C13H19NO9		Charge=1	MSLevel=2	mandatory=false
+Name=G-NeuAc-NeuAc2_G-582	Formula=PrecursorSingle-$CHAIN+CH2NO-C24H36N2O17		Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=G|G-NeuAc_G-291|G-NeuAc2_G-333|G-NeuAc-NeuAc2_G-582		mandatory=true
+
+
+[POSITION]
+!INTENSITIES
+Equation=G[2]>0*$BASEPEAK		mandatory=true

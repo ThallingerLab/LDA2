@@ -1,3 +1,26 @@
+/* 
+ * This file is part of Lipid Data Analyzer
+ * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
+ * Copyright (c) 2023 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
+ *  
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *  
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details. 
+ *  
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Please contact lda@genome.tugraz.at if you need additional information or 
+ * have any questions.
+ */
+
 package at.tugraz.genome.lda.target.calibration;
 
 import java.awt.Color;
@@ -23,6 +46,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -30,13 +54,20 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import at.tugraz.genome.lda.TooltipTexts;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.target.JDefaultComponents;
 import at.tugraz.genome.lda.target.JOptionPanel;
 import at.tugraz.genome.lda.target.JTargetFileWizard;
+import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.StaticUtils;
+import at.tugraz.genome.lda.verifier.DoubleVerifier;
 
-
+/**
+ * 
+ * @author Leonida M. Lamp
+ *
+ */
 public class CalibrationFileChooserPanel extends JOptionPanel implements ActionListener
 {
 	private static final long serialVersionUID = 1L;
@@ -44,9 +75,11 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
 	private JTextField targetFileField_;
 	private SelectionTable inputPanelOriginal_;
 	private SelectionTable inputPanelNew_;
+	private JTextField predictionThresholdField_;
 	
 	private Path previousSelection_ = null;
 	
+	private static final Double DEFAULT_THRESHOLD = 0.25;
 	private static final String PLACEHOLDER_PREFIX = "Enter ";
 	private static final String BROWSE = "Browse";
 	private static final String COMMAND_OPEN_TARGET_FILE = "Open target file";
@@ -58,7 +91,7 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
   
   
   public CalibrationFileChooserPanel(JDefaultComponents wizardComponents) {
-      super(wizardComponents, "Calibrate a C=C target file to your chromatographic conditions.");
+      super(wizardComponents, "Map an RT-DB to your chromatographic conditions.");
       init();
   }
   
@@ -66,9 +99,9 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
   {
   	this.setLayout(new GridBagLayout());
   	
-  	targetFileField_ = instantiateJTextField(PLACEHOLDER_PREFIX + "path and file name of the original C=C target file.");
+  	targetFileField_ = instantiateJTextField(PLACEHOLDER_PREFIX + "path and file name of the original RT-DB.");
   	JButton targetFileButton = instantiateJButton(COMMAND_OPEN_TARGET_FILE, BROWSE);
-  	JPanel targetFilePanel = instantiatePanel(targetFileField_, targetFileButton, "Original C=C target file");
+  	JPanel targetFilePanel = instantiatePanel(targetFileField_, targetFileButton, "Original RT-DB");
 
   	inputPanelOriginal_ = new SelectionTable("Original chromatographic conditions.");
   	inputPanelNew_ = new SelectionTable("New chromatographic conditions.");
@@ -85,6 +118,30 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
         new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0
         , GridBagConstraints.CENTER, GridBagConstraints.BOTH
         , new Insets(5, 5, 5, 5), 0, 0));
+  	this.add(instantiateThresholdPanel(), new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0
+        , GridBagConstraints.EAST, GridBagConstraints.NONE
+        , new Insets(5, 5, 5, 5), 0, 0));
+  }
+  
+  private JPanel instantiateThresholdPanel()
+  {
+  	JPanel panel = new JPanel();
+  	panel.setLayout(new GridBagLayout());
+  	JLabel labelText = new JLabel("Maximum allowed deviation from standards-curve: ");
+  	labelText.setToolTipText(TooltipTexts.LCCL_MAX_DEVIATION);
+  	panel.add(labelText, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+  	predictionThresholdField_ = new JTextField(DEFAULT_THRESHOLD.toString(), 5);
+  	predictionThresholdField_.setInputVerifier(new DoubleVerifier(true,true));
+  	predictionThresholdField_.setHorizontalAlignment(JTextField.RIGHT);
+  	predictionThresholdField_.setToolTipText(TooltipTexts.LCCL_MAX_DEVIATION);
+  	panel.add(predictionThresholdField_, new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+  	JLabel labelUnit = new JLabel(" min");
+  	labelUnit.setToolTipText(TooltipTexts.LCCL_MAX_DEVIATION);
+  	panel.add(labelUnit, new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+  	return panel;
   }
   
   /**
@@ -132,7 +189,7 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
 		if (arg0.getActionCommand().equals(COMMAND_OPEN_TARGET_FILE))
 		{
 			FileNameExtensionFilter filter = new FileNameExtensionFilter("Only .xlsx", "xlsx");
-			selectPath(JFileChooser.FILES_ONLY, this.targetFileField_, filter, "Select the C=C target file (.xlsx file)");
+			selectPath(JFileChooser.FILES_ONLY, this.targetFileField_, filter, "Select the RT-DB (.xlsx file)");
 		}
 	} 
 	
@@ -198,7 +255,7 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
   {
   	if (isPlaceholder(targetFileField_) || inputPanelOriginal_.getUniqueFiles().isEmpty() || inputPanelNew_.getUniqueFiles().isEmpty())
   	{
-  		new WarningMessage(new JFrame(), "Warning", "Specify paths and file names of the original C=C target file as well as for the reference files of the original and new chromatographic conditions before continuing!");
+  		new WarningMessage(new JFrame(), "Warning", "Specify paths and file names of the original RT-DB as well as for the reference files of the original and new chromatographic conditions before continuing!");
   	}
   	else
   	{
@@ -228,6 +285,7 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
   		  	  {
     					CalibrationGraphPanel panel = (CalibrationGraphPanel)getDefaultComponents().getCurrentPanel();
     					panel.setOriginalTargetList(new File(targetFileField_.getText()));
+    					panel.setPredictionThreshold(Double.parseDouble(predictionThresholdField_.getText()));
   		  			panel.parseData(originalConditions, newConditions);
   		  			//during data parsing a redirect back to this panel might occur.
   		  			if (getDefaultComponents().getCurrentPanel() instanceof CalibrationGraphPanel)
@@ -394,7 +452,7 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
 			comboBox.addItem("group 1");
 			comboBox.addItem("group 2");
 			comboBox.addItem("group 3");
-			comboBox.setSelectedIndex(0);
+			comboBox.setSelectedIndex(1);
 			return comboBox;
 		}
 		
@@ -460,7 +518,7 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
 							previousSelection_ = Paths.get(fileCandidates[i].getAbsolutePath());
 							String fileName = StaticUtils.extractFileName(fileCandidates[i].getAbsolutePath());
 							String suffix = fileName.substring(fileName.lastIndexOf(".")+1);
-							if (suffix.equalsIgnoreCase("xlsx"))
+							if (suffix.equalsIgnoreCase("xlsx") && !fileName.startsWith(ExcelUtils.EXCEL_TEMP_PREFIX)) //only listing xlsx files that do not start with the temporary prefix
 							{
 								avoidDuplicates.put(fileCandidates[i].getAbsolutePath(),fileCandidates[i]);
 								this.uniqueFiles_.add(fileCandidates[i]);

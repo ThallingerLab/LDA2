@@ -30,6 +30,7 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 import at.tugraz.genome.exception.MSDialException;
+import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.vos.MSDialEntry;
 
 /**
@@ -40,9 +41,11 @@ import at.tugraz.genome.vos.MSDialEntry;
 public class MSDialTxtParser
 {
   private String fileName_;
+  private String fileId_;
 
   private final static String HEAD_ID = "PeakID";
   private final static String HEAD_TITLE = "Title";
+  private final static String HEAD_NAME = "Name";
   private final static String HEAD_SCANS = "Scans";
   private final static String HEAD_RT_START = "RT left(min)";
   private final static String HEAD_RT = "RT (min)";
@@ -51,6 +54,11 @@ public class MSDialTxtParser
   private final static String HEAD_AREA = "Area";
   private final static String HEAD_ADDUCT = "Adduct";
   private final static String HEAD_ISOTOPE = "Isotope";
+  private final static String HEAD_SCORE_DOT_PRODUCT = "Simple dot product";
+  private final static String HEAD_SCORE_WEIGHTED_DOT_PRODUCT = "Weighted dot product";
+  private final static String HEAD_SCORE_REVERSE_DOT_PRODUCT = "Reverse dot product";
+  private final static String HEAD_MATCHED_PEAKS = "Matched peaks count";
+  private final static String HEAD_MATCHED_PEAKS_PERCENTAGE = "Matched peaks percentage";
   private final static String HEAD_SCORE = "Total score";
   private final static String HEAD_SN = "S/N";
   private final static String HEAD_MSMS = "MSMS spectrum";
@@ -59,11 +67,12 @@ public class MSDialTxtParser
   private Vector<MSDialEntry> results_ = null;
   private Vector<MSDialEntry> ms1Only_ = null;
   
-  public MSDialTxtParser(String fileName){
+  public MSDialTxtParser(String fileName, String fileId){
     this.fileName_ = fileName;
+    this.fileId_ = fileId;
   }
 
-  public void parse() throws MSDialException{
+  public void parse(String msDialVersion) throws MSDialException, LipidCombinameEncodingException{
     results_ = new Vector<MSDialEntry>();
     ms1Only_ = new Vector<MSDialEntry>();
     File file = new File(fileName_);
@@ -88,6 +97,11 @@ public class MSDialTxtParser
       int adductColumn = -1;
       int isotopeColumn = -1;
       int scoreColumn = -1;
+      int dotProductColumn = -1;
+      int weightedDotProductColumn = -1;
+      int reverseDotProductColumn = -1;
+      int matchedPeaksColumn = -1;
+      int matchedPeaksPercentageColumn = -1;      
       int signalNoiseColumn = -1;
       int msmsSpectrumColumn  = -1;
       
@@ -101,6 +115,11 @@ public class MSDialTxtParser
       float area;
       String adduct;
       String isotope;
+      float dotProduct;
+      float weightedDotProduct;
+      float reverseDotProduct;
+      int matchedPeaks;
+      float matchedPeaksPercentage;      
       float score;
       float signalNoise;
       String msmsSpectrum;
@@ -112,7 +131,7 @@ public class MSDialTxtParser
         lineNumber++;
         int columnCount = 0;
         if (!headerFound){
-          if (line.indexOf(HEAD_ID)!=-1 && line.indexOf(HEAD_TITLE)!=-1 && line.indexOf(HEAD_RT)!=-1 &&
+          if (line.indexOf(HEAD_ID)!=-1 && (line.indexOf(HEAD_TITLE)!=-1 || line.indexOf(HEAD_NAME)!=-1) && line.indexOf(HEAD_RT)!=-1 &&
               line.indexOf(HEAD_MZ)!=-1 && line.indexOf(HEAD_ADDUCT)!=-1 && line.indexOf(HEAD_ISOTOPE)!=-1 &&
               line.indexOf(HEAD_SCORE)!=-1){
             headerFound = true;
@@ -120,7 +139,7 @@ public class MSDialTxtParser
                         
             for (String header : tokens){
               if (header.equalsIgnoreCase(HEAD_ID)) idColumn = columnCount;
-              else if (header.equalsIgnoreCase(HEAD_TITLE)) titleColumn = columnCount;
+              else if (header.equalsIgnoreCase(HEAD_TITLE) || header.equalsIgnoreCase(HEAD_NAME)) titleColumn = columnCount;
               else if (header.equalsIgnoreCase(HEAD_SCANS)) scansColumn = columnCount;
               else if (header.equalsIgnoreCase(HEAD_RT_START)) rtStartColumn = columnCount;
               else if (header.equalsIgnoreCase(HEAD_RT)) rtColumn = columnCount;
@@ -129,6 +148,11 @@ public class MSDialTxtParser
               else if (header.equalsIgnoreCase(HEAD_AREA)) areaColumn = columnCount;
               else if (header.equalsIgnoreCase(HEAD_ADDUCT)) adductColumn = columnCount;
               else if (header.equalsIgnoreCase(HEAD_ISOTOPE)) isotopeColumn = columnCount;
+              else if (header.equalsIgnoreCase(HEAD_SCORE_DOT_PRODUCT)) dotProductColumn = columnCount;
+              else if (header.equalsIgnoreCase(HEAD_SCORE_WEIGHTED_DOT_PRODUCT)) weightedDotProductColumn = columnCount;
+              else if (header.equalsIgnoreCase(HEAD_SCORE_REVERSE_DOT_PRODUCT)) reverseDotProductColumn = columnCount;
+              else if (header.equalsIgnoreCase(HEAD_MATCHED_PEAKS)) matchedPeaksColumn = columnCount;
+              else if (header.equalsIgnoreCase(HEAD_MATCHED_PEAKS_PERCENTAGE)) matchedPeaksPercentageColumn = columnCount;
               else if (header.equalsIgnoreCase(HEAD_SCORE)) scoreColumn = columnCount;
               else if (header.equalsIgnoreCase(HEAD_SN)) signalNoiseColumn = columnCount; 
               else if (header.equalsIgnoreCase(HEAD_MSMS)) msmsSpectrumColumn = columnCount;
@@ -146,6 +170,11 @@ public class MSDialTxtParser
           area = -1f;
           adduct = null;
           isotope = null;
+          dotProduct = -1f;
+          weightedDotProduct = -1f;
+          reverseDotProduct = -1f;
+          matchedPeaks = -1;
+          matchedPeaksPercentage = -1;          
           score = -1f;
           signalNoise = -1f;
           msmsSpectrum = null;
@@ -172,7 +201,42 @@ public class MSDialTxtParser
               adduct = entry;
             }else if (isotopeColumn>-1 && columnCount==isotopeColumn) {
               isotope = entry;
-            }else if (scoreColumn>-1 && columnCount==scoreColumn) {
+            }else if (dotProductColumn>-1 && columnCount==dotProductColumn && entry.length()>0 && !entry.equalsIgnoreCase("null")) {
+              try{
+              	dotProduct = Float.parseFloat(entry);
+              } catch(NumberFormatException nfx) {
+                System.out.println("DotProductColumn: "+dotProductColumn+"; "+lineNumber);
+                throw nfx;
+              }
+            }else if (weightedDotProductColumn>-1 && columnCount==weightedDotProductColumn && entry.length()>0 && !entry.equalsIgnoreCase("null")) {
+              try{
+              	weightedDotProduct = Float.parseFloat(entry);
+              } catch(NumberFormatException nfx) {
+                System.out.println("WeightedDotProductColumn: "+weightedDotProductColumn+"; "+lineNumber);
+                throw nfx;
+              }
+            }else if (reverseDotProductColumn>-1 && columnCount==reverseDotProductColumn && entry.length()>0 && !entry.equalsIgnoreCase("null")) {
+              try{
+              	reverseDotProduct = Float.parseFloat(entry);
+              } catch(NumberFormatException nfx) {
+                System.out.println("ReverseDotProductColumn: "+reverseDotProductColumn+"; "+lineNumber);
+                throw nfx;
+              }
+            }else if (matchedPeaksColumn>-1 && columnCount==matchedPeaksColumn && entry.length()>0 && !entry.equalsIgnoreCase("null")) {
+              try{
+              	matchedPeaks = Math.round(Float.parseFloat(entry));
+              } catch(NumberFormatException nfx) {
+                System.out.println("MatchedPeaksColumn: "+matchedPeaksColumn+"; "+lineNumber+" ; "+id);
+                throw nfx;
+              }
+            }else if (matchedPeaksPercentageColumn>-1 && columnCount==matchedPeaksPercentageColumn && entry.length()>0 && !entry.equalsIgnoreCase("null")) {
+              try{
+              	matchedPeaksPercentage = Float.parseFloat(entry);
+              } catch(NumberFormatException nfx) {
+                System.out.println("MatchedPeaksPercentageColumn: "+matchedPeaksPercentageColumn+"; "+lineNumber);
+                throw nfx;
+              }
+            }else if (scoreColumn>-1 && columnCount==scoreColumn && entry.length()>0 && !entry.equalsIgnoreCase("null")) {
               try{
                 score = Float.parseFloat(entry);
               } catch(NumberFormatException nfx) {
@@ -191,10 +255,13 @@ public class MSDialTxtParser
               throw new MSDialException ("There is something wrong with the entry on line number "+lineNumber+": "+line);
             }
             //the entry in the adduct column is not reliable;
-            adduct = name.substring(name.lastIndexOf(";")+1).trim();
-            name = name.substring(0,name.lastIndexOf(";"));
-            vo = new MSDialEntry(id, name, scans, rtStart, rt, rtStop, mz, area, adduct, isotope, score, signalNoise, msmsSpectrum);
-            if (!vo.getIsotope().equalsIgnoreCase("M + 0")) {
+            if (msDialVersion.equalsIgnoreCase(MSDialEntry.MSDIAL_VERSION_4_0)) {
+            	adduct = name.substring(name.lastIndexOf(";")+1).trim();
+            	name = name.substring(0,name.lastIndexOf(";"));
+            }
+            vo = new MSDialEntry(id, fileId_, name, scans, rtStart, rt, rtStop, mz, area, adduct, isotope, score, dotProduct, weightedDotProduct,
+            		reverseDotProduct, matchedPeaks, matchedPeaksPercentage, signalNoise, msmsSpectrum, msDialVersion);
+            if (!vo.getIsotope().equalsIgnoreCase("M + 0") && !vo.getIsotope().equalsIgnoreCase("0")) {
               throw new MSDialException("!!! Identification with "+HEAD_ID+" "+id+" is based on another isotope: "+vo.getIsotope()+" - this hit is discarded !!!");
             }
             if (msmsSpectrum!=null && msmsSpectrum.length()>0)

@@ -1,0 +1,44 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains_CD.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.1%
+SpectrumCoverage=5%
+RetentionTimePostprocessing=true
+
+
+[HEAD]
+!FRAGMENTS
+Name=Precursor		Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=false
+Name=Phosphate_79	Formula=PO3			Charge=1	MSLevel=2	mandatory=false
+Name=Phosphate_97	Formula=H2PO4			Charge=1	MSLevel=2	mandatory=false
+Name=PL153		Formula=C3H6O5P			Charge=1	MSLevel=2	mandatory=false
+Name=PL171		Formula=C3H8O6P			Charge=1	MSLevel=2	mandatory=false
+Name=PIhead_223		Formula=C6H8O7P			Charge=1	MSLevel=2	mandatory=false
+Name=PIhead_241		Formula=C6H10O8P		Charge=1	MSLevel=2	mandatory=true
+Name=PIhead_259		Formula=C6H12O9P		Charge=1	MSLevel=2	mandatory=false
+Name=PIhead_297		Formula=C9H14O9P		Charge=1	MSLevel=2	mandatory=false
+Name=PIhead_315		Formula=C9H16O10P		Charge=1	MSLevel=2	mandatory=false
+
+
+
+[CHAINS]
+!FRAGMENTS
+Name=Carboxy		Formula=$CHAIN-H		Charge=1	MSLevel=2	mandatory=true
+Name=NL_Carboxy		Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Ketene		Formula=$PRECURSOR-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Carboxy_Ino	Formula=NL_Carboxy-C6H10O5	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Ketene_Ino	Formula=NL_Ketene-C6H10O5	Charge=1	MSLevel=2	mandatory=false
+
+
+!INTENSITIES
+Equation=NL_Carboxy*0.9>NL_Ketene		mandatory=true
+
+
+[POSITION]
+!INTENSITIES
+Equation=NL_Carboxy[2]*0.8+Carboxy[2]*0>NL_Carboxy[1]+Carboxy[1]*0	mandatory=false
+Equation=NL_Ketene[2]*0.8>NL_Ketene[1]					mandatory=false
+Equation=NL_Carboxy_Ino[2]*0.8>NL_Carboxy_Ino[1]			mandatory=false
+Equation=NL_Ketene_Ino[2]*0.8>NL_Ketene_Ino[1]				mandatory=false

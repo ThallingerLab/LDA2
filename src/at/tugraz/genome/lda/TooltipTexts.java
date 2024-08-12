@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp  
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -36,7 +36,9 @@ public class TooltipTexts
   public final static String TABS_MAIN_BATCH = "<html>Batch Quantitation of a experiments</html>";
   public final static String TABS_MAIN_STATISTICS = "<html>Analysis of quantified results</html>";
   public final static String TABS_MAIN_DISPLAY = "<html>Manual verification of results with 3D viewer</html>";
-  public final static String TABS_MAIN_TARGET = "<html>Creation of target files with information for \u03C9-C=C position identification</html>";
+  public final static String TABS_MAIN_MASSLIST_CREATOR = "<html>Creation of LDA mass lists</html>";
+  public final static String TABS_MAIN_TARGET = "<html>Creation of RT-DBs with information for \u03C9-C=C position identification</html>";
+  public final static String TABS_MAIN_FRAGRULE_GENERATOR = "<html>Generation of fragmentation rules from experimental data</html>";
   public final static String TABS_MAIN_SETTINGS = "<html>Default LDA settings; e.g. type of mass spectrometer</html>";
   public final static String TABS_MAIN_LICENSE = "<html>Information about the current licensing status</html>";
   public final static String TABS_MAIN_HELP = "<html>Help component</html>";
@@ -57,7 +59,7 @@ public class TooltipTexts
   public final static String GENERAL_ACCEPT_SINGLE_END = "?</html>";
   public final static String ALL_GENERAL  = "<html>Select all</html>";
   public final static String NONE_GENERAL  = "<html>Select none</html>";
-  public final static String INVERT_GENERAL  = "<html>Invert selection</html>";;
+  public final static String INVERT_GENERAL  = "<html>Invert selection</html>";
   
   public final static String QUANTITATION_SINGLE_RAW_FILE = "<html>Enter the raw file of your experiment!<br>" +
   		  "The following file types are accepted:<br>" +
@@ -225,6 +227,7 @@ public class TooltipTexts
   public final static String EXPORT_N_RTs = "<html>Export mass list for &omega identification.</html>";
   public final static String EXPORT_MAF = "<html>Exports data in MAF format.</html>";
   
+  public final static String HEATMAP_SETTINGS_APPLY_TO_ALL = "<html>Apply these settings to all lipid classes, as far as applicable</html>";
   public final static String HEATMAP_SHOW_INT = "<html>Display the internal standards in the heat map or not.</html>";
   public final static String HEATMAP_SHOW_EXT = "<html>Display the external standards in the heat map or not.</html>";
   public final static String HEATMAP_ISOTOPES = "<html>Upper limit for the additional isotopic peaks used for the quantitative value.</html>";
@@ -332,6 +335,13 @@ public class TooltipTexts
   public final static String DISPLAY_ASSIGN_SELECTED_DB_SPECIES = "<html>Assign selected molecular species to this signal.</html>";
   public final static String DISPLAY_REMOVE_SELECTED_DB_SPECIES = "<html>Remove selected molecular species.</html>";
   public final static String DISPLAY_SAVE_CHANGES = "<html>Save changes to result file.</html>";
+  
+  public final static String LCCL_MAX_DEVIATION = "<html>Use this setting to define a maximum allowed deviation from the standards-curve.<br/>" +
+  		"for anchor points derived from biological data.<br/>" +
+  		"A higher threshold will require more manual removal of visual outliers.</html>";
+  
+  
+  
   
   public final static String DIALOG_ADD_PEAK_START_TIME = "<html>The lower time border in minutes.</html>";
   public final static String DIALOG_ADD_PEAK_STOP_TIME = "<html>The upper time border in minutes.</html>";

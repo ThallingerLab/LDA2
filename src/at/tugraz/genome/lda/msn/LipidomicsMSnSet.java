@@ -271,7 +271,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
     //now the names are sorted by area -> I can buiild my lookyp hashes
     if (status_==FRAGMENTS_DETECTED || status_==POSITION_DETECTED){
       for (String combiName : validChainCombinations_){
-      	nameLookupPositionInsensitve_.put(combiName, StaticUtils.getHumanReadableCombiName(combiName,faEncoding,lcbEncoding,false));
+      	nameLookupPositionInsensitve_.put(combiName, StaticUtils.getHumanReadableCombiName(combiName,faEncoding,lcbEncoding));
         if (status_==POSITION_DETECTED && positionDefinition_.containsKey(combiName)){
           Vector<String> posNames = getPositionSpecificCombiNames(combiName,positionDefinition_.get(combiName),faEncoding,lcbEncoding);
           Vector<String> snPosNames = getPositionSpecificCombiName(combiName,positionDefinition_.get(combiName),faEncoding,lcbEncoding);

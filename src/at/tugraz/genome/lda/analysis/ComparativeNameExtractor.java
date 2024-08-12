@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.analysis;
 
@@ -460,6 +460,13 @@ public class ComparativeNameExtractor extends ClassNamesExtractor
     
   public Vector<String> getISNames(String className){
     return this.sortedISNames_.get(className);
+  }
+  
+  public Vector<String> getAllClassNames()
+  {
+  	Vector<String> allClassNames = new Vector<String>(lipidClassesHash_.keySet());
+  	Collections.sort(allClassNames);
+  	return allClassNames;
   }
   
   public Vector<String> getESNames(String className){

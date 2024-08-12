@@ -46,7 +46,7 @@ import de.isas.mztab2.model.PublicationItem;
 import de.isas.mztab2.model.PublicationItem.TypeEnum;
 import de.isas.mztab2.model.Sample;
 import de.isas.mztab2.model.SampleProcessing;
-import at.tugraz.genome.lda.utils.Pair;
+import javafx.util.Pair;
 import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.SettingsException;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
@@ -213,6 +213,8 @@ public class LipidomicsConstants
   private boolean checkChainLabelCombination_;
   /** minimum threshold in seconds to match predicted and measured retention times with high confidence */
   private int minimumThresholdForHighConfidenceRTMatch_;
+  /** maximum threshold in seconds to match unambiguous predicted and measured retention times even if the match is not within the high confidence threshold */
+  private int maximumThresholdForIntermediateConfidenceRTMatch_;
   private boolean useNoiseCutoff_;
   private float noiseCutoffDeviationValue_;
   private Float minimumRelativeIntensity_;
@@ -523,7 +525,9 @@ public class LipidomicsConstants
   private final static String USE_MSCONVERT_FOR_WATERS = "useMsconvertForWaters";
   private final static String MINIMUM_THRESHOLD_FOR_HIGH_CONFIDENCE_RT_MATCH = "minimumThresholdForHighConfidenceRTMatch";
   private final static String MINIMUM_THRESHOLD_FOR_HIGH_CONFIDENCE_RT_MATCH_DEFAULT = "4";
-  
+  private final static String MAXIMUM_THRESHOLD_FOR_INTERMEDIATE_CONFIDENCE_RT_MATCH = "maximumThresholdForIntermediateConfidenceRTMatch";
+  private final static String MAXIMUM_THRESHOLD_FOR_INTERMEDIATE_CONFIDENCE_RT_MATCH_DEFAULT = "4";
+
   
   private final static String MZTAB_INSTRUMENT = "mzTabInstrumentName";
   private final static String MZTAB_IONSOURCE = "mzTabInstrumentIonsource";
@@ -649,6 +653,7 @@ public class LipidomicsConstants
     if (checkChainLabelCombinationString!=null && (checkChainLabelCombinationString.equalsIgnoreCase("yes")||checkChainLabelCombinationString.equalsIgnoreCase("true")))
       checkChainLabelCombination_ = true;
     minimumThresholdForHighConfidenceRTMatch_ = Integer.parseInt(properties.getProperty(MINIMUM_THRESHOLD_FOR_HIGH_CONFIDENCE_RT_MATCH,MINIMUM_THRESHOLD_FOR_HIGH_CONFIDENCE_RT_MATCH_DEFAULT));
+    maximumThresholdForIntermediateConfidenceRTMatch_ = Integer.parseInt(properties.getProperty(MAXIMUM_THRESHOLD_FOR_INTERMEDIATE_CONFIDENCE_RT_MATCH,MAXIMUM_THRESHOLD_FOR_INTERMEDIATE_CONFIDENCE_RT_MATCH_DEFAULT));
     useNoiseCutoff_ = false;
     String cutoffString = properties.getProperty(NOISE_CUTOFF,NOISE_CUTOFF_DEFAULT);
     if (cutoffString!=null && (cutoffString.equalsIgnoreCase("yes")||cutoffString.equalsIgnoreCase("true")))
@@ -934,6 +939,12 @@ public class LipidomicsConstants
   {
     getInstance();
     return instance_.minimumThresholdForHighConfidenceRTMatch_;
+  }
+  
+  public static int getMaximumThresholdForIntermediateConfidenceRTMatch() 
+  {
+    getInstance();
+    return instance_.maximumThresholdForIntermediateConfidenceRTMatch_;
   }
   
   public static float getNoiseCutoffDeviationValue()
@@ -1410,7 +1421,7 @@ public class LipidomicsConstants
     return instance_.ms2_;
   }
   
-  private static float getMs2PrecursorTolerance(){
+  public static float getMs2PrecursorTolerance(){
     getInstance();
     return instance_.ms2PrecursorTolerance_;
   }

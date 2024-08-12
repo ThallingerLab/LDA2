@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,8 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
+
 package at.tugraz.genome.lda.alex123;
 
 import java.io.FileReader;
@@ -102,15 +103,14 @@ public class TargetlistParser
    * @throws AlexTargetlistParserException if there is something wrong with the target lists
    */
   public void parse() throws AlexTargetlistParserException{
-    LineNumberReader reader = null;
     String line;
     isoLookup_ = new Hashtable<String,String>();
     results_ = new Hashtable<Integer,Vector<TargetlistEntry>>();
     
     ElementConfigParser elementParser = Settings.getElementParser();
-    try{
+    try (LineNumberReader reader = new LineNumberReader(new FileReader(fileName_));)
+    {
       this.isoLookup_ = Settings.getAlexIsoLookup();      
-      reader = new LineNumberReader(new FileReader(fileName_));
       int lineNumber = 0;
       boolean headerLineFound = false;
       
@@ -393,10 +393,7 @@ public class TargetlistParser
     }catch (ChemicalFormulaException | HydroxylationEncodingException e) {
       throw new AlexTargetlistParserException(e);
     }catch (AlexTargetlistParserException alx){
-      try{if (reader!=null)reader.close();}catch(Exception ex){}
       throw alx;
-    }finally{
-      try{if (reader!=null)reader.close();}catch(Exception ex){}
     }
   }
   

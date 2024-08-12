@@ -24,10 +24,7 @@
 package at.tugraz.genome.lda;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
@@ -41,21 +38,10 @@ import java.util.Vector;
 
 import javax.swing.JFrame;
 
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-
 import at.tugraz.genome.lda.alex123.RdbOutputWriter;
-import at.tugraz.genome.lda.alex123.TargetlistDirParser;
-import at.tugraz.genome.lda.alex123.TargetlistParser;
 import at.tugraz.genome.lda.alex123.vos.TargetlistEntry;
-import at.tugraz.genome.lda.exception.AlexTargetlistParserException;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExportException;
-import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.exception.NoRuleException;
@@ -69,22 +55,18 @@ import at.tugraz.genome.lda.msn.RulesContainer;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.msn.vos.RtPredictVO;
-import at.tugraz.genome.lda.parser.ModificationParser;
+import at.tugraz.genome.lda.parser.MassListParser;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.swing.Range;
-import at.tugraz.genome.lda.target.export.TargetListExporter;
-import at.tugraz.genome.lda.utils.RangeInteger;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleStringVO;
 import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.maspectras.parser.exceptions.SpectrummillParserException;
-import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
 import at.tugraz.genome.maspectras.quantification.CgException;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
-import at.tugraz.genome.maspectras.utils.Calculator;
 import at.tugraz.genome.maspectras.utils.StringUtils;
 import at.tugraz.genome.voutils.GeneralComparator;
 
@@ -202,7 +184,7 @@ public class QuantificationThread extends Thread
     return this.errorString_;
   }
   
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({ "unchecked", "deprecation" })
   private void startAutomatedLipidomicsQuantification(String chromFile,String quantFile, String resultFile, //float mzTolerance,
       float minusTime, float plusTime, int amountOfIsotopes, int isotopesMustMatch, boolean searchUnknownTime, float basePeakCutoff,
       float rtShift, int numberOfProcessors, boolean ionMode) throws Exception{
@@ -223,10 +205,10 @@ public class QuantificationThread extends Thread
     Vector quantContent = null;
     File quant = new File(quantFile);
     if (quant.isFile() && (quant.getName().endsWith(".xls") || quant.getName().endsWith(".xlsx"))){
-      quantContent = QuantificationThread.parseQuantExcelFile(quantFile, minusTime, plusTime, amountOfIsotopes, isotopesMustMatch, searchUnknownTime, basePeakCutoff, rtShift, lowestRetTime, highestRetTime);
+      quantContent = (new MassListParser(quantFile, minusTime, plusTime, amountOfIsotopes, isotopesMustMatch, searchUnknownTime, rtShift, lowestRetTime, highestRetTime)).getResultsVector();
     } else if ((quant.isFile() && quant.getName().endsWith(".txt")) || quant.isDirectory()){
-      quantContent = QuantificationThread.parseAlex123TargetList(quantFile, minusTime, plusTime, amountOfIsotopes,
-          isotopesMustMatch, searchUnknownTime, basePeakCutoff, rtShift, lowestRetTime, highestRetTime, ionMode);
+      quantContent = (new MassListParser(quantFile, minusTime, plusTime, amountOfIsotopes,
+          isotopesMustMatch, searchUnknownTime, basePeakCutoff, rtShift, lowestRetTime, highestRetTime, true, ionMode)).getResultsVector();
     }
     if (quantContent!=null){
       LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)quantContent.get(0);
@@ -308,556 +290,15 @@ public class QuantificationThread extends Thread
     }
   }
   
-  public static String[] extractFormulaAndAdductName(String contents) throws ExcelInputFileException{
-    String[] formulaAndName = new String[4];
-    String formula = "";
-    String adductName = "";
-    String charge = "1";
-    String multi = "1";
-    String formNameString = contents.substring(contents.indexOf("(")+1,contents.indexOf(")"));
-    if (formNameString.indexOf("form")!=-1&&formNameString.indexOf("name")!=-1){
-      String nearFormString = formNameString.substring(formNameString.indexOf("form"));
-      formula = nearFormString.substring(nearFormString.indexOf("[")+1,nearFormString.indexOf("]")).trim();
-      String nearNameString = formNameString.substring(formNameString.indexOf("name"));
-      adductName = nearNameString.substring(nearNameString.indexOf("[")+1,nearNameString.indexOf("]")).trim();
-      if (formNameString.indexOf("charge=")!=-1){
-        char[] afterChargeString = formNameString.substring(formNameString.indexOf("charge=")+"charge=".length()).toCharArray();
-        try{
-          charge = String.valueOf(extractDigitsAfterEqualSign(afterChargeString));
-          if (Integer.parseInt(charge)<1){
-            charge = "1";
-            System.out.println("Warning: The charge entry in the column header \""+contents+"\" is smaller than 1! Setting it to \"1\"");
-          }
-        }catch (NumberFormatException nfx){
-          System.out.println("Warning: The charge entry in the column header \""+contents+"\" is not integer format! Setting it to \"1\"");
-        }
-      }
-      if (formNameString.indexOf("mult=")!=-1){
-        char[] afterMultiString = formNameString.substring(formNameString.indexOf("mult=")+"mult=".length()).toCharArray();
-        try{
-          multi = String.valueOf(extractDigitsAfterEqualSign(afterMultiString));
-          if (Integer.parseInt(charge)<1){
-            multi = "1";
-            System.out.println("Warning: The mult entry in the column header \""+contents+"\" is smaller than 1! Setting it to \"1\"");
-          }
-        }catch (NumberFormatException nfx){
-          System.out.println("Warning: The mult entry in the column header \""+contents+"\" is not integer format! Setting it to \"1\"");
-        }
-
-      }
-    } else{
-      adductName = formNameString;
-    }
-    formulaAndName[0] = formula;
-    formulaAndName[1] = adductName;
-    formulaAndName[2] = charge;
-    formulaAndName[3] = multi;
-    return formulaAndName;
-  }
-    
-  private static int extractDigitsAfterEqualSign(char[] afterString){
-    int i=0;
-    String digitsString = "";
-    while (i<afterString.length&&Character.isDigit(afterString[i])){
-      digitsString+=String.valueOf(afterString[i]);
-      i++;
-    }
-    return Integer.parseInt(digitsString);
-  }
-  
-  @SuppressWarnings("rawtypes")
-  private static Vector parseQuantExcelFile(String quantFile, float minusTime, float plusTime, int amountOfIsotopes, int isotopesMustMatch, boolean searchUnknownTime, float basePeakCutoff,
-      float rtShift, float lowestRetTime, float highestRetTime) throws IOException,SpectrummillParserException,ExcelInputFileException, ChemicalFormulaException, RulesException, HydroxylationEncodingException{
-    return parseQuantExcelFile(quantFile, minusTime, plusTime, amountOfIsotopes, isotopesMustMatch, searchUnknownTime, basePeakCutoff,
-        rtShift, lowestRetTime, highestRetTime, true);
-  }
-  
-  /**
-   * @param quantFile File path of the Quant File
-   * @param minusTime Retention time before tolerance
-   * @param plusTime Retention time after tolerance
-   * @param amountOfIsotopes Number of isotopes that shall be quantified
-   * @param isotopesMustMatch Number of isotopes that must match the theoretical distribution
-   * @param searchUnknownTime Search unknown retention time
-   * @param basePeakCutoff The relative cutoff value in per mille
-   * @param rtShift Retention time shift
-   * @param lowestRetTime Lowest retention time in the chrom files
-   * @param highestRetTime Highest retention time in the chrom files
-   * @param respectMassShift Take a mass shift range into account
-   * @return a vector containing class sequence, analyte sequence, adduct insensitive retention time filter and quantVO objects
-   * @throws IOException
-   * @throws SpectrummillParserException
-   * @throws ExcelInputFileException
-   * @throws ChemicalFormulaException
-   * @throws RulesException
-   * @throws HydroxylationEncodingException
-   */
-  @SuppressWarnings({ "unchecked", "rawtypes" })
-  public static Vector parseQuantExcelFile(String quantFile, float minusTime, float plusTime, int amountOfIsotopes, int isotopesMustMatch, boolean searchUnknownTime, float basePeakCutoff,
-      float rtShift, float lowestRetTime, float highestRetTime, boolean respectMassShift) throws IOException,SpectrummillParserException,ExcelInputFileException, ChemicalFormulaException, RulesException, HydroxylationEncodingException{
-    InputStream myxls = new FileInputStream(quantFile);
-    Workbook workbook = null;
-    if (quantFile.endsWith(".xlsx")) workbook = new XSSFWorkbook(myxls);
-    else if (quantFile.endsWith(".xls")) workbook = new HSSFWorkbook(myxls);
-    Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();
-    LinkedHashMap<String,Integer> classSequence = new LinkedHashMap<String,Integer>();
-    Hashtable<String,Boolean> adductInsensitiveRtFilter = new Hashtable<String,Boolean>();
-    Hashtable<String,Boolean> bestMatchBySpectrumCoverage = new Hashtable<String,Boolean>();
- // LL  Hashtable<String,Vector<String>> analyteSequence = new Hashtable<String,Vector<String>>();
-    LinkedHashMap<String,Vector<String>> analyteSequence = new LinkedHashMap<String,Vector<String>>();
-    boolean excelOK = false;
-    ElementConfigParser aaParser = Settings.getElementParser();
-    for (int sheetNumber = 0; sheetNumber!=workbook.getNumberOfSheets(); sheetNumber++){
-      Hashtable<String,Hashtable<String,QuantVO>> quantsOfClass = new Hashtable<String,Hashtable<String,QuantVO>>();
-      Hashtable<String,Hashtable<String,QuantVO>> quantsOfOxClass = new Hashtable<String,Hashtable<String,QuantVO>>();
-      
-      Vector<String> analytes = new Vector<String>();
-      Vector<String> oxAnalytes = new Vector<String>();
-      Sheet sheet = workbook.getSheetAt(sheetNumber);
-      boolean rtFilterInsensitive = false;
-      boolean pickBestMatchBySpectrumCoverage = false;
-      int sideChainColumn = -1;
-      int doubleBondColumn = -1;
-      int molecularSpeciesWithDoubleBondPositionsColumn = -1;
-      int oxStateColumn = -1;
-
-      Hashtable<Integer,String> massOfInterestColumns = new Hashtable<Integer,String>();
-      Hashtable<String,Hashtable<String,Integer>> adductComposition = new Hashtable<String,Hashtable<String,Integer>>();
-      Hashtable<String,Integer> charges = new Hashtable<String,Integer>();
-      Hashtable<String,Integer> multi = new Hashtable<String,Integer>();
-      int retTimeColumn = -1;
-      boolean foundColumns = false;
-      float fixedStartTime = 0;
-      float fixedEndTime = Float.MAX_VALUE;
-      Hashtable<Integer,String> elementColumns = new  Hashtable<Integer,String>();
-      int msLevel = 1;
-      int ohNumber = LipidomicsConstants.EXCEL_NO_OH_INFO;
-      RangeInteger ohRange = null;
-      for (int rowCount=0;rowCount!=(sheet.getLastRowNum()+1);rowCount++){
-        Row row = sheet.getRow(rowCount);
-        String sideChain = "";
-        int doubleBonds = -1;
-        String oxState = "";
-        Hashtable<String,Integer> elementalComposition = new Hashtable<String,Integer>();
-        Hashtable <String,Double> massesOfInterest = new Hashtable <String,Double>();
-        float retTime = -1;
-        String molecularSpeciesWithDB = null;
-        Hashtable<Integer,String> possibleElementColumns = new  Hashtable<Integer,String>();
-        for (int i=0; row!=null && i!=(row.getLastCellNum()+1);i++){
-          Cell cell = row.getCell(i);
-          String contents = "";
-          Double numeric = null;
-          int cellType = -1;
-          if (cell!=null) cellType = cell.getCellType();
-          if (cellType==Cell.CELL_TYPE_STRING){
-            contents = cell.getStringCellValue();
-            try{ 
-              if (contents!=null)numeric = new Double(contents.replaceAll(",", "."));
-            }catch(NumberFormatException nfx){};
-          }else if (cellType==Cell.CELL_TYPE_NUMERIC || cellType==Cell.CELL_TYPE_FORMULA){
-           numeric = cell.getNumericCellValue();
-           contents = String.valueOf(numeric);
-          }
-          //String contents = sheet.getCell(i,rowCount).getContents();
-          if (contents!=null)
-            contents = contents.trim();
-          if (!foundColumns){
-            if (contents.equalsIgnoreCase("Seitenkette")||contents.equalsIgnoreCase("Name")){
-              sideChainColumn = i;
-            } 
-            
-            else if (contents.equalsIgnoreCase("dbs")||contents.equalsIgnoreCase("dbs_TAG")){
-              doubleBondColumn = i;
-            } else if (contents.equalsIgnoreCase(LipidomicsConstants.CHAIN_MOD_COLUMN_NAME)){
-              oxStateColumn = i;
-            } 
-
-            else if (contents.startsWith("mass")&&contents.contains("(")&&contents.contains(")")){
-              String[] formulaAndName = extractFormulaAndAdductName(contents);
-              adductComposition.put(formulaAndName[1],StaticUtils.categorizeFormula(formulaAndName[0]));
-              massOfInterestColumns.put(i,formulaAndName[1]);
-              charges.put(formulaAndName[1], Integer.parseInt(formulaAndName[2]));
-              multi.put(formulaAndName[1], Integer.parseInt(formulaAndName[3]));
-            }
-            
-            else if (contents.equalsIgnoreCase("tR (min)")){
-              retTimeColumn = i;
-            }
-            
-            else if (contents.startsWith("Start-RT:")){
-              try{
-                fixedStartTime = Float.parseFloat(contents.substring("Start-RT:".length()).trim().replaceAll(",", "."));
-              }catch(NumberFormatException nfx){nfx.printStackTrace();};
-            }
-            
-            else if (contents.startsWith("Stop-RT:")){
-              try{
-                fixedEndTime = Float.parseFloat(contents.substring("Stop-RT:".length()).trim().replaceAll(",", "."));
-              }catch(NumberFormatException nfx){};
-            }
-            
-            else if (contents.startsWith("Mass-Trace:")){
-              try{
-                msLevel = Integer.parseInt(contents.substring("Mass-Trace:".length()).trim().replaceAll(",", "."));
-              }catch(NumberFormatException nfx){};  
-            }
-            
-            else if (contents.trim().length()==1||contents.trim().length()==2){
-              boolean ok = false;
-              if (Character.isUpperCase(contents.trim().toCharArray()[0])){
-                if (contents.trim().length()==2){
-                  if (Character.isLowerCase(contents.trim().toCharArray()[1]))
-                    ok = true;
-                }else{
-                  ok = true;
-                }
-                if (ok){
-                  String element = contents.trim();
-                  if (aaParser.isElementAvailable(element)){
-                    possibleElementColumns.put(i, element);
-                  }else{
-                    if (sideChainColumn>-1)System.out.println("Warning: The elemental column \""+element+"\" does not seem to be a chemical element!");                
-                  }
-                }
-              }
-            } else if (contents.trim().equalsIgnoreCase("adductInsensitiveRtFilter")) {
-            	rtFilterInsensitive = true;
-            } else if (contents.startsWith("OH-Number:")){
-              String ohString = contents.substring("OH-Number:".length()).trim().replaceAll(",", ".");
-              try{
-                ohNumber = Integer.parseInt(ohString);
-              //this value need not necessarily to be a number - it might be the hydroxy encoded string
-              }catch(NumberFormatException nfx){
-                ohNumber = Settings.getLcbHydroxyEncoding().getHydroxyNumber(ohString);
-              }
-            } else if (contents.startsWith("OH-Range:")){
-              String ohRangeString = contents.substring("OH-Range:".length()).trim().replaceAll(",", ".");
-              String[] ohRangeParts = ohRangeString.split("-");
-              boolean error = false;
-              try{
-                if (ohRangeParts.length>2) error = true;
-                int start = Integer.parseInt(ohRangeParts[0]);
-                int stop = start;
-                if (ohRangeParts.length==2)
-                  stop = Integer.parseInt(ohRangeParts[1]);
-                ohRange = new RangeInteger(start,stop);
-              }catch(NumberFormatException nfx){error = true;}
-              if (error)
-                throw new HydroxylationEncodingException("The value \"OH-Range\" must be a single integer, or a range in the format $lower$-$higher$; the value \""+ohRangeString+"\" in sheet "+sheet.getSheetName()+" does not comply!");
-            } else if (contents.trim().equalsIgnoreCase("pickBestMatchBySpectrumCoverage")) {
-            	pickBestMatchBySpectrumCoverage = true;
-            } else if (contents.equalsIgnoreCase(TargetListExporter.HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS)){
-              molecularSpeciesWithDoubleBondPositionsColumn = i;
-            }
-          }else{            
-            if (i==sideChainColumn&&contents!=null&contents.length()>0){
-//          for Marlene metabolomics implementation - exclude the if - only "sideChain = contents;" must remain 
-              if (numeric!=null){
-                sideChain =  String.valueOf((int)Math.round(numeric));
-              }else
-                sideChain = contents;
-            }
-            if (i==doubleBondColumn&&contents!=null&&contents.length()>0){
-              doubleBonds = numeric.intValue();
-            }
-            if (i==oxStateColumn&&contents!=null&&contents.length()>0){
-              oxState = contents;
-            }
-            
-            if (elementColumns.containsKey(i)&&contents.length()>0){
-              int value = 0;
-              // this is for columns such as "M" for mass, there the values are float and have
-              // to be removed from the chemical formula - however there is no way to figure out
-              // directly from Excel if there is an integer entry in the cell or not!
-              if (numeric!=null && contents.endsWith(".0")){
-                value = (int)Math.round(numeric);
-              }else{
-                try{
-                  value = Integer.parseInt(contents);
-                }catch (NumberFormatException nfx3){  
-                  System.out.println("Warning: The elemental column \""+elementColumns.get(i)+"\" does not seem to be a chemical element, since float values are there -> I remove it!");
-                  elementColumns.remove(i);
-                }
-              }
-              if (value>0)
-                elementalComposition.put(elementColumns.get(i), value);
-            }
-
-            if (massOfInterestColumns.containsKey(i)&&contents!=null&contents.length()>0){
-              double massOfInterest = numeric;
-              if (respectMassShift) massOfInterest += LipidomicsConstants.getMassShift();
-              massesOfInterest.put(massOfInterestColumns.get(i), massOfInterest);
-            }
-            
-            if (i==retTimeColumn&&contents!=null&contents.length()>0){
-              retTime = numeric.floatValue();
-              retTime += rtShift;
-            }
-            
-            if (i==molecularSpeciesWithDoubleBondPositionsColumn&&contents!=null&contents.length()>0){
-              molecularSpeciesWithDB = contents;
-            }
-          }
-        }
-
-        if (sideChainColumn != -1 && possibleElementColumns.size()>0 && 
-            massOfInterestColumns.size()>0 && retTimeColumn != -1&&
-            !foundColumns){
-          foundColumns = true;
-          elementColumns = new Hashtable<Integer,String>(possibleElementColumns);
-        }
-        if (foundColumns&&sideChain!=null&&sideChain.length()>0&&massesOfInterest.size()>0/*&&retTime>0*/){
-          float usedMinusTime = new Float(minusTime);
-          if (usedMinusTime<0) usedMinusTime = usedMinusTime*-1f;
-          float usedPlusTime = new Float(plusTime);
-          if (usedPlusTime<0) usedPlusTime = usedPlusTime*-1f;
-          if (retTime>0||searchUnknownTime){
-            // if a global retention time for a class is set the other retention times have to be recalculated         
-            if (fixedStartTime>0 || fixedEndTime<Float.MAX_VALUE && (fixedStartTime<fixedEndTime)){
-              if (retTime>0){
-                if (fixedStartTime<retTime && retTime<fixedEndTime){
-                  if (fixedStartTime>(retTime-usedMinusTime))
-                    usedMinusTime = retTime-fixedStartTime;
-                  if (fixedEndTime<(retTime+usedPlusTime))
-                    usedPlusTime = fixedEndTime-retTime;
-                }else{
-                // Here I do not know what to do; I guess best is to keep the set RT times, then I can quantify items that are outside
-                // the general class range, if necessary!
-                }
-              }else{
-                float startTime = lowestRetTime;
-                float stopTime = highestRetTime;
-                if (fixedStartTime>startTime)
-                  startTime = fixedStartTime;
-                if (fixedEndTime<stopTime)
-                  stopTime = fixedEndTime;
-                retTime = (startTime+stopTime)/2;
-                usedMinusTime = retTime-startTime;
-                usedPlusTime = stopTime-retTime;
-              }
-            }
-            
-            int startOh = 0;
-            int stopOh = 0;
-            if (ohNumber>LipidomicsConstants.EXCEL_NO_OH_INFO) {
-              startOh = ohNumber;
-              stopOh = ohNumber;
-              if (ohRange!=null) {
-                startOh = ohRange.getStart();
-                stopOh = ohRange.getStop();
-              }
-            }
-            
-            //create new quantVO objects for each (ox)modified lipid
-            String[] oxStates = oxState.split(";");
-            if (oxState.length() == 0) {
-              for (int oh=startOh; oh<(stopOh+1); oh++) {
-                Hashtable<String,QuantVO> quantsOfAnalyte = new Hashtable<String,QuantVO>();
-                String analEncoded = null;
-                Hashtable<String,Integer> correctedElementalComposition = new Hashtable<String,Integer>(elementalComposition);
-                double ohDiff = 0d;
-                int ohToUse = LipidomicsConstants.EXCEL_NO_OH_INFO;
-                if (ohNumber>LipidomicsConstants.EXCEL_NO_OH_INFO) {
-                  ohToUse = oh;
-                  if (oh!=ohNumber) {
-                    int oxygens = 0;
-                    if (correctedElementalComposition.containsKey("O")) oxygens = correctedElementalComposition.get("O");
-                    oxygens += (oh-ohNumber);
-                    if (oxygens<0) continue;
-                    correctedElementalComposition.put("O", oxygens);
-                    ohDiff = (oh-ohNumber)*Settings.getElementParser().getElementDetails("O").getMonoMass();
-                  }
-                }
-                
-                for (String modName : massesOfInterest.keySet()){
-                  Hashtable<String,Integer> modElements = adductComposition.get(modName);
-                  Integer charge = charges.get(modName);
-                  double massOfInterest = massesOfInterest.get(modName)+ohDiff/((double)charge);
-                  Integer mult = multi.get(modName);
-                  
-                  String[] formulas = getFormulasAsString(correctedElementalComposition,modElements,mult);
-                  String analyteFormula = formulas[0];
-                  String modificationFormula = formulas[1];
-                  String chemicalFormula = formulas[2];
-                  //no negative elements are allowed after an applied modification
-                  if (chemicalFormula.indexOf("-")!=-1)
-                    continue;
-                  Object[] distris = getTheoreticalIsoDistributions(aaParser,isotopesMustMatch,amountOfIsotopes,chemicalFormula);
-                  Vector<Double> mustMatchProbabs = (Vector<Double>)distris[0];
-                  Vector<Double> probabs = (Vector<Double>)distris[1];
-                  int negativeStartValue = (Integer)distris[2];
-
-                  QuantVO quantVO = new QuantVO(sheet.getSheetName(), sideChain, doubleBonds,
-                      ohToUse,analyteFormula, massOfInterest, charge, modName,
-                      modificationFormula, retTime, usedMinusTime, usedPlusTime,
-                      mustMatchProbabs, probabs,negativeStartValue, "");
-                  
-                  analEncoded = quantVO.getAnalyteName();
-                  quantsOfAnalyte.put(modName, quantVO);
-                }
-                String analyteName = StaticUtils.generateLipidNameString((analEncoded!=null ? analEncoded : sideChain), doubleBonds, -1, "");
-                if (!quantsOfClass.containsKey(analyteName)) {
-                  analytes.add(analyteName);
-                  quantsOfClass.put(analyteName, quantsOfAnalyte);
-                } else if (!hasValidInfoForOmegaAssignment(molecularSpeciesWithDB, retTime)) {
-                  System.out.println(String.format("Ignoring duplicate analyte %s in mass list (line %s)!", analyteName, (rowCount+1)));
-                }
-                if (hasValidInfoForOmegaAssignment(molecularSpeciesWithDB, retTime)) {
-                  for (String mod : quantsOfAnalyte.keySet()){
-                    try {
-                      Vector<FattyAcidVO> chainCombination = StaticUtils.decodeFAsFromHumanReadableName(
-                          molecularSpeciesWithDB, Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), false, null);
-                      DoubleBondPositionVO doubleBondPositionVO = new DoubleBondPositionVO(
-                          chainCombination, retTime);
-                      quantsOfClass.get(analyteName).get(mod).addInfoForOmegaAssignment(doubleBondPositionVO);
-                    } catch (LipidCombinameEncodingException ex) {
-                      System.out.println(ex.getMessage());
-                    }
-                  }
-                }
-              }
-            	
-            } else {
-            for (String oxMod : oxStates)
-            {
-            	oxMod = oxMod.replaceAll("\\s", "");
-            	
-	            for (int oh=startOh; oh<(stopOh+1); oh++) {
-	              Hashtable<String,QuantVO> quantsOfAnalyte = new Hashtable<String,QuantVO>();
-	              Hashtable<String,QuantVO> quantsOfOxAnalyte = new Hashtable<String,QuantVO>();
-	              
-	              String analEncoded = null;
-	              Hashtable<String,Integer> correctedElementalComposition = new Hashtable<String,Integer>(elementalComposition);
-	              double ohDiff = 0d;
-	              int ohToUse = LipidomicsConstants.EXCEL_NO_OH_INFO;
-	              if (ohNumber>LipidomicsConstants.EXCEL_NO_OH_INFO) {
-	                ohToUse = oh;
-	                if (oh!=ohNumber) {
-	                  int oxygens = 0;
-	                  if (correctedElementalComposition.containsKey("O")) oxygens = correctedElementalComposition.get("O");
-	                  oxygens += (oh-ohNumber);
-	                  if (oxygens<0) continue;
-	                  correctedElementalComposition.put("O", oxygens);
-	                  ohDiff = (oh-ohNumber)*Settings.getElementParser().getElementDetails("O").getMonoMass();
-	                }
-	              }
-	              
-	              ModificationParser mp = new ModificationParser(oxMod);
-	              mp.parse();
-	              correctedElementalComposition = mp.getNewChemicalComposition(correctedElementalComposition);
-	              
-	              for (String modName : massesOfInterest.keySet()){
-	                
-	                String analyteClass = sheet.getSheetName();
-	                
-	                
-	                //apply respective (ox)modification to all masses and formulas
-
-                    Hashtable<String,Integer> modElements = adductComposition.get(modName);
-                    Integer charge = charges.get(modName);
-                    double massOfInterest = mp.getNewMass(massesOfInterest.get(modName)+ohDiff/((double)charge));
-                    Integer mult = multi.get(modName);
-
-                    String[] formulas = getFormulasAsString(correctedElementalComposition,modElements,mult);
-                    String analyteFormula = formulas[0];
-                    String modificationFormula = formulas[1];
-                    String chemicalFormula = formulas[2];
-                                        
-                    //no negative elements are allowed after an applied modification
-                    if (chemicalFormula.indexOf("-")!=-1)
-                      continue;
-                    Object[] distris = getTheoreticalIsoDistributions(aaParser,isotopesMustMatch,amountOfIsotopes,chemicalFormula);
-                    Vector<Double> mustMatchProbabs = (Vector<Double>)distris[0];
-                    Vector<Double> probabs = (Vector<Double>)distris[1];
-                    int negativeStartValue = (Integer)distris[2];
-                	
-                	//add ox-prefix to modified lipids
-                	if(!oxMod.equals("")) {
-                    	analyteClass = "ox" + analyteClass;
-                    }
-                	
-                	QuantVO quantVO = new QuantVO(analyteClass, sideChain, doubleBonds,
-                            ohToUse,analyteFormula, massOfInterest, charge, modName,
-                            modificationFormula, retTime, usedMinusTime, usedPlusTime,
-                            mustMatchProbabs, probabs,negativeStartValue,oxMod);
-                            analEncoded = quantVO.getAnalyteName();
-                            
-                    /*add oxLipids to another sheet (effectively becoming a tab in the GUI)*/
-                            //==
-                    if(oxMod.equals("")) {
-                    	quantsOfAnalyte.put(modName, quantVO);
-                    }else {
-                    	quantsOfOxAnalyte.put(modName, quantVO);
-                    }
-	                	
-	              }
-	              String analyteName = StaticUtils.generateLipidNameString((analEncoded!=null ? analEncoded : sideChain), doubleBonds, -1, oxMod);
-	              
-	              /*add oxLipids to another sheet (effectively becoming a tab in the GUI)*/
-	              if(oxMod.equals("")) {
-	            	  analytes.add(analyteName);
-	            	  quantsOfClass.put(analyteName, quantsOfAnalyte);
-	              }else {
-	            	  oxAnalytes.add(analyteName);
-	            	  quantsOfOxClass.put(analyteName, quantsOfOxAnalyte);
-	              }              
-	            }
-            }
-          	}
-          }
-        }
-      } 
-      quantObjects.put(sheet.getSheetName(), quantsOfClass);
-      analyteSequence.put(sheet.getSheetName(), analytes);
-      classSequence.put(sheet.getSheetName(),msLevel);
-      adductInsensitiveRtFilter.put(sheet.getSheetName(), rtFilterInsensitive);
-      bestMatchBySpectrumCoverage.put(sheet.getSheetName(), pickBestMatchBySpectrumCoverage);
-      
-      /*add (if applicable) oxLipids to another sheet (effectively becoming a tab in the GUI)*/
-      if(!oxAnalytes.isEmpty())
-      {
-    	  quantObjects.put("ox"+sheet.getSheetName(), quantsOfOxClass);
-          analyteSequence.put("ox"+sheet.getSheetName(), oxAnalytes);
-          classSequence.put("ox"+sheet.getSheetName(),msLevel);
-          adductInsensitiveRtFilter.put("ox"+sheet.getSheetName(), rtFilterInsensitive);
-          bestMatchBySpectrumCoverage.put("ox"+sheet.getSheetName(), pickBestMatchBySpectrumCoverage);
-      }
-      
-      if (foundColumns) excelOK = true;
-    }
-    myxls.close();
-    if (!excelOK) throw new ExcelInputFileException("The Excel file is not valid!");
-    checkForIsobaricSpecies(classSequence,analyteSequence,quantObjects);
-    
-    Vector results = new Vector();
-    results.add(classSequence);
-    results.add(analyteSequence);
-    results.add(adductInsensitiveRtFilter);
-    results.add(bestMatchBySpectrumCoverage);
-    results.add(quantObjects);
-    return results;
-  }
-  
-  /**
-   * @param molecularSpeciesWithDB String of the potential molecular species with double bond position assignment
-   * @param retTime retention time in minutes
-   * @return true if a molecular species with double bond position information and a corresponding retention time was found in the mass list
-   */
-  private static boolean hasValidInfoForOmegaAssignment(String molecularSpeciesWithDB, float retTime)
-  {
-    if (molecularSpeciesWithDB != null && retTime>0) return true;
-    return false;
-  }
-  
-  @SuppressWarnings({ "rawtypes" })
+  @SuppressWarnings({ "rawtypes", "deprecation" })
   public static Vector getCorrectAnalyteSequence(String filePath, boolean ionMode) throws Exception{
     File quant = new File(filePath);
     Vector quantContent = null;
     if (quant.isFile() && (quant.getName().endsWith(".xls") || quant.getName().endsWith(".xlsx"))){
-      quantContent = QuantificationThread.parseQuantExcelFile(filePath, 0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f);
+      quantContent = (new MassListParser(filePath, 0f, 0f, 0, 0, true, 0f, 0f, 0f)).getResultsVector();
     } else if ((quant.isFile() && quant.getName().endsWith(".txt")) || quant.isDirectory()){
       System.out.println("Ion mode: "+ionMode);
-      quantContent = QuantificationThread.parseAlex123TargetList(filePath, 0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f, ionMode);
+      quantContent = (new MassListParser(filePath, 0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f, true, ionMode)).getResultsVector();
     }
     if (quantContent!=null)
       return quantContent;
@@ -1648,7 +1089,7 @@ public class QuantificationThread extends Thread
     //deconvoluting the Hashtables
     for (String className : classSequence.keySet()){
       Hashtable<String,Hashtable<String,QuantVO>> classQuant = quantObjects.get(className);
-      Vector<LipidParameterSet> lipidParameterSet = correctedParams.get(className);
+      Vector<LipidParameterSet> setsOfClass = correctedParams.get(className);
       for (String analyteName : analyteSequence.get(className)){
         Hashtable<String,QuantVO> analyteQuant = classQuant.get(analyteName);
         for (String mod : analyteQuant.keySet()){
@@ -1656,14 +1097,14 @@ public class QuantificationThread extends Thread
           if (!infoForOmegaAssignment.isEmpty()) {
             try {
               if (Integer.parseInt(RulesContainer.getAmountOfChains(StaticUtils.getRuleName(className, mod))) < 2) {
-                addOmegaInformationToParameterSets(lipidParameterSet,analyteName,infoForOmegaAssignment,false);
+                addOmegaInformationToParameterSets(setsOfClass,analyteName,infoForOmegaAssignment,false);
               } 
             } catch (RulesException | NoRuleException | IOException | SpectrummillParserException ex) {
               System.out.println(ex.getMessage());
             }
 
             //add omega info to species requiring MSn evidence
-            addOmegaInformationToParameterSets(lipidParameterSet,analyteName,infoForOmegaAssignment,true);
+            addOmegaInformationToParameterSets(setsOfClass,analyteName,infoForOmegaAssignment,true);
           }
         }
       }
@@ -1691,11 +1132,13 @@ public class QuantificationThread extends Thread
           
           Iterator<DoubleBondPositionVO> it = infoForOmegaAssignment.iterator();
           while(it.hasNext()) {
-            DoubleBondPositionVO doubleBondPositionVO = it.next();
-            float expectedRetentionTime = doubleBondPositionVO.getExpectedRetentionTime();
+          	//creating a deep copy to avoid unwanted side effects.
+            DoubleBondPositionVO doubleBondPositionVO = new DoubleBondPositionVO(it.next());
+            
+            double expectedRetentionTime = doubleBondPositionVO.getExpectedRetentionTime();
             if (peakLimits.insideRange(expectedRetentionTime)) {
-              if (mediumAccuracy.insideRange(expectedRetentionTime)) doubleBondPositionVO.setAccuracy(1);
-              if (highAccuracy.insideRange(expectedRetentionTime)) doubleBondPositionVO.setAccuracy(2);
+              if (mediumAccuracy.insideRange(expectedRetentionTime)) doubleBondPositionVO.setAccuracy(DoubleBondPositionVO.ACCURACY_MEDIUM);
+              if (highAccuracy.insideRange(expectedRetentionTime)) doubleBondPositionVO.setAccuracy(DoubleBondPositionVO.ACCURACY_HIGH);
               
               if (needsMSnEvidence) {
                 String chainCombination = getEquivalentChainCombination((LipidomicsMSnSet)param, doubleBondPositionVO);
@@ -1715,8 +1158,9 @@ public class QuantificationThread extends Thread
           //sort omega information and add assignments
           Vector<DoubleBondPositionVO> paramOmegaInfo = param.getOmegaInformation();
           Collections.sort(paramOmegaInfo);
-          Vector<DoubleBondPositionVO> highAccuracyHits = StaticUtils.getHighAccuracyDoubleBondPositions(paramOmegaInfo);
-          Vector<DoubleBondPositionVO> assignedHits = StaticUtils.findUnambiguousDoubleBondPositions(highAccuracyHits);
+//          Vector<DoubleBondPositionVO> highAccuracyHits = StaticUtils.getHighAccuracyDoubleBondPositions(paramOmegaInfo);
+//          Vector<DoubleBondPositionVO> assignedHits = StaticUtils.findUnambiguousDoubleBondPositions(highAccuracyHits);
+          Vector<DoubleBondPositionVO> assignedHits = StaticUtils.findUnambiguousDoubleBondPositionsNew(param);
           for (DoubleBondPositionVO assignedHit : assignedHits) {
             assignedHit.setIsAssigned(true);
           }
@@ -1812,314 +1256,8 @@ public class QuantificationThread extends Thread
     }
     return highestArea;
   }
-    
-  /**
-   * checks if the quantitation file contains any isobaric species - if so, this information is stored in the QuantVO
-   * @param classSequence the lipid classes in sequence
-   * @param analyteSequence the analytes in the lipid classes in sequence
-   * @param quantObjects the hash containing the the QuantVO, which pertai information about quantitation
-   * @throws RulesException exception thrown if something is wrong with an fragmentation rule
-   * @throws IOException if a file is not there
-   * @throws SpectrummillParserException if there is something wrong with the elementconfig.xml
-   */
-  private static void checkForIsobaricSpecies(LinkedHashMap<String,Integer> classSequence, LinkedHashMap<String,Vector<String>> analyteSequence,
-      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects) throws RulesException, IOException, SpectrummillParserException{
-    Vector<String> classes = new Vector<String>(classSequence.keySet());
-
-    // first, the analytes are put in 10Da bins
-    Hashtable<Integer,Vector<QuantVO>> tenDaIsobaricClusters = new Hashtable<Integer,Vector<QuantVO>>();
-    for (int i=0; i!=classes.size(); i++){
-      String lipidClass = classes.get(i);
-      Vector<String> analytes = analyteSequence.get(lipidClass);
-      Hashtable<String,Hashtable<String,QuantVO>> quantClass = quantObjects.get(lipidClass);
-      for (int j=0; j!=analytes.size(); j++){
-        String anal = analytes.get(j);
-        Hashtable<String,QuantVO> quantAnal = quantClass.get(anal);
-        for (String mod : quantAnal.keySet()){
-          QuantVO quant = quantAnal.get(mod);
-          float mz = (float)quant.getAnalyteMass();
-          int clusterId = getTenDaClusterId(mz);
-          Vector<QuantVO> vosOfCluster = new Vector<QuantVO>();
-          if (tenDaIsobaricClusters.containsKey(clusterId)) vosOfCluster = tenDaIsobaricClusters.get(clusterId);
-          vosOfCluster.add(quant);
-          tenDaIsobaricClusters.put(clusterId, vosOfCluster);
-        }
-      }
-    }
-    Hashtable<String,String> alreadyUsed = new Hashtable<String,String>(); 
-    //second the algorithm looks for analytes which are within the tolerance in the 10Da bins
-    for (int i=0; i!=classes.size(); i++){
-      String lipidClass = classes.get(i);
-      Vector<String> analytes = analyteSequence.get(lipidClass);
-      Hashtable<String,Hashtable<String,QuantVO>> quantClass = quantObjects.get(lipidClass);
-      for (int j=0; j!=analytes.size(); j++){
-        String anal = analytes.get(j);
-        Hashtable<String,QuantVO> quantAnal = quantClass.get(anal);
-        for (String mod : quantAnal.keySet()){
-          QuantVO quant1 = quantAnal.get(mod);
-          if (quant1.isQuantifiedByOtherIsobar()) continue;
-          
-          float tol = LipidomicsConstants.getCoarseChromMzTolerance((float)quant1.getAnalyteMass());
-          float sameTol = tol/5f;
-          try{
-            RulesContainer.getAmountOfChains(StaticUtils.getRuleName(quant1.getAnalyteClass(), quant1.getModName()));
-          } catch (NoRuleException nrx) {
-            if(j==0) { System.out.println(nrx.getMessage()); }
-            continue;
-          }
-          
-          float lowerMz = (float)quant1.getAnalyteMass()-tol;
-          float upperMz = (float)quant1.getAnalyteMass()+tol;
-          float lowerSame = (float)quant1.getAnalyteMass()-sameTol;
-          float upperSame = (float)quant1.getAnalyteMass()+sameTol;
-          int clusterId = getTenDaClusterId(lowerMz);
-          Vector<QuantVO> toCompare = new Vector<QuantVO>();
-          if (tenDaIsobaricClusters.containsKey(clusterId)) toCompare.addAll(tenDaIsobaricClusters.get(clusterId));
-          if (clusterId!=getTenDaClusterId(upperMz)){
-            clusterId = getTenDaClusterId(upperMz);
-            if (tenDaIsobaricClusters.containsKey(clusterId)) toCompare.addAll(tenDaIsobaricClusters.get(clusterId));
-          }
-          for (QuantVO quant2 : toCompare){
-            if (quant1.equals(quant2) || alreadyUsed.containsKey(getUniqueQuantVOString(quant2))) continue;
-            
-            try{
-              RulesContainer.getAmountOfChains(StaticUtils.getRuleName(quant2.getAnalyteClass(), quant2.getModName()));
-            } catch (NoRuleException nrx) {
-              if(j==0) { System.out.println(nrx.getMessage()); }
-              continue;
-            }
-            
-            float mz2 = (float)quant2.getAnalyteMass();
-            boolean similarMass = lowerMz<mz2 && mz2<upperMz;
-            boolean sameMass = lowerSame<mz2 && mz2<upperSame;
-            if (similarMass){
-              quant1.addIsobaricSpecies(quant2);
-              quant2.addIsobaricSpecies(quant1);
-//              if ((quant1.getAnalyteClass().equalsIgnoreCase("P-PE")&&quant1.getIdString().equalsIgnoreCase("36:4"))||
-//                  (quant2.getAnalyteClass().equalsIgnoreCase("P-PE")&&quant2.getIdString().equalsIgnoreCase("36:4")))
-//                System.out.println(quant1.getAnalyteClass()+quant1.getIdString()+"_"+quant1.getModName()+"/"+quant2.getAnalyteClass()+quant2.getIdString()+"_"+quant2.getModName()+" "+quant1.getAnalyteMass()+"/"+mz2);
-              if (sameMass) {
-                quant2.setQuantifiedByOtherIsobar(true);
-              }
-            }
-          }
-          String idString = getUniqueQuantVOString(quant1);
-          alreadyUsed.put(idString, idString);
-        }
-      }
-    }      
-  }
   
-  /**
-   * this string is required as unique identifiers, to avoid a repeated comparison
-   * @return a unique string separateble from ohter analytes
-   */
-  private static String getUniqueQuantVOString(QuantVO vo){
-    return vo.getAnalyteClass()+"_;%"+vo.getIdString()+"_;%"+vo.getModName();
-  }
   
-  /**
-   * 
-   * @param mz mz value
-   * @return a unique integer id for a cluster of the size of 10Da
-   */
-  private static int getTenDaClusterId(float mz){
-    return Math.round(Calculator.roundFloat(mz, 0, BigDecimal.ROUND_DOWN));
-  }
-  
-  /**
-   * parses an Alex123 target list file or a directory containing Alex123 target list files
-   * @param quantFile the Alex123 file or the directory containing the Alex123 files
-   * @param minusTime time tolerance in negative direction
-   * @param plusTime time tolerance in positive direction
-   * @param amountOfIsotopes the number of isotopes to be quantified
-   * @param isotopesMustMatch the number of isotopes that have to matcht the theoretical isotopic distribution 
-   * @param searchUnknownTime true if analytes have to be searched where no retention time is present
-   * @param basePeakCutoff a relative cutoff value
-   * @param rtShift shift of retention times in relation to the entered ones
-   * @param lowestRetTime lower hard limit for the retention time
-   * @param highestRetTime upper hard limit for the retention time
-   * @param positiveIonMode should the targets ion positive or in negative ion mode be used for quantitation
-   * @return a vector containing the targets for quantitation
-   * @throws IOException if a file is not there
-   * @throws SpectrummillParserException if there is something wrong with the elementconfig.xml
-   * @throws AlexTargetlistParserException if there is something wrong with the target lists
-   * @throws ChemicalFormulaException if there is something wrong with the chemical formulae
-   * @throws RulesException if there is somehting wrong for the rule parsing
-   */
-  @SuppressWarnings({ "rawtypes", "unchecked" })
-  private static Vector parseAlex123TargetList(String quantFile, float minusTime, float plusTime, int amountOfIsotopes, int isotopesMustMatch, boolean searchUnknownTime, float basePeakCutoff,
-      float rtShift, float lowestRetTime, float highestRetTime, boolean positiveIonMode) throws IOException,SpectrummillParserException, AlexTargetlistParserException, ChemicalFormulaException, RulesException{
-    File file = new File(quantFile);
-    LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,TargetlistEntry>>> sortedEntries = null;
-    if (file.isFile() && file.getName().endsWith(".txt")){
-      Vector<Hashtable<Integer,Vector<TargetlistEntry>>> parsedEntries = new Vector<Hashtable<Integer,Vector<TargetlistEntry>>>();
-      TargetlistParser parser = new TargetlistParser(quantFile,positiveIonMode);
-      parser.parse();
-      parsedEntries.add(parser.getResults());
-      sortedEntries = TargetlistDirParser.sortEntriesForLDA(parsedEntries);
-    }else if (file.isDirectory()){
-      TargetlistDirParser dirParser = new TargetlistDirParser(quantFile,positiveIonMode);
-      dirParser.parse();
-      sortedEntries = dirParser.getResults();
-    }
-    if (sortedEntries==null || sortedEntries.size()==0)
-      throw new AlexTargetlistParserException("There are unusable entries in your target list");
-    
-    LinkedHashMap<String,Integer> classSequence = new LinkedHashMap<String,Integer>();
-    Hashtable<String,Boolean> adductInsensitiveRtFilter = new Hashtable<String,Boolean>();
-    Hashtable<String,Boolean> bestMatchBySpectrumCoverage = new Hashtable<String,Boolean>();
-// LL   Hashtable<String,Vector<String>> analyteSequence = new Hashtable<String,Vector<String>>();
-    LinkedHashMap<String,Vector<String>> analyteSequence = new LinkedHashMap<String,Vector<String>>();
-    Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();
-
-    //now generate the corresponding objects
-    ElementConfigParser elementParser = Settings.getElementParser();
-    for (String className : sortedEntries.keySet()){
-      classSequence.put(className, 1);
-      LinkedHashMap<String,LinkedHashMap<String,TargetlistEntry>> classEntries = sortedEntries.get(className);
-      Vector<String> analytes = new Vector<String>();
-      Hashtable<String,Hashtable<String,QuantVO>> quantsOfClass = new Hashtable<String,Hashtable<String,QuantVO>>();
-      for (String analyteOriginalName : classEntries.keySet()){
-        LinkedHashMap<String,TargetlistEntry> analyteEntries = classEntries.get(analyteOriginalName);
-        String sideChain = "";
-        int doubleBonds = -1;
-        Hashtable<String,QuantVO> quantsOfAnalyte = new Hashtable<String,QuantVO>();
-        for (String mod : analyteEntries.keySet()){
-          TargetlistEntry entry = analyteEntries.get(mod);
-          sideChain = entry.getAnalyteName();
-          doubleBonds = entry.getDbs();
-          entry.setTimeConstraints(-1, minusTime, plusTime);
-          
-          Hashtable<String,Integer> formAnal = StaticUtils.categorizeFormula(entry.getAnalyteFormula());
-          Hashtable<String,Integer> formMod = StaticUtils.categorizeFormula(entry.getModFormula());
-          String[] formulas = getFormulasAsString(formAnal,formMod,1);
-//          String analyteFormula = formulas[0];
-//          String modificationFormula = formulas[1];
-          String chemicalFormula = formulas[2];
-//          System.out.println(className+StaticUtils.generateLipidNameString(sideChain, doubleBonds)+": "+chemicalFormula);
-          Object[] distris = getTheoreticalIsoDistributions(elementParser,isotopesMustMatch,amountOfIsotopes,chemicalFormula);
-          Vector<Double> mustMatchProbabs = (Vector<Double>)distris[0];
-          Vector<Double> probabs = (Vector<Double>)distris[1];
-          int negativeStartValue = (Integer)distris[2];
-          entry.setDistributionValues(mustMatchProbabs,probabs,negativeStartValue);
-          
-          
-          quantsOfAnalyte.put(entry.getModName(), entry);
-        }
-        
-        String analyteName = StaticUtils.generateLipidNameString(sideChain, doubleBonds, -1, "");
-        analytes.add(analyteName);
-        quantsOfClass.put(analyteName, quantsOfAnalyte);
-      }
-      quantObjects.put(className, quantsOfClass);
-      analyteSequence.put(className, analytes);
-      adductInsensitiveRtFilter.put(className, false);
-      bestMatchBySpectrumCoverage.put(className, false);
-    }
-    checkForIsobaricSpecies(classSequence,analyteSequence,quantObjects);
-    Vector results = new Vector();
-    results.add(classSequence);
-    results.add(analyteSequence);
-    results.add(adductInsensitiveRtFilter);
-    results.add(bestMatchBySpectrumCoverage);
-    results.add(quantObjects);
-    //TODO: these few lines are only for testing purposes
-//    classSequence = new LinkedHashMap<String,Integer>();
-//    classSequence.put("TAG", 1);
-//    analyteSequence = new Hashtable<String,Vector<String>>();
-//    Vector<String> analytesOfClass = new Vector<String>();
-//    analytesOfClass.add("40:0");
-//    analyteSequence.put("TAG", analytesOfClass);
-//    Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects2 = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();
-//    Hashtable<String,Hashtable<String,QuantVO>> ofClass = new Hashtable<String,Hashtable<String,QuantVO>>();
-//    ofClass.put("40:0", quantObjects.get("TAG").get("40:0"));   
-//    quantObjects2.put("TAG", ofClass);
-//    results.add(classSequence);
-//    results.add(analyteSequence);
-//    results.add(adductInsensitiveRtFilter);
-//    results.add(quantObjects2);
-    return results;
-  }
-  
-  /**
-   * computes chemical formula strings out of the analyte composition and the modification 
-   * @param elementalComposition the elemental composition of the analyte
-   * @param modElements the elemental composition of the modification
-   * @param mult multiplication for dimers, trimers, etc.
-   * @return [0] neutral analyte formula; [1] formula of modification; [2] total formula
-   */
-  private static String[] getFormulasAsString(Hashtable<String,Integer> elementalComposition, Hashtable<String,Integer> modElements,
-      int mult){
-    Hashtable<String,Integer> chemicalFormula = new Hashtable<String,Integer>(elementalComposition);
-    for (String element : modElements.keySet()) {
-      int amount = modElements.get(element);
-      if (chemicalFormula.containsKey(element))
-        amount += chemicalFormula.get(element);
-      chemicalFormula.put(element, amount);
-    }
-    String[] formulas = new String[3];
-    formulas[0] = StaticUtils.getFormulaInHillNotation(elementalComposition, true);
-    formulas[1] = StaticUtils.getFormulaInHillNotation(modElements, true);
-    formulas[2] = StaticUtils.getFormulaInHillNotation(chemicalFormula,true);
-    return formulas;
-  }
-  
-  /**
-   * calculates the positive and the negative isotopic distribution, and decides which on has to be used
-   * @param elementParser parser containint the relative abundances of the elements
-   * @param isotopesMustMatch number of isotopes that have to fit the theoretical isotopic distribution
-   * @param amountOfIsotopes number of isotopes that shall be quantified by the LDA algorithm
-   * @param chemicalFormula the chemical formula of the analyte where the isotopic distribution has to match
-   * @return [0] Vector<Double> containing the probabilities of the isotopes that must match; [1] Vector<Double> containing probabilities of all isotopes; [2] if the distribution goes in the negative direction - how negative is the lowest isotope 
-   * @throws SpectrummillParserException if there is something wrong with the elementconfig.xml
-   */
-  private static Object[] getTheoreticalIsoDistributions(ElementConfigParser elementParser, int isotopesMustMatch, int amountOfIsotopes, String chemicalFormula) throws SpectrummillParserException{  
-    boolean negativeDistribution = false;
-    Vector<Double> probabs = new Vector<Double>();
-    if (amountOfIsotopes<isotopesMustMatch)
-      amountOfIsotopes = isotopesMustMatch;
-    if (amountOfIsotopes>0){
-      Vector<Vector<Double>> bothDistris = elementParser.calculateChemicalFormulaIntensityDistribution(chemicalFormula, amountOfIsotopes+1, false);
-      probabs = bothDistris.get(0);
-      if (bothDistris.size()>1){
-        Vector<Double> negDistri = bothDistris.get(1);
-        if (StaticUtils.useNegativeDistribution(probabs,negDistri)){
-          probabs = negDistri;
-          negativeDistribution = true;
-        }
-      }
-
-    }else{
-      probabs.add(1d);
-    }
-    Vector<Double> mustMatchProbabs = new Vector<Double>();
-    if (isotopesMustMatch>0){
-      if (amountOfIsotopes == isotopesMustMatch){
-        mustMatchProbabs = new Vector<Double>(probabs);
-      }else{
-        Vector<Vector<Double>> bothDistris = elementParser.calculateChemicalFormulaIntensityDistribution(chemicalFormula, isotopesMustMatch+1, false);
-        mustMatchProbabs = bothDistris.get(0);
-        if (bothDistris.size()>1){
-          Vector<Double> negDistri = bothDistris.get(1);
-          if (StaticUtils.useNegativeDistribution(mustMatchProbabs,negDistri)){
-            mustMatchProbabs = negDistri;
-            negativeDistribution = true;
-          }
-        }
-      }
-    }
-    int negativeStartValue = 0;
-    if (negativeDistribution){
-      negativeStartValue = (mustMatchProbabs.size()*-1)+1;
-    }
-    
-    Object[] distris = new Object[3];
-    distris[0] = mustMatchProbabs;
-    distris[1] = probabs;
-    distris[2] = negativeStartValue;
-    return distris;
-  }
   
   /**
    * method that reduced the defined OH encodings to the actually used ones

@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.quantification;
 
@@ -468,10 +468,11 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
    * @param charge the charge of the analyte
    * @param msLevel the MS-level
    * @param nrOfIsotopes how many isotopes shall be quantified (starting with 0)
+   * @param mustMatchIsos the probabilities of the isotopes that have to match
    * @return the detected results
    * @throws CgException
    */
-  public Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> processShotgunData(float mz, int charge, int msLevel, int nrOfIsotopes) throws CgException{
+  public Hashtable<Integer,Hashtable<Integer,Vector<CgProbe>>> processShotgunData(float mz, int charge, int msLevel, int nrOfIsotopes, Vector<Double> mustMatchIsos) throws CgException{
     float mzTolerance = LipidomicsConstants.getCoarseChromMzTolerance(mz);
     CgProbe probe = calculateAShotgunIntensity(mz,mzTolerance,charge,msLevel);
     if (!(probe.Area>0f))
@@ -484,9 +485,13 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     if (nrOfIsotopes>1){
       for (int i=1; i!=nrOfIsotopes; i++){
         probe = calculateAShotgunIntensity(mz+i*LipidomicsConstants.getNeutronMass()/(float)charge,mzTolerance,charge,msLevel);
-        if (probe.Area==0f)
+        if (probe.Area==0f) {
+          // in this case, less isotopes have been found than required -> the hit should be discarded
+          if (i<mustMatchIsos.size()) {
+            return null;
+          }
           break;
-        else{
+        } else{
           probes = new Vector<CgProbe>();
           probes.add(probe);
           oneResult.put(i, probes);
@@ -4384,6 +4389,32 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
       }
     }
     return results;
+  }
+  
+  public CgProbe calculatePeakAtExactTimePosition(float rt, float mz, float lowerMzBand, float upperMzBand, int charge, int msLevel) throws CgException, QuantificationException {
+  	CgProbe probe = null;
+    //if (timeType == LipidomicsDefines.MINUTES) mainRt = mainRt*60f;
+    LipidomicsChromatogram chrom = new LipidomicsChromatogram(readAChromatogram(mz, lowerMzBand, upperMzBand, msLevel, chromSmoothRange_,chromSmoothRepeats_));
+    chrom.GetMaximumAndAverage();
+    int mainScan = LipidomicsAnalyzer.findIndexByTime(rt, chrom);
+    
+    try{probe = detectPeakThreeD(chrom,mainScan,false,charge,msLevel);}catch(QuantificationException qex){}
+    if (probe!=null && probe.AreaStatus == CgAreaStatus.OK){
+      return probe;
+    }
+    probe = LipidomicsAnalyzer.calculateOneArea(chrom, mainScan, LipidomicsDefines.GreedySteepnessReductionMethod,charge);
+    if (probe.AreaStatus == CgAreaStatus.OK){
+    	return probe;
+    }
+    probe = LipidomicsAnalyzer.calculateOneArea(chrom, mainScan, LipidomicsDefines.EnhancedValleyMethod,charge);
+    if (probe.AreaStatus == CgAreaStatus.OK){
+    	return probe;
+    }
+    probe = LipidomicsAnalyzer.calculateOneArea(chrom, mainScan, LipidomicsDefines.StandardValleyMethod,charge);
+    if (probe.AreaStatus == CgAreaStatus.OK){
+    	return probe;
+    }
+    return probe;
   }
   
   public Vector<Vector<CgProbe>> calculatePeakAtExactProbePosition(LipidParameterSet templateParam, int maxIsotope,int charge, int msLevel) throws CgException {

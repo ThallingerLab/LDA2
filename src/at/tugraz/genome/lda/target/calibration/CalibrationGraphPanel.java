@@ -1,6 +1,28 @@
+/* 
+ * This file is part of Lipid Data Analyzer
+ * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
+ * Copyright (c) 2023 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
+ *  
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *  
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details. 
+ *  
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Please contact lda@genome.tugraz.at if you need additional information or 
+ * have any questions.
+ */
+
 package at.tugraz.genome.lda.target.calibration;
 
-import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -19,6 +41,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Vector;
 
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -37,9 +60,13 @@ import at.tugraz.genome.lda.target.JOptionPanel;
 import at.tugraz.genome.lda.target.LoadingPanel;
 import at.tugraz.genome.lda.target.export.ExportPanel;
 import at.tugraz.genome.lda.target.export.TargetListExporter;
-import at.tugraz.genome.lda.utils.Pair;
+import javafx.util.Pair;
 
-
+/**
+ * 
+ * @author Leonida M. Lamp
+ * 
+ */
 public class CalibrationGraphPanel extends JOptionPanel
 {
 	private static final long serialVersionUID = 1L;
@@ -47,22 +74,25 @@ public class CalibrationGraphPanel extends JOptionPanel
 	private LoadingPanel loadingPanel_;
 	private JPanel displayPanel_;
 	private String[] lipidClasses_ = new String[0];
+	private SubgroupDefinitionPanel subGroupDefinitionPanel_;
 	private JComboBox<String> classListJComboBox_;
 	private JPanel jComboBoxPanel_;
 	private JCheckBox classSpecificJCheckBox_;
+	private JButton defineSubgroupsJButton_;
 	private JSlider granularityJSlider_;
 	private Double grouping_;
 	private RecalibrationPlot plot_;
 	private ArrayList<RecalibrationRegression> regressions_;
 	private File originalTargetList_;
+	private Double predictionThreshold_;
 	public static final String PLOT_ALL = "Combined";
 	private static final Dimension PLOT_DIMENSION = new Dimension(825,650);
-	private static final String TABLE_FRAME_TITLE = "Recalibrate the \u03C9-C=C target list";
+	private static final String TABLE_FRAME_TITLE = "RT-DB mapping";
 	
 	
   
   public CalibrationGraphPanel(JDefaultComponents wizardComponents) {
-      super(wizardComponents, "Recalibrate an omega C=C target list to your chromatographic conditions.");
+      super(wizardComponents, "Map a RT-DB to your chromatographic conditions.");
       init(generateLoadingPanel());
   }
   
@@ -93,7 +123,7 @@ public class CalibrationGraphPanel extends JOptionPanel
   	displayPanel_ = new JPanel();
   	displayPanel_.setLayout(new GridBagLayout());
   	
-  	initClassSpecificJCheckBox();
+  	initClassSpecificJCheckBox(); //put button here
   	initClassListJComboBox();
   	initGranularityJSlider();
   	initPlot();
@@ -104,18 +134,52 @@ public class CalibrationGraphPanel extends JOptionPanel
   
   private void initClassSpecificJCheckBox()
   {
-  	classSpecificJCheckBox_ = new JCheckBox("Calibrate lipid classes separately.", true);
-  	addToDisplayPanel(classSpecificJCheckBox_, new GridBagConstraints(10, 0, 5, 1, 0.0, 0.0
+  	JPanel panel = new JPanel();
+  	panel.setLayout(new GridBagLayout());
+  	
+  	classSpecificJCheckBox_ = new JCheckBox("Map lipid classes individually.", true); //other code relies on this being initialized with true
+  	classSpecificJCheckBox_.addActionListener(new ActionListener() {
+		  public void actionPerformed(ActionEvent e) 
+		  {
+		  	classSpecificJCheckBox_actionPerformed(e);
+		  }
+	  });
+  	panel.add(classSpecificJCheckBox_, new GridBagConstraints(0, 0, 0, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 0, 5, 0), 0, 0));
+  	
+  	defineSubgroupsJButton_ = new JButton("Define Groups");
+  	defineSubgroupsJButton_.setEnabled(classSpecificJCheckBox_.isSelected());
+  	defineSubgroupsJButton_.addActionListener(new ActionListener() {
+		  public void actionPerformed(ActionEvent e) 
+		  {
+		  	defineSubgroupsJButton_actionPerformed(e);
+		  }
+	  });
+  	panel.add(defineSubgroupsJButton_, new GridBagConstraints(0, 1, 0, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(5, 0, 0, 0), 0, 0));
+  	
+  	addToDisplayPanel(panel, new GridBagConstraints(10, 0, 0, 1, 0.0, 0.0
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(5, 5, 5, 5), 0, 0));
   }
   
   private void initClassListJComboBox()
   {
   	jComboBoxPanel_ = new JPanel();
-  	JLabel label = new JLabel("Select displayed lipid class: ");
-  	jComboBoxPanel_.add(label, BorderLayout.WEST);
+  	jComboBoxPanel_.setLayout(new GridBagLayout());
   	
-  	classListJComboBox_ = new JComboBox<String>(lipidClasses_);
+  	JLabel label = new JLabel("Select displayed lipid class / group: ");
+  	jComboBoxPanel_.add(label, new GridBagConstraints(0, 0, 0, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 5, 0), 0, 0));
+  	
+  	initClassListJComboBox(lipidClasses_);
+  	
+  	addToDisplayPanel(jComboBoxPanel_, new GridBagConstraints(0, 0, 0, 2, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(5, 15, 5, 5), 0, 0));
+  }
+  
+  private void initClassListJComboBox(String[] toDisplay)
+  {
+  	classListJComboBox_ = new JComboBox<String>(toDisplay);
   	classListJComboBox_.setSelectedIndex(0);
   	classListJComboBox_.addActionListener(new ActionListener() {
 		  public void actionPerformed(ActionEvent e) 
@@ -123,9 +187,8 @@ public class CalibrationGraphPanel extends JOptionPanel
 		  	classListJComboBox_actionPerformed(e);
 		  }
 	  });
-  	jComboBoxPanel_.add(classListJComboBox_, BorderLayout.EAST);
-  	addToDisplayPanel(jComboBoxPanel_, new GridBagConstraints(10, 1, 5, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(5, 5, 5, 5), 0, 0));
+  	jComboBoxPanel_.add(classListJComboBox_, new GridBagConstraints(0, 1, 0, 1, 0.0, 0.0
+        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(5, 0, 0, 0), 0, 0));
   }
   
   /**
@@ -167,7 +230,7 @@ public class CalibrationGraphPanel extends JOptionPanel
 				int diff = max - value;
 				grouping_ = maxMinutes * diff / max;
 				if (grouping_ < minMinutes) grouping_ = minMinutes; //to make sure the data points are a monotonic sequence
-				System.out.println(grouping_);
+				System.out.println(grouping_+" value: "+value);
 				showViewOfChoice();
 			} 
 			
@@ -178,34 +241,48 @@ public class CalibrationGraphPanel extends JOptionPanel
     });
     
   	granularityJSlider_ = slider;
-  	panel.add(granularityJSlider_, new GridBagConstraints(0, 1, 0, 2, 0.0, 0.0
+  	panel.add(granularityJSlider_, new GridBagConstraints(0, 1, 0, 1, 0.0, 0.0
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(5, 0, 0, 0), 0, 0));
   	
   	addToDisplayPanel(panel, new GridBagConstraints(5, 0, 10, 2, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(5, 5, 5, 5), 0, 0));
+        ,GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0));
   }
   
+  /**
+   * Initiates the recalibration plot.
+   */
   private void initPlot()
   {
   	RecalibrationRegression regression = getRegressionByFields(PLOT_ALL, PLOT_ALL);
-  	ArrayList<Pair<Double,Double>> data = regression == null ? new ArrayList<Pair<Double,Double>>() : regression.getDifferences();
+  	ArrayList<AnchorPointVO> data = regression == null ? new ArrayList<AnchorPointVO>() : regression.getDifferences();
   	RecalibrationRegression regressionStandards = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, PLOT_ALL);
-  	ArrayList<Pair<Double,Double>> dataStandards = regressionStandards == null ? new ArrayList<Pair<Double,Double>>() : regressionStandards.getDifferences();
-    plot_ = new RecalibrationPlot(data, dataStandards, regression, PLOT_DIMENSION, this);
+  	ArrayList<AnchorPointVO> dataStandards = regressionStandards == null ? new ArrayList<AnchorPointVO>() : regressionStandards.getDifferences();
+    plot_ = new RecalibrationPlot(data, dataStandards, regression, PLOT_DIMENSION, this, null);
     addPlotToDisplayPanel();
   }
   
+  /**
+   * Adds the recalibration plot to the display panel. The plot needs to be generated prior to calling this method.
+   */
   private void addPlotToDisplayPanel()
   {
   	addToDisplayPanel(plot_, new GridBagConstraints(0, 3, 15, 1, 0.0, 0.0
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(10, 5, 5, 5), 0, 0));
   }
   
+  /**
+   * Adds a component to the display panel with the given constraints.
+   * @param component
+   * @param constraints
+   */
   private void addToDisplayPanel(JComponent component, GridBagConstraints constraints)
   {
   	displayPanel_.add(component, constraints);
   }
   
+  /**
+   * Removes all panels; needed when going back to the previous JOptionsPanel
+   */
   private void cleanPanels()
   {
   	if (this.loadingPanel_ != null)
@@ -218,17 +295,160 @@ public class CalibrationGraphPanel extends JOptionPanel
   		this.remove(displayPanel_);
   		this.displayPanel_ = null;
   	}
+  	this.subGroupDefinitionPanel_ = null;
   }
   
-  private void showViewOfChoice()
+  /**
+   * Shows the plot selected in the class list JComboBox
+   */
+  public void showViewOfChoice()
   {
   	String selectedItem = (String)classListJComboBox_.getSelectedItem(); 
   	updatePlot(selectedItem);
   }
   
+  /**
+   * Handles the events called when triggering the class list JComboBox.
+   * @param e
+   */
   private void classListJComboBox_actionPerformed(ActionEvent e) 
   {
   	showViewOfChoice();
+  }
+  
+  /**
+   * Handles the events called when triggering the class specific JCheckBox.
+   * @param e
+   */
+  private void classSpecificJCheckBox_actionPerformed(ActionEvent e)
+  {
+  	defineSubgroupsJButton_.setEnabled(classSpecificJCheckBox_.isSelected());
+  	updateClassListJComboBox();
+  }
+  
+  /**
+   * The class list JComboBox contains the lipid classes and names of subgroups that will be used for recalibration; 
+   * the combined regression is always selectable.
+   * This method adjusts this list depending on user settings.
+   */
+  public void updateClassListJComboBox()
+  {
+  	jComboBoxPanel_.remove(classListJComboBox_);
+  	if (!classSpecificJCheckBox_.isSelected())
+  	{
+  		initClassListJComboBox(new String[] {PLOT_ALL});
+  	}
+  	else if (subGroupDefinitionPanel_ != null)
+  	{
+  		ArrayList<String> ungroupedLipidClasses = subGroupDefinitionPanel_.getUngroupedLipidClasses();
+  		ArrayList<SubGroup> subGroups = subGroupDefinitionPanel_.getDefinedSubgroups();
+  		String[] toDisplay = new String[ungroupedLipidClasses.size()+subGroups.size()+1];
+  		toDisplay[0] = PLOT_ALL;
+  		for (int i=0; i<subGroups.size(); i++)
+  		{
+  			toDisplay[i+1] = subGroups.get(i).getGroupName();
+  		}
+  		for (int i=0; i<ungroupedLipidClasses.size();i++)
+  		{
+  			toDisplay[i+subGroups.size()+1] = ungroupedLipidClasses.get(i);
+  		}
+  		jComboBoxPanel_.remove(classListJComboBox_);
+  		initClassListJComboBox(toDisplay);
+  	}
+  	else
+  	{
+  		initClassListJComboBox(lipidClasses_);
+  	}
+  	displayPanel_.invalidate();
+  	displayPanel_.updateUI();
+  }
+  
+  /**
+   * Given a lipid class name, this method returns the relevant key to retrieve the correct regression.
+   * If no class specific regression is available, the id for the combined regression is returned.
+   * @param cName
+   * @return
+   */
+  public String getRelevantRegressionName(String cName)
+  {
+  	if (subGroupDefinitionPanel_ != null)
+  	{
+  		for (String name : subGroupDefinitionPanel_.getUngroupedLipidClasses())
+  		{
+  			if (name.equals(cName)) return cName;
+  		}
+  		for (SubGroup group : subGroupDefinitionPanel_.getDefinedSubgroups())
+  		{
+  			for (String name : group.getLipidClasses())
+  			{
+  				if (name.equals(cName)) return group.getGroupName();
+  			}
+  		}
+  	}
+  	else
+  	{
+  		for (int i=0;i<lipidClasses_.length;i++)
+    	{
+    		if (cName.equals(lipidClasses_[i])) return cName;
+    	}
+  	}
+  	return PLOT_ALL;
+  }
+  
+  /**
+   * Handles the events called when triggering the define subgroups JButton.
+   * @param e
+   */
+  private void defineSubgroupsJButton_actionPerformed(ActionEvent e)
+  {
+  	subGroupDefinitionPanel_ = new SubgroupDefinitionPanel(
+  			subGroupDefinitionPanel_ == null ? new ArrayList<SubGroup>() : subGroupDefinitionPanel_.getDefinedSubgroups(), lipidClasses_, this);
+  }
+  
+  /**
+   * Removes all regressions with an id referring to defined sub groups.
+   */
+  public void removeSubGroupRegressions()
+  {
+  	ArrayList<RecalibrationRegression> toRemove = new ArrayList<RecalibrationRegression>();
+  	for (SubGroup group : subGroupDefinitionPanel_.getDefinedSubgroups())
+  	{
+  		for (RecalibrationRegression regression : regressions_)
+  		{
+  			if (regression.getLipidClass().equals(group.getGroupName()))
+  			{
+  				toRemove.add(regression);
+  			}
+  		}
+  	}
+  	regressions_.removeAll(toRemove);
+  }
+  
+  /**
+   * Generates regressions for the subgroups.
+   * @param subGroups
+   */
+  public void addSubGroupRegressions(ArrayList<SubGroup> subGroups)
+  {
+  	for (SubGroup group : subGroups)
+  	{
+  		ArrayList<AnchorPointVO> differencesStandards = new ArrayList<AnchorPointVO>();
+  		ArrayList<AnchorPointVO> differences = new ArrayList<AnchorPointVO>();
+  		for (String lipidClass : group.getLipidClasses())
+  		{
+  			RecalibrationRegression regressionStandards = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, lipidClass);
+  			if (regressionStandards != null) differencesStandards.addAll(regressionStandards.getDifferences());
+  			RecalibrationRegression regression = getRegressionByFields(PLOT_ALL, lipidClass);
+  			if (regression != null) differences.addAll(regression.getDifferences());
+  		}
+  		RecalibrationRegression regressionStandardsForGroup = new RecalibrationRegression(
+  				differencesStandards, grouping_, CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, group.getGroupName());
+  		regressions_.add(regressionStandardsForGroup);
+  		RecalibrationRegression regressionForGroup = new RecalibrationRegression(
+  				differences, grouping_, PLOT_ALL, group.getGroupName());
+  		regressions_.add(regressionForGroup);
+  	}
+  	fillMissingDataPoints(regressions_);
   }
   
   private void updatePlot(String className)
@@ -240,10 +460,10 @@ public class CalibrationGraphPanel extends JOptionPanel
   	}
   	fillMissingDataPoints(regressions_);
   	RecalibrationRegression regression = getRegressionByFields(PLOT_ALL, className);
-  	ArrayList<Pair<Double,Double>> data = regression == null ? new ArrayList<Pair<Double,Double>>() : regression.getDifferences();
+  	ArrayList<AnchorPointVO> data = regression == null ? new ArrayList<AnchorPointVO>() : regression.getDifferences();
   	RecalibrationRegression regressionStandards = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, className);
-  	ArrayList<Pair<Double,Double>> dataStandards = regressionStandards == null ? new ArrayList<Pair<Double,Double>>() : regressionStandards.getDifferences();
-  	plot_ = new RecalibrationPlot(data, dataStandards, regression, PLOT_DIMENSION, this);
+  	ArrayList<AnchorPointVO> dataStandards = regressionStandards == null ? new ArrayList<AnchorPointVO>() : regressionStandards.getDifferences();
+  	plot_ = new RecalibrationPlot(data, dataStandards, regression, PLOT_DIMENSION, this, plot_.getXYPlot());
   	addPlotToDisplayPanel();
   	displayPanel_.invalidate();
   	displayPanel_.updateUI();
@@ -255,16 +475,16 @@ public class CalibrationGraphPanel extends JOptionPanel
    */
   public void parseData(Hashtable<String,ArrayList<File>> originalConditions, Hashtable<String,ArrayList<File>> newConditions) throws ExcelInputFileException
   {
-  	regressions_ = new ArrayList<RecalibrationRegression>();
+  	this.regressions_ = new ArrayList<RecalibrationRegression>();
   	
   	if (originalConditions.containsKey(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX) &&
   			newConditions.containsKey(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX))
   	{
-  		regressions_ = parseStandardMix(
+  		this.regressions_ = parseStandardMix(
   				originalConditions.get(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX), 
   				newConditions.get(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX));
   	}
-  	regressions_.addAll(parseAllResults(originalConditions, newConditions));
+  	this.regressions_.addAll(parseAllResults(originalConditions, newConditions));
   }
   
   
@@ -282,8 +502,8 @@ public class CalibrationGraphPanel extends JOptionPanel
   	ArrayList<IdentificationVO> originalIdentifications = parseResultFiles(originalMix);
 		ArrayList<IdentificationVO> newIdentifications = parseResultFiles(newMix);
 		ArrayList<MatchedIdentificationVO> matches = computeMatches(originalIdentifications, originalMix.size(), newIdentifications, newMix.size());
-		Hashtable<String, ArrayList<Pair<Double,Double>>> differencesForClass = computeDifferencesForClass(matches, 0);
-		ArrayList<Pair<Double,Double>> differences = new ArrayList<Pair<Double,Double>>();
+		Hashtable<String, ArrayList<AnchorPointVO>> differencesForClass = computeDifferencesForClass(matches, 0);
+		ArrayList<AnchorPointVO> differences = new ArrayList<AnchorPointVO>();
 		
 		lipidClasses_ = new String[differencesForClass.keySet().size()];
 		int count = 0;
@@ -300,7 +520,6 @@ public class CalibrationGraphPanel extends JOptionPanel
   }
   
   /**
-   * TODO: additional data points?
    * Parses all data and produces combined recalibration regressions for for each lipid class (wherever enough data points are available)
    * as well as fits for all calibrants combined. If not enough combined calibrants are available, an error message is thrown.
    * @param originalConditions
@@ -318,7 +537,6 @@ public class CalibrationGraphPanel extends JOptionPanel
   	Collections.sort(sortedLipidClasses);
   	sortedLipidClasses.add(0, PLOT_ALL); //adding PLOT_ALL at the beginning, ensuring it is always the first element
 		lipidClasses_ = sortedLipidClasses.toArray(new String[sortedLipidClasses.size()]);	
-//		filterOutliers(regressions, sortedLipidClasses, 5.0);
   	
   	return regressions;
   }
@@ -335,20 +553,26 @@ public class CalibrationGraphPanel extends JOptionPanel
   	Double maxKey = clusteredCombined.get(clusteredCombined.size()-1).getKey();
   	for (RecalibrationRegression regression : regressions)
   	{
-  		if (regression.getLipidClass().equals(PLOT_ALL)) continue;
+  		if (regression.getLipidClass().equals(PLOT_ALL) || regression.getDataType().equals(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX)) continue;
   		
   		ArrayList<Pair<Double, Double>> clustered = regression.getClustered();
   		ArrayList<Pair<Double, Double>> clusteredToAdd = new ArrayList<Pair<Double, Double>>();
   		
-  		//adding data points before
+  		//adding first and last datapoints
   		Double firstKey = clustered.get(0).getKey();
-  		if (minKey < firstKey-(this.grouping_*0.75))
+  		Double lastKey = clustered.get(clustered.size()-1).getKey();
+  		Double previousKey = firstKey;
+  		if (minKey < firstKey-(this.grouping_*0.1))
   		{
-  			clusteredToAdd.addAll(getClusterInBetween(clusteredCombined, minKey, firstKey-(this.grouping_*0.75)));
+  			clustered.add(0, regressionCombined.getClustered().get(0));
+  			previousKey = minKey;
+  		}
+  		if (maxKey > lastKey+(this.grouping_*0.1))
+  		{
+  			clustered.add(clusteredCombined.get(clusteredCombined.size()-1));
   		}
   		
   		//adding data points in between
-  		Double previousKey = firstKey;
   		for (Pair<Double, Double> cluster : clustered)
 			{
   			Double currentKey = cluster.getKey();
@@ -359,13 +583,6 @@ public class CalibrationGraphPanel extends JOptionPanel
   			}
   			previousKey = currentKey;
 			}
-  		
-  		//adding data points after
-  		Double lastKey = clustered.get(clustered.size()-1).getKey();
-  		if (maxKey > lastKey+(this.grouping_*0.75))
-  		{
-  			clusteredToAdd.addAll(getClusterInBetween(clusteredCombined, lastKey+(this.grouping_*0.75), maxKey));
-  		}
   		
   		clustered.addAll(clusteredToAdd);
   		Collections.sort(clustered, new Comparator<Pair<Double, Double>>() 
@@ -393,93 +610,31 @@ public class CalibrationGraphPanel extends JOptionPanel
   	return clusteredInBetween;
   }
   
-  /**
-   * TODO: Consider improvements: e.g. only accept removal if a standard competes with the hit? Take other data into account?
-   * Regressions of data not derived from standards (but for which standards are available) for each lipid class are filtered for outliers.
-   * First, deviations of all data points for each lipid class (standards and other data) compared to the fit generated from (only!) all standards are computed.
-   * Then, for each data point belonging to "other" data, the mean and standard deviation are computed for the data without the respective data point. 
-   * Data points exceeding a deviation from the standard fit of more than mean plus minus the standard deviation multiplied with @param scaleOfFilter are removed.
-   * @param regressions
-   * @param lipidClasses
-   * @param scaleOfFilter
-   */
-  private void filterOutliers(ArrayList<RecalibrationRegression> regressions, ArrayList<String> lipidClasses, double scaleOfFilter)
-  {
-  	System.out.println("filtering");
-  	RecalibrationRegression regressionStandards = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, PLOT_ALL);
-  	if (regressionStandards == null || regressionStandards.getFunction() == null) return;
-  	for (RecalibrationRegression regressionClass : regressions)
-  	{
-  		String lipidClass = regressionClass.getLipidClass();
-  		if (lipidClass.equals(PLOT_ALL) || 
-  				regressionClass.getDataType().equals(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX) ||
-  				getRegressionByFields(regressions, CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, lipidClass) == null) //only remove a hit if standards are actually available?
-  		{
-  			continue;
-  		}
-  		System.out.println(lipidClass);
-  		ArrayList<Double> deviations = new ArrayList<Double>();
-  		for (Pair<Double,Double> difference : regressionClass.getDifferences())
-  		{
-  			if (!regressionStandards.getFunction().isValidPoint(difference.getKey())) continue;
-  			Double deviation = Math.abs(regressionStandards.getFunction().value(difference.getKey()) - difference.getValue());
-  			deviations.add(deviation);
-  		}
-  		ArrayList<Pair<Double,Double>> dataWOStd = new ArrayList<Pair<Double,Double>>(regressionClass.getDifferences());
-  		dataWOStd.removeAll(regressionStandards.getDifferences()); //to avoid possibly removing standards...
-  		ArrayList<Pair<Double,Double>> outliers = new ArrayList<Pair<Double,Double>>();
-  		for (Pair<Double,Double> dataPoint : dataWOStd)
-  		{
-  			if (!regressionStandards.getFunction().isValidPoint(dataPoint.getKey())) continue;
-  			Double deviation = Math.abs(regressionStandards.getFunction().value(dataPoint.getKey()) - dataPoint.getValue());
-  			ArrayList<Double> deviationsWO = new ArrayList<Double>(deviations);
-  			deviationsWO.remove(deviation); //removing the current item
-  			Double mean = getMean(deviationsWO);
-    		Double stdDev = getStdDev(deviationsWO);
-    		
-  			boolean isLessThanLowerBound = deviation < mean - stdDev * scaleOfFilter;
-        boolean isGreaterThanUpperBound = deviation > mean + stdDev * scaleOfFilter;
-//        System.out.println(dataPoint.getKey()+" "+deviation+" lower: "+(mean - stdDev * scaleOfFilter)+" upper: "+(mean + stdDev * scaleOfFilter));
-        if (isLessThanLowerBound || isGreaterThanUpperBound)
-        {
-        	outliers.add(dataPoint);
-        }
-  		}
-  		for (Pair<Double,Double> outlier : outliers)
-  		{
-  			System.out.println("!!! removed outlier !!!");
-  			System.out.println(lipidClass+" "+outlier.getKey()+" "+outlier.getValue());
-  			removeDataPointFromRegression(regressionClass, outlier);
-      	removeDataPointFromRegression(getRegressionByFields(regressions, PLOT_ALL, PLOT_ALL), outlier);
-  		}
-  	}
-  }
-  
-  private Double getMean(List<Double> values) 
-  {
-  	Double sum = 0.0;
-    for (Double value : values) 
-    {
-      sum += value;
-    }
-    return (sum / values.size());
-  }
-  
-  private Double getVariance(List<Double> values) 
-  {
-  	Double mean = getMean(values);
-    Double temp = 0.0;
-    for (Double a : values) 
-    {
-      temp += (a - mean) * (a - mean);
-    }
-    return temp / (values.size() - 1.0);
-  }
-  
-  private Double getStdDev(List<Double> values) 
-  {
-    return Math.sqrt(getVariance(values));
-  }
+//  private Double getMean(List<Double> values) 
+//  {
+//  	Double sum = 0.0;
+//    for (Double value : values) 
+//    {
+//      sum += value;
+//    }
+//    return (sum / values.size());
+//  }
+//  
+//  private Double getVariance(List<Double> values) 
+//  {
+//  	Double mean = getMean(values);
+//    Double temp = 0.0;
+//    for (Double a : values) 
+//    {
+//      temp += (a - mean) * (a - mean);
+//    }
+//    return temp / (values.size() - 1.0);
+//  }
+//  
+//  private Double getStdDev(List<Double> values) 
+//  {
+//    return Math.sqrt(getVariance(values));
+//  }
   
   
   
@@ -494,8 +649,8 @@ public class CalibrationGraphPanel extends JOptionPanel
   {
     //in case we have valid regressions for additional lipid classes, we need to redefine the lipidClasses_ array
   	HashSet<String> uniqueLipidClasses = new HashSet<String>();
-  	Hashtable<String, ArrayList<Pair<Double,Double>>> differencesForClass = computeDifferencesForClass(matches, 2);
-  	ArrayList<Pair<Double,Double>> differencesAll = new ArrayList<Pair<Double,Double>>();
+  	Hashtable<String, ArrayList<AnchorPointVO>> differencesForClass = computeDifferencesForClass(matches, 1);
+  	ArrayList<AnchorPointVO> differencesAll = new ArrayList<AnchorPointVO>();
 		for (String lipidClass : differencesForClass.keySet()) //there might be different lipid classes here than in the standard mix
 		{
 			addCombinedRegression(differencesForClass.get(lipidClass), lipidClass, uniqueLipidClasses, regressions);
@@ -515,7 +670,7 @@ public class CalibrationGraphPanel extends JOptionPanel
 		{
 			if (!uniqueLipidClasses.contains(lipidClasses_[i]))
 			{
-				addCombinedRegression(new ArrayList<Pair<Double,Double>>(), lipidClasses_[i], uniqueLipidClasses, regressions);
+				addCombinedRegression(new ArrayList<AnchorPointVO>(), lipidClasses_[i], uniqueLipidClasses, regressions);
 			}
 		}
 		return uniqueLipidClasses;
@@ -527,21 +682,34 @@ public class CalibrationGraphPanel extends JOptionPanel
    * @param targetResults
    * @return
    */
-  private Hashtable<String, ArrayList<Pair<Double,Double>>> computeDifferencesForClass(ArrayList<MatchedIdentificationVO> matches, int acceptedConfidence)
+  private Hashtable<String, ArrayList<AnchorPointVO>> computeDifferencesForClass(ArrayList<MatchedIdentificationVO> matches, int acceptedConfidence)
   {
-  	Hashtable<String, ArrayList<Pair<Double,Double>>> differencesForClass = new Hashtable<String, ArrayList<Pair<Double,Double>>>();
+  	Hashtable<String, ArrayList<AnchorPointVO>> differencesForClass = new Hashtable<String, ArrayList<AnchorPointVO>>();
   	
   	for (MatchedIdentificationVO match : matches)
 		{
   		if (match.getConfidence() < acceptedConfidence) continue;
+  		ArrayList<Pair<IdentificationVO,IdentificationVO>> acceptedMatches = new ArrayList<Pair<IdentificationVO,IdentificationVO>>();
   		String lipidClass = match.getHighestConfidencePair().getKey().getLipidClass();
+  		if (match.getConfidence() < 2)
+  		{
+  			acceptedMatches.add(match.getHighestConfidencePair());
+  		}
+  		else if (match.getConfidence() == 2)
+  		{
+  			acceptedMatches = match.getAcceptedMatches();
+  		}
   		if (!differencesForClass.containsKey(lipidClass))
   		{
-  			differencesForClass.put(lipidClass, new ArrayList<Pair<Double,Double>>());
+  			differencesForClass.put(lipidClass, new ArrayList<AnchorPointVO>());
   		}
-  		Double original = match.getHighestConfidencePair().getKey().getAverageRT();
-			Double difference = original - match.getHighestConfidencePair().getValue().getAverageRT();
-  		differencesForClass.get(lipidClass).add(new Pair<Double,Double>(original, difference));
+  		
+  		for (Pair<IdentificationVO,IdentificationVO> matchedPair : acceptedMatches)
+  		{
+  			Double original = matchedPair.getKey().getAverageRT();
+  			Double difference = original - matchedPair.getValue().getAverageRT();
+  			differencesForClass.get(lipidClass).add(new AnchorPointVO(lipidClass, matchedPair.getKey().getLipidSpecies(), original, difference));
+  		}
 		}
   	return differencesForClass;
   }
@@ -555,7 +723,7 @@ public class CalibrationGraphPanel extends JOptionPanel
    * @param regressions
    * @return true if a valid regression was successfully added, otherwise false.
    */
-  private boolean addCombinedRegression(ArrayList<Pair<Double,Double>> differences, String lipidClass, HashSet<String> uniqueLipidClasses, ArrayList<RecalibrationRegression> regressions)
+  private boolean addCombinedRegression(ArrayList<AnchorPointVO> differences, String lipidClass, HashSet<String> uniqueLipidClasses, ArrayList<RecalibrationRegression> regressions)
   {
 		RecalibrationRegression regressionStandards = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, lipidClass);
 		if (regressionStandards != null)
@@ -576,6 +744,13 @@ public class CalibrationGraphPanel extends JOptionPanel
   }
   
   
+  /**
+   * Computes matches for data types other than standard mix
+   * @param originalConditions
+   * @param newConditions
+   * @return
+   * @throws ExcelInputFileException
+   */
   private ArrayList<MatchedIdentificationVO> computeMatchesForDataTypeOther(Hashtable<String,ArrayList<File>> originalConditions, Hashtable<String,ArrayList<File>> newConditions) throws ExcelInputFileException
   {
   	ArrayList<MatchedIdentificationVO> matches = new ArrayList<MatchedIdentificationVO>();
@@ -610,7 +785,8 @@ public class CalibrationGraphPanel extends JOptionPanel
   		
   		if (newIdentifications != null)
   		{
-  			matches.add(new MatchedIdentificationVO(originalIdentifications, maxOriginal, newIdentifications, maxNew));
+  			RecalibrationRegression standardsReg = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, PLOT_ALL);
+  			matches.add(new MatchedIdentificationVO(originalIdentifications, maxOriginal, newIdentifications, maxNew, standardsReg, predictionThreshold_));
   		}
   	}
   	return matches;
@@ -689,7 +865,7 @@ public class CalibrationGraphPanel extends JOptionPanel
   }
   
 	/**
-	 * @param dataType
+	 * @param dataType						either CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX or PLOT_ALL
 	 * @param lipidClass
 	 * @return
 	 */
@@ -699,8 +875,8 @@ public class CalibrationGraphPanel extends JOptionPanel
   }
   
   /**
-   * @param regressions
-   * @param dataType
+   * @param regressions					the ArrayList to search the desired regression in
+   * @param dataType						either CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX or PLOT_ALL
    * @param lipidClass
    * @return
    */
@@ -716,21 +892,24 @@ public class CalibrationGraphPanel extends JOptionPanel
   	return null;
   }
   
-  public String findLipidClassForDataPoint(Pair<Double,Double> dataPoint)
+  public AnchorPointVO findLipidClassForDataPoint(Pair<Double,Double> dataPoint)
   {
   	for (int i=0; i<lipidClasses_.length; i++) 
 		{
   		if (lipidClasses_[i].equals(PLOT_ALL)) continue;
   		RecalibrationRegression regressionForClass = getRegressionByFields(PLOT_ALL, lipidClasses_[i]);
-  		if (regressionForClass.getDifferences().contains(dataPoint))
-  		{
-  			return lipidClasses_[i];
-  		}
+  		for (AnchorPointVO point : regressionForClass.getDifferences())
+			{
+				if (point.getxValue().equals(dataPoint.getKey()) && point.getyValue().equals(dataPoint.getValue()))
+				{
+					return point;
+				}
+			}
 		}
   	return null;
   }
   
-  private boolean removeDataPointFromRegression(RecalibrationRegression regression, Pair<Double,Double> dataPoint)
+  private boolean removeDataPointFromRegression(RecalibrationRegression regression, AnchorPointVO dataPoint)
   {
   	if (regression.getClusteredWithoutDataPointSize(dataPoint) > 2)
   	{
@@ -740,17 +919,22 @@ public class CalibrationGraphPanel extends JOptionPanel
   	return false;
   }
   
-  protected void removeDataPoint(String lipidClass, Pair<Double,Double> dataPoint)
+  protected void removeDataPoint(AnchorPointVO dataPoint)
   {
   	RecalibrationRegression regressionAll = getRegressionByFields(PLOT_ALL, PLOT_ALL);
-  	RecalibrationRegression regressionClass = getRegressionByFields(PLOT_ALL, lipidClass);
-  	if (removeDataPointFromRegression(regressionAll, dataPoint))
+  	RecalibrationRegression regressionClass = getRegressionByFields(PLOT_ALL, dataPoint.getLipidClass());
+  	RecalibrationRegression regressionSubGroup = getRegressionByFields(PLOT_ALL, getRelevantRegressionName(dataPoint.getLipidClass()));
+  	if (removeDataPointFromRegression(regressionAll, dataPoint)) //assumption that there will not be too few data points in such cases.
   	{
+  		if (!regressionClass.equals(regressionSubGroup))
+  		{
+  			removeDataPointFromRegression(regressionSubGroup, dataPoint); //assumption that there will not be too few data points in such cases.
+  		}
   		if (!removeDataPointFromRegression(regressionClass, dataPoint))
   		{
-  			new WarningMessage(new JFrame(), "Warning", String.format("Class specific calibration of %s is not possible anymore due to the removed data point!", lipidClass));
+  			new WarningMessage(new JFrame(), "Warning", String.format("Class specific calibration of %s is not possible anymore due to the removed data point!", getRelevantRegressionName(dataPoint.getLipidClass())));
     		List<String> lipidClasses = new ArrayList<String>(Arrays.asList(lipidClasses_));
-    		lipidClasses.remove(lipidClass);
+    		lipidClasses.remove(dataPoint.getLipidClass());
     		lipidClasses_ = lipidClasses.toArray(new String[lipidClasses.size()]);
     		regressions_.remove(regressionClass);
     		displayPanel_.remove(jComboBoxPanel_);
@@ -786,5 +970,11 @@ public class CalibrationGraphPanel extends JOptionPanel
   public void setOriginalTargetList(File originalTargetList)
   {
   	this.originalTargetList_ = originalTargetList;
+  }
+
+  
+  public void setPredictionThreshold(Double predictionThreshold)
+  {
+  	this.predictionThreshold_ = predictionThreshold;
   }
 }

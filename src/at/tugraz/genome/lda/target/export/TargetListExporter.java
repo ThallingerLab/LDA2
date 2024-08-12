@@ -1,90 +1,95 @@
+/* 
+ * This file is part of Lipid Data Analyzer
+ * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
+ * Copyright (c) 2023 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
+ *  
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *  
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details. 
+ *  
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Please contact lda@genome.tugraz.at if you need additional information or 
+ * have any questions.
+ */
+
 package at.tugraz.genome.lda.target.export;
 
 import java.io.BufferedOutputStream;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.swing.JFrame;
 
 import org.apache.commons.math3.exception.OutOfRangeException;
+import org.apache.commons.math3.util.Precision;
 import org.apache.poi.hssf.usermodel.HSSFCell;
-import org.apache.poi.hssf.usermodel.HSSFCellStyle;
-import org.apache.poi.hssf.usermodel.HSSFFont;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
-import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.dhatim.fastexcel.reader.CellType;
+import org.dhatim.fastexcel.reader.ReadableWorkbook;
 
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.QuantificationThread;
 import at.tugraz.genome.lda.Settings;
+import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.exception.ExportException;
+import at.tugraz.genome.lda.masslist.MassListExporter;
 import at.tugraz.genome.lda.msn.LipidomicsMSnSet;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
+import at.tugraz.genome.lda.parser.MassListParser;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.target.IsotopeLabelVO;
 import at.tugraz.genome.lda.target.calibration.CalibrationGraphPanel;
 import at.tugraz.genome.lda.target.calibration.RecalibrationRegression;
 import at.tugraz.genome.lda.target.experiment.IsotopeEffectRegression;
+import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.RangeDouble;
+import at.tugraz.genome.lda.utils.RangeInteger;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.lda.vos.ResultFileVO;
-import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
 import javafx.util.Pair;
 
+
 /**
- * We do the following: 
- * possibly run the analysis module on our read in files for clustering 
- * then for each species containing a defined label (here we just use the prefix I guess):
- * we write the molecular species according to the defined labels and calculate the RT according to the formula
- * then it's written out; we likely do not need a quant file for ordering because we can just remove the prefix via regex I believe
+ * 
+ * Writes RTDBs either newly generated from experimental data or mapped to chromatographic conditions.
+ * 
+ * @author Leonida M. Lamp
  *
- * !!!!!!!!!!!! we need a template masslist !!!!!!
- * 
- * with this things changed.. we do not need comparative analysis: we just take our template masslist.. 
- * ...just locate it somewhere in the filesystem and give it a default path for now.
- * 
- * then we go through the class and correct analyte sequence and just write the masslist out. 
- * group hits together if they are below a certain threshold apart
- * otherwise this should be relatively straightforward
- * 
- * we first iterate through the classes: the analytes in correctAnalyteSequence and get the quantObjects for each;
- * we iterate over all resultfiles and labeled species are added as new QuantVO to the analyte sequence;
- * if there is already an identical analyte with just a different RT: maybe just add the RTs of all to the quantVO, or an average if they are close enough?
- * add them all as doublebondpositionVOs, 
- * when we iterate over this for the export we can do a median over identical ones.
- * as a final step we just export the QuantVOs.
- * 
- * 
- * 
- * 
  */
 public class TargetListExporter
-{	
-  private final static String HEADER_NAME = "Name";
-  private final static String HEADER_COLON = "";
-  private final static String HEADER_DBS = "dbs";
-  public final static String HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS = "mol. species";
-  private final static String HEADER_RETENTION_TIME = "tR (min)";
+{
+	public final static String HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS = "mol. species";
+  public final static int HEADER_ROW = 1; //important: must not be 0 as there might be some important general info in row 0.
   
-  private final static int HEADER_ROW = 1;
-  private final static double THRESHOLD_FOR_CLUSTERING = 5.0; //TODO: this should be a user decision, as it depends on the length of the chromatography
-  
-//  private Hashtable<String, RecalibrationRegression> recalibrationRegressionsForClass_;
-//  private RecalibrationRegression recalibrationRegression_;
   private IsotopeEffectRegression isotopeEffectRegression_;
   private Vector<ResultFileVO> resultFileVO_;
   private Vector<IsotopeLabelVO> labels_;
@@ -94,11 +99,12 @@ public class TargetListExporter
   
   //TODO: just for development! for comparing target lists - remove later (first cName, second: original rt, third recalibr. doublebondPositionVO)
   Hashtable<String,Set<Pair<Double,DoubleBondPositionVO>>> beforeAfter_ = new Hashtable<String,Set<Pair<Double,DoubleBondPositionVO>>>(); 
+  Hashtable<String,Vector<Pair<Double,DoubleBondPositionVO>>> comparisonPairsOfClass_ = new Hashtable<String,Vector<Pair<Double,DoubleBondPositionVO>>>();
   
   
   /**
-   * Constructor for omega MassList Recalibration
-   * The recalibration regressions are retrieved from @param calibrationGraphPanel depending on @param calibrateSeparately.
+   * Constructor for RTDB mapping
+   * The regressions for RT mapping are retrieved from @param calibrationGraphPanel depending on @param calibrateSeparately.
    * @param templatePath
    * @param calibrateSeparately
    * @param calibrationGraphPanel
@@ -111,36 +117,10 @@ public class TargetListExporter
   	this.beforeAfter_ = new Hashtable<String,Set<Pair<Double,DoubleBondPositionVO>>>(); //TODO: just for development!
   }
   
+  
   /**
-   * Constructor for omega MassList Recalibration
-   * @param recalibrationRegression
-   */
-//  public TargetListExporter(RecalibrationRegression recalibrationRegression, String templatePath)
-//	{
-//		this.recalibrationRegression_ = recalibrationRegression;
-//		this.isotopeEffectRegression_ = null;
-//		this.resultFileVO_ = new Vector<ResultFileVO>();
-//		this.labels_ = new Vector<IsotopeLabelVO>();
-//		this.templatePath_ = templatePath;
-//	}
-  
-  
-//  public TargetListExporter(Hashtable<String, RecalibrationRegression> recalibrationRegressionsForClass, String templatePath)
-//	{
-//  	this.recalibrationRegressionsForClass_ = recalibrationRegressionsForClass;
-//  	this.isotopeEffectRegression_ = null;
-//		this.isotopeEffectRegression_ = null;
-//		this.resultFileVO_ = new Vector<ResultFileVO>();
-//		this.labels_ = new Vector<IsotopeLabelVO>();
-//		this.templatePath_ = templatePath;
-//	}
-  
-  
-	//TODO: create MassList dynamically
-  /**
-   * Constructor for omega MassList creation with stable isotope labeled standards
+   * Constructor for RTDB creation with stable isotope labeled standards
    * @param isotopeEffectRegression
-   * @param resultIndices
    * @param resultFileVO
    * @param labels
    */
@@ -152,73 +132,27 @@ public class TargetListExporter
 		this.labels_ = labels;
 	}
 	
-	
-	
-	
 	/**
-	 * How do we do this....
-	 * we go through all result files, 
-	 * > filter for only analytes with MSn info
 	 * 
-	 * > Hashtable className, new java class: 
-	 * 				saves labeled and unlabeled species of class separately
-	 * 				method getlabeled ( position ind. mol species)
-	 * 				method getunlabeled ( position ind. mol species) ...probably not needed anymore
-	 * 				method getlabeledmolecularspecies
-	 * 				2x field hashtable pos ind mol species, vector lipidomicsmsnset
-	 * 				
-	 * iterate over labeledmolecularspecies.
-	 * get labeled -> expected RT is calculated, then species are clustered
-	 * get unlabeled -> species are clustered
-	 * 
-	 * for the calculation of the expected RT, only the number of deuteriums in the chemical formula is considered
-	 * for adding of the omega position, the prefix of the fatty acid chain is considered (can only have one prefix)
-	 * 
-	 * for each labeled cluster 
-	 * 		if within our cluster we have deuterated species with more labels but matching expected RT, add omega pos to all in the cluster 
-	 * 		(and expected sn position if all species in the cluster have identical ones?), 
-	 * 		
-	 * 		we then see if within threshold there's a matching partner with same mol. species, if so adjust RT
-	 * 		then add the doublebondpositionVOs to the quants
-	 * 		then export
-	 * 	
+	 * @param templatePath
+	 * @param exportPanel
 	 * @throws ExportException
 	 */
-	@SuppressWarnings("unchecked")
-	protected void export(String templatePath, String outPath) throws ExportException
+	protected void export(ExportPanel exportPanel) throws ExportException
 	{		
-		try (	BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outPath));
+		try (	BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(exportPanel.getOutPath()));
 					XSSFWorkbook workbook = new XSSFWorkbook();)
 		{
-			Vector<?> quantInfo = QuantificationThread.getCorrectAnalyteSequence(templatePath,false);
-			LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)quantInfo.get(0);
-			LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantInfo.get(1);
-			Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(4);
-		  
-      new ElementConfigParser("elementconfig.xml").parse();
-      
-      XSSFCellStyle headerStyle = getHeaderStyle(workbook);  
-      for (String cName : classSequence.keySet()) 
-      {
-      	System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+ cName + "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-      	Vector<DoubleBondPositionVO> allLabeledVOsToAdd = new Vector<DoubleBondPositionVO>();
-      	if (!isRecalibration())
-      	{
-      		MolecularSpeciesContainer container = new MolecularSpeciesContainer();
-        	fillContainerForClass(cName, container);
-        	Set<String> labeledMolecularSpecies = container.getLabeledMolecularSpecies();
-        	for (String molecularSpecies : labeledMolecularSpecies)
-        	{
-        		Vector<DoubleBondPositionVO> labeledVOs = container.getLabeledSpecies(molecularSpecies);
-        		Vector<DoubleBondPositionVO> clusteredLabeledVOs = clusterMolecularSpecies(labeledVOs, true);
-        		allLabeledVOsToAdd.addAll(clusteredLabeledVOs); 	
-        	}
-      	}
-        Sheet sheet = workbook.createSheet(cName);
-        writeMassListForSheet(sheet, headerStyle, analyteSequence.get(cName), quantObjects.get(cName), cName, allLabeledVOsToAdd);
-      }
-      workbook.write(out);
-      System.out.println("workbook written!");
+			if (isRTMapping())
+			{
+				this.exportRTMappedDB(workbook);
+			}
+			else
+			{
+				this.exportNewRTDB(workbook, exportPanel);
+			}
+			workbook.write(out);
+	    System.out.println("workbook written!");
     } 
 		catch (Exception e) 
 		{
@@ -226,75 +160,172 @@ public class TargetListExporter
     } 
 	}
 	
+	/**
+	 * Exports a RTDB mapped to provided chromatographic conditions
+	 * @param workbook
+	 * @throws Exception
+	 */
+	private void exportRTMappedDB(XSSFWorkbook workbook) throws Exception
+	{
+		MassListParser massListParser = new MassListParser(this.getTemplatePath());
+		
+    for (String cName : massListParser.getClassSequence().keySet()) 
+    {
+    	Vector<DoubleBondPositionVO> allLabeledVOsToAdd = new Vector<DoubleBondPositionVO>();
+      Sheet sheet = workbook.createSheet(cName);
+      writeMassListForSheet(sheet, ExcelUtils.getMassListHeaderStyle(workbook), ExcelUtils.getMassListNumberStyle(workbook), massListParser, cName, allLabeledVOsToAdd);
+    }
+	}
+	
+	/**
+	 * Exports a RTDB generated from experiments
+	 * For the calculation of the expected RT, aTIE is computed based on the gradient chosen in @param exportPanel and the TIE parameters identified.
+	 * For adding the omega position information, the prefix of the fatty acid chain is considered (can only have one prefix)
+	 * Based on the user provided clustering threshold in @param exportPanel, identifications are grouped.
+	 * If within a group we have species with only one different deuterium label each and the labels are compatible, add omega pos to all in the cluster 
+	 * For more than one deuterium label in one species, the TIE is corrected additively for each label, and if a singly labeled species with matching expected RT exists, 
+	 * the species is assigned and given the expected RT of the singly labeled species as that is deemed more reliable.
+	 * 
+	 * @param workbook
+	 * @param exportPanel
+	 * @throws Exception
+	 */
+	private void exportNewRTDB(XSSFWorkbook workbook, ExportPanel exportPanel) throws Exception
+	{
+		MassListParser templateParser = new MassListParser(exportPanel.getTemplatePath());
+		
+		GradientAdjuster adjuster = GradientParser.parseGradient(exportPanel.getExportOptions().getSelectedGradient());
+		if (adjuster == null && exportPanel.getExportOptions().isGradientSelected()) throw new ExportException("The gradient file could not be read!");
+    
+    for (String cName : templateParser.getClassSequence().keySet()) 
+    {
+    	Vector<DoubleBondPositionVO> allLabeledVOsToAdd = new Vector<DoubleBondPositionVO>();
+    	
+    	Double clusteringThreshold = exportPanel.getExportOptions().getSelectedClustering();
+  		MolecularSpeciesContainer container = new MolecularSpeciesContainer();
+    	fillContainerForClass(cName, container, adjuster);
+    	for (String molecularSpecies : container.getSingleLabeledMolecularSpecies())
+    	{
+    		Vector<DoubleBondPositionVO> singleLabeledVOs = container.getSingleLabeledSpecies(molecularSpecies);
+    		Vector<DoubleBondPositionVO> multiLabeledVOs = container.getMultiLabeledSpecies(molecularSpecies); //TODO: here we only take those that were also found as single labels, this can be expanded later
+    		
+    		//add multi labeled info to single label vos before clustering them.
+    		if (multiLabeledVOs != null)
+    		{
+    			Vector<DoubleBondPositionVO> clusteredMultiLabeledVOs = clusterMolecularSpecies(multiLabeledVOs, true, clusteringThreshold);
+    			for (DoubleBondPositionVO voMulti : clusteredMultiLabeledVOs)
+    			{
+    				double multiRT = voMulti.getExpectedRetentionTime();
+    				RangeDouble range = new RangeDouble(multiRT-clusteringThreshold/60.0, multiRT+clusteringThreshold/60.0);
+    				for (DoubleBondPositionVO voSingle : singleLabeledVOs)
+    				{
+    					double singleRT = voSingle.getExpectedRetentionTime();
+    					if (range.insideRange(singleRT) && computeCombinedPattern(voMulti, voSingle).equals(voMulti.getPositionAssignmentPattern()))
+    					{
+    						voSingle.setChainCombination(voMulti.getChainCombination());
+    					}
+    				}
+    			}
+    		}
+    		
+    		Vector<DoubleBondPositionVO> clusteredSingleLabeledVOs = clusterMolecularSpecies(singleLabeledVOs, true, clusteringThreshold);
+    		
+    		allLabeledVOsToAdd.addAll(clusteredSingleLabeledVOs); 	
+    	}
+    	
+      Sheet sheet = workbook.createSheet(cName);
+      writeMassListForSheet(sheet, ExcelUtils.getMassListHeaderStyle(workbook), ExcelUtils.getMassListNumberStyle(workbook), templateParser, cName, allLabeledVOsToAdd);
+    }
+	}
+	
 	@SuppressWarnings("unchecked")
 	private void writeMassListForSheet(
 			Sheet sheet, 
 			XSSFCellStyle headerStyle, 
-			Vector<String> analytes, 
-			Hashtable<String,Hashtable<String,QuantVO>> quantObjects, 
+			XSSFCellStyle numberStyle,
+			MassListParser templateParser,
 			String cName,
 			Vector<DoubleBondPositionVO> allLabeledVOsToAdd)
 	{
 		try 
 		{
-			Vector<Object> elModCharge = getAvailableElementsAndModificationsPlusCharge(quantObjects);
+			Vector<Object> elModCharge = getAvailableElementsAndModificationsPlusCharge(templateParser.getQuantObjects().get(cName));
 	    Vector<String> elements = (Vector<String>)elModCharge.get(0);
 	    LinkedHashMap<String,String> mods = (LinkedHashMap<String,String>)elModCharge.get(1);
 	    Hashtable<String,Integer> modToCharge = (Hashtable<String,Integer>)elModCharge.get(2);
+	    Integer ohNumber = 0;
 	    
-	    List<String> headerTitles = createHeaderTitles(elements, mods, modToCharge);
-	    if (cName.equals("SM") || cName.equals("Cer"))
+	    if (templateParser.isFirstRowRelevant(cName))
 	    {
 	    	int rowCount = 0;
     		Row outRow = sheet.createRow(rowCount);
-        Cell cell = outRow.createCell(9,HSSFCell.CELL_TYPE_STRING);
-        cell.setCellValue("OH-Number: 2");
-        cell = outRow.createCell(10,HSSFCell.CELL_TYPE_STRING);
-        cell.setCellValue("OH-Range: 2-3");
-        cell = outRow.createCell(11,HSSFCell.CELL_TYPE_STRING);
-        cell.setCellValue("adductInsensitiveRtFilter");
+    		if (templateParser.getAdductInsensitiveRtFilter().get(cName) != null && templateParser.getAdductInsensitiveRtFilter().get(cName) == true)
+    		{
+    			Cell cell = outRow.createCell(3,HSSFCell.CELL_TYPE_STRING);
+          cell.setCellValue(MassListExporter.OPTION_ADDUCT_INSENSITIVE_RT_FILTER);
+    		}
+    		if (templateParser.getBestMatchBySpectrumCoverage().get(cName) != null && templateParser.getBestMatchBySpectrumCoverage().get(cName) == true)
+    		{
+    			Cell cell = outRow.createCell(4,HSSFCell.CELL_TYPE_STRING);
+          cell.setCellValue(MassListExporter.OPTION_PICK_BEST_MATCH_BY_SPECTRUM_COVERAGE);
+    		}
+    		if (templateParser.getFixedStartTime().get(cName) != null)
+    		{
+    			Cell cell = outRow.createCell(5,HSSFCell.CELL_TYPE_STRING);
+          cell.setCellValue(MassListExporter.OPTION_START_RT+Precision.round(templateParser.getFixedStartTime().get(cName), 2));
+    		}
+    		if (templateParser.getFixedStopTime().get(cName) != null)
+    		{
+    			Cell cell = outRow.createCell(6,HSSFCell.CELL_TYPE_STRING);
+    			cell.setCellValue(MassListExporter.OPTION_STOP_RT+Precision.round(templateParser.getFixedStopTime().get(cName), 2));
+    		}
+    		if (templateParser.getOHNumber().get(cName) != null)
+    		{
+    			ohNumber = templateParser.getOHNumber().get(cName);
+    			Cell cell = outRow.createCell(7,HSSFCell.CELL_TYPE_STRING);
+    			cell.setCellValue(MassListExporter.OPTION_OH_NUMBER+ohNumber);
+    		}
+    		if (templateParser.getOHRange().get(cName) != null)
+    		{
+    			RangeInteger ohRange = templateParser.getOHRange().get(cName);
+    			Cell cell = outRow.createCell(8,HSSFCell.CELL_TYPE_STRING);
+    			cell.setCellValue(MassListExporter.OPTION_OH_RANGE+ohRange.getStart()+"-"+ohRange.getStop());
+    		}
 	    }
-	    createHeader(sheet, headerTitles, headerStyle);
 	    
+	    List<String> headerTitles = createHeaderTitles(elements, mods, modToCharge);
+	    createHeader(sheet, headerTitles, headerStyle);
 	    
 	    int firstModColumn = headerTitles.indexOf(headerTitles.stream().filter((s)->(s).startsWith("mass(form[")).findFirst().get());
 	    int rowCount = HEADER_ROW+1;
-	    for (String analyte : analytes) 
+	    for (String analyte : templateParser.getAnalyteSequence().get(cName)) 
 	    {
 	    	Cell cell;
 	    	
-	    	Hashtable<String,QuantVO> quantAnalytes = quantObjects.get(analyte);
+	    	Hashtable<String,QuantVO> quantAnalytes = templateParser.getQuantObjects().get(cName).get(analyte);
 	      Hashtable<String,Integer> formula = new Hashtable<String,Integer>();
 	      Vector<DoubleBondPositionVO> doubleBondPositionVOs = new Vector<DoubleBondPositionVO>(); //they will be identical for all mods..
 	      for (String mod : mods.keySet()) 
 	      {
 	        QuantVO quant = quantAnalytes.get(mod);
-	        if (!isRecalibration() && quant.getDbs() > 0) //only species with double bonds are relevant
+	        if (!isRTMapping() && quant.getDbs() > 0) //only species with double bonds are relevant
 	        {
 	        	for (DoubleBondPositionVO doubleBondPositionVO : allLabeledVOsToAdd)
 		        {
 		        	if (quant.getCarbons() == doubleBondPositionVO.getNumberOfCarbons() &&
-		        			quant.getDbs() == doubleBondPositionVO.getNumberOfDoubleBonds() &&
-		        			quant.getOhNumber() == doubleBondPositionVO.getNumberOfOH())
+		        			quant.getDbs() == doubleBondPositionVO.getNumberOfDoubleBonds()) //number of oh etc are not considered on purpose, they should be grouped in the target list
 		        	{
-		        		quant.addInfoForOmegaAssignment(doubleBondPositionVO);
+		        		quant.addInfoForOmegaAssignment(doubleBondPositionVO); 
 		        	}
 		        }
 	        }
 	        doubleBondPositionVOs = quant.getInfoForOmegaAssignment();
 	      }
 	      
-	      if (isRecalibration())
+	      if (isRTMapping())
 	      {
-	      	RecalibrationRegression regression = calibrationGraphPanel_.getRegressionByFields(CalibrationGraphPanel.PLOT_ALL, CalibrationGraphPanel.PLOT_ALL);
-	      	if (this.calibrateSeparately_)
-	      	{
-	      		RecalibrationRegression regressionByClass = calibrationGraphPanel_.getRegressionByFields(CalibrationGraphPanel.PLOT_ALL, cName);
-	      		if (regressionByClass != null)
-	      		{
-	      			regression = regressionByClass;
-	      		}
-	      	}
+	      	RecalibrationRegression regression = calibrationGraphPanel_.getRegressionByFields(CalibrationGraphPanel.PLOT_ALL, 
+      				calibrateSeparately_ ? calibrationGraphPanel_.getRelevantRegressionName(cName) : CalibrationGraphPanel.PLOT_ALL);
       		boolean noRegressionAvailable = regression == null;
 	      	for (int i=0;i<doubleBondPositionVOs.size();i++)
 		      {
@@ -324,16 +355,24 @@ public class TargetListExporter
 	      {
 	      	int modCount = 0;
 	      	Row row = sheet.createRow(rowCount);
+	      	boolean increaseRowCount = true; //relevant if there is e.g. more than one ohNumber
 	      	for (String mod : mods.keySet()) 
 		      {
 		      	QuantVO quant = quantAnalytes.get(mod);
+		      	
+		      	if (ohNumber > 0 && quant.getOhNumber() != ohNumber) //only write out the relevant ohNumber
+		      	{
+		      		increaseRowCount = false;
+		      		continue;
+		      	}
+		      	
 		      	if (modCount==0) 
-		        {   	
-		          cell = row.createCell(headerTitles.indexOf(HEADER_NAME),HSSFCell.CELL_TYPE_STRING);
-		          cell.setCellValue(quant.getAnalyteName());
-		          cell = row.createCell(headerTitles.indexOf(HEADER_COLON),HSSFCell.CELL_TYPE_STRING);
+		        {  
+		          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_NAME),HSSFCell.CELL_TYPE_STRING);
+		          cell.setCellValue(quant.getCarbons());
+		          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_COLON),HSSFCell.CELL_TYPE_STRING);
 		          cell.setCellValue(":");
-		          cell = row.createCell(headerTitles.indexOf(HEADER_DBS),HSSFCell.CELL_TYPE_NUMERIC);
+		          cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_DBS),HSSFCell.CELL_TYPE_NUMERIC);
 		          cell.setCellValue(quant.getDbs());
 		          if (i>=0)
 		          {
@@ -351,11 +390,13 @@ public class TargetListExporter
 		        modCount++;
 		        if (i>=0)
 	          {
-	          	cell = row.createCell(headerTitles.indexOf(HEADER_RETENTION_TIME),HSSFCell.CELL_TYPE_NUMERIC);
+	          	cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_RETENTION_TIME),HSSFCell.CELL_TYPE_NUMERIC);
 		          cell.setCellValue(doubleBondPositionVOs.get(i).getExpectedRetentionTime());
+		          cell.setCellStyle(numberStyle);
 	          }
 		      }
-	      	rowCount++;
+	      	if (increaseRowCount)
+	      		rowCount++;
 	      }
 	    }
 		}
@@ -365,6 +406,12 @@ public class TargetListExporter
 		}
 	}
 	
+//	public String computeQuantID(QuantVO quant, boolean includeOH)
+//	{
+//		return String.format("%s, %s, %s, %s", 
+//				quant.getCarbons(), quant.getDbs(), quant.getModName(), includeOH ? quant.getOhNumber() : "");
+//	}
+	
 	private void computeExpectedRetentionTime(DoubleBondPositionVO vo, RecalibrationRegression regression, String cName)
 	{
 		double before = vo.getExpectedRetentionTime();
@@ -372,28 +419,67 @@ public class TargetListExporter
 		{
 			double after = regression.getTargetRT(before);
 			vo.setExpectedRetentionTime((float)after);
-			System.out.println(String.format("original: %s, recalibrated: %s", before, after));
+//			System.out.println(String.format("original: %s, recalibrated: %s", before, after));
 		}
 		catch (OutOfRangeException ex)
 		{
-			vo.setExpectedRetentionTime((float)-1.0);
+			double extrapolatedRT = extrapolateRTOutOfRange(before, regression);
+			vo.setExpectedRetentionTime((float)extrapolatedRT);
 		}
 		
 		//TODO: just for development, remove after!
-		if (!beforeAfter_.containsKey(cName))
-		{
-			beforeAfter_.put(cName, ConcurrentHashMap.newKeySet());
-		}
-		beforeAfter_.get(cName).add(new Pair<Double,DoubleBondPositionVO>(before,vo));
+//		if (!beforeAfter_.containsKey(cName))
+//		{
+//			beforeAfter_.put(cName, ConcurrentHashMap.newKeySet());
+//		}
+//		beforeAfter_.get(cName).add(new Pair<Double,DoubleBondPositionVO>(before,vo));
 	}
 	
+	/**
+	 * Extrapolates calibrated retention times when the values are out of the range of calibration.
+	 * @param before
+	 * @param regression
+	 * @return
+	 */
+	private double extrapolateRTOutOfRange(double before, RecalibrationRegression regression)
+	{
+		Double returnValue = -1.0;
+		ArrayList<Pair<Double,Double>> clustered = regression.getClustered();
+		Pair<Double,Double> firstPair = null;
+		Pair<Double,Double> secondPair = null;
+		if (before < clustered.get(0).getKey())
+		{
+			firstPair = clustered.get(0);
+			secondPair = clustered.get(1);
+		}
+		else if (before > clustered.get(clustered.size()-1).getKey())
+		{
+			firstPair = clustered.get(clustered.size()-1);
+			secondPair = clustered.get(clustered.size()-2);
+		}
+		if (firstPair != null && secondPair != null)
+		{
+			double m = (secondPair.getValue() - firstPair.getValue()) / (secondPair.getKey() - firstPair.getKey());
+			double b = firstPair.getValue()-m*firstPair.getKey();
+			returnValue = before - (m*before+b);
+		}
+		System.out.println(returnValue);
+		return returnValue;
+	}
 	
-	//first all vos are sorted according to the labeling pattern (they already all have the same molecular species) into objects
-	//then for the vos within these objects the mean and standard deviation is calculated
-	//if standard deviation is below our threshold, then this is an accepted cluster, we save it as a new vo
-	//when we are done, the final step is to take all obtained doublebondpositionvos and check if another dbpvo with a compatible labeling pattern is within the time threshold, if so, merge
-	//TODO: in this class we get only vos of identical molecular species. this means we can compute permutable positions for this molecular species and use this to compute overlapping patterns!
-	private Vector<DoubleBondPositionVO> clusterMolecularSpecies(Vector<DoubleBondPositionVO> doubleBondPositionVOs, boolean labeled)
+	/**
+	 * first all vos are sorted according to the labeling pattern (they already all have the same molecular species) into objects
+	 * then for the vos within these objects the mean and standard deviation is calculated
+	 * if standard deviation is below our threshold, then this is an accepted cluster, we save it as a new vo
+	 * when we are done, the final step is to take all obtained doublebondpositionvos and check if another dbpvo with a compatible labeling pattern is within the time threshold, if so, merge
+	 * TODO: in this class we get only vos of identical molecular species. this means we can compute permutable positions for this molecular species and use this to compute overlapping patterns!
+	 * 
+	 * @param doubleBondPositionVOs
+	 * @param labeled
+	 * @param clusteringThreshold
+	 * @return
+	 */
+	private Vector<DoubleBondPositionVO> clusterMolecularSpecies(Vector<DoubleBondPositionVO> doubleBondPositionVOs, boolean labeled, double clusteringThreshold)
 	{
 		/**
 		 * if we have labeled species:
@@ -409,24 +495,19 @@ public class TargetListExporter
 			Hashtable<Vector<Integer>,Vector<DoubleBondPositionVO>> patternLookup = computePatternLookup(doubleBondPositionVOs);
 			for (Vector<Integer> pattern : patternLookup.keySet()) //cluster elements for each pattern
 			{
-				Vector<DoubleBondPositionVO> averageElements = computeClusters(patternLookup.get(pattern));
+				Vector<DoubleBondPositionVO> averageElements = computeGroups(patternLookup.get(pattern),clusteringThreshold);
 				patternLookup.put(pattern, averageElements);
 			}
 			
 			/**
-			 * TODO: for now we do nothing with patterns which could be combined, because I am not sure if it's scientifically accurate to do
-			 * plan is:  iterate over markedToCombine (they are within threshold and have an overlapping pattern) and combine to a common vo 
+			 * iterate over markedToCombine (they are within threshold and have an overlapping pattern) and combine to a common vo 
 			 */
 			
 			Hashtable<Vector<Integer>,Vector<Vector<Integer>>> overlappingPatterns = computeOverlappingPatterns(patternLookup.keySet(),permutationPattern);
 			
-			Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>> markedToCombine = markToCombine(patternLookup, overlappingPatterns);
+			Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>> markedToCombine = markToCombine(patternLookup, overlappingPatterns,clusteringThreshold);
 			Vector<Pair<RangeDouble,Vector<DoubleBondPositionVO>>> combineRanges = new Vector<Pair<RangeDouble,Vector<DoubleBondPositionVO>>>();
 			
-			
-			/**
-			 * TODO: I have an interesting bug here: the current settings will print the weirdness out. I do not understand it. Sorry future me.
-			 */
 			for (DoubleBondPositionVO doubleBondPositionVO : markedToCombine.keySet())
 			{
 				boolean isRepresented = false;
@@ -434,7 +515,7 @@ public class TargetListExporter
 				{
 					if (range1.getKey().insideRange(doubleBondPositionVO.getExpectedRetentionTime()))
 					{
-						RangeDouble range2 = new RangeDouble(doubleBondPositionVO.getExpectedRetentionTime()-THRESHOLD_FOR_CLUSTERING/60.0, doubleBondPositionVO.getExpectedRetentionTime()+THRESHOLD_FOR_CLUSTERING/60.0);
+						RangeDouble range2 = new RangeDouble(doubleBondPositionVO.getExpectedRetentionTime()-clusteringThreshold/60.0, doubleBondPositionVO.getExpectedRetentionTime()+clusteringThreshold/60.0);
 						range1.getKey().extendToOtherRanges(range2);
 						range1.getValue().add(doubleBondPositionVO);
 						isRepresented = true;
@@ -442,7 +523,7 @@ public class TargetListExporter
 				}
 				if (!isRepresented)
 				{
-					RangeDouble range2 = new RangeDouble(doubleBondPositionVO.getExpectedRetentionTime()-THRESHOLD_FOR_CLUSTERING/60.0, doubleBondPositionVO.getExpectedRetentionTime()+THRESHOLD_FOR_CLUSTERING/60.0);
+					RangeDouble range2 = new RangeDouble(doubleBondPositionVO.getExpectedRetentionTime()-clusteringThreshold/60.0, doubleBondPositionVO.getExpectedRetentionTime()+clusteringThreshold/60.0);
 					Vector<DoubleBondPositionVO> newVector = new Vector<DoubleBondPositionVO>();
 					newVector.add(doubleBondPositionVO);
 					Pair<RangeDouble,Vector<DoubleBondPositionVO>> newRange = new Pair<RangeDouble,Vector<DoubleBondPositionVO>>(range2,newVector);
@@ -476,18 +557,17 @@ public class TargetListExporter
 			  			fattyAcid.setOmegaPosition(pattern.get(i));
 			  			combinedFattyAcidVO.add(fattyAcid);
 			  		}
-						float expectedRetentionTime = doubleBondPositionVO.getExpectedRetentionTime();
+						double expectedRetentionTime = doubleBondPositionVO.getExpectedRetentionTime();
 						int count = 1;
 						for (DoubleBondPositionVO vo : vos)
 						{
 							toBeRemovedFromLookup.add(vo);
-//							System.out.println("To be removed vo1: "+vo.getMolecularSpecies()+"        pattern: "+vo.getPositionAssignmentPattern()+"     RT: "+vo.getExpectedRetentionTime());
 							expectedRetentionTime+= vo.getExpectedRetentionTime();
 							count++;
 						}
-						DoubleBondPositionVO combined = new DoubleBondPositionVO(combinedFattyAcidVO, expectedRetentionTime/count, 0, doubleBondPositionVO.getMolecularSpecies());
+						DoubleBondPositionVO combined = new DoubleBondPositionVO(
+								combinedFattyAcidVO, expectedRetentionTime/count, DoubleBondPositionVO.ACCURACY_LOW, doubleBondPositionVO.getMolecularSpecies());
 						toBeAddedToLookup.add(combined);
-//						System.out.println("To be removed parent: "+doubleBondPositionVO.getMolecularSpecies()+"        pattern: "+doubleBondPositionVO.getPositionAssignmentPattern()+"     RT: "+doubleBondPositionVO.getExpectedRetentionTime());
 						toBeRemovedFromLookup.add(doubleBondPositionVO);
 					}
 					
@@ -503,81 +583,15 @@ public class TargetListExporter
 								patternLookup.put(toBeAdded.getPositionAssignmentPattern(), new Vector<DoubleBondPositionVO>());
 							}
 							patternLookup.get(toBeAdded.getPositionAssignmentPattern()).add(toBeAdded);
-//							System.out.println("To be added: "+toBeAdded.getMolecularSpecies()+"        pattern: "+toBeAdded.getPositionAssignmentPattern()+"     RT: "+toBeAdded.getExpectedRetentionTime());
 							added.add(toBeAdded.getPositionAssignmentPattern());
 						}
 					}
 					for (DoubleBondPositionVO toBeRemoved : toBeRemovedFromLookup)
 					{
 						patternLookup.get(toBeRemoved.getPositionAssignmentPattern()).remove(toBeRemoved);
-//						System.out.println("To be removed: "+toBeRemoved.getMolecularSpecies()+"        pattern: "+toBeRemoved.getPositionAssignmentPattern()+"     RT: "+toBeRemoved.getExpectedRetentionTime());
 					}
 				}
 			}
-			
-			
-//			List<DoubleBondPositionVO> blackList = new ArrayList<DoubleBondPositionVO>();
-//			Vector<DoubleBondPositionVO> whiteList = new Vector<DoubleBondPositionVO>();
-			/**
-			 * markedToCombine must be filtered to some degree:
-			 * if only 1 match found: combine without issue (includes chains with permuation etc.)
-			 * if multiple matches found: check if one of the vos has double bond positions assigned for all chains:
-			 * if yes, check if all positions different from -1 are identical: 
-			 * 			if yes, combine all
-			 * 			if no, all of them should be removed from the data: add them to a list of elements to be removed and check each time if an equivalent vo is contained there.
-			 * if no, check total number of assigned positions for individual fatty acid species:
-			 * 			if number matches for all, combine without issue (includes chains with permuation etc.)
-			 * 			if no, remove species with the offending fatty acid assigned and combine the rest
-			 * TODO: this needs to be expanded, not general enough for triglycerides and some other cases
-			 */
-			
-			/**
-			 * new approach to deal with markedToCombine:
-			 * we do NOT remove any analytes. we consider all possible combinations for a peak to be correct!
-			 * 
-			 * 
-			 */
-//			for (DoubleBondPositionVO vo1 : markedToCombine.keySet())
-//			{
-//				System.out.println("Parent VO pattern: "+vo1.getPositionAssignmentPattern()+" RT: "+vo1.getExpectedRetentionTime());
-////				patternLookup.get(vo1.getPositionAssignmentPattern()).remove(vo1); //removing element
-//				Vector<DoubleBondPositionVO> toCombine = markedToCombine.get(vo1);
-//				if (vo1.areDoubleBondPositionsAssignedForAllChains())
-//				{
-//					DoubleBondPositionVO combined = new DoubleBondPositionVO(vo1);
-//					float expectedRetentionTime = combined.getExpectedRetentionTime();
-//					int count = 1;
-//					for (DoubleBondPositionVO vo : toCombine)
-//					{
-//						patternLookup.get(vo.getPositionAssignmentPattern()).remove(vo); //removing element
-//						expectedRetentionTime+= vo.getExpectedRetentionTime();
-//						count++;
-//					}
-//					combined.setExpectedRetentionTime(expectedRetentionTime/count);
-//					if (!patternLookup.containsKey(combined.getPositionAssignmentPattern()))
-//						patternLookup.put(combined.getPositionAssignmentPattern(), new Vector<DoubleBondPositionVO>());
-//					patternLookup.get(combined.getPositionAssignmentPattern()).add(combined);
-//				}
-//				else if (toCombine.size() == 1)
-//				{
-//					
-//					patternLookup.get(toCombine.get(0).getPositionAssignmentPattern()).remove(toCombine.get(0)); //removing element
-//					DoubleBondPositionVO combined = combineDoubleBondPositionVO(vo1,toCombine.get(0));
-//					if (combined != null)
-//					{
-//						if (!patternLookup.containsKey(combined.getPositionAssignmentPattern()))
-//							patternLookup.put(combined.getPositionAssignmentPattern(), new Vector<DoubleBondPositionVO>());
-//						patternLookup.get(combined.getPositionAssignmentPattern()).add(combined);
-//					}
-//				}
-//				
-//				toCombine.forEach((n) -> System.out.println((n).getPositionAssignmentPattern()));
-//				if(vo1.getMolecularSpecies().equals("16:2_18:1"))
-//				{
-//					System.out.println("stop?");
-//				}
-//			}	
-			
 			for (Vector<Integer> pattern : patternLookup.keySet()) 
 			{
 				returnElements.addAll(patternLookup.get(pattern));
@@ -589,26 +603,10 @@ public class TargetListExporter
 			/**
 			 * we calculate the clusters, then these are transformed into a Vector of vos and returned
 			 */	
-			return computeClusters(doubleBondPositionVOs);
-//			System.out.println("next");
-//			calculateDistanceMatrix(doubleBondPositionVOs);
+			return computeGroups(doubleBondPositionVOs,clusteringThreshold);
 		}
 	}
 	
-	/**
-	 * returns true if only one possible double bond position combination is possible for the queried data
-	 * @param vo1
-	 * @param doubleBondPositionVOs
-	 * @return
-	 */
-	private boolean isCombinationStraightforward(Set<Vector<Integer>> combinedPatterns)
-	{
-		if (combinedPatterns.size() != 1)
-		{
-			return false;
-		}
-		return true;
-	}
 	
 	private Set<Vector<Integer>> computeCombinedPatterns(DoubleBondPositionVO vo1, Vector<DoubleBondPositionVO> doubleBondPositionVOs)
 	{
@@ -643,31 +641,10 @@ public class TargetListExporter
 	}
 	
 	
-//	private Vector<Integer> combinePattern(Vector<Vector<Integer>> patterns)
-//	{
-//		Vector<Integer> combinedPattern = new Vector<Integer>();
-//		Vector<Integer> temp = new Vector<Integer>();
-//		for (Vector<Integer> pattern : patterns)
-//		{
-//			if (temp.isEmpty())
-//			{
-//				temp = pattern;
-//				continue;
-//			}
-//			for (int i=0;i<pattern.size();i++)
-//			{
-//				if ((pattern.get(i) == temp.get(i)) || patter )
-//			}
-//		}
-//		
-//		
-//	}
-	
-	
-	
 	private Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>> markToCombine(
 			Hashtable<Vector<Integer>,Vector<DoubleBondPositionVO>> patternLookup,
-			Hashtable<Vector<Integer>,Vector<Vector<Integer>>> overlappingPatterns)
+			Hashtable<Vector<Integer>,Vector<Vector<Integer>>> overlappingPatterns,
+			Double clusteringThreshold)
 	{
 		Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>> markedToCombine = new Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>>();
 		for (Vector<Integer> pattern : overlappingPatterns.keySet()) //combine overlapping patterns with same retention times
@@ -686,7 +663,7 @@ public class TargetListExporter
 						Float retentionTime2 = (float)vo2.getExpectedRetentionTime();
 //							System.out.println(String.format("Species1: %s, RT1: %s, Species2: %s, RT2: %s ", 
 //									vo1.getDoubleBondPositionsHumanReadable(), retentionTime1, vo2.getDoubleBondPositionsHumanReadable(), retentionTime2));
-						if (Math.abs(retentionTime1-retentionTime2) < (THRESHOLD_FOR_CLUSTERING/60)) //if is within threshold
+						if (Math.abs(retentionTime1-retentionTime2) < (clusteringThreshold/60)) //if is within threshold
 						{
 							
 							if (!markedToCombine.containsKey(vo1))
@@ -759,90 +736,6 @@ public class TargetListExporter
 		}
 		return markedToCombine;
 	}
-	
-	/**
-	private Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>> markToCombine(
-			Hashtable<Vector<Integer>,Vector<DoubleBondPositionVO>> patternLookup,
-			Hashtable<Vector<Integer>,Vector<Vector<Integer>>> overlappingPatterns)
-	{
-		Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>> markedToCombine = new Hashtable<DoubleBondPositionVO,Vector<DoubleBondPositionVO>>();
-		try
-		{
-			for (Vector<Integer> pattern : overlappingPatterns.keySet()) //combine overlapping patterns with same retention times
-			{
-				Vector<DoubleBondPositionVO> patternVOs = patternLookup.get(pattern); //the species matching the pattern exactly
-				for (Vector<Integer> overlappingPattern : overlappingPatterns.get(pattern)) //pattern overlap with the queried pattern
-				{
-					Vector<DoubleBondPositionVO> overlappingPatternVOs = patternLookup.get(overlappingPattern); //species with pattern overlap with the queried pattern
-					if (overlappingPatternVOs!=null)
-					{
-						for (DoubleBondPositionVO vo1 : patternVOs)
-						{
-							Set<Vector<Integer>> patternLookupKeySet = patternLookup.keySet();
-							for (Vector<Integer> pttrn : patternLookupKeySet)
-							{
-								if (pttrn.equals(overlappingPattern))
-								{
-									System.out.println("HI");
-									Vector<DoubleBondPositionVO> test = patternLookup.get(pttrn);
-									System.out.println("HI!");
-								}
-							}
-							for (Entry<Vector<Integer>,Vector<DoubleBondPositionVO>> dbvo : patternLookup.entrySet())
-							{
-								Vector<DoubleBondPositionVO> testest = dbvo.getValue();
-								Vector<Integer> henlo = dbvo.getKey();
-								Vector<DoubleBondPositionVO> testestest = patternLookup.get(henlo);
-								System.out.println("HI!");
-							}
-							
-							Float retentionTime1 = (float)vo1.getExpectedRetentionTime();
-							for (DoubleBondPositionVO vo2 : overlappingPatternVOs)
-							{
-								Float retentionTime2 = (float)vo2.getExpectedRetentionTime();
-//								System.out.println(String.format("Species1: %s, RT1: %s, Species2: %s, RT2: %s ", 
-//										vo1.getDoubleBondPositionsHumanReadable(), retentionTime1, vo2.getDoubleBondPositionsHumanReadable(), retentionTime2));
-								if (Math.abs(retentionTime1-retentionTime2) < (THRESHOLD_FOR_CLUSTERING/60)) //if is within threshold
-								{
-									if (markedToCombine.containsKey(vo2)) 
-									{
-										if (!markedToCombine.get(vo2).contains(vo1)) 
-										{
-											markedToCombine.get(vo2).add(vo1);
-										}
-									} 
-									else if (markedToCombine.containsKey(vo1))
-									{
-										if (!markedToCombine.get(vo1).contains(vo2)) 
-										{
-											markedToCombine.get(vo1).add(vo2);
-										}
-									}
-									else
-									{
-										markedToCombine.put(vo1, new Vector<DoubleBondPositionVO>());
-										markedToCombine.get(vo1).add(vo2);
-									}
-								}
-							}
-						}
-					}
-					else 
-					{
-						System.out.println(overlappingPattern);
-					}
-				}				
-			}
-		}
-		catch (NullPointerException ex)
-		{
-			ex.printStackTrace();
-			System.out.println("HI!");
-		}
-		
-		return markedToCombine;
-	}
-	*/
 	
 	
 	/**
@@ -935,7 +828,7 @@ public class TargetListExporter
   {
   	if (vo1.getMolecularSpecies().equals(vo2.getMolecularSpecies()))
   	{
-  		float combinedRetentionTime = (vo1.getExpectedRetentionTime()+vo2.getExpectedRetentionTime())/2;
+  		double combinedRetentionTime = (vo1.getExpectedRetentionTime()+vo2.getExpectedRetentionTime())/2;
   		Vector<Integer> pattern1 = vo1.getPositionAssignmentPattern();
   		Vector<Integer> pattern2 = vo2.getPositionAssignmentPattern();
   		if (vo2.getPermutationPattern().contains(Boolean.TRUE) && pattern2.size() == 2) //TODO: adapt for more than 2 chains
@@ -957,7 +850,7 @@ public class TargetListExporter
   		{
   			combinedFattyAcidVO.get(i).setOmegaPosition(combinedPattern.get(i));
   		}
-  		return new DoubleBondPositionVO(combinedFattyAcidVO, combinedRetentionTime, 0, vo1.getMolecularSpecies());
+  		return new DoubleBondPositionVO(combinedFattyAcidVO, combinedRetentionTime, DoubleBondPositionVO.ACCURACY_LOW, vo1.getMolecularSpecies());
   	}
   	return null;
   }
@@ -986,36 +879,12 @@ public class TargetListExporter
 	}
 	
 	/**
-	 * just for verifying the clustering is ok
-	 * TODO: delete later
+	 * Groups identifications based on the provided @param clusteringThreshold
 	 * @param doubleBondPositionVOs
+	 * @param clusteringThreshold
+	 * @return
 	 */
-	private void calculateDistanceMatrix(Vector<DoubleBondPositionVO> doubleBondPositionVOs)
-	{
-		Vector<Vector<Float>> distanceMatrix = new Vector<Vector<Float>>();
-		for (DoubleBondPositionVO vo1 : doubleBondPositionVOs)
-		{
-			Float retentionTime1 = (float)vo1.getExpectedRetentionTime();
-			Vector<Float> distances = new Vector<Float>();
-			for (DoubleBondPositionVO vo2 : doubleBondPositionVOs)
-			{
-				distances.add(Math.abs(retentionTime1-(float)vo2.getExpectedRetentionTime()));
-			}
-			distanceMatrix.add(distances);
-			System.out.println(distances);
-		}
-	}
-	
-	/**
-	 * what we do is the following: 
-	 * fist make a hashtable of clusters (key index, value cluster)
-	 * if a species is not in a cluster yet, add species to new cluster, add it to hashtable with index
-	 * else add cluster to hashtable with index
-	 * check for each other species that is within threshold if it is in a cluster, if so if it is the same cluster, if not, merge clusters
-	 * merging of clusters works as follows: new cluster with elements of both, assign this new cluster to the initial clusters
-	 * @param doubleBondPositionVOs
-	 */
-	private Vector<DoubleBondPositionVO> computeClusters(Vector<DoubleBondPositionVO> doubleBondPositionVOs)
+	private Vector<DoubleBondPositionVO> computeGroups(Vector<DoubleBondPositionVO> doubleBondPositionVOs, double clusteringThreshold)
 	{
 		Vector<DoubleBondPositionVO> averageElements = new Vector<DoubleBondPositionVO>();
 		//first index of vo, second number of cluster
@@ -1038,7 +907,7 @@ public class TargetListExporter
 			for (int j=0; j<doubleBondPositionVOs.size();j++)
 			{
 				DoubleBondPositionVO vo2 = doubleBondPositionVOs.get(j);
-				if (Math.abs(retentionTime1-(float)vo2.getExpectedRetentionTime()) < (THRESHOLD_FOR_CLUSTERING/60)) //if is within threshold
+				if (Math.abs(retentionTime1-(float)vo2.getExpectedRetentionTime()) < (clusteringThreshold/60)) //if is within threshold
 				{
 					if (!clusterLookup.containsKey(j)) //if this vo is in no cluster yet: add to cluster of vo1
 					{
@@ -1065,7 +934,529 @@ public class TargetListExporter
 		return averageElements;
 	}
 	
-	private class Cluster
+	private void fillContainerForClass(String cName, MolecularSpeciesContainer container, GradientAdjuster adjuster)
+	{
+		try
+		{
+			for (ResultFileVO resultFileVO : resultFileVO_)
+			{
+				QuantificationResult quantRes = resultFileVO.getQuantificationResult();
+				Vector<LipidParameterSet> analytes = quantRes.getIdentifications().get(cName);
+				
+				if (analytes == null)
+				{
+					return;
+				}
+				
+				for (LipidParameterSet analyte : analytes)
+				{
+					//TODO: if only one chain for a class, MSn is not necessary. However, some methods would have to be rewritten and identifications are usually more accurate, if there is MSn info available
+					if (analyte instanceof LipidomicsMSnSet
+							&& analyte.getDoubleBonds()>0 )
+					{
+						LipidomicsMSnSet analyteMSn = (LipidomicsMSnSet) analyte;
+						if (analyteMSn.getStatus() < LipidomicsMSnSet.FRAGMENTS_DETECTED) 
+						{
+							continue; //it does not make sense to write anything less than a molecular species with double bond information to the masslist
+						}
+						Vector<Pair<String,String>> labeledUnlabeledPairs = analyteMSn.getLabeledUnlabeledPairs();
+						
+						double expectedRetentionTime = analyte.getPreciseRT();
+						boolean viableForCalibration = true;
+						boolean singleLabel = true;
+						
+						//only deuterated species need recalculation of the expected retention time
+						if (isotopeEffectRegression_ != null && analyte.getChemicalFormula().contains("D"))
+						{
+							int numberDeuterium = StaticUtils.categorizeFormula(analyte.getChemicalFormula()).get("D");
+							if (numberDeuterium > isotopeEffectRegression_.getMaxNumDeuteriumAllowed())
+							{
+								singleLabel = false;
+								String validCombi = analyteMSn.getValidChainCombinations().get(0);
+								for (FattyAcidVO fa : StaticUtils.decodeLipidNamesFromChainCombi(validCombi))
+								{
+									String prefix = fa.getPrefix();
+									if (prefix != null && !prefix.equals(""))
+									{
+										for (IsotopeLabelVO label : labels_)
+										{
+											if (label.getLabelId().equals(prefix))
+											{
+												int num = label.getLabelElements().containsKey("D") ? label.getLabelElements().get("D") : 0;
+												if (num > isotopeEffectRegression_.getMaxNumDeuteriumAllowed())
+												{
+													viableForCalibration = false; //retention times affected by labels outside the calibration curve cannot be recalculated!
+												}
+												else
+												{
+													expectedRetentionTime = adjuster != null ? 
+															adjuster.getGradientAdjustedValue(isotopeEffectRegression_.getIsotopeEffect(num), expectedRetentionTime) :
+															isotopeEffectRegression_.getIsotopeEffect(num)*expectedRetentionTime;
+												}
+												continue;
+											}
+										}
+									}
+					      }
+							}
+							else
+							{
+								expectedRetentionTime = adjuster != null ? 
+										adjuster.getGradientAdjustedValue(isotopeEffectRegression_.getIsotopeEffect(numberDeuterium), analyte.getPreciseRT()) :
+										isotopeEffectRegression_.getIsotopeEffect(numberDeuterium)*analyte.getPreciseRT();
+							}
+						}					
+						
+						if (!viableForCalibration) continue;
+						
+						for (Pair<String,String> pair : labeledUnlabeledPairs) 
+						{
+							String labeledSpecies = pair.getValue();
+							Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
+			    		String[] splitName = StaticUtils.splitChainCombinationsAtChainSeparators(labeledSpecies);
+			    		for (int i=0; i<splitName.length;i++)
+			    		{
+			    			FattyAcidVO fa = StaticUtils.decodeHumanReadableChain(splitName[i],Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),false,null);
+			    			String prefix = fa.getPrefix();
+			    			
+			    			if (!prefix.equals("")) //unlabeled species do not need this loop
+			    			{
+			    				for (IsotopeLabelVO label : labels_)
+				    			{
+				    				if (label.getLabelId().equals(prefix))
+				    				{
+				    					fa.setOmegaPosition(label.getOmegaPosition());
+				    					fa.setPrefix("");
+				    				}
+				    			}
+			    			}
+			    			
+			    			chains.add(fa);
+			    		}
+			    		
+			    		if (analyte.getChemicalFormula().contains("D") || analyte.getChemicalFormula().contains("Cc")) //TODO: consider accounting for additional isotopes?
+							{
+			    			if (singleLabel)
+			    			{
+			    				container.addSingleLabeledSpecies(
+					    				pair.getKey(), 
+					    				new DoubleBondPositionVO(chains,expectedRetentionTime,DoubleBondPositionVO.ACCURACY_LOW,pair.getKey()));
+			    			}
+			    			else
+			    			{
+			    				container.addMultiLabeledSpecies(
+					    				pair.getKey(), 
+					    				new DoubleBondPositionVO(chains,expectedRetentionTime,DoubleBondPositionVO.ACCURACY_LOW,pair.getKey()));
+			    			}
+							}
+						}
+					}
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+	}	
+	
+	
+	
+	/**
+   * Creates a formatted header row with the given header titles in the row number given by HEADER_ROW
+   * @param ws Excel worksheet to write the header to
+   * @param headerTitles List of header titles
+   */
+  public static void createHeader(Sheet sheet, List<String> headerTitles, XSSFCellStyle headerStyle) 
+  {
+  	Row row = sheet.createRow(HEADER_ROW);
+  	Cell cell;
+  	for (int i=0; i<headerTitles.size(); i++) 
+  	{
+  		cell = row.createCell(i, HSSFCell.CELL_TYPE_STRING);
+  		cell.setCellValue(headerTitles.get(i));
+  		cell.setCellStyle(headerStyle);
+  	}
+    sheet.setColumnWidth(headerTitles.indexOf(MassListExporter.HEADER_NAME), 10 * 256);
+    sheet.setColumnWidth(headerTitles.indexOf(MassListExporter.HEADER_COLON), 2 * 256);
+    sheet.setColumnWidth(headerTitles.indexOf(MassListExporter.HEADER_DBS), 10 * 256);
+  	sheet.setColumnWidth(headerTitles.indexOf(HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS), 30 * 256);
+  	sheet.setColumnWidth(headerTitles.indexOf(MassListExporter.HEADER_RETENTION_TIME), 10 * 256);
+  }
+	
+	/**
+	 * Creates a list of header titles
+	 * @param elements
+	 * @param mods
+	 * @return
+	 */
+  public static List<String> createHeaderTitles(
+  		Vector<String> elements, LinkedHashMap<String,String> mods, Hashtable<String,Integer> modToCharge) 
+  {
+    List<String> headerTitles = new ArrayList<String>();
+    headerTitles.add(MassListExporter.HEADER_NAME);
+    headerTitles.add(MassListExporter.HEADER_COLON);
+    headerTitles.add(MassListExporter.HEADER_DBS);
+    headerTitles.add(HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS);
+    
+    for (String element : elements) 
+    {
+    	headerTitles.add(element);
+    }
+    
+    for (String mod : mods.keySet()) 
+    {
+    	String modHeader = "mass(form["+mods.get(mod)+"] name["+mod+"]";
+    	if (modToCharge.get(mod)>1)
+        modHeader += " charge="+modToCharge.get(mod);
+      modHeader += ")";
+    	headerTitles.add(modHeader);
+    }
+    
+    headerTitles.add(MassListExporter.HEADER_RETENTION_TIME);
+    
+    return headerTitles;
+  }
+	
+	/**
+   * extracts from the original mass list the chemical elements used, the modifications applied and the charge of those modifications
+   * @param quantObjects the information form the original Excel mass list; first key: analyte name; second key modification name; value: information about the analyte entry
+   * @return vector containing three objects: first object: a vector containing the elements in the order of the Hill notation; second object: a LinkedHashMap containing the modifications as key and the modification formula as value; third object: a hash table; key: modification name; value: charge of the modification 
+   * @throws ChemicalFormulaException thrown when there is something wrong with the chemical formula
+   */
+  public Vector<Object> getAvailableElementsAndModificationsPlusCharge(Hashtable<String,Hashtable<String,QuantVO>> quantObjects) throws ChemicalFormulaException
+  {
+    Vector<Object> result = new Vector<Object>();
+    Set<String> elements = new HashSet<String>();
+    LinkedHashMap<String,String> modifications = new LinkedHashMap<String,String>();
+    Hashtable<String,Integer> modToCharge = new Hashtable<String,Integer>();
+    for (Hashtable<String,QuantVO> quantAnal : quantObjects.values()) {
+      for (QuantVO quant : quantAnal.values()) {
+        for (String element : StaticUtils.categorizeFormula(quant.getAnalyteFormula()).keySet()) {
+          if (!elements.contains(element))
+            elements.add(element);
+          if (!modifications.containsKey(quant.getModName())) {
+            modifications.put(quant.getModName(),StaticUtils.getFormulaInHillNotation(StaticUtils.categorizeFormula(quant.getModFormula()),false));
+            modToCharge.put(quant.getModName(), quant.getCharge());
+          }
+        }
+      }
+    }
+    Vector<String> sorted = new Vector<String>();
+    if (elements.contains("C"))
+      sorted.add("C");
+    if (elements.contains("H"))
+      sorted.add("H");
+    List<String> otherThanCH = new ArrayList<String>();
+    for (String element : elements) {
+      if (!element.equalsIgnoreCase("C") && !element.equalsIgnoreCase("H"))
+        otherThanCH.add(element);
+    }
+    Collections.sort(otherThanCH);
+    for (String element : otherThanCH)
+      sorted.add(element);
+    result.add(sorted);
+    result.add(modifications);
+    result.add(modToCharge);
+    return result;
+  }
+  
+  private String getTemplatePath()
+  {
+  	return this.templatePath_;
+  }
+  
+  private boolean isRTMapping()
+	{
+		return this.calibrationGraphPanel_ != null;
+	}
+  
+  //TODO: just for development, remove later!
+  private Hashtable<String,Set<Pair<Double,DoubleBondPositionVO>>> getBeforeAfter()
+	{
+		return this.beforeAfter_;
+	}
+  
+  //TODO: just for development, remove later!
+  private Hashtable<String,Vector<Pair<Double,DoubleBondPositionVO>>> parseComparisonSheet(org.dhatim.fastexcel.reader.Sheet sheet) throws Exception
+  {
+  	Hashtable<String,Vector<Pair<Double,DoubleBondPositionVO>>> allowedPairsOfClass = new Hashtable<String,Vector<Pair<Double,DoubleBondPositionVO>>>();
+  	List<org.dhatim.fastexcel.reader.Row> rows = null;
+  	rows = sheet.read();
+  	Integer rowNr = 0;
+    org.dhatim.fastexcel.reader.Row headerRow = rows.get(rowNr++);
+    List<String> headerTitles = null;
+		try (Stream<org.dhatim.fastexcel.reader.Cell> cells = headerRow.stream();) {
+			headerTitles = cells.map((c) -> (!(c==null || c.getType().equals(CellType.ERROR)) ? c.getText() : "null")).collect(Collectors.toList());
+    }
+		if (headerTitles == null) throw new IOException("No headertitles...");
+		
+    List<org.dhatim.fastexcel.reader.Row> contentRows = rows.subList(rowNr, rows.size());
+    
+    String lClass = null;
+    String molecularSpecies = null;
+    float targetRT = 0f;
+    float originalRT = 0f;
+    int index;
+    String rawValue;
+    
+    for (org.dhatim.fastexcel.reader.Row row : contentRows) {
+      List<org.dhatim.fastexcel.reader.Cell> cells = row.stream().filter((c) -> !(c==null || c.getType().equals(CellType.ERROR))).collect(Collectors.toList());
+      for (org.dhatim.fastexcel.reader.Cell cell : cells) {
+        index = cell.getColumnIndex();
+        rawValue = cell.getRawValue();
+        
+        if (index == headerTitles.indexOf("Lipid Class")) {
+        	lClass = rawValue;
+        } else if (index == headerTitles.indexOf("Lipid Molecular Species")) {
+          molecularSpecies = rawValue;
+        } else if (index == headerTitles.indexOf("RT Target DB /min")) {
+        	targetRT = Float.parseFloat(rawValue);
+        } else if (index == headerTitles.indexOf("RT Original DB /min")) {
+        	originalRT = Float.parseFloat(rawValue);
+        }
+        
+      }
+      Vector<FattyAcidVO> chainCombination = StaticUtils.decodeFAsFromHumanReadableName(
+      		molecularSpecies, Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(), false, null);
+      DoubleBondPositionVO vo = new DoubleBondPositionVO(chainCombination, targetRT, 0, molecularSpecies);
+      if (!allowedPairsOfClass.containsKey(lClass))
+      {
+      	allowedPairsOfClass.put(lClass, new Vector<Pair<Double,DoubleBondPositionVO>>());
+      }
+      allowedPairsOfClass.get(lClass).add(new Pair<Double,DoubleBondPositionVO>(new Double(originalRT), vo));
+    }
+  	return allowedPairsOfClass;
+  }
+  
+  /**
+   * 
+   * @param targetPath		file created with the new conditions.
+   * @param outPath
+   * @param outPath				if there is a comparison template to adhere to
+   * @throws ExportException
+   */
+  //TODO: just for development, remove later!
+  @SuppressWarnings("unchecked")
+	public void exportBeforeAfter(String targetPath, String outPath, String comparisonPath) throws ExportException
+  {
+  	comparisonPairsOfClass_ = new Hashtable<String,Vector<Pair<Double,DoubleBondPositionVO>>>();
+  	String sheetName = "RTDB_A_to_B1";
+  	if (comparisonPath != null)
+  	{
+  		try (InputStream is = new FileInputStream(comparisonPath);
+  				ReadableWorkbook wb = new ReadableWorkbook(is);
+          Stream<org.dhatim.fastexcel.reader.Sheet> sheets = wb.getSheets();) {
+        sheets.forEach((s) -> {
+        				if (s.getName().equalsIgnoreCase(sheetName)) 
+        				{
+        					try {
+                  	comparisonPairsOfClass_ = parseComparisonSheet(s);
+                  } catch (Exception ex) {
+                    new WarningMessage(new JFrame(), "ERROR", ex.getMessage());
+                  }
+        				}
+              });
+        
+      } catch (IOException ex){
+        ex.printStackTrace();
+      }
+  	}
+  	
+  	
+  	try (	BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outPath));
+				XSSFWorkbook workbook = new XSSFWorkbook();)
+  	{
+  		Sheet sheet = workbook.createSheet("beforeAfter");
+  		Cell cell;
+  		createBeforeAfterTitle(sheet);
+  		int rowCount = 1;
+  		@SuppressWarnings("rawtypes")
+			Vector quantInfo = QuantificationThread.getCorrectAnalyteSequence(targetPath,false);
+			LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)quantInfo.get(0);
+			LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantInfo.get(1);
+			Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(4);
+	  	for (String cName : classSequence.keySet())
+			{
+	  		//Key is the pair from the original target list (orig. rt, recalibrated), value from the target (rtError, target vo).
+	  		Hashtable<Pair<Double,DoubleBondPositionVO>, Pair<Double,DoubleBondPositionVO>> matchedRecalibratedToTarget = 
+	  				new Hashtable<Pair<Double,DoubleBondPositionVO>, Pair<Double,DoubleBondPositionVO>>();
+	  		//To ensure vos are not matched twice.
+	  		Hashtable<DoubleBondPositionVO,Pair<Double,Pair<Double,DoubleBondPositionVO>>> matchedTargetToRecalibrated =
+	  				new Hashtable<DoubleBondPositionVO,Pair<Double,Pair<Double,DoubleBondPositionVO>>>();
+	  		
+	  		Vector<Pair<Double,DoubleBondPositionVO>> pairsOfClassPriority = new Vector<Pair<Double,DoubleBondPositionVO>>();
+	  		if (!comparisonPairsOfClass_.isEmpty())
+	  		{
+	  			pairsOfClassPriority = comparisonPairsOfClass_.get(cName);
+	  			if (pairsOfClassPriority == null) pairsOfClassPriority = new Vector<Pair<Double,DoubleBondPositionVO>>();
+	  		}
+	  		
+	  		Set<Pair<Double,DoubleBondPositionVO>> beforeAfter = getBeforeAfter().get(cName);
+	  		Vector<Pair<Double,DoubleBondPositionVO>> pairsOfClass = new Vector<Pair<Double,DoubleBondPositionVO>>();
+	  		if (beforeAfter != null)
+	  		{
+	  			pairsOfClass = new Vector<Pair<Double,DoubleBondPositionVO>>(beforeAfter);
+	  		}
+	  		if (!comparisonPairsOfClass_.isEmpty())
+	  		{
+	  			pairsOfClass = pairsOfClassPriority;
+	  		}
+	  		if (pairsOfClass.isEmpty()) continue;
+	  			
+	  		Vector<Object> elModCharge = getAvailableElementsAndModificationsPlusCharge(quantObjects.get(cName));
+		    LinkedHashMap<String,String> mods = (LinkedHashMap<String,String>)elModCharge.get(1);
+		    
+		    for (Pair<Double,DoubleBondPositionVO> pair : pairsOfClass) //iterating over the original TG entries first to limit false matches.
+		    {
+		    	boolean pairAdded = false;
+		    	for (Pair<Double,DoubleBondPositionVO> original : beforeAfter)
+		    	{
+		    		if (original.getKey().equals(pair.getKey()) && original.getValue().getChainCombination().equals(pair.getValue().getChainCombination()))
+		    		{
+		    			pair = original;
+		    		}
+		    	}
+		    	for (String analyte : analyteSequence.get(cName)) 
+			    {
+			    	Hashtable<String,QuantVO> quantAnalytes = quantObjects.get(cName).get(analyte);
+			    	for (String mod : mods.keySet()) 
+			      {
+			    		QuantVO quant = quantAnalytes.get(mod);
+			        Vector<DoubleBondPositionVO> doubleBondPositionVOs = quant.getInfoForOmegaAssignment();
+			        for (DoubleBondPositionVO vo : doubleBondPositionVOs)
+			        {
+			        	if (pair.getValue().getDoubleBondPositionsHumanReadable().equals(vo.getDoubleBondPositionsHumanReadable()))
+		        		{
+			        		double rtError = vo.getExpectedRetentionTime()-pair.getValue().getExpectedRetentionTime();
+			        		double existingRtError = Double.MAX_VALUE;
+			        		if (matchedRecalibratedToTarget.containsKey(pair))
+			        		{
+			        			existingRtError = matchedRecalibratedToTarget.get(pair).getKey();
+			        		}
+			        		else if (matchedTargetToRecalibrated.containsKey(vo))
+			        		{
+			        			existingRtError = matchedTargetToRecalibrated.get(vo).getKey();
+			        		}
+			        		else
+			        		{
+			        			if (Math.abs(rtError) < 1.0)
+			        			{
+			        				matchedRecalibratedToTarget.put(pair, new Pair<Double,DoubleBondPositionVO>(rtError,vo));
+				        			matchedTargetToRecalibrated.put(vo, new Pair<Double,Pair<Double,DoubleBondPositionVO>>(rtError,pair));
+				        			pairAdded = true;
+			        			}
+			        		}
+			        		
+			        		if (existingRtError < Double.MAX_VALUE)
+			        		{
+			        			if (Math.abs(rtError) <= Math.abs(existingRtError))
+			        			{
+			        				if (!matchedRecalibratedToTarget.containsKey(pair)) //remove existing stuff, so we don't get the false matches
+					        		{
+			        					Pair<Double,DoubleBondPositionVO> toRemove = null;
+					        			for (Pair<Double,DoubleBondPositionVO> previous : matchedRecalibratedToTarget.keySet())
+					        			{
+					        				if (matchedRecalibratedToTarget.get(previous).getValue().equals(vo) && comparisonPairsOfClass_.isEmpty())
+					        				{
+					        					toRemove = previous;
+					        				}
+					        			}
+					        			if (toRemove != null) matchedRecalibratedToTarget.remove(toRemove);
+					        		}
+			        				matchedRecalibratedToTarget.put(pair, new Pair<Double,DoubleBondPositionVO>(rtError,vo));
+			        				matchedTargetToRecalibrated.put(vo, new Pair<Double,Pair<Double,DoubleBondPositionVO>>(rtError,pair));
+			        				pairAdded = true;
+			        			}
+			        		}
+		        		}
+			        }
+			      }
+			    }
+		    	if (!pairAdded && !comparisonPairsOfClass_.isEmpty())
+			    {
+			    	matchedRecalibratedToTarget.put(pair, pair);
+			    }
+		    }
+		    if (!matchedRecalibratedToTarget.isEmpty())
+		    {
+		    	ArrayList<DoubleBondPositionVO> usedVOs = new ArrayList<DoubleBondPositionVO>();
+		    	for (Pair<Double,DoubleBondPositionVO> originalPair : matchedRecalibratedToTarget.keySet())
+		    	{
+		    		//first double: rtError, second double: originalRT, vo: recalibrated
+		    		Pair<Double,DoubleBondPositionVO> targetPair = matchedRecalibratedToTarget.get(originalPair);
+		    		if (usedVOs.contains(targetPair.getValue()) && comparisonPairsOfClass_.isEmpty()) continue;
+		    		usedVOs.add(targetPair.getValue());
+		    		
+		    		String molName = targetPair.getValue().getDoubleBondPositionsHumanReadable();
+		    		double targetRT = targetPair.getValue().getExpectedRetentionTime();
+        		double originalRT = originalPair.getKey();
+        		double recalibratedRT = originalPair.getValue().getExpectedRetentionTime();
+        		double rtError = targetPair.getKey()>1.0 ? 0.0 : targetPair.getKey();
+        		
+        		Row row = sheet.createRow(rowCount);
+      			cell = row.createCell(0,HSSFCell.CELL_TYPE_STRING);
+	          cell.setCellValue(cName);
+      			cell = row.createCell(1,HSSFCell.CELL_TYPE_STRING);
+	          cell.setCellValue(molName);
+	          cell = row.createCell(2,HSSFCell.CELL_TYPE_NUMERIC);
+	          cell.setCellValue(targetRT);
+	          cell = row.createCell(3,HSSFCell.CELL_TYPE_NUMERIC);
+	          cell.setCellValue(originalRT);
+	          cell = row.createCell(4,HSSFCell.CELL_TYPE_NUMERIC);
+	          cell.setCellValue(recalibratedRT);
+	          cell = row.createCell(5,HSSFCell.CELL_TYPE_NUMERIC);
+	          cell.setCellValue(originalRT-targetRT);
+	          cell = row.createCell(6,HSSFCell.CELL_TYPE_NUMERIC);
+	          cell.setCellValue(rtError);
+	          cell = row.createCell(7,HSSFCell.CELL_TYPE_NUMERIC);
+	          cell.setCellValue(Math.abs(rtError));
+	          rowCount++;
+		    	}
+		    }
+			}	
+	  	workbook.write(out);
+	  	System.out.println("recalibration_comparison.xlsx written!");
+  	}
+  	catch (Exception e) 
+		{
+      throw new ExportException(e);
+    } 
+  }
+  
+  private void createBeforeAfterTitle(Sheet sheet)
+  {
+  	Row row = sheet.createRow(0);
+  	Cell cell = row.createCell(0,HSSFCell.CELL_TYPE_STRING);
+    cell.setCellValue("Lipid Class");
+    sheet.setColumnWidth(0, 10 * 256);
+    cell = row.createCell(1,HSSFCell.CELL_TYPE_STRING);
+    cell.setCellValue("Lipid Molecular Species");
+    sheet.setColumnWidth(1, 25 * 256);
+    cell = row.createCell(2,HSSFCell.CELL_TYPE_STRING);
+    cell.setCellValue("Target DB");
+    sheet.setColumnWidth(2, 15 * 256);
+    cell = row.createCell(3,HSSFCell.CELL_TYPE_STRING);
+    cell.setCellValue("Original DB");
+    sheet.setColumnWidth(3, 15 * 256);
+    cell = row.createCell(4,HSSFCell.CELL_TYPE_STRING);
+    cell.setCellValue("Recalibrated DB");
+    sheet.setColumnWidth(4, 15 * 256);
+    cell = row.createCell(5,HSSFCell.CELL_TYPE_STRING);
+    cell.setCellValue("RT differences (original - target)");
+    sheet.setColumnWidth(5, 15 * 256);
+    cell = row.createCell(6,HSSFCell.CELL_TYPE_STRING);
+    cell.setCellValue("RT error");
+    sheet.setColumnWidth(6, 15 * 256);
+    cell = row.createCell(7,HSSFCell.CELL_TYPE_STRING);
+    cell.setCellValue("Abs RT error");
+    sheet.setColumnWidth(7, 15 * 256);
+  }
+  
+  
+  
+  
+  private class Cluster
 	{
 		private Vector<DoubleBondPositionVO> doubleBondPositionVOs_ = new Vector<DoubleBondPositionVO>();
 		
@@ -1113,338 +1504,54 @@ public class TargetListExporter
 			}
 		}
 	}
-	
-	
-	/**
-	 * Check to identify species which may have a more ambiguous retention time, due to coelution
-	 */
-	private boolean containsMoreThanOneSpecies(Vector<Pair<String,String>> labeledUnlabeledPairs)
-	{
-		Set<String> uniqueSpecies = new HashSet<String>();
-		for (Pair<String,String> pair : labeledUnlabeledPairs)
-		{
-			uniqueSpecies.add(pair.getKey());
-		}
-		return uniqueSpecies.size() > 1;
-	}
-	
-	
-	
-	private void fillContainerForClass(String cName, MolecularSpeciesContainer container)
-	{
-		try
-		{
-			for (ResultFileVO resultFileVO : resultFileVO_)
-			{
-				QuantificationResult quantRes = resultFileVO.getQuantificationResult();
-				Vector<LipidParameterSet> analytes = quantRes.getIdentifications().get(cName);
-				
-				for (LipidParameterSet analyte : analytes)
-				{
-					//TODO: if only one chain for a class, MSn is not necessary. However, some methods would have to be rewritten and identifications are usually more accurate, if there is MSn info available
-					if (analyte instanceof LipidomicsMSnSet
-							&& analyte.getDoubleBonds()>0 )
-					{
-						LipidomicsMSnSet analyteMSn = (LipidomicsMSnSet) analyte;
-						if (analyteMSn.getStatus() < LipidomicsMSnSet.FRAGMENTS_DETECTED) 
-						{
-							continue; //it does not make sense to write anything less than a molecular species with double bond information to the masslist
-						}
-						Vector<Pair<String,String>> labeledUnlabeledPairs = analyteMSn.getLabeledUnlabeledPairs();
-						
-						//TODO: only for printing, remove later
-//						for (Pair<String,String> pair : labeledUnlabeledPairs)
-//						{
-//							if (analyte.getChemicalFormula().contains("D"))
-//								System.out.println(String.format("class: %s, unlabeled: %s, labeled: %s, RT: %s ", cName, pair.getKey(), pair.getValue(), analyte.getPreciseRT()));
-//						}
-						
-						Hashtable<String,Integer> elements = StaticUtils.categorizeFormula(analyte.getChemicalFormula());
-						double expectedRetentionTime = analyte.getPreciseRT();
-						
-						//only deuterated species need recalculation of the expected retention time
-						if (isotopeEffectRegression_ != null && analyte.getChemicalFormula().contains("D"))
-						{
-							int numberDeuterium = elements.get("D");
-							if (numberDeuterium > isotopeEffectRegression_.getMaxNumDeuteriumAllowed())
-							{
-								continue; //retention times affected by labels outside the calibration curve cannot be recalculated!
-							}
-							expectedRetentionTime = isotopeEffectRegression_.getRTofUnlabeledSpecies(numberDeuterium, analyte.getPreciseRT());
-						}					
-						
-						for (Pair<String,String> pair : labeledUnlabeledPairs) 
-						{
-							String labeledSpecies = pair.getValue();
-							Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
-			    		String[] splitName = StaticUtils.splitChainCombinationsAtChainSeparators(labeledSpecies);
-			    		for (int i=0; i<splitName.length;i++)
-			    		{
-			    			FattyAcidVO fa = StaticUtils.decodeHumanReadableChain(splitName[i],Settings.getFaHydroxyEncoding(),Settings.getLcbHydroxyEncoding(),false,null);
-			    			String prefix = fa.getPrefix();
-			    			
-			    			if (!prefix.equals("")) //unlabeled species do not need this loop
-			    			{
-			    				for (IsotopeLabelVO label : labels_)
-				    			{
-				    				if (label.getLabelId().equals(prefix))
-				    				{
-				    					fa.setOmegaPosition(label.getOmegaPosition());
-				    					fa.setPrefix("");
-				    				}
-				    			}
-			    			}
-			    			
-			    			chains.add(fa);
-			    		}
-			    		
-			    		//all isotope labeled species are stored separate from unlabeled species, as only they get written out in the end
-			    		if (analyte.getChemicalFormula().contains("D") || analyte.getChemicalFormula().contains("Cc")) //TODO: consider accounting for additional isotopes?
-							{
-				    		container.addLabeledSpecies(
-				    				pair.getKey(), 
-				    				new DoubleBondPositionVO(chains,(float)expectedRetentionTime,0,pair.getKey()));
-							}
-			    		else 
-			    		{
-			    			container.addUnlabeledSpecies(
-				    				pair.getKey(), 
-				    				new DoubleBondPositionVO(chains,(float)expectedRetentionTime,0,pair.getKey()));
-			    		}
-						}
-					}
-				}
-			}
-		}
-		catch (Exception ex)
-		{
-			ex.printStackTrace();
-		}
-		
-	}	
-	
-	
-//	private Hashtable<String,Vector<LipidParameterSet>> collectLabeledResultsForClass(String cName)
-//	{
-//		Hashtable<String,Vector<LipidParameterSet>> labeledResultsForClass = new Hashtable<String,Vector<LipidParameterSet>>();
-//		for (int index : resultIndices_)
-//		{
-//			QuantificationResult quantRes = resultFileVO_.get(index).getQuantificationResult();
-//			Vector<LipidParameterSet> analytes = quantRes.getIdentifications().get(cName);
-//			
-//			for (LipidParameterSet analyte : analytes)
-//			{
-//				if (analyte instanceof LipidomicsMSnSet 
-//						&& analyte.getDoubleBonds()>0 
-//						&& (analyte.getChemicalFormula().contains("D") || analyte.getChemicalFormula().contains("Cc")))
-//				{
-//					String name = analyte.getNameStringWithoutRt();
-//					if (!labeledResultsForClass.contains(name))
-//					{
-//						labeledResultsForClass.put(name, new Vector<LipidParameterSet>());
-//					}
-//					analyte = addDoubleBondPositionVO((LipidomicsMSnSet)analyte);
-//					labeledResultsForClass.get(name).add(analyte);
-//				}
-//			}
-//		}
-//		return labeledResultsForClass;
-//	}
-	
-	
-	//for this task I need the label definitions, then probably replace elements accordingly and create a doublebondpositionvo, which is added to the analyte
-	private LipidParameterSet addDoubleBondPositionVO(LipidomicsMSnSet analyte)
-	{
-		
-		return analyte;
-	}
-	
-	
-	private Hashtable<String,Hashtable<String,QuantVO>> addDoubleBondPositionsToQuantVOs(
-			Hashtable<String,Hashtable<String,QuantVO>> quantObjects, Vector<String> analyteSequence, String cName)
-	{
-//		this.isotopeEffectRegression_ = isotopeEffectRegression;
-		for (ResultFileVO resultFileVO : resultFileVO_)
-		{
-			QuantificationResult quantRes = resultFileVO.getQuantificationResult();
-			Vector<LipidParameterSet> analytes = quantRes.getIdentifications().get(cName);
-			
-			
-		}
-		
-		
-		return quantObjects;
-	}
-	
-	
-	
-	
-	/**
-   * Creates a formatted header row with the given header titles in the row number given by HEADER_ROW
-   * @param ws Excel worksheet to write the header to
-   * @param headerTitles List of header titles
-   */
-  private static void createHeader(Sheet sheet, List<String> headerTitles, XSSFCellStyle headerStyle) 
-  {
-  	Row row = sheet.createRow(HEADER_ROW);
-  	Cell cell;
-  	for (int i=0; i<headerTitles.size(); i++) 
-  	{
-  		cell = row.createCell(i, HSSFCell.CELL_TYPE_STRING);
-  		cell.setCellValue(headerTitles.get(i));
-  		cell.setCellStyle(headerStyle);
-  	}
-  }
-	
-	/**
-	 * Creates a list of header titles
-	 * @param elements
-	 * @param mods
-	 * @return
-	 */
-  private static List<String> createHeaderTitles(
-  		Vector<String> elements, LinkedHashMap<String,String> mods, Hashtable<String,Integer> modToCharge) 
-  {
-    List<String> headerTitles = new ArrayList<String>();
-    headerTitles.add(HEADER_NAME);
-    headerTitles.add(HEADER_COLON);
-    headerTitles.add(HEADER_DBS);
-    headerTitles.add(HEADER_MOLECULAR_SPECIES_WITH_DOUBLE_BOND_POSITIONS);
-    
-    for (String element : elements) 
-    {
-    	headerTitles.add(element);
-    }
-    
-    for (String mod : mods.keySet()) 
-    {
-    	String modHeader = "mass(form["+mods.get(mod)+"] name["+mod+"]";
-    	if (modToCharge.get(mod)>1)
-        modHeader += " charge="+modToCharge.get(mod);
-      modHeader += ")";
-    	headerTitles.add(modHeader);
-    }
-    
-    headerTitles.add(HEADER_RETENTION_TIME);
-    
-    return headerTitles;
-  }
-	
   
-	public static XSSFCellStyle getHeaderStyle(XSSFWorkbook wb)
-	{
-    XSSFCellStyle arial12style = wb.createCellStyle();
-    XSSFFont arial12font = wb.createFont();
-    arial12font.setBoldweight(HSSFFont.BOLDWEIGHT_BOLD);
-    arial12font.setFontName("Arial");
-    arial12font.setFontHeightInPoints((short)12);
-    arial12style.setFont(arial12font);
-    arial12style.setAlignment(HSSFCellStyle.ALIGN_CENTER);
-    return arial12style;
-  }
-	
-	/**
-   * extracts from the original mass list the chemical elements used, the modifications applied and the charge of those modifications
-   * @param quantObjects the information form the original Excel mass list; first key: analyte name; second key modification name; value: information about the analyte entry
-   * @return vector containing three objects: first object: a vector containing the elements in the order of the Hill notation; second object: a LinkedHashMap containing the modifications as key and the modification formula as value; third object: a hash table; key: modification name; value: charge of the modification 
-   * @throws ChemicalFormulaException thrown when there is something wrong with the chemical formula
-   */
-  protected Vector<Object> getAvailableElementsAndModificationsPlusCharge(Hashtable<String,Hashtable<String,QuantVO>> quantObjects) throws ChemicalFormulaException
-  {
-    Vector<Object> result = new Vector<Object>();
-    Set<String> elements = new HashSet<String>();
-    LinkedHashMap<String,String> modifications = new LinkedHashMap<String,String>();
-    Hashtable<String,Integer> modToCharge = new Hashtable<String,Integer>();
-    for (Hashtable<String,QuantVO> quantAnal : quantObjects.values()) {
-      for (QuantVO quant : quantAnal.values()) {
-        for (String element : StaticUtils.categorizeFormula(quant.getAnalyteFormula()).keySet()) {
-          if (!elements.contains(element))
-            elements.add(element);
-          if (!modifications.containsKey(quant.getModName())) {
-            modifications.put(quant.getModName(),StaticUtils.getFormulaInHillNotation(StaticUtils.categorizeFormula(quant.getModFormula()),false));
-            modToCharge.put(quant.getModName(), quant.getCharge());
-          }
-        }
-      }
-    }
-    Vector<String> sorted = new Vector<String>();
-    if (elements.contains("C"))
-      sorted.add("C");
-    if (elements.contains("H"))
-      sorted.add("H");
-    List<String> otherThanCH = new ArrayList<String>();
-    for (String element : elements) {
-      if (!element.equalsIgnoreCase("C") && !element.equalsIgnoreCase("H"))
-        otherThanCH.add(element);
-    }
-    Collections.sort(otherThanCH);
-    for (String element : otherThanCH)
-      sorted.add(element);
-    result.add(sorted);
-    result.add(modifications);
-    result.add(modToCharge);
-    return result;
-  }
-  
-  public String getTemplatePath()
-  {
-  	return this.templatePath_;
-  }
-  
-  private boolean isRecalibration()
-	{
-		return this.calibrationGraphPanel_ != null;
-	}
   
   /**
-   * Inner helper class
+   * Saves species of a class which were detected with a stable isotope label.
+   * All retention times must be corrected for the isotope effect on retention time.
    * 
-   * > Hashtable className, new java class: 
-	 * 				saves labeled and unlabeled species of class separately
-	 * 				method getlabeled ( position ind. mol species)
-	 * 				method getunlabeled ( position ind. mol species)
-	 * 				method getlabeledmolecularspecies
-	 * 				2x field hashtable pos ind mol species, vector lipidomicsmsnset
+   * @author Leonida M. Lamp
+   *
    */
   private class MolecularSpeciesContainer
   {
-  	private Hashtable<String, Vector<DoubleBondPositionVO>> labeledSpecies_;
-  	private Hashtable<String, Vector<DoubleBondPositionVO>> unlabeledSpecies_;
+  	private Hashtable<String, Vector<DoubleBondPositionVO>> singleLabeledSpecies_;
+  	private Hashtable<String, Vector<DoubleBondPositionVO>> multiLabeledSpecies_;
   	
   	private MolecularSpeciesContainer()
   	{
-  		labeledSpecies_ = new Hashtable<String, Vector<DoubleBondPositionVO>>();
-  		unlabeledSpecies_ = new Hashtable<String, Vector<DoubleBondPositionVO>>();
+  		singleLabeledSpecies_ = new Hashtable<String, Vector<DoubleBondPositionVO>>();
+  		multiLabeledSpecies_ = new Hashtable<String, Vector<DoubleBondPositionVO>>();
   	}
   	
-  	private void addLabeledSpecies(String molecularSpecies, DoubleBondPositionVO doubleBondPositionVO)
+  	private void addSingleLabeledSpecies(String molecularSpecies, DoubleBondPositionVO doubleBondPositionVO)
   	{
-  		if (!this.labeledSpecies_.containsKey(molecularSpecies))
+  		if (!this.singleLabeledSpecies_.containsKey(molecularSpecies))
   		{
-  			this.labeledSpecies_.put(molecularSpecies, new Vector<DoubleBondPositionVO>());
+  			this.singleLabeledSpecies_.put(molecularSpecies, new Vector<DoubleBondPositionVO>());
   		}
-  		this.labeledSpecies_.get(molecularSpecies).add(doubleBondPositionVO);
+  		this.singleLabeledSpecies_.get(molecularSpecies).add(doubleBondPositionVO);
   	}
   	
-  	private void addUnlabeledSpecies(String molecularSpecies, DoubleBondPositionVO doubleBondPositionVO)
+  	private void addMultiLabeledSpecies(String molecularSpecies, DoubleBondPositionVO doubleBondPositionVO)
   	{
-  		if (!this.unlabeledSpecies_.containsKey(molecularSpecies))
+  		if (!this.multiLabeledSpecies_.containsKey(molecularSpecies))
   		{
-  			this.unlabeledSpecies_.put(molecularSpecies, new Vector<DoubleBondPositionVO>());
+  			this.multiLabeledSpecies_.put(molecularSpecies, new Vector<DoubleBondPositionVO>());
   		}
-  		this.unlabeledSpecies_.get(molecularSpecies).add(doubleBondPositionVO);
+  		this.multiLabeledSpecies_.get(molecularSpecies).add(doubleBondPositionVO);
   	}
   	
-  	private Set<String> getLabeledMolecularSpecies()
+  	private Set<String> getSingleLabeledMolecularSpecies()
   	{
-  		return labeledSpecies_.keySet();
+  		return singleLabeledSpecies_.keySet();
   	}
   	
-  	private Vector<DoubleBondPositionVO> getLabeledSpecies(String molecularSpecies)
+  	private Vector<DoubleBondPositionVO> getSingleLabeledSpecies(String molecularSpecies)
   	{
-  		if (labeledSpecies_.containsKey(molecularSpecies))
+  		if (singleLabeledSpecies_.containsKey(molecularSpecies))
   		{
-  			return labeledSpecies_.get(molecularSpecies);
+  			return singleLabeledSpecies_.get(molecularSpecies);
   		}
   		else
   		{
@@ -1452,11 +1559,11 @@ public class TargetListExporter
   		}
   	}
   	
-  	private Vector<DoubleBondPositionVO> getUnlabeledSpecies(String molecularSpecies)
+  	private Vector<DoubleBondPositionVO> getMultiLabeledSpecies(String molecularSpecies)
   	{
-  		if (unlabeledSpecies_.containsKey(molecularSpecies))
+  		if (multiLabeledSpecies_.containsKey(molecularSpecies))
   		{
-  			return unlabeledSpecies_.get(molecularSpecies);
+  			return multiLabeledSpecies_.get(molecularSpecies);
   		}
   		else
   		{
@@ -1468,143 +1575,6 @@ public class TargetListExporter
   
   
   
-  //TODO: just for development, remove later!
-  private Hashtable<String,Set<Pair<Double,DoubleBondPositionVO>>> getBeforeAfter()
-	{
-		return this.beforeAfter_;
-	}
-  
-  //TODO: just for development, remove later!
-  public void exportBeforeAfter(String targetPath, String outPath) throws ExportException
-  {
-  	try (	BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outPath));
-				XSSFWorkbook workbook = new XSSFWorkbook();)
-  	{
-  		Sheet sheet = workbook.createSheet("beforeAfter");
-  		Cell cell;
-  		createBeforeAfterTitle(sheet);
-  		int rowCount = 1;
-  		@SuppressWarnings("rawtypes")
-			Vector quantInfo = QuantificationThread.getCorrectAnalyteSequence(targetPath,false);
-			LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)quantInfo.get(0);
-			LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantInfo.get(1);
-			Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)quantInfo.get(4);
-	  	for (String cName : classSequence.keySet())
-			{
-	  		//Key is the pair from the original target list (orig. rt, recalibrated), value from the target (rtError, target vo).
-	  		Hashtable<Pair<Double,DoubleBondPositionVO>, Pair<Double,DoubleBondPositionVO>> matchedRecalibratedToTarget = 
-	  				new Hashtable<Pair<Double,DoubleBondPositionVO>, Pair<Double,DoubleBondPositionVO>>();
-	  		//To ensure vos are not matched twice.
-	  		Hashtable<DoubleBondPositionVO,Pair<Double,Pair<Double,DoubleBondPositionVO>>> matchedTargetToRecalibrated =
-	  				new Hashtable<DoubleBondPositionVO,Pair<Double,Pair<Double,DoubleBondPositionVO>>>();
-	  		
-	  		
-	  		
-	  		Set<Pair<Double,DoubleBondPositionVO>> pairsOfClass = getBeforeAfter().get(cName);
-	  		if (pairsOfClass==null) continue;
-	  		Vector<Object> elModCharge = getAvailableElementsAndModificationsPlusCharge(quantObjects.get(cName));
-		    LinkedHashMap<String,String> mods = (LinkedHashMap<String,String>)elModCharge.get(1);
-		    
-		    for (Pair<Double,DoubleBondPositionVO> pair : pairsOfClass) //iterating over the original TG entries first to limit false matches.
-		    {
-		    	for (String analyte : analyteSequence.get(cName)) 
-			    {
-			    	Hashtable<String,QuantVO> quantAnalytes = quantObjects.get(cName).get(analyte);
-			    	for (String mod : mods.keySet()) 
-			      {
-			    		QuantVO quant = quantAnalytes.get(mod);
-			        Vector<DoubleBondPositionVO> doubleBondPositionVOs = quant.getInfoForOmegaAssignment();
-			        for (DoubleBondPositionVO vo : doubleBondPositionVOs)
-			        {
-			        	if (pair.getValue().getDoubleBondPositionsHumanReadable().equals(vo.getDoubleBondPositionsHumanReadable()))
-		        		{
-			        		double rtError = vo.getExpectedRetentionTime()-pair.getValue().getExpectedRetentionTime();
-			        		double existingRtError = Double.MAX_VALUE;
-			        		if (matchedRecalibratedToTarget.containsKey(pair))
-			        		{
-			        			existingRtError = matchedRecalibratedToTarget.get(pair).getKey();
-			        		}
-			        		else if (matchedTargetToRecalibrated.containsKey(vo))
-			        		{
-			        			existingRtError = matchedTargetToRecalibrated.get(vo).getKey();
-			        		}
-			        		else
-			        		{
-			        			if (Math.abs(rtError) < 1.0)
-			        			{
-			        				matchedRecalibratedToTarget.put(pair, new Pair<Double,DoubleBondPositionVO>(rtError,vo));
-				        			matchedTargetToRecalibrated.put(vo, new Pair<Double,Pair<Double,DoubleBondPositionVO>>(rtError,pair));
-			        			}
-			        		}
-			        		
-			        		if (existingRtError < Double.MAX_VALUE)
-			        		{
-			        			if (Math.abs(rtError) < Math.abs(existingRtError))
-			        			{
-			        				matchedRecalibratedToTarget.put(pair, new Pair<Double,DoubleBondPositionVO>(rtError,vo));
-			        				matchedTargetToRecalibrated.put(vo, new Pair<Double,Pair<Double,DoubleBondPositionVO>>(rtError,pair));
-			        			}
-			        		}
-		        		}
-			        }
-			      }
-			    }
-		    }
-		    if (!matchedRecalibratedToTarget.isEmpty())
-		    {
-		    	for (Pair<Double,DoubleBondPositionVO> originalPair : matchedRecalibratedToTarget.keySet())
-		    	{
-		    		//first double: rtError, second double: originalRT, vo: recalibrated
-		    		Pair<Double,DoubleBondPositionVO> targetPair = matchedRecalibratedToTarget.get(originalPair);
-		    		
-		    		String molName = targetPair.getValue().getDoubleBondPositionsHumanReadable();
-		    		double targetRT = targetPair.getValue().getExpectedRetentionTime();
-        		double originalRT = originalPair.getKey();
-        		double recalibratedRT = originalPair.getValue().getExpectedRetentionTime();
-        		double rtError = targetPair.getKey();
-        		
-        		Row row = sheet.createRow(rowCount);
-      			cell = row.createCell(0,HSSFCell.CELL_TYPE_STRING);
-	          cell.setCellValue(cName);
-      			cell = row.createCell(1,HSSFCell.CELL_TYPE_STRING);
-	          cell.setCellValue(molName);
-	          cell = row.createCell(2,HSSFCell.CELL_TYPE_NUMERIC);
-	          cell.setCellValue(targetRT);
-	          cell = row.createCell(3,HSSFCell.CELL_TYPE_NUMERIC);
-	          cell.setCellValue(originalRT);
-	          cell = row.createCell(4,HSSFCell.CELL_TYPE_NUMERIC);
-	          cell.setCellValue(recalibratedRT);
-	          cell = row.createCell(5,HSSFCell.CELL_TYPE_NUMERIC);
-	          cell.setCellValue(targetRT-originalRT);
-	          cell = row.createCell(6,HSSFCell.CELL_TYPE_NUMERIC);
-	          cell.setCellValue(rtError);
-	          rowCount++;
-		    	}
-		    }
-			}	
-	  	workbook.write(out);
-	  	System.out.println("recalibration_comparison.xlsx written!");
-  	}
-  	catch (Exception e) 
-		{
-      throw new ExportException(e);
-    } 
-  }
-  
-  private void createBeforeAfterTitle(Sheet sheet)
-  {
-  	Row row = sheet.createRow(0);
-    Cell cell = row.createCell(2,HSSFCell.CELL_TYPE_STRING);
-    cell.setCellValue("target DB");
-    cell = row.createCell(3,HSSFCell.CELL_TYPE_STRING);
-    cell.setCellValue("original DB");
-    cell = row.createCell(4,HSSFCell.CELL_TYPE_STRING);
-    cell.setCellValue("recalibrated DB");
-    cell = row.createCell(5,HSSFCell.CELL_TYPE_STRING);
-    cell.setCellValue("RT differences (target vs original)");
-    cell = row.createCell(6,HSSFCell.CELL_TYPE_STRING);
-    cell.setCellValue("RT error");
-  }
 }
 
 

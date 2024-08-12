@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -232,12 +232,21 @@ public class AbsoluteQuantSettingsPanel extends JPanel implements ExpVolumeListe
       throw new AbsoluteSettingsInputException("The neutral lipid concentration has to be set for all experiments or for none");
     if (foundSampleWeightOnce && !foundSampleWeightAll)
       throw new AbsoluteSettingsInputException("The sample weight has to be set for all experiments or for none");
+    
+    Hashtable<String,String> chosenClassLookup = new Hashtable<String,String>();
     for (String className : classSettings_.keySet()){
-      LipidClassSettingVO classVO = classSettings_.get(className).getSettings();
+    	String chosenClass = getChosenClassLookup(className);
+      LipidClassSettingVO classVO = classSettings_.get(chosenClass).getSettings();
       standSet.put(className, classVO);
+      chosenClassLookup.put(className, chosenClass);
     }
-    AbsoluteSettingsVO settingsVO = new AbsoluteSettingsVO(probeVols,standSet);
+    AbsoluteSettingsVO settingsVO = new AbsoluteSettingsVO(probeVols,standSet,chosenClassLookup);
     return settingsVO;
+  }
+  
+  public String getChosenClassLookup(String className)
+  {
+  	return classSettings_ == null ? className : classSettings_.get(className).getChosenClass();
   }
   
   

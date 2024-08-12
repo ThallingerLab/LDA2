@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.analysis;
 
@@ -28,6 +28,7 @@ import java.util.Hashtable;
 import java.util.Set;
 import java.util.Vector;
 
+import at.tugraz.genome.lda.swing.ResultDisplaySettings;
 import at.tugraz.genome.lda.vos.AutoAnalyteAddVO;
 import at.tugraz.genome.lda.vos.ResultCompVO;
 import at.tugraz.genome.lda.vos.ResultDisplaySettingsVO;
@@ -147,11 +148,14 @@ public interface HeatMapClickListener extends SampleLookup
   public void exportMzTab(File exportFile, short speciesType, boolean exportDoubleBondPositions);
   public void exportRdb(File exportFile);
   public void exportMaf(File exportFile);
+  public void exportSummary(File exportFile, boolean isGrouped);
   
   /**
    * callback to show the settings dialog for exporting
    * @param grouped is it the export settings for the grouped heat map
    */
   public void showExportSettingsDialog(boolean grouped);
+  
+  public void applySettingsToAllClasses(ResultDisplaySettings settings);
   
 }

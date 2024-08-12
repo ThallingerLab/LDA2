@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.msn.parser;
 
@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Set;
@@ -361,6 +362,46 @@ public class FALibParser
    */
   public Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> getFattyAcids(){
     return result_;
+  }
+  
+  /**
+   * Fetches the results of the parsing with defined hydroxyEncoding, number of C atoms and number of double bonds
+   * @param hydroxyEncoding
+   * @param numC
+   * @param numDB
+   * @return
+   */
+  public ArrayList<FattyAcidVO> getFattyAcidSet(String hydroxyEncoding, Integer numC, Integer numDB)
+  {
+  	ArrayList<FattyAcidVO> chains = new ArrayList<FattyAcidVO>();
+  	Hashtable<String,Hashtable<String,FattyAcidVO>> selectedFAs = result_.get(hydroxyEncoding).get(numC).get(numDB);
+  	for (String pref : selectedFAs.keySet()) {
+  	  for (String oxState : selectedFAs.get(pref).keySet()) {
+  		  chains.add(selectedFAs.get(pref).get(oxState));
+  	  }
+    }
+  	return chains;
+  }
+  
+  /**
+   * Fetches the results of the parsing with defined hydroxyEncoding
+   * @param hydroxyEncoding
+   * @return
+   */
+  public ArrayList<FattyAcidVO> getFattyAcidSet(String hydroxyEncoding)
+  {
+  	ArrayList<FattyAcidVO> chains = new ArrayList<FattyAcidVO>();
+  	Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> selectedFAs = result_.get(hydroxyEncoding);
+  	for (Integer cAtoms : selectedFAs.keySet()) {
+      for (Integer dbs : selectedFAs.get(cAtoms).keySet()) {
+        for (String pref : selectedFAs.get(cAtoms).get(dbs).keySet()) {
+      	  for (String oxState : selectedFAs.get(cAtoms).get(dbs).get(pref).keySet()) {
+      		  chains.add(selectedFAs.get(cAtoms).get(dbs).get(pref).get(oxState));
+      	  }
+        }
+      }
+    }
+  	return chains;
   }
   
   /**
