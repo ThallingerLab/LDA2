@@ -355,7 +355,7 @@ public class MzMLReader extends AbstractXMLSpectraReader
    * @return A float[] containing the lowest and highest m/z value
    * @throws CgException All internal exceptions are mapped to the CgException type.
    */
-  protected float[] getMaximaFromBinaryDataArray() throws CgException
+  private float[] getMaximaFromBinaryDataArray() throws CgException
   {
     float[] maxima = new float[]{Float.MAX_VALUE, 0f};
     String precision = null;

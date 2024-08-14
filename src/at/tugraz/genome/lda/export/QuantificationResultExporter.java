@@ -1098,8 +1098,7 @@ public class QuantificationResultExporter
 					LipidomicsConstants.CHAIN_TYPE_NO_CHAIN);
 			for (String name:headGroupFragments.keySet()) {
 				// TODO: ask why number of hydroxylations is -1 at all times?
-				writeMSnFragment(ws, count++, name, param.getMSnMzTolerance(),
-						headGroupFragments.get(name),
+				writeMSnFragment(ws, count++, name, headGroupFragments.get(name),
 						LipidomicsConstants.CHAIN_TYPE_NO_CHAIN, -1);
 			}
 			Hashtable<String,IntensityRuleVO> headIntRules = param
@@ -1132,8 +1131,7 @@ public class QuantificationResultExporter
 					FattyAcidVO fa = StaticUtils.decodeLipidNameForCreatingCombis(faName);
 					String displayName = StaticUtils.getChainFragmentDisplayName(name,
 							fa.getCarbonDbsId());
-					writeMSnFragment(ws, count++, displayName, param.getMSnMzTolerance(),
-							fragments.get(name), fa.getChainType(), fa.getOhNumber());
+					writeMSnFragment(ws, count++, displayName, fragments.get(name), fa.getChainType(), fa.getOhNumber());
 				}
 			}
 
@@ -1316,8 +1314,6 @@ public class QuantificationResultExporter
 	 *          Excel row that shall be used for writing
 	 * @param name
 	 *          display name of the fragment
-	 * @param mzTolerance
-	 *          m/z tolerance for the identification
 	 * @param probe
 	 *          VO containing information about the identified fragment
 	 * @param chainType
@@ -1328,8 +1324,7 @@ public class QuantificationResultExporter
 	 * @throws ChemicalFormulaException
 	 *           thrown when something is wrong with the chemical formula
 	 */
-	private static void writeMSnFragment(Worksheet ws, int row, String name,
-			float mzTolerance, CgProbe probe, short chainType, int oh)
+	private static void writeMSnFragment(Worksheet ws, int row, String name, CgProbe probe, short chainType, int oh)
 			throws ChemicalFormulaException
 	{
 		ws.value(row, MSN_ROW_FRAGMENT_NAME, name);
@@ -1350,7 +1345,7 @@ public class QuantificationResultExporter
 		ws.value(row, MSN_ROW_FRAGMENT_MSLEVEL + add, probe.getMsLevel());
 		ws.value(row, MSN_ROW_FRAGMENT_CHARGE + add, probe.Charge);
 		ws.value(row, MSN_ROW_FRAGMENT_MZ + add, (double) probe.Mz);
-		ws.value(row, MSN_ROW_FRAGMENT_MZ_TOLERANCE + add, (double) mzTolerance);
+		ws.value(row, MSN_ROW_FRAGMENT_MZ_TOLERANCE + add, (double) probe.LowerMzBand);
 		ws.value(row, MSN_ROW_FRAGMENT_AREA + add, (double) probe.Area);
 		ws.value(row, MSN_ROW_FRAGMENT_PEAK + add, (double) probe.Peak);
 		ws.value(row, MSN_ROW_FRAGMENT_TIME_LOWER + add,

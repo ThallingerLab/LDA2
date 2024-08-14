@@ -334,15 +334,6 @@ public abstract class AbstractXMLSpectraReader implements XMLSpectraReader
   protected abstract void readOnlyRequiredInfoForMultiThreading() throws CgException;
   
   /**
-   * This method reads out the m/z maxima of a binary data array, for getting an idea
-   * about the m/z ranges for splitting in iterations and/or threads
-   * 
-   * @return A float[] containing the lowest and highest m/z value
-   * @throws CgException All internal exceptions are mapped to the CgException type.
-   */
-  protected abstract float[] getMaximaFromBinaryDataArray() throws CgException;
-  
-  /**
    * Returns the XML element constant, the content of which will be read. 
    * Everything outside of it will be ignored by the reader.
    * 

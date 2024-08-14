@@ -142,7 +142,8 @@ public class SingleQuantThread extends Thread
         Vector<Float> rts = new Vector<Float>();
         MSnAnalyzer msnAnalyzer = null;
         for (QuantVO oneSet : quantVOs){
-          msnAnalyzer = new MSnAnalyzer(oneSet.getAnalyteClass(),oneSet.getModName(),oneSet.getAnalyteMass(),(double)LipidomicsConstants.getMs2PrecursorTolerance(),
+        	float tol = LipidomicsConstants.getMs2PrecursorTolerance((float)oneSet.getAnalyteMass());
+          msnAnalyzer = new MSnAnalyzer(oneSet.getAnalyteClass(),oneSet.getModName(),oneSet.getAnalyteMass(),(double)tol,
               oneSet.getAnalyteName(),oneSet.getDbs(),oneSet.getOhNumber(),oneSet.getAnalyteFormula(), oneSet.getModFormula(),oneSet.getCharge(),analyzer,false,
               quantVOs.size()>1);
           rts.addAll(msnAnalyzer.getFoundMatchingSpectraTimes());
@@ -161,7 +162,7 @@ public class SingleQuantThread extends Thread
 
     } else {
       if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
-        isotopicProbes = analyzer.processShotgunData((float)quantSet.getAnalyteMass(),quantSet.getCharge(),msLevel,quantSet.getProbabs().size());
+        isotopicProbes = analyzer.processShotgunData((float)quantSet.getAnalyteMass(),quantSet.getCharge(),msLevel,quantSet.getProbabs().size(),quantSet.getMustMatchProbabs());
       } else if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_PRM){
         //TODO: the MS-level is here always set to 2
         isotopicProbes = analyzer.processPrmData((float)quantSet.getAnalyteMass(),quantSet.getCharge(),2,quantSet.getAnalyteClass(),
@@ -219,8 +220,9 @@ public class SingleQuantThread extends Thread
       if (LipidomicsConstants.isMS2()){
         Hashtable<QuantVO,Hashtable<Integer,LipidParameterSet>> foundForQuantVO = new Hashtable<QuantVO,Hashtable<Integer,LipidParameterSet>>();
         for (QuantVO oneSet : quantVOs){
-          float startMz = (float)oneSet.getAnalyteMass()-LipidomicsConstants.getMs2PrecursorTolerance();
-          float stopMz = (float)oneSet.getAnalyteMass()+LipidomicsConstants.getMs2PrecursorTolerance();
+        	float tol = LipidomicsConstants.getMs2PrecursorTolerance((float)oneSet.getAnalyteMass());
+          float startMz = (float)oneSet.getAnalyteMass()-tol;
+          float stopMz = (float)oneSet.getAnalyteMass()+tol;
           float lowestTime = Float.MAX_VALUE;
           float highestTime = 0f;
           if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE){
@@ -588,7 +590,7 @@ public class SingleQuantThread extends Thread
     Vector<Vector<CgProbe>> isotopicProbes2 = new Vector<Vector<CgProbe>>();
     // k is the isotope number
     float totalArea = 0;
-    double rt = 0.0;
+    Double rt = 0.0;
     for (int k=0;k!=oneHit.size();k++){
       Vector<CgProbe> probes = oneHit.get(k);
       if (probes !=null){
@@ -610,7 +612,7 @@ public class SingleQuantThread extends Thread
       }
     }
     if (LipidomicsConstants.isShotgun()==LipidomicsConstants.SHOTGUN_TRUE)
-    	rt = -1.0;
+    	rt = null;
     LipidParameterSet param = new LipidParameterSet(analyteMass, analyteName, dbs, modName, rt, analyteFormula, modFormula,charge, ohNumber);
     param.LowerMzBand = LipidomicsConstants.getCoarseChromMzTolerance(analyteMass);
     param.UpperMzBand = LipidomicsConstants.getCoarseChromMzTolerance(analyteMass);
@@ -706,7 +708,8 @@ public class SingleQuantThread extends Thread
       Vector<CgProbe> corrected = new Vector<CgProbe>();
       float mz = param.Mz[0]+i*LipidomicsConstants.getNeutronMass()/(float)param.getCharge();
       for (CgProbe aProbe : probes){
-        mzTolerance = aProbe.LowerMzBand;
+      	if (i==0)
+      		mzTolerance = aProbe.LowerMzBand;
         CgProbe probe = new CgProbe(aProbe);
         probe.Mz = mz;
         corrected.add(probe);

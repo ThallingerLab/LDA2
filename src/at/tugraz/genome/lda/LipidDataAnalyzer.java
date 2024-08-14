@@ -102,7 +102,6 @@ import uk.ac.ebi.pride.jmztab2.utils.errors.MZTabErrorType.Level;
 
 import org.apache.batik.dom.GenericDOMImplementation;
 import org.apache.batik.svggen.SVGGraphics2D;
-import org.apache.commons.math3.util.Precision;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 
@@ -1080,7 +1079,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     text.setFont(new Font("Arial",Font.PLAIN, 12));
     logoPanel.add(text,new GridBagConstraints(0, 4, 3, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
-    text = new JLabel("Copyright \u00A9 2023 J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger, Leonida M Lamp");
+    text = new JLabel("Copyright \u00A9 2024 J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger, Leonida M Lamp");
     text.setFont(new Font("Arial",Font.PLAIN, 12));
     logoPanel.add(text,new GridBagConstraints(0, 5, 3, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 50, 0, 0), 0, 0));
@@ -1630,7 +1629,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     
     separateHitsByRT_  = new JCheckBox();
-    separateHitsByRT_.setSelected(true);
+    separateHitsByRT_.setSelected(LipidomicsConstants.isShotgun()!=1);
     separateHitsByRT_.setActionCommand(CHANGE_SEPARATE_RT_STATUS);
     separateHitsByRT_.addActionListener(this);
     separateHitsByRT_.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
@@ -1645,11 +1644,13 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     rtGroupingTime_.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
     groupRtPanel.add(rtGroupingTime_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    rtGroupingTime_.setEnabled(separateHitsByRT_.isSelected());
     
     rtTimeUnit_ = new JLabel("min");
     rtTimeUnit_.setToolTipText(TooltipTexts.STATISTICS_SEPARATE_RT);
     groupRtPanel.add(rtTimeUnit_,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    rtTimeUnit_.setEnabled(separateHitsByRT_.isSelected());
     
     //start: added via the oxidized lipids extension
     JSeparator js = new JSeparator(SwingConstants.VERTICAL);
@@ -3235,8 +3236,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       return;
     }
     if (command.equalsIgnoreCase(CHANGE_SEPARATE_RT_STATUS)){
-      rtGroupingTime_.setEnabled(separateHitsByRT_.isSelected());
-      rtTimeUnit_.setEnabled(separateHitsByRT_.isSelected());
+    	if (LipidomicsConstants.isShotgun()==1&&separateHitsByRT_.isSelected())
+    	{
+    		new WarningMessage(new JFrame(), "Warning", "Shotgun settings are selected. RT grouping is not enabled for shotgun data!");
+    		separateHitsByRT_.setSelected(false);
+    	}
+    	else
+    	{
+    		rtGroupingTime_.setEnabled(separateHitsByRT_.isSelected());
+        rtTimeUnit_.setEnabled(separateHitsByRT_.isSelected());
+    	}
     } else if  (command.equalsIgnoreCase(ExportPanel.EXPORT_PNG)){
       exportFileChooser_.setFileFilter(new FileNameExtensionFilter("PNG (*.png)","png"));
       int returnVal = exportFileChooser_.showSaveDialog(new JFrame());
@@ -3872,7 +3881,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     String titleString = "Lipid Data Analyzer "+Settings.VERSION+"   "+LipidomicsConstants.getCurrentMSMachine()+" settings ";
     String fragSelected = Settings.getFragmentSettingsString();
     if (fragSelected!=null) titleString += " "+fragSelected;    
-    titleString += "         \u00A9 2023 - J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger, Leonida M Lamp - GNU GPL v3 license";
+    titleString += "         \u00A9 2024 - J\u00fcrgen Hartler, Andreas Ziegl, Gerhard G Thallinger, Leonida M Lamp - GNU GPL v3 license";
     return titleString;
   }
 
@@ -4599,13 +4608,18 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         int selection = -1;
         for (int i=0;i!=this.displayTable_.getRowCount();i++){
           String moleculeInTable = (String)this.displayTable_.getDisplayedNameAt(i);
+          String rtInTableString = null;
           if (moleculeInTable.startsWith(moleculeName)){
             boolean found = false;
-            String rtInTableString = moleculeInTable.substring(moleculeName.length()+1);
-            if (rtInTableString.indexOf("_")!=-1) rtInTableString = rtInTableString.substring(0,rtInTableString.indexOf("_"));
-            if (compVO.getResultMolecule().belongsRtToThisAreaVO(rtInTableString, null))
-            {
+            if (moleculeInTable.equals(moleculeName)) {
             	found = true;
+            }else {
+            	rtInTableString = moleculeInTable.substring(moleculeName.length()+1);
+            	if (rtInTableString.indexOf("_")!=-1) rtInTableString = rtInTableString.substring(0,rtInTableString.indexOf("_"));
+            	if (compVO.getResultMolecule().belongsRtToThisAreaVO(rtInTableString, null))
+            	{
+            		found = true;
+            	}
             }
             if (found){
               //if show MS2 spectra is selected, try to find an adequate matching hit where MS2 spectra are present
@@ -5448,7 +5462,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       Hashtable<Integer,Vector<RangeColor>> rangeColors = StaticUtils.createRangeColorVOs(params,((LipidomicsTableModel)displayTable_.getModel()).getMSnIdentificationName(currentSelected_),
           result_.getFaHydroxyEncoding(), result_.getLcbHydroxyEncoding(), areTheseAlex123MsnFragments());
       int threeDMsLevel = 2;
-      Hashtable<Integer,Vector<String>> spectraRaw = reader_.getMsMsSpectra(params.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), params.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance(),-1f,-1f);
+      float tol = LipidomicsConstants.getMs2PrecursorTolerance(params.Mz[0]);
+      Hashtable<Integer,Vector<String>> spectraRaw = reader_.getMsMsSpectra(params.Mz[0]-tol, params.Mz[0]+tol,-1f,-1f);
 
       float peakRt = 0f;
       if (params.getRt()!=null && params.getRt().length()>0)
@@ -5503,7 +5518,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         int extendedStart = (borders[0]*9)/10;
         int extendedStop = (borders[1]*21)/20;
         Lipidomics2DSpectraChromPainter spectrumPainter = new Lipidomics2DSpectraChromPainter(analyzer_,scanNrSpectrumHash, scanNrPrecursorHash, scanNrLevelHash, allRetTimes,
-            peakRt, extendedStart,extendedStop,LipidomicsConstants.getMs2ChromMultiplicationFactorForInt(),LipidomicsConstants.getMs2PrecursorTolerance()*2,this,
+            peakRt, extendedStart,extendedStop,LipidomicsConstants.getMs2ChromMultiplicationFactorForInt(),tol*2,this,
             extendedStart,extendedStop, true,new Vector<CgProbe>(),new Vector<CgProbe>(),1,1, this.relAbund_.isSelected(),
             params,rangeColors, new Double(annotationThreshold_.getText()),shotgunIsDisplayed_);
 
@@ -6474,7 +6489,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       float m2dGain = spectrumPainter_.getM2dGain();   
       spectrumPanel_.remove(spectrumPainter_);   
       //int msLevel = 2;
-      Hashtable<Integer,Vector<String>> spectraRaw = reader_.getMsMsSpectra(params.Mz[0]-LipidomicsConstants.getMs2PrecursorTolerance(), params.Mz[0]+LipidomicsConstants.getMs2PrecursorTolerance(), -1f, -1f);
+      float tol = LipidomicsConstants.getMs2PrecursorTolerance(params.Mz[0]);
+      Hashtable<Integer,Vector<String>> spectraRaw = reader_.getMsMsSpectra(params.Mz[0]-tol, params.Mz[0]+tol, -1f, -1f);
       int[] borders = null;
       for (Integer level : spectraRaw.keySet()){
         //TODO: a dummy call to set the values for getBordersOfLastMs2Extraction()
@@ -6508,7 +6524,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       int extendedStart = (borders[0]*9)/10;
       int extendedStop = (borders[1]*21)/20;
       Lipidomics2DSpectraChromPainter spectrumPainter = new Lipidomics2DSpectraChromPainter(analyzer_,rtNrSpectrumHash, rtNrPrecursorHash, scanNrLevelHash, retTimes,
-          peakRt, extendedStart,extendedStop,LipidomicsConstants.getMs2ChromMultiplicationFactorForInt(),LipidomicsConstants.getMs2PrecursorTolerance()*2,this,
+          peakRt, extendedStart,extendedStop,LipidomicsConstants.getMs2ChromMultiplicationFactorForInt(),tol*2,this,
           extendedStart,extendedStop, true,new Vector<CgProbe>(),new Vector<CgProbe>(),1,1, this.relAbund_.isSelected(),
           params,new Hashtable<Integer,Vector<RangeColor>>(),new Double(annotationThreshold_.getText()),false);      
 

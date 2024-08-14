@@ -609,7 +609,7 @@ public class LDAResultReader
 //        for (positionDefinition)
         positionDefinition = cleanPositionDefinition(positionDefinition);
         if (isDefinitionPresent(positionDefinition)) status = LipidomicsMSnSet.POSITION_DETECTED;
-        addingMSnEvidence = new LipidomicsMSnSet(addingMSnEvidence, status, mzTolerance,headGroupFragments, headIntensityRules,
+        addingMSnEvidence = new LipidomicsMSnSet(addingMSnEvidence, status, headGroupFragments, headIntensityRules,
         chainFragments, chainIntensityRules, validChainCombinations, relativeAreas,  positionDefinition,positionEvidence, numberOfPositions, basePeakValues,
         msnRetentionTimes, faHydroxyEncoding_, lcbHydroxyEncoding_);
         msHash.put(speciesName,addingMSnEvidence);
@@ -944,7 +944,7 @@ public class LDAResultReader
       String speciesName = addingMSnEvidence.getNamePlusModHumanReadable();
       positionDefinition = cleanPositionDefinition(positionDefinition);
       if (isDefinitionPresent(positionDefinition)) status = LipidomicsMSnSet.POSITION_DETECTED;
-      addingMSnEvidence = new LipidomicsMSnSet(addingMSnEvidence, status, mzTolerance, headGroupFragments, headIntensityRules,
+      addingMSnEvidence = new LipidomicsMSnSet(addingMSnEvidence, status, headGroupFragments, headIntensityRules,
       chainFragments, chainIntensityRules, validChainCombinations, relativeAreas, positionDefinition,positionEvidence, numberOfPositions, basePeakValues,
       msnRetentionTimes, faHydroxyEncoding_, lcbHydroxyEncoding_);
       msHash.put(speciesName,addingMSnEvidence);
@@ -1062,7 +1062,7 @@ public class LDAResultReader
       String modification = null;
       String formula = null;
       String modFormula = null;
-      double preciseRT = 0.0;
+      Double preciseRT = null;
       float area = 0f;
       float areaError = 0f;
       float background = 0f; 
@@ -1229,8 +1229,8 @@ public class LDAResultReader
               probe.AreaStatus = CgAreaStatus.TooSmall;
             }            
             probe.Mz = mz;
-            probe.LowerMzBand = mzTolerance;
-            probe.UpperMzBand = mzTolerance;
+            probe.LowerMzBand = params.LowerMzBand;
+            probe.UpperMzBand = params.UpperMzBand;
             probe.isotopeNumber = isotope;
             if (ellipseTimePosition>0&&ellipseMzPosition>0&&ellipseTimeStretch>0&&ellipseMzStretch>0&&
                 lowMz>0&&upMz>0){
