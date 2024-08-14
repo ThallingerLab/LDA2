@@ -342,7 +342,7 @@ public class RdbOutputWriter
             Vector<String> molsWithRt;
             for (String molWithRt : selectedMolHash.keySet()) {
               String molName;
-              if (analysisModule.isISorES(className, molWithRt))
+              if (analysisModule.isISorES(className, molWithRt) || LipidomicsConstants.isShotgun() == 1)
                 molName = new String(molWithRt);
               else
                 molName = molWithRt.substring(0,molWithRt.lastIndexOf("_"));

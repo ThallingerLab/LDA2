@@ -952,14 +952,15 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       Vector<String> confirmationMessages = new Vector<String>();
       String confirmationMessage = "Are you sure you want to eliminate double peaks for "+currentlySelected.getLabel()+"? The peak nearest to the RT of "+currentlySelected.getValue()+" is taken!";
       if (actionCommand.equalsIgnoreCase("Quant. anal. at not found")||actionCommand.equalsIgnoreCase("Take exact peak for others")){
-        confirmationMessage = "Are you sure you want to automatically add peaks for the following molecules? ";
+        confirmationMessage = "<html>Are you sure you want to automatically add peaks for the following molecules?";
         if (actionCommand.equalsIgnoreCase("Quant. anal. at not found"))
-          confirmationMessage += "The peak nearest to the RT of the following experiments are taken:";
+          confirmationMessage += "<br>The peak nearest to the RT of the following identifications (ID) are taken: </br>";
         else if (actionCommand.equalsIgnoreCase("Take exact peak for others"))
-          confirmationMessage += "The exact peak borders of the following experiments are taekn:";
-        confirmationMessages.add(confirmationMessage);
+          confirmationMessage += "<br>The exact peak borders of the following identifications (ID) are taken: </br>";
         for (SimpleValueObject species : templateSpecies)
-          confirmationMessages.add(species.getLabel()+":    "+species.getValue());
+          confirmationMessage += "<br> ID: "+species.getLabel()+" &emsp; experiment: "+species.getValue()+" </br>";
+        confirmationMessage += "</html>";
+        confirmationMessages.add(confirmationMessage);
       }else{
         confirmationMessages.add(confirmationMessage);
       }
@@ -981,12 +982,12 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       Graphics2D g2 = (Graphics2D)renderedImage_.getGraphics();
       boolean printAttentionRectangle = false;
       if (actionCommand.equalsIgnoreCase("Select")){
-        if (!this.selectAnalyte(moleculeNames_.get(lastClickedCellPos_[1]),experimentNames_.get(lastClickedCellPos_[0]),heatmap_.getColorForCell(lastClickedCellPos_[1], lastClickedCellPos_[0]),modHash,
+        if (!this.selectAnalyte(heatmap_.getOriginalAnalyteName(lastClickedCellPos_[1]),experimentNames_.get(lastClickedCellPos_[0]),heatmap_.getColorForCell(lastClickedCellPos_[1], lastClickedCellPos_[0]),modHash,
             vo.getAbsoluteFilePath(),updateableAndAnalyteBefore,maxIsotope))
           return;
         g2.setColor(Color.BLUE);
       }else if (actionCommand.equalsIgnoreCase("Deselect")){
-        g2.setColor(this.deselectAnalyte(moleculeNames_.get(lastClickedCellPos_[1]),experimentNames_.get(lastClickedCellPos_[0])));
+        g2.setColor(this.deselectAnalyte(heatmap_.getOriginalAnalyteName(lastClickedCellPos_[1]),experimentNames_.get(lastClickedCellPos_[0])));
         if (isMarkDoublePeaks() && heatmap_.getAttentionProbe(lastClickedCellPos_[1], experimentNames_.get(lastClickedCellPos_[0])) != null)
         {
           printAttentionRectangle = true;
@@ -996,7 +997,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       cellRect.setLocation(new Point(cellRect.getLocation().x+imagePositionX_,cellRect.getLocation().y+imagePositionY_));
       g2.fillRect(cellRect.x+1,cellRect.y+1,cellRect.width-1,cellRect.height-1);
       if (printAttentionRectangle){
-        heatmap_.paintAttentionRectangle(g2, heatmap_.getAttentionProbe(moleculeNames_.get(lastClickedCellPos_[1]), experimentNames_.get(lastClickedCellPos_[0])), 
+        heatmap_.paintAttentionRectangle(g2, heatmap_.getAttentionProbe(lastClickedCellPos_[1], experimentNames_.get(lastClickedCellPos_[0])), 
             lastClickedCellPos_[1], lastClickedCellPos_[0], heatmap_.getExpressionImageXStart(), heatmap_.getExpressionImageYStart());
       }
       this.invalidate();
@@ -1218,7 +1219,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
                   	if (attentionProbe != null && attentionProbe == LipidomicsHeatMap.ATTENTION_COLOR_DOUBLE_PEAK || attentionProbe == LipidomicsHeatMap.ATTENTION_DOUBLE_AND_NOT_ALL_MODS)
                       this.mouseMoved(e);
                     else{
-                      if (isAnalyteSelected(heatmap_.getAnalyteName(cellPos[1]),experimentNames_.get(cellPos[0]))){
+                      if (isAnalyteSelected(heatmap_.getOriginalAnalyteName(cellPos[1]),experimentNames_.get(cellPos[0]))){
                         selectSingleItem_.setEnabled(false);
                         deselectSingleItem_.setEnabled(true);
                       }else{

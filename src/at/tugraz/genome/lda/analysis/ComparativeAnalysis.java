@@ -978,7 +978,7 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
      * TODO: this could also be moved to after all files have been read in (but before ComparativeNameExtractor calls buildResultHashes())
      * for this the parseResultFile method of ComparativeNameExtractor needs to be removed/replaced
      */
-    if (quantRes.getConstants()!=null && quantRes.getConstants().getShotgun()==LipidomicsConstants.SHOTGUN_TRUE && !(expRtGroupingTime_ < 0)) {
+    if (quantRes.getConstants().getShotgun()==LipidomicsConstants.SHOTGUN_TRUE && !(expRtGroupingTime_ < 0)) {
       disableRtGrouping();
     }
     
@@ -1200,9 +1200,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
       }
       
       
-      
-      
-      
       for (String groupName : groupAndMols.keySet()){
         for (String molName : groupAndMols.get(groupName).keySet()){
           //standards should not run through this process
@@ -1268,7 +1265,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
           }          
         }
       }
-      
     }
     // now build the conventional Hashes
     for (String fileName : unprocessedResults_.keySet()){
