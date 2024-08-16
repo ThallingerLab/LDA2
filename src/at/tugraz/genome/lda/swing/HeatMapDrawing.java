@@ -327,22 +327,23 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   	Insets insets = new Insets(5, 5, 5, 5);
   	
   	int y=0;
-  	settingsPanel.add(new JLabel("Selection mode: "), new GridBagConstraints(0, y, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
-  	selectionMode_ = new JComboBox<String>(SELECTION_MODE_OPTIONS);
-  	selectionMode_.setActionCommand(CHANGE_SELECTION_MODE);
-  	selectionMode_.addActionListener(this);
-  	selectionMode_.setToolTipText(TooltipTexts.HEATMAP_SELECTION_MODE);
-    settingsPanel.add(selectionMode_, new GridBagConstraints(1, y, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
-  	
-    y++;
+  	if (!isGrouped_){
+	  	settingsPanel.add(new JLabel("Selection mode: "), new GridBagConstraints(0, y, 1, 1, 0.0, 0.0
+	        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
+	  	selectionMode_ = new JComboBox<String>(SELECTION_MODE_OPTIONS);
+	  	selectionMode_.setActionCommand(CHANGE_SELECTION_MODE);
+	  	selectionMode_.addActionListener(this);
+	  	selectionMode_.setToolTipText(TooltipTexts.HEATMAP_SELECTION_MODE);
+	    settingsPanel.add(selectionMode_, new GridBagConstraints(1, y, 1, 1, 0.0, 0.0
+	        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
+	    y++;
+  	}
     settingsPanel.add(new JLabel("Number of isotopes: "), new GridBagConstraints(0, y, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
     settingsPanel.add(maxIsotopes_, new GridBagConstraints(1, y, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
-    
     y++;
+    
     int x=0;
     settingsPanel.add(new JLabel("Show: "), new GridBagConstraints(x, y, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
@@ -385,8 +386,8 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       settingsPanel.add(markDoublePeaks_, new GridBagConstraints(x, y, 2, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
     }
-    
     y++;
+    
     JPanel buttonsPanel = new JPanel();
     ExportButton settingsButton = new ExportButton("Quantitative settings","openSettingsDialog",Color.BLACK,Color.decode("#EEEEEE"),TooltipTexts.HEATMAP_SETTINGS,this);
     buttonsPanel.add(settingsButton);
@@ -408,8 +409,8 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     
     settingsPanel.add(buttonsPanel, new GridBagConstraints(1, y, 9, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
-    
     y++;
+    
     ExportPanel exportPanel = new ExportPanel(Color.decode("#EEEEEE"),Color.BLACK,this,!isGrouped_,true, false);
   	JLabel exportLabel = new JLabel("Export: ");
   	exportLabel.setToolTipText(TooltipTexts.EXPORT_GENERAL);
@@ -417,8 +418,8 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
   	settingsPanel.add(exportPanel,new GridBagConstraints(1, y, 9, 1, 0.0, 0.0
         ,GridBagConstraints.NORTHWEST, GridBagConstraints.NONE, insets, 0, 0));
-  	
   	y++;
+  	
     exportProgressPanel_ = new JPanel();
     exportLabel_ = new JLabel("");
     exportLabel_.setToolTipText(TooltipTexts.EXPORT_STATUS_TEXT);
