@@ -343,30 +343,38 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
     
     y++;
-    settingsPanel.add(new JLabel("Show: "), new GridBagConstraints(0, y, 1, 1, 0.0, 0.0
+    int x=0;
+    settingsPanel.add(new JLabel("Show: "), new GridBagConstraints(x, y, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
-    showOption_ = new JComboBox<String>(DISPLAY_OPTIONS);
-    showOption_.setActionCommand(CHANGE_DISPLAY_OPTION);
-    showOption_.addActionListener(this);
-    showOption_.setToolTipText(TooltipTexts.HEATMAP_SHOW_OPTION);
-    settingsPanel.add(showOption_, new GridBagConstraints(1, y, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
+    x++;
+    
+    if (!isGrouped_){
+	    showOption_ = new JComboBox<String>(DISPLAY_OPTIONS);
+	    showOption_.setActionCommand(CHANGE_DISPLAY_OPTION);
+	    showOption_.addActionListener(this);
+	    showOption_.setToolTipText(TooltipTexts.HEATMAP_SHOW_OPTION);
+	    settingsPanel.add(showOption_, new GridBagConstraints(x, y, 1, 1, 0.0, 0.0
+	        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
+	    x++;
+    }
     
     showInternalStandards_  = new JCheckBox("internal standards");
     showInternalStandards_.setSelected(true);
     showInternalStandards_.setActionCommand(CHANGE_IS_STATUS);
     showInternalStandards_.addActionListener(this);
     showInternalStandards_.setToolTipText(TooltipTexts.HEATMAP_SHOW_INT);
-    settingsPanel.add(showInternalStandards_, new GridBagConstraints(2, y, 1, 1, 0.0, 0.0
+    settingsPanel.add(showInternalStandards_, new GridBagConstraints(x, y, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
+    x++;
 
     showExternalStandards_  = new JCheckBox("external standards");
     showExternalStandards_.setSelected(true);
     showExternalStandards_.setActionCommand(CHANGE_ES_STATUS);
     showExternalStandards_.addActionListener(this);
     showExternalStandards_.setToolTipText(TooltipTexts.HEATMAP_SHOW_EXT);
-    settingsPanel.add(showExternalStandards_, new GridBagConstraints(3, y, 1, 1, 0.0, 0.0
+    settingsPanel.add(showExternalStandards_, new GridBagConstraints(x, y, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
+    x++;
 
     if (!isGrouped_){
       markDoublePeaks_  = new JCheckBox("double peaks/missed mods");
@@ -374,7 +382,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       markDoublePeaks_.setActionCommand(CHANGE_DOUBLE_STATUS);
       markDoublePeaks_.addActionListener(this);
       markDoublePeaks_.setToolTipText(TooltipTexts.HEATMAP_DOUBLE_PEAKS);
-      settingsPanel.add(markDoublePeaks_, new GridBagConstraints(4, y, 2, 1, 0.0, 0.0
+      settingsPanel.add(markDoublePeaks_, new GridBagConstraints(x, y, 2, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
     }
     
@@ -1129,7 +1137,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     		ArrayList<Integer> rows = heatmap_.getAllRowsOfSameSumComposition(analyteRow);
     		analyteList += String.format("%s (RT=%s min)", 
     				heatmap_.getMolecularSpeciesLevelName(analyteRow), heatmap_.getRetentionTime(analyteRow));
-    		if (!((String)getShowOption().getSelectedItem()).equalsIgnoreCase(HeatMapDrawing.DISPLAY_OPTION_SUM_COMP))
+    		if (!getSelectedShowOption().equalsIgnoreCase(HeatMapDrawing.DISPLAY_OPTION_SUM_COMP))
     			analyteList += String.format(", this sum composition contains %s identifications at the molecular species level, which will be deleted as well", rows.size());
     		if (rows.size() > 0)
     		{
@@ -1446,9 +1454,11 @@ public class HeatMapDrawing extends JPanel implements ActionListener
 //    return !(this.showInternalStandards_.isSelected());
 //  }
   
-  public JComboBox<String> getShowOption()
+  public String getSelectedShowOption()
 	{
-		return showOption_;
+  	if (showOption_ == null)
+  		return DISPLAY_OPTION_SUM_COMP;
+  	return (String)showOption_.getSelectedItem();
 	}
 
 	private class SelectionItemListener implements java.awt.event.ItemListener

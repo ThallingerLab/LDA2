@@ -108,7 +108,7 @@ public class LipidomicsHeatMap
   public LipidomicsHeatMap(HeatMapDrawing parent) throws CalculationNotPossibleException
   {
   	this.isMarkDoublePeaks_ = parent.isMarkDoublePeaks();
-  	this.isSumCompOnly_ = ((String)parent.getShowOption().getSelectedItem()).equalsIgnoreCase(HeatMapDrawing.DISPLAY_OPTION_SUM_COMP);
+  	this.isSumCompOnly_ = parent.getSelectedShowOption().equalsIgnoreCase(HeatMapDrawing.DISPLAY_OPTION_SUM_COMP);
   	this.sampleNames_ = parent.getExperimentNames();
   	this.heatMapRows_ = computeRows(parent);
     this.analyteNames_ = computeAnalyteNames();

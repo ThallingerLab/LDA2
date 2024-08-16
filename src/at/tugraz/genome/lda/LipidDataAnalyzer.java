@@ -7452,18 +7452,21 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       resultsViewTabs.setToolTipTextAt(1, TooltipTexts.TABS_RESULTS_BARCHART+molGroup_+"</html>");
       if (groupsPanel_.getGroups().size()>0){
         Hashtable<String,Hashtable<String,ResultCompVO>> groupedResultsOfOneGroup = analysisModule_.getGroupedResults().get(molGroup_);
-        JPanel groupPanel = new JPanel();
-        groupPanel.setLayout(new BorderLayout());
         
         HeatMapDrawing groupDrawing = new HeatMapDrawing(groupedResultsOfOneGroup, groupsPanel_.getGroups(),molNames, isLookup,esLookup, resultStatus_,LipidDataAnalyzer.this,molGroup_,drawing, 
         		displaySettings,selectionSettings,combinedChartSettings,exportSettingsGroup_,analysisModule_);
         
         JScrollPane groupScrollPane = new JScrollPane(groupDrawing);
+        groupScrollPane.getViewport().getView().setBackground(Color.GRAY);
         int[] groupWidthAndHeight = getScrollPaneWidthAndHeight(groupDrawing);
-        scrollPane.setPreferredSize(new Dimension(groupWidthAndHeight[0], groupWidthAndHeight[1]));
+        groupScrollPane.setPreferredSize(new Dimension(groupWidthAndHeight[0], groupWidthAndHeight[1]));
         groupHeatmaps_.put(molGroup_, groupDrawing);
-        groupPanel.add(groupScrollPane,BorderLayout.WEST);
-        resultsViewTabs.addTab("Group-Heatmap", groupPanel);
+        
+        JSplitPane groupSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, groupScrollPane, new JScrollPane(groupDrawing.getSettingsPanel()));
+        groupSplitPane.setOneTouchExpandable(true);
+        groupSplitPane.setDividerLocation(640);
+        
+        resultsViewTabs.addTab("Group-Heatmap", groupSplitPane);
         resultsViewTabs.setToolTipTextAt(2, TooltipTexts.TABS_RESULTS_HEATMAP_GROUP+molGroup_+"</html>");
         JPanel groupBarChartPanel = new JPanel();
         resultsViewTabs.addTab("Group bar-chart", groupBarChartPanel);
