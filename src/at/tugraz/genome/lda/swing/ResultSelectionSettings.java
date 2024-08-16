@@ -30,12 +30,15 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.Hashtable;
 import java.util.Vector;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JDialog;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -60,8 +63,10 @@ public class ResultSelectionSettings extends JDialog implements ActionListener
 //  private Vector<ActionListener> parents_;
   
   JButton button_;
+  boolean isOpen_ = false;
   
   public ResultSelectionSettings(String title, Vector<String> moleculeNames, boolean selected){
+  	super(new JFrame(), title);
     moleculeNames_ = moleculeNames;
 //    parents_ = new Vector<ActionListener>();
     checkboxes_ = new Hashtable<String,JCheckBox>();
@@ -72,11 +77,6 @@ public class ResultSelectionSettings extends JDialog implements ActionListener
     int titleColSpan = moleculeNames.size();
     if (titleColSpan>columns_)
       titleColSpan = columns_;
-    if (title!=null&&title.length()>0){
-      JLabel titleLabel = new JLabel(title);
-      this.add(titleLabel, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 2, 2, 2), 0, 0));
-    }
     
     JPanel moleculeSelection = new JPanel(new GridBagLayout());
     int rows = moleculeNames_.size()/columns_;
@@ -122,9 +122,32 @@ public class ResultSelectionSettings extends JDialog implements ActionListener
     button_.setActionCommand("AcceptDisplaySettings");
     buttonPanel.add(button_);
     setVisible(false);
-    setDefaultCloseOperation(DISPOSE_ON_CLOSE );
+    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE );
+    
+    this.addWindowListener(new WindowAdapter() {
+    	public void windowClosing(WindowEvent we) {
+    		close();
+    	}
+    });
+    
     pack(); 
-
+  }
+  
+  public void close()
+  {
+  	this.setVisible(false);
+  	isOpen_ = false;
+  }
+  
+  public void open()
+  {
+  	this.setVisible(true);
+  	isOpen_ = true;
+  }
+  
+  public boolean isOpen()
+  {
+  	return this.isOpen_;
   }
   
   public void addActionListener(ActionListener parent){
