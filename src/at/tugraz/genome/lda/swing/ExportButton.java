@@ -33,6 +33,8 @@ import java.awt.event.MouseListener;
 import javax.swing.JButton;
 import javax.swing.border.LineBorder;
 
+import at.tugraz.genome.lda.TooltipTexts;
+
 /**
  * 
  * @author Juergen Hartler
@@ -42,12 +44,12 @@ public class ExportButton extends JButton implements MouseListener
 {
   private static final long serialVersionUID = 211052889655909533L;
 
-  public ExportButton(String name,String actionCommand, Color fontColor, Color bkgrnd, ActionListener parent) {
+  public ExportButton(String name,String actionCommand, Color fontColor, Color bkgrnd, String toolTips, ActionListener parent) {
     super(name);
     setForeground(fontColor);
     setActionCommand(actionCommand);
     addActionListener(parent);
-    Font textFont = new Font("Helvetica",Font.BOLD, 9);
+    Font textFont = new Font("Helvetica",Font.BOLD, 12);
     //setFont(getFont().deriveFont(10f));
     setFont(textFont);
     setMargin(new Insets(1,5,1,5));
@@ -62,6 +64,7 @@ public class ExportButton extends JButton implements MouseListener
     this.addMouseListener(this);
     this.setFocusPainted(false);
     this.setContentAreaFilled(false);
+    this.setToolTipText(toolTips);
   }
   
   public void mouseEntered(MouseEvent e) {

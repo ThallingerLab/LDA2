@@ -41,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.analysis.exception.CalculationNotPossibleException;
+import at.tugraz.genome.lda.swing.HeatMapDrawing;
 import at.tugraz.genome.lda.utils.DoubleCalculator;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.ResultAreaVO;
@@ -96,6 +97,7 @@ public class LipidomicsHeatMap
   protected SampleLookup lookup_;
   private ArrayList<HeatMapRow> heatMapRows_;
   private boolean isMarkDoublePeaks_;
+  private boolean isSumCompOnly_;
   
   protected boolean ignorePlatformSettings_;
 
@@ -103,16 +105,15 @@ public class LipidomicsHeatMap
   public final static Color ATTENTION_COLOR_NOT_ALL_MODS = new Color(51,153,255);
   public final static Color ATTENTION_DOUBLE_AND_NOT_ALL_MODS = new Color(204,153,255);
   
-  public LipidomicsHeatMap(Hashtable<String,Hashtable<String,ResultCompVO>> resultsOfOneGroup, 
-  		Vector<String> experimentNames, SampleLookup lookup, Vector<String> moleculeNames,
-  		int maxIsotope, ResultDisplaySettingsVO settingVO, boolean isMarkDoublePeaks) throws CalculationNotPossibleException
+  public LipidomicsHeatMap(HeatMapDrawing parent) throws CalculationNotPossibleException
   {
-  	this.isMarkDoublePeaks_ = isMarkDoublePeaks;
-  	this.sampleNames_ = experimentNames;
-  	this.heatMapRows_ = computeRows(resultsOfOneGroup, moleculeNames, maxIsotope, settingVO);
+  	this.isMarkDoublePeaks_ = parent.isMarkDoublePeaks();
+  	this.isSumCompOnly_ = parent.getSelectedShowOption().equalsIgnoreCase(HeatMapDrawing.DISPLAY_OPTION_SUM_COMP);
+  	this.sampleNames_ = parent.getExperimentNames();
+  	this.heatMapRows_ = computeRows(parent);
     this.analyteNames_ = computeAnalyteNames();
     this.gradient_ = this.createThreeColGradientImage(this.defaultNrOfGradientPixels_);
-    this.lookup_ = lookup;
+    this.lookup_ = parent.getHeatMapListener();
     this.ignorePlatformSettings_ = false;
   }
   
@@ -121,7 +122,7 @@ public class LipidomicsHeatMap
   	ArrayList<String> analyteNames = new ArrayList<String>();
   	for (HeatMapRow row : heatMapRows_)
     {
-  		analyteNames.add(row.getAnalyteName());
+  		analyteNames.add(row.getAnalyteName(isSumCompOnly_));
     }
   	return analyteNames;
   }
@@ -136,26 +137,32 @@ public class LipidomicsHeatMap
    * @return
    * @throws CalculationNotPossibleException
    */
-  private ArrayList<HeatMapRow> computeRows(Hashtable<String,Hashtable<String,ResultCompVO>> resultsOfOneGroup,
-      Vector<String> moleculeNames, int maxIsotope, ResultDisplaySettingsVO settingVO) throws CalculationNotPossibleException
+  private ArrayList<HeatMapRow> computeRows(HeatMapDrawing parent) throws CalculationNotPossibleException
   {
+  	Vector<String> moleculeNames = parent.getSelectedMoleculeNames();
+  	Integer maxIsotope = Integer.parseInt((String)parent.getMaxIsotopes().getSelectedItem());
+  	
+  	
   	ArrayList<HeatMapRow> rows = new ArrayList<HeatMapRow>();
     for (int j=0; j!=moleculeNames.size();j++)
     {
     	String sumCompositionName = moleculeNames.get(j);
-    	Hashtable<String,ResultCompVO> resultsOfOneSumComp = resultsOfOneGroup.get(sumCompositionName);
-    	Hashtable<String,ArrayList<Double>> medianValues = computeMedianAreaAtMolSpeciesLevel(resultsOfOneSumComp, settingVO, maxIsotope);
+    	Hashtable<String,ResultCompVO> resultsOfOneSumComp = parent.getResultsOfOneGroup().get(sumCompositionName);
+    	Hashtable<String,ArrayList<Double>> medianValues = computeMedianAreaAtMolSpeciesLevel(resultsOfOneSumComp, parent.getSettingsVO(), maxIsotope);
     	ResultCompVO dummyCompVO = new ResultCompVO();
     	
-    	HeatMapRow rowSumComp = computeHeatMapRow(ResultCompVO.SUM_COMPOSITION, medianValues, sumCompositionName, settingVO, resultsOfOneSumComp, maxIsotope, dummyCompVO);
+    	HeatMapRow rowSumComp = computeHeatMapRow(ResultCompVO.SUM_COMPOSITION, medianValues, sumCompositionName, parent.getSettingsVO(), resultsOfOneSumComp, maxIsotope, dummyCompVO);
     	rows.add(rowSumComp);
     	
-    	for (String name : medianValues.keySet())
+    	if (!isSumCompOnly_)
     	{
-    		if (name.equals(ResultCompVO.SUM_COMPOSITION)) continue;
-    		HeatMapRow row = computeHeatMapRow(name, medianValues, sumCompositionName, settingVO, resultsOfOneSumComp, maxIsotope, dummyCompVO);
-    		row.setAttentionValues(rowSumComp.getAttentionValues());
-    		rows.add(row);
+    		for (String name : medianValues.keySet())
+      	{
+      		if (name.equals(ResultCompVO.SUM_COMPOSITION)) continue;
+      		HeatMapRow row = computeHeatMapRow(name, medianValues, sumCompositionName, parent.getSettingsVO(), resultsOfOneSumComp, maxIsotope, dummyCompVO);
+      		row.setAttentionValues(rowSumComp.getAttentionValues());
+      		rows.add(row);
+      	}
     	}
     }
     return rows;
@@ -387,12 +394,11 @@ public class LipidomicsHeatMap
 //    expressionGraphics.drawString(intermediate,this.pictureIndent_+((imageSizeX-2*this.pictureIndent_)*coordinate)/this.defaultNrOfGradientPixels_-textWidth/2,textYPosition);    
   }
   
-  
   public BufferedImage createImage() {
     return this.createImage(null);
   }
   
-  public BufferedImage createImage(Graphics2D extGraphics) 
+  public BufferedImage createImage(Graphics2D extGraphics)
   {
     BufferedImage dummyImage = new BufferedImage(1000,1000,BufferedImage.TYPE_3BYTE_BGR);
     Font descriptionFont = new Font("Dialog",Font.PLAIN, 9);
@@ -410,7 +416,7 @@ public class LipidomicsHeatMap
     int annotationWidth = 0;
     for (HeatMapRow row : heatMapRows_)
     {
-    	int width = descriptionFontMetrics.stringWidth(row.getAnalyteName());
+    	int width = descriptionFontMetrics.stringWidth(row.getAnalyteName(isSumCompOnly_));
     	if (width>annotationWidth){
         annotationWidth = width;
       } 
@@ -518,7 +524,7 @@ public class LipidomicsHeatMap
     int textHeight = descriptionFontMetrics.getHeight();
     for (int i=0; i<this.heatMapRows_.size(); i++)
     {
-    	String analyteName = this.heatMapRows_.get(i).getAnalyteName();
+    	String analyteName = this.heatMapRows_.get(i).getAnalyteName(isSumCompOnly_);
     	int textWidth = descriptionFontMetrics.stringWidth(analyteName);
       if (textWidth>analyteTextWidthMax_)
         analyteTextWidthMax_ = textWidth;
@@ -1097,7 +1103,7 @@ public class LipidomicsHeatMap
 		private Hashtable<String,Double> relativeValues_; //expname to rel value
 		private Hashtable<String,Double> molecularSpeciesContribution_;
 		private final static String RT_DELIMITER = "_";
-		private final static String STANDARD = "std";
+		private final static String STANDARD = "x";
 		
 		/**
 		 * 
@@ -1152,8 +1158,9 @@ public class LipidomicsHeatMap
 	        + yoffset, heatRectWidth_ - 2, heatRectHeight_ - 2);
 	  }
 	  
-	  private String getAnalyteName()
+	  private String getAnalyteName(boolean original)
 	  {
+	  	if (original) return getOriginalAnalyteName();
 	  	String delimiter = " ... ";
 	  	String rtGroup = getRtGroup().equalsIgnoreCase(STANDARD) ? delimiter : String.format("%s%s min %s", delimiter, getRtGroup(), delimiter);
 	  	return String.format("%s%s%s", getSumCompositionName(), rtGroup, getMolecularSpeciesName());
@@ -1168,7 +1175,7 @@ public class LipidomicsHeatMap
 		private String extractSumCompositionName(String name)
 		{
 			String nameString = name;
-			if (name.contains(RT_DELIMITER)) //if it is an internal or external standard, it won't contain a retention time
+			if (name.contains(RT_DELIMITER)) //if it is an internal or external standard, it is shotgun data or hits with different RTs are not shown separately, it won't contain a retention time
 			{
 				nameString = name.substring(0, name.indexOf(RT_DELIMITER));
 			}

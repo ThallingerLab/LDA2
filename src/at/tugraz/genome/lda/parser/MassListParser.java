@@ -236,11 +236,11 @@ public class MassListParser
    * @param quantFile File path of the Quant File
    * @param minusTime Retention time before tolerance
    * @param plusTime Retention time after tolerance
-   * @param amountOfIsotopes Number of isotopes that shall be quantified
+   * @param amountOfIsotopes_ Number of isotopes that shall be quantified
    * @param isotopesMustMatch Number of isotopes that must match the theoretical distribution
-   * @param searchUnknownTime Search unknown retention time
+   * @param searchUnknownTime_ Search unknown retention time
    * @param basePeakCutoff The relative cutoff value in per mille
-   * @param rtShift Retention time shift
+   * @param rtShift_ Retention time shift
    * @param lowestRetTime Lowest retention time in the chrom files
    * @param highestRetTime Highest retention time in the chrom files
    * @param respectMassShift Take a mass shift range into account
@@ -709,11 +709,11 @@ public class MassListParser
    * @param quantFile the Alex123 file or the directory containing the Alex123 files
    * @param minusTime time tolerance in negative direction
    * @param plusTime time tolerance in positive direction
-   * @param amountOfIsotopes the number of isotopes to be quantified
+   * @param amountOfIsotopes_ the number of isotopes to be quantified
    * @param isotopesMustMatch the number of isotopes that have to matcht the theoretical isotopic distribution 
-   * @param searchUnknownTime true if analytes have to be searched where no retention time is present
+   * @param searchUnknownTime_ true if analytes have to be searched where no retention time is present
    * @param basePeakCutoff a relative cutoff value
-   * @param rtShift shift of retention times in relation to the entered ones
+   * @param rtShift_ shift of retention times in relation to the entered ones
    * @param lowestRetTime lower hard limit for the retention time
    * @param highestRetTime upper hard limit for the retention time
    * @param positiveIonMode should the targets ion positive or in negative ion mode be used for quantitation

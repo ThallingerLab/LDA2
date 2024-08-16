@@ -14942,7 +14942,7 @@ public void testTabFile() throws Exception {
             progressBatchBar.setValue(0);
             BatchQuantThread batchQuantThread_ = new BatchQuantThread(batchQuantTable, batchQuantTableModel,progressBatchBar, 
               quantifyingBatchLabel, minusTimeTol,plusTimeTol,amountOfIsotopes,isotopesMustMatch,searchUnknownBatchTime, cutoff, 
-                rtShift, nrProcessors,ionMode,true);
+                rtShift, 1, nrProcessors,ionMode,true);
             batchQuantThread_.start();
           }else{
             if (rawFiles.size()==0){
