@@ -107,9 +107,13 @@ public class MassListExporter
 			{
 				exportLDAFormat(workbook);
 			}
-			else if (exportFormat_.equals(MassListCreatorPanel.EXPORT_FORMAT_COMPOUND_DISCOVERER))
+			else if (exportFormat_.equals(MassListCreatorPanel.EXPORT_FORMAT_LONG_LIST))
 			{
-				exportCDFormat(workbook);
+				exportLongListFormat(workbook);
+			}
+			else if (exportFormat_.equals(MassListCreatorPanel.EXPORT_FORMAT_SHORT_LIST))
+			{
+				exportShortListFormat(workbook);
 			}
 			
 			workbook.write(out);
@@ -121,7 +125,7 @@ public class MassListExporter
 	}
 	
 	
-	private void exportCDFormat(XSSFWorkbook workbook) throws IOException, RulesException, SheetNotPresentException, ChemicalFormulaException
+	private void exportLongListFormat(XSSFWorkbook workbook) throws IOException, RulesException, SheetNotPresentException, ChemicalFormulaException
 	{
 		Sheet sheet = workbook.createSheet("Mass List");
 		XSSFCellStyle headerStyle = ExcelUtils.getMassListHeaderStyle(workbook);
@@ -185,6 +189,64 @@ public class MassListExporter
 	                cell.setCellValue(massAdduct);
 								}
 	            }
+	          }
+					}
+				}
+			}
+		}
+	}
+	
+	private void exportShortListFormat(XSSFWorkbook workbook) throws IOException, RulesException, SheetNotPresentException, ChemicalFormulaException
+	{
+		Sheet sheet = workbook.createSheet("Mass List");
+		XSSFCellStyle headerStyle = ExcelUtils.getMassListHeaderStyle(workbook);
+		List<String> headerTitles = createCDHeaderTitles();
+		createHeader(0, sheet, headerTitles, headerStyle);
+		int rowCount = 0;
+		Row row;
+    Cell cell;
+		for (LipidClassVO lClassVO : lipidClasses_)
+		{
+			ArrayList<FattyAcidVO> chainsFA = new ArrayList<FattyAcidVO>();
+	  	ArrayList<FattyAcidVO> chainsLCB = new ArrayList<FattyAcidVO>();
+	    if (lClassVO.getNumberOfFAChains() > 0)
+	    {
+	    	FALibParser faParser = new FALibParser(lClassVO.getFAChainListPath());
+		    faParser.parseFile();
+	    	chainsFA = faParser.getFattyAcidSet(false); //do not include the oxstate, as that is currently buggy
+	    }
+	    if (lClassVO.getNumberOfLCBChains() > 0)
+	    {
+	    	SPBLibParser faParser = new SPBLibParser(new File(lClassVO.getLCBChainListPath()));
+		    faParser.parseFile();
+	    	chainsLCB = faParser.getFattyAcidSet(false); //do not include the oxstate, as that is currently buggy
+	    }
+			
+	    for (int i=lClassVO.getMinChainC(); i<=lClassVO.getMaxChainC(); i++)
+			{
+				for (int j=lClassVO.getMinChainDB(); j<=lClassVO.getMaxChainDB(); j++)
+				{
+					for (int k=lClassVO.getOhRangeFrom(); k<=lClassVO.getOhRangeTo(); k++)
+					{
+						ArrayList<ArrayList<FattyAcidVO>> filtered = getPossCombis(lClassVO.getNumberOfFAChains(),lClassVO.getNumberOfLCBChains(),i,j,k,
+								chainsFA,chainsLCB, new ArrayList<FattyAcidVO>()); 
+						if (filtered.isEmpty()) continue; //no combinations possible
+						
+						Hashtable<String,Hashtable<String,Integer>> prefixElements = new Hashtable<String,Hashtable<String,Integer>>();
+						prefixElements = computeElementsFromChains(prefixElements,lClassVO,filtered);
+						for (String label : prefixElements.keySet())
+	          {
+							Hashtable<String,Integer> elements = prefixElements.get(label);
+							double massNeutral = computeNeutralMass(elements);
+							row = sheet.createRow(++rowCount);
+          		cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_CD_CLASS),HSSFCell.CELL_TYPE_STRING);
+              cell.setCellValue(lClassVO.getLipidClass());
+              cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_CD_SPECIES),HSSFCell.CELL_TYPE_STRING);
+              cell.setCellValue(buildLipidSpeciesString(lClassVO, i,j,k));
+              cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_CD_FORMULA),HSSFCell.CELL_TYPE_STRING);
+              cell.setCellValue(StaticUtils.getFormulaInHillNotation(elements, false));
+              cell = row.createCell(headerTitles.indexOf(MassListExporter.HEADER_CD_MASS_NEUTRAL),HSSFCell.CELL_TYPE_NUMERIC);
+              cell.setCellValue(massNeutral);
 	          }
 					}
 				}

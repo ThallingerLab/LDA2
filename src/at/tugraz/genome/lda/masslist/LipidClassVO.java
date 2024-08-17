@@ -88,6 +88,28 @@ public class LipidClassVO
 				other.getMaxChainC(), other.getMinChainDB(), other.getMaxChainDB(), other.getNumberOfFAChains(), other.getNumberOfLCBChains(), other.getFAChainList(), other.getLCBChainList());
 	}
 
+	public LipidClassVO(String faChainList, String lcbChainList)
+	{
+		this.lClass_ = null;
+		this.adductInsensitiveRtFilter_ = true;
+		this.pickBestMatchBySpectrumCoverage_ = false;
+		this.ohRangeFrom_ = 0;
+		this.ohRangeTo_ = 0;
+		this.rtRangeFrom_ = -1.0;
+		this.rtRangeTo_ = -1.0;
+		this.adducts_ = new ArrayList<AdductVO>();
+		this.headGroupFormulaString_ = null;
+		this.headgroupFormula_ = null;
+		this.minChainC_ = 1;
+		this.maxChainC_ = 50;
+		this.minChainDB_ = 0;
+		this.maxChainDB_ = 12;
+		this.numberOfFAChains_ = 2;
+		this.numberOfLCBChains_ = 0;
+		this.faChainList_ = faChainList;
+		this.lcbChainList_ = lcbChainList;
+	}
+
 	public String getLipidClass()
 	{
 		return lClass_;

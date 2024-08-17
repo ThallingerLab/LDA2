@@ -396,7 +396,11 @@ public class TooltipTexts
   public final static String MASSLIST_CLASS_DELETE= "<html>Delete this lipid (sub)class definition.</html>";
   public final static String MASSLIST_CLASS_OVERRIDE= "<html>Override the existing lipid (sub)class definition.</html>";
   public final static String MASSLIST_CLASS_SAVE_NEW= "<html>Export this new lipid (sub)class definition.</html>";
+  public final static String MASSLIST_CLASS_OVERRIDE_ALL= "<html>Apply all these settings to all listed lipid (sub)class definitions.</html>";
+  public final static String MASSLIST_CLASS_APPLY= "<html>Apply this setting to all listed lipid (sub)class definitions.</html>";
+  public final static String MASSLIST_CLASS_EXPORT_OPTION= "<html>Select which group of lipid (sub)class definitions should be exported.</html>";
   
+  public final static String MASSLIST_EDIT_ADDUCT = "<html>Add, remove or edit adducts.</html>"; 
   public final static String MASSLIST_ADDUCT_NAME = "<html>This defines the name of the adduct.<br/>" +
   		"In combination with the respective lipid (sub)class name this determines the filename of the MS/MS fragmentation rules file <br/>" +
   		"that LDA will look for in the folder 'fragRules' in the installation directory. <br/>" +
