@@ -35,7 +35,6 @@ public class LipidClassVO
 	private String lClass_;
 	private boolean adductInsensitiveRtFilter_;
 	private boolean pickBestMatchBySpectrumCoverage_;
-	private int ohNumber_;
 	private int ohRangeFrom_;
 	private int ohRangeTo_;
 	private double rtRangeFrom_;
@@ -54,7 +53,7 @@ public class LipidClassVO
 	
 	
 	public LipidClassVO(String lClass, boolean adductInsensitiveRtFilter,
-			boolean pickBestMatchBySpectrumCoverage, int ohNumber, int ohRangeFrom,
+			boolean pickBestMatchBySpectrumCoverage, int ohRangeFrom,
 			int ohRangeTo, double rtRangeFrom, double rtRangeTo, 
 			ArrayList<AdductVO> adducts, String headgroupFormula, int minChainC,
 			int maxChainC, int minChainDB, int maxChainDB, int numberOfFAChains,
@@ -64,7 +63,6 @@ public class LipidClassVO
 		this.lClass_ = lClass;
 		this.adductInsensitiveRtFilter_ = adductInsensitiveRtFilter;
 		this.pickBestMatchBySpectrumCoverage_ = pickBestMatchBySpectrumCoverage;
-		this.ohNumber_ = ohNumber;
 		this.ohRangeFrom_ = ohRangeFrom;
 		this.ohRangeTo_ = ohRangeTo;
 		this.rtRangeFrom_ = rtRangeFrom;
@@ -84,7 +82,8 @@ public class LipidClassVO
 
 	public LipidClassVO(LipidClassVO other) throws ChemicalFormulaException
 	{
-		this(other.getLipidClass(), other.isAdductInsensitiveRtFilter(), other.isPickBestMatchBySpectrumCoverage(), other.getOhNumber(), other.getOhRangeFrom(), other.getOhRangeTo(),
+		this(other.getLipidClass(), other.isAdductInsensitiveRtFilter(), other.isPickBestMatchBySpectrumCoverage(), //other.getOhNumber(), 
+				other.getOhRangeFrom(), other.getOhRangeTo(),
 				other.getRtRangeFrom(), other.getRtRangeTo(), other.getAdducts(), other.getHeadGroupFormulaString(), other.getMinChainC(),
 				other.getMaxChainC(), other.getMinChainDB(), other.getMaxChainDB(), other.getNumberOfFAChains(), other.getNumberOfLCBChains(), other.getFAChainList(), other.getLCBChainList());
 	}
@@ -108,7 +107,7 @@ public class LipidClassVO
 
 	public int getOhNumber()
 	{
-		return ohNumber_;
+		return getOhRangeFrom();
 	}
 
 
@@ -219,11 +218,6 @@ public class LipidClassVO
 			boolean pickBestMatchBySpectrumCoverage)
 	{
 		this.pickBestMatchBySpectrumCoverage_ = pickBestMatchBySpectrumCoverage;
-	}
-
-	public void setOhNumber(int ohNumber)
-	{
-		this.ohNumber_ = ohNumber;
 	}
 
 	public void setOhRangeFrom(int ohRangeFrom)

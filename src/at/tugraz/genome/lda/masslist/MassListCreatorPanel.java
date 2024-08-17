@@ -100,7 +100,6 @@ public class MassListCreatorPanel extends JPanel
 	private final static String COMMAND_CLASS_CHAIN_C_MIN= "classChainMin";
 	private final static String COMMAND_CLASS_DB_MIN= "classDBMin";
 	private final static String COMMAND_CLASS_RT_MIN= "classRtMin";
-	private final static String COMMAND_CLASS_OH= "classOH";
 	private final static String COMMAND_CLASS_OH_MIN= "classOhMin";
 	private final static String COMMAND_CLASS_ADDUCT_INSENSITIVE_RT_FILTER= "classRTFilter";
 	private final static String COMMAND_CLASS_PICK_BEST= "classPickBest";
@@ -147,7 +146,6 @@ public class MassListCreatorPanel extends JPanel
 	private JComboBox<String> exportedFormat_;
 	private JTextField numberLCBChainField_;
 	private JComboBox<String> lcbChainList_;
-	private JTextField ohField_;
 	
 	public MassListCreatorPanel()
 	{
@@ -340,10 +338,6 @@ public class MassListCreatorPanel extends JPanel
 		addLabeledJListScrollPane(panel, 5, new JLabel("Selected adducts (hold CNTR for multiple selection): "), 
 				instantiateJListScrollPane(COMMAND_CLASS_ADDUCT_LIST, adductListNames_, vo, findSelectedAdductListIndices(vo)),
 				TooltipTexts.MASSLIST_CLASS_ADDUCT_SELECTION);
-		
-		ohField_ = instantiateJTextField(COMMAND_CLASS_OH, String.valueOf(vo.getOhNumber()));
-		ohField_.setEnabled(vo.getNumberOfLCBChains() > 0);
-		addLabeledTextField(panel, 6, new JLabel("Sphingolipid chain OH number: "), ohField_, TooltipTexts.MASSLIST_CLASS_OH_NUMBER);
 		addLabeledRange(panel, 7, new JLabel("Chain OH / oxidation range: "), 
 				instantiateJTextFieldRange(COMMAND_CLASS_OH_MIN, String.valueOf(vo.getOhRangeFrom()), String.valueOf(vo.getOhRangeTo()), 
 				PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH), TooltipTexts.MASSLIST_CLASS_OH_RANGE);
@@ -357,8 +351,6 @@ public class MassListCreatorPanel extends JPanel
 		addLabeledRange(panel, 10, new JLabel("Retention time (RT) range in minutes: "), 
 				instantiateJTextFieldRange(COMMAND_CLASS_RT_MIN, String.valueOf(vo.getRtRangeFrom()), String.valueOf(vo.getRtRangeTo()), 
 				PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH), TooltipTexts.MASSLIST_CLASS_RT_RANGE);
-//		addLabeledRange(panel, 11, new JLabel("Oxidized lipid Ox range (optional): "), 
-//				instantiateJTextFieldRange(COMMAND_CLASS_OX_MIN, String.valueOf(vo.getOxRangeFrom()), String.valueOf(vo.getOxRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
 		JCheckBox rtFilter = instantiateCheckBox(COMMAND_CLASS_ADDUCT_INSENSITIVE_RT_FILTER, vo.isAdductInsensitiveRtFilter());
 		addLabeledCheckBox(panel, 11, new JLabel("Enable adduct insensitive RT filter: "), rtFilter, TooltipTexts.MASSLIST_CLASS_RT_FILTER);
 		JCheckBox pickBest = instantiateCheckBox(COMMAND_CLASS_PICK_BEST, vo.isPickBestMatchBySpectrumCoverage());
@@ -414,7 +406,7 @@ public class MassListCreatorPanel extends JPanel
 	  });
 		jList.setSelectedIndices(indices);
 		JScrollPane scrollPane = new JScrollPane(jList);
-		scrollPane.setPreferredSize(new Dimension(PREFERRED_DISPLAY_COMPONENT_WIDTH,50));
+		scrollPane.setPreferredSize(new Dimension(PREFERRED_DISPLAY_COMPONENT_WIDTH,80));
 		return scrollPane;
 	}
 	
@@ -808,19 +800,6 @@ public class MassListCreatorPanel extends JPanel
 				else
 					setWarningTextFieldBorder(textfield);
 				break;
-//			case COMMAND_CLASS_CHAIN_NUM:
-//				tempClass_.setNumberOfChains(0);
-//				try
-//				{
-//					int chainNum = Integer.parseInt(textfield.getText());
-//					if (chainNum > 0)
-//						setDefaultTextFieldBorder(textfield);
-//					else
-//						setWarningTextFieldBorder(textfield);
-//					tempClass_.setNumberOfChains(chainNum);
-//				}
-//				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
-//				break;
 			case COMMAND_CLASS_FA_CHAIN_NUM:
 				tempClass_.setNumberOfFAChains(0);
 				try
@@ -845,9 +824,6 @@ public class MassListCreatorPanel extends JPanel
 						setWarningTextFieldBorder(textfield);
 					tempClass_.setNumberOfLCBChains(chainNum);
 					lcbChainList_.setEnabled(chainNum > 0);
-					tempClass_.setOhNumber(chainNum > 0 ? (tempClass_.getOhNumber()>0 ? tempClass_.getOhNumber() : 2) : 0);
-					ohField_.setText(String.valueOf(tempClass_.getOhNumber()));
-					ohField_.setEnabled(chainNum > 0);
 				}
 				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
 				break;
@@ -858,19 +834,6 @@ public class MassListCreatorPanel extends JPanel
 					setDefaultTextFieldBorder(textfield);
 				}
 				catch (ChemicalFormulaException ex) {setWarningTextFieldBorder(textfield);}
-				break;
-			case COMMAND_CLASS_OH:
-				tempClass_.setOhNumber(-1);
-				try
-				{
-					int num = Integer.parseInt(textfield.getText());
-					if (num >= 0)
-						setDefaultTextFieldBorder(textfield);
-					else
-						setWarningTextFieldBorder(textfield);
-					tempClass_.setOhNumber(num);
-				}
-				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
 				break;
 				
 			default:
@@ -1058,19 +1021,7 @@ public class MassListCreatorPanel extends JPanel
 	
 	private boolean isLipidClassOxDefinitionViable()
 	{
-		//default
-		if (tempClass_.getOhNumber() == 0 && tempClass_.getOhRangeFrom() == 0 && tempClass_.getOhRangeTo() == 0)
-		{
-			return true;
-		}
-		//sphingolipids
-		else if ((tempClass_.getOhNumber() > 0 && (tempClass_.getOhRangeFrom() > 0 && tempClass_.getOhRangeFrom() < tempClass_.getOhRangeTo())
-				&& (tempClass_.getOhRangeFrom() <= tempClass_.getOhNumber() && tempClass_.getOhRangeTo() >= tempClass_.getOhNumber())))
-		{
-			return true;
-		}
-		//oxidized lipids
-		else if ((tempClass_.getOhNumber() == 0 && (tempClass_.getOhRangeFrom() >= 0 && tempClass_.getOhRangeFrom() < tempClass_.getOhRangeTo()))) 
+		if (tempClass_.getOhRangeFrom() >= 0 && tempClass_.getOhRangeFrom() <= tempClass_.getOhRangeTo()) 
 		{
 			return true;
 		}

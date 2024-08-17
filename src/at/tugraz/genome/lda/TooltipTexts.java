@@ -361,18 +361,14 @@ public class TooltipTexts
   		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>"; 
   public final static String MASSLIST_CLASS_FORMULA = "<html>This defines the chemical formula of the lipid headgroup (without chains).<br/>" +
   		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>"; 
-  public final static String MASSLIST_CLASS_OH_NUMBER = "<html>This defines the number of chain (FA and SPB) OH groups of a sphingolipid (sub)class that should be explicitly written in LDA mass list format.<br/>" +
-  		"Only masses that are possible given the chains defined in the provided chain lists are written to the list.<br/>" +
-  		"LDA computes masses for alternative total number of chain oxidation as defined by the oxidation range setting internally.<br/>" +
-  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";
   public final static String MASSLIST_CLASS_OH_RANGE = "<html>This defines the range of chain (FA and SPB) oxidation of a lipid (sub)class.<br/>" +
-  		"Only masses that are possible given the chains defined in the provided chain lists are written to the list.<br/>" +
+  		"Only masses that are possible given the chains defined in the provided chain lists are exported.<br/>" +
   		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";
   public final static String MASSLIST_CLASS_C_RANGE = "<html>This defines the range of chain (FA and SPB) C atoms that should be exported.<br/>" +
-  		"Only masses that are possible given the chains defined in the provided chain lists are written to the list.<br/>" +
+  		"Only masses that are possible given the chains defined in the provided chain lists are exported.<br/>" +
   		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";
   public final static String MASSLIST_CLASS_DB_RANGE = "<html>This defines the range of chain (FA and SPB) double bonds that should be exported.<br/>" +
-  		"Only masses that are possible given the chains defined in the provided chain lists are written to the list.<br/>" +
+  		"Only masses that are possible given the chains defined in the provided chain lists are exported.<br/>" +
   		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";
   public final static String MASSLIST_CLASS_RT_RANGE = "<html>This defines the retention time range setting for the LDA mass list.<br/>" +
   		"If a range is defined, LDA will only consider IDs within the defined RT range.<br/>" +

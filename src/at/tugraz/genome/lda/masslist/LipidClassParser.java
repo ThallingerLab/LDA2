@@ -40,7 +40,6 @@ public class LipidClassParser
 	public final static String LIPID_CLASS_NAME = "name";
 	public final static String LIPID_CLASS_RT_FILTER = "adductInsensitiveRtFilter";
 	public final static String LIPID_CLASS_PICK_BEST = "pickBestMatchBySpectrumCoverage";
-	public final static String LIPID_CLASS_OH_NUMBER = "OH_number";
 	public final static String LIPID_CLASS_OH_RANGE_FROM = "OH_range_from";
 	public final static String LIPID_CLASS_OH_RANGE_TO = "OH_range_to";
 	public final static String LIPID_CLASS_RT_RANGE_FROM = "RT_range_from";
@@ -84,7 +83,6 @@ public class LipidClassParser
 					String name = properties.getProperty(LIPID_CLASS_NAME, null);
 					boolean adductInsensitiveRtFilter = Boolean.parseBoolean(properties.getProperty(LIPID_CLASS_RT_FILTER, null));
 					boolean pickBestMatchBySpectrumCoverage = Boolean.parseBoolean(properties.getProperty(LIPID_CLASS_PICK_BEST, null));
-					int ohNumber = Integer.parseInt(properties.getProperty(LIPID_CLASS_OH_NUMBER, null));
 					int ohRangeFrom = Integer.parseInt(properties.getProperty(LIPID_CLASS_OH_RANGE_FROM, null));
 					int ohRangeTo = Integer.parseInt(properties.getProperty(LIPID_CLASS_OH_RANGE_TO, null));
 					double rtRangeFrom = Double.parseDouble(properties.getProperty(LIPID_CLASS_RT_RANGE_FROM, null));
@@ -105,7 +103,7 @@ public class LipidClassParser
 						ArrayList<AdductVO> selectedAdducts = matchSelectedAdducts(adducts, fileCandidates[i].getName());
 						
 						LipidClassVO vo = new LipidClassVO(name,
-								adductInsensitiveRtFilter, pickBestMatchBySpectrumCoverage, ohNumber, ohRangeFrom, ohRangeTo, 
+								adductInsensitiveRtFilter, pickBestMatchBySpectrumCoverage, ohRangeFrom, ohRangeTo, 
 								rtRangeFrom, rtRangeTo, selectedAdducts, headgroupFormula,
 								minChainC, maxChainC, minChainDB, maxChainDB, numberOfFAChains, numberOfLCBChains, faChainList, lcbChainList);
 						

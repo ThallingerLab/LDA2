@@ -50,11 +50,9 @@ public class LipidClassExporter
 			out.write("## When set to 'true', the parameter 'pickBestMatchBySpectrumCoverage' the best matches are picked from duplicates (same lipid class and scan number) by spectrum coverage.\n".getBytes());
 			out.write(String.format("%s=%s\n", LipidClassParser.LIPID_CLASS_PICK_BEST, toExport_.isPickBestMatchBySpectrumCoverage()).getBytes());
 			out.write("## Number of 'OH groups' present in the fatty acyl (FA) and long chain base (LCB) chains of this lipid class, \n".getBytes());
-			out.write("## where the parameter 'OH_number' is specific for sphingolipids and defines which number of 'OH groups' the values should be explicitly written in the mass list for \n".getBytes());
 			out.write("## and 'OH_range_from' and 'OH_range_to' define the lower and upper limit of the number of 'OH groups', respectively, which the algorithm identifies compounds for. \n".getBytes());
 			out.write("## Which number is chosen for 'OH_number' from the biologically relevant range for sphingolipids does not influence the algorithm. \n".getBytes());
 			out.write("## ATTENTION: this parameter should only be used for sphingolipids. \n".getBytes());
-			out.write(String.format("%s=%s\n", LipidClassParser.LIPID_CLASS_OH_NUMBER, toExport_.getOhNumber()).getBytes());
 			out.write(String.format("%s=%s\n", LipidClassParser.LIPID_CLASS_OH_RANGE_FROM, toExport_.getOhRangeFrom()).getBytes());
 			out.write(String.format("%s=%s\n", LipidClassParser.LIPID_CLASS_OH_RANGE_TO, toExport_.getOhRangeTo()).getBytes());
 			out.write("## Optional definition of the retention time (RT) range (the lower limit is defined with 'RT_range_from' and the upper limit with 'RT_range_to') that this lipid class elutes at. \n".getBytes());
