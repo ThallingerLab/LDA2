@@ -77,8 +77,6 @@ public class QuantificationMenu extends JPanel
 	BatchQuantificationTableModel batchQuantTableModel_;
 	BatchQuantificationTable batchQuantTable_;
 	
-	
-	
 	public QuantificationMenu(boolean isBatch, LipidDataAnalyzer parent) 
 	{
 		this.setLayout(new GridBagLayout());
@@ -97,7 +95,7 @@ public class QuantificationMenu extends JPanel
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     JButton jButtonMzXMLOpen = new JButton("Select");
     jButtonMzXMLOpen.addActionListener(parent);
-    jButtonMzXMLOpen.setActionCommand("showMzxmlDirChooser");
+    jButtonMzXMLOpen.setActionCommand(isBatch ? "showMzxmlDirChooser" : "showMzxmlFileChooser");
     jButtonMzXMLOpen.setToolTipText(isBatch ? TooltipTexts.QUANTITATION_BATCH_RAW_FILE : TooltipTexts.QUANTITATION_SINGLE_RAW_FILE);
     selectionPanel.add(jButtonMzXMLOpen,new GridBagConstraints(7, y, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
@@ -109,7 +107,7 @@ public class QuantificationMenu extends JPanel
         ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     JButton jButtonQuantOpen = new JButton("Select");
     jButtonQuantOpen.addActionListener(parent);
-    jButtonQuantOpen.setActionCommand("showQuantDirChooser");
+    jButtonQuantOpen.setActionCommand(isBatch ? "showQuantDirChooser" : "showQuantFileChooser");
     jButtonQuantOpen.setToolTipText(isBatch ? TooltipTexts.QUANTITATION_BATCH_MASS_LIST : TooltipTexts.QUANTITATION_SINGLE_MASS_LIST);
     selectionPanel.add(jButtonQuantOpen,new GridBagConstraints(7, y, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
@@ -274,7 +272,7 @@ public class QuantificationMenu extends JPanel
     y++;
     startQuantification_ = new JButton("Start Quantitation");
     startQuantification_.addActionListener(parent);
-    startQuantification_.setActionCommand("startBatchQuantification");
+    startQuantification_.setActionCommand(isBatch ? "startBatchQuantification" : "startQuantification");
     startQuantification_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_START);
     this.add(startQuantification_,new GridBagConstraints(0, y, 1, 1, 0.0, 0.0
         ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
@@ -559,5 +557,16 @@ public class QuantificationMenu extends JPanel
 		this.batchQuantTable_ = batchQuantTable;
 	}
   
+	/**
+	 * Sets the batch quantification table (and table model) for the single quant menu from the batch
+	 * quant menu. This is required for switching from the single quantification menu to the batch one
+	 * (e.g. for SciEX files).
+	 * @param theBatchQuantMenu
+	 */
+	public void setBatchQuantTableForSingleQuant(QuantificationMenu theBatchQuantMenu)
+	{
+		this.batchQuantTableModel_ = theBatchQuantMenu.getBatchQuantTableModel();
+		this.batchQuantTable_ = theBatchQuantMenu.getBatchQuantTable();
+	}
   
 }

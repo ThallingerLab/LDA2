@@ -134,6 +134,8 @@ import at.tugraz.genome.lda.fragai.SpectraIdentifier;
 import at.tugraz.genome.lda.fragai.SpectraInterpreter;
 import at.tugraz.genome.lda.fragai.SpectraTextExporter;
 import at.tugraz.genome.lda.fragai.SpectrumContainer;
+import at.tugraz.genome.lda.glyco.GlycanUI;
+import at.tugraz.genome.lda.glyco.SugarSnapPanel;
 import at.tugraz.genome.lda.fragai.CombinedSpectrumContainer;
 import at.tugraz.genome.lda.interfaces.ColorChangeListener;
 import at.tugraz.genome.lda.listeners.AnnotationThresholdListener;
@@ -248,13 +250,14 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JTabbedPane mainTabs;
   private QuantificationMenu singleQuantMenu_;
   private QuantificationMenu batchQuantMenu_;
+  private JTabbedPane quantitationPane_;
   private JPanel resultsMenu_;
   private JPanel resultsPanel_;
   private JPanel settingsPanel_;
   private JPanel licensePanel_;
   private MassListCreatorPanel massListPanel_;
   private JTargetFileWizard targetFilePanel_;
-  private JPanel aIPanel_;
+  private SugarSnapPanel sugarSnapPanel_;
   
   /**
    * what do I want and need? I need to read in 
@@ -484,6 +487,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     this.createDisplayTopMenu();
     this.batchQuantMenu_ = new QuantificationMenu(true,this);
     this.singleQuantMenu_ = new QuantificationMenu(false,this);
+    this.singleQuantMenu_.setBatchQuantTableForSingleQuant(batchQuantMenu_);
     this.createResultsMenu();
     this.initL2dPanel();
     
@@ -537,6 +541,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     singleQuantificationPanel.setLayout(new BorderLayout());
     JPanel batchQuantificationPanel = new JPanel();
     batchQuantificationPanel.setLayout(new BorderLayout());
+    singleQuantificationPanel.add(singleQuantMenu_);
+    batchQuantificationPanel.add(batchQuantMenu_);
     resultsPanel_ = new JPanel();
     resultsPanel_.setLayout(new BorderLayout());
     settingsPanel_ = new JPanel();
@@ -544,26 +550,26 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     licensePanel_ = new JPanel();
     massListPanel_ = new MassListCreatorPanel();
     targetFilePanel_ = new JTargetFileWizard();
-    aIPanel_ = new JPanel();
+    sugarSnapPanel_ = new SugarSnapPanel();
     helpPanel_ = new JPanel();
     initHelpPanel();
     aboutPanel_ = new JPanel();
     initAboutPanel();
     
-    JTabbedPane quantitationPane = new JTabbedPane();
-    quantitationPane.setOpaque(true);
-    quantitationPane.setBackground(Color.decode("#EEEEEE"));
-    quantitationPane.addTab("Batch Quantitation", batchQuantificationPanel);
-    quantitationPane.setToolTipTextAt(quantitationPane.indexOfComponent(batchQuantificationPanel), TooltipTexts.TABS_MAIN_BATCH);
-    quantitationPane.addTab("Single Quantitation", singleQuantificationPanel);
-    quantitationPane.setToolTipTextAt(quantitationPane.indexOfComponent(singleQuantificationPanel), TooltipTexts.TABS_MAIN_SINGLE);
-    mainTabs.addTab("Quantitation", quantitationPane);
-    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(quantitationPane), TooltipTexts.TABS_MAIN_QUANTITATION);
+    quantitationPane_ = new JTabbedPane();
+    quantitationPane_.setOpaque(true);
+    quantitationPane_.setBackground(Color.decode("#EEEEEE"));
+    quantitationPane_.addTab("Batch Quantitation", batchQuantificationPanel);
+    quantitationPane_.setToolTipTextAt(quantitationPane_.indexOfComponent(batchQuantificationPanel), TooltipTexts.TABS_MAIN_BATCH);
+    quantitationPane_.addTab("Single Quantitation", singleQuantificationPanel);
+    quantitationPane_.setToolTipTextAt(quantitationPane_.indexOfComponent(singleQuantificationPanel), TooltipTexts.TABS_MAIN_SINGLE);
+    mainTabs.addTab("Quantitation", quantitationPane_);
+    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(quantitationPane_), TooltipTexts.TABS_MAIN_QUANTITATION);
     mainTabs.addTab("Statistical Analysis", resultsPanel_);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(resultsPanel_), TooltipTexts.TABS_MAIN_STATISTICS);
     mainTabs.addTab("Display Results", displayPanel_);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(displayPanel_), TooltipTexts.TABS_MAIN_DISPLAY);
-    if (Settings.SHOW_OMEGA_TOOLS)
+    if (Settings.SHOW_OMEGA_TOOLS || Settings.SHOW_SUGAR_SNAP)
     {
     	mainTabs.addTab("MassList Creator", massListPanel_);
       mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(massListPanel_), TooltipTexts.TABS_MAIN_MASSLIST_CREATOR);
@@ -573,14 +579,9 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     	mainTabs.addTab("LC=CL", targetFilePanel_);
       mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(targetFilePanel_), TooltipTexts.TABS_MAIN_TARGET);
     }
-    if (Settings.SHOW_AI_TOOLS)
+    if (Settings.SHOW_SUGAR_SNAP)
     {
-    	JButton startAIButton = new JButton("Start");
-    	startAIButton.setActionCommand("Start AI");
-    	startAIButton.addActionListener(this);
-    	aIPanel_.add(startAIButton);
-    	mainTabs.addTab("AI FragRule Generator", aIPanel_);
-      mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(aIPanel_), TooltipTexts.TABS_MAIN_FRAGRULE_GENERATOR);
+    	mainTabs.addTab("SugarSnap", sugarSnapPanel_);
     }
     mainTabs.addTab("Settings", settingsPanel_);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(settingsPanel_), TooltipTexts.TABS_MAIN_SETTINGS);
@@ -596,8 +597,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     mainTabs.addTab("About", aboutPanel_);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(aboutPanel_), TooltipTexts.TABS_MAIN_ABOUT);
     mainTabs.setSelectedIndex(0);
-    singleQuantificationPanel.add(singleQuantMenu_);
-    batchQuantificationPanel.add(batchQuantMenu_);
     resultTabs_= new JTabbedPane();
     resultsPanel_.add(resultTabs_,BorderLayout.CENTER);
     resultStatusPanel_ = new JPanel(new BorderLayout());
@@ -3534,8 +3533,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
             this.batchQuantMenu_.getQuantifyingPanel().setVisible(true);
             this.batchQuantMenu_.getStartQuantification().setEnabled(false);
             this.batchQuantMenu_.getSpinnerLabel().setVisible(true);
-
-            mainTabs.setSelectedIndex(1);
+            
+            quantitationPane_.setSelectedIndex(0);
             batchQuantThread_.start();
           }
         }
@@ -3632,6 +3631,14 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       batchQuantMenu_.getQuantifyingLabel().setText("Finished");
       this.batchQuantMenu_.getStartQuantification().setEnabled(true);
       batchQuantMenu_.getSpinnerLabel().setVisible(false);
+      
+      if (this.singleQuantMenu_.getProgressBar().getValue() > 0) //possible with .wiff files
+      {
+      	this.singleQuantMenu_.getProgressBar().setValue(100);
+        singleQuantMenu_.getQuantifyingLabel().setText("Finished");
+        this.singleQuantMenu_.getStartQuantification().setEnabled(true);
+        singleQuantMenu_.getSpinnerLabel().setVisible(false);
+      }
     }
 
   }
