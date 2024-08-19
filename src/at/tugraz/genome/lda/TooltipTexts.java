@@ -31,9 +31,9 @@ package at.tugraz.genome.lda;
  */
 public class TooltipTexts
 {
-	public final static String TABS_MAIN_QUANTITATION = "<html>Quantitation of experiments</html>";
-  public final static String TABS_MAIN_SINGLE= "<html>Quantitation of a single experiment</html>";
-  public final static String TABS_MAIN_BATCH = "<html>Batch quantitation of experiments</html>";
+  
+  public final static String TABS_MAIN_QUANTITATION = "<html>Quantitation of a single experiment</html>";
+  public final static String TABS_MAIN_BATCH = "<html>Batch Quantitation of a experiments</html>";
   public final static String TABS_MAIN_STATISTICS = "<html>Analysis of quantified results</html>";
   public final static String TABS_MAIN_DISPLAY = "<html>Manual verification of results with 3D viewer</html>";
   public final static String TABS_MAIN_MASSLIST_CREATOR = "<html>Creation of LDA mass lists</html>";
@@ -77,27 +77,24 @@ public class TooltipTexts
   
   public final static String QUANTITATION_RET_BEFORE = "<html>Retention time tolerance in minutes.<br>"+
     "Specification of a time tolerance to allow quantitation<br/>"+
-    "before the expected retention time entered in the Excel mass list  file.<br/>" +
+    "before the expected retention time entered in the Excel file.<br/>" +
     "If no time is entered in the Excel, this field has no effect!</html>";
   
   public final static String QUANTITATION_RET_AFTER = "<html>Retention time tolerance in minutes.<br>"+
   "Specification of a time tolerance to allow quantitation<br/>"+
-  "after the expected retention time entered in the Excel mass list  file.<br/>" +
+  "after the expected retention time entered in the Excel file.<br/>" +
   "If no time is entered in the Excel, this field has no effect!</html>";
   
   public final static String QUANTITATION_CUTOFF = "<html>Peaks smaller than \"highest peak area\" times this <br>"+
   "value in per mille are automatically discared.</html>";
   
   public final static String QUANTIFICATION_RET_SHIFT = "<html>Retention time shift in minutes relative to the one<br>"+
-  "entered in the Excel mass list  file</html>";
+  "entered in the mass list Excel file</html>";
   
   public final static String QUANTITATION_ISOTOPES = "<html>How many isotopic peaks should be quantified additional to the base peak.<br/>" +
   		"The first input field defines the amount of isotpes.<br/>" +
   		"The second one the amount of isotopes that must match the<br/>" +
   		"isotopic distribution (otherwise hit is discarded).</html>";
-  
-  public final static String CHROM_PROCESSORS = "<html>The number of processors to be used for file translation.<br/>" +
-      "It is recommended to use 1 processor.</html>";
   
   public final static String QUANTITATION_PROCESSORS = "<html>The number of processors to be used for quantitation.<br/>" +
       "It is recommended to use n-1 processors.<br/>" +
