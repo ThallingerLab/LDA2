@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install4j version="10.0.6" transformSequenceNumber="10">
   <directoryPresets config="./installFiles/launcher_archive/ldaCmd.sh" />
-  <application name="Lipid Data Analyzer" applicationId="7095-5139-4826-4510" mediaDir="./i4j-output" shortName="LDA" publisher="Graz University of Technology" publisherWeb="http://genome.tugraz.at/" version="2.10.0" allPathsRelative="true" macVolumeId="b1bfb5d3c6ff7197" javaMinVersion="1.8" allowBetaVM="true" jdkMode="runtimeJre">
+  <application name="Lipid Data Analyzer" applicationId="8357-0793-0080-2282" mediaDir="./i4j-output" shortName="LDA" publisher="Graz University of Technology" publisherWeb="http://genome.tugraz.at/" version="2.10.1" allPathsRelative="true" macVolumeId="b1bfb5d3c6ff7197" javaMinVersion="1.8" allowBetaVM="true" jdkMode="runtimeJre">
     <variables>
       <variable name="javaProp3D" />
       <variable name="headlessTrue" />
@@ -622,8 +622,7 @@ AGILENT SOFTWARE LICENSE TERMS&lt;br/&gt;&lt;br/&gt;
 &lt;br/&gt;
  
 Bruker Daltonik GmbH (hereinafter referred to as &lt;b&gt;"Licensor"&lt;/b&gt;) has developed the CompassXtract software program (hereinafter referred to as "&lt;b&gt;CompassXtract&lt;/b&gt;"), which consists of documentation and individual CompassXtract libraries (hereinafter referred to as "&lt;b&gt;CompassXtract Libraries&lt;/b&gt;"). These license terms constitute an agreement (hereinafter referred to as "&lt;b&gt;Agreement&lt;/b&gt;") between you and Licensor and shall be the legal basis for any non-commercial usage of Licensor's CompassXtract. These license terms also apply to any updates or supplements for CompassXtract or separable parts of CompassXtract such as CompassXtract Libraries, unless other terms accompany those items, in which case those terms apply.&lt;br/&gt;
-
-You may only use CompassXtract as a whole, if you have downloaded it from Licensor's Webserver at &lt;a href="http://www.bdal.de/compassxtract"&gt;http://www.bdal.de/compassxtract&lt;/a&gt; and accepted this Agreement as binding between Licensor and you. However, certain individual CompassXtract Libraries might be conveyed to you by others. In both cases, you may only legally use CompassXtract or any of the CompassXtract Libraries conveyed to you after having accepted this Agreement as binding between Licensor and you.&lt;br/&gt;&lt;br/&gt;
+ You may only use CompassXtract as a whole, if you have downloaded it from Licensor's Webserver at &lt;a href="http://www.bdal.de/compassxtract"&gt;http://www.bdal.de/compassxtract&lt;/a&gt; and accepted this Agreement as binding between Licensor and you. However, certain individual CompassXtract Libraries might be conveyed to you by others. In both cases, you may only legally use CompassXtract or any of the CompassXtract Libraries conveyed to you after having accepted this Agreement as binding between Licensor and you.&lt;br/&gt;&lt;br/&gt;
  
 &lt;b&gt;1. Purpose of CompassXtract and License&lt;/b&gt;&lt;br/&gt;
 CompassXtract is provided as it is, in a trial and development stage, not yet marketable and without any warranties regarding fitness for any purpose whatsoever. It may contain errors and defects. The aim and purpose of providing it free of charge and under the terms of this Agreement is to discover such errors and defects. It is, inter alia but not limited to, not designed, manufactured or intended for any use requiring fail-safe performance in which the failure of CompassXtract could lead to death, personal injury or physical and environmental damage, such as the operation of medical facilities. Nor is it, inter alia but not limited to, designed to perform any queries or operations which might require reliable results and/or which might be the basis for business and/or medical decisions. You agree not to use CompassXtract in connection with any such activities.&lt;br/&gt;&lt;br/&gt;
@@ -1733,7 +1732,7 @@ return true;</property>
       <variables>
         <variable name="javaProp3D" value="-Djava.ext.dirs=./" />
       </variables>
-      <jreBundle jreBundleSource="preCreated" includedJre="C:/Users/leoni/AppData/Local/install4j/v10/jres/windows-amd64-17.0.7.tar.gz" manualJreEntry="true" />
+      <jreBundle jreBundleSource="preCreated" includedJre="windows-amd64-1.8.0_202" />
     </windows>
     <linuxRPM name="Linux RPM 64bit" id="560" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}_64bit" installDir="/opt/LDA">
       <excludedLaunchers>
@@ -1804,10 +1803,10 @@ return true;</property>
       <variables>
         <variable name="javaProp3D" value="-Djava.ext.dirs=./:/System/Library/Frameworks/JavaVM.framework/Home/lib/ext" />
       </variables>
-      <jreBundle usePack200="false" jreBundleSource="preCreated" includedJre="C:/Users/leoni/AppData/Local/install4j/v10/jres/macosx-amd64-1.8.0_202_unpacked.tar.gz" manualJreEntry="true" />
+      <jreBundle usePack200="false" />
     </macosFolder>
   </mediaSets>
-  <buildIds buildAll="false">
-    <mediaSet refId="258" />
+  <buildIds>
+    <mediaSet refId="511" />
   </buildIds>
 </install4j>
