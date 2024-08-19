@@ -2820,7 +2820,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           if (!headerFile.exists()){
             this.progressBar_.setValue(30);
             this.quantifyingLabel_.setText("Translating to chrom");
-            mzToChromThread_ = new MzxmlToChromThread(fileToTranslate,Integer.parseInt(nrProcessors_.getText()));
+            mzToChromThread_ = new MzxmlToChromThread(fileToTranslate,1); //set number of processors to 1; TODO: make user input
+//            		Integer.parseInt(nrProcessors_.getText()));
             mzToChromThread_.start();
             threadStarted = true;
           }
@@ -4033,7 +4034,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         Vector<File> filesToTranslate = BatchQuantThread.getMzXMLFilesOfWiffConversion(filePath);
         if (filesToTranslate.size()==1){
           selectedMzxmlFile.setText(filesToTranslate.get(0).getAbsolutePath());
-          mzToChromThread_ = new MzxmlToChromThread(filesToTranslate.get(0).getAbsolutePath(),Integer.parseInt(nrProcessors_.getText()));
+          mzToChromThread_ = new MzxmlToChromThread(filesToTranslate.get(0).getAbsolutePath(),1); //set number of processors to 1; TODO: make user input
+//          		Integer.parseInt(nrProcessors_.getText()));
           mzToChromThread_.start();          
         } else {
           Vector<RawQuantificationPairVO> pairs = new Vector<RawQuantificationPairVO>();
@@ -4081,7 +4083,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         }
       }else{
         String mzXMLFilePath = selectedMzxmlFile.getText().substring(0,selectedMzxmlFile.getText().lastIndexOf("."))+"."+LipidomicsConstants.getIntermediateFileFormat();
-        mzToChromThread_ = new MzxmlToChromThread(mzXMLFilePath,Integer.parseInt(nrProcessors_.getText()));
+        mzToChromThread_ = new MzxmlToChromThread(mzXMLFilePath,1); //set number of processors to 1; TODO: make user input
+//        		Integer.parseInt(nrProcessors_.getText()));
         mzToChromThread_.start();
       }
     }
