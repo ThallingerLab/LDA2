@@ -67,7 +67,7 @@ import at.tugraz.genome.lda.target.JOptionPanel;
 import at.tugraz.genome.lda.target.JTargetFileWizard;
 import at.tugraz.genome.lda.target.LoadingPanel;
 import at.tugraz.genome.lda.vos.AdductVO;
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 
 /**
  * 

@@ -42,7 +42,7 @@ import org.jfree.chart.ChartMouseListener;
 import org.jfree.chart.entity.ChartEntity;
 import org.jfree.chart.entity.XYItemEntity;
 
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 
 /**
  * 

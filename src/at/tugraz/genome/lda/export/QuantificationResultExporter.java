@@ -61,7 +61,7 @@ import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.maspectras.quantification.CgAreaStatus;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.maspectras.quantification.Probe3D;
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 
 /**
  * 

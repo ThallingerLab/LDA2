@@ -46,7 +46,7 @@ import de.isas.mztab2.model.PublicationItem;
 import de.isas.mztab2.model.PublicationItem.TypeEnum;
 import de.isas.mztab2.model.Sample;
 import de.isas.mztab2.model.SampleProcessing;
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 import at.tugraz.genome.lda.exception.HydroxylationEncodingException;
 import at.tugraz.genome.lda.exception.SettingsException;
 import at.tugraz.genome.lda.msn.hydroxy.parser.HydroxyEncoding;
