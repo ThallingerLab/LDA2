@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install4j version="10.0.6" transformSequenceNumber="10">
   <directoryPresets config="./installFiles/launcher_archive/ldaCmd.sh" />
-  <application name="Lipid Data Analyzer" applicationId="7095-5139-4826-4510" mediaDir="./i4j-output" shortName="LDA" publisher="Graz University of Technology" publisherWeb="http://genome.tugraz.at/" version="2.10.1" allPathsRelative="true" macVolumeId="b1bfb5d3c6ff7197" javaMinVersion="1.8" allowBetaVM="true" jdkMode="runtimeJre">
+  <application name="Lipid Data Analyzer" applicationId="8357-0793-0080-2282" mediaDir="./i4j-output" shortName="LDA" publisher="Graz University of Technology" publisherWeb="http://genome.tugraz.at/" version="2.10.1" allPathsRelative="true" macVolumeId="b1bfb5d3c6ff7197" javaMinVersion="1.8" allowBetaVM="true" jdkMode="runtimeJre">
     <variables>
       <variable name="javaProp3D" />
       <variable name="headlessTrue" />
@@ -1733,7 +1733,7 @@ return true;</property>
       <variables>
         <variable name="javaProp3D" value="-Djava.ext.dirs=./" />
       </variables>
-      <jreBundle jreBundleSource="preCreated" includedJre="C:/Users/leoni/AppData/Local/install4j/v10/jres/windows-amd64-17.0.7.tar.gz" manualJreEntry="true" />
+      <jreBundle jreBundleSource="preCreated" includedJre="windows-amd64-1.8.0_202" />
     </windows>
     <linuxRPM name="Linux RPM 64bit" id="560" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}_64bit" installDir="/opt/LDA">
       <excludedLaunchers>
@@ -1804,10 +1804,10 @@ return true;</property>
       <variables>
         <variable name="javaProp3D" value="-Djava.ext.dirs=./:/System/Library/Frameworks/JavaVM.framework/Home/lib/ext" />
       </variables>
-      <jreBundle usePack200="false" jreBundleSource="preCreated" includedJre="C:/Users/leoni/AppData/Local/install4j/v10/jres/macosx-amd64-1.8.0_202_unpacked.tar.gz" manualJreEntry="true" />
+      <jreBundle usePack200="false" />
     </macosFolder>
   </mediaSets>
-  <buildIds buildAll="false">
-    <mediaSet refId="258" />
+  <buildIds>
+    <mediaSet refId="511" />
   </buildIds>
 </install4j>
