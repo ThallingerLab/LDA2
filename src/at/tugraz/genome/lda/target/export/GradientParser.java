@@ -38,7 +38,7 @@ import org.dhatim.fastexcel.reader.Row;
 import org.dhatim.fastexcel.reader.Sheet;
 
 import at.tugraz.genome.lda.parser.LDAResultReader;
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 
 /**
  * 

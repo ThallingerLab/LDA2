@@ -60,7 +60,7 @@ import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.vos.RTCheckedVO;
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 
 /**
  * Class for analysis of the ASC output

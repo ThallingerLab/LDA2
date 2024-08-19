@@ -29,7 +29,7 @@ import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.apache.commons.math3.exception.OutOfRangeException;
 
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 
 /**
  * 

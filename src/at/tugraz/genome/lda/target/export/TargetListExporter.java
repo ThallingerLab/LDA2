@@ -75,7 +75,7 @@ import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.lda.vos.QuantVO;
 import at.tugraz.genome.lda.vos.ResultFileVO;
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 
 
 /**

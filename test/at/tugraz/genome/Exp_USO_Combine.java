@@ -35,7 +35,7 @@ import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.ExportException;
 import at.tugraz.genome.lda.export.QuantificationResultExporter;
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 
 /**
  * This class will allow for appending the entries of a results file to another one.
