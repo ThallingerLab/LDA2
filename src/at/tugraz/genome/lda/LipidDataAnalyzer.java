@@ -2820,7 +2820,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           if (!headerFile.exists()){
             this.progressBar_.setValue(30);
             this.quantifyingLabel_.setText("Translating to chrom");
-            mzToChromThread_ = new MzxmlToChromThread(fileToTranslate,Integer.parseInt(nrProcessors_.getText()));
+            mzToChromThread_ = new MzxmlToChromThread(fileToTranslate,1); //set number of processors to 1; TODO: make user input
+//            		Integer.parseInt(nrProcessors_.getText()));
             mzToChromThread_.start();
             threadStarted = true;
           }
@@ -4033,7 +4034,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         Vector<File> filesToTranslate = BatchQuantThread.getMzXMLFilesOfWiffConversion(filePath);
         if (filesToTranslate.size()==1){
           selectedMzxmlFile.setText(filesToTranslate.get(0).getAbsolutePath());
-          mzToChromThread_ = new MzxmlToChromThread(filesToTranslate.get(0).getAbsolutePath(),Integer.parseInt(nrProcessors_.getText()));
+          mzToChromThread_ = new MzxmlToChromThread(filesToTranslate.get(0).getAbsolutePath(),1); //set number of processors to 1; TODO: make user input
+//          		Integer.parseInt(nrProcessors_.getText()));
           mzToChromThread_.start();          
         } else {
           Vector<RawQuantificationPairVO> pairs = new Vector<RawQuantificationPairVO>();
@@ -4081,7 +4083,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         }
       }else{
         String mzXMLFilePath = selectedMzxmlFile.getText().substring(0,selectedMzxmlFile.getText().lastIndexOf("."))+"."+LipidomicsConstants.getIntermediateFileFormat();
-        mzToChromThread_ = new MzxmlToChromThread(mzXMLFilePath,Integer.parseInt(nrProcessors_.getText()));
+        mzToChromThread_ = new MzxmlToChromThread(mzXMLFilePath,1); //set number of processors to 1; TODO: make user input
+//        		Integer.parseInt(nrProcessors_.getText()));
         mzToChromThread_.start();
       }
     }
@@ -7415,45 +7418,58 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       if (corrTypeESLookup.containsKey(chosenMolGroup))
         esLookup = corrTypeESLookup.get(chosenMolGroup);
       
-      JPanel aPanel = new JPanel();
-      aPanel.setLayout(new BorderLayout());
+//      JPanel aPanel = new JPanel();
+      
+//      aPanel.setLayout(new BorderLayout());
       boolean hasAbs = jButtonResultAbsQuant_.getText().equalsIgnoreCase("Remove absolute settings");
       ResultDisplaySettings displaySettings = new ResultDisplaySettings(
       		analysisModule_.getISAvailability().get(chosenMolGroup),
       		analysisModule_.getESAvailability().get(chosenMolGroup),isLookup,esLookup,hasAbs,quantSettingsPanel_);
-      ResultSelectionSettings selectionSettings = new ResultSelectionSettings(null,molNames,true);
-      ResultSelectionSettings combinedChartSettings = new ResultSelectionSettings(null,molNames,false);
+      ResultSelectionSettings selectionSettings = new ResultSelectionSettings("Select molecules to be displayed in the heatmap",molNames,true);
+      ResultSelectionSettings combinedChartSettings = new ResultSelectionSettings("Select molecules for a combined bar chart",molNames,false);
       
       HeatMapDrawing drawing = new HeatMapDrawing(resultsOfOneGroup,analysisModule_.getExpNamesInSequence(),molNames, isLookup,esLookup, resultStatus_,LipidDataAnalyzer.this,molGroup_,null,
           displaySettings,selectionSettings,combinedChartSettings,exportSettings_,analysisModule_);
       
       JScrollPane scrollPane = new JScrollPane(drawing);
+      scrollPane.getViewport().getView().setBackground(Color.GRAY);
       int[] widthAndHeight = getScrollPaneWidthAndHeight(drawing);
       scrollPane.setPreferredSize(new Dimension(widthAndHeight[0], widthAndHeight[1]));
       heatmaps_.put(molGroup_, drawing);
-      if (analysisModule_.getExpNamesInSequence().size()>25)
-        aPanel.add(scrollPane,BorderLayout.CENTER);
-      else
-        aPanel.add(scrollPane,BorderLayout.WEST);
-      resultsViewTabs.addTab("Heatmap", aPanel);
+      
+      JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, new JScrollPane(drawing.getSettingsPanel()));
+			splitPane.setOneTouchExpandable(true);
+			splitPane.setDividerLocation(640);
+      
+//      splitPane.add(drawing.getSettingsPanel());
+//      splitPane.add(scrollPane);
+      
+//      if (analysisModule_.getExpNamesInSequence().size()>25)
+//        aPanel.add(scrollPane,BorderLayout.CENTER);
+//      else
+//        aPanel.add(scrollPane,BorderLayout.WEST);
+      resultsViewTabs.addTab("Heatmap", splitPane);
       resultsViewTabs.setToolTipTextAt(0, TooltipTexts.TABS_RESULTS_HEATMAP+molGroup_+"</html>");
       JPanel barChartPanel = new JPanel();
       resultsViewTabs.addTab("Bar-chart", barChartPanel);
       resultsViewTabs.setToolTipTextAt(1, TooltipTexts.TABS_RESULTS_BARCHART+molGroup_+"</html>");
       if (groupsPanel_.getGroups().size()>0){
         Hashtable<String,Hashtable<String,ResultCompVO>> groupedResultsOfOneGroup = analysisModule_.getGroupedResults().get(molGroup_);
-        JPanel groupPanel = new JPanel();
-        groupPanel.setLayout(new BorderLayout());
         
         HeatMapDrawing groupDrawing = new HeatMapDrawing(groupedResultsOfOneGroup, groupsPanel_.getGroups(),molNames, isLookup,esLookup, resultStatus_,LipidDataAnalyzer.this,molGroup_,drawing, 
         		displaySettings,selectionSettings,combinedChartSettings,exportSettingsGroup_,analysisModule_);
         
         JScrollPane groupScrollPane = new JScrollPane(groupDrawing);
+        groupScrollPane.getViewport().getView().setBackground(Color.GRAY);
         int[] groupWidthAndHeight = getScrollPaneWidthAndHeight(groupDrawing);
-        scrollPane.setPreferredSize(new Dimension(groupWidthAndHeight[0], groupWidthAndHeight[1]));
+        groupScrollPane.setPreferredSize(new Dimension(groupWidthAndHeight[0], groupWidthAndHeight[1]));
         groupHeatmaps_.put(molGroup_, groupDrawing);
-        groupPanel.add(groupScrollPane,BorderLayout.WEST);
-        resultsViewTabs.addTab("Group-Heatmap", groupPanel);
+        
+        JSplitPane groupSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, groupScrollPane, new JScrollPane(groupDrawing.getSettingsPanel()));
+        groupSplitPane.setOneTouchExpandable(true);
+        groupSplitPane.setDividerLocation(640);
+        
+        resultsViewTabs.addTab("Group-Heatmap", groupSplitPane);
         resultsViewTabs.setToolTipTextAt(2, TooltipTexts.TABS_RESULTS_HEATMAP_GROUP+molGroup_+"</html>");
         JPanel groupBarChartPanel = new JPanel();
         resultsViewTabs.addTab("Group bar-chart", groupBarChartPanel);

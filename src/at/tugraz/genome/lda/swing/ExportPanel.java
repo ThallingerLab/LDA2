@@ -72,25 +72,23 @@ public class ExportPanel extends JPanel
     this.parent_ = parent;
     if (background != null)
       this.setBackground(background);
-    Font textFont = new Font("Helvetica",Font.BOLD, 9);
+//    Font textFont = new Font("Helvetica",Font.BOLD, 12);
 
     JLabel label = null;
     if (!pictureOnly){
-      label = new JLabel("Export: ");
-      label.setForeground(font);
-      label.setFont(textFont);
-      label.setToolTipText(TooltipTexts.EXPORT_GENERAL);
-      this.add(label);
+//      label = new JLabel("Export: ");
+//      label.setForeground(font);
+//      label.setFont(textFont);
+//      label.setToolTipText(TooltipTexts.EXPORT_GENERAL);
+//      this.add(label);
     }
-    ExportButton png = new ExportButton("PNG",EXPORT_PNG,font,background,parent_);
-    png.setToolTipText(TooltipTexts.EXPORT_PNG);
+    ExportButton png = new ExportButton("PNG",EXPORT_PNG,font,background,TooltipTexts.EXPORT_PNG,parent_);
     this.add(png);
     label = new JLabel(" | ");
     label.setForeground(font);
-    label.setFont(textFont);
+//    label.setFont(textFont);
     this.add(label); 
-    ExportButton svg = new ExportButton("SVG",EXPORT_SVG,font,background,parent_);
-    svg.setToolTipText(TooltipTexts.EXPORT_SVG);
+    ExportButton svg = new ExportButton("SVG",EXPORT_SVG,font,background,TooltipTexts.EXPORT_SVG,parent_);
     this.add(svg);
 //    if (pictureOnly){
 //      label = new JLabel(" | ");
@@ -104,41 +102,36 @@ public class ExportPanel extends JPanel
     if (pictureOnly) return;
     label = new JLabel(" | ");
     label.setForeground(font);
-    label.setFont(textFont);
+//    label.setFont(textFont);
     this.add(label); 
-    ExportButton excel = new ExportButton("Excel",EXPORT_EXCEL,font,background,parent_);
-    excel.setToolTipText(TooltipTexts.EXPORT_EXCEL);
+    ExportButton excel = new ExportButton("Excel",EXPORT_EXCEL,font,background,TooltipTexts.EXPORT_EXCEL,parent_);
     this.add(excel);
     if (mzTab){
       label = new JLabel(" | ");
       label.setForeground(font);
-      label.setFont(textFont);
+//      label.setFont(textFont);
       this.add(label); 
-      ExportButton mztab = new ExportButton("mzTab",EXPORT_MZTAB,font,background,parent_);
-      mztab.setToolTipText(TooltipTexts.EXPORT_MZTAB);
+      ExportButton mztab = new ExportButton("mzTab",EXPORT_MZTAB,font,background,TooltipTexts.EXPORT_MZTAB,parent_);
       this.add(mztab);
       label = new JLabel(" | ");
       label.setForeground(font);
-      label.setFont(textFont);
+//      label.setFont(textFont);
       this.add(label); 
-      ExportButton rdb = new ExportButton("rdb",EXPORT_RDB,font,background,parent_);
-      rdb.setToolTipText(TooltipTexts.EXPORT_RDB);
+      ExportButton rdb = new ExportButton("rdb",EXPORT_RDB,font,background,TooltipTexts.EXPORT_RDB,parent_);
       this.add(rdb);
     }
     label = new JLabel(" | ");
     label.setForeground(font);
-    label.setFont(textFont);
+//    label.setFont(textFont);
     this.add(label); 
-    ExportButton text = new ExportButton("Text",EXPORT_TEXT,font,background,parent_);
-    text.setToolTipText(TooltipTexts.EXPORT_TXT);
+    ExportButton text = new ExportButton("Text",EXPORT_TEXT,font,background,TooltipTexts.EXPORT_TXT,parent_);
     this.add(text);
     if (chroms){
       label = new JLabel(" | ");
       label.setForeground(font);
-      label.setFont(textFont);
+//      label.setFont(textFont);
       this.add(label); 
-      ExportButton chrom = new ExportButton("Chroms",EXPORT_CHROMS,font,background,parent_);
-      chrom.setToolTipText(TooltipTexts.EXPORT_CHROMS);
+      ExportButton chrom = new ExportButton("Chroms",EXPORT_CHROMS,font,background,TooltipTexts.EXPORT_CHROMS,parent_);
       this.add(chrom);      
     }
     

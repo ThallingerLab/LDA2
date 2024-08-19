@@ -159,7 +159,8 @@ public class BatchQuantThread extends Thread
             this.readFromRaw_ = true;
             String mzXMLFilePath = filePair.getRawFile().getAbsolutePath().substring(0,filePair.getRawFile().getAbsolutePath().lastIndexOf("."))
                 +"."+LipidomicsConstants.getIntermediateFileFormat();
-            mzThread_ = new MzxmlToChromThread(mzXMLFilePath,numberOfProcessors_);
+            mzThread_ = new MzxmlToChromThread(mzXMLFilePath,1); //set number of processors to 1; TODO: make user input
+//            	numberOfProcessors_);
             mzThread_.start();
           }
         }
@@ -323,7 +324,8 @@ public class BatchQuantThread extends Thread
             this.quantTable_.repaint();
             this.quantifyingLabel_.setText("Translating "+filePair.getRawFileName()+" to chrom");
             this.progressBar_.setValue((this.currentLine_*100)/this.quantTableModel_.getRowCount()+oneThird_);
-            mzThread_ = new MzxmlToChromThread(filePair.getRawFile().getAbsolutePath(),numberOfProcessors_);
+            mzThread_ = new MzxmlToChromThread(filePair.getRawFile().getAbsolutePath(),1); //set number of processors to 1; TODO: make user input
+//            		numberOfProcessors_);
             mzThread_.start();
             threadStarted = true;
           }

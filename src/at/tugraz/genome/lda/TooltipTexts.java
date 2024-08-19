@@ -228,6 +228,8 @@ public class TooltipTexts
   public final static String EXPORT_MAF = "<html>Exports data in MAF format.</html>";
   
   public final static String HEATMAP_SETTINGS_APPLY_TO_ALL = "<html>Apply these settings to all lipid classes, as far as applicable</html>";
+  public final static String HEATMAP_SELECTION_MODE = "<html>Allows for selection of the chosen option with a single click.</html>";
+  public final static String HEATMAP_SHOW_OPTION = "<html>Select at which level of structural detail molecules should be displayed.</html>";
   public final static String HEATMAP_SHOW_INT = "<html>Display the internal standards in the heat map or not.</html>";
   public final static String HEATMAP_SHOW_EXT = "<html>Display the external standards in the heat map or not.</html>";
   public final static String HEATMAP_ISOTOPES = "<html>Upper limit for the additional isotopic peaks used for the quantitative value.</html>";
