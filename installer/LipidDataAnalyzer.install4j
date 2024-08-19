@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install4j version="10.0.6" transformSequenceNumber="10">
   <directoryPresets config="./installFiles/launcher_archive/ldaCmd.sh" />
-  <application name="Lipid Data Analyzer" applicationId="7095-5139-4826-4510" mediaDir="./i4j-output" shortName="LDA" publisher="Graz University of Technology" publisherWeb="http://genome.tugraz.at/" version="2.10.0" allPathsRelative="true" macVolumeId="b1bfb5d3c6ff7197" javaMinVersion="1.8" allowBetaVM="true" jdkMode="runtimeJre">
+  <application name="Lipid Data Analyzer" applicationId="7095-5139-4826-4510" mediaDir="./i4j-output" shortName="LDA" publisher="Graz University of Technology" publisherWeb="http://genome.tugraz.at/" version="2.10.1" allPathsRelative="true" macVolumeId="b1bfb5d3c6ff7197" javaMinVersion="1.8" allowBetaVM="true" jdkMode="runtimeJre">
     <variables>
       <variable name="javaProp3D" />
       <variable name="headlessTrue" />
