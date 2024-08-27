@@ -30,6 +30,11 @@ import javax.swing.JFrame;
 
 import at.tugraz.genome.lda.WarningMessage;
 
+/**
+ * 
+ * @author Leonida M. Lamp
+ * 
+ */
 public class LipidClassExporter
 {
 	private LipidClassVO toExport_;

@@ -1,3 +1,26 @@
+/* 
+ * This file is part of Lipid Data Analyzer
+ * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
+ * Copyright (c) 2024 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
+ *  
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *  
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details. 
+ *  
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Please contact lda@genome.tugraz.at if you need additional information or 
+ * have any questions.
+ */
+
 package at.tugraz.genome.lda.masslist;
 
 import java.awt.Dimension;
@@ -32,6 +55,12 @@ import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.vos.AdductVO;
 import javafx.util.Pair;
 
+
+/**
+ * 
+ *@author Leonida M. Lamp 
+ * 
+ */
 public class LipidClassPanel extends JPanel
 {
 	private static final long serialVersionUID = 1L;
@@ -101,15 +130,15 @@ public class LipidClassPanel extends JPanel
 		}
 		else
 		{
-			exportOption_ = parent_.instantiateJComboBox(new String[] {OPTION_EXPORT_ALL,OPTION_EXPORT_SELECTED}, 0);
+			exportOption_ = parent_.instantiateJComboBox(new String[] {OPTION_EXPORT_ALL,OPTION_EXPORT_SELECTED}, 0, isSingleEdit_);
 			addLabeledComboBox(this, y++, new JLabel("Lipid (sub)classes to export: "), exportOption_,  TooltipTexts.MASSLIST_CLASS_EXPORT_OPTION);
 			JSeparator sep = new JSeparator();
-			sep.setPreferredSize(new Dimension(500,10));
-			this.add(sep, new GridBagConstraints(0,y++,6,1,1.0,0.0,GridBagConstraints.CENTER,GridBagConstraints.VERTICAL,new Insets(5,0,0,0),0,2));
+			sep.setPreferredSize(new Dimension(520,10));
+			this.add(sep, new GridBagConstraints(0,y++,6,1,1.0,0.0,GridBagConstraints.CENTER,GridBagConstraints.VERTICAL,new Insets(10,0,0,0),0,2));
 		}
 		if (!isSingleEdit_) addApplyJButton(y,COMMAND_ALL_CHAIN_NUM,TooltipTexts.MASSLIST_CLASS_APPLY);
 		numberLCBChainField_ = instantiateJTextField(COMMAND_CLASS_LCB_CHAIN_NUM, String.valueOf(selectedClass_.getNumberOfLCBChains()));
-		addNumberOfChainSelection(this, y++, MassListCreatorPanel.PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH,
+		addNumberOfChainSelection(this, y++, parent_.getPreferredDisplayComponentWidthSmaller(isSingleEdit_ ? 0 : 25),
 				instantiateJTextField(COMMAND_CLASS_FA_CHAIN_NUM, String.valueOf(selectedClass_.getNumberOfFAChains())), numberLCBChainField_, 
 				TooltipTexts.MASSLIST_CLASS_NUM_CHAIN);	
 		
@@ -133,22 +162,22 @@ public class LipidClassPanel extends JPanel
 		if (!isSingleEdit_) addApplyJButton(y,COMMAND_ALL_OH,TooltipTexts.MASSLIST_CLASS_APPLY);
 		addLabeledRange(this, y++, new JLabel("Chain OH / oxidation range: "), 
 				instantiateJTextFieldRange(COMMAND_CLASS_OH, String.valueOf(selectedClass_.getOhRangeFrom()), String.valueOf(selectedClass_.getOhRangeTo()), 
-				MassListCreatorPanel.PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH), TooltipTexts.MASSLIST_CLASS_OH_RANGE);
+				parent_.getPreferredDisplayComponentWidthSmaller(isSingleEdit_ ? 0 : 25)), TooltipTexts.MASSLIST_CLASS_OH_RANGE);
 		
 		if (!isSingleEdit_) addApplyJButton(y,COMMAND_ALL_CHAIN_C,TooltipTexts.MASSLIST_CLASS_APPLY);
 		addLabeledRange(this, y++, new JLabel("Total number of chain C atoms: "), 
 				instantiateJTextFieldRange(COMMAND_CLASS_CHAIN_C, String.valueOf(selectedClass_.getMinChainC()), String.valueOf(selectedClass_.getMaxChainC()), 
-			  MassListCreatorPanel.PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH), TooltipTexts.MASSLIST_CLASS_C_RANGE);
+			  parent_.getPreferredDisplayComponentWidthSmaller(isSingleEdit_ ? 0 : 25)), TooltipTexts.MASSLIST_CLASS_C_RANGE);
 		
 		if (!isSingleEdit_) addApplyJButton(y,COMMAND_ALL_DB,TooltipTexts.MASSLIST_CLASS_APPLY);
 		addLabeledRange(this, y++, new JLabel("Total number of chain double bonds: "), 
 				instantiateJTextFieldRange(COMMAND_CLASS_DB, String.valueOf(selectedClass_.getMinChainDB()), String.valueOf(selectedClass_.getMaxChainDB()), 
-				MassListCreatorPanel.PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH), TooltipTexts.MASSLIST_CLASS_DB_RANGE);
+				parent_.getPreferredDisplayComponentWidthSmaller(isSingleEdit_ ? 0 : 25)), TooltipTexts.MASSLIST_CLASS_DB_RANGE);
 		
 		if (!isSingleEdit_) addApplyJButton(y,COMMAND_ALL_RT,TooltipTexts.MASSLIST_CLASS_APPLY);
 		addLabeledRange(this, y++, new JLabel("Retention time (RT) range in minutes: "), 
 				instantiateJTextFieldRange(COMMAND_CLASS_RT, String.valueOf(selectedClass_.getRtRangeFrom()), String.valueOf(selectedClass_.getRtRangeTo()), 
-				MassListCreatorPanel.PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH), TooltipTexts.MASSLIST_CLASS_RT_RANGE);
+				parent_.getPreferredDisplayComponentWidthSmaller(isSingleEdit_ ? 0 : 25)), TooltipTexts.MASSLIST_CLASS_RT_RANGE);
 		
 		if (!isSingleEdit_) addApplyJButton(y,COMMAND_ALL_ADDUCT_INSENSITIVE_RT_FILTER,TooltipTexts.MASSLIST_CLASS_APPLY);
 		JCheckBox rtFilter = instantiateCheckBox(COMMAND_CLASS_ADDUCT_INSENSITIVE_RT_FILTER, selectedClass_.isAdductInsensitiveRtFilter());
@@ -201,7 +230,7 @@ public class LipidClassPanel extends JPanel
 		  	jButtonExecuter(actionCommand);
 		  }
 	  });
-		this.add(button, parent_.getDefaultGridBagConstraints(5,yPos, GridBagConstraints.EAST, 1, 1));
+		this.add(button, parent_.getDefaultGridBagConstraints(5,yPos, GridBagConstraints.CENTER, 1, 1));
 	}
 	
 	private JButton instantiateJButton(String actionCommand, String text, boolean isOverride, String tooltips)
@@ -227,7 +256,7 @@ public class LipidClassPanel extends JPanel
 		  }
 	  });
 		jComboBox.setSelectedIndex(index);
-		jComboBox.setPreferredSize(new Dimension(MassListCreatorPanel.PREFERRED_DISPLAY_COMPONENT_WIDTH,20));
+		jComboBox.setPreferredSize(new Dimension(parent_.getPreferredDisplayComponentWidth(isSingleEdit_ ? 0 : 50),20));
 		return jComboBox;
 	}
 	
@@ -258,13 +287,13 @@ public class LipidClassPanel extends JPanel
 	  });
 		jList.setSelectedIndices(indices);
 		JScrollPane scrollPane = new JScrollPane(jList);
-		scrollPane.setPreferredSize(new Dimension(MassListCreatorPanel.PREFERRED_DISPLAY_COMPONENT_WIDTH,100));
+		scrollPane.setPreferredSize(new Dimension(parent_.getPreferredDisplayComponentWidth(isSingleEdit_ ? 0 : 50),100));
 		return scrollPane;
 	}
 	
 	private JTextField instantiateJTextField(String actionCommand, String text)
 	{
-		return instantiateJTextField(actionCommand, text, MassListCreatorPanel.PREFERRED_DISPLAY_COMPONENT_WIDTH);
+		return instantiateJTextField(actionCommand, text, parent_.getPreferredDisplayComponentWidth(isSingleEdit_ ? 0 : 50));
 	}
 	
 	private Pair<JTextField,JTextField> instantiateJTextFieldRange(String actionCommand, String textFrom, String textTo, Integer width)

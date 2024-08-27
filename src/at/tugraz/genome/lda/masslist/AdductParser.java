@@ -33,6 +33,12 @@ import java.util.Properties;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.vos.AdductVO;
 
+
+/**
+ * 
+ * @author Leonida M. Lamp
+ * 
+ */
 public class AdductParser
 {
 	public final static String ADDUCT_FOLDER = "./massListCreation/adducts";

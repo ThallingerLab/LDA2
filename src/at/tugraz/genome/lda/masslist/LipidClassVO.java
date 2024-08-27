@@ -30,6 +30,11 @@ import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.AdductVO;
 
+/**
+ * 
+ * @author Leonida M. Lamp
+ * 
+ */
 public class LipidClassVO
 {
 	private String lClass_;

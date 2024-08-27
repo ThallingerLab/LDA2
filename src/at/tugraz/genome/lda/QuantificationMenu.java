@@ -248,7 +248,7 @@ public class QuantificationMenu extends JPanel
     nrProcessors_.setToolTipText(TooltipTexts.QUANTITATION_PROCESSORS);
     nrProcessors_.setInputVerifier(new IntegerMaxVerifier(true,1,getMaxProcessors()));
     settingsPanel5.add(nrProcessors_,new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
     
     if (Settings.useAlex()){
       JPanel settingsPanel6 = addJPanelToQuantMenu(++y, this);

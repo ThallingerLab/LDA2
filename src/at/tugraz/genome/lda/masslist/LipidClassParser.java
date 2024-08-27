@@ -32,6 +32,11 @@ import java.util.Properties;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.vos.AdductVO;
 
+/**
+ * 
+ * @author Leonida M. Lamp
+ * 
+ */
 public class LipidClassParser
 {
 	public final static String LIPID_CLASS_FOLDER = "./massListCreation/lipidClasses";

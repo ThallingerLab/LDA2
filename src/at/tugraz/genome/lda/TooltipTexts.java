@@ -354,6 +354,7 @@ public class TooltipTexts
   public final static String MASSLIST_GENERAL_FORMAT= "<html>Select the desired output format.<br/>" +
   		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>"; 
   
+  public final static String MASSLIST_CLASS_SELECT_ALL = "<html>Invert the selection of listed lipid classes.</html>"; 
   public final static String MASSLIST_CLASS_NAME = "<html>This defines the name of the lipid (sub)class.<br/>" +
   		"In combination with the respective adduct name this determines the filename of the MS/MS fragmentation rules file <br/>" +
   		"that LDA will look for in the folder 'fragRules' in the installation directory.<br/>" +

@@ -57,6 +57,11 @@ import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.AdductVO;
 import at.tugraz.genome.maspectras.parser.spectrummill.ElementConfigParser;
 
+/**
+ * 
+ * @author Leonida M. Lamp
+ * 
+ */
 public class MassListExporter
 {
 	public final static String OPTION_ADDUCT_INSENSITIVE_RT_FILTER = "adductInsensitiveRtFilter";
