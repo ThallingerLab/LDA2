@@ -297,20 +297,23 @@ public class FragmentCalculator
       
       for (Vector<Integer> dbCombi : dbCombis){
           
-    	    //TODO: the next few lines are required for oxidized lipids (including the for), but take an enormous amount of time - excluded until fixed
-////        List<String> oxStates = new ArrayList<>(possibleCAtomsDbsOxs.get(cCombis.get(0)).get(dbCombi.get(0)).keySet());
-////    	    Set<List<String>> oxCombis = getOxCombinations(oxStates,chains);
-////        Set<List<String>> validOxCombis = ValidateCombinations(oxCombis); 
+			Set<List<String>> validOxCombis = new HashSet<List<String>>();
+	      		// ox state defined in quantVO/masslist
+			if (!analyteOxState_.isEmpty()) {
+				//TODO: the next few lines are required for oxidized lipids (including the for), but take an enormous amount of time - excluded until fixed
+				List<String> oxStates = new ArrayList<>(possibleCAtomsDbsOxs.get(cCombis.get(0)).get(dbCombi.get(0)).keySet());
+				Set<List<String>> oxCombis = getOxCombinations(oxStates,chains);
+				validOxCombis = ValidateCombinations(oxCombis); 
 		  
-////        for(List<String> oxCombi : validOxCombis) {
+				for(List<String> oxCombi : validOxCombis) {
 			          String combiName = "";
 			          Vector<String> singleCombiParts = new Vector<String>();
 			          for (int i=0; i!=chains; i++){
 			            int cAtoms = cCombis.get(i);
 			            int dBonds = dbCombi.get(i);
 			            String oxState = null;
-			            //TODO: the next line is required for oxidized lipids, but take an enormous amount of time - excluded until fixed
-			            ////oxState = oxCombi.get(i);
+			            //TODO: the next line is required for oxidized lipids, but take an enormous amount of time
+			            oxState = oxCombi.get(i);
 			            String partName = StaticUtils.generateLipidNameString(String.valueOf(cAtoms), dBonds,-1,oxState);
 			            combiName += partName+LipidomicsConstants.CHAIN_SEPARATOR_NO_POS;
 			            singleCombiParts.add(partName);
@@ -330,12 +333,45 @@ public class FragmentCalculator
 			            for (String permutedName : permutedNames) permutedCombinations.put(permutedName, permutedName);
 			            combinations.add(combiName);
 			          }
-			        } 
-    //TODO: the next line is required for oxidized lipids, but take an enormous amount of time - excluded until fixed
- ////      }
-    }
-    return combinations;
-  }
+			        }
+				// no ox state in quantVO/masslist
+				} else {
+					String combiName = "";
+					Vector<String> singleCombiParts = new Vector<String>();
+					for (int i = 0; i != chains; i++) {
+						int cAtoms = cCombis.get(i);
+						int dBonds = dbCombi.get(i);
+						String oxState = null;
+						// TODO: the next line is required for oxidized lipids,
+						// but take an enormous amount of time - excluded until
+						// fixed
+						//// oxState = oxCombi.get(i);
+						String partName = StaticUtils.generateLipidNameString(String.valueOf(cAtoms), dBonds, -1, oxState);
+						combiName += partName + LipidomicsConstants.CHAIN_SEPARATOR_NO_POS;
+						singleCombiParts.add(partName);
+
+					}
+					combiName = combiName.substring(0, combiName.length() - 1);
+					// this is for filtering permuted double entries
+					Vector<String> permutedNames = StaticUtils.getPermutedChainNames(singleCombiParts,
+						LipidomicsConstants.CHAIN_SEPARATOR_NO_POS);
+					boolean isThere = false;
+					for (String permutedName : permutedNames) {
+						if (permutedCombinations.containsKey(permutedName)) {
+							isThere = true;
+							break;
+						}
+					}
+					if (!isThere) {
+						for (String permutedName : permutedNames)
+							permutedCombinations.put(permutedName, permutedName);
+						combinations.add(combiName);
+					}
+				}	 
+			}
+		}
+	return combinations;
+}
   
   
   /**
@@ -2171,4 +2207,3 @@ public class FragmentCalculator
 		return validCombinations;
 	} 
 }
-
