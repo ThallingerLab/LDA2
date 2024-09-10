@@ -174,6 +174,7 @@ import at.tugraz.genome.lda.swing.ResultSelectionSettings;
 import at.tugraz.genome.lda.swing.RuleDefinitionInterface;
 import at.tugraz.genome.lda.swing.SpectrumUpdateListener;
 import at.tugraz.genome.lda.target.JTargetFileWizard;
+import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.verifier.DoubleVerifier;
 import at.tugraz.genome.lda.vos.AbsoluteSettingsVO;
@@ -1669,7 +1670,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
              if (resultFileCandidates[i].isFile() && !avoidDuplicates.containsKey(resultFileCandidates[i].getAbsolutePath())){
                String fileName = StaticUtils.extractFileName(resultFileCandidates[i].getAbsolutePath()); 
                String suffix = fileName.substring(fileName.lastIndexOf(".")+1);
-               if (suffix.equalsIgnoreCase("xls")||suffix.equalsIgnoreCase("xlsx")){
+               if ((suffix.equalsIgnoreCase("xls")||suffix.equalsIgnoreCase("xlsx")) && !fileName.startsWith(ExcelUtils.EXCEL_TEMP_PREFIX)){
                  avoidDuplicates.put(resultFileCandidates[i].getAbsolutePath(),resultFileCandidates[i]);
                  this.resultFiles_.add(resultFileCandidates[i]);
                }
@@ -3075,7 +3076,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       	throw new ExcelInputFileException("Some of the input files contain invalid information!");
       }
       catch (Exception e) {
-      	throw new ExcelInputFileException("The Excel returns the following failure: "+e.getMessage());
+      	throw new ExcelInputFileException("An Excel file returns the following failure: "+e.getMessage());
       }
       this.generateHeatMaps();
     }else{
@@ -3127,7 +3128,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     threadpool.shutdown();
     try { threadpool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); } catch (InterruptedException e) {}
     
-    for (String molGroup : analysisResults.keySet())
+    for (String molGroup : heatmaps_.keySet())
     {
     	resultTabs_.addTab(molGroup,jPanels.get(molGroup));
       resultTabs_.setToolTipTextAt(resultTabs_.indexOfTab(molGroup), TooltipTexts.TABS_RESULTS_GROUP+molGroup+"</html>");
@@ -3516,7 +3517,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
               cutoff = Float.parseFloat(singleQuantMenu_.getCutoff().getText().replaceAll(",", "."));
           }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The cutoff value must be float format!"); ok=false;}
           try{
-            if (singleQuantMenu_.getRtShift().getText()!=null && singleQuantMenu_.getRtShift().getText().length()>0)
+            if (singleQuantMenu_.getRtShift().getText()
+            		!=null && singleQuantMenu_.getRtShift().getText().length()>0)
               rtShift = Float.parseFloat(singleQuantMenu_.getRtShift().getText().replaceAll(",", "."));
           }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The RT-shift value must be float format!"); ok=false;}
           if (ok){
@@ -6875,6 +6877,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       aResultsViewPanel.add(resultsViewTabs,BorderLayout.CENTER);
       Hashtable<String,Hashtable<String,ResultCompVO>> resultsOfOneGroup = analysisModule_.getResults().get(molGroup_);
       Vector<String> molNames = analysisModule_.getAllMoleculeNames().get(molGroup_);
+      if (molNames.isEmpty()) return; //do not add empty heatmaps
       Hashtable<String,Integer> isLookup = new Hashtable<String,Integer> ();
       Hashtable<String,Integer> esLookup = new Hashtable<String,Integer> ();
       if (corrTypeISLookup.containsKey(chosenMolGroup))
