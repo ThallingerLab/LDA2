@@ -287,6 +287,11 @@ public class ResultCompVO
   	return this.resultMolecule_;
   }
   
+  public boolean isMSnVerifiedOrStandard()
+  {
+  	return this.resultMolecule_ != null && (this.resultMolecule_.isMSnVerified() || this.resultMolecule_.isAStandard());
+  }
+  
   public int getType()
   {
     return type_;

@@ -128,6 +128,15 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   public static final String DISPLAY_OPTION_BOTH = "Include lipid molecular species";
   protected static final String[] DISPLAY_OPTIONS = new String[] {DISPLAY_OPTION_SUM_COMP,DISPLAY_OPTION_BOTH};
   protected static final String CHANGE_DISPLAY_OPTION = "changeDisplayOption";
+  public static final String DISPLAY_OPTION_ALL_GROUPS = "All analyte groups";
+  public static final String DISPLAY_OPTION_MSN_VERIFIED_GROUPS = "Analyte groups verified by MS/MS";
+  protected static final String[] DISPLAY_OPTIONS_MSN = new String[] {DISPLAY_OPTION_ALL_GROUPS,DISPLAY_OPTION_MSN_VERIFIED_GROUPS};
+  protected static final String CHANGE_DISPLAY_OPTION_MSN = "changeDisplayOptionMSn";
+  public static final String SORT_OPTION_DEFAULT = "Sort by order in file";
+  public static final String SORT_OPTION_SPECIES = "Sort by species name";
+  public static final String SORT_OPTION_RT = "Sort by elution order";
+  protected static final String[] SORTING_OPTIONS= new String[] {SORT_OPTION_DEFAULT,SORT_OPTION_SPECIES,SORT_OPTION_RT};
+  protected static final String CHANGE_SORTING_OPTION = "changeSortingOption";
   protected static final String CHANGE_IS_STATUS = "changeISShowStatus";
   protected static final String CHANGE_ES_STATUS = "changeESShowStatus";
   protected static final String CHANGE_DOUBLE_STATUS = "changeDoublePeaksStatus";
@@ -148,14 +157,16 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   protected HeatMapClickListener heatMapListener_;
   protected String groupName_;
   private JComboBox<String> showOption_;
+  private JComboBox<String> showOptionMSn_;
   private JComboBox<String> selectionMode_;
+  private JComboBox<String> sortMode_;
   protected JCheckBox showInternalStandards_;
   protected JCheckBox showExternalStandards_;
   protected JCheckBox markDoublePeaks_;
   protected JComboBox<String> maxIsotopes_;
   protected Hashtable<String,Hashtable<String,ResultCompVO>> resultsOfOneGroup_;
   protected Vector<String> experimentNames_;
-  protected Vector<String> moleculeNames_;
+  protected final Vector<String> moleculeNames_;
   protected Hashtable<String,Integer> isLookup_;
   protected Hashtable<String,Integer> esLookup_;
   protected ResultDisplaySettingsVO settingsVO_;
@@ -325,6 +336,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   	JPanel settingsPanel = new JPanel();
   	settingsPanel.setLayout(new GridBagLayout());
   	Insets insets = new Insets(5, 5, 5, 5);
+  	Insets insetsLess = new Insets(1, 0, 1, 10);
   	
   	int y=0;
   	if (!isGrouped_){
@@ -338,44 +350,70 @@ public class HeatMapDrawing extends JPanel implements ActionListener
 	        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
 	    y++;
   	}
+  	
     settingsPanel.add(new JLabel("Number of isotopes: "), new GridBagConstraints(0, y, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
     settingsPanel.add(maxIsotopes_, new GridBagConstraints(1, y, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
     y++;
     
-    int x=0;
-    settingsPanel.add(new JLabel("Show: "), new GridBagConstraints(x, y, 1, 1, 0.0, 0.0
+    settingsPanel.add(new JLabel("Display: "), new GridBagConstraints(0, y, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
-    x++;
+    
+    JPanel displayOptionsPanel = new JPanel();
+    displayOptionsPanel.setLayout(new GridBagLayout());
+    settingsPanel.add(displayOptionsPanel, new GridBagConstraints(1, y, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
+    y++;
+    
+    JPanel displayOptionsPanelTop = new JPanel();
+    displayOptionsPanelTop.setLayout(new GridBagLayout());
+    displayOptionsPanel.add(displayOptionsPanelTop, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insetsLess, 0, 0));
+    
+    JPanel displayOptionsPanelBottom = new JPanel();
+    displayOptionsPanelBottom.setLayout(new GridBagLayout());
+    displayOptionsPanel.add(displayOptionsPanelBottom, new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insetsLess, 0, 0));
     
     if (!isGrouped_){
 	    showOption_ = new JComboBox<String>(DISPLAY_OPTIONS);
 	    showOption_.setActionCommand(CHANGE_DISPLAY_OPTION);
 	    showOption_.addActionListener(this);
 	    showOption_.setToolTipText(TooltipTexts.HEATMAP_SHOW_OPTION);
-	    settingsPanel.add(showOption_, new GridBagConstraints(x, y, 1, 1, 0.0, 0.0
-	        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
-	    x++;
+	    displayOptionsPanelTop.add(showOption_, new GridBagConstraints(0,0, 1, 1, 0.0, 0.0
+	        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insetsLess, 0, 0));
     }
+    
+    showOptionMSn_ = new JComboBox<String>(DISPLAY_OPTIONS_MSN);
+    showOptionMSn_.setActionCommand(CHANGE_DISPLAY_OPTION_MSN);
+    showOptionMSn_.addActionListener(this);
+    showOptionMSn_.setToolTipText(TooltipTexts.HEATMAP_SHOW_OPTION_MSN);
+    displayOptionsPanelTop.add(showOptionMSn_, new GridBagConstraints(1,0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insetsLess, 0, 0));
+    
+    sortMode_ = new JComboBox<String>(SORTING_OPTIONS);
+    sortMode_.setActionCommand(CHANGE_SORTING_OPTION);
+    sortMode_.addActionListener(this);
+    sortMode_.setToolTipText(TooltipTexts.HEATMAP_SORTING_OPTIONS);
+    displayOptionsPanelTop.add(sortMode_, new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
     
     showInternalStandards_  = new JCheckBox("internal standards");
     showInternalStandards_.setSelected(true);
     showInternalStandards_.setActionCommand(CHANGE_IS_STATUS);
     showInternalStandards_.addActionListener(this);
     showInternalStandards_.setToolTipText(TooltipTexts.HEATMAP_SHOW_INT);
-    settingsPanel.add(showInternalStandards_, new GridBagConstraints(x, y, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
-    x++;
+    displayOptionsPanelBottom.add(showInternalStandards_, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insetsLess, 0, 0));
 
     showExternalStandards_  = new JCheckBox("external standards");
     showExternalStandards_.setSelected(true);
     showExternalStandards_.setActionCommand(CHANGE_ES_STATUS);
     showExternalStandards_.addActionListener(this);
     showExternalStandards_.setToolTipText(TooltipTexts.HEATMAP_SHOW_EXT);
-    settingsPanel.add(showExternalStandards_, new GridBagConstraints(x, y, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
-    x++;
+    displayOptionsPanelBottom.add(showExternalStandards_, new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insetsLess, 0, 0));
 
     if (!isGrouped_){
       markDoublePeaks_  = new JCheckBox("double peaks/missed mods");
@@ -383,10 +421,9 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       markDoublePeaks_.setActionCommand(CHANGE_DOUBLE_STATUS);
       markDoublePeaks_.addActionListener(this);
       markDoublePeaks_.setToolTipText(TooltipTexts.HEATMAP_DOUBLE_PEAKS);
-      settingsPanel.add(markDoublePeaks_, new GridBagConstraints(x, y, 2, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
+      displayOptionsPanelBottom.add(markDoublePeaks_, new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insetsLess, 0, 0));
     }
-    y++;
     
     JPanel buttonsPanel = new JPanel();
     ExportButton settingsButton = new ExportButton("Quantitative settings","openSettingsDialog",Color.BLACK,Color.decode("#EEEEEE"),TooltipTexts.HEATMAP_SETTINGS,this);
@@ -610,10 +647,25 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         this.invalidate();
         this.updateUI();
       }
-    } else if (actionCommand.equals(CHANGE_DISPLAY_OPTION)) {
+    } else if (actionCommand.equals(CHANGE_DISPLAY_OPTION) || actionCommand.equals(CHANGE_DISPLAY_OPTION_MSN) || actionCommand.equals(CHANGE_SORTING_OPTION)) {
     	this.selectedMoleculeRows_.clear();
     	this.selectedSingleMolecules_.clear();
-    	this.generateHeatMap();
+    	if (actionCommand.equals(CHANGE_DISPLAY_OPTION_MSN) && ((String)showOptionMSn_.getSelectedItem()).equalsIgnoreCase(DISPLAY_OPTION_ALL_GROUPS))
+  		{
+  			selectionSettings_.updateNames(moleculeNames_, true); //all molecule names have to be selected, as the lipidomicsheatmap only builds heatmaprows for selected ones!
+    		combinedChartSettings_.updateNames(moleculeNames_, false);
+    		if (chromExport_ != null) //null for group heatmaps
+    			chromExport_.updateAnalyteNames(new ArrayList<String>(moleculeNames_));
+  		}
+    	this.generateHeatMap(); //must be generated before the next if and after the one before!
+    	if (actionCommand.equals(CHANGE_DISPLAY_OPTION_MSN) && ((String)showOptionMSn_.getSelectedItem()).equalsIgnoreCase(DISPLAY_OPTION_MSN_VERIFIED_GROUPS))
+  		{
+  			Vector<String> analyteNames = new Vector<String>(this.heatmap_.getOriginalAnalyteNames());
+    		selectionSettings_.updateNames(analyteNames, true);
+    		combinedChartSettings_.updateNames(analyteNames, false);
+    		if (chromExport_ != null) //null for group heatmaps
+    			chromExport_.updateAnalyteNames(new ArrayList<String>(analyteNames));
+  		}
       this.invalidate();
       this.updateUI();
     } else if (actionCommand.equalsIgnoreCase("openSettingsDialog")){
@@ -879,7 +931,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         for (String mod : this.modifications_){
           if (chromExport_.isModificationSelected(mod))modsToUse.add(mod);
         }
-        for (String name : this.moleculeNames_){
+        for (String name : this.heatmap_.getOriginalAnalyteNames()){
           if (chromExport_.isMoleculeSelected(name)){
             if (modifications_.size()==1)
               analsToExport.add(name);
@@ -1425,16 +1477,16 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   
   private Vector<String> getUnselectedMoleculeNames(){
     Vector<String> unselectedNames = new Vector<String>();
-    for (String name : moleculeNames_){
+    for (String name : this.heatmap_.getOriginalAnalyteNames()){
       if (!this.selectionSettings_.isSelected(name)) unselectedNames.add(name);
     }
     return unselectedNames;    
   }
   
   public Vector<String> getSelectedMoleculeNames(){
-    
     Vector<String> selectedNames = new Vector<String>();
-    for (String name : moleculeNames_){
+    
+    for (String name : this.moleculeNames_){
       boolean accept = true;
       if (this.selectionSettings_.isSelected(name)){
         if (!this.showInternalStandards_.isSelected() && isLookup_.containsKey(name))
@@ -1460,6 +1512,13 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   	if (showOption_ == null)
   		return DISPLAY_OPTION_SUM_COMP;
   	return (String)showOption_.getSelectedItem();
+	}
+  
+  public String getSelectedShowOptionMSn()
+	{
+  	if (showOptionMSn_ == null)
+  		return DISPLAY_OPTION_ALL_GROUPS;
+  	return (String)showOptionMSn_.getSelectedItem();
 	}
 
 	private class SelectionItemListener implements java.awt.event.ItemListener
@@ -1596,7 +1655,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   
   private Vector<String> getISs(){
     Vector<String> iss = new Vector<String>();
-    for (String anal : moleculeNames_){
+    for (String anal : this.heatmap_.getOriginalAnalyteNames()){
       if (this.isLookup_.containsKey(anal))iss.add(anal);
     }
     return iss;
@@ -1604,7 +1663,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   
   private Vector<String> getESs(){
     Vector<String> ess = new Vector<String>();
-    for (String anal : moleculeNames_){
+    for (String anal : this.heatmap_.getOriginalAnalyteNames()){
       if (this.esLookup_.containsKey(anal))ess.add(anal);
     }
     return ess;
@@ -1726,7 +1785,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     Vector<String> absPaths = new Vector<String>();
     Hashtable<String,Vector<AutoAnalyteAddVO>> updateablesAndAnalytesBefore = new Hashtable<String,Vector<AutoAnalyteAddVO>>();
     Vector<Integer> maxIsotopes = new Vector<Integer>();
-    for (String molName :moleculeNames_){
+    for (String molName : heatmap_.getOriginalAnalyteNames()){
       if (!selectedSingleMolecules_.containsKey(molName) && !currentlySelected.getLabel().equalsIgnoreCase(molName))
         continue;
       String expName;
@@ -1824,6 +1883,11 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   {
   	displaySettings_.copySettings(settings);
   	actionPerformed(ResultDisplaySettings.APPLY_DISPLAY_SETTINGS);
+  }
+  
+  public String getSortMode()
+  {
+  	return (String)this.sortMode_.getSelectedItem();
   }
   
   

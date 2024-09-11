@@ -1697,7 +1697,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     rtTimeUnit_.setEnabled(separateHitsByRT_.isSelected());
     
-    //start: added via the oxidized lipids extension
     JSeparator js = new JSeparator(SwingConstants.VERTICAL);
     js.setPreferredSize(new Dimension(5,1));
     GridBagConstraints gbc = new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
@@ -1706,51 +1705,37 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     gbc.weighty = 1;
     groupRtPanel.add(js, gbc);
     
-    JLabel temp_label = new JLabel("Show MSn Only");
-    groupRtPanel.add(temp_label ,new GridBagConstraints(5, 0, 1, 1, 0.0, 0.0
-            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    temp_label.setToolTipText("Show only lipids with MSn headgroup evidence");
-    showMSnEvidenceStat_ = new JCheckBox("");
+    showMSnEvidenceStat_ = new JCheckBox("Load MSn Only");
+    showMSnEvidenceStat_.setToolTipText(TooltipTexts.STATISTICS_SHOW_MSN_ONLY);
     showMSnEvidenceStat_.addItemListener(new LipidomicsItemListener("showMSnOnlyStat"));
-    groupRtPanel.add(showMSnEvidenceStat_ ,new GridBagConstraints(6, 0, 1, 1, 0.0, 0.0
+    groupRtPanel.add(showMSnEvidenceStat_ ,new GridBagConstraints(5, 0, 1, 1, 0.0, 0.0
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     
     
     js = new JSeparator(SwingConstants.VERTICAL);
     js.setPreferredSize(new Dimension(5,1));
-    gbc = new GridBagConstraints(7, 0, 1, 1, 0.0, 0.0
-            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0);
-    gbc.fill = GridBagConstraints.VERTICAL;
-    gbc.weighty = 1;
+    gbc = new GridBagConstraints(6, 0, 1, 1, 0.0, 1.0
+            ,GridBagConstraints.WEST, GridBagConstraints.VERTICAL, new Insets(0, 6, 0, 0), 0, 0);
     groupRtPanel.add(js, gbc);
     
-    temp_label = new JLabel("Chain Evidence Only");
-    groupRtPanel.add(temp_label ,new GridBagConstraints(8, 0, 1, 1, 0.0, 0.0
-            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    temp_label.setToolTipText("Show only lipids with MSn headgroup- and chain evidence");
-    showChainEvidenceStat_ = new JCheckBox("");
+    showChainEvidenceStat_ = new JCheckBox("Chain Evidence Only");
     showChainEvidenceStat_.setEnabled(false);
+    showChainEvidenceStat_.setToolTipText(TooltipTexts.STATISTICS_CHAIN_EVIDENCE_ONLY);
     showChainEvidenceStat_.addItemListener(new LipidomicsItemListener("showChainOnlyStat"));
-    groupRtPanel.add(showChainEvidenceStat_ ,new GridBagConstraints(9, 0, 1, 1, 0.0, 0.0
+    groupRtPanel.add(showChainEvidenceStat_ ,new GridBagConstraints(7, 0, 1, 1, 0.0, 0.0
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     
     js = new JSeparator(SwingConstants.VERTICAL);
     js.setPreferredSize(new Dimension(5,1));
-    gbc = new GridBagConstraints(10, 0, 1, 1, 0.0, 0.0
-            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0);
-    gbc.fill = GridBagConstraints.VERTICAL;
-    gbc.weighty = 1;
+    gbc.gridx = 8;
     groupRtPanel.add(js, gbc);
     
-    temp_label = new JLabel("Combine Classes with ox-Classes");
-    groupRtPanel.add(temp_label ,new GridBagConstraints(11, 0, 1, 1, 0.0, 0.0
-            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    temp_label.setToolTipText("Combines classes with their respective ox-class");
-    combineWithOx_ = new JCheckBox("");
+    combineWithOx_ = new JCheckBox("Combine Classes with ox-Classes");
+    combineWithOx_.setToolTipText(TooltipTexts.STATISTICS_COMBINE_OX);
     combineWithOx_.addItemListener(new LipidomicsItemListener("combineWithOx"));
-    groupRtPanel.add(combineWithOx_ ,new GridBagConstraints(12, 0, 1, 1, 0.0, 0.0
+    groupRtPanel.add(combineWithOx_ ,new GridBagConstraints(9, 0, 1, 1, 0.0, 0.0
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    //end: added via the oxidized lipids extension   
+ 
     
     statisticalAnalysisSettingsPanel.add(groupRtPanel,new GridBagConstraints(0, 1, 5, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(5, 0, 15, 0), 0, 0));   
@@ -7439,15 +7424,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       
       JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, new JScrollPane(drawing.getSettingsPanel()));
 			splitPane.setOneTouchExpandable(true);
-			splitPane.setDividerLocation(640);
+			splitPane.setDividerLocation(600);
       
-//      splitPane.add(drawing.getSettingsPanel());
-//      splitPane.add(scrollPane);
-      
-//      if (analysisModule_.getExpNamesInSequence().size()>25)
-//        aPanel.add(scrollPane,BorderLayout.CENTER);
-//      else
-//        aPanel.add(scrollPane,BorderLayout.WEST);
       resultsViewTabs.addTab("Heatmap", splitPane);
       resultsViewTabs.setToolTipTextAt(0, TooltipTexts.TABS_RESULTS_HEATMAP+molGroup_+"</html>");
       JPanel barChartPanel = new JPanel();

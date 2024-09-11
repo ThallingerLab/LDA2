@@ -775,6 +775,17 @@ public class ResultCompGroupVO extends ResultCompVO
     return values;
   }
   
+  @Override
+  public boolean isMSnVerifiedOrStandard()
+  {
+  	for (ResultCompVO compVO : oneGroup_.values())
+  	{
+  		if (compVO.isMSnVerifiedOrStandard())
+  			return true;
+  	}
+  	return false;
+  }
+  
   public Hashtable<String,ResultCompVO> getGroupingPartners(){
     return oneGroup_;
   }
