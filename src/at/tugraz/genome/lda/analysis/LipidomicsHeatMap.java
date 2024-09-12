@@ -270,6 +270,8 @@ public class LipidomicsHeatMap
   
   boolean isDesiredLevelOfVerification(Hashtable<String,ResultCompVO> resultsOfOneSumComp)
   {
+  	if (!isGroupPresent(resultsOfOneSumComp))
+  		return false;
   	if (isAllAnalyteGroups_)
   		return true;
   	else
@@ -279,6 +281,21 @@ public class LipidomicsHeatMap
   			if (resultsOfOneSumComp.get(experimentName).isMSnVerifiedOrStandard())
   				return true;
     	}
+  	}
+  	return false;
+  }
+  
+  /**
+   * For grouped compVOs it is possible, that a row is empty (due to the one file with an entry not being selected)
+   * @param oneGroup
+   * @return
+   */
+  private boolean isGroupPresent(Hashtable<String,ResultCompVO> oneGroup)
+  {
+  	for (ResultCompVO vo : oneGroup.values())
+  	{
+  		if (!vo.isEmptyObject())
+  			return true;
   	}
   	return false;
   }

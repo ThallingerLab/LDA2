@@ -58,7 +58,8 @@ public class ResultCompGroupVO extends ResultCompVO
   private Vector<Double> sumPercentualSds_;
 //  private Vector<Double> relativeMedianAreaSD_;
   
-  public ResultCompGroupVO(Hashtable<String,ResultCompVO> oneGroup){
+  public ResultCompGroupVO(Hashtable<String,ResultCompVO> oneGroup)
+  {
     oneGroup_ = oneGroup;
 
     super.usedIsotpes_ = 0;
@@ -791,7 +792,18 @@ public class ResultCompGroupVO extends ResultCompVO
   			count++;
   		}
   	}
-  	return sum/count;
+  	return count>0 ? sum/count : 0d;
+  }
+  
+  @Override
+  public boolean isEmptyObject()
+  {
+  	for (ResultCompVO vo : oneGroup_.values())
+  	{
+  		if (!vo.isEmptyObject())
+  			return false;
+  	}
+  	return true;
   }
   
   @Override

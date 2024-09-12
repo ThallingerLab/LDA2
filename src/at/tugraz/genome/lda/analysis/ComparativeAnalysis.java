@@ -2012,7 +2012,6 @@ public class ComparativeAnalysis extends ComparativeNameExtractor implements Com
             ResultCompGroupVO groupVO = new ResultCompGroupVO(participatingExps);
             groupedCompForOneMolecule.put(groupName, groupVO);
           }
-          
           groupedCompForOneGroup.put(molecule, groupedCompForOneMolecule);
         }
         comparativeRatiosGroups_.put(molGroup, groupedCompForOneGroup);
