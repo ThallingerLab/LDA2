@@ -237,7 +237,7 @@ public class TooltipTexts
   public final static String EXPORT_MAF = "<html>Exports data in MAF format.</html>";
   
   public final static String HEATMAP_SETTINGS_APPLY_TO_ALL = "<html>Apply these settings to all lipid classes, as far as applicable</html>";
-  public final static String HEATMAP_SELECTION_MODE = "<html>Allows for selection of the chosen option with a single click.</html>";
+  public final static String HEATMAP_SELECTION_MODE = "<html>Allows for quick selection/deselection of the chosen option with a single left-click.</html>";
   public final static String HEATMAP_SORTING_OPTIONS = "<html>Choose the way analytes are sorted.</html>";
   public final static String HEATMAP_SHOW_OPTION = "<html>Select at which level of structural detail analyte groups should be displayed.</html>";
   public final static String HEATMAP_SHOW_OPTION_MSN = "<html>Select at which level of MS verification analyte groups should be displayed. <br>" +

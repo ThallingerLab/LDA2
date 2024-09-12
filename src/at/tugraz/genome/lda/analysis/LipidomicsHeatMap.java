@@ -186,7 +186,46 @@ public class LipidomicsHeatMap
   	{
   		rows.sort(new DefaultComparator(parent.getSelectedMoleculeNames()));
   	}
+  	else if (parent.getSortMode().equalsIgnoreCase(HeatMapDrawing.SORT_OPTION_MZ))
+  	{
+  		rows.sort(new MZComparator());
+  	}
+  	else if (parent.getSortMode().equalsIgnoreCase(HeatMapDrawing.SORT_OPTION_AREA))
+  	{
+  		rows.sort(new AreaComparator(parent));
+  	}
   	return rows;
+  }
+  
+  class AreaComparator implements Comparator<HeatMapRow> {
+  	HeatMapDrawing parent_;
+  	
+  	AreaComparator(HeatMapDrawing parent)
+  	{
+  		this.parent_ = parent;
+  	}
+  	
+  	@Override
+    public int compare(HeatMapRow a, HeatMapRow b) {
+  		return Comparator.comparing(HeatMapRow::isMolecularSpeciesLevel)
+  				.thenComparing((HeatMapRow r) -> parent_.getAverageArea(r.getAllCompVO())).reversed()
+  				.thenComparing(HeatMapRow::getOriginalAnalyteName)
+      		.thenComparing(HeatMapRow::getMolecularSpeciesName)
+      		.thenComparing(HeatMapRow::getRtGroupValue)
+      		.compare(a,b);
+    }
+  }
+  
+  class MZComparator implements Comparator<HeatMapRow> {
+  	@Override
+    public int compare(HeatMapRow a, HeatMapRow b) {
+  		return Comparator.comparing(HeatMapRow::getPrecursorMZ)
+  				.thenComparing(HeatMapRow::getOriginalAnalyteName)
+      		.thenComparing(HeatMapRow::isMolecularSpeciesLevel)
+      		.thenComparing(HeatMapRow::getMolecularSpeciesName)
+      		.thenComparing(HeatMapRow::getRtGroupValue)
+      		.compare(a,b);
+    }
   }
   
   class DefaultComparator implements Comparator<HeatMapRow> {
@@ -1339,6 +1378,11 @@ public class LipidomicsHeatMap
 					}
 				}
 			}
+		}
+		
+		private Double getPrecursorMZ()
+		{
+			return this.compVOs_.values().stream().filter((s) -> s.getMass(0)>0).findFirst().get().getMass(0); //the m/z value will be the same for each ID of a group
 		}
 		
 		private Double getValue(String experiment)

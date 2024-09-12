@@ -24,6 +24,7 @@
 package at.tugraz.genome.lda.vos;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Hashtable;
 import java.util.Vector;
 
@@ -773,6 +774,24 @@ public class ResultCompGroupVO extends ResultCompVO
         values.add(value);
     }
     return values;
+  }
+  
+  @Override
+  public double getMass(int maxIsotope)
+  {
+  	Collection<ResultCompVO> vos = oneGroup_.values();
+  	int count = 0;
+  	Double sum = 0d;
+  	for (ResultCompVO vo : vos)
+  	{
+  		Double value = vo.getMass(maxIsotope);
+  		if (value > 0)
+  		{
+  			sum += value;
+  			count++;
+  		}
+  	}
+  	return sum/count;
   }
   
   @Override

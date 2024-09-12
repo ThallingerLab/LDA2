@@ -119,23 +119,25 @@ public class HeatMapDrawing extends JPanel implements ActionListener
 {
   private static final long serialVersionUID = 9212631108743680488L;
   private static final String SELECTION_MODE_OFF = "Off";
-  private static final String SELECTION_MODE_MOLECULE_ROWS = "Molecule rows";
-  private static final String SELECTION_MODE_SINGLE_MOLECULES = "Single molecules";
-  private static final String SELECTION_MODE_BOTH = "Molecule rows and single molecules";
+  private static final String SELECTION_MODE_MOLECULE_ROWS = "ID groups (rows)";
+  private static final String SELECTION_MODE_SINGLE_MOLECULES = "Single IDs (rectangles)";
+  private static final String SELECTION_MODE_BOTH = "ID groups and single IDs";
   private static final String[] SELECTION_MODE_OPTIONS = new String[] {SELECTION_MODE_OFF,SELECTION_MODE_MOLECULE_ROWS,SELECTION_MODE_SINGLE_MOLECULES,SELECTION_MODE_BOTH};
   private static final String CHANGE_SELECTION_MODE = "changeSelectionMode";
   public static final String DISPLAY_OPTION_SUM_COMP = "Sum compositions only";
   public static final String DISPLAY_OPTION_BOTH = "Include lipid molecular species";
   protected static final String[] DISPLAY_OPTIONS = new String[] {DISPLAY_OPTION_SUM_COMP,DISPLAY_OPTION_BOTH};
   protected static final String CHANGE_DISPLAY_OPTION = "changeDisplayOption";
-  public static final String DISPLAY_OPTION_ALL_GROUPS = "All analyte groups";
-  public static final String DISPLAY_OPTION_MSN_VERIFIED_GROUPS = "Analyte groups verified by MS/MS";
+  public static final String DISPLAY_OPTION_ALL_GROUPS = "All ID groups";
+  public static final String DISPLAY_OPTION_MSN_VERIFIED_GROUPS = "ID groups verified by MS/MS";
   protected static final String[] DISPLAY_OPTIONS_MSN = new String[] {DISPLAY_OPTION_ALL_GROUPS,DISPLAY_OPTION_MSN_VERIFIED_GROUPS};
   protected static final String CHANGE_DISPLAY_OPTION_MSN = "changeDisplayOptionMSn";
   public static final String SORT_OPTION_DEFAULT = "Sort by order in file";
   public static final String SORT_OPTION_SPECIES = "Sort by species name";
   public static final String SORT_OPTION_RT = "Sort by elution order";
-  protected static final String[] SORTING_OPTIONS= new String[] {SORT_OPTION_DEFAULT,SORT_OPTION_SPECIES,SORT_OPTION_RT};
+  public static final String SORT_OPTION_MZ = "Sort by precursor m/z";
+  public static final String SORT_OPTION_AREA = "Sort by average intensity (sum compositions separate)";
+  protected static final String[] SORTING_OPTIONS= new String[] {SORT_OPTION_DEFAULT,SORT_OPTION_SPECIES,SORT_OPTION_RT,SORT_OPTION_MZ,SORT_OPTION_AREA};
   protected static final String CHANGE_SORTING_OPTION = "changeSortingOption";
   protected static final String CHANGE_IS_STATUS = "changeISShowStatus";
   protected static final String CHANGE_ES_STATUS = "changeESShowStatus";
@@ -357,7 +359,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
     y++;
     
-    settingsPanel.add(new JLabel("Display: "), new GridBagConstraints(0, y, 1, 1, 0.0, 0.0
+    settingsPanel.add(new JLabel("Display options: "), new GridBagConstraints(0, y, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
     
     JPanel displayOptionsPanel = new JPanel();
@@ -445,7 +447,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
     
     settingsPanel.add(buttonsPanel, new GridBagConstraints(1, y, 9, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, insetsLess, 0, 0));
     y++;
     
     ExportPanel exportPanel = new ExportPanel(Color.decode("#EEEEEE"),Color.BLACK,this,!isGrouped_,true, false);
@@ -454,7 +456,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   	settingsPanel.add(exportLabel,new GridBagConstraints(0, y, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, insets, 0, 0));
   	settingsPanel.add(exportPanel,new GridBagConstraints(1, y, 9, 1, 0.0, 0.0
-        ,GridBagConstraints.NORTHWEST, GridBagConstraints.NONE, insets, 0, 0));
+        ,GridBagConstraints.NORTHWEST, GridBagConstraints.NONE, insetsLess, 0, 0));
   	y++;
   	
     exportProgressPanel_ = new JPanel();
@@ -567,7 +569,6 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     int maxIsotope = 0;
     if (actionCommand.equalsIgnoreCase(CHANGE_SELECTION_MODE))
     {
-    	System.out.println((String)selectionMode_.getSelectedItem());
     	if (((String)selectionMode_.getSelectedItem()).equalsIgnoreCase(SELECTION_MODE_MOLECULE_ROWS))
     	{
     		this.isMoleculeRowSelectionMode_ = true;
@@ -1889,6 +1890,27 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   {
   	return (String)this.sortMode_.getSelectedItem();
   }
+  
+  public Double getAverageArea(ArrayList<ResultCompVO> vos)
+	{
+  	int count = 0;
+  	Double sum = 0d;
+  	for (ResultCompVO vo : vos)
+  	{
+  		Double value = 0d;
+  		try
+  		{
+  			int isotopes = vo.getAvailableIsotopeNr(Integer.parseInt((String)getMaxIsotopes().getSelectedItem()));
+  			value = vo.getArea(isotopes, this.getSettingsVO());
+  		} catch (CalculationNotPossibleException ex) {}
+  		if (value > 0)
+  		{
+  			sum += value;
+  			count++;
+  		}
+  	}
+  	return count > 0 ? sum/count : 0d;
+	}
   
   
   public void cleanup(){
