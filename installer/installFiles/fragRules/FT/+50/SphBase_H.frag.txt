@@ -1,0 +1,31 @@
+[GENERAL]
+AmountOfChains=1
+AmountOfLCBs=1
+ChainLibrary=fattyAcidChains.xlsx
+LCBLibrary=dLCB.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+SpectrumCoverage=10%
+BasePeakCutoff=0.01%
+LcbHydroxylationRange=1-3
+RetentionTimePostprocessing=true
+ValidOnlyWithOtherAdduct=Na|-OH
+OtherAdductValidityTolerance=0.15
+ChooseMoreLikelyRtWhenOtherAdductEqual=true
+
+
+[HEAD]
+!FRAGMENTS
+Name=NL_H2O		Formula=$PRECURSOR-H2O		Charge=1	MSLevel=2	mandatory=true
+Name=NL_NH3		Formula=$PRECURSOR-H3N		Charge=1	MSLevel=2	mandatory=false
+Name=NL_NH3+H2O		Formula=$PRECURSOR-H5ON		Charge=1	MSLevel=2	mandatory=false
+Name=NL_2xH2O_36	Formula=$PRECURSOR-H4O2		Charge=1	MSLevel=2	mandatory=true	oh=3
+Name=Frag71		Formula=C5H11			Charge=1	MSLevel=2	mandatory=false
+Name=Frag83		Formula=C6H11			Charge=1	MSLevel=2	mandatory=false
+Name=Frag95		Formula=C7H11			Charge=1	MSLevel=2	mandatory=false
+Name=Frag97		Formula=C6H9O			Charge=1	MSLevel=2	mandatory=false
+Name=Frag109		Formula=C7H9O			Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=NL_H2O*0.8>NL_NH3					mandatory=true
+Equation=Frag71|Frag83|Frag95|Frag97|Frag109|NL_NH3+H2O|NL_NH3	mandatory=true

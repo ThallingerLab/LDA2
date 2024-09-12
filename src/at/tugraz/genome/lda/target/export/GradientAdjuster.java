@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 
 /**
  * 

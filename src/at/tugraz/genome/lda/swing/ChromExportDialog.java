@@ -73,6 +73,7 @@ public class ChromExportDialog extends JDialog implements ActionListener
   private Hashtable<String,JCheckBox> modBoxes_;
   private JPanel expSelection_;
   private JPanel moleculeSelection_;
+  private JScrollPane scrollPane_;
   private JPanel modificationsSelection_;
   private JRadioButton pngRadio_;
   private JRadioButton svgRadio_;
@@ -95,14 +96,14 @@ public class ChromExportDialog extends JDialog implements ActionListener
     expBoxes_ = this.initCheckboxes(expSelection_, "Samples", experiments_);
     moleculeSelection_ = new JPanel();
     analBoxes_ = this.initCheckboxes(moleculeSelection_, "Analytes" ,analytes_);
-    JScrollPane analScrollPane = new JScrollPane(moleculeSelection_);
-    analScrollPane.setPreferredSize(new Dimension(1000, 600));
+    scrollPane_ = new JScrollPane(moleculeSelection_);
+    scrollPane_.setPreferredSize(new Dimension(1000, 600));
     modificationsSelection_ = new JPanel();
     modBoxes_ = this.initCheckboxes(modificationsSelection_, "Modifications",modifications_);
     
     tabs_.addTab("Sample", expSelection_);
     tabs_.setToolTipTextAt(0, TooltipTexts.TABS_CHROMEXPORT_EXPS);
-    tabs_.addTab("Analyte", analScrollPane);
+    tabs_.addTab("Analyte", scrollPane_);
     tabs_.setToolTipTextAt(1, TooltipTexts.TABS_CHROMEXPORT_ANALS);
     tabs_.addTab("Modifications", modificationsSelection_);
     tabs_.setToolTipTextAt(2, TooltipTexts.TABS_CHROMEXPORT_MODS);
@@ -262,6 +263,21 @@ public class ChromExportDialog extends JDialog implements ActionListener
     }
     experiments_ = names;
     correctDialogSize();
+  }
+  
+  public void updateAnalyteNames(ArrayList<String> names){
+  	this.tabs_.remove(1);
+  	this.analytes_ = names;
+  	this.moleculeSelection_ = new JPanel();
+  	this.analBoxes_ = this.initCheckboxes(moleculeSelection_, "Analytes" ,analytes_);
+  	this.scrollPane_ = new JScrollPane(moleculeSelection_);
+  	scrollPane_.setPreferredSize(new Dimension(1000, 600));
+  	tabs_.insertTab("Analyte", null, scrollPane_, TooltipTexts.TABS_CHROMEXPORT_ANALS, 1);
+  	correctDialogSize();
+  	invalidate();
+    doLayout();
+    this.setSize(this.getPreferredSize());
+    repaint();
   }
   
   public void checkMolecules(Vector<String> anals, boolean check){

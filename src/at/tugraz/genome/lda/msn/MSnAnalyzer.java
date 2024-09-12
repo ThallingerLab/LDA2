@@ -70,7 +70,7 @@ import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.maspectras.quantification.ChromatogramReader;
 import at.tugraz.genome.maspectras.utils.Calculator;
 import at.tugraz.genome.voutils.GeneralComparator;
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 
 /**
  * Central class for the verification of MSn evidence

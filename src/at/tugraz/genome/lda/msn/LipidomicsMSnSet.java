@@ -48,7 +48,7 @@ import at.tugraz.genome.lda.vos.DoubleStringVO;
 import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.voutils.GeneralComparator;
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 
 /**
  * TODO: remove ambig pos.

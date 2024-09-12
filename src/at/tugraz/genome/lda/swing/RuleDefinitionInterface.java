@@ -179,7 +179,8 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
   private ElementConfigParser elementParser_ = Settings.getElementParser();  
   
   /** Possibility List for combo mandatory fields */
-  private String possibibilityListPostProcessing_[] = {"true", "false"};
+  private String possibibilityListPostProcessingFragment_[] = {"true", "false", "other"};
+  private String possibibilityListPostProcessingIntensity_[] = {"true", "false"};
       
   /** The analyzer from LipidomicsAnalyzer as a parameter of this class*/
   LipidomicsAnalyzer analyzer_;
@@ -689,10 +690,14 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
         headFragmentMsLevelVerifier_[i] = fragmentMsLevelVerifier;
         headRuleMSLevels_[i] = headRuleMSLevel;
         
-        JComboBox<Object> fragRuleMandatoryField = new JComboBox<Object>(possibibilityListPostProcessing_);          
+        JComboBox<Object> fragRuleMandatoryField = new JComboBox<Object>(possibibilityListPostProcessingFragment_);          
         if(headFragments_.elementAt(i).isMandatory()==FragmentRuleVO.MANDATORY_TRUE)
         {
           fragRuleMandatoryField.setSelectedIndex(0); 
+        }           
+        else if(headFragments_.elementAt(i).isMandatory()==FragmentRuleVO.MANDATORY_OTHER)
+        {
+          fragRuleMandatoryField.setSelectedIndex(2); 
         }           
         else
         {
@@ -789,7 +794,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    fragRuleMsLevelField_.setToolTipText("Enter the ms lever of the fragment here!");
    fragRuleMsLevelField_.getDocument().addDocumentListener(new AddHeadFragmentDocumentListener(this));
    
-   fragRuleMandatoryCombo_ = new JComboBox<Object>(possibibilityListPostProcessing_); 
+   fragRuleMandatoryCombo_ = new JComboBox<Object>(possibibilityListPostProcessingFragment_); 
    fragRuleMandatoryCombo_.setSelectedIndex(1);   
    gridBayLayout_.setConstraints(fragRuleMandatoryCombo_, new GridBagConstraints (5, headFragments_.size()+1, 1, 1, 0, 0, 
    GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0 ));
@@ -870,7 +875,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
      headRuleEquationFields_[i] = equRuleEquationField;
       
   
-     JComboBox<Object> equRuleMandatoryField = new JComboBox<Object>(possibibilityListPostProcessing_); 
+     JComboBox<Object> equRuleMandatoryField = new JComboBox<Object>(possibibilityListPostProcessingIntensity_); 
      if(headIntensityRules_.elementAt(i).isMandatory())
      {
        equRuleMandatoryField.setSelectedIndex(0); 
@@ -942,7 +947,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
    equRuleEquationField_.setToolTipText("Enter the equation here!");
    equRuleEquationField_.getDocument().addDocumentListener(new AddHeadEquationDocumentListener(this));
       
-   equRuleMandatoryCombo_ = new JComboBox<Object>(possibibilityListPostProcessing_); 
+   equRuleMandatoryCombo_ = new JComboBox<Object>(possibibilityListPostProcessingIntensity_); 
    equRuleMandatoryCombo_.setSelectedIndex(1);   
    gridBayLayout_.setConstraints(equRuleMandatoryCombo_, new GridBagConstraints (2, headIntensityRulesSize+headFragments_.size()+5, 1, 1, 0, 0,  
    GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0 ));   
@@ -1161,12 +1166,13 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       chainFragmentMsLevelVerifier_[i] = chainFragmentMsLevelVerifier;
       chainRuleMSLevels_[i] = chainRuleMsLevelField;
            
-      final JComboBox<Object> chainRuleMandatoryField = new JComboBox<Object>(possibibilityListPostProcessing_); 
+      final JComboBox<Object> chainRuleMandatoryField = new JComboBox<Object>(possibibilityListPostProcessingFragment_); 
       if(sortedChainFragments_.elementAt(i).isMandatory()==FragmentRuleVO.MANDATORY_TRUE)
       {
         chainRuleMandatoryField.setSelectedIndex(0); 
-      }           
-      else
+      } else if (sortedChainFragments_.elementAt(i).isMandatory()==FragmentRuleVO.MANDATORY_OTHER){
+        chainRuleMandatoryField.setSelectedIndex(2);
+      } else
       {
         chainRuleMandatoryField.setSelectedIndex(1);
       }        
@@ -1263,7 +1269,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     chainRuleMsLevelField_.setToolTipText("Enter the ms lever of the fragment here!");
     chainRuleMsLevelField_.getDocument().addDocumentListener(new AddChainFragmentDocumentListener(this));
 
-    chainRuleMandatoryCombo_ = new JComboBox<Object>(possibibilityListPostProcessing_);
+    chainRuleMandatoryCombo_ = new JComboBox<Object>(possibibilityListPostProcessingFragment_);
     chainRuleMandatoryCombo_.setSelectedIndex(1); 
     gridBayLayout_.setConstraints(chainRuleMandatoryCombo_, new GridBagConstraints (5, chainFragmentRules_.size()+1, 1, 1, 0, 0, 
     GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0 ));
@@ -1346,7 +1352,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       chainRuleEquationFields_[i] = equChainRuleEquationField;
           
       
-      JComboBox<Object> equChainRuleMandatoryField = new JComboBox<Object>(possibibilityListPostProcessing_); 
+      JComboBox<Object> equChainRuleMandatoryField = new JComboBox<Object>(possibibilityListPostProcessingIntensity_); 
       if(chainIntensityRules_.elementAt(i).isMandatory())
       {
         equChainRuleMandatoryField.setSelectedIndex(0); 
@@ -1414,7 +1420,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     equChainRuleEquationField_.getDocument().addDocumentListener(new AddChainEquationDocumentListener(this)); 
        
     
-    equChainRuleMandatoryCombo_ = new JComboBox<Object>(possibibilityListPostProcessing_); 
+    equChainRuleMandatoryCombo_ = new JComboBox<Object>(possibibilityListPostProcessingIntensity_); 
     equChainRuleMandatoryCombo_.setSelectedIndex(1);   
     gridBayLayout_.setConstraints(equChainRuleMandatoryCombo_, new GridBagConstraints (2, chainIntensityRulesSize+chainFragmentRules_.size()+5, 1, 1, 0, 0, 
     GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0 ));    
@@ -1570,7 +1576,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       positionEquationVerifier_[i] = positionEquationVerifier;
       positionRuleEquationFields_[i] = positionEquationField;
     
-      JComboBox<Object> positionMandatoryField = new JComboBox<Object>(possibibilityListPostProcessing_); 
+      JComboBox<Object> positionMandatoryField = new JComboBox<Object>(possibibilityListPostProcessingIntensity_); 
       if(positionIntensityRules_.elementAt(i).isMandatory())
       {
         positionMandatoryField.setSelectedIndex(0); 
@@ -1637,7 +1643,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     positionEquationField_.setToolTipText("Enter the equation here!");
     positionEquationField_.getDocument().addDocumentListener(new AddPositionEquationDocumentListener(this));
     
-    positionRuleMandatoryCombo_ = new JComboBox<Object>(possibibilityListPostProcessing_); 
+    positionRuleMandatoryCombo_ = new JComboBox<Object>(possibibilityListPostProcessingIntensity_); 
     positionRuleMandatoryCombo_.setSelectedIndex(1);   
     gridBayLayout_.setConstraints(positionRuleMandatoryCombo_, new GridBagConstraints (2, 1+positionIntensityRulesSize, 1, 1, 0, 0, 
     GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0 ));
@@ -2230,6 +2236,8 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
     if(inputNumber == 0)
     {
       return 1;          
+    }else if (inputNumber == 2) {
+      return 2;
     }
     else
     {   

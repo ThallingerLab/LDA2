@@ -35,7 +35,7 @@ import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.utils.StaticUtils;
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 
 /**
  * Value object holding data required for the assignment of a double bond position

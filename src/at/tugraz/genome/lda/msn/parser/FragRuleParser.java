@@ -1601,6 +1601,7 @@ public class FragRuleParser
   private static void writeFragmentRule(BufferedWriter bw, FragmentRuleVO rule) throws IOException{
     String mandatory = "false";                
     if(rule.isMandatory()==FragmentRuleVO.MANDATORY_TRUE) mandatory = "true";
+    else if (rule.isMandatory()==FragmentRuleVO.MANDATORY_OTHER) mandatory = "other";
     bw.write(FRAGMENT_NAME+"=" + rule.getName() + "\t" + FRAGMENT_FORMULA+"=" + 
       rule.getFormula() + "\t" + FRAGMENT_CHARGE+"=" + 
       Integer.toString(rule.getCharge()) + "\t"+ FRAGMENT_LEVEL+"=" + 

@@ -67,7 +67,7 @@ import at.tugraz.genome.lda.target.JOptionPanel;
 import at.tugraz.genome.lda.target.JTargetFileWizard;
 import at.tugraz.genome.lda.target.LoadingPanel;
 import at.tugraz.genome.lda.vos.AdductVO;
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 
 /**
  * 
@@ -303,7 +303,7 @@ public class MassListCreatorPanel extends JPanel
 				instantiateJTextFieldRange(COMMAND_CLASS_OH_MIN, String.valueOf(vo.getOhRangeFrom()), String.valueOf(vo.getOhRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
 		addLabeledRange(panel, 10, new JLabel("Oxidized lipid Ox range (optional): "), 
 				instantiateJTextFieldRange(COMMAND_CLASS_OX_MIN, String.valueOf(vo.getOxRangeFrom()), String.valueOf(vo.getOxRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
-		JCheckBox rtFilter = instantiateCheckBox(COMMAND_CLASS_ADDUCT_INSENSITIVE_RT_FILTER, vo.isAdductInsensitiveRtFilter());
+		JCheckBox rtFilter = instantiateCheckBox(COMMAND_CLASS_ADDUCT_INSENSITIVE_RT_FILTER, true); //will change with updates from other branch
 		addLabeledCheckBox(panel, 11, new JLabel("Enable adduct insensitive RT filter: "), rtFilter);
 		JCheckBox pickBest = instantiateCheckBox(COMMAND_CLASS_PICK_BEST, vo.isPickBestMatchBySpectrumCoverage());
 		addLabeledCheckBox(panel, 12, new JLabel("Pick best match by spectrum coverage: "), pickBest);
@@ -884,7 +884,7 @@ public class MassListCreatorPanel extends JPanel
 				}
 				else
 				{
-					MassListExporter exporter = new MassListExporter(outPath, lipidClassTable_.getSelectedLipidClasses(), (String)exportOptions_.getSelectedItem());
+					MassListExporter exporter = new MassListExporter(outPath, lipidClassTable_.getSelectedLipidClasses(), "test"); //will change with updates from other branch
 					
 					StringBuilder builder = new StringBuilder();
 					builder.append("<html>Writing the mass list to the specified file.<br>");
