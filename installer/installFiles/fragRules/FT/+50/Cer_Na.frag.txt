@@ -1,0 +1,26 @@
+[GENERAL]
+AmountOfChains=2
+AmountOfLCBs=1
+ChainLibrary=fattyAcidChains.xlsx
+LCBLibrary=dLCB.xlsx
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+SpectrumCoverage=5%
+BasePeakCutoff=0.01%
+ChainCutoff=70%
+FaHydroxylationRange=0-1
+LcbHydroxylationRange=1-3
+RetentionTimePostprocessing=true
+ValidOnlyWithOtherAdduct=H|-OH
+OtherAdductValidityTolerance=0.1
+ForceOtherAdductValidity=true
+
+
+[HEAD]
+!FRAGMENTS
+Name=NL_H2O		Formula=$PRECURSOR-H2O	Charge=1	MSLevel=2	mandatory=true
+Name=NL_2xH2O_36	Formula=$PRECURSOR-H4O2	Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=NL_H2O>0.2*$BASEPEAK	mandatory=true

@@ -7,7 +7,3 @@
 #To avoid committing currently selected fragRules
 /fragRules/
 /fragRules/interim/
-/bin/
-
-#User-specific files
-/LipidDataAnalyzer.properties

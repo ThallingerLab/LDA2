@@ -4,6 +4,7 @@ ChainLibrary=fattyAcidChains.xlsx
 CAtomsFromName=\D*(\d+):\d+
 DoubleBondsFromName=\D*\d+:(\d+)
 BasePeakCutoff=0.01%
+ChainCutoff=10%
 RetentionTimePostprocessing=true
 SpectrumCoverage=10%
 
@@ -20,12 +21,11 @@ Name=NL_serine_wrong	Formula=$PRECURSOR-C3H5NO2	Charge=1	MSLevel=2	mandatory=oth
 !INTENSITIES
 Equation=NL_serine_wrong*0.5<NL_PChead_60					mandatory=true
 Equation=Precursor<0.25*$BASEPEAK						mandatory=true
-Equation=PChead_168|PChead_224							mandatory=true
 
 
 [CHAINS]
 !FRAGMENTS
-Name=Carboxy		Formula=$CHAIN-H			Charge=1	MSLevel=2	mandatory=class
+Name=Carboxy		Formula=$CHAIN-H			Charge=1	MSLevel=2	mandatory=true
 Name=NL_Carboxy		Formula=$PRECURSOR-C2O2H4-$CHAIN	Charge=1	MSLevel=2	mandatory=false
 Name=NL_Ketene		Formula=$PRECURSOR-C2O2H4-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false
 Name=Lyso		Formula=Carboxy+C3H5O4P			Charge=1	MSLevel=2	mandatory=false

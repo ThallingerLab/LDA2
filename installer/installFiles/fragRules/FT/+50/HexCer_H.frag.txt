@@ -1,0 +1,50 @@
+[GENERAL]
+AmountOfChains=2
+AmountOfLCBs=1
+ChainLibrary=fattyAcidChains.xlsx
+LCBLibrary=dLCB.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+SpectrumCoverage=0.2%
+BasePeakCutoff=0.01%
+ChainCutoff=70%
+FaHydroxylationRange=0-1
+LcbHydroxylationRange=2-3
+RetentionTimePostprocessing=true
+SingleChainIdentification=true
+ValidOnlyWithOtherAdduct=-OH|Na
+OtherAdductValidityTolerance=0.1
+ForceOtherAdductValidity=false
+ChooseMoreLikelyRtWhenOtherAdductEqual=true
+
+
+[HEAD]
+!FRAGMENTS
+Name=NL_H2O			Formula=$PRECURSOR-H2O		Charge=1	MSLevel=2	mandatory=false		oh=2=true,3
+Name=NL_Prop			Formula=$PRECURSOR-C3H6O	Charge=1	MSLevel=2	mandatory=false		
+Name=NL_Hex			Formula=$PRECURSOR-C6H10O5	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Hex_H2O			Formula=NL_Hex-H2O		Charge=1	MSLevel=2	mandatory=false
+Name=NL_PEhead_141_WRONG	Formula=$PRECURSOR-C2H8NO4P	Charge=1	MSLevel=2	mandatory=other
+Name=PChead_184_WRONG		Formula=C5H15NO4P		Charge=1	MSLevel=2	mandatory=other
+Name=NL_Ethanolamine_43_WRONG	Formula=$PRECURSOR-C2H5N	Charge=1	MSLevel=2	mandatory=other
+Name=NL_trimethylamine_59_WRONG	Formula=$PRECURSOR-C3H9N	Charge=1	MSLevel=2	mandatory=other
+
+!INTENSITIES
+Equation=NL_Hex_H2O|NL_Hex|NL_Prop|NL_PEhead_141_WRONG|NL_Ethanolamine_43_WRONG									mandatory=true
+Equation=NL_PEhead_141_WRONG*0+NL_Ethanolamine_43_WRONG*0+NL_H2O+NL_Hex_H2O+NL_Hex+NL_Prop>NL_PEhead_141_WRONG*0+NL_Ethanolamine_43_WRONG*0	mandatory=true
+Equation=NL_Hex_H2O+NL_Hex+NL_Prop+NL_H2O+NL_PEhead_141_WRONG+NL_Ethanolamine_43_WRONG>0.4*$BASEPEAK						mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=LCB-2H2O		Formula=$LCB-H3O2		Charge=1	MSLevel=2	mandatory=false		oh=2=true,3=true
+
+!INTENSITIES
+Equation=LCB-2H2O<0.05*$BASEPEAK										mandatory=true	oh=3
+Equation=LCB-2H2O<0.03*(NL_H2O+NL_Hex_H2O)									mandatory=true	oh=3
+Equation=LCB-2H2O*0+NL_PEhead_141_WRONG+PChead_184_WRONG+NL_Ethanolamine_43_WRONG<NL_Prop+NL_Hex+NL_Hex_H2O	mandatory=true
+
+
+[POSITION]
+!INTENSITIES
+Equation=LCB-2H2O[1]>0*$BASEPEAK	mandatory=true

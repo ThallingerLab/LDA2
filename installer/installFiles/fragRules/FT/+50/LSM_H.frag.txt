@@ -1,0 +1,31 @@
+[GENERAL]
+AmountOfChains=1
+AmountOfLCBs=1
+ChainLibrary=fattyAcidChains.xlsx
+LCBLibrary=dLCB.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=1%
+SpectrumCoverage=10%
+FaHydroxylationRange=0-1
+LcbHydroxylationRange=1-3
+RetentionTimePostprocessing=true
+
+
+[HEAD]
+!FRAGMENTS
+Name=Precursor			Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=other
+Name=NL_H2O			Formula=$PRECURSOR-H2O		Charge=1	MSLevel=2	mandatory=true
+Name=PChead_184			Formula=C5H15NO4P		Charge=1	MSLevel=2	mandatory=true
+Name=NL_PChead_183		Formula=$PRECURSOR-C5H14NO4P	Charge=1	MSLevel=2	mandatory=false
+Name=NL_trimethylamine_59	Formula=$PRECURSOR-C3H9N	Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=PChead_184>0.3*$BASEPEAK	mandatory=true
+Equation=PChead_184>0.3*Precursor	mandatory=true
+Equation=PChead_184*1.2>NL_H2O		mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=LCB-2H2O		Formula=$LCB-H3O2			Charge=1	MSLevel=2	mandatory=false

@@ -379,7 +379,7 @@ public class TestClass extends JApplet implements AddScan
     // this.testExportPanel();
     //this.translateTAGListToMzMineFormat();
     //this.shortenMSList();
-    //this.calculateTheoreticalMass();
+    this.calculateTheoreticalMass();
     //calculateByKnownMassesAndCAtoms();
     //this.calculateIntensityDistribution();
     //this.justMzValues();
