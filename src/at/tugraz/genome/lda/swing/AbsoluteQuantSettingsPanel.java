@@ -88,6 +88,8 @@ public class AbsoluteQuantSettingsPanel extends JPanel implements ExpVolumeListe
   
   public void hideSettingsPanel(){
     inputPanel_.removeAll();
+    volumeSettings_ = null;
+    classSettings_ = null;
     this.invalidate();
     this.updateUI();
   }

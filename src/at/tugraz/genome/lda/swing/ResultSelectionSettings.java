@@ -59,6 +59,7 @@ public class ResultSelectionSettings extends JDialog implements ActionListener
 
   private Vector<String> moleculeNames_;
   private Hashtable<String,JCheckBox> checkboxes_;
+  private JScrollPane scrollPane_;
   
 //  private Vector<ActionListener> parents_;
   
@@ -78,24 +79,9 @@ public class ResultSelectionSettings extends JDialog implements ActionListener
     if (titleColSpan>columns_)
       titleColSpan = columns_;
     
-    JPanel moleculeSelection = new JPanel(new GridBagLayout());
-    int rows = moleculeNames_.size()/columns_;
-    if (moleculeNames_.size()>0 && moleculeNames_.size()%columns_!=0)
-      rows++;
-    for (int i=0; i!=moleculeNames_.size(); i++){
-      String name = moleculeNames_.get(i);
-      JCheckBox select  = new JCheckBox(name);
-      select.setSelected(selected);
-      int row = i%rows;
-      int column = i/rows;
-      select.setToolTipText(TooltipTexts.GENERAL_ACCEPT_SINGLE_START+name+TooltipTexts.GENERAL_ACCEPT_SINGLE_END);
-      moleculeSelection.add(select, new GridBagConstraints(column, row+1, 1, 1, 0.0, 0.0
-          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(2, 2, 2, 2), 0, 0));
-      checkboxes_.put(name, select);
-    }
-    JScrollPane analScrollPane = new JScrollPane(moleculeSelection);
-    analScrollPane.setPreferredSize(new Dimension(1000, 600));
-    this.add(analScrollPane,BorderLayout.CENTER);
+    scrollPane_ = buildJCheckBoxes(selected);
+    
+    this.add(scrollPane_,BorderLayout.CENTER);
     
     JPanel buttonPanel = new JPanel();
     this.add(buttonPanel,BorderLayout.SOUTH);
@@ -131,6 +117,28 @@ public class ResultSelectionSettings extends JDialog implements ActionListener
     });
     
     pack(); 
+  }
+  
+  private JScrollPane buildJCheckBoxes(boolean selected)
+  {
+  	JPanel moleculeSelection = new JPanel(new GridBagLayout());
+  	JScrollPane analScrollPane = new JScrollPane(moleculeSelection);
+    analScrollPane.setPreferredSize(new Dimension(1000, 600));
+  	int rows = moleculeNames_.size()/columns_;
+    if (moleculeNames_.size()>0 && moleculeNames_.size()%columns_!=0)
+      rows++;
+    for (int i=0; i!=moleculeNames_.size(); i++){
+      String name = moleculeNames_.get(i);
+      JCheckBox select  = new JCheckBox(name);
+      select.setSelected(selected);
+      int row = i%rows;
+      int column = i/rows;
+      select.setToolTipText(TooltipTexts.GENERAL_ACCEPT_SINGLE_START+name+TooltipTexts.GENERAL_ACCEPT_SINGLE_END);
+      moleculeSelection.add(select, new GridBagConstraints(column, row+1, 1, 1, 0.0, 0.0
+          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(2, 2, 2, 2), 0, 0));
+      checkboxes_.put(name, select);
+    }
+    return analScrollPane;
   }
   
   public void close()
@@ -188,14 +196,24 @@ public class ResultSelectionSettings extends JDialog implements ActionListener
     }
     moleculeNames_ = names;
     invalidate();
-//    this.setSize(this.getPreferredSize());
     doLayout();
     this.setSize(this.getPreferredSize());
     repaint();
-//    this.repaint();
-//    this.validateTree();
-//    this.validate();
   }
+  
+  public void updateNames(Vector<String> names, boolean selected)
+  {
+  	this.remove(scrollPane_);
+  	this.checkboxes_.clear();
+  	this.moleculeNames_ = names;
+  	this.scrollPane_ = buildJCheckBoxes(selected);
+  	this.add(scrollPane_,BorderLayout.CENTER);
+  	invalidate();
+    doLayout();
+    this.setSize(this.getPreferredSize());
+    repaint();
+  }
+  
 
   public void actionPerformed(ActionEvent e)
   {

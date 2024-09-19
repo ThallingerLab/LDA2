@@ -160,7 +160,16 @@ public class TooltipTexts
   "With this option the user can specify if these are displayed as separate hits or not.<br/>" +
   "This option has no effects for data was generated with LDA versions 1.6.0 or earlier.<br/>" +
   "The value specifies the RT-shift-tolerance of the peak grouping accross experiments.</html>";
-
+  
+  public final static String STATISTICS_SHOW_MSN_ONLY = "<html>Only load analytes for which MSn evidence <br/>" +
+  "of at least the headgroup is present. <br/>" +
+  "ATTENTION: for correct statistical results, do NOT check this box and instead select the display option 'Analyte groups verified by MS/MS' in the heatmap</html>";
+  
+  public final static String STATISTICS_CHAIN_EVIDENCE_ONLY = "<html>Only load analytes for which MSn evidence <br/>" +
+  "of the headgroup and chains is present. <br/>" +
+  "ATTENTION: for correct statistical results, do NOT check this box and instead select the display option 'Analyte groups verified by MS/MS' in the heatmap</html>";
+  
+  public final static String STATISTICS_COMBINE_OX = "<html>Combines classes with their respective oxidized classes.</html>";
   
   public final static String STATISTICS_CORRECT_ORDER_FILE = "<html>The analytes are normally ordered according to the order in the result Excel files.<br/>" +
   "However, due to not-quantified analytes this order could deviate from the original order in the quantitation file.<br/>" +
@@ -228,8 +237,12 @@ public class TooltipTexts
   public final static String EXPORT_MAF = "<html>Exports data in MAF format.</html>";
   
   public final static String HEATMAP_SETTINGS_APPLY_TO_ALL = "<html>Apply these settings to all lipid classes, as far as applicable</html>";
-  public final static String HEATMAP_SELECTION_MODE = "<html>Allows for selection of the chosen option with a single click.</html>";
-  public final static String HEATMAP_SHOW_OPTION = "<html>Select at which level of structural detail molecules should be displayed.</html>";
+  public final static String HEATMAP_SELECTION_MODE = "<html>Allows for quick selection/deselection of the chosen option with a single left-click.</html>";
+  public final static String HEATMAP_SORTING_OPTIONS = "<html>Choose the way analytes are sorted.</html>";
+  public final static String HEATMAP_SHOW_OPTION = "<html>Select at which level of structural detail analyte groups should be displayed.</html>";
+  public final static String HEATMAP_SHOW_OPTION_MSN = "<html>Select at which level of MS verification analyte groups should be displayed. <br>" +
+  		"One analyte per RT group meeting the desired level of verification suffices for all IDs of the group to be included. <br>" +
+  		"Standards are included in any case.</html>";
   public final static String HEATMAP_SHOW_INT = "<html>Display the internal standards in the heat map or not.</html>";
   public final static String HEATMAP_SHOW_EXT = "<html>Display the external standards in the heat map or not.</html>";
   public final static String HEATMAP_ISOTOPES = "<html>Upper limit for the additional isotopic peaks used for the quantitative value.</html>";

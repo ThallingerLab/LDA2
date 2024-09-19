@@ -24,6 +24,7 @@
 package at.tugraz.genome.lda.vos;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Hashtable;
 import java.util.Vector;
 
@@ -57,7 +58,8 @@ public class ResultCompGroupVO extends ResultCompVO
   private Vector<Double> sumPercentualSds_;
 //  private Vector<Double> relativeMedianAreaSD_;
   
-  public ResultCompGroupVO(Hashtable<String,ResultCompVO> oneGroup){
+  public ResultCompGroupVO(Hashtable<String,ResultCompVO> oneGroup)
+  {
     oneGroup_ = oneGroup;
 
     super.usedIsotpes_ = 0;
@@ -773,6 +775,46 @@ public class ResultCompGroupVO extends ResultCompVO
         values.add(value);
     }
     return values;
+  }
+  
+  @Override
+  public double getMass(int maxIsotope)
+  {
+  	Collection<ResultCompVO> vos = oneGroup_.values();
+  	int count = 0;
+  	Double sum = 0d;
+  	for (ResultCompVO vo : vos)
+  	{
+  		Double value = vo.getMass(maxIsotope);
+  		if (value > 0)
+  		{
+  			sum += value;
+  			count++;
+  		}
+  	}
+  	return count>0 ? sum/count : 0d;
+  }
+  
+  @Override
+  public boolean isEmptyObject()
+  {
+  	for (ResultCompVO vo : oneGroup_.values())
+  	{
+  		if (!vo.isEmptyObject())
+  			return false;
+  	}
+  	return true;
+  }
+  
+  @Override
+  public boolean isMSnVerifiedOrStandard()
+  {
+  	for (ResultCompVO compVO : oneGroup_.values())
+  	{
+  		if (compVO.isMSnVerifiedOrStandard())
+  			return true;
+  	}
+  	return false;
   }
   
   public Hashtable<String,ResultCompVO> getGroupingPartners(){

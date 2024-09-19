@@ -597,6 +597,16 @@ public class ResultAreaVO
   	return sets;
   }
   
+  public boolean isMSnVerified()
+  {
+  	for (LipidParameterSet set : lipidParameterSets_)
+  	{
+  		if (set instanceof LipidomicsMSnSet)
+  			return true;
+  	}
+  	return false;
+  }
+  
   public void removeMolecularSpeciesFromParams(String humanReadable, String modification)
   {
   	for (LipidParameterSet set : lipidParameterSets_)

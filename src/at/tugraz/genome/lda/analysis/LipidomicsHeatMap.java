@@ -32,6 +32,7 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Hashtable;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -98,6 +99,7 @@ public class LipidomicsHeatMap
   private ArrayList<HeatMapRow> heatMapRows_;
   private boolean isMarkDoublePeaks_;
   private boolean isSumCompOnly_;
+  private boolean isAllAnalyteGroups_;
   
   protected boolean ignorePlatformSettings_;
 
@@ -109,6 +111,7 @@ public class LipidomicsHeatMap
   {
   	this.isMarkDoublePeaks_ = parent.isMarkDoublePeaks();
   	this.isSumCompOnly_ = parent.getSelectedShowOption().equalsIgnoreCase(HeatMapDrawing.DISPLAY_OPTION_SUM_COMP);
+  	this.isAllAnalyteGroups_ = parent.getSelectedShowOptionMSn().equalsIgnoreCase(HeatMapDrawing.DISPLAY_OPTION_ALL_GROUPS);
   	this.sampleNames_ = parent.getExperimentNames();
   	this.heatMapRows_ = computeRows(parent);
     this.analyteNames_ = computeAnalyteNames();
@@ -128,7 +131,7 @@ public class LipidomicsHeatMap
   }
   
   /**
-   * Computes a row for the heat map.
+   * Computes the rows for the heatmap.
    * @param resultsOfOneGroup
    * @param experimentNames
    * @param moleculeNames
@@ -142,12 +145,12 @@ public class LipidomicsHeatMap
   	Vector<String> moleculeNames = parent.getSelectedMoleculeNames();
   	Integer maxIsotope = Integer.parseInt((String)parent.getMaxIsotopes().getSelectedItem());
   	
-  	
   	ArrayList<HeatMapRow> rows = new ArrayList<HeatMapRow>();
     for (int j=0; j!=moleculeNames.size();j++)
     {
     	String sumCompositionName = moleculeNames.get(j);
     	Hashtable<String,ResultCompVO> resultsOfOneSumComp = parent.getResultsOfOneGroup().get(sumCompositionName);
+    	if (!isDesiredLevelOfVerification(resultsOfOneSumComp)) continue;
     	Hashtable<String,ArrayList<Double>> medianValues = computeMedianAreaAtMolSpeciesLevel(resultsOfOneSumComp, parent.getSettingsVO(), maxIsotope);
     	ResultCompVO dummyCompVO = new ResultCompVO();
     	
@@ -165,7 +168,136 @@ public class LipidomicsHeatMap
       	}
     	}
     }
+    sortRows(rows, parent);
     return rows;
+  }
+  
+  private ArrayList<HeatMapRow> sortRows(ArrayList<HeatMapRow> rows, HeatMapDrawing parent)
+  {
+  	if (parent.getSortMode().equalsIgnoreCase(HeatMapDrawing.SORT_OPTION_SPECIES))
+  	{
+  		rows.sort(new SpeciesComparator());
+  	}
+  	else if (parent.getSortMode().equalsIgnoreCase(HeatMapDrawing.SORT_OPTION_RT))
+  	{
+  		rows.sort(new ElutionOrderComparator());
+  	}
+  	else if (parent.getSortMode().equalsIgnoreCase(HeatMapDrawing.SORT_OPTION_DEFAULT))
+  	{
+  		rows.sort(new DefaultComparator(parent.getSelectedMoleculeNames()));
+  	}
+  	else if (parent.getSortMode().equalsIgnoreCase(HeatMapDrawing.SORT_OPTION_MZ))
+  	{
+  		rows.sort(new MZComparator());
+  	}
+  	else if (parent.getSortMode().equalsIgnoreCase(HeatMapDrawing.SORT_OPTION_AREA))
+  	{
+  		rows.sort(new AreaComparator(parent));
+  	}
+  	return rows;
+  }
+  
+  class AreaComparator implements Comparator<HeatMapRow> {
+  	HeatMapDrawing parent_;
+  	
+  	AreaComparator(HeatMapDrawing parent)
+  	{
+  		this.parent_ = parent;
+  	}
+  	
+  	@Override
+    public int compare(HeatMapRow a, HeatMapRow b) {
+  		return Comparator.comparing(HeatMapRow::isMolecularSpeciesLevel)
+  				.thenComparing((HeatMapRow r) -> parent_.getAverageArea(r.getAllCompVO())).reversed()
+  				.thenComparing(HeatMapRow::getOriginalAnalyteName)
+      		.thenComparing(HeatMapRow::getMolecularSpeciesName)
+      		.thenComparing(HeatMapRow::getRtGroupValue)
+      		.compare(a,b);
+    }
+  }
+  
+  class MZComparator implements Comparator<HeatMapRow> {
+  	@Override
+    public int compare(HeatMapRow a, HeatMapRow b) {
+  		return Comparator.comparing(HeatMapRow::getPrecursorMZ)
+  				.thenComparing(HeatMapRow::getOriginalAnalyteName)
+      		.thenComparing(HeatMapRow::isMolecularSpeciesLevel)
+      		.thenComparing(HeatMapRow::getMolecularSpeciesName)
+      		.thenComparing(HeatMapRow::getRtGroupValue)
+      		.compare(a,b);
+    }
+  }
+  
+  class DefaultComparator implements Comparator<HeatMapRow> {
+  	Vector<String> moleculeNames_ = new Vector<String>();
+  	
+  	DefaultComparator (Vector<String> moleculeNames)
+  	{
+  		this.moleculeNames_ = moleculeNames;
+  	}
+  	
+  	@Override
+    public int compare(HeatMapRow a, HeatMapRow b) {
+  		return Comparator.comparing((HeatMapRow r) -> moleculeNames_.indexOf(r.getOriginalAnalyteName()))
+      		.thenComparing(HeatMapRow::isMolecularSpeciesLevel)
+      		.thenComparing(HeatMapRow::getMolecularSpeciesName)
+      		.thenComparing(HeatMapRow::getRtGroupValue)
+      		.compare(a,b);
+    }
+  }
+  
+  class SpeciesComparator implements Comparator<HeatMapRow> {
+    @Override
+    public int compare(HeatMapRow a, HeatMapRow b) {
+        return Comparator.comparing(HeatMapRow::getOriginalAnalyteName)
+        		.thenComparing(HeatMapRow::isMolecularSpeciesLevel)
+        		.thenComparing(HeatMapRow::getMolecularSpeciesName)
+        		.thenComparing(HeatMapRow::getRtGroupValue)
+        		.compare(a,b);
+    }
+  }
+  
+  class ElutionOrderComparator implements Comparator<HeatMapRow> {
+    @Override
+    public int compare(HeatMapRow a, HeatMapRow b) {
+        return Comparator.comparing(HeatMapRow::getRtGroupValue)
+        		.thenComparing(HeatMapRow::getOriginalAnalyteName)
+        		.thenComparing(HeatMapRow::isMolecularSpeciesLevel)
+        		.thenComparing(HeatMapRow::getMolecularSpeciesName)
+        		.compare(a,b);
+    }
+  }
+  
+  boolean isDesiredLevelOfVerification(Hashtable<String,ResultCompVO> resultsOfOneSumComp)
+  {
+  	if (!isGroupPresent(resultsOfOneSumComp))
+  		return false;
+  	if (isAllAnalyteGroups_)
+  		return true;
+  	else
+  	{
+  		for (String experimentName : resultsOfOneSumComp.keySet())
+    	{
+  			if (resultsOfOneSumComp.get(experimentName).isMSnVerifiedOrStandard())
+  				return true;
+    	}
+  	}
+  	return false;
+  }
+  
+  /**
+   * For grouped compVOs it is possible, that a row is empty (due to the one file with an entry not being selected)
+   * @param oneGroup
+   * @return
+   */
+  private boolean isGroupPresent(Hashtable<String,ResultCompVO> oneGroup)
+  {
+  	for (ResultCompVO vo : oneGroup.values())
+  	{
+  		if (!vo.isEmptyObject())
+  			return true;
+  	}
+  	return false;
   }
   
   private HeatMapRow computeHeatMapRow(String name, Hashtable<String,ArrayList<Double>> medianValues, String sumCompositionName, ResultDisplaySettingsVO settingVO, 
@@ -262,7 +394,7 @@ public class LipidomicsHeatMap
       {
         values.get(ResultCompVO.SUM_COMPOSITION).add(value);
         ResultAreaVO areaVO = compVO.getResultMolecule();
-        if (areaVO != null) //TODO: areaVO can be null for ResultGroupCompVOs, as molecular species are not yet implemented
+        if (areaVO != null)
         {
         	Set<String> names = areaVO.getAllMolecularSpeciesNamesHumanReadable();
     			for (String name : names)
@@ -884,7 +1016,7 @@ public class LipidomicsHeatMap
 	 */
 	public boolean isMolecularSpeciesLevel(int row)
 	{
-		return !this.heatMapRows_.get(row).getMolecularSpeciesName().equals(ResultCompVO.SUM_COMPOSITION);
+		return this.heatMapRows_.get(row).isMolecularSpeciesLevel();
 	}
 	
 	public String extractPreferredUnitForExp()
@@ -1201,12 +1333,22 @@ public class LipidomicsHeatMap
 		{
 			return molecularSpeciesName_;
 		}
+		
+		private boolean isMolecularSpeciesLevel()
+		{
+			return !getMolecularSpeciesName().equals(ResultCompVO.SUM_COMPOSITION);
+		}
 
 		private String getRtGroup()
 		{
 			return rtGroup_;
 		}
-
+		
+		private Double getRtGroupValue()
+		{
+			return rtGroup_ != null ? Double.parseDouble(rtGroup_) : Double.MAX_VALUE; //typically standards, or for shotgun all analytes
+		}
+		
 		private String getPreferredUnit()
 		{
 			return preferredUnit_;
@@ -1253,6 +1395,11 @@ public class LipidomicsHeatMap
 					}
 				}
 			}
+		}
+		
+		private Double getPrecursorMZ()
+		{
+			return this.compVOs_.values().stream().filter((s) -> s.getMass(0)>0).findFirst().get().getMass(0); //the m/z value will be the same for each ID of a group
 		}
 		
 		private Double getValue(String experiment)
