@@ -48,7 +48,6 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.dhatim.fastexcel.Worksheet;
 
-import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
@@ -60,7 +59,7 @@ import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.vos.RTCheckedVO;
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 
 /**
  * Class for analysis of the ASC output
