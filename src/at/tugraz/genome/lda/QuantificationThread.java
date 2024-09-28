@@ -782,7 +782,7 @@ public class QuantificationThread extends Thread
         //check here for results that need other adducts to be correct
         if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE) {
  /*LL*/         try {
- /*LL*/           results_ = OtherAdductChecker.checkTheResultsForOtherAdducts(results_,unsplittedPeaks_,quantObjects,analyzers_.get(0),classSequence);
+ /*LL*/           results_ = OtherAdductChecker.checkTheResultsForOtherAdducts(results_,unsplittedPeaks_,quantObjects,analyzers_.get(0),classSequence,analyteSequence);
  /*LL*/         }
  /*LL*/         catch (CgException | LipidCombinameEncodingException e) {
  /*LL*/           e.printStackTrace();
@@ -811,7 +811,7 @@ public class QuantificationThread extends Thread
         if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_TRUE) {
   /*LL*/        try {
   /*LL*/          OtherAdductChecker.removePeaksThatFallBelowTheBasepeakCutoff(results_,extractHighestArea()*(basePeakCutoff/1000f));
-    /*LL*/        results_ = OtherAdductChecker.checkTheResultsForOtherAdducts(results_,unsplittedPeaks_,quantObjects,analyzers_.get(0),classSequence);
+    /*LL*/        results_ = OtherAdductChecker.checkTheResultsForOtherAdducts(results_,unsplittedPeaks_,quantObjects,analyzers_.get(0),classSequence,analyteSequence);
    /*LL*/       }
  /*LL*/         catch (CgException | LipidCombinameEncodingException e) {
   /*LL*/          e.printStackTrace();
