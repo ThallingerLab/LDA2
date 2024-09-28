@@ -436,7 +436,7 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
 	      String dir = StaticUtils.extractDirName(file.getAbsolutePath()); 
 	      tableData[count][COLUMN_FILE_NAME] = fileName;
 	      tableData[count][COLUMN_DIR_NAME] = dir;
-	      tableData[count][COLUMN_DATA_TYPE] = generateDataTypeJComboBox().getItemAt(0);
+	      tableData[count][COLUMN_DATA_TYPE] = generateDataTypeJComboBox().getItemAt(1);
 	      count++;
 	    }
 	    generateSelectionTablePanel(tableData);
@@ -452,7 +452,6 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
 			comboBox.addItem("group 1");
 			comboBox.addItem("group 2");
 			comboBox.addItem("group 3");
-			comboBox.setSelectedIndex(1);
 			return comboBox;
 		}
 		

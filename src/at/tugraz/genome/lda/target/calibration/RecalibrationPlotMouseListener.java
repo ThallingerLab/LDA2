@@ -114,7 +114,7 @@ public class RecalibrationPlotMouseListener implements ChartMouseListener
 	    getContentPane().add(new JLabel("Retention time in original RT-DB: "), generateDefaultConstraints(0, 2));
 	    getContentPane().add(new JLabel(String.format("%s min", Precision.round(dataPoint.getxValue(), 2))), generateDefaultConstraints(7, 2));
 	    getContentPane().add(new JLabel("Retention time with new experimental conditions: "), generateDefaultConstraints(0, 3));
-	    getContentPane().add(new JLabel(String.format("%s min", Precision.round(dataPoint.getyValue()+dataPoint.getxValue(), 2))), generateDefaultConstraints(7, 3));
+	    getContentPane().add(new JLabel(String.format("%s min", Precision.round(dataPoint.getxValue()-dataPoint.getyValue(), 2))), generateDefaultConstraints(7, 3));
 	    getContentPane().add(new JLabel("Retention time difference: "), generateDefaultConstraints(0, 4));
 	    getContentPane().add(new JLabel(String.format("%s min", Precision.round(dataPoint.getyValue(), 2))), generateDefaultConstraints(7, 4));
 	    
