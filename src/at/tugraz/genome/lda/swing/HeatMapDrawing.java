@@ -524,11 +524,6 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     if (!isGrouped_ && chromExport_ != null) 
     	chromExport_.refreshNames(getDisplayNames());
   }
-  
-  public JComboBox<String> getMaxIsotopes()
-	{
-		return maxIsotopes_;
-	}
 
 	public HeatMapClickListener getHeatMapListener()
 	{
@@ -605,7 +600,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
           return;
         }else{
         	combinedChartSettings_.close();
-          int maxIsotopes = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
+          int maxIsotopes = getSelectedIsotope();
           Hashtable<String,String> preferredUnits = new Hashtable<String,String>();
           for (String name : combinedChartSettings_.getSelected())
           {
@@ -745,7 +740,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
             fileToStore = (File)results.get(0);
             if ((Boolean)results.get(1)){
               try {
-                maxIsotope = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
+                maxIsotope = getSelectedIsotope();
                 Hashtable<String,Hashtable<String,ResultCompVO>> compVOs = resultsOfOneGroup_;
                 if (isGrouped_)
                   compVOs = ungroupedPartner_.resultsOfOneGroup_;
@@ -790,7 +785,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
             fileToStore = (File)results.get(0);
             if ((Boolean)results.get(1)){
               try {
-                maxIsotope = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
+                maxIsotope = getSelectedIsotope();
                 Hashtable<String,Hashtable<String,ResultCompVO>> compVOs = resultsOfOneGroup_;
                 if (isGrouped_)
                   compVOs = ungroupedPartner_.resultsOfOneGroup_;
@@ -991,7 +986,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       for (String modName : modifications_){
         if (vo.containsMod(modName)) availableMods.put(modName, modName);
       }
-      int maxIsotopes = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
+      int maxIsotopes = getSelectedIsotope();
       foundUpdateables = new Vector<String>();
       updateableAndAnalyteBefore = new Vector<AutoAnalyteAddVO>();
       modHash = new Hashtable<String,String>();
@@ -1295,7 +1290,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
                 String molName = heatmap_.getMolecularSpeciesName(cellPos[1]);
                 Double molContribution = heatmap_.getMolecularSpeciesContributionOfAllMods(experiment, cellPos[1]);
                 
-                int maxIsotope = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
+                int maxIsotope = getSelectedIsotope();
                 String statusText = "";
                 try {
                   double relativeValue = compVO.getRelativeValue(compVO.getAvailableIsotopeNr(maxIsotope),settingsVO_,molName,heatmap_.getMolecularSpeciesContributionOfAllMods(experiment, cellPos[1]));
@@ -1369,7 +1364,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
             statusText_.setText("");
           }  
         }
-        int maxIsotopes = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
+        int maxIsotopes = getSelectedIsotope();
         //if click happened within heatmap boundaries
         if ((y>=imagePositionY_) && (y<imagePositionY_+renderedImage_.getHeight()) && (x>=imagePositionX_) && (x<(imagePositionX_+renderedImage_.getWidth()))) {
           int xInImage = x-imagePositionX_;
@@ -1534,7 +1529,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
       if (m_ctrl.equalsIgnoreCase("ChangeIsotope")){
         if (e.getStateChange()==ItemEvent.SELECTED){
           if (parentAction_);
-            heatMapListener_.changeIsotopesUsed(groupName_, isGrouped_, Integer.parseInt((String)maxIsotopes_.getSelectedItem()));
+            heatMapListener_.changeIsotopesUsed(groupName_, isGrouped_, getSelectedIsotope());
           generateHeatMap();
           invalidate();
           updateUI();
@@ -1717,7 +1712,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   }
   
   public int getPossibleIsotopeNumber(String molecule){
-    int maxIsotope = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
+    int maxIsotope = getSelectedIsotope();
     return StaticUtils.getMaxApplicableIsotope(resultsOfOneGroup_.get(molecule),maxIsotope);
   }
   
@@ -1730,7 +1725,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     if (valueType!=null && valueType.length()>0)
       settings.setType(valueType);
     if (maxIsotopes_.getItemCount()>0)
-      return HeatMapDrawing.extractValuesOfInterest(resultsOfOneGroup_, Integer.parseInt((String)maxIsotopes_.getSelectedItem()), settings, null, expOptions,modifications_);
+      return HeatMapDrawing.extractValuesOfInterest(resultsOfOneGroup_, getSelectedIsotope(), settings, null, expOptions,modifications_);
     else
       return null;
   }
@@ -1845,7 +1840,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
     for (String expId : experimentNames_)
       expIdToString.put(expId, heatMapListener_.getDisplayName(expId));
     try {
-      int maxIsotope = Integer.parseInt((String)maxIsotopes_.getSelectedItem());
+      int maxIsotope = getSelectedIsotope();
       Hashtable<String,Hashtable<String,ResultCompVO>> compVOs = resultsOfOneGroup_;
       if (isGrouped_)
         compVOs = ungroupedPartner_.resultsOfOneGroup_;
@@ -1900,7 +1895,7 @@ public class HeatMapDrawing extends JPanel implements ActionListener
   		Double value = 0d;
   		try
   		{
-  			int isotopes = vo.getAvailableIsotopeNr(Integer.parseInt((String)getMaxIsotopes().getSelectedItem()));
+  			int isotopes = vo.getAvailableIsotopeNr(getSelectedIsotope());
   			value = vo.getArea(isotopes, this.getSettingsVO());
   		} catch (CalculationNotPossibleException ex) {}
   		if (value > 0)
