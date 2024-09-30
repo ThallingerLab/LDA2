@@ -76,14 +76,21 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
 	private SelectionTable inputPanelOriginal_;
 	private SelectionTable inputPanelNew_;
 	private JTextField predictionThresholdField_;
+	private JComboBox<String> matchAlgorithm_;
 	
 	private Path previousSelection_ = null;
 	
-	private static final Double DEFAULT_THRESHOLD = 0.25;
+	private static final Double DEFAULT_THRESHOLD = 0.50;
+	public static final String MATCHING_SETTING_DEFAULT = "Adapt to provided data";
+	public static final String MATCHING_SETTING_INCREASED_NUMBER = "Prioritize number of anchor points";
+	public static final String MATCHING_SETTING_INCREASED_RELIABILITY = "Prioritize reliability of anchor points";
+	public static final String MATCHING_SETTING_ALL_MATCHES = "All potential matches";
+	private static final String[] MATCHING_SETTING = {MATCHING_SETTING_DEFAULT, MATCHING_SETTING_INCREASED_NUMBER, MATCHING_SETTING_INCREASED_RELIABILITY, MATCHING_SETTING_ALL_MATCHES};
 	private static final String PLACEHOLDER_PREFIX = "Enter ";
 	private static final String BROWSE = "Browse";
 	private static final String COMMAND_OPEN_TARGET_FILE = "Open target file";
 	public static final String DATA_TYPE_STANDARD_MIX = "standards";
+	
 	private static final Dimension ENTER_FIELD_DIMENSION_MIN = new Dimension(300,15);
 	private static final Dimension ENTER_FIELD_DIMENSION = new Dimension(750,30);
 	private static final Dimension BUTTON_PANEL_DIMENSION = new Dimension(825,35);
@@ -118,29 +125,37 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
         new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0
         , GridBagConstraints.CENTER, GridBagConstraints.BOTH
         , new Insets(5, 5, 5, 5), 0, 0));
-  	this.add(instantiateThresholdPanel(), new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0
-        , GridBagConstraints.EAST, GridBagConstraints.NONE
+  	this.add(instantiateSettingsPanel(), new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0
+        , GridBagConstraints.CENTER, GridBagConstraints.BOTH
         , new Insets(5, 5, 5, 5), 0, 0));
   }
   
-  private JPanel instantiateThresholdPanel()
+  private JPanel instantiateSettingsPanel()
   {
   	JPanel panel = new JPanel();
   	panel.setLayout(new GridBagLayout());
-  	JLabel labelText = new JLabel("Maximum allowed deviation from standards-curve: ");
-  	labelText.setToolTipText(TooltipTexts.LCCL_MAX_DEVIATION);
-  	panel.add(labelText, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
+  	JLabel labelMatch = new JLabel("Select the matching algorithm: ");
+  	labelMatch.setToolTipText(TooltipTexts.LCCL_MATCHING_ALGORITHM);
+  	panel.add(labelMatch, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+  	matchAlgorithm_ = new JComboBox<String>(MATCHING_SETTING);
+  	matchAlgorithm_.setToolTipText(TooltipTexts.LCCL_MATCHING_ALGORITHM);
+  	panel.add(matchAlgorithm_, new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 70), 0, 0));
+  	JLabel labelText = new JLabel("Maximum accepted deviation from standards-curve: ");
+  	labelText.setToolTipText(TooltipTexts.LCCL_MAX_DEVIATION);
+  	panel.add(labelText, new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
   	predictionThresholdField_ = new JTextField(DEFAULT_THRESHOLD.toString(), 5);
   	predictionThresholdField_.setInputVerifier(new DoubleVerifier(true,true));
   	predictionThresholdField_.setHorizontalAlignment(JTextField.RIGHT);
   	predictionThresholdField_.setToolTipText(TooltipTexts.LCCL_MAX_DEVIATION);
-  	panel.add(predictionThresholdField_, new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+  	panel.add(predictionThresholdField_, new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
   	JLabel labelUnit = new JLabel(" min");
   	labelUnit.setToolTipText(TooltipTexts.LCCL_MAX_DEVIATION);
-  	panel.add(labelUnit, new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+  	panel.add(labelUnit, new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
+        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
   	return panel;
   }
   
@@ -191,7 +206,7 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
 			FileNameExtensionFilter filter = new FileNameExtensionFilter("Only .xlsx", "xlsx");
 			selectPath(JFileChooser.FILES_ONLY, this.targetFileField_, filter, "Select the RT-DB (.xlsx file)");
 		}
-	} 
+	}
 	
 	/**
 	 * Sets the text of the provided JTextField to the selected file or folder path depending on the selection mode.
@@ -268,12 +283,6 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
   		}
   		else 
   		{
-  			if (!originalConditions.keySet().contains(DATA_TYPE_STANDARD_MIX))
-    		{
-  				//TODO: consider removing this warning or modifying it, currently a standard mix doesn't do all that much for data quality (gives more data points mostly).
-    			new WarningMessage(new JFrame(), "Warning", "The reference files do not contain any files of the data type "+DATA_TYPE_STANDARD_MIX+"! The matched chromatographic peaks used for calibration will require more diligent manual curation.");
-    		}
-  			
   			goNext();
     		getDefaultComponents().disableAllButtons();
     		
@@ -284,6 +293,7 @@ public class CalibrationFileChooserPanel extends JOptionPanel implements ActionL
     				try 
   		  	  {
     					CalibrationGraphPanel panel = (CalibrationGraphPanel)getDefaultComponents().getCurrentPanel();
+    					panel.setMatchingAlgo((String)matchAlgorithm_.getSelectedItem());
     					panel.setOriginalTargetList(new File(targetFileField_.getText()));
     					panel.setPredictionThreshold(Double.parseDouble(predictionThresholdField_.getText()));
   		  			panel.parseData(originalConditions, newConditions);

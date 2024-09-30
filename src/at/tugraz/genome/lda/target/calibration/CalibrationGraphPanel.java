@@ -85,6 +85,7 @@ public class CalibrationGraphPanel extends JOptionPanel
 	private ArrayList<RecalibrationRegression> regressions_;
 	private File originalTargetList_;
 	private Double predictionThreshold_;
+	private String matchingAlgo_;
 	public static final String PLOT_ALL = "Combined";
 	private static final Dimension PLOT_DIMENSION = new Dimension(825,650);
 	private static final String TABLE_FRAME_TITLE = "RT-DB mapping";
@@ -677,9 +678,9 @@ public class CalibrationGraphPanel extends JOptionPanel
   }
   
   /**
-   * For class specific recalibration
-   * @param referenceResults
-   * @param targetResults
+   * For general and class specific recalibration
+   * @param matches
+   * @param acceptedConfidence		the minimum confidence of an identification to be accepted
    * @return
    */
   private Hashtable<String, ArrayList<AnchorPointVO>> computeDifferencesForClass(ArrayList<MatchedIdentificationVO> matches, int acceptedConfidence)
@@ -786,7 +787,7 @@ public class CalibrationGraphPanel extends JOptionPanel
   		if (newIdentifications != null)
   		{
   			RecalibrationRegression standardsReg = getRegressionByFields(CalibrationFileChooserPanel.DATA_TYPE_STANDARD_MIX, PLOT_ALL);
-  			matches.add(new MatchedIdentificationVO(originalIdentifications, maxOriginal, newIdentifications, maxNew, standardsReg, predictionThreshold_));
+  			matches.add(new MatchedIdentificationVO(originalIdentifications, maxOriginal, newIdentifications, maxNew, standardsReg, predictionThreshold_, matchingAlgo_));
   		}
   	}
   	return matches;
@@ -976,5 +977,10 @@ public class CalibrationGraphPanel extends JOptionPanel
   public void setPredictionThreshold(Double predictionThreshold)
   {
   	this.predictionThreshold_ = predictionThreshold;
+  }
+  
+  public void setMatchingAlgo(String algo)
+  {
+  	this.matchingAlgo_ = algo;
   }
 }
