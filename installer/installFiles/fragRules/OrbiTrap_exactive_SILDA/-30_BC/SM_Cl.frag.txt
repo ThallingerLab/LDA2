@@ -1,0 +1,26 @@
+[GENERAL]
+AmountOfChains=2
+AmountOfLCBs=1
+ChainLibrary=fattyAcidChains_BC.xlsx
+LCBLibrary=dLCB.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.1%
+ChainCutoff=70%
+SpectrumCoverage=10%
+FaHydroxylationRange=0-1
+LcbHydroxylationRange=1-3
+RetentionTimePostprocessing=true
+SingleChainIdentification=true
+ValidOnlyWithOtherAdduct=HCOO
+OtherAdductValidityTolerance=0.2
+
+
+[HEAD]
+!FRAGMENTS	
+Name=NL_PChead_50	Formula=$PRECURSOR-CH3Cl	Charge=1	MSLevel=2	mandatory=true
+Name=NL_PChead_60_WRONG	Formula=$PRECURSOR-C2O2H4	Charge=1	MSLevel=2	mandatory=other
+
+!INTENSITIES
+Equation=NL_PChead_50>0.2*$BASEPEAK		mandatory=true
+Equation=NL_PChead_50*2>NL_PChead_60_WRONG	mandatory=true

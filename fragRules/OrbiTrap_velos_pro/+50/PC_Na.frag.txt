@@ -7,8 +7,6 @@ BasePeakCutoff=0.02%
 ChainCutoff=50%
 RetentionTimePostprocessing=true
 SpectrumCoverage=10%
-ValidOnlyWithOtherAdduct=H
-OtherAdductValidityTolerance=0.1
 
 
 [HEAD]

@@ -47,13 +47,14 @@ public class MatchedIdentificationVO
 	private int maxMatches_;
 	private RecalibrationRegression regression_;
 	private double predictionThreshold_;
+	private String matchingAlgo_;
 	private Pair<IdentificationVO,IdentificationVO> highestConfidencePair_;
 	private ArrayList<Pair<IdentificationVO,IdentificationVO>> acceptedMatches_ = new ArrayList<Pair<IdentificationVO,IdentificationVO>>();
 	private int confidence_ = 0;
 //	ArrayList<Pair<IdentificationVO,IdentificationVO>> elutionOrderAssignments_ = new ArrayList<Pair<IdentificationVO,IdentificationVO>>();
 	
 	protected MatchedIdentificationVO(ArrayList<IdentificationVO> originals, int maxOriginals, ArrayList<IdentificationVO> matches, int maxMatches, 
-			RecalibrationRegression regression, double predictionThreshold)
+			RecalibrationRegression regression, double predictionThreshold, String matchingAlgo)
 	{
 		this.originals_ = originals;
 		this.maxOriginals_ = maxOriginals;
@@ -61,6 +62,7 @@ public class MatchedIdentificationVO
 		this.maxMatches_ = maxMatches;
 		this.regression_ = regression;
 		this.predictionThreshold_ = predictionThreshold;
+		this.matchingAlgo_ = matchingAlgo;
 		findHighestConfidencePairings();
 //		findElutionOrderAssignments();
 	}
@@ -68,16 +70,17 @@ public class MatchedIdentificationVO
 	/**
 	 * The algorithm finds pairs as follows:
 	 * Take the identification with the highest average area for both original and new conditions => highest confidence pair (confidence = 0)
-	 * (confidence 0 is accepted for standards, 1 is required for biological data).
+	 * (confidence 0 is always accepted for standards, 1 is required for biological data).
 	 * 
-	 * If the standards regression is null or the retention times are outside the range of the regression: 
+	 * If the matching algorithm is CalibrationFileChooserPanel.MATCHING_SETTING_INCREASED_RELIABILITY or
+	 * the standards regression is null or the retention times are outside the range of the regression and the matching algorithm is CalibrationFileChooserPanel.MATCHING_SETTING_DEFAULT: 
 	 * 1. If this identification is found in all given results files
 	 * 2. If this identification has MSn evidence in at least one file
 	 * 3. If the number of MSn peaks is inconsistent (1 and more than 1), we risk false matches. => confidence remains 0
 	 * 4. If there are more than one MSn peaks for both conditions: if the elution order matches the intensity order
 	 * then this identification (only the one with the highest intensity) is matched with confidence = 1.
 	 * 
-	 * Else:
+	 * Else (CalibrationFileChooserPanel.MATCHING_SETTING_INCREASED_NUMBER):
 	 * 1. Take identifications with available MSn evidence, which are found in all given result files
 	 * 2. Find the closest identification to the predicted retention time for each
 	 * 3. Take preferentially hits with highest total area (of original and new measurements combined)
@@ -91,7 +94,13 @@ public class MatchedIdentificationVO
 		IdentificationVO highestIntensityMatch = matches_.get(0);
 		this.highestConfidencePair_ = new Pair<IdentificationVO,IdentificationVO>(highestIntensityOriginal, highestIntensityMatch);
 		
-		if (isWithinRTRange())
+		if (matchingAlgo_.equals(CalibrationFileChooserPanel.MATCHING_SETTING_ALL_MATCHES)) //all data recieves the minimum confidence required for being accepted
+		{
+			this.confidence_ = 1;
+		}
+		
+		if ((isWithinRTRange() || matchingAlgo_.equals(CalibrationFileChooserPanel.MATCHING_SETTING_INCREASED_NUMBER)) &&
+				!matchingAlgo_.equals(CalibrationFileChooserPanel.MATCHING_SETTING_INCREASED_RELIABILITY))
 		{
 			this.acceptedMatches_ = findAcceptedMatches(sortPredictedMatchesByTotalArea());
 			if (!acceptedMatches_.isEmpty())
@@ -172,7 +181,7 @@ public class MatchedIdentificationVO
 				{
 					if (newVO.isMSnAvailable() && isAlwaysFound(newVO,maxMatches_))
 					{
-						if (isWithinPredictionThreshold(originalVO, newVO))
+						if (matchingAlgo_.equals(CalibrationFileChooserPanel.MATCHING_SETTING_INCREASED_NUMBER) || isWithinPredictionThreshold(originalVO, newVO))
 						{
 							newSet.add(newVO);
 							matchesPrediction.add(new Pair<IdentificationVO,IdentificationVO>(originalVO, newVO));
@@ -381,11 +390,19 @@ public class MatchedIdentificationVO
 			@Override
 			public int compare(Pair<IdentificationVO,IdentificationVO> o1, Pair<IdentificationVO,IdentificationVO> o2)
 			{
-				double predictedRT1 = regression_.getTargetRT(o1.getKey().getAverageRT());
-				double predictedRT2 = regression_.getTargetRT(o2.getKey().getAverageRT());
-				
-				return new Double(Math.abs(predictedRT1 - o1.getValue().getAverageRT()))
-						.compareTo(Math.abs(predictedRT2 - o2.getValue().getAverageRT()));
+				if (!matchingAlgo_.equals(CalibrationFileChooserPanel.MATCHING_SETTING_INCREASED_NUMBER))
+				{
+					double predictedRT1 = regression_.getTargetRT(o1.getKey().getAverageRT());
+					double predictedRT2 = regression_.getTargetRT(o2.getKey().getAverageRT());
+					
+					return new Double(Math.abs(predictedRT1 - o1.getValue().getAverageRT()))
+							.compareTo(Math.abs(predictedRT2 - o2.getValue().getAverageRT()));
+				}
+				else //the setting for increased number of identifications also works without a standards-curve for predicted values
+				{
+					return new Double(o1.getValue().getAverageRT())
+							.compareTo(o2.getValue().getAverageRT());
+				}
 			}
 		};
 	}

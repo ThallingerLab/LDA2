@@ -42,32 +42,32 @@ import java.util.HashMap;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.border.TitledBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
 
+import at.tugraz.genome.lda.TooltipTexts;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
+import at.tugraz.genome.lda.msn.parser.FALibParser;
+import at.tugraz.genome.lda.msn.parser.SPBLibParser;
 import at.tugraz.genome.lda.target.JOptionPanel;
 import at.tugraz.genome.lda.target.JTargetFileWizard;
 import at.tugraz.genome.lda.target.LoadingPanel;
 import at.tugraz.genome.lda.vos.AdductVO;
-import org.apache.commons.math3.util.Pair;
 
 /**
  * 
@@ -77,54 +77,47 @@ import org.apache.commons.math3.util.Pair;
 public class MassListCreatorPanel extends JPanel 
 {
 	private static final long serialVersionUID = 1L;
-	
+	private static final int LIPID_CLASS_HEIGHT = 675;
 	public final static String CHAIN_LIST_FOLDER = "./fattyAcids/";
 	public final static String CHAIN_LIST_SUFFIX = ".xlsx";
-	private final static String COMMAND_ADDUCT_NAME = "adductName";
-	private final static String COMMAND_ADDUCT_FORMULA = "adductFormula";
-	private final static String COMMAND_ADDUCT_CHARGE= "adductCharge";
-	private final static String COMMAND_ADDUCT_EXPORT= "adductExport";
 	
-	private final static String COMMAND_CLASS_NAME = "className";
-	private final static String COMMAND_CLASS_CHAIN_NUM= "classChainNum";
-	private final static String COMMAND_CLASS_FORMULA= "classFormula";
-	private final static String COMMAND_CLASS_FA_CHAIN_LIST= "classFAChainList";
-	private final static String COMMAND_CLASS_ADDUCT_LIST= "classAdductList";
-	private final static String COMMAND_CLASS_CHAIN_C_MIN= "classChainMin";
-	private final static String COMMAND_CLASS_DB_MIN= "classDBMin";
-	private final static String COMMAND_CLASS_RT_MIN= "classRtMin";
-	private final static String COMMAND_CLASS_OH= "classOH";
-	private final static String COMMAND_CLASS_OH_MIN= "classOhMin";
-	private final static String COMMAND_CLASS_OX_MIN= "classOxMin";
-	private final static String COMMAND_CLASS_ADDUCT_INSENSITIVE_RT_FILTER= "classRTFilter";
-	private final static String COMMAND_CLASS_PICK_BEST= "classPickBest";
-	private final static String COMMAND_CLASS_EXPORT= "classExport";
+	final static String COMMAND_EDIT_ADDUCT = "editAdduct";
 	
 	private final static String OUT_OPEN= "outOpen";
 	
-	private final static String EXPORT= "export";
+	public final static String EXPORT_OPTION_NEG = "negative ion mode";
+	public final static String EXPORT_OPTION_POS = "positive ion mode";
+	public final static String EXPORT_OPTION_BOTH = "both ion modes";
+	private final static String[] EXPORT_OPTIONS_ION_MODE = new String[] {EXPORT_OPTION_NEG, EXPORT_OPTION_POS, EXPORT_OPTION_BOTH};
+	public final static String EXPORT_FORMAT_LDA = "LDA Mass List";
+	public final static String EXPORT_FORMAT_LONG_LIST = "Merged list (long)";
+	public final static String EXPORT_FORMAT_SHORT_LIST = "Merged list (short)";
+	private final static String[] EXPORT_OPTIONS_FORMAT = new String[] {EXPORT_FORMAT_LDA, EXPORT_FORMAT_LONG_LIST, EXPORT_FORMAT_SHORT_LIST};
+	private final static String EXPORT = "export";
+	
 	
 	private final static String PLACEHOLDER_OUT_PATH = "Enter path and file name for the mass list export.";
 	
-	private final static int PREFERRED_DISPLAY_COMPONENT_WIDTH= 150;
-	private final static int PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH= 50;
-	
-	
+	private LipidClassPanel lipidClassPanelSingle_;
+	private LipidClassPanel lipidClassPanelMulti_;
+	private AdductCreatorPanel adductCreatorPanel_;
 	private ArrayList<AdductVO> allDefinedAdducts_;
 	private ArrayList<LipidClassVO> allDefinedLipidClasses_;
 	private String[] faChainListNames_;
+	private String[] lcbChainListNames_;
 	private String[] adductListNames_;
-	private AdductVO selectedAdduct_;
-	private AdductVO tempAdduct_;
 	private LipidClassVO selectedClass_;
 	private LipidClassVO tempClass_;
 	private JPanel displayPanel_;
-	private AdductsTable adductsTable_;
-	private JPanel lipidClassPanel_;
+	private JTabbedPane lipidClassPane_;
 	private LipidClassTable lipidClassTable_;
-	private JPanel adductPanel_;
+
 	private JTextField outTextField_;
 	private Path previousSelection_ = null;
+	private JComboBox<String> exportedIonMode_;
+	private JComboBox<String> exportedFormat_;
+//	private JTextField numberLCBChainField_;
+//	private JComboBox<String> lcbChainList_;
 	
 	public MassListCreatorPanel()
 	{
@@ -132,25 +125,26 @@ public class MassListCreatorPanel extends JPanel
 		displayPanel_.setLayout(new GridBagLayout());
 		try
 		{
-			allDefinedAdducts_ = (new AdductParser()).parse();
-			adductListNames_ = getAdductNames();
+			adductCreatorPanel_ = new AdductCreatorPanel(this);
+			allDefinedAdducts_ = adductCreatorPanel_.getAllDefinedAdducts();
+			adductListNames_ = adductCreatorPanel_.getAdductNames();
 			allDefinedLipidClasses_ = (new LipidClassParser(allDefinedAdducts_)).parse();
-			faChainListNames_ = getFAChainListNames();
+			faChainListNames_ = getChainListNames(true);
+			lcbChainListNames_ = getChainListNames(false);
 			selectedClass_ = allDefinedLipidClasses_.get(0);
-			tempClass_ = new LipidClassVO(selectedClass_);
-			selectedAdduct_ = allDefinedAdducts_.get(0);
-			tempAdduct_ = new AdductVO(selectedAdduct_);		
-			lipidClassTable_ = new LipidClassTable("Defined lipid classes", getLipidClassNames(), selectedClass_.getLipidClass());
+			tempClass_ = new LipidClassVO(selectedClass_);	
+			lipidClassTable_ = new LipidClassTable("Defined lipid (sub)classes", getLipidClassNames(), selectedClass_.getLipidClass());
 			displayPanel_.add(lipidClassTable_, getDefaultGridBagConstraints(0,0, GridBagConstraints.EAST, 1, 1));
-			adductsTable_ = new AdductsTable("Defined adducts", getAdductNames(), selectedAdduct_.getAdductName());
-			displayPanel_.add(adductsTable_, getDefaultGridBagConstraints(0,1, GridBagConstraints.EAST, 1, 1));
-			lipidClassPanel_ = getLipidClassPanel(selectedClass_);
-			displayPanel_.add(lipidClassPanel_, getDefaultGridBagConstraints(1,0, GridBagConstraints.EAST, 1, 1));
-			adductPanel_ = getAdductPanel(selectedAdduct_);
-			displayPanel_.add(adductPanel_, getDefaultGridBagConstraints(1,1, GridBagConstraints.EAST, 1, 1));
+//			adductsTable_ = new AdductsTable("Defined adducts", getAdductNames(), selectedAdduct_.getAdductName());
+//			displayPanel_.add(adductsTable_, getDefaultGridBagConstraints(0,1, GridBagConstraints.EAST, 1, 1));
+			JPanel lipidClassPanel = initLipidClassPanel();
+			displayPanel_.add(lipidClassPanel, getDefaultGridBagConstraints(1,0, GridBagConstraints.EAST, 1, 1));
+//			adductPanel_ = getAdductPanel(selectedAdduct_);
+//			displayPanel_.add(adductPanel_, getDefaultGridBagConstraints(1,1, GridBagConstraints.EAST, 1, 1));
 			outTextField_ = instantiatePlaceholderJTextField(PLACEHOLDER_OUT_PATH, PLACEHOLDER_OUT_PATH, 825);
 			displayPanel_.add(getOutPathPanel(outTextField_), getDefaultGridBagConstraints(0,2, GridBagConstraints.CENTER, 2, 1));
-			displayPanel_.add(instantiateJButton(EXPORT, "Export", true), getDefaultGridBagConstraints(0,3, GridBagConstraints.CENTER, 2, 1, new Insets(10, 10, 10, 10)));
+			displayPanel_.add(instantiateJButton(EXPORT, "Export", true, TooltipTexts.MASSLIST_GENERAL_EXPORT), 
+					getDefaultGridBagConstraints(0,3, GridBagConstraints.CENTER, 2, 1, new Insets(10, 10, 10, 10)));
 			
 			
 	  	this.add(displayPanel_);
@@ -174,11 +168,21 @@ public class MassListCreatorPanel extends JPanel
 		return null;
 	}
 	
-	private void refreshLipidClassScrollPane(String selectedLipidClassName) throws FileNotFoundException, IOException, ChemicalFormulaException
+	void reloadLipidClassScrollPane() throws FileNotFoundException, IOException, ChemicalFormulaException
+	{
+		reloadLipidClassScrollPane(selectedClass_.getLipidClass());
+	}
+	
+	private void reloadLipidClassScrollPane(String selectedLipidClassName) throws FileNotFoundException, IOException, ChemicalFormulaException
 	{
 		allDefinedLipidClasses_ = (new LipidClassParser(allDefinedAdducts_)).parse();
-		faChainListNames_ = getFAChainListNames();
-		LipidClassVO vo = getVOfromName(selectedLipidClassName);
+		faChainListNames_ = getChainListNames(true);
+		lcbChainListNames_ = getChainListNames(false);
+		LipidClassVO vo = allDefinedLipidClasses_.get(0);
+		if (selectedLipidClassName != null)
+		{
+			vo = getVOfromName(selectedLipidClassName);
+		}
 		if (vo != null) 
 		{
 			selectedClass_ = vo;
@@ -188,138 +192,84 @@ public class MassListCreatorPanel extends JPanel
 		{
 			throw new IOException("Something went wrong with the import.");
 		}
+		lipidClassTable_ = new LipidClassTable("Defined lipid (sub)classes", getLipidClassNames(), selectedClass_.getLipidClass());
+		refreshLipidClassScrollPane();
+	}
+	
+	private void refreshLipidClassScrollPane()
+	{
 		displayPanel_.remove(lipidClassTable_);
-		lipidClassTable_ = new LipidClassTable("Defined lipid classes", getLipidClassNames(), selectedClass_.getLipidClass());
 		displayPanel_.add(lipidClassTable_, getDefaultGridBagConstraints(0,0, GridBagConstraints.EAST, 1, 1));
 		displayPanel_.invalidate();
 		displayPanel_.updateUI();
 	}
 	
-	private void refreshAdductScrollPane(String selectedAddductName) throws FileNotFoundException, IOException, ChemicalFormulaException
+	void refreshLipidClassPanel() throws IOException
 	{
-		allDefinedAdducts_ = (new AdductParser()).parse();
-		adductListNames_ = getAdductNames();
-		for (AdductVO vo : allDefinedAdducts_)
-		{ 
-			if (vo.getAdductName().equals(selectedAddductName))
-			{
-				selectedAdduct_ = vo;
-				tempAdduct_ = new AdductVO(selectedAdduct_);
-			}
-		}
-		displayPanel_.remove(adductsTable_);
-		adductsTable_ = new AdductsTable("Defined adducts", getAdductNames(), selectedAdduct_.getAdductName());
-		displayPanel_.add(adductsTable_, getDefaultGridBagConstraints(0,1, GridBagConstraints.EAST, 1, 1));
-		displayPanel_.invalidate();
-		displayPanel_.updateUI();
-		refreshLipidClassScrollPane(selectedClass_.getLipidClass());
-		refreshLipidClassPanel();
-	}
-	
-	private void refreshAdductPanel() throws IOException
-	{
-		displayPanel_.remove(adductPanel_);
-		adductPanel_ = getAdductPanel(selectedAdduct_);
-		displayPanel_.add(adductPanel_, getDefaultGridBagConstraints(1,1, GridBagConstraints.EAST, 1, 1));
-		displayPanel_.invalidate();
-		displayPanel_.updateUI();
-	}
-	
-	private void refreshLipidClassPanel() throws IOException
-	{
-		displayPanel_.remove(lipidClassPanel_);
-		lipidClassPanel_ = getLipidClassPanel(selectedClass_);
-		displayPanel_.add(lipidClassPanel_, getDefaultGridBagConstraints(1,0, GridBagConstraints.EAST, 1, 1));
-		displayPanel_.invalidate();
-		displayPanel_.updateUI();
+		int index = lipidClassPane_.indexOfComponent(lipidClassPanelSingle_);
+		lipidClassPane_.remove(lipidClassPanelSingle_);
+//		displayPanel_.remove(lipidClassPanel_);
+		lipidClassPanelSingle_ = new LipidClassPanel(this, true, faChainListNames_, lcbChainListNames_);
+//		displayPanel_.add(lipidClassPanel_, getDefaultGridBagConstraints(1,0, GridBagConstraints.EAST, 1, 1));
+		lipidClassPane_.add(lipidClassPanelSingle_, index);
+		lipidClassPane_.setTitleAt(index, "Edit selected lipid (sub)class");
+		lipidClassPane_.setSelectedIndex(index);
+		lipidClassPane_.invalidate();
+		lipidClassPane_.updateUI();
 	}
 	
 	private JPanel getOutPathPanel(JTextField outPathField)
 	{
 		JPanel panel = new JPanel();
 		panel.setLayout(new GridBagLayout());
-				
-//				instantiateJTextField(OUT_EDIT, PLACEHOLDER_OUT_PATH, 825);
-		panel.add(outPathField, getDefaultGridBagConstraints(0,0, GridBagConstraints.WEST, 1, 1));
-  	JButton outPathButton = instantiateJButton(OUT_OPEN, "Browse", true);
-		panel.add(outPathButton, getDefaultGridBagConstraints(1,0, GridBagConstraints.EAST, 1, 1, new Insets(10,10,10,10)));
-		TitledBorder border = JOptionPanel.getTitledPanelBorder("Mass list export path");
-		panel.setBorder(border);
-		panel.setPreferredSize(new Dimension(975,75));
-		return panel;
-	}
-	
-	private JPanel getAdductPanel(AdductVO vo)
-	{
-		JPanel panel = new JPanel();
-		panel.setLayout(new GridBagLayout());
-		JTextField nameField = instantiateJTextField(COMMAND_ADDUCT_NAME, vo.getAdductName());
-		addLabeledTextField(panel, 0, new JLabel("Adduct name: "), nameField);
-		JTextField formulaField = instantiateJTextField(COMMAND_ADDUCT_FORMULA, vo.getFormulaString());
-		addLabeledTextField(panel, 1, new JLabel("Chemical fomula: "), formulaField);
-		JTextField chargeField = instantiateJTextField(COMMAND_ADDUCT_CHARGE, String.valueOf(vo.getCharge()));
-		addLabeledTextField(panel, 2, new JLabel("Charge: "), chargeField);
-		JPanel buttonPanel = instantiateJButtonPanel(COMMAND_ADDUCT_EXPORT, "Override this definition", "Save as new adduct definition");
-		panel.add(buttonPanel, getDefaultGridBagConstraints(0,13, GridBagConstraints.CENTER, 5, 1));
-		TitledBorder border = JOptionPanel.getTitledPanelBorder("Display / edit currently selected adduct definition");
-		panel.setBorder(border);
-		panel.setPreferredSize(new Dimension(550,200));
-		return panel;
-	}
-	
-	private JPanel getLipidClassPanel(LipidClassVO vo) throws IOException
-	{
-		JPanel panel = new JPanel();
-		panel.setLayout(new GridBagLayout());
-		JTextField nameField = instantiateJTextField(COMMAND_CLASS_NAME, vo.getLipidClass());
-		addLabeledTextField(panel, 0, new JLabel("Lipid class name: "), nameField);
-		JTextField numberChainField = instantiateJTextField(COMMAND_CLASS_CHAIN_NUM, String.valueOf(vo.getNumberOfChains()));
-		addLabeledTextField(panel, 1, new JLabel("Number of FA and/or LCB chains: "), numberChainField);
-		JTextField chemicalFormula = instantiateJTextField(COMMAND_CLASS_FORMULA, vo.getHeadGroupFormulaString());
-		addLabeledTextField(panel, 2, new JLabel("Chemical formula without chains: "), chemicalFormula);
-		JComboBox<String> faChainList = instantiateJComboBox(COMMAND_CLASS_FA_CHAIN_LIST, faChainListNames_, vo, findSelectedFAChainListIndex(vo));
-		addLabeledComboBox(panel, 3, new JLabel("Selected FA chain list: "), faChainList);
-		JScrollPane adductList = instantiateJListScrollPane(COMMAND_CLASS_ADDUCT_LIST, adductListNames_, vo, findSelectedAdductListIndices(vo));
-		addLabeledJListScrollPane(panel, 4, new JLabel("Selected adducts (hold CNTR for multiple selection): "), adductList);
-		addLabeledRange(panel, 5, new JLabel("Total number of C atoms in the chains: "), 
-				instantiateJTextFieldRange(COMMAND_CLASS_CHAIN_C_MIN, String.valueOf(vo.getMinChainC()), String.valueOf(vo.getMaxChainC()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
-		addLabeledRange(panel, 6, new JLabel("Total number of double bonds (C=C) in the chains: "), 
-				instantiateJTextFieldRange(COMMAND_CLASS_DB_MIN, String.valueOf(vo.getMinChainDB()), String.valueOf(vo.getMaxChainDB()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
-		addLabeledRange(panel, 7, new JLabel("Retention time (RT) range in minutes (optional): "), 
-				instantiateJTextFieldRange(COMMAND_CLASS_RT_MIN, String.valueOf(vo.getRtRangeFrom()), String.valueOf(vo.getRtRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
-		JTextField ohField = instantiateJTextField(COMMAND_CLASS_OH, String.valueOf(vo.getOhNumber()));
-		addLabeledTextField(panel, 8, new JLabel("Sphingolipid OH number (optional): "), ohField);
-		addLabeledRange(panel, 9, new JLabel("Sphingolipid OH range (optional): "), 
-				instantiateJTextFieldRange(COMMAND_CLASS_OH_MIN, String.valueOf(vo.getOhRangeFrom()), String.valueOf(vo.getOhRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
-		addLabeledRange(panel, 10, new JLabel("Oxidized lipid Ox range (optional): "), 
-				instantiateJTextFieldRange(COMMAND_CLASS_OX_MIN, String.valueOf(vo.getOxRangeFrom()), String.valueOf(vo.getOxRangeTo()), PREFERRED_DISPLAY_COMPONENT_SMALLER_WIDTH));
-		JCheckBox rtFilter = instantiateCheckBox(COMMAND_CLASS_ADDUCT_INSENSITIVE_RT_FILTER);
-		addLabeledCheckBox(panel, 11, new JLabel("Enable adduct insensitive RT filter: "), rtFilter);
-		JCheckBox pickBest = instantiateCheckBox(COMMAND_CLASS_PICK_BEST);
-		addLabeledCheckBox(panel, 12, new JLabel("Pick best match by spectrum coverage: "), pickBest);
-		JPanel buttonPanel = instantiateJButtonPanel(COMMAND_CLASS_EXPORT, "Override this definition", "Save as new lipid class definition");
-		panel.add(buttonPanel, getDefaultGridBagConstraints(0,13, GridBagConstraints.CENTER, 5, 1));
+		JLabel exportIonModeLabel = new JLabel("Export relevant adducts for: ");
+		exportIonModeLabel.setToolTipText(TooltipTexts.MASSLIST_GENERAL_ION_MODE);
+		panel.add(exportIonModeLabel, getDefaultGridBagConstraints(0,0, GridBagConstraints.WEST, 1, 1));
+		exportedIonMode_ = instantiateJComboBox(EXPORT_OPTIONS_ION_MODE, 0, false);
+		exportedIonMode_.setToolTipText(TooltipTexts.MASSLIST_GENERAL_ION_MODE);
+		panel.add(exportedIonMode_, getDefaultGridBagConstraints(1,0, GridBagConstraints.WEST, 1, 1));
 		
-		TitledBorder border = JOptionPanel.getTitledPanelBorder("Display / edit currently selected lipid class definition");
+		JLabel exportFormatLabel = new JLabel("Export file format: ");
+		exportFormatLabel.setToolTipText(TooltipTexts.MASSLIST_GENERAL_ION_MODE);
+		panel.add(exportFormatLabel, getDefaultGridBagConstraints(0,1, GridBagConstraints.WEST, 1, 1));
+		exportedFormat_ = instantiateJComboBox(EXPORT_OPTIONS_FORMAT, 0, false);
+		exportedFormat_.setToolTipText(TooltipTexts.MASSLIST_GENERAL_FORMAT);
+		panel.add(exportedFormat_, getDefaultGridBagConstraints(1,1, GridBagConstraints.WEST, 1, 1));
+		
+		outPathField.setToolTipText(TooltipTexts.MASSLIST_GENERAL_BROWSE_FIELD);
+		panel.add(outPathField, getDefaultGridBagConstraints(0,2, GridBagConstraints.WEST, 2, 1));
+  	JButton outPathButton = instantiateJButton(OUT_OPEN, "Browse", true, TooltipTexts.MASSLIST_GENERAL_BROWSE);
+		panel.add(outPathButton, getDefaultGridBagConstraints(2,2, GridBagConstraints.EAST, 1, 1, new Insets(10,10,10,10)));
+		TitledBorder border = JOptionPanel.getTitledPanelBorder("Mass list export");
 		panel.setBorder(border);
-		panel.setPreferredSize(new Dimension(550,525));
+		panel.setPreferredSize(new Dimension(975,150));
 		return panel;
 	}
 	
-	private JPanel instantiateJButtonPanel(String actionCommand, String textOverride, String textSaveNew)
+	private JPanel initLipidClassPanel() throws IOException
 	{
 		JPanel panel = new JPanel();
 		panel.setLayout(new GridBagLayout());
-		JButton buttonOverride = instantiateJButton(actionCommand, textOverride, true);
-		JButton buttonSaveNew = instantiateJButton(actionCommand, textSaveNew, false);
-		panel.add(buttonOverride, getDefaultGridBagConstraints(0,0, GridBagConstraints.WEST, 1, 1, new Insets(10, 10, 10, 10)));
-		panel.add(buttonSaveNew, getDefaultGridBagConstraints(1,0, GridBagConstraints.EAST, 1, 1, new Insets(10, 10, 10, 10)));
+		lipidClassPane_ = new JTabbedPane();
+		panel.add(lipidClassPane_, new GridBagConstraints(0,0,1,1,1.0,1.0,GridBagConstraints.CENTER,GridBagConstraints.BOTH,new Insets(10,10,10,10),0,5));
+		lipidClassPanelSingle_ = new LipidClassPanel(this, true, faChainListNames_, lcbChainListNames_);
+		lipidClassPane_.add(lipidClassPanelSingle_, "Edit selected lipid (sub)class");
+		lipidClassPanelMulti_ = new LipidClassPanel(this, false, faChainListNames_, lcbChainListNames_);
+		lipidClassPane_.add(lipidClassPanelMulti_, "Edit multiple lipid (sub)classes");
+		
+		panel.add(instantiateJButton(COMMAND_EDIT_ADDUCT, "Edit list of adducts", true, TooltipTexts.MASSLIST_EDIT_ADDUCT), 
+				getDefaultGridBagConstraints(0,1, GridBagConstraints.CENTER, 1, 1, new Insets(10, 10, 10, 10)));
+		
+		TitledBorder border = JOptionPanel.getTitledPanelBorder("Display / edit lipid class definitions");
+		panel.setBorder(border);
+		panel.setPreferredSize(new Dimension(565,LIPID_CLASS_HEIGHT));
 		return panel;
 	}
 	
-	private JButton instantiateJButton(String actionCommand, String text, boolean isOverride)
+	private JButton instantiateJButton(String actionCommand, String text, boolean isOverride, String tooltips)
 	{
 		JButton button = new JButton(text);
+		button.setToolTipText(tooltips);
 		button.addActionListener(new ActionListener() {
 		  public void actionPerformed(ActionEvent e) 
 		  {
@@ -329,50 +279,15 @@ public class MassListCreatorPanel extends JPanel
 		return button;
 	}
 	
-	private JScrollPane instantiateJListScrollPane(String actionCommand, String[] entries, LipidClassVO vo, int[] indices) throws IOException
-	{
-		JList<String> jList = new JList<String>(entries);
-		jList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-		jList.addListSelectionListener(new ListSelectionListener() {
-			@Override
-			public void valueChanged(ListSelectionEvent arg0)
-			{
-				jListScrollChangeExecuter(actionCommand, jList);
-			}
-	  });
-		jList.setSelectedIndices(indices);
-		JScrollPane scrollPane = new JScrollPane(jList);
-		scrollPane.setPreferredSize(new Dimension(PREFERRED_DISPLAY_COMPONENT_WIDTH,50));
-		return scrollPane;
-	}
-	
-	private JComboBox<String> instantiateJComboBox(String actionCommand, String[] entries, LipidClassVO vo, int index) throws IOException
+	JComboBox<String> instantiateJComboBox(String[] entries, int index, boolean isSingle)
 	{
 		JComboBox<String> jComboBox = new JComboBox<String>(entries);
-		jComboBox.addActionListener(new ActionListener() {
-		  public void actionPerformed(ActionEvent e) 
-		  {
-		  	jComboBoxChangeExecuter(actionCommand, jComboBox);
-		  }
-	  });
 		jComboBox.setSelectedIndex(index);
-		jComboBox.setPreferredSize(new Dimension(PREFERRED_DISPLAY_COMPONENT_WIDTH,20));
+		jComboBox.setPreferredSize(new Dimension(getPreferredDisplayComponentWidth(isSingle ? 0 : 50),20));
 		return jComboBox;
 	}
 	
-	private int findSelectedFAChainListIndex(LipidClassVO vo) throws IOException
-	{
-		for (int i=0; i<faChainListNames_.length; i++)
-		{
-			if (faChainListNames_[i].equalsIgnoreCase(vo.getFaChainList()))
-			{
-				return i;
-			}
-		}
-		throw new IOException(String.format("The file defining the lipid class '%s' contains a FA chain list name that does not exist!", vo.getLipidClass()));
-	}
-	
-	private int[] findSelectedAdductListIndices(LipidClassVO vo) throws IOException
+	int[] findSelectedAdductListIndices(LipidClassVO vo) throws IOException
 	{
 		ArrayList<Integer> indices = new ArrayList<Integer>();
 		for (int i=0; i<adductListNames_.length; i++)
@@ -392,19 +307,6 @@ public class MassListCreatorPanel extends JPanel
 		int[] arr = new int[indices.size()];
 		for (int i=0; i<indices.size(); i++) arr[i] = indices.get(i);
 		return arr;
-	}
-	
-	private JCheckBox instantiateCheckBox(String actionCommand)
-	{
-		JCheckBox checkBox = new JCheckBox();
-		checkBox.addActionListener(new ActionListener() {
-			@Override
-		  public void actionPerformed(ActionEvent e) 
-		  {
-		  	jCheckBoxChangeExecuter(actionCommand, checkBox);
-		  }
-	  });
-		return checkBox;
 	}
 	
 	/**
@@ -439,86 +341,7 @@ public class MassListCreatorPanel extends JPanel
 		return field;
 	}
 	
-	private JTextField instantiateJTextField(String actionCommand, String text)
-	{
-		return instantiateJTextField(actionCommand, text, PREFERRED_DISPLAY_COMPONENT_WIDTH);
-	}
-	
-	private Pair<JTextField,JTextField> instantiateJTextFieldRange(String actionCommand, String textFrom, String textTo, Integer width)
-	{
-		JTextField textFieldFrom = new JTextField(textFrom);
-		textFieldFrom.setPreferredSize(new Dimension(width,20));
-		setDefaultTextFieldBorder(textFieldFrom);
-		JTextField textFieldTo = new JTextField(textTo);
-		textFieldTo.setPreferredSize(new Dimension(width,20));
-		setDefaultTextFieldBorder(textFieldTo);
-		
-		DocumentListener listener = new DocumentListener(){
-			@Override
-			public void insertUpdate(DocumentEvent e){textFieldChangeExecuterRange(actionCommand, textFieldFrom, textFieldTo);}
-			@Override
-			public void removeUpdate(DocumentEvent e){textFieldChangeExecuterRange(actionCommand, textFieldFrom, textFieldTo);}
-			@Override
-			public void changedUpdate(DocumentEvent e){textFieldChangeExecuterRange(actionCommand, textFieldFrom, textFieldTo);}
-    };
-    
-		textFieldFrom.getDocument().addDocumentListener(listener);
-		textFieldTo.getDocument().addDocumentListener(listener);
-		return new Pair<JTextField,JTextField>(textFieldFrom,textFieldTo);
-	}
-	
-	private JTextField instantiateJTextField(String actionCommand, String text, Integer width)
-	{
-		JTextField textField = new JTextField(text);
-		textField.setPreferredSize(new Dimension(width,20));
-		setDefaultTextFieldBorder(textField);
-		textField.getDocument().addDocumentListener(new DocumentListener(){
-			@Override
-			public void insertUpdate(DocumentEvent e){textFieldChangeExecuter(actionCommand, textField);}
-			@Override
-			public void removeUpdate(DocumentEvent e){textFieldChangeExecuter(actionCommand, textField);}
-			@Override
-			public void changedUpdate(DocumentEvent e){textFieldChangeExecuter(actionCommand, textField);}
-    });
-		return textField;
-	}
-	
-	private void addLabeledJListScrollPane(JPanel panel, Integer yPos, JLabel label, JScrollPane jScrollPane)
-	{
-		panel.add(label, getDefaultGridBagConstraints(0,yPos, GridBagConstraints.WEST, 2, 1));
-		panel.add(jScrollPane, getDefaultGridBagConstraints(2,yPos, GridBagConstraints.CENTER, 3, 1));
-	}
-	
-	private void addLabeledComboBox(JPanel panel, Integer yPos, JLabel label, JComboBox<String> comboBox)
-	{
-		panel.add(label, getDefaultGridBagConstraints(0,yPos, GridBagConstraints.WEST, 2, 1));
-		panel.add(comboBox, getDefaultGridBagConstraints(2,yPos, GridBagConstraints.CENTER, 3, 1));
-	}
-	
-	private void addLabeledCheckBox(JPanel panel, Integer yPos, JLabel label, JCheckBox checkBox)
-	{
-		panel.add(label, getDefaultGridBagConstraints(0,yPos, GridBagConstraints.WEST, 2, 1));
-		panel.add(checkBox, getDefaultGridBagConstraints(2,yPos, GridBagConstraints.CENTER, 3, 1));
-	}
-	
-	private void addLabeledTextField(JPanel panel, Integer yPos, JLabel label, JTextField textField)
-	{
-		panel.add(label, getDefaultGridBagConstraints(0,yPos, GridBagConstraints.WEST, 2, 1));
-		panel.add(textField, getDefaultGridBagConstraints(2,yPos, GridBagConstraints.EAST, 3, 1));
-	}
-	
-	private void addLabeledRange(JPanel panel, Integer yPos, JLabel label, Pair<JTextField,JTextField> range)
-	{
-		JLabel minField = new JLabel("From: ");
-		JLabel maxField = new JLabel("To: ");
-		panel.add(label, getDefaultGridBagConstraints(0,yPos, GridBagConstraints.WEST, 1, 1));
-		panel.add(minField, getDefaultGridBagConstraints(1,yPos, GridBagConstraints.EAST, 1, 1));
-		panel.add(range.getKey(), getDefaultGridBagConstraints(2,yPos, GridBagConstraints.WEST, 1, 1));
-		panel.add(maxField, getDefaultGridBagConstraints(3,yPos, GridBagConstraints.EAST, 1, 1));
-		panel.add(range.getValue(), getDefaultGridBagConstraints(4,yPos, GridBagConstraints.EAST, 1, 1));
-	}
-	
-	private GridBagConstraints getDefaultGridBagConstraints(int column, int row, int orientation, int width, int height, Insets insets)
+	GridBagConstraints getDefaultGridBagConstraints(int column, int row, int orientation, int width, int height, Insets insets)
 	{
 		return new GridBagConstraints(
 				column, 
@@ -534,329 +357,17 @@ public class MassListCreatorPanel extends JPanel
 				5);
 	}
 	
-	private GridBagConstraints getDefaultGridBagConstraints(int column, int row, int orientation, int width, int height)
+	GridBagConstraints getDefaultGridBagConstraints(int column, int row, int orientation, int width, int height)
 	{
-		return getDefaultGridBagConstraints(column, row, orientation, width, height, new Insets(2, 3, 2, 3));
-	}
-	
-	private void textFieldChangeExecuterRange(String actionCommand, JTextField textfieldFrom, JTextField textfieldTo)
-	{
-		switch (actionCommand)
-		{
-			case COMMAND_CLASS_CHAIN_C_MIN:
-				tempClass_.setMinChainC(-1);
-				tempClass_.setMaxChainC(-1);
-				try
-				{
-					int numFrom = Integer.parseInt(textfieldFrom.getText());
-					int numTo = Integer.parseInt(textfieldTo.getText());
-					
-					if (numFrom > 0 && numTo > 0 && numFrom < numTo)
-					{
-						setDefaultTextFieldBorder(textfieldFrom);
-						setDefaultTextFieldBorder(textfieldTo);
-					}	
-					else
-					{
-						setWarningTextFieldBorder(textfieldFrom);
-						setWarningTextFieldBorder(textfieldTo);
-					}
-					tempClass_.setMinChainC(numFrom);
-					tempClass_.setMaxChainC(numTo);
-				}
-				catch (NumberFormatException ex) 
-				{
-					setWarningTextFieldBorder(textfieldFrom);
-					setWarningTextFieldBorder(textfieldTo);
-				}
-				break;	
-			case COMMAND_CLASS_DB_MIN:
-				tempClass_.setMinChainDB(-1);
-				tempClass_.setMaxChainDB(-1);
-				try
-				{
-					int numFrom = Integer.parseInt(textfieldFrom.getText());
-					int numTo = Integer.parseInt(textfieldTo.getText());
-					
-					if ((numFrom < numTo) || (numFrom < 1 && numTo < 1))
-					{
-						setDefaultTextFieldBorder(textfieldFrom);
-						setDefaultTextFieldBorder(textfieldTo);
-					}	
-					else
-					{
-						setWarningTextFieldBorder(textfieldFrom);
-						setWarningTextFieldBorder(textfieldTo);
-					}
-					tempClass_.setMinChainDB(numFrom);
-					tempClass_.setMaxChainDB(numTo);
-				}
-				catch (NumberFormatException ex) 
-				{
-					setWarningTextFieldBorder(textfieldFrom);
-					setWarningTextFieldBorder(textfieldTo);
-				}
-				break;	
-			case COMMAND_CLASS_RT_MIN:
-				tempClass_.setRtRangeFrom(-1);
-				tempClass_.setRtRangeTo(-1);
-				try
-				{
-					int numFrom = Integer.parseInt(textfieldFrom.getText());
-					int numTo = Integer.parseInt(textfieldTo.getText());
-					
-					if ((numFrom < numTo) || (numFrom < 0 && numTo < 0))
-					{
-						setDefaultTextFieldBorder(textfieldFrom);
-						setDefaultTextFieldBorder(textfieldTo);
-					}	
-					else
-					{
-						setWarningTextFieldBorder(textfieldFrom);
-						setWarningTextFieldBorder(textfieldTo);
-					}
-					tempClass_.setRtRangeFrom(numFrom);
-					tempClass_.setRtRangeTo(numTo);
-				}
-				catch (NumberFormatException ex) 
-				{
-					setWarningTextFieldBorder(textfieldFrom);
-					setWarningTextFieldBorder(textfieldTo);
-				}
-				break;	
-
-			case COMMAND_CLASS_OH_MIN:
-				tempClass_.setOhRangeFrom(-1);
-				tempClass_.setOhRangeTo(-1);
-				try
-				{
-					int numFrom = Integer.parseInt(textfieldFrom.getText());
-					int numTo = Integer.parseInt(textfieldTo.getText());
-					
-					if ((numFrom < numTo) || (numFrom < 1 && numTo < 1))
-					{
-						setDefaultTextFieldBorder(textfieldFrom);
-						setDefaultTextFieldBorder(textfieldTo);
-					}	
-					else
-					{
-						setWarningTextFieldBorder(textfieldFrom);
-						setWarningTextFieldBorder(textfieldTo);
-					}
-					tempClass_.setOhRangeFrom(numFrom);
-					tempClass_.setOhRangeTo(numTo);
-				}
-				catch (NumberFormatException ex) 
-				{
-					setWarningTextFieldBorder(textfieldFrom);
-					setWarningTextFieldBorder(textfieldTo);
-				}
-				break;
-				
-			case COMMAND_CLASS_OX_MIN:
-				tempClass_.setOxRangeFrom(-1);
-				tempClass_.setOxRangeTo(-1);
-				try
-				{
-					int numFrom = Integer.parseInt(textfieldFrom.getText());
-					int numTo = Integer.parseInt(textfieldTo.getText());
-					
-					if ((numFrom < numTo) || (numFrom < 1 && numTo < 1))
-					{
-						setDefaultTextFieldBorder(textfieldFrom);
-						setDefaultTextFieldBorder(textfieldTo);
-					}	
-					else
-					{
-						setWarningTextFieldBorder(textfieldFrom);
-						setWarningTextFieldBorder(textfieldTo);
-					}
-					tempClass_.setOxRangeFrom(numFrom);
-					tempClass_.setOxRangeTo(numTo);
-				}
-				catch (NumberFormatException ex) 
-				{
-					setWarningTextFieldBorder(textfieldFrom);
-					setWarningTextFieldBorder(textfieldTo);
-				}
-				break;
-				
-			default:
-				break;
-		}
-	}
-	
-	private void textFieldChangeExecuter(String actionCommand, JTextField textfield)
-	{
-		switch (actionCommand)
-		{
-			case COMMAND_ADDUCT_NAME:
-				tempAdduct_.setAdductName(textfield.getText());
-				if (isAdductNameAvailable(textfield.getText()))
-					setDefaultTextFieldBorder(textfield);
-				else
-					setWarningTextFieldBorder(textfield);
-				break;
-			case COMMAND_ADDUCT_FORMULA:
-				try
-				{
-					tempAdduct_.setFormulaString(textfield.getText());
-					setDefaultTextFieldBorder(textfield);
-				}
-				catch (ChemicalFormulaException ex) {setWarningTextFieldBorder(textfield);}
-				break;
-			case COMMAND_ADDUCT_CHARGE:
-				try
-				{
-					tempAdduct_.setCharge(0);
-					tempAdduct_.setCharge(Integer.parseInt(textfield.getText()));
-					setDefaultTextFieldBorder(textfield);
-				}
-				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
-				break;	
-			case COMMAND_CLASS_NAME:
-				tempClass_.setLipidClass(textfield.getText());
-				if (isLipidClassNameAvailable(textfield.getText()))
-					setDefaultTextFieldBorder(textfield);
-				else
-					setWarningTextFieldBorder(textfield);
-				break;
-			case COMMAND_CLASS_CHAIN_NUM:
-				tempClass_.setNumberOfChains(0);
-				try
-				{
-					int chainNum = Integer.parseInt(textfield.getText());
-					if (chainNum > 0)
-						setDefaultTextFieldBorder(textfield);
-					else
-						setWarningTextFieldBorder(textfield);
-					tempClass_.setNumberOfChains(chainNum);
-				}
-				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
-				break;
-			case COMMAND_CLASS_FORMULA:
-				try
-				{
-					tempClass_.setHeadGroupFormulaString(textfield.getText());
-					setDefaultTextFieldBorder(textfield);
-				}
-				catch (ChemicalFormulaException ex) {setWarningTextFieldBorder(textfield);}
-				break;
-			case COMMAND_CLASS_OH:
-				tempClass_.setOhNumber(-1);
-				try
-				{
-					int num = Integer.parseInt(textfield.getText());
-					if (num >= 0)
-						setDefaultTextFieldBorder(textfield);
-					else
-						setWarningTextFieldBorder(textfield);
-					tempClass_.setOhNumber(num);
-				}
-				catch (NumberFormatException ex) {setWarningTextFieldBorder(textfield);}
-				break;
-				
-			default:
-				break;
-		}
-	}
-	
-	private void jListScrollChangeExecuter(String actionCommand, JList<String> jList)
-	{
-		switch (actionCommand)
-		{
-			case COMMAND_CLASS_ADDUCT_LIST:
-				ArrayList<AdductVO> selectedAdducts = new ArrayList<AdductVO>();
-				for (String adductName : jList.getSelectedValuesList())
-				{
-					for (AdductVO vo : allDefinedAdducts_)
-					{
-						if (adductName.equals(vo.getAdductName()))
-						{
-							selectedAdducts.add(vo);
-						}
-					}
-				}
-				tempClass_.setAdducts(selectedAdducts);
-				break;
-			default:
-				break;
-		}
-	}
-	
-	private void jComboBoxChangeExecuter(String actionCommand, JComboBox<String> jComboBox)
-	{
-		switch (actionCommand)
-		{
-			case COMMAND_CLASS_FA_CHAIN_LIST:
-				tempClass_.setFaChainList((String)jComboBox.getSelectedItem());
-				break;
-			default:
-				break;
-		}
-	}
-	
-	private void jCheckBoxChangeExecuter(String actionCommand, JCheckBox checkBox)
-	{
-		switch (actionCommand)
-		{
-			case COMMAND_CLASS_ADDUCT_INSENSITIVE_RT_FILTER:
-				tempClass_.setAdductInsensitiveRtFilter(checkBox.isSelected());
-				break;
-			case COMMAND_CLASS_PICK_BEST:
-				tempClass_.setPickBestMatchBySpectrumCoverage(checkBox.isSelected());
-				break;
-			default:
-				break;
-		}
+		return getDefaultGridBagConstraints(column, row, orientation, width, height, new Insets(2, 5, 2, 5));
 	}
 	
 	private void jButtonExecuter(String actionCommand, boolean isOverride)
 	{
 		switch (actionCommand)
 		{
-			case COMMAND_ADDUCT_EXPORT:
-				if (isAdductViable())
-				{
-					try
-					{
-						exportAdduct(isOverride);
-						refreshAdductScrollPane(selectedAdduct_.getAdductName());
-					}
-					catch (IOException | ChemicalFormulaException ex)
-					{
-						new WarningMessage(new JFrame(), "Error", "An error occurred during the export. Error message: "+ex.getMessage());
-					}
-				}
-				else
-				{
-					new WarningMessage(new JFrame(), "Error", "The adduct definition contains erroneous user-entries, please correct textfields highlighted in red before exporting.");
-				}
-				break;
-			case COMMAND_CLASS_EXPORT:
-				if (isLipidClassViable())
-				{
-					if (isLipidClassOxDefinitionViable())
-					{
-						try
-						{
-							exportLipidClass(isOverride);
-							refreshLipidClassScrollPane(selectedClass_.getLipidClass());
-						}
-						catch (IOException | ChemicalFormulaException ex)
-						{
-							new WarningMessage(new JFrame(), "Error", "An error occurred during the export. Error message: "+ex.getMessage());
-						}
-					}
-					else
-					{
-						new WarningMessage(new JFrame(), "Error", "The lipid class definition may only contain a definition for the Sphingolipid OH number and OH range (with OH number being within the OH range), OR the oxidized lipid ox range. Please correct this before the export");
-					}
-				}	
-				else
-				{
-					new WarningMessage(new JFrame(), "Error", "The lipid class definition contains erroneous user-entries, please correct textfields highlighted in red before exporting and make sure at least one adduct is selected.");
-				}
+			case COMMAND_EDIT_ADDUCT:
+				adductCreatorPanel_.open();
 				break;
 			case OUT_OPEN:
 				selectOutPath();
@@ -867,9 +378,19 @@ public class MassListCreatorPanel extends JPanel
 				{
 					new WarningMessage(new JFrame(), "Error", "A filepath to write the mass list to must be defined prior to the export!");
 				}
+				else if (lipidClassTable_.getSelectedLipidClasses().isEmpty())
+				{
+					new WarningMessage(new JFrame(), "Error", "Please select at least one lipid class prior to the export!");
+				}
 				else
 				{
-					MassListExporter exporter = new MassListExporter(outPath, lipidClassTable_.getSelectedLipidClasses());
+					if (!outPath.endsWith(".xlsx"))
+					{
+						outPath += ".xlsx";
+						outTextField_.setText(outPath);
+					}
+					MassListExporter exporter = new MassListExporter(outPath, lipidClassTable_.getSelectedLipidClasses(), 
+							(String)exportedIonMode_.getSelectedItem(), (String)exportedFormat_.getSelectedItem());
 					
 					StringBuilder builder = new StringBuilder();
 					builder.append("<html>Writing the mass list to the specified file.<br>");
@@ -931,69 +452,284 @@ public class MassListCreatorPanel extends JPanel
 		}
 	}
 	
-	private boolean isLipidClassOxDefinitionViable()
+	ArrayList<LipidClassVO> findLipidClassesToExport(String option)
 	{
-		if (tempClass_.getOhNumber() == 0 && tempClass_.getOhRangeFrom() == 0 && tempClass_.getOhRangeTo() == 0 && tempClass_.getOxRangeFrom() == 0 && tempClass_.getOxRangeTo() == 0)
-		{
-			return true;
-		}
-		else if ((tempClass_.getOxRangeFrom() == 0 && tempClass_.getOxRangeTo() == 0)
-				&& (tempClass_.getOhNumber() > 0 && (tempClass_.getOhRangeFrom() >= 0 && tempClass_.getOhRangeFrom() < tempClass_.getOhRangeTo())
-				&& (tempClass_.getOhRangeFrom() <= tempClass_.getOhNumber() && tempClass_.getOhRangeTo() >= tempClass_.getOhNumber())))
-		{
-			return true;
-		}
-		else if ( (tempClass_.getOhNumber() == 0 && tempClass_.getOhRangeFrom() == 0 && tempClass_.getOhRangeTo() == 0)
-				&& tempClass_.getOxRangeFrom() >= 0 && tempClass_.getOxRangeFrom() < tempClass_.getOxRangeTo())
-		{
-			return true;
-		}
-		return false;
+		if (option.equalsIgnoreCase(LipidClassPanel.OPTION_EXPORT_ALL))
+			return allDefinedLipidClasses_;
+		else
+			return lipidClassTable_.getSelectedLipidClasses();
 	}
 	
-	private boolean isLipidClassViable()
+	boolean isChainNumViable(LipidClassVO vo)
 	{
-		if (isLipidClassNameAvailable(tempClass_.getLipidClass())
-				&& tempClass_.getNumberOfChains() != 0
-				&& tempClass_.getHeadgroupFormula() != null
-				&& tempClass_.getMinChainC() > 0 && tempClass_.getMinChainC() < tempClass_.getMaxChainC()
-				&& (tempClass_.getMinChainDB() >= 0 && tempClass_.getMinChainDB() < tempClass_.getMaxChainDB() || (tempClass_.getMinChainDB() == 0 && tempClass_.getMaxChainDB() == 0))
-				&& ((tempClass_.getRtRangeFrom() >= 0 && tempClass_.getRtRangeFrom() < tempClass_.getRtRangeTo()) || (tempClass_.getRtRangeFrom() < 0 && tempClass_.getRtRangeTo() < 0))
-				&& tempClass_.getOhNumber()>=0
-				&& (tempClass_.getOhRangeFrom() >= 0 && tempClass_.getOhRangeFrom() < tempClass_.getOhRangeTo() || (tempClass_.getOhRangeFrom() == 0 && tempClass_.getOhRangeTo() == 0))
-				&& (tempClass_.getOxRangeFrom() >= 0 && tempClass_.getOxRangeFrom() < tempClass_.getOxRangeTo() || (tempClass_.getOxRangeFrom() == 0 && tempClass_.getOxRangeTo() == 0))
-				&& !tempClass_.getAdducts().isEmpty()
-				)
-		{
-			return true;
-		}
-		return false;
+		return vo.getNumberOfFAChains()>=0 && vo.getNumberOfLCBChains()>=0
+				&& (vo.getNumberOfFAChains()+vo.getNumberOfLCBChains()>0);
 	}
 	
 	/**
-	 * Exports an adduct definition file
-	 * @param isOverride	true if the selected adduct definition file should be overriden / replaced with the new one
+	 * Exports @param toExport with adapted numbers of @param faChains (FA) and @param sbpchains (SPB) chains
 	 */
-	private void exportAdduct(boolean isOverride)
+	void exportChainNumbersToSelectedClasses(int faChains, int spbchains, ArrayList<LipidClassVO> toExport)
 	{
-		if (isOverride)
+		for (LipidClassVO vo : toExport)
 		{
-			String originalFilePath = AdductExporter.buildAdductPath(selectedAdduct_.getFileName());
-			File file = new File(originalFilePath);
-			file.delete();
+			vo.setNumberOfFAChains(faChains);
+			vo.setNumberOfLCBChains(spbchains);
+			exportLipidClass(vo, true);
 		}
-		String fileName = buildAdductFileName(tempAdduct_.getAdductName());
-		tempAdduct_.setFileName(fileName);
-		AdductExporter exporter = new AdductExporter(tempAdduct_);
-		exporter.export();
-		if (isOverride)
+		try {reloadLipidClassScrollPane(selectedClass_.getLipidClass());}
+		catch (IOException | ChemicalFormulaException ex)
 		{
-			updateAdductForLipidClasses(selectedAdduct_, tempAdduct_);
+			new WarningMessage(new JFrame(), "Error", "An error occurred during the export. Error message: "+ex.getMessage());
 		}
-		selectedAdduct_ = tempAdduct_;
 	}
 	
-	private void updateAdductForLipidClasses(AdductVO oldAdduct, AdductVO newAdduct)
+	/**
+	 * Exports @param toExport with the adapted of @param faChainList (FA chain list)
+	 */
+	void exportFAChainListToSelectedClasses(String faChainList, ArrayList<LipidClassVO> toExport)
+	{
+		for (LipidClassVO vo : toExport)
+		{
+			vo.setFaChainList(faChainList);
+			exportLipidClass(vo, true);
+		}
+		try {reloadLipidClassScrollPane(selectedClass_.getLipidClass());}
+		catch (IOException | ChemicalFormulaException ex)
+		{
+			new WarningMessage(new JFrame(), "Error", "An error occurred during the export. Error message: "+ex.getMessage());
+		}
+	}
+	
+	/**
+	 * Exports @param toExport with the adapted value of @param spbChainList (SPB chain list)
+	 */
+	void exportSPBChainListToSelectedClasses(String spbChainList, ArrayList<LipidClassVO> toExport)
+	{
+		for (LipidClassVO vo : toExport)
+		{
+			vo.setLCBChainList(spbChainList);
+			exportLipidClass(vo, true);
+		}
+		try {reloadLipidClassScrollPane(selectedClass_.getLipidClass());}
+		catch (IOException | ChemicalFormulaException ex)
+		{
+			new WarningMessage(new JFrame(), "Error", "An error occurred during the export. Error message: "+ex.getMessage());
+		}
+	}
+	
+	boolean isAdductListViable(LipidClassVO vo)
+	{
+		return !vo.getAdducts().isEmpty();
+	}
+	
+	/**
+	 * Exports @param toExport with the adapted value of @param adductList (the list of adducts)
+	 */
+	void exportAdductListToSelectedClasses(ArrayList<AdductVO> adductList, ArrayList<LipidClassVO> toExport)
+	{
+		for (LipidClassVO vo : toExport)
+		{
+			vo.setAdducts(adductList);
+			exportLipidClass(vo, true);
+		}
+		try {reloadLipidClassScrollPane(selectedClass_.getLipidClass());}
+		catch (IOException | ChemicalFormulaException ex)
+		{
+			new WarningMessage(new JFrame(), "Error", "An error occurred during the export. Error message: "+ex.getMessage());
+		}
+	}
+	
+	boolean isCNumViable(LipidClassVO vo)
+	{
+		return vo.getMinChainC() > 0 && vo.getMinChainC() < vo.getMaxChainC();
+	}
+	
+	/**
+	 * Exports @param toExport with the adapted value of @param min (minimum number of C atoms) and @param max (maximum number of C atoms)
+	 */
+	void exportCNumToSelectedClasses(int min, int max, ArrayList<LipidClassVO> toExport)
+	{
+		for (LipidClassVO vo : toExport)
+		{
+			vo.setMinChainC(min);
+			vo.setMaxChainC(max);
+			exportLipidClass(vo, true);
+		}
+		try {reloadLipidClassScrollPane(selectedClass_.getLipidClass());}
+		catch (IOException | ChemicalFormulaException ex)
+		{
+			new WarningMessage(new JFrame(), "Error", "An error occurred during the export. Error message: "+ex.getMessage());
+		}
+	}
+	
+	boolean isDBNumViable(LipidClassVO vo)
+	{
+		return vo.getMinChainDB() >= 0 && vo.getMinChainDB() < vo.getMaxChainDB() 
+				|| (vo.getMinChainDB() == 0 && vo.getMaxChainDB() == 0);
+	}
+	
+	/**
+	 * Exports @param toExport with the adapted value of @param min (minimum number of DB) and @param max (maximum number of DB)
+	 */
+	void exportDBNumToSelectedClasses(int min, int max, ArrayList<LipidClassVO> toExport)
+	{
+		for (LipidClassVO vo : toExport)
+		{
+			vo.setMinChainDB(min);
+			vo.setMaxChainDB(max);
+			exportLipidClass(vo, true);
+		}
+		try {reloadLipidClassScrollPane(selectedClass_.getLipidClass());}
+		catch (IOException | ChemicalFormulaException ex)
+		{
+			new WarningMessage(new JFrame(), "Error", "An error occurred during the export. Error message: "+ex.getMessage());
+		}
+	}
+	
+	boolean isRTViable(LipidClassVO vo)
+	{
+		return (vo.getRtRangeFrom() >= 0 && vo.getRtRangeFrom() < vo.getRtRangeTo()) 
+				|| (vo.getRtRangeFrom() < 0 && vo.getRtRangeTo() < 0);
+	}
+	
+	/**
+	 * Exports @param toExport with the adapted value of @param min (minimum RT) and @param max (maximum RT)
+	 */
+	void exportRTToSelectedClasses(double min, double max, ArrayList<LipidClassVO> toExport)
+	{
+		for (LipidClassVO vo : toExport)
+		{
+			vo.setRtRangeFrom(min);
+			vo.setRtRangeTo(max);
+			exportLipidClass(vo, true);
+		}
+		try {reloadLipidClassScrollPane(selectedClass_.getLipidClass());}
+		catch (IOException | ChemicalFormulaException ex)
+		{
+			new WarningMessage(new JFrame(), "Error", "An error occurred during the export. Error message: "+ex.getMessage());
+		}
+	}
+	
+	boolean isLipidClassOxDefinitionViable(LipidClassVO vo)
+	{
+		return (vo.getOhRangeFrom() >= 0 && vo.getOhRangeFrom() <= vo.getOhRangeTo())
+				|| (vo.getOhRangeFrom() == 0 && vo.getOhRangeFrom() == 0);
+	}
+	
+	/**
+	 * Exports @param toExport with the adapted value of @param min (minimum oxidation) and @param max (maximum oxidation)
+	 */
+	void exportOxNumToSelectedClasses(int min, int max, ArrayList<LipidClassVO> toExport)
+	{
+		for (LipidClassVO vo : toExport)
+		{
+			vo.setOhRangeFrom(min);
+			vo.setOhRangeTo(max);
+			exportLipidClass(vo, true);
+		}
+		try {reloadLipidClassScrollPane(selectedClass_.getLipidClass());}
+		catch (IOException | ChemicalFormulaException ex)
+		{
+			new WarningMessage(new JFrame(), "Error", "An error occurred during the export. Error message: "+ex.getMessage());
+		}
+	}
+	
+	/**
+	 * Exports @param toExport with the adapted value of @param filter (adduct insensitive retention time filter)
+	 */
+	void exportFilterToSelectedClasses(boolean filter, ArrayList<LipidClassVO> toExport)
+	{
+		for (LipidClassVO vo : toExport)
+		{
+			vo.setAdductInsensitiveRtFilter(filter);
+			exportLipidClass(vo, true);
+		}
+		try {reloadLipidClassScrollPane(selectedClass_.getLipidClass());}
+		catch (IOException | ChemicalFormulaException ex)
+		{
+			new WarningMessage(new JFrame(), "Error", "An error occurred during the export. Error message: "+ex.getMessage());
+		}
+	}
+	
+	/**
+	 * Exports @param toExport with the adapted value of @param pick (pick best match by spectrum coverage)
+	 */
+	void exportPickToSelectedClasses(boolean pick, ArrayList<LipidClassVO> toExport)
+	{
+		for (LipidClassVO vo : toExport)
+		{
+			vo.setPickBestMatchBySpectrumCoverage(pick);
+			exportLipidClass(vo, true);
+		}
+		try {reloadLipidClassScrollPane(selectedClass_.getLipidClass());}
+		catch (IOException | ChemicalFormulaException ex)
+		{
+			new WarningMessage(new JFrame(), "Error", "An error occurred during the export. Error message: "+ex.getMessage());
+		}
+	}
+	
+	/**
+	 * To be used when overriding a list of lipid class definitions
+	 * @param vo
+	 * @return
+	 */
+	boolean isGeneralDefinitionViable(LipidClassVO vo)
+	{
+		return isChainNumViable(vo)
+				&& isCNumViable(vo)
+				&& isDBNumViable(vo)
+				&& isRTViable(vo)
+				&& isLipidClassOxDefinitionViable(vo)
+				&& isAdductListViable(vo);
+	}
+	
+	/**
+	 * Exports @param toExport with the adapted values taken from @param template
+	 */
+	void exportAll(LipidClassVO template, ArrayList<LipidClassVO> toExport)
+	{
+		for (LipidClassVO vo : toExport)
+		{
+			vo.setNumberOfFAChains(template.getNumberOfFAChains());
+			vo.setNumberOfLCBChains(template.getNumberOfLCBChains());
+			vo.setFaChainList(template.getFAChainList());
+			vo.setLCBChainList(template.getLCBChainList());
+			vo.setAdducts(template.getAdducts());
+			vo.setMinChainC(template.getMinChainC());
+			vo.setMaxChainC(template.getMaxChainC());
+			vo.setMinChainDB(template.getMinChainDB());
+			vo.setMaxChainDB(template.getMaxChainDB());
+			vo.setRtRangeFrom(template.getRtRangeFrom());
+			vo.setRtRangeTo(template.getRtRangeTo());
+			vo.setOhRangeFrom(template.getOhRangeFrom());
+			vo.setOhRangeTo(template.getOhRangeTo());
+			vo.setAdductInsensitiveRtFilter(template.isAdductInsensitiveRtFilter());
+			vo.setPickBestMatchBySpectrumCoverage(template.isPickBestMatchBySpectrumCoverage());
+			exportLipidClass(vo, true);
+		}
+		try {reloadLipidClassScrollPane(selectedClass_.getLipidClass());}
+		catch (IOException | ChemicalFormulaException ex)
+		{
+			new WarningMessage(new JFrame(), "Error", "An error occurred during the export. Error message: "+ex.getMessage());
+		}
+	}
+	
+	
+	
+	boolean isLipidClassViable()
+	{
+		return isLipidClassNameAvailable(tempClass_.getLipidClass())
+				&& isChainNumViable(tempClass_)
+				&& tempClass_.getHeadgroupFormula() != null
+				&& isCNumViable(tempClass_)
+				&& isDBNumViable(tempClass_)
+				&& isRTViable(tempClass_)
+				&& isLipidClassOxDefinitionViable(tempClass_)
+				&& isAdductListViable(tempClass_);
+	}
+	
+	void updateAdductForLipidClasses(AdductVO oldAdduct, AdductVO newAdduct, boolean isDelete)
 	{
 		for (LipidClassVO vo : allDefinedLipidClasses_)
 		{
@@ -1003,7 +739,10 @@ public class MassListCreatorPanel extends JPanel
 			{
 				if (adduct.getAdductName().equals(oldAdduct.getAdductName()))
 				{
-					newAdductVOList.add(newAdduct);
+					if (!isDelete)
+					{
+						newAdductVOList.add(newAdduct);
+					}
 					isChanged = true;
 				}
 				else
@@ -1019,11 +758,43 @@ public class MassListCreatorPanel extends JPanel
 		}
 	}
 	
+	
+	void synchronizeCurrentLipidClass(LipidClassPanel caller)
+	{
+		this.selectedClass_ = caller.getSelectedClass();
+		this.tempClass_ = caller.getTempClass();;
+	}
+	
 	/**
-	 * Exports a lipid class definition file
+	 * Deletes a lipid class definition file
+	 */
+	void deleteLipidClass()
+	{
+		Object[] options = {"Delete","Cancel"};
+		int n = JOptionPane.showOptionDialog(new JFrame(), String.format("Are you sure you want to delete the lipid (sub)class definition '%s'?", 
+				selectedClass_.getLipidClass()), "Deleting lipid (sub)class definition", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+				options,options[0]);
+		
+		if (n == 0)
+		{
+			try 
+			{
+				String originalFilePath = LipidClassExporter.buildLipidClassPath(selectedClass_.getLipidClass());
+				File file = new File(originalFilePath);
+				file.delete();
+				reloadLipidClassScrollPane(null);
+			}
+			catch (IOException | ChemicalFormulaException ex) {
+				new WarningMessage(new JFrame(), "Error", "An error occurred. Error message: "+ex.getMessage());
+			}
+		}
+	}
+	
+	/**
+	 * Exports a lipid class definition file. Called only for updating adduct lists.
 	 * @param isOverride	true if the selected adduct definition file should be overriden / replaced with the new one
 	 */
-	private void exportLipidClass(LipidClassVO toExport, boolean isOverride)
+	void exportLipidClass(LipidClassVO toExport, boolean isOverride)
 	{
 		if (isOverride)
 		{
@@ -1039,47 +810,28 @@ public class MassListCreatorPanel extends JPanel
 	 * Exports a lipid class definition file
 	 * @param isOverride	true if the selected adduct definition file should be overriden / replaced with the new one
 	 */
-	private void exportLipidClass(boolean isOverride)
+	void exportLipidClass(boolean isOverride)
 	{
-		if (isOverride)
+		try
 		{
-			String originalFilePath = LipidClassExporter.buildLipidClassPath(selectedClass_.getLipidClass());
-			File file = new File(originalFilePath);
-			file.delete();
+			if (isOverride)
+			{
+				String originalFilePath = LipidClassExporter.buildLipidClassPath(selectedClass_.getLipidClass());
+				File file = new File(originalFilePath);
+				file.delete();
+			}
+			selectedClass_ = tempClass_;
+			LipidClassExporter exporter = new LipidClassExporter(selectedClass_);
+			exporter.export();
+			reloadLipidClassScrollPane(selectedClass_.getLipidClass());
 		}
-		selectedClass_ = tempClass_;
-		LipidClassExporter exporter = new LipidClassExporter(selectedClass_);
-		exporter.export();
-	}
-	
-	private String buildAdductFileName(String adductName)
-	{
-		return "adduct_"+adductName+AdductParser.ADDUCT_SUFFIX;
-	}
-	
-	private boolean isAdductViable()
-	{
-		if (isAdductNameAvailable(tempAdduct_.getAdductName())
-				&& tempAdduct_.getFormula() != null
-				&& tempAdduct_.getCharge() != 0)
+		catch (IOException | ChemicalFormulaException ex)
 		{
-			return true;
+			new WarningMessage(new JFrame(), "Error", "An error occurred during the export. Error message: "+ex.getMessage());
 		}
-		return false;
 	}
 	
-	private boolean isAdductNameAvailable(String name)
-	{
-		ArrayList<AdductVO> other = new ArrayList<AdductVO>(allDefinedAdducts_);
-		other.remove(selectedAdduct_);
-		for (AdductVO vo : other)
-		{
-			if (vo.getAdductName().equalsIgnoreCase(name)) return false;
-		}
-		return true;
-	}
-	
-	private boolean isLipidClassNameAvailable(String name)
+	boolean isLipidClassNameAvailable(String name)
 	{
 		ArrayList<LipidClassVO> other = new ArrayList<LipidClassVO>(allDefinedLipidClasses_);
 		other.remove(selectedClass_);
@@ -1090,24 +842,14 @@ public class MassListCreatorPanel extends JPanel
 		return true;
 	}
 	
-	private void setDefaultTextFieldBorder(JTextField textfield)
+	void setDefaultTextFieldBorder(JTextField textfield)
 	{
 		textfield.setBorder(BorderFactory.createLineBorder(Color.darkGray));
 	}
 	
-	private void setWarningTextFieldBorder(JTextField textfield)
+	void setWarningTextFieldBorder(JTextField textfield)
 	{
 		textfield.setBorder(BorderFactory.createLineBorder(Color.red));
-	}
-	
-	private String[] getAdductNames()
-	{
-		ArrayList<String> names = new ArrayList<String>();
-		for (AdductVO vo : allDefinedAdducts_)
-		{
-			names.add(vo.getAdductName());
-		}
-		return toArray(names);
 	}
 	
 	private String[] getLipidClassNames()
@@ -1120,13 +862,13 @@ public class MassListCreatorPanel extends JPanel
 		return toArray(names);
 	}
 	
-	private String[] getFAChainListNames() throws IOException
+	private String[] getChainListNames(boolean isFA) throws IOException
 	{
 		ArrayList<String> names = new ArrayList<String>();
 		File folder = new File(CHAIN_LIST_FOLDER);
 		if (!folder.exists())
 		{
-			throw new IOException(String.format("The FA chain list folder '%s' does not exist!", CHAIN_LIST_FOLDER));
+			throw new IOException(String.format("The chain list folder '%s' does not exist!", CHAIN_LIST_FOLDER));
 		}
 		File[] fileCandidates = folder.listFiles();
 		for (int i=0; i<fileCandidates.length;i++)
@@ -1134,12 +876,23 @@ public class MassListCreatorPanel extends JPanel
 			String fileName = fileCandidates[i].getName(); 
 			if (fileName.endsWith(CHAIN_LIST_SUFFIX))
 			{
-				names.add(fileName.substring(0, fileName.indexOf(CHAIN_LIST_SUFFIX)));
+				try
+				{
+					if (isFA && new FALibParser(fileCandidates[i]).isFAFile())
+					{
+				    names.add(fileName.substring(0, fileName.indexOf(CHAIN_LIST_SUFFIX)));
+					}
+					else if (!isFA && new SPBLibParser(fileCandidates[i]).isLCBFile())
+					{
+				    names.add(fileName.substring(0, fileName.indexOf(CHAIN_LIST_SUFFIX)));
+					}
+				}
+				catch (Exception ex) {}
 			}
 		};
 		return toArray(names);
 	}
-	
+
 	private String[] toArray(ArrayList<String> list)
 	{
 		String[] arr = new String[list.size()];
@@ -1160,78 +913,6 @@ public class MassListCreatorPanel extends JPanel
 		}
 	}
 	
-	private void handleAdductSelection(String adduct) throws IOException, ChemicalFormulaException
-	{
-		for (AdductVO vo : allDefinedAdducts_)
-		{
-			if (vo.getAdductName().equals(adduct))
-			{
-				selectedAdduct_ = vo;
-				tempAdduct_ = new AdductVO(selectedAdduct_);
-				refreshAdductPanel();
-				return;
-			}
-		}
-	}
-	
-	
-	private class AdductsTable extends JPanel
-  {
-		private static final long serialVersionUID = 1L;
-  	private static final int COLUMN_NAME= 0;
-  	
-    private JPanel selectionTablePanel_;
-    private JTable displayTable_;
-    private JScrollPane scrollPane_;
-    
-    private AdductsTable(String title, String[] adductNames, String selected)
-    {
-    	this.setPreferredSize(new Dimension(400,200));
-    	selectionTablePanel_ = new JPanel();
-    	generateSelectionTablePanel(initializeTableData(adductNames), selected);
-    	this.setLayout(new GridBagLayout());
-    	this.add(selectionTablePanel_, getDefaultGridBagConstraints(0, 1, GridBagConstraints.CENTER, 1, 1));
-    	this.setBorder(JOptionPanel.getTitledPanelBorder(title));
-    }
-    
-    private void generateSelectionTablePanel(Object[][] tableData, String selected)
-    {
-    	String[] columnNames = { "adduct name" };
-    	BooleanTableModel model = new BooleanTableModel(tableData, columnNames);
-    	displayTable_ = new JTable(model);
-    	scrollPane_ = new JScrollPane(displayTable_);
-    	scrollPane_.setPreferredSize(new Dimension(325,125));
-    	displayTable_.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-    	ListSelectionModel selectionModel = displayTable_.getSelectionModel();
-    	selectionModel.setAnchorSelectionIndex(model.indexOf(selected,COLUMN_NAME));
-    	selectionModel.setLeadSelectionIndex(model.indexOf(selected,COLUMN_NAME));
-    	selectionModel.addListSelectionListener(new ListSelectionListener() {
-        public void valueChanged(ListSelectionEvent e) {
-        	try
-        	{
-        		MassListCreatorPanel.this.handleAdductSelection((String)model.getValueAt(((ListSelectionModel)e.getSource()).getMaxSelectionIndex(), COLUMN_NAME));
-        	}
-        	catch (IOException | ChemicalFormulaException ex)
-        	{
-        		new WarningMessage(new JFrame(), "Warning", String.format("The definition file for the lipid class '%s' could not be parsed.", 
-        				(String)model.getValueAt(((ListSelectionModel)e.getSource()).getMaxSelectionIndex(), COLUMN_NAME)));
-        	}
-        }
-    	});
-    	selectionTablePanel_.add(scrollPane_);
-    }
-    
-    private Object[][] initializeTableData(String[] adductNames)
-    {
-    	Object[][] tableData = new Object[adductNames.length][1];
-    	for (int i=0; i<adductNames.length; i++)
-	    {
-	    	tableData[i][COLUMN_NAME] = adductNames[i];
-	    }
-    	return tableData;
-    }
-  }
-	
 	private class LipidClassTable extends JPanel
   {
 		private static final long serialVersionUID = 1L;
@@ -1245,24 +926,31 @@ public class MassListCreatorPanel extends JPanel
     private BooleanTableModel model_;
     private HashMap<String,Boolean> lipidClassIncluded_;
     
+    @Override
+    public Dimension getPreferredSize()
+    {
+    	return new Dimension(400,LIPID_CLASS_HEIGHT);
+    }
+    
     private LipidClassTable(String title, String[] lipidClassNames, String selected)
     {
     	this.lipidClassNames_ = lipidClassNames;
-    	this.setPreferredSize(new Dimension(400,525));
-    	selectionTablePanel_ = new JPanel();
-    	generateSelectionTablePanel(initializeTableData(lipidClassNames), selected);
+    	selectionTablePanel_ = generateSelectionTablePanel(initializeTableData(lipidClassNames), selected);
     	this.setLayout(new GridBagLayout());
-    	this.add(selectionTablePanel_, getDefaultGridBagConstraints(0, 1, GridBagConstraints.CENTER, 1, 1));
+    	this.add(selectionTablePanel_, new GridBagConstraints(0,0,1,1,1.0,1.0,GridBagConstraints.CENTER,GridBagConstraints.BOTH,new Insets(10,10,0,10),0,5));
     	this.setBorder(JOptionPanel.getTitledPanelBorder(title));
     }
     
-    private void generateSelectionTablePanel(Object[][] tableData, String selected)
+    private JPanel generateSelectionTablePanel(Object[][] tableData, String selected)
     {
-    	String[] columnNames = { "lipid class name", "include in mass list" };
+    	JPanel panel = new JPanel();
+    	panel.setLayout(new GridBagLayout());
+    	String[] columnNames = { "lipid class name", "select" };
     	model_ = new BooleanTableModel(tableData, columnNames);
     	displayTable_ = new JTable(model_);
+    	displayTable_.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+    	displayTable_.getColumnModel().getColumn(0).setPreferredWidth(250);
     	scrollPane_ = new JScrollPane(displayTable_);
-    	scrollPane_.setPreferredSize(new Dimension(325,475));
     	displayTable_.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     	ListSelectionModel selectionModel = displayTable_.getSelectionModel();
     	selectionModel.setAnchorSelectionIndex(model_.indexOf(selected,COLUMN_NAME));
@@ -1280,7 +968,27 @@ public class MassListCreatorPanel extends JPanel
         	}
         }
     	});
-    	selectionTablePanel_.add(scrollPane_);
+    	panel.add(scrollPane_, new GridBagConstraints(0,0,1,1,1.0,1.0,GridBagConstraints.CENTER,GridBagConstraints.BOTH,new Insets(10,10,10,10),0,5));
+    	JButton button = new JButton("Invert selection");
+    	button.setToolTipText(TooltipTexts.MASSLIST_CLASS_SELECT_ALL);
+  		button.addActionListener(new ActionListener() {
+  		  public void actionPerformed(ActionEvent e) 
+  		  {
+  		  	invertSelection();
+  		  }
+  	  });
+  		panel.add(button, getDefaultGridBagConstraints(0,1, GridBagConstraints.CENTER, 1, 1, new Insets(10, 10, 10, 10)));
+    	return panel;
+    }
+    
+    private void invertSelection()
+    {
+    	for (int i=0; i<lipidClassNames_.length; i++)
+    	{
+    		boolean value = (Boolean)model_.getValueAt(i, COLUMN_INCLUDE);
+    		model_.setValueAt(!value, i, COLUMN_INCLUDE);
+    	}
+    	refreshLipidClassScrollPane();
     }
     
     private Object[][] initializeTableData(String[] lipidClassNames)
@@ -1312,14 +1020,14 @@ public class MassListCreatorPanel extends JPanel
     }
   }
 	
-	private class BooleanTableModel extends AbstractTableModel {
+	class BooleanTableModel extends AbstractTableModel {
 		
 		private static final long serialVersionUID = 1L;
 		
 		Object tableData_[][];
 		String[] columnNames_;
 		
-		private BooleanTableModel(Object[][] tableData, String[] columnNames)
+		BooleanTableModel(Object[][] tableData, String[] columnNames)
 		{
 			this.tableData_ = tableData;
 			this.columnNames_ = columnNames;
@@ -1366,5 +1074,30 @@ public class MassListCreatorPanel extends JPanel
 	  public boolean isCellEditable(int row, int column) {
 	    return (column != 0);
 	  }
+	}
+
+	public AdductCreatorPanel getAdductCreatorPanel()
+	{
+		return this.adductCreatorPanel_;
+	}
+
+	public LipidClassVO getSelectedClass()
+	{
+		return selectedClass_;
+	}
+	
+	public LipidClassVO getTempClass()
+	{
+		return tempClass_;
+	}
+	
+	int getPreferredDisplayComponentWidth(int offset)
+	{
+		return 180-offset;
+	}
+	
+	int getPreferredDisplayComponentWidthSmaller(int offset)
+	{
+		return 65-offset;
 	}
 }

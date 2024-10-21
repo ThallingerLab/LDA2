@@ -300,6 +300,7 @@ public class FattyAcidVO implements Comparable<FattyAcidVO>
 							.thenComparing(FattyAcidVO::getOhNumber)
 							.thenComparing(FattyAcidVO::getOmegaPosition)
 							.thenComparing(FattyAcidVO::getPrefix)
+							.thenComparing(FattyAcidVO::getOxState)
 							.compare(this, other);
 	}
   

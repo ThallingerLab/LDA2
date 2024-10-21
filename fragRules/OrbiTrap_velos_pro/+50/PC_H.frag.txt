@@ -14,7 +14,7 @@ IsobarSCExclusionRatio=0.004
 !FRAGMENTS
 Name=PChead_184			Formula=C5H15NO4P		Charge=1	MSLevel=2	mandatory=false
 Name=NL-Na_wrong		Formula=$PRECURSOR-P1O4C5N1H14	Charge=1	MSLevel=2	mandatory=other
-Name=NL-triMeth_WRONG		Formula=$PRECURSOR-NC3H9	Charge=1	MSLevel=2	mandatory=other
+Name=NL-triMeth_WRONG		Formula=$PRECURSOR-NC3H9	Charge=1	MSLevel=2	mandatory=false
 Name=Precursor			Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=other
 Name=NL_PEhead_141_WRONG	Formula=$PRECURSOR-C2H8NO4P	Charge=1	MSLevel=2	mandatory=other
 

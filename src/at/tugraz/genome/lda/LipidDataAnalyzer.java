@@ -66,7 +66,6 @@ import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
-import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JApplet;
 import javax.swing.JButton;
@@ -77,7 +76,6 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JProgressBar;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
@@ -94,7 +92,6 @@ import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.table.TableColumnModel;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
@@ -137,6 +134,7 @@ import at.tugraz.genome.lda.fragai.SpectraIdentifier;
 import at.tugraz.genome.lda.fragai.SpectraInterpreter;
 import at.tugraz.genome.lda.fragai.SpectraTextExporter;
 import at.tugraz.genome.lda.fragai.SpectrumContainer;
+import at.tugraz.genome.lda.glyco.FragGLiPanel;
 import at.tugraz.genome.lda.fragai.CombinedSpectrumContainer;
 import at.tugraz.genome.lda.interfaces.ColorChangeListener;
 import at.tugraz.genome.lda.listeners.AnnotationThresholdListener;
@@ -154,8 +152,6 @@ import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.quantification.QuantificationResult;
 import at.tugraz.genome.lda.swing.AbsoluteQuantSettingsPanel;
 import at.tugraz.genome.lda.swing.BarChartPainter;
-import at.tugraz.genome.lda.swing.BatchQuantificationTable;
-import at.tugraz.genome.lda.swing.BatchQuantificationTableModel;
 import at.tugraz.genome.lda.swing.ClassesOverviewPanel;
 import at.tugraz.genome.lda.swing.ColorChooserDialog;
 import at.tugraz.genome.lda.swing.CutoffSettingsPanel;
@@ -177,9 +173,9 @@ import at.tugraz.genome.lda.swing.ResultSelectionSettings;
 import at.tugraz.genome.lda.swing.RuleDefinitionInterface;
 import at.tugraz.genome.lda.swing.SpectrumUpdateListener;
 import at.tugraz.genome.lda.target.JTargetFileWizard;
+import at.tugraz.genome.lda.utils.ExcelUtils;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.verifier.DoubleVerifier;
-import at.tugraz.genome.lda.verifier.IntegerMaxVerifier;
 import at.tugraz.genome.lda.vos.AbsoluteSettingsVO;
 import at.tugraz.genome.lda.vos.AddAnalyteVO;
 import at.tugraz.genome.lda.vos.AutoAnalyteAddVO;
@@ -252,15 +248,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JFileChooser mzXMLFileChooser;
   private JFileChooser mzXMLDirChooser;
   private JTabbedPane mainTabs;
-  private JPanel singleQuantMenu_;
-  private JPanel batchQuantMenu_;
+  private QuantificationMenu singleQuantMenu_;
+  private QuantificationMenu batchQuantMenu_;
+  private JTabbedPane quantitationPane_;
   private JPanel resultsMenu_;
   private JPanel resultsPanel_;
   private JPanel settingsPanel_;
   private JPanel licensePanel_;
   private MassListCreatorPanel massListPanel_;
   private JTargetFileWizard targetFilePanel_;
-  private JPanel aIPanel_;
+  private FragGLiPanel fragGLiPanel_;
   
   /**
    * what do I want and need? I need to read in 
@@ -269,18 +266,11 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JPanel helpPanel_;
   private JPanel aboutPanel_;
   private JPanel displayTopMenu;
-  private JLabel mzXMLLabel;
-  private JTextField selectedMzxmlFile;
-  private JTextField selectedMzxmlDirectory_;
-  private JButton jButtonMxXMLOpen;
-  private JButton jButtonMxXMLDirOpen_;
   private QuantificationThread quantThread_;
   private BatchQuantThread batchQuantThread_;
   private RawToMzxmlThread rawmzThread_;
   private MzxmlToChromThread mzToChromThread_;
   private Timer timer_;
-  private JLabel quantifyingLabel_;
-  private JLabel quantifyingBatchLabel_;
   
   private JLabel resultStatus_;
 
@@ -326,45 +316,13 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JTextField externalStandardSelection_;
   private JTextField correctOrderFile_;
   private JFileChooser correctOrderFileChooser_;
-
   
-  private JLabel chromLabel;
   private JTextField selectedChromFile;
   private JButton jButtonChromOpen;
-  private JTextField selectedQuantFile;
-  private JTextField selectedQuantDir_;
-  private JButton jButtonQuantOpen;
-  private JButton jBatchQuantOpen_;
-  private JButton startQuantification;
-  private JButton startBatchQuantification_;
   private JFileChooser chromFileChooser_;
   private JFileChooser quantFileChooser_;
   private JFileChooser quantDirChooser_;
-  private JTextField singleTimeMinusTol_;
-  private JTextField singleTimePlusTol_;
-  private JTextField singleCutoff_;
-  private JTextField singleRTShift_;
-  private JCheckBox isoValidation_;
-  private JTextField amountOfIsotopes_;
-  private JCheckBox isoBatchValidation_;
-  private JTextField amountOfBatchIsotopes_;
-  private JCheckBox searchUnknownTime_;
-  private JCheckBox searchUnknownBatchTime_;
-  private JTextField amountOfMatchingSearchIsotopes_;
-  private JTextField amountOfMatchingBatchSearchIsotopes_;
-  private JTextField nrProcessors_;
-  private JTextField nrProcessorsBatch_;
-  /** the ion mode for the Alex123 searches*/
-  private JComboBox<String> ionMode_;
-  /** the ion mode for the Alex123 batch searches*/
-  private JComboBox<String> ionModeBatch_;
-  /** the ion mode to set Alex123 order in display results*/
   private JComboBox<String> ionModeOrder_;
-
-  private JTextField batchTimeMinusTol_;
-  private JTextField batchTimePlusTol_;
-  private JTextField batchCutoff_;
-  private JTextField batchRTShift_;
 
   
   private JTextField selectedResultFile;
@@ -372,16 +330,14 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private JButton startDisplay;
   private JFileChooser resultFileChooser_;
   private LipidomicsJTable displayTable_;
-  private BatchQuantificationTable batchQuantTable_;
-  private BatchQuantificationTableModel batchQuantTableModel_;
+//  private BatchQuantificationTable batchQuantTable_;
+//  private BatchQuantificationTableModel batchQuantTableModel_;
   private ListSelectionModel listSelectionModel;
   private JPanel selectionPane;
   private JPanel tableContainer;
   private JPanel tablePanel_;
   private DisplayTolerancePanel displayTolerancePanel_;
   private JComboBox<String> selectedSheet_;
-  private JPanel quantifyingPanel_;
-  private JPanel quantifyingBatchPanel_;
 
   private Lipidomics2DPainter l2DPainter_;
   private Lipidomics2DPainter spectrumPainter_;
@@ -420,10 +376,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   
   private LipidParameterSet params_;
   private MSMapViewer viewer_;
-  private JProgressBar progressBar_;
-  private JProgressBar progressBatchBar_;
-  private JLabel spinnerLabel_;
-  private JLabel spinnerBatchLabel_;
   private JPanel l2dPanel_;
   /** layout for the 2D-panel - used to remove the Component at CENTER position*/
   private BorderLayout l2dPanelLayout_;
@@ -503,7 +455,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   
   private final static String DEFAULT_ANNOTATION_CUTOFF = "5";
   
-  private final static Font SELECT_FIELD_FONT = new Font("Helvetica",Font.PLAIN,10);
+  protected final static Font SELECT_FIELD_FONT = new Font("Helvetica",Font.PLAIN,10);
   
   /** a dialog field showing the new MSn assignment*/
   private RecalculateMSnDialog recalcDialog_;
@@ -529,15 +481,16 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
   private int statisticsViewMode_ = 0;
   //TODO: set to false for production version
   private boolean exportChromatogramsFromDRView_ = false;
-
   
   public LipidDataAnalyzer(){
   	this.checkLicense();
     this.createDisplayTopMenu();
-    this.createSingleQuantMenu();
-    this.createBatchQuantMenu();
+    this.batchQuantMenu_ = new QuantificationMenu(true,this);
+    this.singleQuantMenu_ = new QuantificationMenu(false,this);
+    this.singleQuantMenu_.setBatchQuantTableForSingleQuant(batchQuantMenu_);
     this.createResultsMenu();
     this.initL2dPanel();
+    
     displaysMs2_ = false;
     shotgunIsDisplayed_ = false;
     
@@ -588,6 +541,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     singleQuantificationPanel.setLayout(new BorderLayout());
     JPanel batchQuantificationPanel = new JPanel();
     batchQuantificationPanel.setLayout(new BorderLayout());
+    singleQuantificationPanel.add(singleQuantMenu_);
+    batchQuantificationPanel.add(batchQuantMenu_);
     resultsPanel_ = new JPanel();
     resultsPanel_.setLayout(new BorderLayout());
     settingsPanel_ = new JPanel();
@@ -595,39 +550,32 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     licensePanel_ = new JPanel();
     massListPanel_ = new MassListCreatorPanel();
     targetFilePanel_ = new JTargetFileWizard();
-    aIPanel_ = new JPanel();
+    fragGLiPanel_ = new FragGLiPanel();
     helpPanel_ = new JPanel();
     initHelpPanel();
     aboutPanel_ = new JPanel();
     initAboutPanel();
     
-    
-    mainTabs.addTab("Quantitation", singleQuantificationPanel);
-    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(singleQuantificationPanel), TooltipTexts.TABS_MAIN_QUANTITATION);
-    mainTabs.addTab("Batch Quantitation", batchQuantificationPanel);
-    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(batchQuantificationPanel), TooltipTexts.TABS_MAIN_BATCH);
+    quantitationPane_ = new JTabbedPane();
+    quantitationPane_.setOpaque(true);
+    quantitationPane_.setBackground(Color.decode("#EEEEEE"));
+    quantitationPane_.addTab("Batch Quantitation", batchQuantificationPanel);
+    quantitationPane_.setToolTipTextAt(quantitationPane_.indexOfComponent(batchQuantificationPanel), TooltipTexts.TABS_MAIN_BATCH);
+    quantitationPane_.addTab("Single Quantitation", singleQuantificationPanel);
+    quantitationPane_.setToolTipTextAt(quantitationPane_.indexOfComponent(singleQuantificationPanel), TooltipTexts.TABS_MAIN_SINGLE);
+    mainTabs.addTab("Quantitation", quantitationPane_);
+    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(quantitationPane_), TooltipTexts.TABS_MAIN_QUANTITATION);
     mainTabs.addTab("Statistical Analysis", resultsPanel_);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(resultsPanel_), TooltipTexts.TABS_MAIN_STATISTICS);
     mainTabs.addTab("Display Results", displayPanel_);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(displayPanel_), TooltipTexts.TABS_MAIN_DISPLAY);
-    if (Settings.SHOW_OMEGA_TOOLS)
+  	mainTabs.addTab("MassList Creator", massListPanel_);
+    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(massListPanel_), TooltipTexts.TABS_MAIN_MASSLIST_CREATOR);
+  	mainTabs.addTab("LC=CL", targetFilePanel_);
+    mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(targetFilePanel_), TooltipTexts.TABS_MAIN_TARGET);
+    if (Settings.SHOW_FRAGGLI)
     {
-    	mainTabs.addTab("MassList Creator", massListPanel_);
-      mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(massListPanel_), TooltipTexts.TABS_MAIN_MASSLIST_CREATOR);
-    }
-    if (Settings.SHOW_OMEGA_TOOLS)
-    {
-    	mainTabs.addTab("LC=CL", targetFilePanel_);
-      mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(targetFilePanel_), TooltipTexts.TABS_MAIN_TARGET);
-    }
-    if (Settings.SHOW_AI_TOOLS)
-    {
-    	JButton startAIButton = new JButton("Start");
-    	startAIButton.setActionCommand("Start AI");
-    	startAIButton.addActionListener(this);
-    	aIPanel_.add(startAIButton);
-    	mainTabs.addTab("AI FragRule Generator", aIPanel_);
-      mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(aIPanel_), TooltipTexts.TABS_MAIN_FRAGRULE_GENERATOR);
+    	mainTabs.addTab("FraGLi", fragGLiPanel_);
     }
     mainTabs.addTab("Settings", settingsPanel_);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(settingsPanel_), TooltipTexts.TABS_MAIN_SETTINGS);
@@ -643,8 +591,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     mainTabs.addTab("About", aboutPanel_);
     mainTabs.setToolTipTextAt(mainTabs.indexOfComponent(aboutPanel_), TooltipTexts.TABS_MAIN_ABOUT);
     mainTabs.setSelectedIndex(0);
-    singleQuantificationPanel.add(singleQuantMenu_);
-    batchQuantificationPanel.add(batchQuantMenu_);
     resultTabs_= new JTabbedPane();
     resultsPanel_.add(resultTabs_,BorderLayout.CENTER);
     resultStatusPanel_ = new JPanel(new BorderLayout());
@@ -1338,257 +1284,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     jButtonResultOpen.setPreferredSize(jButtonChromOpen.getPreferredSize());
   }
   
-  private void createBatchQuantMenu(){
-    this.batchQuantMenu_ = new JPanel();
-    this.batchQuantMenu_.setLayout(new GridBagLayout());
-    JPanel selectionPanel = new JPanel();
-    selectionPanel.setLayout(new GridBagLayout());
-    batchQuantMenu_.add(selectionPanel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel batchMzXMLLabel = new JLabel("Folder with raw file(s): ");
-    batchMzXMLLabel.setToolTipText(TooltipTexts.QUANTITATION_BATCH_RAW_FILE);
-    selectionPanel.add(batchMzXMLLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    this.selectedMzxmlDirectory_ = new JTextField(54);
-    selectedMzxmlDirectory_.setMinimumSize(selectedMzxmlDirectory_.getPreferredSize());
-    selectedMzxmlDirectory_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_RAW_FILE);
-    selectionPanel.add(selectedMzxmlDirectory_,new GridBagConstraints(1, 0, 6, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    jButtonMxXMLDirOpen_ = new JButton("Select");
-    jButtonMxXMLDirOpen_.addActionListener(this);
-    jButtonMxXMLDirOpen_.setActionCommand("showMzxmlDirChooser");
-    jButtonMxXMLDirOpen_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_RAW_FILE);
-    selectionPanel.add(jButtonMxXMLDirOpen_,new GridBagConstraints(7, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel quantChromLabel = new JLabel("Folder with mass list or RT-DB file(s): ");
-    quantChromLabel.setToolTipText(TooltipTexts.QUANTITATION_BATCH_MASS_LIST);
-    selectionPanel.add(quantChromLabel,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    jBatchQuantOpen_ = new JButton("Select");
-    jBatchQuantOpen_.addActionListener(this);
-    jBatchQuantOpen_.setActionCommand("showQuantDirChooser");
-    jBatchQuantOpen_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_MASS_LIST);
-    selectionPanel.add(jBatchQuantOpen_,new GridBagConstraints(7, 1, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    this.selectedQuantDir_ = new JTextField(54);
-    selectedQuantDir_.setMinimumSize(selectedQuantDir_.getPreferredSize());
-    selectedQuantDir_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_MASS_LIST);
-    selectionPanel.add(selectedQuantDir_,new GridBagConstraints(1, 1, 6, 1, 0.0, 0.0
-      ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    
-    JPanel settingsPanel = new JPanel ();  
-    settingsPanel.setLayout(new GridBagLayout());
-    batchQuantMenu_.add(settingsPanel,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
-
-//    JLabel mzTolLabel = new JLabel("m/z-Tolerance: ");
-//    settingsPanel.add(mzTolLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-//        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-//    batchMzTol_ = new JTextField(4);
-//    batchMzTol_.setText("0.02");
-//    batchMzTol_.setHorizontalAlignment(JTextField.RIGHT);
-//    settingsPanel.add(batchMzTol_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-//        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel timeMinusTolLabel = new JLabel("Time before tol.: ");
-    timeMinusTolLabel.setToolTipText(TooltipTexts.QUANTITATION_RET_BEFORE);
-    settingsPanel.add(timeMinusTolLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    batchTimeMinusTol_ = new JTextField(4);
-    batchTimeMinusTol_.setMinimumSize(batchTimeMinusTol_.getPreferredSize());
-    batchTimeMinusTol_.setText("5");
-    batchTimeMinusTol_.setHorizontalAlignment(JTextField.RIGHT);
-    batchTimeMinusTol_.setToolTipText(TooltipTexts.QUANTITATION_RET_BEFORE);
-    settingsPanel.add(batchTimeMinusTol_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel timeMinusUnit = new JLabel("min");
-    timeMinusUnit.setToolTipText(TooltipTexts.QUANTITATION_RET_BEFORE);
-    settingsPanel.add(timeMinusUnit,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel timePlusTolLabel = new JLabel("Time after tol.: ");
-    timePlusTolLabel.setToolTipText(TooltipTexts.QUANTITATION_RET_AFTER);
-    settingsPanel.add(timePlusTolLabel,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    batchTimePlusTol_ = new JTextField(4);
-    batchTimePlusTol_.setMinimumSize(batchTimePlusTol_.getPreferredSize());
-    batchTimePlusTol_.setText("5");
-    batchTimePlusTol_.setHorizontalAlignment(JTextField.RIGHT);
-    batchTimePlusTol_.setToolTipText(TooltipTexts.QUANTITATION_RET_AFTER);
-    settingsPanel.add(batchTimePlusTol_,new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel timePlusUnit = new JLabel("min");
-    timePlusUnit.setToolTipText(TooltipTexts.QUANTITATION_RET_AFTER);
-    settingsPanel.add(timePlusUnit,new GridBagConstraints(5, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-
-    JLabel cutoffLabel = new JLabel("Rel. base-peak cutoff: ");
-    cutoffLabel.setToolTipText(TooltipTexts.QUANTITATION_CUTOFF);
-    settingsPanel.add(cutoffLabel,new GridBagConstraints(6, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    batchCutoff_ = new JTextField(4);
-    batchCutoff_.setMinimumSize(batchCutoff_.getPreferredSize());
-    batchCutoff_.setText(LipidomicsConstants.getBasePeakDefaultCutoff());
-    batchCutoff_.setHorizontalAlignment(JTextField.RIGHT);
-    batchCutoff_.setToolTipText(TooltipTexts.QUANTITATION_CUTOFF);
-    settingsPanel.add(batchCutoff_,new GridBagConstraints(7, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel cutoffUnit = new JLabel("\u2030");
-    cutoffUnit.setToolTipText(TooltipTexts.QUANTITATION_CUTOFF);
-    settingsPanel.add(cutoffUnit,new GridBagConstraints(8, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel rtShiftLabel = new JLabel("RT-shift: ");
-    rtShiftLabel.setToolTipText(TooltipTexts.QUANTIFICATION_RET_SHIFT);
-    settingsPanel.add(rtShiftLabel,new GridBagConstraints(9, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    batchRTShift_ = new JTextField(4);
-    batchRTShift_.setMinimumSize(batchRTShift_.getPreferredSize());
-    batchRTShift_.setText("0.0");
-    batchRTShift_.setHorizontalAlignment(JTextField.RIGHT);
-    batchRTShift_.setToolTipText(TooltipTexts.QUANTIFICATION_RET_SHIFT);
-    settingsPanel.add(batchRTShift_,new GridBagConstraints(10, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel rtShiftUnit = new JLabel("min");
-    rtShiftUnit.setToolTipText(TooltipTexts.QUANTIFICATION_RET_SHIFT);
-    settingsPanel.add(rtShiftUnit,new GridBagConstraints(11, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-
-    
-    JPanel settingsPanel2 = new JPanel ();
-    settingsPanel2.setLayout(new GridBagLayout());
-    batchQuantMenu_.add(settingsPanel2,new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
-    isoBatchValidation_ = new JCheckBox();
-    isoBatchValidation_.setSelected(true);
-    isoBatchValidation_.addItemListener(new LipidomicsItemListener("endisableAmountOfBatchIsotopes"));
-    isoBatchValidation_.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
-    settingsPanel2.add(isoBatchValidation_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel allowIsotopicValidation = new JLabel("Isotopic quantitation of ");
-    allowIsotopicValidation.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
-    settingsPanel2.add(allowIsotopicValidation,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    amountOfBatchIsotopes_ = new JTextField(4);
-    amountOfBatchIsotopes_.setMinimumSize(amountOfBatchIsotopes_.getPreferredSize());
-    amountOfBatchIsotopes_.setText("2");
-    amountOfBatchIsotopes_.setHorizontalAlignment(JTextField.RIGHT);
-    amountOfBatchIsotopes_.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
-    settingsPanel2.add(amountOfBatchIsotopes_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel isotopePeaks = new JLabel("isotopes where ");
-    isotopePeaks.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
-    settingsPanel2.add(isotopePeaks,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    amountOfMatchingBatchSearchIsotopes_ = new JTextField(4);
-    amountOfMatchingBatchSearchIsotopes_.setMinimumSize(amountOfMatchingBatchSearchIsotopes_.getPreferredSize());
-    amountOfMatchingBatchSearchIsotopes_.setText("1");
-    amountOfMatchingBatchSearchIsotopes_.setHorizontalAlignment(JTextField.RIGHT);
-//    amountOfMatchingBatchSearchIsotopes_.setEnabled(false);
-    amountOfMatchingBatchSearchIsotopes_.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
-    settingsPanel2.add(amountOfMatchingBatchSearchIsotopes_,new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel isotopeMatchPeaks = new JLabel("isotopic peak(s) have to match");
-    isotopeMatchPeaks.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
-    settingsPanel2.add(isotopeMatchPeaks,new GridBagConstraints(5, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-
-
-    JPanel settingsPanel3 = new JPanel ();
-    settingsPanel3.setLayout(new GridBagLayout());
-    batchQuantMenu_.add(settingsPanel3,new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
-    searchUnknownBatchTime_ = new JCheckBox();
-    searchUnknownBatchTime_.setSelected(true);
-    searchUnknownBatchTime_.setToolTipText(TooltipTexts.QUANTITATION_RET_UNKNOWN);
-    settingsPanel3.add(searchUnknownBatchTime_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel findUnknownMolecules = new JLabel("Find molecules where retention time is unknown");
-    findUnknownMolecules.setToolTipText(TooltipTexts.QUANTITATION_RET_UNKNOWN);
-    settingsPanel3.add(findUnknownMolecules,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-
-    JLabel maxProcessors = new JLabel("Processors for quantitation:");
-    maxProcessors.setToolTipText(TooltipTexts.QUANTITATION_PROCESSORS);
-    settingsPanel3.add(maxProcessors,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    nrProcessorsBatch_ = new JTextField(3);
-    nrProcessorsBatch_.setMinimumSize(nrProcessorsBatch_.getPreferredSize());
-    nrProcessorsBatch_.setText(String.valueOf(this.getAmountOfProcessorsPreferred()));
-    nrProcessorsBatch_.setHorizontalAlignment(JTextField.RIGHT);
-    nrProcessorsBatch_.setToolTipText(TooltipTexts.QUANTITATION_PROCESSORS);
-    nrProcessorsBatch_.setInputVerifier(new IntegerMaxVerifier(true,1,getMaxProcessors()));
-    settingsPanel3.add(nrProcessorsBatch_,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-
-    int yPositionCounterSettingsPanels = 4;
-    if (Settings.useAlex()){
-      JPanel settingsPanel4 = new JPanel();
-      settingsPanel4.setLayout(new GridBagLayout());
-      batchQuantMenu_.add(settingsPanel4,new GridBagConstraints(0, yPositionCounterSettingsPanels, 1, 1, 0.0, 0.0
-          ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
-      JLabel ionModeLabel = new JLabel("Ion mode:");
-      ionModeLabel.setToolTipText(TooltipTexts.QUANTITATION_ION_MODE);
-      settingsPanel4.add(ionModeLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-          ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-      ionModeBatch_ = new JComboBox<String>();
-      ionModeBatch_.addItem("+");
-      ionModeBatch_.addItem("-");
-      ionModeBatch_.setToolTipText(TooltipTexts.QUANTITATION_ION_MODE);
-      ionModeBatch_.setFont(SELECT_FIELD_FONT);
-      settingsPanel4.add(ionModeBatch_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-          ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-      JLabel ionModeInfo = new JLabel("(selection required for Alex123 target lists)");
-      ionModeInfo.setToolTipText(TooltipTexts.QUANTITATION_ION_MODE);
-      settingsPanel4.add(ionModeInfo,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
-          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-      yPositionCounterSettingsPanels++;
-    }
-    
-    startBatchQuantification_ = new JButton("Start Quantitation");
-    startBatchQuantification_.addActionListener(this);
-    startBatchQuantification_.setActionCommand("startBatchQuantification");
-    startBatchQuantification_.setToolTipText(TooltipTexts.QUANTITATION_BATCH_START);
-    batchQuantMenu_.add(startBatchQuantification_,new GridBagConstraints(0, yPositionCounterSettingsPanels, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
-    yPositionCounterSettingsPanels++;
-    quantifyingBatchPanel_ = new JPanel ();  
-    quantifyingBatchPanel_.setLayout(new BorderLayout());
-    batchQuantMenu_.add(quantifyingBatchPanel_,new GridBagConstraints(0, yPositionCounterSettingsPanels, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
-    yPositionCounterSettingsPanels++;
-    
-    batchQuantTableModel_ = new BatchQuantificationTableModel();
-    batchQuantTable_ = new BatchQuantificationTable(batchQuantTableModel_);
-
-    TableColumnModel tcm = batchQuantTable_.getColumnModel();
-    tcm.getColumn(0).setPreferredWidth(15);
-    tcm.getColumn(0).setMaxWidth(15);
-    tcm.getColumn(1).setPreferredWidth(170);
-    tcm.getColumn(2).setPreferredWidth(200);
-    tcm.getColumn(3).setPreferredWidth(170);
-
-    JScrollPane scrollPane = new JScrollPane(batchQuantTable_);
-    scrollPane.setPreferredSize(new Dimension(650, 200));
-    quantifyingBatchPanel_.add(scrollPane,BorderLayout.CENTER);
-    JPanel quantProgressPanel = new JPanel();
-    quantProgressPanel.setLayout(new GridBagLayout());
-    quantifyingBatchPanel_.add(quantProgressPanel,BorderLayout.SOUTH);
-    
-    quantifyingBatchLabel_ = new JLabel("Quantifying");
-    quantifyingBatchLabel_.setToolTipText(TooltipTexts.QUANTITATION_STATUS_TEXT);
-    quantProgressPanel.add(quantifyingBatchLabel_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    progressBatchBar_ = new JProgressBar();
-    progressBatchBar_.setMaximum(100);
-    progressBatchBar_.setToolTipText(TooltipTexts.QUANTITATION_PROGRESS);
-    quantProgressPanel.add(progressBatchBar_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    Icon icon = new ImageIcon(LipidDataAnalyzer.class.getResource("/images/spinner.gif"));
-    spinnerBatchLabel_ = new JLabel(icon);
-    quantProgressPanel.add(spinnerBatchLabel_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    
-    quantifyingBatchPanel_.setVisible(false);
-  }
-  
   private void createResultsMenu(){
     resultsMenu_ = new JPanel();
     resultsMenu_.setLayout(new GridBagLayout());
@@ -1697,6 +1392,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     rtTimeUnit_.setEnabled(separateHitsByRT_.isSelected());
     
+    //start: added via the oxidized lipids extension
     JSeparator js = new JSeparator(SwingConstants.VERTICAL);
     js.setPreferredSize(new Dimension(5,1));
     GridBagConstraints gbc = new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
@@ -1705,37 +1401,51 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     gbc.weighty = 1;
     groupRtPanel.add(js, gbc);
     
-    showMSnEvidenceStat_ = new JCheckBox("Load MSn Only");
-    showMSnEvidenceStat_.setToolTipText(TooltipTexts.STATISTICS_SHOW_MSN_ONLY);
+    JLabel temp_label = new JLabel("Show MSn Only");
+    groupRtPanel.add(temp_label ,new GridBagConstraints(5, 0, 1, 1, 0.0, 0.0
+            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    temp_label.setToolTipText("Show only lipids with MSn headgroup evidence");
+    showMSnEvidenceStat_ = new JCheckBox("");
     showMSnEvidenceStat_.addItemListener(new LipidomicsItemListener("showMSnOnlyStat"));
-    groupRtPanel.add(showMSnEvidenceStat_ ,new GridBagConstraints(5, 0, 1, 1, 0.0, 0.0
+    groupRtPanel.add(showMSnEvidenceStat_ ,new GridBagConstraints(6, 0, 1, 1, 0.0, 0.0
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     
     
     js = new JSeparator(SwingConstants.VERTICAL);
     js.setPreferredSize(new Dimension(5,1));
-    gbc = new GridBagConstraints(6, 0, 1, 1, 0.0, 1.0
-            ,GridBagConstraints.WEST, GridBagConstraints.VERTICAL, new Insets(0, 6, 0, 0), 0, 0);
+    gbc = new GridBagConstraints(7, 0, 1, 1, 0.0, 0.0
+            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0);
+    gbc.fill = GridBagConstraints.VERTICAL;
+    gbc.weighty = 1;
     groupRtPanel.add(js, gbc);
     
-    showChainEvidenceStat_ = new JCheckBox("Chain Evidence Only");
+    temp_label = new JLabel("Chain Evidence Only");
+    groupRtPanel.add(temp_label ,new GridBagConstraints(8, 0, 1, 1, 0.0, 0.0
+            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    temp_label.setToolTipText("Show only lipids with MSn headgroup- and chain evidence");
+    showChainEvidenceStat_ = new JCheckBox("");
     showChainEvidenceStat_.setEnabled(false);
-    showChainEvidenceStat_.setToolTipText(TooltipTexts.STATISTICS_CHAIN_EVIDENCE_ONLY);
     showChainEvidenceStat_.addItemListener(new LipidomicsItemListener("showChainOnlyStat"));
-    groupRtPanel.add(showChainEvidenceStat_ ,new GridBagConstraints(7, 0, 1, 1, 0.0, 0.0
+    groupRtPanel.add(showChainEvidenceStat_ ,new GridBagConstraints(9, 0, 1, 1, 0.0, 0.0
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
     
     js = new JSeparator(SwingConstants.VERTICAL);
     js.setPreferredSize(new Dimension(5,1));
-    gbc.gridx = 8;
+    gbc = new GridBagConstraints(10, 0, 1, 1, 0.0, 0.0
+            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0);
+    gbc.fill = GridBagConstraints.VERTICAL;
+    gbc.weighty = 1;
     groupRtPanel.add(js, gbc);
     
-    combineWithOx_ = new JCheckBox("Combine Classes with ox-Classes");
-    combineWithOx_.setToolTipText(TooltipTexts.STATISTICS_COMBINE_OX);
-    combineWithOx_.addItemListener(new LipidomicsItemListener("combineWithOx"));
-    groupRtPanel.add(combineWithOx_ ,new GridBagConstraints(9, 0, 1, 1, 0.0, 0.0
+    temp_label = new JLabel("Combine Classes with ox-Classes");
+    groupRtPanel.add(temp_label ,new GridBagConstraints(11, 0, 1, 1, 0.0, 0.0
             ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
- 
+    temp_label.setToolTipText("Combines classes with their respective ox-class");
+    combineWithOx_ = new JCheckBox("");
+    combineWithOx_.addItemListener(new LipidomicsItemListener("combineWithOx"));
+    groupRtPanel.add(combineWithOx_ ,new GridBagConstraints(12, 0, 1, 1, 0.0, 0.0
+            ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
+    //end: added via the oxidized lipids extension   
     
     statisticalAnalysisSettingsPanel.add(groupRtPanel,new GridBagConstraints(0, 1, 5, 1, 0.0, 0.0
         ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(5, 0, 15, 0), 0, 0));   
@@ -1903,245 +1613,6 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     
   }
   
-  private void createSingleQuantMenu(){
-    this.singleQuantMenu_ = new JPanel();
-    this.singleQuantMenu_.setLayout(new GridBagLayout());
-    JPanel selectionPanel = new JPanel();
-    selectionPanel.setLayout(new GridBagLayout());
-    singleQuantMenu_.add(selectionPanel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-
-    mzXMLLabel = new JLabel("Raw file: ");
-    mzXMLLabel.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_RAW_FILE);
-    selectionPanel.add(mzXMLLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    this.selectedMzxmlFile = new JTextField(62);
-    selectedMzxmlFile.setMinimumSize(selectedMzxmlFile.getPreferredSize());
-    selectedMzxmlFile.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_RAW_FILE);
-//    selectedFile.setEnabled(false);
-    
-    selectionPanel.add(selectedMzxmlFile,new GridBagConstraints(1, 0, 6, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    
-    jButtonMxXMLOpen = new JButton("Select");
-    jButtonMxXMLOpen.addActionListener(this);
-    jButtonMxXMLOpen.setActionCommand("showMzxmlFileChooser");
-    jButtonMxXMLOpen.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_RAW_FILE);
-    selectionPanel.add(jButtonMxXMLOpen,new GridBagConstraints(7, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    chromLabel = new JLabel("Mass list or RT-DB file: ");
-    chromLabel.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_MASS_LIST);
-    this.selectedQuantFile = new JTextField(62);
-    selectedQuantFile.setMinimumSize(selectedQuantFile.getPreferredSize());
-    selectedQuantFile.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_MASS_LIST);
-    selectionPanel.add(selectedQuantFile,new GridBagConstraints(1, 1, 6, 1, 0.0, 0.0
-      ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    selectionPanel.add(chromLabel,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    jButtonQuantOpen = new JButton("Select");
-    jButtonQuantOpen.addActionListener(this);
-    jButtonQuantOpen.setActionCommand("showQuantFileChooser");
-    jButtonQuantOpen.setToolTipText(TooltipTexts.QUANTITATION_SINGLE_MASS_LIST);
-    selectionPanel.add(jButtonQuantOpen,new GridBagConstraints(7, 1, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-
-    
-    JPanel settingsPanel = new JPanel ();  
-    settingsPanel.setLayout(new GridBagLayout());
-    singleQuantMenu_.add(settingsPanel,new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
-
-//    JLabel mzTolLabel = new JLabel("m/z-Tolerance: ");
-//    settingsPanel.add(mzTolLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-//        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-//    singleMzTol_ = new JTextField(4);
-//    singleMzTol_.setText("0.02");
-//    singleMzTol_.setHorizontalAlignment(JTextField.RIGHT);
-//    settingsPanel.add(singleMzTol_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-//        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel timeMinusTolLabel = new JLabel("Time before tol.: ");
-    timeMinusTolLabel.setToolTipText(TooltipTexts.QUANTITATION_RET_BEFORE);
-    settingsPanel.add(timeMinusTolLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    singleTimeMinusTol_ = new JTextField(4);
-    singleTimeMinusTol_.setMinimumSize(singleTimeMinusTol_.getPreferredSize());
-    singleTimeMinusTol_.setText("5");
-    singleTimeMinusTol_.setHorizontalAlignment(JTextField.RIGHT);
-    singleTimeMinusTol_.setToolTipText(TooltipTexts.QUANTITATION_RET_BEFORE);
-    settingsPanel.add(singleTimeMinusTol_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel timeMinusUnit = new JLabel("min");
-    timeMinusUnit.setToolTipText(TooltipTexts.QUANTITATION_RET_BEFORE);
-    settingsPanel.add(timeMinusUnit,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel timePlusTolLabel = new JLabel("Time after tol.: ");
-    timePlusTolLabel.setToolTipText(TooltipTexts.QUANTITATION_RET_AFTER);
-    settingsPanel.add(timePlusTolLabel,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    singleTimePlusTol_ = new JTextField(4);
-    singleTimePlusTol_.setMinimumSize(singleTimePlusTol_.getPreferredSize());
-    singleTimePlusTol_.setText("5");
-    singleTimePlusTol_.setHorizontalAlignment(JTextField.RIGHT);
-    singleTimePlusTol_.setToolTipText(TooltipTexts.QUANTITATION_RET_AFTER);
-    settingsPanel.add(singleTimePlusTol_,new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel timePlusUnit = new JLabel("min");
-    timePlusUnit.setToolTipText(TooltipTexts.QUANTITATION_RET_AFTER);
-    settingsPanel.add(timePlusUnit,new GridBagConstraints(5, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel cutoffLabel = new JLabel("Rel. base-peak cutoff: ");
-    cutoffLabel.setToolTipText(TooltipTexts.QUANTITATION_CUTOFF);
-    settingsPanel.add(cutoffLabel,new GridBagConstraints(6, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    singleCutoff_ = new JTextField(4);
-    singleCutoff_.setMinimumSize(singleCutoff_.getPreferredSize());
-    singleCutoff_.setText(LipidomicsConstants.getBasePeakDefaultCutoff());
-    singleCutoff_.setHorizontalAlignment(JTextField.RIGHT);
-    singleCutoff_.setToolTipText(TooltipTexts.QUANTITATION_CUTOFF);
-    settingsPanel.add(singleCutoff_,new GridBagConstraints(7, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel cutoffUnit = new JLabel("\u2030");
-    cutoffUnit.setToolTipText(TooltipTexts.QUANTITATION_CUTOFF);
-    settingsPanel.add(cutoffUnit,new GridBagConstraints(8, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel rtShiftLabel = new JLabel("RT-shift: ");
-    rtShiftLabel.setToolTipText(TooltipTexts.QUANTIFICATION_RET_SHIFT);
-    settingsPanel.add(rtShiftLabel,new GridBagConstraints(9, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    singleRTShift_ = new JTextField(4);
-    singleRTShift_.setMinimumSize(singleRTShift_.getPreferredSize());
-    singleRTShift_.setText("0.0");
-    singleRTShift_.setHorizontalAlignment(JTextField.RIGHT);
-    singleRTShift_.setToolTipText(TooltipTexts.QUANTIFICATION_RET_SHIFT);
-    settingsPanel.add(singleRTShift_,new GridBagConstraints(10, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel rtShiftUnit = new JLabel("min");
-    rtShiftUnit.setToolTipText(TooltipTexts.QUANTIFICATION_RET_SHIFT);
-    settingsPanel.add(rtShiftUnit,new GridBagConstraints(11, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-
-    
-    JPanel settingsPanel2 = new JPanel ();
-    settingsPanel2.setLayout(new GridBagLayout());
-    singleQuantMenu_.add(settingsPanel2,new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
-    isoValidation_ = new JCheckBox();
-    isoValidation_.setSelected(true);
-    isoValidation_.addItemListener(new LipidomicsItemListener("endisableAmountOfIsotopes"));
-    isoValidation_.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
-    settingsPanel2.add(isoValidation_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel allowIsotopicValidation = new JLabel("Isotopic quantitation of ");
-    allowIsotopicValidation.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
-    settingsPanel2.add(allowIsotopicValidation,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    amountOfIsotopes_ = new JTextField(4);
-    amountOfIsotopes_.setMinimumSize(amountOfIsotopes_.getPreferredSize());
-    amountOfIsotopes_.setText("2");
-    amountOfIsotopes_.setHorizontalAlignment(JTextField.RIGHT);
-    amountOfIsotopes_.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
-    settingsPanel2.add(amountOfIsotopes_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel isotopePeaks = new JLabel("isotopes where");
-    isotopePeaks.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
-    settingsPanel2.add(isotopePeaks,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    amountOfMatchingSearchIsotopes_ = new JTextField(4);
-    amountOfMatchingSearchIsotopes_.setMinimumSize(amountOfMatchingSearchIsotopes_.getPreferredSize());
-    amountOfMatchingSearchIsotopes_.setText("1");
-    amountOfMatchingSearchIsotopes_.setHorizontalAlignment(JTextField.RIGHT);
-    amountOfMatchingSearchIsotopes_.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
-//    amountOfMatchingSearchIsotopes_.setEnabled(false);
-    settingsPanel2.add(amountOfMatchingSearchIsotopes_,new GridBagConstraints(4, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel isotopeMatchPeaks = new JLabel("isotopic peak(s) have to match");
-    isotopeMatchPeaks.setToolTipText(TooltipTexts.QUANTITATION_ISOTOPES);
-    settingsPanel2.add(isotopeMatchPeaks,new GridBagConstraints(5, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-
-    
-    JPanel settingsPanel3 = new JPanel ();
-    settingsPanel3.setLayout(new GridBagLayout());
-    singleQuantMenu_.add(settingsPanel3,new GridBagConstraints(0, 3, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
-    searchUnknownTime_ = new JCheckBox();
-    searchUnknownTime_.setSelected(true);
-    searchUnknownTime_.setToolTipText(TooltipTexts.QUANTITATION_RET_UNKNOWN);
-    settingsPanel3.add(searchUnknownTime_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel findUnknownMolecules = new JLabel("Find molecules where retention time is unknown");
-    findUnknownMolecules.setToolTipText(TooltipTexts.QUANTITATION_RET_UNKNOWN);
-    settingsPanel3.add(findUnknownMolecules,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    JLabel maxProcessors = new JLabel("Processors for quantitation:");
-    maxProcessors.setToolTipText(TooltipTexts.QUANTITATION_PROCESSORS);
-    settingsPanel3.add(maxProcessors,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    nrProcessors_ = new JTextField(3);
-    nrProcessors_.setMinimumSize(nrProcessors_.getPreferredSize());
-    nrProcessors_.setText(String.valueOf(this.getAmountOfProcessorsPreferred()));
-    nrProcessors_.setHorizontalAlignment(JTextField.RIGHT);
-    nrProcessors_.setToolTipText(TooltipTexts.QUANTITATION_PROCESSORS);
-    nrProcessors_.setInputVerifier(new IntegerMaxVerifier(true,1,getMaxProcessors()));
-    settingsPanel3.add(nrProcessors_,new GridBagConstraints(3, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    
-    int yPositionCounterSettingsPanels = 4;
-    if (Settings.useAlex()){
-      JPanel settingsPanel4 = new JPanel();
-      settingsPanel4.setLayout(new GridBagLayout());
-      singleQuantMenu_.add(settingsPanel4,new GridBagConstraints(0, yPositionCounterSettingsPanels, 1, 1, 0.0, 0.0
-          ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
-      JLabel ionModeLabel = new JLabel("Ion mode:");
-      ionModeLabel.setToolTipText(TooltipTexts.QUANTITATION_ION_MODE);
-      settingsPanel4.add(ionModeLabel,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-          ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-      ionMode_ = new JComboBox<String>();
-      ionMode_.addItem("+");
-      ionMode_.addItem("-");
-      ionMode_.setToolTipText(TooltipTexts.QUANTITATION_ION_MODE);
-      ionMode_.setFont(SELECT_FIELD_FONT);
-      settingsPanel4.add(ionMode_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-          ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-      JLabel ionModeInfo = new JLabel("(selection required for Alex123 target lists)");
-      ionModeInfo.setToolTipText(TooltipTexts.QUANTITATION_ION_MODE);
-      settingsPanel4.add(ionModeInfo,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
-          ,GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-      yPositionCounterSettingsPanels++;
-    }
-
-    startQuantification = new JButton("Start Quantitation");
-    startQuantification.addActionListener(this);
-    startQuantification.setActionCommand("startQuantification");
-    startQuantification.setToolTipText(TooltipTexts.QUANTITATION_START);
-    singleQuantMenu_.add(startQuantification,new GridBagConstraints(0, yPositionCounterSettingsPanels, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
-    yPositionCounterSettingsPanels++;
-    
-    quantifyingPanel_ = new JPanel ();  
-    quantifyingPanel_.setLayout(new GridBagLayout());
-    singleQuantMenu_.add(quantifyingPanel_,new GridBagConstraints(0, yPositionCounterSettingsPanels, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(6, 6, 0, 0), 0, 0));
-    yPositionCounterSettingsPanels++;
-    quantifyingLabel_ = new JLabel("Quantifying");
-    quantifyingLabel_.setToolTipText(TooltipTexts.QUANTITATION_STATUS_TEXT);
-    quantifyingPanel_.add(quantifyingLabel_,new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    progressBar_ = new JProgressBar();
-    progressBar_.setMaximum(100);
-    progressBar_.setToolTipText(TooltipTexts.QUANTITATION_PROGRESS);
-    quantifyingPanel_.add(progressBar_,new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    Icon icon = new ImageIcon(LipidDataAnalyzer.class.getResource("/images/spinner.gif"));
-    spinnerLabel_ = new JLabel(icon);
-    quantifyingPanel_.add(spinnerLabel_,new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0
-        ,GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(0, 6, 0, 0), 0, 0));
-    
-
-    quantifyingPanel_.setVisible(false);
-
-  }
-  
   public void actionPerformed(ActionEvent arg0)
   {
     String command = arg0.getActionCommand();
@@ -2154,7 +1625,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       int returnVal = this.mzXMLFileChooser.showOpenDialog(new Frame());;
       if (returnVal == JFileChooser.APPROVE_OPTION) {
          String text = this.mzXMLFileChooser.getSelectedFile().getAbsolutePath();
-         this.selectedMzxmlFile.setText(text);
+         this.singleQuantMenu_.getSelectedMzxmlDirectory().setText(text);
       } else return;
     }
     if (command.equalsIgnoreCase("showMzxmlDirChooser")){
@@ -2166,7 +1637,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       int returnVal = this.mzXMLDirChooser.showOpenDialog(new Frame());;
       if (returnVal == JFileChooser.APPROVE_OPTION) {
          String text = this.mzXMLDirChooser.getSelectedFile().getAbsolutePath();
-         this.selectedMzxmlDirectory_.setText(text);
+         this.batchQuantMenu_.getSelectedMzxmlDirectory().setText(text);
       } else return;
     }
     String subCommand = "";
@@ -2192,7 +1663,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
              if (resultFileCandidates[i].isFile() && !avoidDuplicates.containsKey(resultFileCandidates[i].getAbsolutePath())){
                String fileName = StaticUtils.extractFileName(resultFileCandidates[i].getAbsolutePath()); 
                String suffix = fileName.substring(fileName.lastIndexOf(".")+1);
-               if (suffix.equalsIgnoreCase("xls")||suffix.equalsIgnoreCase("xlsx")){
+               if ((suffix.equalsIgnoreCase("xls")||suffix.equalsIgnoreCase("xlsx")) && !fileName.startsWith(ExcelUtils.EXCEL_TEMP_PREFIX)){
                  avoidDuplicates.put(resultFileCandidates[i].getAbsolutePath(),resultFileCandidates[i]);
                  this.resultFiles_.add(resultFileCandidates[i]);
                }
@@ -2362,7 +1833,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       int returnVal = this.quantFileChooser_.showOpenDialog(new Frame());
       if (returnVal == JFileChooser.APPROVE_OPTION) {
          String text = this.quantFileChooser_.getSelectedFile().getAbsolutePath();
-         this.selectedQuantFile.setText(text);
+         this.singleQuantMenu_.getSelectedQuantDir().setText(text);
       } else return;
     }
     if (command.equalsIgnoreCase("showQuantDirChooser")){
@@ -2374,7 +1845,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       int returnVal = this.quantDirChooser_.showOpenDialog(new Frame());;
       if (returnVal == JFileChooser.APPROVE_OPTION) {
          String text = this.quantDirChooser_.getSelectedFile().getAbsolutePath();
-         this.selectedQuantDir_.setText(text);
+         this.batchQuantMenu_.getSelectedQuantDir().setText(text);
       } else return;
     }
     if (command.equalsIgnoreCase("showResultChooser")){
@@ -2394,24 +1865,24 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       boolean canStartQuantification = false;
       float cutoff = 0f;
       float rtShift = 0f;
-      if (selectedMzxmlDirectory_.getText()!=null&&selectedMzxmlDirectory_.getText().length()>0 &&
-          selectedQuantDir_.getText()!=null&&selectedQuantDir_.getText().length()>0){
+      if (batchQuantMenu_.getSelectedMzxmlDirectory().getText()!=null&&batchQuantMenu_.getSelectedMzxmlDirectory().getText().length()>0 &&
+          batchQuantMenu_.getSelectedQuantDir().getText()!=null&&batchQuantMenu_.getSelectedQuantDir().getText().length()>0){
         canStartQuantification = true;
-        if (this.isoBatchValidation_.isSelected()){
-          if (this.amountOfBatchIsotopes_.getText()==null||this.amountOfBatchIsotopes_.getText().length()<1)
+        if (this.batchQuantMenu_.getIsoValidation().isSelected()){
+          if (this.batchQuantMenu_.getAmountOfIsotopes().getText()==null||this.batchQuantMenu_.getAmountOfIsotopes().getText().length()<1)
             canStartQuantification = false;
           else{
             try{
-              Integer.parseInt(this.amountOfBatchIsotopes_.getText());
+              Integer.parseInt(this.batchQuantMenu_.getAmountOfIsotopes().getText());
             }catch(NumberFormatException nfx){
               canStartQuantification = false;
             }
           }
-          if (this.amountOfMatchingBatchSearchIsotopes_.getText()==null||this.amountOfMatchingBatchSearchIsotopes_.getText().length()<1)
+          if (this.batchQuantMenu_.getAmountOfMatchingSearchIsotopes().getText()==null||this.batchQuantMenu_.getAmountOfMatchingSearchIsotopes().getText().length()<1)
             canStartQuantification = false;
           else{
             try{
-              int isos = Integer.parseInt(this.amountOfMatchingBatchSearchIsotopes_.getText());
+              int isos = Integer.parseInt(this.batchQuantMenu_.getAmountOfMatchingSearchIsotopes().getText());
               if (isos<0)
                 canStartQuantification = false;
             }catch(NumberFormatException nfx){
@@ -2420,39 +1891,39 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           }
         }
         try{
-          if (batchCutoff_.getText()!=null && batchCutoff_.getText().length()>0){
-            cutoff = Float.parseFloat(batchCutoff_.getText().replaceAll(",", "."));
-            LipidomicsConstants.getInstance().setRelativeMS1BasePeakCutoff(batchCutoff_.getText());
+          if (batchQuantMenu_.getCutoff().getText()!=null && batchQuantMenu_.getCutoff().getText().length()>0){
+            cutoff = Float.parseFloat(batchQuantMenu_.getCutoff().getText().replaceAll(",", "."));
+            LipidomicsConstants.getInstance().setRelativeMS1BasePeakCutoff(batchQuantMenu_.getCutoff().getText());
           }  
         }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The cutoff value must be float format!"); canStartQuantification=false;}
         try{
-          if (batchRTShift_.getText()!=null && batchRTShift_.getText().length()>0)
-            rtShift = Float.parseFloat(batchRTShift_.getText().replaceAll(",", "."));
+          if (batchQuantMenu_.getRtShift().getText()!=null && batchQuantMenu_.getRtShift().getText().length()>0)
+            rtShift = Float.parseFloat(batchQuantMenu_.getRtShift().getText().replaceAll(",", "."));
         }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The RT-shift value must be float format!"); canStartQuantification=false;}
 
-//        if (this.searchUnknownBatchTime_.isSelected()){
+//        if (this.batchQuantMenu_.getSearchUnknownTime().isSelected()){
 //        }
       }
       float minusTimeTol = 0f;
       float plusTimeTol = 0f;
-      if (this.batchTimeMinusTol_.getText()!=null && this.batchTimeMinusTol_.getText().length()>0){
-        try{ minusTimeTol = Float.parseFloat(this.batchTimeMinusTol_.getText());} catch (NumberFormatException nfx){new WarningMessage(new JFrame(), "Error", "The  \"Time before tol.\" value must be entered in float format!"); canStartQuantification=false;}
+      if (this.batchQuantMenu_.getTimeMinusTol().getText()!=null && this.batchQuantMenu_.getTimeMinusTol().getText().length()>0){
+        try{ minusTimeTol = Float.parseFloat(this.batchQuantMenu_.getTimeMinusTol().getText());} catch (NumberFormatException nfx){new WarningMessage(new JFrame(), "Error", "The  \"Time before tol.\" value must be entered in float format!"); canStartQuantification=false;}
       }
-      if (this.batchTimePlusTol_.getText()!=null && this.batchTimePlusTol_.getText().length()>0){
-        try{ plusTimeTol = Float.parseFloat(this.batchTimePlusTol_.getText());} catch (NumberFormatException nfx){new WarningMessage(new JFrame(), "Error", "The  \"Time after tol.\" value must be entered in float format!"); canStartQuantification=false;}
+      if (this.batchQuantMenu_.getTimePlusTol().getText()!=null && this.batchQuantMenu_.getTimePlusTol().getText().length()>0){
+        try{ plusTimeTol = Float.parseFloat(this.batchQuantMenu_.getTimePlusTol().getText());} catch (NumberFormatException nfx){new WarningMessage(new JFrame(), "Error", "The  \"Time after tol.\" value must be entered in float format!"); canStartQuantification=false;}
       }
       if (canStartQuantification){      
         Vector<File> rawFiles = new Vector<File>();
         Vector<File> quantFiles = new Vector<File>();
-        File rawDir = new File(this.selectedMzxmlDirectory_.getText());
-        File quantDir = new File(this.selectedQuantDir_.getText());
+        File rawDir = new File(this.batchQuantMenu_.getSelectedMzxmlDirectory().getText());
+        File quantDir = new File(this.batchQuantMenu_.getSelectedQuantDir().getText());
         int amountOfIsotopes = 0;
         int isotopesMustMatch = 0;
-        if (this.isoBatchValidation_.isSelected()){
-          amountOfIsotopes = Integer.parseInt(this.amountOfBatchIsotopes_.getText());
-          isotopesMustMatch = Integer.parseInt(this.amountOfMatchingBatchSearchIsotopes_.getText());
+        if (this.batchQuantMenu_.getIsoValidation().isSelected()){
+          amountOfIsotopes = Integer.parseInt(this.batchQuantMenu_.getAmountOfIsotopes().getText());
+          isotopesMustMatch = Integer.parseInt(this.batchQuantMenu_.getAmountOfMatchingSearchIsotopes().getText());
         }
-//        if (this.searchUnknownBatchTime_.isSelected()){          
+//        if (this.batchQuantMenu_.getSearchUnknownTime().isSelected()){          
 //        }
         if (rawDir.exists()&&rawDir.isDirectory()&&quantDir.exists()&&quantDir.isDirectory()){
           File[] rawFileCandidates = rawDir.listFiles();
@@ -2536,19 +2007,18 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           Vector<RawQuantificationPairVO> pairs = new Vector<RawQuantificationPairVO>();
           if (rawFiles.size()>0 && quantFiles.size()>0 && (pairs = generateQuantificationPairVOs(rawFiles,quantFiles)).size()>0){
             boolean ionMode = false;
-            if (this.ionModeBatch_!=null && ((String)ionModeBatch_.getSelectedItem()).equalsIgnoreCase("+"))
+            if (this.batchQuantMenu_.getIonMode()!=null && ((String)batchQuantMenu_.getIonMode().getSelectedItem()).equalsIgnoreCase("+"))
               ionMode = true;
-            this.batchQuantTableModel_.clearFiles();
-            this.batchQuantTableModel_.addFiles(pairs);
-            this.quantifyingBatchLabel_.setText("Quantifying");
-            this.progressBatchBar_.setValue(0);
-            this.quantifyingBatchPanel_.setVisible(true);
-            this.startBatchQuantification_.setEnabled(false);
-            this.spinnerBatchLabel_.setVisible(true);
-            batchQuantThread_ = new BatchQuantThread(this.batchQuantTable_, this.batchQuantTableModel_,this.progressBatchBar_, 
-                this.quantifyingBatchLabel_,//Float.parseFloat(this.batchMzTol_.getText()),
-                minusTimeTol,plusTimeTol,amountOfIsotopes,isotopesMustMatch,this.searchUnknownBatchTime_.isSelected(), cutoff, 
-                rtShift, Integer.parseInt(nrProcessorsBatch_.getText()),ionMode,false);
+            this.batchQuantMenu_.getBatchQuantTableModel().clearFiles();
+            this.batchQuantMenu_.getBatchQuantTableModel().addFiles(pairs);
+            this.batchQuantMenu_.getQuantifyingLabel().setText("Quantifying");
+            this.batchQuantMenu_.getProgressBar().setValue(0);
+            this.batchQuantMenu_.getQuantifyingPanel().setVisible(true);
+            this.batchQuantMenu_.getStartQuantification().setEnabled(false);
+            this.batchQuantMenu_.getSpinnerLabel().setVisible(true);
+            batchQuantThread_ = new BatchQuantThread(batchQuantMenu_,
+                minusTimeTol,plusTimeTol,amountOfIsotopes,isotopesMustMatch,cutoff, 
+                rtShift,ionMode,false);
             batchQuantThread_.start();
           }else{
             if (rawFiles.size()==0){
@@ -2574,22 +2044,22 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         }
       }else{
 //        boolean wasWarningMessage=false;
-        if (selectedMzxmlDirectory_.getText()==null||selectedMzxmlDirectory_.getText().length()<1){
+        if (batchQuantMenu_.getSelectedMzxmlDirectory().getText()==null||batchQuantMenu_.getSelectedMzxmlDirectory().getText().length()<1){
           @SuppressWarnings("unused")
           WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a raw, mzXML, mzML or chrom file directory");
 //          wasWarningMessage=true;
-        }else if (selectedQuantDir_.getText()==null||selectedQuantDir_.getText().length()<1){
+        }else if (batchQuantMenu_.getSelectedQuantDir().getText()==null||batchQuantMenu_.getSelectedQuantDir().getText().length()<1){
           @SuppressWarnings("unused")
           WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a quant file directory");
 //          wasWarningMessage=true;
-        } else if (this.isoBatchValidation_.isSelected()){
-          if (this.amountOfBatchIsotopes_.getText()==null||this.amountOfBatchIsotopes_.getText().length()<1){
+        } else if (this.batchQuantMenu_.getIsoValidation().isSelected()){
+          if (this.batchQuantMenu_.getAmountOfIsotopes().getText()==null||this.batchQuantMenu_.getAmountOfIsotopes().getText().length()<1){
             @SuppressWarnings("unused")
             WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "If you select the isotope option, please specify the amount of isotopes (integer format)!");
 //            wasWarningMessage=true;
           }else{
             try{
-              Integer.parseInt(this.amountOfBatchIsotopes_.getText());
+              Integer.parseInt(this.batchQuantMenu_.getAmountOfIsotopes().getText());
             }catch(NumberFormatException nfx){
               @SuppressWarnings("unused")
               WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The number of isotopes must be integer format!");
@@ -2597,13 +2067,13 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
             }
           }
         }
-        if (this.amountOfMatchingBatchSearchIsotopes_.getText()==null||this.amountOfMatchingBatchSearchIsotopes_.getText().length()<0){
+        if (this.batchQuantMenu_.getAmountOfMatchingSearchIsotopes().getText()==null||this.batchQuantMenu_.getAmountOfMatchingSearchIsotopes().getText().length()<0){
           @SuppressWarnings("unused")
           WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "If you select the find molecules without retention-time option, please specify the amount of matching isotopes (integer format)!");
 //          wasWarningMessage=true;
         }else{
           try{
-            int isotopes = Integer.parseInt(this.amountOfMatchingBatchSearchIsotopes_.getText());
+            int isotopes = Integer.parseInt(this.batchQuantMenu_.getAmountOfMatchingSearchIsotopes().getText());
             if (isotopes<0){
               @SuppressWarnings("unused")
               WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The number of matching isotopes must be >=0!");
@@ -2616,7 +2086,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           }
         } 
 
-//        if (!wasWarningMessage && this.searchUnknownBatchTime_.isSelected()){
+//        if (!wasWarningMessage && this.batchQuantMenu_.getSearchUnknownTime().isSelected()){
 //        }
       }
     }
@@ -2626,19 +2096,19 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       float afterTolerance = 0f;
       float cutoff = 0f;
       float rtShift = 0f;
-      if (selectedMzxmlFile.getText()!=null)
-        selectedMzxmlFile.setText(selectedMzxmlFile.getText().trim());
-      if (selectedQuantFile.getText()!=null)
-        selectedQuantFile.setText(selectedQuantFile.getText().trim());
-      if (selectedMzxmlFile.getText()!=null&&selectedMzxmlFile.getText().length()>0 &&
-          selectedQuantFile.getText()!=null&&selectedQuantFile.getText().length()>0){
+      if (singleQuantMenu_.getSelectedMzxmlDirectory().getText()!=null)
+        singleQuantMenu_.getSelectedMzxmlDirectory().setText(singleQuantMenu_.getSelectedMzxmlDirectory().getText().trim());
+      if (singleQuantMenu_.getSelectedQuantDir().getText()!=null)
+        singleQuantMenu_.getSelectedQuantDir().setText(singleQuantMenu_.getSelectedQuantDir().getText().trim());
+      if (singleQuantMenu_.getSelectedMzxmlDirectory().getText()!=null&&singleQuantMenu_.getSelectedMzxmlDirectory().getText().length()>0 &&
+          singleQuantMenu_.getSelectedQuantDir().getText()!=null&&singleQuantMenu_.getSelectedQuantDir().getText().length()>0){
         canStartQuantification = true;
-        if (!StaticUtils.existsFile(selectedMzxmlFile.getText())){
-          new WarningMessage(new JFrame(), "Error", "The raw file \""+StaticUtils.extractFileName(selectedMzxmlFile.getText())+"\" does not exist!"); 
+        if (!StaticUtils.existsFile(singleQuantMenu_.getSelectedMzxmlDirectory().getText())){
+          new WarningMessage(new JFrame(), "Error", "The raw file \""+StaticUtils.extractFileName(singleQuantMenu_.getSelectedMzxmlDirectory().getText())+"\" does not exist!"); 
           return;
         }else{
-          if (selectedQuantFile.getText().length()>3){
-            String suffix = selectedQuantFile.getText().substring(selectedQuantFile.getText().lastIndexOf("."));
+          if (singleQuantMenu_.getSelectedQuantDir().getText().length()>3){
+            String suffix = singleQuantMenu_.getSelectedQuantDir().getText().substring(singleQuantMenu_.getSelectedQuantDir().getText().lastIndexOf("."));
             if (!(suffix.equalsIgnoreCase(".xls")||(suffix.equalsIgnoreCase(".xlsx")||(Settings.useAlex()&&suffix.equalsIgnoreCase(".txt"))))){
               if (Settings.useAlex())
                 new WarningMessage(new JFrame(), "Error", "For the mass lists just Excel files in the xls or xlsx or Text files in the txt format are allowed!"); 
@@ -2649,7 +2119,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           }
         }
         if (canStartQuantification){
-          String suffix = selectedMzxmlFile.getText().substring(selectedMzxmlFile.getText().lastIndexOf(".")+1);
+          String suffix = singleQuantMenu_.getSelectedMzxmlDirectory().getText().substring(singleQuantMenu_.getSelectedMzxmlDirectory().getText().lastIndexOf(".")+1);
           if (!(suffix.equalsIgnoreCase("chrom")||suffix.equalsIgnoreCase("head")||suffix.equalsIgnoreCase("idx")||
               suffix.equalsIgnoreCase("rtt")||suffix.equalsIgnoreCase("raw")||suffix.equalsIgnoreCase("d")||suffix.equalsIgnoreCase("wiff")||
               suffix.equalsIgnoreCase(AbstractXMLSpectraReader.FILE_TYPE_MZ_XML)||
@@ -2658,33 +2128,33 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
             return;
           }
         }
-        if (!StaticUtils.existsFile(selectedQuantFile.getText())){
-          new WarningMessage(new JFrame(), "Error", "The mass list file \""+StaticUtils.extractFileName(selectedQuantFile.getText())+"\" does not exist!"); 
+        if (!StaticUtils.existsFile(singleQuantMenu_.getSelectedQuantDir().getText())){
+          new WarningMessage(new JFrame(), "Error", "The mass list file \""+StaticUtils.extractFileName(singleQuantMenu_.getSelectedQuantDir().getText())+"\" does not exist!"); 
           canStartQuantification=false;
         }
         try{
-          if (singleTimeMinusTol_.getText()!=null && singleTimeMinusTol_.getText().length()>0)
-            beforeTolerance = Float.parseFloat(singleTimeMinusTol_.getText().replaceAll(",", "."));
+          if (singleQuantMenu_.getTimeMinusTol().getText()!=null && singleQuantMenu_.getTimeMinusTol().getText().length()>0)
+            beforeTolerance = Float.parseFloat(singleQuantMenu_.getTimeMinusTol().getText().replaceAll(",", "."));
         }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The  \"Time before tol.\" value must be entered in float format!"); canStartQuantification=false;}
         try{
-          if (singleTimePlusTol_.getText()!=null && singleTimePlusTol_.getText().length()>0)
-            afterTolerance = Float.parseFloat(singleTimePlusTol_.getText().replaceAll(",", "."));
+          if (singleQuantMenu_.getTimePlusTol().getText()!=null && singleQuantMenu_.getTimePlusTol().getText().length()>0)
+            afterTolerance = Float.parseFloat(singleQuantMenu_.getTimePlusTol().getText().replaceAll(",", "."));
         }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The  \"Time after tol.\" value must be entered in float format!"); canStartQuantification=false;}
-        if (this.isoValidation_.isSelected()){
-          if (this.amountOfIsotopes_.getText()==null||this.amountOfIsotopes_.getText().length()<1)
+        if (this.singleQuantMenu_.getIsoValidation().isSelected()){
+          if (this.singleQuantMenu_.getAmountOfIsotopes().getText()==null||this.singleQuantMenu_.getAmountOfIsotopes().getText().length()<1)
             canStartQuantification = false;
           else{
             try{
-              Integer.parseInt(this.amountOfIsotopes_.getText());
+              Integer.parseInt(this.singleQuantMenu_.getAmountOfIsotopes().getText());
             }catch(NumberFormatException nfx){
               canStartQuantification = false;
             }
           }
-          if (this.amountOfMatchingSearchIsotopes_.getText()==null||this.amountOfMatchingSearchIsotopes_.getText().length()<1)
+          if (this.singleQuantMenu_.getAmountOfMatchingSearchIsotopes().getText()==null||this.singleQuantMenu_.getAmountOfMatchingSearchIsotopes().getText().length()<1)
             canStartQuantification = false;
           else{
             try{
-              int isos = Integer.parseInt(this.amountOfMatchingSearchIsotopes_.getText());
+              int isos = Integer.parseInt(this.singleQuantMenu_.getAmountOfMatchingSearchIsotopes().getText());
               if (isos<0)
                 canStartQuantification = false;
             }catch(NumberFormatException nfx){
@@ -2693,36 +2163,36 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
           }
         }
         try{
-          if (singleCutoff_.getText()!=null && singleCutoff_.getText().length()>0){
-            cutoff = Float.parseFloat(singleCutoff_.getText().replaceAll(",", "."));
-            LipidomicsConstants.getInstance().setRelativeMS1BasePeakCutoff(singleCutoff_.getText());
+          if (singleQuantMenu_.getCutoff().getText()!=null && singleQuantMenu_.getCutoff().getText().length()>0){
+            cutoff = Float.parseFloat(singleQuantMenu_.getCutoff().getText().replaceAll(",", "."));
+            LipidomicsConstants.getInstance().setRelativeMS1BasePeakCutoff(singleQuantMenu_.getCutoff().getText());
           }
         }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The cutoff value must be float format!"); canStartQuantification=false;}
         try{
-          if (singleRTShift_.getText()!=null && singleRTShift_.getText().length()>0)
-            rtShift = Float.parseFloat(singleRTShift_.getText().replaceAll(",", "."));
+          if (singleQuantMenu_.getRtShift().getText()!=null && singleQuantMenu_.getRtShift().getText().length()>0)
+            rtShift = Float.parseFloat(singleQuantMenu_.getRtShift().getText().replaceAll(",", "."));
         }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The RT-shift value must be float format!"); canStartQuantification=false;}
 
-//        if (this.searchUnknownTime_.isSelected()){
+//        if (this.singleQuantMenu_.getSearchUnknownTime().isSelected()){
 //        }
       }      
       if (canStartQuantification){
-        this.quantifyingPanel_.setVisible(true);
-        this.startQuantification.setEnabled(false);
-        spinnerLabel_.setVisible(true);
-        String fileToTranslate = selectedMzxmlFile.getText();
+        this.singleQuantMenu_.getQuantifyingPanel().setVisible(true);
+        this.singleQuantMenu_.getStartQuantification().setEnabled(false);
+        singleQuantMenu_.getSpinnerLabel().setVisible(true);
+        String fileToTranslate = singleQuantMenu_.getSelectedMzxmlDirectory().getText();
         readFromRaw_ = false;
         boolean threadStarted = false;
         boolean aborted = false;
         int amountOfIsotopes = 0;
         int isotopesMustMatch = 0;
-        if (this.isoValidation_.isSelected()){
-          amountOfIsotopes = Integer.parseInt(this.amountOfIsotopes_.getText());
-          isotopesMustMatch = Integer.parseInt(this.amountOfMatchingSearchIsotopes_.getText());
+        if (this.singleQuantMenu_.getIsoValidation().isSelected()){
+          amountOfIsotopes = Integer.parseInt(this.singleQuantMenu_.getAmountOfIsotopes().getText());
+          isotopesMustMatch = Integer.parseInt(this.singleQuantMenu_.getAmountOfMatchingSearchIsotopes().getText());
         }
         
-//        if (this.searchUnknownTime_.isSelected()){
-//          isotopesMustMatch = Integer.parseInt(this.amountOfMatchingSearchIsotopes_.getText());
+//        if (this.singleQuantMenu_.getSearchUnknownTime().isSelected()){
+//          isotopesMustMatch = Integer.parseInt(this.singleQuantMenu_.getAmountOfMatchingSearchIsotopes().getText());
 //        }
         String suffix = fileToTranslate.substring(fileToTranslate.lastIndexOf("."));
         if (suffix.equalsIgnoreCase(".RAW")||suffix.equalsIgnoreCase(".d")||suffix.equalsIgnoreCase(".wiff")){        
@@ -2791,8 +2261,8 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
                 }
               }
               if (params[0]!=null && params[0].length()>0){
-                this.progressBar_.setValue(5);
-                this.quantifyingLabel_.setText("Translating to "+LipidomicsConstants.getIntermediateFileFormat());
+                this.singleQuantMenu_.getProgressBar().setValue(5);
+                this.singleQuantMenu_.getQuantifyingLabel().setText("Translating to "+LipidomicsConstants.getIntermediateFileFormat());
                 rawmzThread_ = new RawToMzxmlThread(params,isMassPlusPlus,watersMsConvert);
                 rawmzThread_.start();
                 threadStarted = true;
@@ -2803,61 +2273,60 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
         if (!threadStarted && (fileToTranslate.endsWith(".mzXML") || fileToTranslate.endsWith(".mzML"))){
           File headerFile = new File(StringUtils.getChromFilePaths(fileToTranslate)[1]);
           if (!headerFile.exists()){
-            this.progressBar_.setValue(30);
-            this.quantifyingLabel_.setText("Translating to chrom");
-            mzToChromThread_ = new MzxmlToChromThread(fileToTranslate,1); //set number of processors to 1; TODO: make user input
-//            		Integer.parseInt(nrProcessors_.getText()));
+            this.singleQuantMenu_.getProgressBar().setValue(30);
+            this.singleQuantMenu_.getQuantifyingLabel().setText("Translating to chrom");
+            mzToChromThread_ = new MzxmlToChromThread(fileToTranslate,singleQuantMenu_.getNrProcessorsChrom());
             mzToChromThread_.start();
             threadStarted = true;
           }
         }
         if (!threadStarted && !aborted){
           boolean ionMode = false;
-          if (this.ionMode_!=null && ((String)ionMode_.getSelectedItem()).equalsIgnoreCase("+"))
+          if (this.singleQuantMenu_.getIonMode()!=null && ((String)singleQuantMenu_.getIonMode().getSelectedItem()).equalsIgnoreCase("+"))
             ionMode = true;
-          this.quantifyingLabel_.setText("Quantifying");
-          this.progressBar_.setValue(70);
-          quantThread_ = new QuantificationThread(selectedMzxmlFile.getText(), selectedQuantFile.getText(),LipidDataAnalyzer.getResultFilePath(selectedMzxmlFile.getText(), selectedQuantFile.getText()),
+          this.singleQuantMenu_.getQuantifyingLabel().setText("Quantifying");
+          this.singleQuantMenu_.getProgressBar().setValue(70);
+          quantThread_ = new QuantificationThread(singleQuantMenu_.getSelectedMzxmlDirectory().getText(), singleQuantMenu_.getSelectedQuantDir().getText(),LipidDataAnalyzer.getResultFilePath(singleQuantMenu_.getSelectedMzxmlDirectory().getText(), singleQuantMenu_.getSelectedQuantDir().getText()),
               beforeTolerance,afterTolerance,amountOfIsotopes,isotopesMustMatch,
-              this.searchUnknownTime_.isSelected(),cutoff,rtShift,Integer.parseInt(nrProcessors_.getText()),ionMode,false);
+              this.singleQuantMenu_.getSearchUnknownTime().isSelected(),cutoff,rtShift,singleQuantMenu_.getNrProcessors(),ionMode,false);
           quantThread_.start();
           threadStarted = true;
         }else if (aborted){
-          this.quantifyingPanel_.setVisible(false);
-          this.startQuantification.setEnabled(true);
-          spinnerLabel_.setVisible(false);          
+          this.singleQuantMenu_.getQuantifyingPanel().setVisible(false);
+          this.singleQuantMenu_.getStartQuantification().setEnabled(true);
+          singleQuantMenu_.getSpinnerLabel().setVisible(false);          
         }
       }else{
 //        boolean wasWarningMessage=false;
-        if (selectedMzxmlFile.getText()==null||selectedMzxmlFile.getText().length()<1){
+        if (singleQuantMenu_.getSelectedMzxmlDirectory().getText()==null||singleQuantMenu_.getSelectedMzxmlDirectory().getText().length()<1){
           @SuppressWarnings("unused")
           WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a raw, mzXML, mzML or chrom file");
 //          wasWarningMessage=true;
-        }else if (selectedQuantFile.getText()==null||selectedQuantFile.getText().length()<1){
+        }else if (singleQuantMenu_.getSelectedQuantDir().getText()==null||singleQuantMenu_.getSelectedQuantDir().getText().length()<1){
           @SuppressWarnings("unused")
           WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "You must specify a quant file");
 //          wasWarningMessage=true;
-        } else if (this.isoValidation_.isSelected()){
-          if (this.amountOfIsotopes_.getText()==null||this.amountOfIsotopes_.getText().length()<1){
+        } else if (this.singleQuantMenu_.getIsoValidation().isSelected()){
+          if (this.singleQuantMenu_.getAmountOfIsotopes().getText()==null||this.singleQuantMenu_.getAmountOfIsotopes().getText().length()<1){
             @SuppressWarnings("unused")
             WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "If you select the isotope option, please specify the amount of isotopes that you want to quantify (integer format)!");
 //            wasWarningMessage=true;
           }else{
             try{
-              Integer.parseInt(this.amountOfIsotopes_.getText());
+              Integer.parseInt(this.singleQuantMenu_.getAmountOfIsotopes().getText());
             }catch(NumberFormatException nfx){
               @SuppressWarnings("unused")
               WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The number of isotopes must be integer format!");
 //              wasWarningMessage=true;
             }
           }
-          if (this.amountOfMatchingSearchIsotopes_.getText()==null||this.amountOfMatchingSearchIsotopes_.getText().length()<0){
+          if (this.singleQuantMenu_.getAmountOfMatchingSearchIsotopes().getText()==null||this.singleQuantMenu_.getAmountOfMatchingSearchIsotopes().getText().length()<0){
             @SuppressWarnings("unused")
             WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "If you select the find molecules without retention-time option, please specify the amount of matching isotopes (integer format)!");
 //            wasWarningMessage=true;
           }else{
             try{
-              int isotopes = Integer.parseInt(this.amountOfMatchingSearchIsotopes_.getText());
+              int isotopes = Integer.parseInt(this.singleQuantMenu_.getAmountOfMatchingSearchIsotopes().getText());
               if (isotopes<0){
                 @SuppressWarnings("unused")
                 WarningMessage dlg = new WarningMessage(new JFrame(), "Warning", "The number of matching isotopes must be >=0!");
@@ -2870,7 +2339,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
             }
           }          
         }
-//        if (!wasWarningMessage && this.searchUnknownTime_.isSelected()){
+//        if (!wasWarningMessage && this.singleQuantMenu_.getSearchUnknownTime().isSelected()){
 //        }
       }
     }
@@ -3600,7 +3069,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       	throw new ExcelInputFileException("Some of the input files contain invalid information!");
       }
       catch (Exception e) {
-      	throw new ExcelInputFileException("The Excel returns the following failure: "+e.getMessage());
+      	throw new ExcelInputFileException("An Excel file returns the following failure: "+e.getMessage());
       }
       this.generateHeatMaps();
     }else{
@@ -3652,7 +3121,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     threadpool.shutdown();
     try { threadpool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); } catch (InterruptedException e) {}
     
-    for (String molGroup : analysisResults.keySet())
+    for (String molGroup : heatmaps_.keySet())
     {
     	resultTabs_.addTab(molGroup,jPanels.get(molGroup));
       resultTabs_.setToolTipTextAt(resultTabs_.indexOfTab(molGroup), TooltipTexts.TABS_RESULTS_GROUP+molGroup+"</html>");
@@ -4005,71 +3474,68 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       if (this.rawmzThread_.getErrorString()!=null&&this.rawmzThread_.getErrorString().length()>0){
         @SuppressWarnings("unused")
         WarningMessage dlg = new WarningMessage(new JFrame(), "Error", rawmzThread_.getErrorString());
-        this.startQuantification.setEnabled(true);
-        spinnerLabel_.setVisible(false);
+        this.singleQuantMenu_.getStartQuantification().setEnabled(true);
+        singleQuantMenu_.getSpinnerLabel().setVisible(false);
       }
       this.rawmzThread_ = null;
-      this.progressBar_.setValue(30);
-      this.quantifyingLabel_.setText("Translating to chrom");
+      this.singleQuantMenu_.getProgressBar().setValue(30);
+      this.singleQuantMenu_.getQuantifyingLabel().setText("Translating to chrom");
       System.out.println("Translating to chrom from timer");
       this.readFromRaw_ = true;
-      String filePath = selectedMzxmlFile.getText();
+      String filePath = singleQuantMenu_.getSelectedMzxmlDirectory().getText();
       String suffix = filePath.substring(filePath.lastIndexOf("."));
       if (suffix.equalsIgnoreCase(".wiff")){
         Vector<File> filesToTranslate = BatchQuantThread.getMzXMLFilesOfWiffConversion(filePath);
         if (filesToTranslate.size()==1){
-          selectedMzxmlFile.setText(filesToTranslate.get(0).getAbsolutePath());
-          mzToChromThread_ = new MzxmlToChromThread(filesToTranslate.get(0).getAbsolutePath(),1); //set number of processors to 1; TODO: make user input
-//          		Integer.parseInt(nrProcessors_.getText()));
+          singleQuantMenu_.getSelectedMzxmlDirectory().setText(filesToTranslate.get(0).getAbsolutePath());
+          mzToChromThread_ = new MzxmlToChromThread(filesToTranslate.get(0).getAbsolutePath(),batchQuantMenu_.getNrProcessorsChrom());
           mzToChromThread_.start();          
         } else {
           Vector<RawQuantificationPairVO> pairs = new Vector<RawQuantificationPairVO>();
-          File quantFile = new File(selectedQuantFile.getText());
+          File quantFile = new File(singleQuantMenu_.getSelectedQuantDir().getText());
           for (File rawFile: filesToTranslate){
             pairs.add(new RawQuantificationPairVO(rawFile,quantFile,true));
           }
           int amountOfIsotopes = 0;
           int isotopesMustMatch = 0;
-          if (this.isoValidation_.isSelected()){
-            amountOfIsotopes = Integer.parseInt(this.amountOfIsotopes_.getText());
-            isotopesMustMatch = Integer.parseInt(this.amountOfMatchingSearchIsotopes_.getText());
+          if (this.singleQuantMenu_.getIsoValidation().isSelected()){
+            amountOfIsotopes = Integer.parseInt(this.singleQuantMenu_.getAmountOfIsotopes().getText());
+            isotopesMustMatch = Integer.parseInt(this.singleQuantMenu_.getAmountOfMatchingSearchIsotopes().getText());
           }
           boolean ok = true;
           float cutoff = 0f;
           float rtShift = 0f;
           try{
-            if (singleCutoff_.getText()!=null && singleCutoff_.getText().length()>0)
-              cutoff = Float.parseFloat(singleCutoff_.getText().replaceAll(",", "."));
+            if (singleQuantMenu_.getCutoff().getText()!=null && singleQuantMenu_.getCutoff().getText().length()>0)
+              cutoff = Float.parseFloat(singleQuantMenu_.getCutoff().getText().replaceAll(",", "."));
           }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The cutoff value must be float format!"); ok=false;}
           try{
-            if (singleRTShift_.getText()!=null && singleRTShift_.getText().length()>0)
-              rtShift = Float.parseFloat(singleRTShift_.getText().replaceAll(",", "."));
+            if (singleQuantMenu_.getRtShift().getText()
+            		!=null && singleQuantMenu_.getRtShift().getText().length()>0)
+              rtShift = Float.parseFloat(singleQuantMenu_.getRtShift().getText().replaceAll(",", "."));
           }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The RT-shift value must be float format!"); ok=false;}
           if (ok){
             boolean ionMode=false;
-            if (this.ionMode_!=null && ((String)ionMode_.getSelectedItem()).equalsIgnoreCase("+"))
+            if (this.singleQuantMenu_.getIonMode()!=null && ((String)singleQuantMenu_.getIonMode().getSelectedItem()).equalsIgnoreCase("+"))
               ionMode = true;
-            batchQuantTableModel_.clearFiles();
-            batchQuantTableModel_.addFiles(pairs);
-            batchQuantThread_ = new BatchQuantThread(this.batchQuantTable_, this.batchQuantTableModel_,this.progressBatchBar_, 
-                this.quantifyingBatchLabel_,//Float.parseFloat(this.batchMzTol_.getText()),
-                Float.parseFloat(this.singleTimeMinusTol_.getText()),Float.parseFloat(this.singleTimePlusTol_.getText()),
-                amountOfIsotopes,isotopesMustMatch,this.searchUnknownTime_.isSelected(), cutoff, 
-                rtShift, Integer.parseInt(nrProcessors_.getText()),ionMode,false);
-            this.quantifyingBatchLabel_.setText("Quantifying");
-            this.progressBatchBar_.setValue(0);
-            this.quantifyingBatchPanel_.setVisible(true);
-            this.startBatchQuantification_.setEnabled(false);
-            this.spinnerBatchLabel_.setVisible(true);
-
-            mainTabs.setSelectedIndex(1);
+            batchQuantMenu_.getBatchQuantTableModel().clearFiles();
+            batchQuantMenu_.getBatchQuantTableModel().addFiles(pairs);
+            batchQuantThread_ = new BatchQuantThread(singleQuantMenu_,
+                amountOfIsotopes,isotopesMustMatch, cutoff, 
+                rtShift,ionMode,false);
+            this.batchQuantMenu_.getQuantifyingLabel().setText("Quantifying");
+            this.batchQuantMenu_.getProgressBar().setValue(0);
+            this.batchQuantMenu_.getQuantifyingPanel().setVisible(true);
+            this.batchQuantMenu_.getStartQuantification().setEnabled(false);
+            this.batchQuantMenu_.getSpinnerLabel().setVisible(true);
+            
+            quantitationPane_.setSelectedIndex(0);
             batchQuantThread_.start();
           }
         }
       }else{
-        String mzXMLFilePath = selectedMzxmlFile.getText().substring(0,selectedMzxmlFile.getText().lastIndexOf("."))+"."+LipidomicsConstants.getIntermediateFileFormat();
-        mzToChromThread_ = new MzxmlToChromThread(mzXMLFilePath,1); //set number of processors to 1; TODO: make user input
-//        		Integer.parseInt(nrProcessors_.getText()));
+        String mzXMLFilePath = singleQuantMenu_.getSelectedMzxmlDirectory().getText().substring(0,singleQuantMenu_.getSelectedMzxmlDirectory().getText().lastIndexOf("."))+"."+LipidomicsConstants.getIntermediateFileFormat();
+        mzToChromThread_ = new MzxmlToChromThread(mzXMLFilePath,batchQuantMenu_.getNrProcessorsChrom());
         mzToChromThread_.start();
       }
     }
@@ -4077,89 +3543,97 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       if (this.mzToChromThread_.getErrorString()!=null&&this.mzToChromThread_.getErrorString().length()>0){
         @SuppressWarnings("unused")
         WarningMessage dlg = new WarningMessage(new JFrame(), "Error", mzToChromThread_.getErrorString());
-        this.startQuantification.setEnabled(true);
-        spinnerLabel_.setVisible(false);
+        this.singleQuantMenu_.getStartQuantification().setEnabled(true);
+        singleQuantMenu_.getSpinnerLabel().setVisible(false);
       }
       if (readFromRaw_){
         this.readFromRaw_ = false;
-        RawToMzxmlThread.deleteMzXMLFiles(selectedMzxmlFile.getText().substring(0,selectedMzxmlFile.getText().lastIndexOf("."))+"."+LipidomicsConstants.getIntermediateFileFormat());
+        RawToMzxmlThread.deleteMzXMLFiles(singleQuantMenu_.getSelectedMzxmlDirectory().getText().substring(0,singleQuantMenu_.getSelectedMzxmlDirectory().getText().lastIndexOf("."))+"."+LipidomicsConstants.getIntermediateFileFormat());
       }
 
       boolean ok = true;
       if (mzToChromThread_.isPolaritySwitched()){
-        if (selectedQuantFile.getText().indexOf(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_POSITIVE)!=-1){
-          String newRawName = selectedMzxmlFile.getText();
+        if (singleQuantMenu_.getSelectedQuantDir().getText().indexOf(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_POSITIVE)!=-1){
+          String newRawName = singleQuantMenu_.getSelectedMzxmlDirectory().getText();
           newRawName = newRawName.substring(0,newRawName.lastIndexOf("."))+RawToChromThread.FILE_SUFFIX_POLARITY_POSITIVE+".chrom";
-          selectedMzxmlFile.setText(newRawName);
-        } else if (selectedQuantFile.getText().indexOf(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_NEGATIVE)!=-1){
-          String newRawName = selectedMzxmlFile.getText();
+          singleQuantMenu_.getSelectedMzxmlDirectory().setText(newRawName);
+        } else if (singleQuantMenu_.getSelectedQuantDir().getText().indexOf(GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_NEGATIVE)!=-1){
+          String newRawName = singleQuantMenu_.getSelectedMzxmlDirectory().getText();
           newRawName = newRawName.substring(0,newRawName.lastIndexOf("."))+RawToChromThread.FILE_SUFFIX_POLARITY_NEGATIVE+".chrom";
-          selectedMzxmlFile.setText(newRawName);
+          singleQuantMenu_.getSelectedMzxmlDirectory().setText(newRawName);
         } else {
           ok = false;
           new WarningMessage(new JFrame(), "Error", "This is polarity switched data! It is not clear which of the two generated chrom files shall be quantified! Please use "+GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_POSITIVE+" or "+GlobalConstants.CHROMATOGRAM_HEADER_FILE_POLARITY_NEGATIVE+" in the file name!");
-          this.quantifyingPanel_.setVisible(false);
+          this.singleQuantMenu_.getQuantifyingPanel().setVisible(false);
         }
       }
       this.mzToChromThread_ = null;
-      this.quantifyingLabel_.setText("Quantifying");
+      this.singleQuantMenu_.getQuantifyingLabel().setText("Quantifying");
       System.out.println("Quantifying from thread");
-      this.progressBar_.setValue(70);
+      this.singleQuantMenu_.getProgressBar().setValue(70);
       int amountOfIsotopes = 0;
       int isotopesMustMatch = 0;
-      if (this.isoValidation_.isSelected()){
-        amountOfIsotopes = Integer.parseInt(this.amountOfIsotopes_.getText());
-        isotopesMustMatch = Integer.parseInt(this.amountOfMatchingSearchIsotopes_.getText());
+      if (this.singleQuantMenu_.getIsoValidation().isSelected()){
+        amountOfIsotopes = Integer.parseInt(this.singleQuantMenu_.getAmountOfIsotopes().getText());
+        isotopesMustMatch = Integer.parseInt(this.singleQuantMenu_.getAmountOfMatchingSearchIsotopes().getText());
       }      
       float cutoff = 0f;
       float rtShift = 0f;
       try{
-        if (singleCutoff_.getText()!=null && singleCutoff_.getText().length()>0)
-          cutoff = Float.parseFloat(singleCutoff_.getText().replaceAll(",", "."));
+        if (singleQuantMenu_.getCutoff().getText()!=null && singleQuantMenu_.getCutoff().getText().length()>0)
+          cutoff = Float.parseFloat(singleQuantMenu_.getCutoff().getText().replaceAll(",", "."));
       }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The cutoff value must be float format!"); ok=false;}
       try{
-        if (singleRTShift_.getText()!=null && singleRTShift_.getText().length()>0)
-          rtShift = Float.parseFloat(singleRTShift_.getText().replaceAll(",", "."));
+        if (singleQuantMenu_.getRtShift().getText()!=null && singleQuantMenu_.getRtShift().getText().length()>0)
+          rtShift = Float.parseFloat(singleQuantMenu_.getRtShift().getText().replaceAll(",", "."));
       }catch(NumberFormatException ex){new WarningMessage(new JFrame(), "Error", "The RT-shift value must be float format!"); ok=false;}
       if (ok){
         boolean ionMode = false;
-        if (this.ionMode_!=null && ((String)ionMode_.getSelectedItem()).equalsIgnoreCase("+"))
+        if (this.singleQuantMenu_.getIonMode()!=null && ((String)singleQuantMenu_.getIonMode().getSelectedItem()).equalsIgnoreCase("+"))
           ionMode = true;
-        quantThread_ = new QuantificationThread(selectedMzxmlFile.getText(), selectedQuantFile.getText(),LipidDataAnalyzer.getResultFilePath(selectedMzxmlFile.getText(), selectedQuantFile.getText()),// Float.parseFloat(this.singleMzTol_.getText()),
-            Float.parseFloat(this.singleTimeMinusTol_.getText()),Float.parseFloat(this.singleTimePlusTol_.getText()),amountOfIsotopes,isotopesMustMatch,this.searchUnknownTime_.isSelected(),
-            cutoff,rtShift,Integer.parseInt(this.nrProcessors_.getText()),ionMode,false);
+        quantThread_ = new QuantificationThread(singleQuantMenu_.getSelectedMzxmlDirectory().getText(), singleQuantMenu_.getSelectedQuantDir().getText(),LipidDataAnalyzer.getResultFilePath(singleQuantMenu_.getSelectedMzxmlDirectory().getText(), singleQuantMenu_.getSelectedQuantDir().getText()),// Float.parseFloat(this.singleMzTol_.getText()),
+            Float.parseFloat(this.singleQuantMenu_.getTimeMinusTol().getText()),Float.parseFloat(this.singleQuantMenu_.getTimePlusTol().getText()),amountOfIsotopes,isotopesMustMatch,this.singleQuantMenu_.getSearchUnknownTime().isSelected(),
+            cutoff,rtShift,this.singleQuantMenu_.getNrProcessors(),ionMode,false);
         quantThread_.start();
       }else{
-        this.startQuantification.setEnabled(true);
-        spinnerLabel_.setVisible(false);
+        this.singleQuantMenu_.getStartQuantification().setEnabled(true);
+        singleQuantMenu_.getSpinnerLabel().setVisible(false);
       }
     }
     if (this.quantThread_!=null && !this.quantThread_.finished() && 
         (this.quantThread_.getErrorString()==null||this.quantThread_.getErrorString().length()==0)){
       if (quantThread_.getTotalAmountOfLipids()>0&&quantThread_.getCurrentLipidCount()>0){
-        this.progressBar_.setValue(70+((30*(quantThread_.getCurrentLipidCount()-1))/quantThread_.getTotalAmountOfLipids()));
-        quantifyingLabel_.setText("Quantifying "+quantThread_.getCurrentLipid()+" ("+quantThread_.getCurrentLipidCount()+"/"+quantThread_.getTotalAmountOfLipids()+")");
+        this.singleQuantMenu_.getProgressBar().setValue(70+((30*(quantThread_.getCurrentLipidCount()-1))/quantThread_.getTotalAmountOfLipids()));
+        singleQuantMenu_.getQuantifyingLabel().setText("Quantifying "+quantThread_.getCurrentLipid()+" ("+quantThread_.getCurrentLipidCount()+"/"+quantThread_.getTotalAmountOfLipids()+")");
       }  
     }
     if (this.quantThread_!=null && this.quantThread_.finished()){
       if (this.quantThread_.getErrorString()!=null&&this.quantThread_.getErrorString().length()>0){
         @SuppressWarnings("unused")
         WarningMessage dlg = new WarningMessage(new JFrame(), "Error", quantThread_.getErrorString());
-        this.startQuantification.setEnabled(true);
-        spinnerLabel_.setVisible(false);
+        this.singleQuantMenu_.getStartQuantification().setEnabled(true);
+        singleQuantMenu_.getSpinnerLabel().setVisible(false);
       }
       this.quantThread_ = null;
-      this.progressBar_.setValue(100);
-      quantifyingLabel_.setText("Finished");
-      this.startQuantification.setEnabled(true);
-      spinnerLabel_.setVisible(false);
+      this.singleQuantMenu_.getProgressBar().setValue(100);
+      singleQuantMenu_.getQuantifyingLabel().setText("Finished");
+      this.singleQuantMenu_.getStartQuantification().setEnabled(true);
+      singleQuantMenu_.getSpinnerLabel().setVisible(false);
     }
     if (this.batchQuantThread_!=null && this.batchQuantThread_.finished()){
       this.batchQuantThread_ = null;
-      this.progressBatchBar_.setValue(100);
-      quantifyingBatchLabel_.setText("Finished");
-      this.startBatchQuantification_.setEnabled(true);
-      spinnerBatchLabel_.setVisible(false);
+      this.batchQuantMenu_.getProgressBar().setValue(100);
+      batchQuantMenu_.getQuantifyingLabel().setText("Finished");
+      this.batchQuantMenu_.getStartQuantification().setEnabled(true);
+      batchQuantMenu_.getSpinnerLabel().setVisible(false);
+      
+      if (this.singleQuantMenu_.getProgressBar().getValue() > 0) //possible with .wiff files
+      {
+      	this.singleQuantMenu_.getProgressBar().setValue(100);
+        singleQuantMenu_.getQuantifyingLabel().setText("Finished");
+        this.singleQuantMenu_.getStartQuantification().setEnabled(true);
+        singleQuantMenu_.getSpinnerLabel().setVisible(false);
+      }
     }
 
   }
@@ -4362,34 +3836,34 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       this.spectrumPainter_.repaint();
     }
     if (command.equalsIgnoreCase("endisableAmountOfIsotopes")){
-      if (this.isoValidation_.isSelected()){
-        this.amountOfIsotopes_.setEnabled(true);
-        this.amountOfMatchingSearchIsotopes_.setEnabled(true);
+      if (this.singleQuantMenu_.getIsoValidation().isSelected()){
+        this.singleQuantMenu_.getAmountOfIsotopes().setEnabled(true);
+        this.singleQuantMenu_.getAmountOfMatchingSearchIsotopes().setEnabled(true);
       }else{
-        this.amountOfIsotopes_.setEnabled(false);
-        this.amountOfMatchingSearchIsotopes_.setEnabled(false);
+        this.singleQuantMenu_.getAmountOfIsotopes().setEnabled(false);
+        this.singleQuantMenu_.getAmountOfMatchingSearchIsotopes().setEnabled(false);
       }  
     }
     if (command.equalsIgnoreCase("endisableAmountOfBatchIsotopes")){
-      if (this.isoBatchValidation_.isSelected()){
-        this.amountOfBatchIsotopes_.setEnabled(true);
-        this.amountOfMatchingBatchSearchIsotopes_.setEnabled(true);
+      if (this.batchQuantMenu_.getIsoValidation().isSelected()){
+        this.batchQuantMenu_.getAmountOfIsotopes().setEnabled(true);
+        this.batchQuantMenu_.getAmountOfMatchingSearchIsotopes().setEnabled(true);
       }else{
-        this.amountOfBatchIsotopes_.setEnabled(false);
-        this.amountOfMatchingBatchSearchIsotopes_.setEnabled(false);
+        this.batchQuantMenu_.getAmountOfIsotopes().setEnabled(false);
+        this.batchQuantMenu_.getAmountOfMatchingSearchIsotopes().setEnabled(false);
       }  
     }
 //    if (command.equalsIgnoreCase("searchForUnknownRetentionTime")){
-//      if (this.searchUnknownTime_.isSelected())
-//        this.amountOfMatchingSearchIsotopes_.setEnabled(true);
+//      if (this.singleQuantMenu_.getSearchUnknownTime().isSelected())
+//        this.singleQuantMenu_.getAmountOfMatchingSearchIsotopes().setEnabled(true);
 //      else
-//        this.amountOfMatchingSearchIsotopes_.setEnabled(false);
+//        this.singleQuantMenu_.getAmountOfMatchingSearchIsotopes().setEnabled(false);
 //    }
 //    if (command.equalsIgnoreCase("searchForUnknownBatchRetentionTime")){
-//      if (this.searchUnknownBatchTime_.isSelected())
-//        this.amountOfMatchingBatchSearchIsotopes_.setEnabled(true);
+//      if (this.batchQuantMenu_.getSearchUnknownTime().isSelected())
+//        this.batchQuantMenu_.getAmountOfMatchingSearchIsotopes().setEnabled(true);
 //      else
-//        this.amountOfMatchingBatchSearchIsotopes_.setEnabled(false);
+//        this.batchQuantMenu_.getAmountOfMatchingSearchIsotopes().setEnabled(false);
 //    }   
     if (command.equalsIgnoreCase("ChangeIsotope") && !this.displaysMs2_){
       if (e.getStateChange()==ItemEvent.SELECTED){
@@ -4412,7 +3886,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
     
   }
   
-  private class LipidomicsItemListener implements java.awt.event.ItemListener
+  protected class LipidomicsItemListener implements java.awt.event.ItemListener
   {
     private String m_ctrl;
     
@@ -7396,6 +6870,7 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       aResultsViewPanel.add(resultsViewTabs,BorderLayout.CENTER);
       Hashtable<String,Hashtable<String,ResultCompVO>> resultsOfOneGroup = analysisModule_.getResults().get(molGroup_);
       Vector<String> molNames = analysisModule_.getAllMoleculeNames().get(molGroup_);
+      if (molNames.isEmpty()) return; //do not add empty heatmaps
       Hashtable<String,Integer> isLookup = new Hashtable<String,Integer> ();
       Hashtable<String,Integer> esLookup = new Hashtable<String,Integer> ();
       if (corrTypeISLookup.containsKey(chosenMolGroup))
@@ -7424,8 +6899,15 @@ public class LipidDataAnalyzer extends JApplet implements ActionListener,HeatMap
       
       JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, new JScrollPane(drawing.getSettingsPanel()));
 			splitPane.setOneTouchExpandable(true);
-			splitPane.setDividerLocation(600);
+			splitPane.setDividerLocation(640);
       
+//      splitPane.add(drawing.getSettingsPanel());
+//      splitPane.add(scrollPane);
+      
+//      if (analysisModule_.getExpNamesInSequence().size()>25)
+//        aPanel.add(scrollPane,BorderLayout.CENTER);
+//      else
+//        aPanel.add(scrollPane,BorderLayout.WEST);
       resultsViewTabs.addTab("Heatmap", splitPane);
       resultsViewTabs.setToolTipTextAt(0, TooltipTexts.TABS_RESULTS_HEATMAP+molGroup_+"</html>");
       JPanel barChartPanel = new JPanel();

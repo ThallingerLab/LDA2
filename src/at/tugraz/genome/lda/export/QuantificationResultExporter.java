@@ -37,6 +37,7 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -72,7 +73,12 @@ import org.apache.commons.math3.util.Pair;
 // TODO: features for omega assingment have been commented out / not added
 public class QuantificationResultExporter
 {
+	/** the maximum number of characters allowed in an excel sheet name */
+	public final static int EXCEL_SHEET_CHAR_LIMIT = 31;
+	
 	public final static String SHEET_CONSTANTS = "About";
+	
+	public final static String SHEET_LIPID_CLASS_LOOKUP = "Lipid (sub)classes";
 
 	public final static String ADDUCT_MSN_SHEET = " - MSn";
 
@@ -480,6 +486,24 @@ public class QuantificationResultExporter
 				createHeader(ws, headerTitles);
 				writeConstants(ws, propertyRows);
 			}
+			
+			TreeMap<String,String> sheetNameLookup = new TreeMap<String,String>();
+			
+			if (isSheetNameOverlength(new ArrayList<String>(quantRes.getIdentifications().keySet())))
+			{
+				Worksheet ws = wb.newWorksheet(SHEET_LIPID_CLASS_LOOKUP);
+				List<String> headerTitles = new ArrayList<String>();
+				headerTitles.add("ID");
+				headerTitles.add("Full name");
+				createHeader(ws, headerTitles);
+				Integer count = 1;
+				for (String sheetName:quantRes.getIdentifications().keySet()) {
+					sheetNameLookup.put(sheetName, count.toString());
+					ws.value(count, 0, count.toString());
+					ws.value(count, 1, sheetName);
+					count++;
+				}
+			}
 
 			for (String sheetName:quantRes.getIdentifications().keySet()) {
 				Vector<LipidParameterSet> params = quantRes.getIdentifications()
@@ -494,8 +518,7 @@ public class QuantificationResultExporter
 					msLevel = quantRes.getMsLevels().get(sheetName);
 				}
 
-				Worksheet[] sheetsForClass = createRequiredSheetsForClass(wb,
-						sheetName);
+				Worksheet[] sheetsForClass = createRequiredSheetsForClass(wb, sheetNameLookup.isEmpty() ? sheetName : sheetNameLookup.get(sheetName));
 				Worksheet resultSheet = sheetsForClass[0];
 				Worksheet resultSheetMSn = sheetsForClass[1];
 				Worksheet resultSheetOmega = sheetsForClass[2];
@@ -566,6 +589,18 @@ public class QuantificationResultExporter
 			ex.printStackTrace();
 			throw new ExportException(ex.getMessage());
 		}
+	}
+	
+	private static boolean isSheetNameOverlength(ArrayList<String> sheetNames)
+	{
+		int longestSuffixLength = ADDUCT_OVERVIEW_SHEET.length();
+		int max = EXCEL_SHEET_CHAR_LIMIT-longestSuffixLength;
+		for (String name : sheetNames)
+		{
+			if (name.length() > max)
+				return true;
+		}
+		return false;
 	}
 
 	/**
