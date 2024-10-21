@@ -177,7 +177,7 @@ import at.tugraz.genome.lda.msn.PostQuantificationProcessor;
 import at.tugraz.genome.lda.msn.RulesContainer;
 import at.tugraz.genome.lda.msn.parser.FALibParser;
 import at.tugraz.genome.lda.msn.parser.FragRuleParser;
-import at.tugraz.genome.lda.msn.parser.LCBLibParser;
+import at.tugraz.genome.lda.msn.parser.SPBLibParser;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.msn.vos.IntensityChainVO;
 import at.tugraz.genome.lda.msn.vos.IntensityPositionVO;
@@ -14931,8 +14931,8 @@ public void testTabFile() throws Exception {
             batchQuantTableModel.addFiles(pairs);
             progressBatchBar.setValue(0);
             BatchQuantThread batchQuantThread_ = new BatchQuantThread(batchQuantTable, batchQuantTableModel,progressBatchBar, 
-              quantifyingBatchLabel, minusTimeTol,plusTimeTol,amountOfIsotopes,isotopesMustMatch,searchUnknownBatchTime, cutoff, 
-                rtShift, nrProcessors,ionMode,true);
+                quantifyingBatchLabel, minusTimeTol,plusTimeTol,amountOfIsotopes,isotopesMustMatch,searchUnknownBatchTime, cutoff, 
+                  rtShift, 1, nrProcessors,ionMode,true);
             batchQuantThread_.start();
           }else{
             if (rawFiles.size()==0){
@@ -15332,7 +15332,7 @@ public void testTabFile() throws Exception {
   private void parseLCBList() {
     File lcbFile = new File("C:\\Development\\LipidDataAnalyzer\\fattyAcids\\dLCB.xlsx");
     try {
-      LCBLibParser parser = new LCBLibParser(lcbFile);
+      SPBLibParser parser = new SPBLibParser(lcbFile);
       parser.parseFile();
     }
     catch (IOException | RulesException e) {
@@ -18232,7 +18232,7 @@ public void testTabFile() throws Exception {
       parser.parse();
       FALibParser faParser = new FALibParser(faLibPath);
       faParser.parseFile();
-      Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> fas = faParser.getFattyAcids().get("n");
+      Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> fas = faParser.getResult().get("n");
       Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
       for (Integer cAtoms : fas.keySet()) {
         for (Integer dbs : fas.get(cAtoms).keySet()) {
@@ -20782,7 +20782,7 @@ public void testTabFile() throws Exception {
       parser.parse();
       FALibParser faParser = new FALibParser(faLibPath);
       faParser.parseFile();
-      Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> fas = faParser.getFattyAcids().get("n");
+      Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> fas = faParser.getResult().get("n");
       Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
       for (Integer cAtoms : fas.keySet()) {
           for (Integer dbs : fas.get(cAtoms).keySet()) {

@@ -365,7 +365,7 @@ public class TargetListGenerator
 		Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
 		FALibParser faParser = new FALibParser(path);
     faParser.parseFile();
-    Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> fas = faParser.getFattyAcids().get("n");
+    Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> fas = faParser.getResult().get("n");
     for (Integer cAtoms : fas.keySet()) {
       for (Integer dbs : fas.get(cAtoms).keySet()) {
         for (String pref : fas.get(cAtoms).get(dbs).keySet()) {
@@ -385,7 +385,7 @@ public class TargetListGenerator
       parser.parse();
       FALibParser faParser = new FALibParser(chainListPath);
       faParser.parseFile();
-      Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> fas = faParser.getFattyAcids().get("n");
+      Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> fas = faParser.getResult().get("n");
       Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
       for (Integer cAtoms : fas.keySet()) {
         for (Integer dbs : fas.get(cAtoms).keySet()) {
@@ -608,7 +608,7 @@ public class TargetListGenerator
       parser.parse();
       FALibParser faParser = new FALibParser(chainListPath);
       faParser.parseFile();
-      Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> fas = faParser.getFattyAcids().get("n");
+      Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> fas = faParser.getResult().get("n");
       Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
       for (Integer cAtoms : fas.keySet()) {
         for (Integer dbs : fas.get(cAtoms).keySet()) {
