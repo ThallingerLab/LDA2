@@ -91,7 +91,7 @@ public class ChooserPanel extends JOptionPanel
     JLabel requirements= new JLabel("<html> <ul style=\"list-style-type:circle;\"> "
     		+ "<li> An RT-DB in LDA-format. </li>"
     		+ "<li> Experimental data (analyzed with LDA) of an (internal) standard mix and/or biological samples measured with the exact same chromatographic conditions the RT-DB was created with. </li>"
-    		+ "<li> Experimental data (analyzed with LDA) of the same standard mix and/or biological samples measured with your chromatography. </li>"
+    		+ "<li> Experimental data (analyzed with LDA) of a (ideally the same) standard mix and/or biological samples measured with your chromatography. </li>"
     		+ "</html>");
     requirements.setFont(new Font("Arial",Font.PLAIN, 12));
     requirements.setPreferredSize(new Dimension(sizeTextOneLine.width,sizeTextOneLine.height*5));
