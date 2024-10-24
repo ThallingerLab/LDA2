@@ -379,10 +379,10 @@ public class TooltipTexts
   public final static String MASSLIST_CLASS_OH_RANGE = "<html>This defines the range of chain (FA and SPB) oxidation of a lipid (sub)class.<br/>" +
   		"Only masses that are possible given the chains defined in the provided chain lists are exported.<br/>" +
   		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";
-  public final static String MASSLIST_CLASS_C_RANGE = "<html>This defines the range of chain (FA and SPB) C atoms that should be exported.<br/>" +
+  public final static String MASSLIST_CLASS_C_RANGE = "<html>This defines the range of combined chain (FA and SPB) C atoms that should be exported.<br/>" +
   		"Only masses that are possible given the chains defined in the provided chain lists are exported.<br/>" +
   		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";
-  public final static String MASSLIST_CLASS_DB_RANGE = "<html>This defines the range of chain (FA and SPB) double bonds that should be exported.<br/>" +
+  public final static String MASSLIST_CLASS_DB_RANGE = "<html>This defines the range of combined chain (FA and SPB) double bonds that should be exported.<br/>" +
   		"Only masses that are possible given the chains defined in the provided chain lists are exported.<br/>" +
   		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";
   public final static String MASSLIST_CLASS_RT_RANGE = "<html>This defines the retention time range setting for the LDA mass list.<br/>" +
@@ -394,8 +394,8 @@ public class TooltipTexts
   		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";  
   public final static String MASSLIST_CLASS_FA_LIST = "<html>This defines the fatty acid chain list to base the mass list on.<br/>" +
   		"Available for selection are all fatty acid chain lists in the folder 'fattyAcids' in the installation directory.<br/>" +
-  		"Only compounds that are possible given the entries in the provided chain list will be included in the resulting mass list.<br/>" +
-  		"If the chain list includes stable isotope labeled chains, those will be included in all possible combinations in the generated mass list file.<br/>" +
+  		"Only compounds that are possible given the entries in the provided chain list will be included in the exported file.<br/>" +
+  		"If the chain list includes stable isotope labeled chains, those will be included in all possible combinations.<br/>" +
   		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";
   public final static String MASSLIST_CLASS_SPB_LIST = "<html>This defines the sphingoid base list to base the mass list on.<br/>" +
   		"Available for selection are all sphingoid base lists in the folder 'fattyAcids' in the installation directory.<br/>" +

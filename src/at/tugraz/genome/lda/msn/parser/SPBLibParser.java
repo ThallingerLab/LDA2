@@ -56,6 +56,8 @@ public class SPBLibParser extends FALibParser
   
   /** the Excel file must contain a tab ending with "SPB"*/
   private final static String SPB_SHEET_SUFFIX = "SPB";
+  /** for backward compatibility: also tabs ending with "LCB" are allowed */
+  private final static String LCB_SHEET_SUFFIX = "LCB"; 
   /** the highest hydroxylation number available*/
   private short highestHydroxyNumber_ = 0;
   
@@ -76,7 +78,8 @@ public class SPBLibParser extends FALibParser
     {
       for (int sheetNumber = 0; sheetNumber!=workbook.getNumberOfSheets(); sheetNumber++)
       {
-        if (workbook.getSheetAt(sheetNumber).getSheetName().endsWith(SPB_SHEET_SUFFIX)) 
+      	String sheetName = workbook.getSheetAt(sheetNumber).getSheetName();
+        if (sheetName.endsWith(SPB_SHEET_SUFFIX) || sheetName.endsWith(LCB_SHEET_SUFFIX)) 
         	return true;
       }
     }
