@@ -71,6 +71,7 @@ public class Settings
   /** property label for making empty entries when an analyte cannot by found by "Quant. anal. at not found" and "Take exact peak for others"*/
   public final static String EMPTY_ENTRY_FOR_QUANT_ANAL_NOT_FOUND = "EmptyEntriesForQuantAnalNotFound";
   
+  public final static boolean SHOW_LCCL= false; //TODO: set to false before publication and remove altogether when the version is published
   public final static boolean SHOW_FRAGGLI = false; //TODO: set to false before publication and remove altogether when the version is published
   
   private static String operatingSystem_;

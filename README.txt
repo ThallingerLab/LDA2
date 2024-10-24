@@ -1,6 +1,6 @@
-# LDA2 featuring LC=CL
+# LDA2
 
-Lipid Data Analyzer 2 LC=CL extension
+Lipid Data Analyzer 2
 
 
 
@@ -29,10 +29,5 @@ and click on "Add JARs...". Navigate to the "natives" directory in your project 
 corresponding directory (linux64, mac or windows64), and all jar files in this directory to your
 library path. Then, click on "Apply and Close". The LDA can be started from Eclipse by right-clicking
 on the class LipidDataAnalyzer.java and selecting "Run As" -> "3 Java Application".
-
-
-Code for LC=CL:
-The code primarily responsible for the LC=CL can be found in
-src/at/tugraz/genome/lda/target
 
 
