@@ -38,7 +38,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -192,6 +191,7 @@ public class MassListCreatorPanel extends JPanel
 		{
 			throw new IOException("Something went wrong with the import.");
 		}
+		displayPanel_.remove(lipidClassTable_); //this needs to be removed before refreshing the scrollpane, as there will be a different instance afterwards.
 		lipidClassTable_ = new LipidClassTable("Defined lipid (sub)classes", getLipidClassNames(), selectedClass_.getLipidClass());
 		refreshLipidClassScrollPane();
 	}
@@ -380,6 +380,7 @@ public class MassListCreatorPanel extends JPanel
 				}
 				else if (lipidClassTable_.getSelectedLipidClasses().isEmpty())
 				{
+					ArrayList<LipidClassVO> test1 = lipidClassTable_.getSelectedLipidClasses();
 					new WarningMessage(new JFrame(), "Error", "Please select at least one lipid class prior to the export!");
 				}
 				else
@@ -924,7 +925,6 @@ public class MassListCreatorPanel extends JPanel
     private JTable displayTable_;
     private JScrollPane scrollPane_;
     private BooleanTableModel model_;
-    private HashMap<String,Boolean> lipidClassIncluded_;
     
     @Override
     public Dimension getPreferredSize()
@@ -981,6 +981,17 @@ public class MassListCreatorPanel extends JPanel
     	return panel;
     }
     
+    private Object[][] initializeTableData(String[] lipidClassNames)
+    {
+    	Object[][] tableData = new Object[lipidClassNames.length][2];
+    	for (int i=0; i<lipidClassNames.length; i++)
+	    {
+	    	tableData[i][COLUMN_NAME] = lipidClassNames[i];
+	      tableData[i][COLUMN_INCLUDE] = Boolean.TRUE;
+	    }
+    	return tableData;
+    }
+    
     private void invertSelection()
     {
     	for (int i=0; i<lipidClassNames_.length; i++)
@@ -989,19 +1000,6 @@ public class MassListCreatorPanel extends JPanel
     		model_.setValueAt(!value, i, COLUMN_INCLUDE);
     	}
     	refreshLipidClassScrollPane();
-    }
-    
-    private Object[][] initializeTableData(String[] lipidClassNames)
-    {
-    	Object[][] tableData = new Object[lipidClassNames.length][2];
-    	lipidClassIncluded_ = new HashMap<String,Boolean>();
-    	for (int i=0; i<lipidClassNames.length; i++)
-	    {
-	    	tableData[i][COLUMN_NAME] = lipidClassNames[i];
-	      tableData[i][COLUMN_INCLUDE] = Boolean.FALSE;
-	      lipidClassIncluded_.put(lipidClassNames[i], true);
-	    }
-    	return tableData;
     }
     
     private ArrayList<LipidClassVO> getSelectedLipidClasses()
