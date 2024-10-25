@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install4j version="10.0.6" transformSequenceNumber="10">
   <directoryPresets config="./installFiles/launcher_archive/ldaCmd.sh" />
-  <application name="Lipid Data Analyzer" applicationId="8357-0793-0080-2282" mediaDir="./i4j-output" shortName="LDA" publisher="Graz University of Technology" publisherWeb="http://genome.tugraz.at/" version="2.10.1" allPathsRelative="true" macVolumeId="b1bfb5d3c6ff7197" javaMinVersion="1.8" allowBetaVM="true" jdkMode="runtimeJre">
+  <application name="Lipid Data Analyzer" applicationId="8357-0793-0080-2282" mediaDir="./i4j-output" shortName="LDA" publisher="Graz University of Technology" publisherWeb="http://genome.tugraz.at/" version="2.11.0" allPathsRelative="true" macVolumeId="b1bfb5d3c6ff7197" javaMinVersion="1.8" allowBetaVM="true" jdkMode="runtimeJre">
     <variables>
       <variable name="javaProp3D" />
       <variable name="headlessTrue" />
@@ -1093,7 +1093,7 @@ return path;</property>
               <action id="1154" beanClass="com.install4j.runtime.beans.actions.files.AddWindowsFileRightsAction" actionElevationType="elevated" failureStrategy="askQuit">
                 <serializedBean>
                   <property name="all" type="boolean" value="false" />
-                  <property name="files" type="array" class="java.io.File" length="11">
+                  <property name="files" type="array" class="java.io.File" length="12">
                     <element index="0">
                       <object class="java.io.File">
                         <string>LipidDataAnalyzer.properties</string>
@@ -1149,6 +1149,11 @@ return path;</property>
                         <string>modconfig.xml</string>
                       </object>
                     </element>
+                    <element index="11">
+                      <object class="java.io.File">
+                        <string>massListCreation</string>
+                      </object>
+                    </element>
                   </property>
                   <property name="read" type="boolean" value="true" />
                   <property name="write" type="boolean" value="true" />
@@ -1156,7 +1161,7 @@ return path;</property>
               </action>
               <action id="1360" beanClass="com.install4j.runtime.beans.actions.files.SetModeAction" actionElevationType="elevated">
                 <serializedBean>
-                  <property name="files" type="array" class="java.io.File" length="10">
+                  <property name="files" type="array" class="java.io.File" length="11">
                     <element index="0">
                       <object class="java.io.File">
                         <string>LipidDataAnalyzer.properties</string>
@@ -1205,6 +1210,11 @@ return path;</property>
                     <element index="9">
                       <object class="java.io.File">
                         <string>lcbHydroxylationEncoding.txt</string>
+                      </object>
+                    </element>
+                    <element index="10">
+                      <object class="java.io.File">
+                        <string>massListCreation</string>
                       </object>
                     </element>
                   </property>
