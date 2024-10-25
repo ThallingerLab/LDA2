@@ -1093,7 +1093,7 @@ return path;</property>
               <action id="1154" beanClass="com.install4j.runtime.beans.actions.files.AddWindowsFileRightsAction" actionElevationType="elevated" failureStrategy="askQuit">
                 <serializedBean>
                   <property name="all" type="boolean" value="false" />
-                  <property name="files" type="array" class="java.io.File" length="11">
+                  <property name="files" type="array" class="java.io.File" length="12">
                     <element index="0">
                       <object class="java.io.File">
                         <string>LipidDataAnalyzer.properties</string>
@@ -1149,6 +1149,11 @@ return path;</property>
                         <string>modconfig.xml</string>
                       </object>
                     </element>
+                    <element index="11">
+                      <object class="java.io.File">
+                        <string>massListCreation</string>
+                      </object>
+                    </element>
                   </property>
                   <property name="read" type="boolean" value="true" />
                   <property name="write" type="boolean" value="true" />
@@ -1156,7 +1161,7 @@ return path;</property>
               </action>
               <action id="1360" beanClass="com.install4j.runtime.beans.actions.files.SetModeAction" actionElevationType="elevated">
                 <serializedBean>
-                  <property name="files" type="array" class="java.io.File" length="10">
+                  <property name="files" type="array" class="java.io.File" length="11">
                     <element index="0">
                       <object class="java.io.File">
                         <string>LipidDataAnalyzer.properties</string>
@@ -1205,6 +1210,11 @@ return path;</property>
                     <element index="9">
                       <object class="java.io.File">
                         <string>lcbHydroxylationEncoding.txt</string>
+                      </object>
+                    </element>
+                    <element index="10">
+                      <object class="java.io.File">
+                        <string>massListCreation</string>
                       </object>
                     </element>
                   </property>
