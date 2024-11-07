@@ -15335,6 +15335,8 @@ public void testTabFile() throws Exception {
       ElementConfigParser parser = new ElementConfigParser("elementconfig.xml");
       parser.parse();
     
+      //for HC
+      //String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\HC_positive.xlsx";
       //for DGD
       //String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\DGD_positive.xlsx";
       //for PI-DGD
@@ -15354,7 +15356,9 @@ public void testTabFile() throws Exception {
       BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(quantFile));
       XSSFWorkbook resultWorkbook = new XSSFWorkbook();
       XSSFCellStyle headerStyle = getHeaderStyle(resultWorkbook);
-      
+
+      //for HC
+      //Sheet resultSheet = resultWorkbook.createSheet("HC");
       //for DGD
       //Sheet resultSheet = resultWorkbook.createSheet("DGD");
       //for PI-DGD
@@ -15456,63 +15460,69 @@ public void testTabFile() throws Exception {
 //          cDbsCombi.put(i, j);
 //        }
 //      }
+
+      //HC
+//      for (int i=30; i<41; i+=5) {
+//        for (int j=0; j!=6; j++) {
+//          cDbsCombi.put(i, j);
+//        }
+//      }
+
       
-      //DGD, PI-DGD, PHexHex-DGD
-//      for (int i=20; i!=21; i++) {
-//        for (int j=0; j!=9; j++) {
-//          if (j>1 && i<26)
-//            continue;
-//          else if (j>2 && i<28)
-//            continue;
-//          else if (j>3 && i<32)
-//            continue;
-//          else if (j>4 && i<34)
-//            continue;
-//          else if (j>5 && i<36)
-//            continue;
+//      //DGD, PI-DGD, PHexHex-DGD
+//      for (int i=30; i<51; i+=5) {
+//        for (int j=0; j!=6; j++) {
 //          cDbsCombi.put(i, j);
 //        }
 //      }
 
       //GDGT, PI-PI-GDGT
-      for (int i=40; i!=41; i++) {
-        for (int j=0; j!=9; j++) {
+      for (int i=80; i!=81; i++) {
+        for (int j=0; j!=17; j++) {
           cDbsCombi.put(i, j);
         }
       }
 
       
-      
       //for DGD, PI-DGD, PHexHex-DGD
-//      for (int cAtoms=20; cAtoms<21; cAtoms+=1){
+      //for (int cAtoms=30; cAtoms<41; cAtoms+=5){
+      //for DGD, PI-DGD, PHexHex-DGD
+      //for (int cAtoms=30; cAtoms<51; cAtoms+=5){
       //for GDGT, PI-PI-GDGT
-      for (int cAtoms=40; cAtoms<41; cAtoms+=1){
+      for (int cAtoms=80; cAtoms<81; cAtoms+=1){
         int dbs = 0;
         int dbsMax = cDbsCombi.get(cAtoms)+1;
         while (dbs<dbsMax){
+          //for HC
+//        	int totalC = cAtoms;
+//        	int hAtoms = totalC*2-2*dbs+2;
+//        	int oAtoms = 0;
+//        	int pAtoms = 0;
+//        	int nAtoms = 0;
+
           //for DGD
-//          int totalC = cAtoms*2+3;
+//          int totalC = cAtoms+3;
 //          int hAtoms = totalC*2-2*dbs+2;
 //          int oAtoms = 3;
 //          int pAtoms = 0;
 //          int nAtoms = 0;
 
         	//for PI-DGD && PHex-DGD
-//        	int totalC = cAtoms*2+9;
+//        	int totalC = cAtoms+9;
 //        	int hAtoms = totalC*2-2*dbs+1;
 //        	int oAtoms = 11;
 //        	int pAtoms = 1;
 //        	int nAtoms = 0;
 
         	//for PHexHex-DGD
-//        	int totalC = cAtoms*2+15;
+//        	int totalC = cAtoms+15;
 //        	int hAtoms = totalC*2-2*dbs-1;
 //        	int oAtoms = 16;
 //        	int pAtoms = 1;
 //        	int nAtoms = 0;
         	
-        	//for PHexHeNH2-DGD
-//        	int totalC = cAtoms*2+15;
+        	//for PHexHexNH2-DGD
+//        	int totalC = cAtoms+15;
 //        	int hAtoms = totalC*2-2*dbs;
 //        	int oAtoms = 15;
 //        	int pAtoms = 1;
@@ -15520,21 +15530,21 @@ public void testTabFile() throws Exception {
 
         	
           //for GDGT
-//          int totalC = cAtoms*2+6;
+//          int totalC = cAtoms+6;
 //          int hAtoms = totalC*2-2*dbs;
 //          int oAtoms = 6;
 //          int pAtoms = 0;
 //          int nAtoms = 0;
 
         	//for PI-PI-GDGT
-//        	int totalC = cAtoms*2+18;
+//        	int totalC = cAtoms+18;
 //        	int hAtoms = totalC*2-2*dbs-2;
 //        	int oAtoms = 22;
 //        	int pAtoms = 2;
 //        	int nAtoms = 0;
 
         	//for PHex-PHexHex-GDGT
-        	int totalC = cAtoms*2+24;
+        	int totalC = cAtoms+24;
         	int hAtoms = totalC*2-2*dbs-4;
         	int oAtoms = 27;
         	int pAtoms = 2;
