@@ -15344,13 +15344,13 @@ public void testTabFile() throws Exception {
       //for PHexHex-DGD
       //String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\PHexHex-DGD_positive.xlsx";
       //for PHexHex-DGD
-      //String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\PHexHexNH2-DGD_positive.xlsx";
+      String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\PHexHexNH2-DGD_positive.xlsx";
       //for GDGT
       //String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\GDGT_positive.xlsx";
       //for PI-PI-GDGT
       //String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\PI-PI-GDGT_positive.xlsx";
       //for PHex-PHexHex-GDGT
-      String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\PHex-PHexHex-GDGT_positive.xlsx";
+      //String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\PHex-PHexHex-GDGT_positive.xlsx";
       
       
       BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(quantFile));
@@ -15366,14 +15366,14 @@ public void testTabFile() throws Exception {
       //for PHexHex-DGD
       //Sheet resultSheet = resultWorkbook.createSheet("PHexHex-DGD");
       //for PHexHexNH2-DGD
-      //Sheet resultSheet = resultWorkbook.createSheet("PHexHexNH2-DGD");
+      Sheet resultSheet = resultWorkbook.createSheet("PHexHexNH2-DGD");
       
       //for GDGT
       //Sheet resultSheet = resultWorkbook.createSheet("GDGT");
       //for PI-PI-GDGT
       //Sheet resultSheet = resultWorkbook.createSheet("PI-PI-GDGT");
       //for PHex-PHexHex-GDGT
-      Sheet resultSheet = resultWorkbook.createSheet("PHex-PHexHex-GDGT");
+      //Sheet resultSheet = resultWorkbook.createSheet("PHex-PHexHex-GDGT");
 
       
       int rowCount = 4;
@@ -15463,33 +15463,33 @@ public void testTabFile() throws Exception {
 
       //HC
 //      for (int i=30; i<41; i+=5) {
-//        for (int j=0; j!=6; j++) {
+//        for (int j=0; j!=(i/5+1); j++) {
 //          cDbsCombi.put(i, j);
 //        }
 //      }
 
       
 //      //DGD, PI-DGD, PHexHex-DGD
-//      for (int i=30; i<51; i+=5) {
-//        for (int j=0; j!=6; j++) {
-//          cDbsCombi.put(i, j);
-//        }
-//      }
-
-      //GDGT, PI-PI-GDGT
-      for (int i=80; i!=81; i++) {
-        for (int j=0; j!=17; j++) {
+      for (int i=30; i<51; i+=5) {
+        for (int j=0; j!=(i/5+1); j++) {
           cDbsCombi.put(i, j);
         }
       }
+
+      //GDGT, PI-PI-GDGT
+//      for (int i=80; i!=81; i++) {
+//        for (int j=0; j!=17; j++) {
+//          cDbsCombi.put(i, j);
+//        }
+//      }
 
       
       //for DGD, PI-DGD, PHexHex-DGD
       //for (int cAtoms=30; cAtoms<41; cAtoms+=5){
       //for DGD, PI-DGD, PHexHex-DGD
-      //for (int cAtoms=30; cAtoms<51; cAtoms+=5){
+      for (int cAtoms=30; cAtoms<51; cAtoms+=5){
       //for GDGT, PI-PI-GDGT
-      for (int cAtoms=80; cAtoms<81; cAtoms+=1){
+//      for (int cAtoms=80; cAtoms<81; cAtoms+=1){
         int dbs = 0;
         int dbsMax = cDbsCombi.get(cAtoms)+1;
         while (dbs<dbsMax){
@@ -15522,11 +15522,11 @@ public void testTabFile() throws Exception {
 //        	int nAtoms = 0;
         	
         	//for PHexHexNH2-DGD
-//        	int totalC = cAtoms+15;
-//        	int hAtoms = totalC*2-2*dbs;
-//        	int oAtoms = 15;
-//        	int pAtoms = 1;
-//        	int nAtoms = 1;
+        	int totalC = cAtoms+15;
+        	int hAtoms = totalC*2-2*dbs;
+        	int oAtoms = 15;
+        	int pAtoms = 1;
+        	int nAtoms = 1;
 
         	
           //for GDGT
@@ -15544,11 +15544,11 @@ public void testTabFile() throws Exception {
 //        	int nAtoms = 0;
 
         	//for PHex-PHexHex-GDGT
-        	int totalC = cAtoms+24;
-        	int hAtoms = totalC*2-2*dbs-4;
-        	int oAtoms = 27;
-        	int pAtoms = 2;
-        	int nAtoms = 0;
+//        	int totalC = cAtoms+24;
+//        	int hAtoms = totalC*2-2*dbs-4;
+//        	int oAtoms = 27;
+//        	int pAtoms = 2;
+//        	int nAtoms = 0;
 
 
         	int dAtoms = 0;
