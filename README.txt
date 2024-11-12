@@ -2,11 +2,16 @@
 
 Lipid Data Analyzer 2 LC=CL extension
 
-
-
 Lipid Data Analyzer 2 is released under a GNU GENERAL PUBLIC LICENSE Version 3.
 
 Licensing details can be found in the LICENSE document of this folder.
+
+This document contains compilation instrucions. Precompiled installers can be found at:
+https://genome.tugraz.at/lccl_review/lda_download.shtml
+Username: lccl
+Password: omega
+
+Detailed information about system requirements, installation guide, demo data and instructions how to run the software can be found in LDA’s user guide (LDA.pdf) located in the doc subdirectory: doc/LDA.pdf
 
 
 Project compilation:
