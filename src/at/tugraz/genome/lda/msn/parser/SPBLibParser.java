@@ -119,7 +119,7 @@ public class SPBLibParser extends FALibParser
         sheet = null;
         String hydrKey = null;
         for (String key : encodedHydroxyStrings.keySet()) {
-          if (sheetName.equalsIgnoreCase(key+SPB_SHEET_SUFFIX)) {
+          if (sheetName.equalsIgnoreCase(key+SPB_SHEET_SUFFIX) || sheetName.equalsIgnoreCase(key+LCB_SHEET_SUFFIX)) {
             sheet = workbook.getSheetAt(sheetNumber);
             hydrKey = key;
             break;
