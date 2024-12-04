@@ -460,7 +460,8 @@ public class TestClass extends JApplet implements AddScan
     //this.batchQuantByCommandLine();
     //this.groupAlexResultsByRt();
     //generateSphingolipidMassList();
-  	this.generateArcheaMassList();
+  	//this.generateArchaeaMassList();
+  	this.generateAcetlyCoAMassList();
     //generateIsoLabeledMassList();
     //parseLCBList();
     //replicateCudaBug();
@@ -15330,7 +15331,176 @@ public void testTabFile() throws Exception {
 
   }
   
-  private void generateArcheaMassList() {
+  private void generateAcetlyCoAMassList() {
+    try{
+      ElementConfigParser parser = new ElementConfigParser("elementconfig.xml");
+      parser.parse();
+    
+      String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Marcel\\20241122\\MHO06AE_MS-275_360min\\massList\\AcetylCoA_pos.xlsx";
+      
+      BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(quantFile));
+      XSSFWorkbook resultWorkbook = new XSSFWorkbook();
+      XSSFCellStyle headerStyle = getHeaderStyle(resultWorkbook);
+
+      //for AcetylCoA
+      Sheet resultSheet = resultWorkbook.createSheet("AcetylCoA");
+      
+      //for GDGT
+      //Sheet resultSheet = resultWorkbook.createSheet("GDGT");
+      //for PI-PI-GDGT
+      //Sheet resultSheet = resultWorkbook.createSheet("PI-PI-GDGT");
+      //for PHex-PHexHex-GDGT
+      //Sheet resultSheet = resultWorkbook.createSheet("PHex-PHexHex-GDGT");
+
+      
+      int rowCount = 4;
+      Row outRow = resultSheet.createRow(rowCount);
+      Cell label = outRow.createCell(0,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("Name");
+      label.setCellStyle(headerStyle);
+//      label = outRow.createCell(2,HSSFCell.CELL_TYPE_STRING);
+//      label.setCellValue("dbs");
+//      label.setCellStyle(headerStyle);
+      label = outRow.createCell(3,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("C");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(4,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("H");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(5,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("O");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(6,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("P");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(7,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("N");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(8,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("S");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(9,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("Cc");
+      label.setCellStyle(headerStyle);
+      //for all others
+      label = outRow.createCell(10,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("M");
+      label.setCellStyle(headerStyle);
+
+      
+      //for positive ion mode data
+      label = outRow.createCell(11,HSSFCell.CELL_TYPE_STRING);      
+      label.setCellValue("mass(form[+H] name[H])");
+      label.setCellStyle(headerStyle);
+      
+      //for all except for sphingoid backbone chain library
+      label = outRow.createCell(13,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("tR (min)");
+      label.setCellStyle(headerStyle);
+      rowCount++;
+      
+      Hashtable<Integer,Integer> cDbsCombi = new Hashtable<Integer,Integer>();
+
+      for (int i=23; i<24; i++) {
+        for (int j=0; j!=11; j++) {
+          cDbsCombi.put(i, j);
+        }
+      }
+      
+
+      
+      for (int cAtoms=23; cAtoms<24; cAtoms++){
+      //for GDGT, PI-PI-GDGT
+//      for (int cAtoms=80; cAtoms<81; cAtoms+=1){
+        int dbs = 0;
+        int dbsMax = cDbsCombi.get(cAtoms)+1;
+        while (dbs<dbsMax){
+          //for Acetyl-CoA
+        	
+        	int totalC = cAtoms-dbs;
+        	int hAtoms = 38;
+        	int oAtoms = 17;
+        	int pAtoms = 3;
+        	int nAtoms = 7;
+        	int sAtoms = 1;
+        	int c13Atoms = dbs;
+        	
+          //for GDGT
+//          int totalC = cAtoms+6;
+//          int hAtoms = totalC*2-2*dbs;
+//          int oAtoms = 6;
+//          int pAtoms = 0;
+//          int nAtoms = 0;
+
+        	//for PI-PI-GDGT
+//        	int totalC = cAtoms+18;
+//        	int hAtoms = totalC*2-2*dbs-2;
+//        	int oAtoms = 22;
+//        	int pAtoms = 2;
+//        	int nAtoms = 0;
+
+        	//for PHex-PHexHex-GDGT
+//        	int totalC = cAtoms+24;
+//        	int hAtoms = totalC*2-2*dbs-4;
+//        	int oAtoms = 27;
+//        	int pAtoms = 2;
+//        	int nAtoms = 0;
+
+
+        	int dAtoms = 0;
+          double massNeutral = parser.getElementDetails("C").getMonoMass()*((double)totalC)+parser.getElementDetails("H").getMonoMass()*((double)hAtoms)+
+              parser.getElementDetails("O").getMonoMass()*((double)oAtoms)+parser.getElementDetails("P").getMonoMass()*((double)pAtoms)+
+              parser.getElementDetails("N").getMonoMass()*((double)nAtoms)+parser.getElementDetails("S").getMonoMass()*((double)sAtoms)+
+              parser.getElementDetails("Cc").getMonoMass()*((double)c13Atoms);
+          
+          //for positive ion mode
+          //protonated
+          double massH = massNeutral+parser.getElementDetails("h").getMonoMass();
+
+          //for negative ion mode
+          //deprotonated
+//          double massH = massNeutral-parser.getElementDetails("h").getMonoMass();
+//          //water loss
+//          double massHCOO = massNeutral-parser.getElementDetails("h").getMonoMass()+2*parser.getElementDetails("H").getMonoMass()+parser.getElementDetails("C").getMonoMass()+2*parser.getElementDetails("O").getMonoMass();
+//          //sodiated
+//          double massCl = massNeutral+parser.getElementDetails("cl").getMonoMass();
+
+          outRow = resultSheet.createRow(rowCount);
+          label = outRow.createCell(0,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue("M"+String.valueOf(dbs));
+          label = outRow.createCell(3,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(totalC);
+          label = outRow.createCell(4,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(hAtoms);
+          label = outRow.createCell(5,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(oAtoms);
+          label = outRow.createCell(6,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(pAtoms);
+          label = outRow.createCell(7,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(nAtoms);
+          label = outRow.createCell(8,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(sAtoms);
+          label = outRow.createCell(9,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(c13Atoms);
+          label = outRow.createCell(10,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(massNeutral);
+          
+          //positive
+          label = outRow.createCell(11,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(massH);
+          dbs++;
+          rowCount++;
+        }
+      }      
+      resultWorkbook.write(out);
+      out.close();
+    } catch (Exception ex){
+      ex.printStackTrace();
+    }
+
+  }
+  
+  private void generateArchaeaMassList() {
     try{
       ElementConfigParser parser = new ElementConfigParser("elementconfig.xml");
       parser.parse();
