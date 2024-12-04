@@ -6,7 +6,7 @@ Lipid Data Analyzer 2 is released under a GNU GENERAL PUBLIC LICENSE Version 3.
 
 Licensing details can be found in the LICENSE document of this folder.
 
-This document contains compilation instrucions. Precompiled installers can be found at:
+This document contains compilation instructions. Precompiled installers can be found at:
 https://genome.tugraz.at/lccl_review/lda_download.shtml
 Username: lccl
 Password: omega
