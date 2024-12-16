@@ -30,6 +30,7 @@ import java.util.Comparator;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.StringTokenizer;
@@ -152,6 +153,12 @@ public class LDAResultReader
       new WarningMessage(new JFrame(), "ERROR", ex.getMessage());
       throw new ExcelInputFileException(ex);
     }
+    
+    //filtering out lipid classes without entries
+    resultParameterSets_ = new Hashtable<>(resultParameterSets_.entrySet().stream()
+            .filter(entry -> !entry.getValue().isEmpty())
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+    );
     
     return new QuantificationResult(resultParameterSets_,lipidomicsConstants_,msLevels_,faHydroxyEncoding_,lcbHydroxyEncoding_);
     
