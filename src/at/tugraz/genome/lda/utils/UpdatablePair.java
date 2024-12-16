@@ -24,7 +24,7 @@
 package at.tugraz.genome.lda.utils;
  
 /**
- * Pair class that is updatable in contrast to the otherwise analogous Pair class offered by javafx.
+ * Pair class that is updatable in contrast to the otherwise analogous Pair class offered by apache.
  * 
  * @author Leonida M. Lamp
  *

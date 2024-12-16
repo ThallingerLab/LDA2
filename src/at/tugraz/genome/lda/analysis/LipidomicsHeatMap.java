@@ -143,7 +143,7 @@ public class LipidomicsHeatMap
   private ArrayList<HeatMapRow> computeRows(HeatMapDrawing parent) throws CalculationNotPossibleException
   {
   	Vector<String> moleculeNames = parent.getSelectedMoleculeNames();
-  	Integer maxIsotope = Integer.parseInt((String)parent.getMaxIsotopes().getSelectedItem());
+  	Integer maxIsotope = parent.getSelectedIsotope();;
   	
   	ArrayList<HeatMapRow> rows = new ArrayList<HeatMapRow>();
     for (int j=0; j!=moleculeNames.size();j++)

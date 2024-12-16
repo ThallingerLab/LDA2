@@ -31,6 +31,11 @@ import javax.swing.JFrame;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.vos.AdductVO;
 
+/**
+ * 
+ * @author Leonida M. Lamp
+ * 
+ */
 public class AdductExporter
 {
 	private AdductVO toExport_;

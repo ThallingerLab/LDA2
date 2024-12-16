@@ -77,18 +77,40 @@ public class BatchQuantThread extends Thread
   private boolean readFromRaw_;
   int oneThird_;
   private int numberOfProcessors_;
+  private int numberOfChromProcessors_;
   private boolean areWiffPresent_;
   private Vector<RawQuantificationPairVO> generatedMzXMLsFromWiff_;
   
+  public BatchQuantThread(QuantificationMenu quantMenu,
+      int amountOfIsotopes, int isotopesMustMatch,
+      float basePeakCutoff, float rtShift, boolean ionMode, boolean cli) {
+  	this(quantMenu,
+  			Float.parseFloat(quantMenu.getTimeMinusTol().getText()),
+  			Float.parseFloat(quantMenu.getTimePlusTol().getText()),
+      amountOfIsotopes, isotopesMustMatch,
+      basePeakCutoff, rtShift, ionMode, cli);
+  }
+  
+  public BatchQuantThread(QuantificationMenu quantMenu,
+      float minusTime, float plusTime,int amountOfIsotopes, int isotopesMustMatch,
+      float basePeakCutoff, float rtShift, boolean ionMode, boolean cli) {
+  	this(quantMenu.getBatchQuantTable(),quantMenu.getBatchQuantTableModel(),
+  			quantMenu.getProgressBar(),quantMenu.getQuantifyingLabel(),
+  			minusTime, plusTime,amountOfIsotopes,isotopesMustMatch,
+  			quantMenu.getSearchUnknownTime().isSelected(),
+  			basePeakCutoff,rtShift,quantMenu.getNrProcessorsChrom(),
+  			quantMenu.getNrProcessors(),ionMode,cli);
+  }
+  
   public BatchQuantThread(BatchQuantificationTable quantTable, BatchQuantificationTableModel quantTableModel, 
-      JProgressBar progressBar, JLabel quantifyingLabel,//float mzTolerance,
+      JProgressBar progressBar, JLabel quantifyingLabel,
       float minusTime, float plusTime,int amountOfIsotopes, int isotopesMustMatch, boolean searchUnknownTime,
-      float basePeakCutoff, float rtShift, int numberOfProcessors, boolean ionMode, boolean cli) {
-    this.quantTable_ = quantTable;
+      float basePeakCutoff, float rtShift, int numberOfChromProcessors, int numberOfProcessors, boolean ionMode, boolean cli)
+  {
+  	this.quantTable_ = quantTable;
     this.quantTableModel_ = quantTableModel;
     this.progressBar_ = progressBar;
     this.quantifyingLabel_ = quantifyingLabel;
-//    this.mzTolerance_ = mzTolerance;
     this.minusTime_ = minusTime;
     this.plusTime_ = plusTime;
     currentLine_ = 0;
@@ -103,6 +125,7 @@ public class BatchQuantThread extends Thread
     this.basePeakCutoff_ = basePeakCutoff;
     rtShift_ = rtShift;
     numberOfProcessors_ = numberOfProcessors;
+    numberOfChromProcessors_ = numberOfChromProcessors;
     this.generatedMzXMLsFromWiff_ = new Vector<RawQuantificationPairVO>();
     this.areWiffPresent_ = false;
     this.ionMode_ = ionMode;
@@ -159,8 +182,7 @@ public class BatchQuantThread extends Thread
             this.readFromRaw_ = true;
             String mzXMLFilePath = filePair.getRawFile().getAbsolutePath().substring(0,filePair.getRawFile().getAbsolutePath().lastIndexOf("."))
                 +"."+LipidomicsConstants.getIntermediateFileFormat();
-            mzThread_ = new MzxmlToChromThread(mzXMLFilePath,1); //set number of processors to 1; TODO: make user input
-//            	numberOfProcessors_);
+            mzThread_ = new MzxmlToChromThread(mzXMLFilePath,numberOfChromProcessors_);
             mzThread_.start();
           }
         }
@@ -324,8 +346,7 @@ public class BatchQuantThread extends Thread
             this.quantTable_.repaint();
             this.quantifyingLabel_.setText("Translating "+filePair.getRawFileName()+" to chrom");
             this.progressBar_.setValue((this.currentLine_*100)/this.quantTableModel_.getRowCount()+oneThird_);
-            mzThread_ = new MzxmlToChromThread(filePair.getRawFile().getAbsolutePath(),1); //set number of processors to 1; TODO: make user input
-//            		numberOfProcessors_);
+            mzThread_ = new MzxmlToChromThread(filePair.getRawFile().getAbsolutePath(),numberOfChromProcessors_);
             mzThread_.start();
             threadStarted = true;
           }

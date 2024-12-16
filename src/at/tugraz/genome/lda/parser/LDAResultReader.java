@@ -30,8 +30,11 @@ import java.util.Comparator;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.StringTokenizer;
+import java.util.TreeMap;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,6 +48,7 @@ import org.dhatim.fastexcel.reader.*;
 import at.tugraz.genome.lda.LipidomicsConstants;
 import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.WarningMessage;
+import at.tugraz.genome.lda.analysis.ClassNamesExtractor;
 import at.tugraz.genome.lda.analysis.ComparativeNameExtractor;
 import at.tugraz.genome.lda.exception.ExcelInputFileException;
 import at.tugraz.genome.lda.exception.LipidCombinameEncodingException;
@@ -110,6 +114,8 @@ public class LDAResultReader
     lcbHydroxyEncoding_ = null;
     resultParameterSets_ = new Hashtable<String,Vector<LipidParameterSet>>();
     msLevels_ = new Hashtable<String,Integer>();
+    
+    
     String suffix = "";
     if (filePath!=null && filePath.length()>3)
       suffix = filePath.substring(filePath.lastIndexOf("."));
@@ -118,15 +124,25 @@ public class LDAResultReader
       throw new ExcelInputFileException("The specified file format is not supported!");
     } 
     try (InputStream is = new FileInputStream(filePath);
-        ReadableWorkbook wb = new ReadableWorkbook(is);
-        Stream<Sheet> sheets = wb.getSheets();) {
+        ReadableWorkbook wb = new ReadableWorkbook(is);) {
+    	TreeMap<String,String> map = new TreeMap<String,String>();
+    	Optional<Sheet> lipidClassSheet = wb.getSheets().filter((s) -> (s.getName().equals(QuantificationResultExporter.SHEET_LIPID_CLASS_LOOKUP))).findFirst();
+  		if (lipidClassSheet.isPresent())
+  		{
+  			map = ClassNamesExtractor.parseLipidClassSheet(lipidClassSheet.get());
+  		}
+  		final TreeMap<String,String> finalMap = map;
+  		
       //the comparator makes sure MS1 sheets and the lipidomicsConstants are read first (requirement for MSn and double bond position information)
       Comparator<Sheet> sheetComparator = (s1, s2) -> compareBySheetName(s1, s2);
-      sheets.filter((s) -> parseSheet(s, specificClass))
+      
+      
+      wb.getSheets().filter((s) -> parseSheet(s, finalMap.isEmpty() ? specificClass : specificClass == null ? null
+      		: finalMap.entrySet().stream().filter((m) -> m.getValue().equals(specificClass)).findFirst().get().getKey()))
             .sorted(sheetComparator)
             .forEach((s) -> {
               try {
-                readSheet(s, showModifications);
+                readSheet(s, showModifications, finalMap);
               } catch (SettingsException | RulesException | LipidCombinameEncodingException | IOException ex) {
                 new WarningMessage(new JFrame(), "ERROR", ex.getMessage());
               }
@@ -138,6 +154,12 @@ public class LDAResultReader
       throw new ExcelInputFileException(ex);
     }
     
+    //filtering out lipid classes without entries
+    resultParameterSets_ = new Hashtable<>(resultParameterSets_.entrySet().stream()
+            .filter(entry -> !entry.getValue().isEmpty())
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+    );
+    
     return new QuantificationResult(resultParameterSets_,lipidomicsConstants_,msLevels_,faHydroxyEncoding_,lcbHydroxyEncoding_);
     
   }
@@ -146,31 +168,50 @@ public class LDAResultReader
    * Calls the corresponding method for the individual Excel sheets
    * @param sheet the Excel sheet
    * @param showModifications this hash is filled by the method and gives information whether there are more than one modifications present; key: lipid class
+   * @param lipidClassNames
    * @throws SettingsException
    * @throws RulesException
    * @throws LipidCombinameEncodingException
    */
-  private static void readSheet(Sheet sheet, Hashtable<String,Boolean> showModifications) 
-      throws SettingsException, RulesException, LipidCombinameEncodingException, IOException {
+  private static void readSheet(Sheet sheet, Hashtable<String,Boolean> showModifications, TreeMap<String,String> lipidClassNames) 
+      throws SettingsException, RulesException, LipidCombinameEncodingException, IOException 
+  {
     String name = sheet.getName();
-    if (name.equals(QuantificationResultExporter.SHEET_CONSTANTS)){
+    if (name.equals(QuantificationResultExporter.SHEET_CONSTANTS))
+    {
       Object[] settings = readSettingsFromExcel(sheet);
       lipidomicsConstants_ = (LipidomicsConstants)settings[0];
       faHydroxyEncoding_ = (HydroxyEncoding)settings[1];
       lcbHydroxyEncoding_ = (HydroxyEncoding)settings[2];
-      
-    } else if (name.endsWith(QuantificationResultExporter.ADDUCT_MSN_SHEET)) {
-      readMSnSheet(sheet);
-      
-    } else if (name.endsWith(QuantificationResultExporter.ADDUCT_OMEGA_SHEET)) {
-      readOmegaSheet(sheet);
+    } 
+    else if (name.endsWith(QuantificationResultExporter.ADDUCT_MSN_SHEET)) 
+    {
+      readMSnSheet(sheet, buildLipidClassName(name, lipidClassNames, QuantificationResultExporter.ADDUCT_MSN_SHEET));
+    } 
+    else if (name.endsWith(QuantificationResultExporter.ADDUCT_OMEGA_SHEET)) 
+    {
+      readOmegaSheet(sheet, buildLipidClassName(name, lipidClassNames, QuantificationResultExporter.ADDUCT_OMEGA_SHEET));
       LipidParameterSet.setOmegaInformationAvailable(true);
-      
-    } else {
-      readMS1Sheet(sheet, showModifications);
-      
+    } 
+    else 
+    {
+      readMS1Sheet(sheet, showModifications, buildLipidClassName(name, lipidClassNames, null));
     }
-    
+  }
+  
+  /**
+   * returns the correct lipid class name
+   * @param sheetName						the name of the Excel sheet
+   * @param lipidClassNames
+   * @param suffix							the suffix to remove from the Excel sheet name
+   * @return
+   */
+  private static String buildLipidClassName(String sheetName, TreeMap<String,String> lipidClassNames, String suffix)
+  {
+  	String lipidClass = sheetName;
+  	if (suffix != null)
+  		lipidClass = sheetName.substring(0,sheetName.lastIndexOf(suffix));
+  	return lipidClassNames.isEmpty() ? lipidClass : lipidClassNames.get(lipidClass);
   }
 
   /**
@@ -178,13 +219,11 @@ public class LDAResultReader
    * @param sheet Constants Excel sheet
    * @throws SettingsException thrown when a settings combination is not possible
    * @return settings: [0] LipidomicsConstants object containing the parameters that were read; [1] FA hydroxylation encoding; [2] LCB hydroxylation encoding
+   * @throws IOException 
    */
-  public static Object[] readSettingsFromExcel(Sheet sheet) throws SettingsException {
+  public static Object[] readSettingsFromExcel(Sheet sheet) throws SettingsException, IOException {
     Properties properties = new Properties();
-    List<Row> rows = null;
-    try {
-      rows = sheet.read();
-    } catch (IOException ex) { }
+    List<Row> rows = sheet.read();
     Row headerRow = rows.get(QuantificationResultExporter.HEADER_ROW);
     List<Row> contentRows = rows.subList(QuantificationResultExporter.HEADER_ROW+1, rows.size());
     List<String> headerTitles = LDAResultReader.readSheetHeaderTitles(headerRow);
@@ -244,12 +283,13 @@ public class LDAResultReader
   /**
    * Reads MSn evidence from an Excel sheet. Where applicable, the results are stored in a LipidomicsMSnSet.
    * @param sheet MSn Excel sheet
+   * @param lipidClass
    * @throws RulesException 
    * @throws LipidCombinameEncodingException thrown when a lipid combi ID (containing type and OH number) cannot be decoded
+   * @throws IOException 
    */
-  private static void readMSnSheet(Sheet sheet) throws RulesException, LipidCombinameEncodingException {
+  private static void readMSnSheet(Sheet sheet, String lipidClass) throws RulesException, LipidCombinameEncodingException, IOException {
     Hashtable<String,LipidParameterSet> msHash = new Hashtable<String,LipidParameterSet>();
-    String lipidClass = sheet.getName().substring(0,sheet.getName().lastIndexOf(QuantificationResultExporter.ADDUCT_MSN_SHEET));
     Vector<LipidParameterSet> resultPrms = resultParameterSets_.get(lipidClass);
     resultPrms.stream().forEach((p) -> msHash.put(p.getNamePlusModHumanReadable(), p));
     
@@ -326,11 +366,7 @@ public class LDAResultReader
     char unknownPosSep = LipidomicsConstants.CHAIN_SEPARATOR_NO_POS.toCharArray()[0];
     
     
-    List<Row> rows = null;
-    try {
-      rows = sheet.read();
-    } catch (IOException ex) {}
-    
+    List<Row> rows = sheet.read();
     
     int lastRow = rows.get(rows.size()-1).getRowNum();
     //To mimic empty rows as these are delimiters of entries (empty rows are not read in)
@@ -953,18 +989,16 @@ public class LDAResultReader
   /**
    * Reads double bond position evidence from an Excel sheet. The results are stored in a Vector of DoubleBondPositionVOs for each LipidParameterSet.
    * @param sheet Omega Excel sheet
+   * @param lipidClass
+   * @throws IOException 
    */
-  private static void readOmegaSheet(Sheet sheet) {
-    String lipidClass = sheet.getName().replace(QuantificationResultExporter.ADDUCT_OMEGA_SHEET, "");
+  private static void readOmegaSheet(Sheet sheet, String lipidClass) throws IOException {
     Hashtable<String,LipidParameterSet> msHash = new Hashtable<String,LipidParameterSet>();
     for (LipidParameterSet param : resultParameterSets_.get(lipidClass)){
       msHash.put(param.getNamePlusModHumanReadable(), param);
     }
     
-    List<Row> rows = null;
-    try {
-      rows = sheet.read();
-    } catch (IOException ex) {}
+    List<Row> rows = sheet.read();
     Row headerRow = rows.get(QuantificationResultExporter.HEADER_ROW);
     List<String> headerTitles = readSheetHeaderTitles(headerRow);
     List<Row> contentRows = rows.subList(QuantificationResultExporter.HEADER_ROW+1, rows.size());
@@ -1021,16 +1055,17 @@ public class LDAResultReader
    * Reads MS1 evidence from an Excel sheet. The results are stored in a Vector of LipidParameterSets.
    * @param sheet MS1 Excel sheet
    * @param showModifications this hash is filled by the method and gives information whether there are more than one modifications present; key: lipid class
+   * @param lipidClass
+   * @throws IOException 
    */
-  private static void readMS1Sheet(Sheet sheet, Hashtable<String,Boolean> showModifications) throws IOException
+  private static void readMS1Sheet(Sheet sheet, Hashtable<String,Boolean> showModifications, String lipidClass) throws IOException
   {
     int msLevel=1;
     Vector<LipidParameterSet> resultParams = new Vector<LipidParameterSet>();
     LipidParameterSet params = null;
     boolean showModification = false;
     Hashtable<String,String> analyteNames = new Hashtable<String,String>();
-    List<Row> rows = null;
-    rows = sheet.read();
+    List<Row> rows = sheet.read();
     Row headerRow = rows.get(QuantificationResultExporter.HEADER_ROW);
     List<String> headerTitles = readSheetHeaderTitles(headerRow);
     for (String title : headerTitles) {
@@ -1260,9 +1295,9 @@ public class LDAResultReader
         }
       }
     }
-    resultParameterSets_.put(sheet.getName(), resultParams);
-    showModifications.put(sheet.getName(), showModification);
-    msLevels_.put(sheet.getName(), msLevel);
+    resultParameterSets_.put(lipidClass, resultParams);
+    showModifications.put(lipidClass, showModification);
+    msLevels_.put(lipidClass, msLevel);
   }
   
   
@@ -1331,7 +1366,8 @@ public class LDAResultReader
           name.equals(specificClass+QuantificationResultExporter.ADDUCT_OMEGA_SHEET)) {
         parseSheet = true;
       }
-    } else if (!name.endsWith(QuantificationResultExporter.ADDUCT_OVERVIEW_SHEET)) {
+    } else if (!name.endsWith(QuantificationResultExporter.ADDUCT_OVERVIEW_SHEET) &&
+    					 !name.endsWith(QuantificationResultExporter.SHEET_LIPID_CLASS_LOOKUP)) {
       parseSheet = true;
     }
     return parseSheet;

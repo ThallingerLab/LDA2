@@ -6,8 +6,7 @@ DoubleBondsFromName=\D*\d+:(\d+)
 BasePeakCutoff=0.02%
 ChainCutoff=60%
 RetentionTimePostprocessing=true
-ValidOnlyWithOtherAdduct=H
-OtherAdductValidityTolerance=0.1
+
 
 [HEAD]
 !FRAGMENTS
