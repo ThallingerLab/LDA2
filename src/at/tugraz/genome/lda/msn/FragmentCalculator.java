@@ -181,13 +181,14 @@ public class FragmentCalculator
         String lcbLib = null;
         if (lcbChains>0) lcbLib = RulesContainer.getLcbLibrary(ruleName_,rulesDir_);
         calculatePossibleFaLcbHydroxyCombinations(fattyChains,lcbChains);
-        int cAtoms = getIntValueFromParsingRule(RulesContainer.getCAtomsFromNamePattern(ruleName_,rulesDir_), analyteName_, ruleName_, FragRuleParser.GENERAL_CATOMS_PARSE);
-        int dbs = getIntValueFromParsingRule(RulesContainer.getDoubleBondsFromNamePattern(ruleName_,rulesDir_), analyteName_, ruleName_, FragRuleParser.GENERAL_DBOND_PARSE);
-        if (LipidomicsConstants.checkChainLabelCombination()) {
-          this.labelInName_ = this.analyteName_.substring(0,this.analyteName_.indexOf(String.valueOf(cAtoms)));
-        }
+        if (amountOfChains >0) {
+          int cAtoms = getIntValueFromParsingRule(RulesContainer.getCAtomsFromNamePattern(ruleName_,rulesDir_), analyteName_, ruleName_, FragRuleParser.GENERAL_CATOMS_PARSE);
+          int dbs = getIntValueFromParsingRule(RulesContainer.getDoubleBondsFromNamePattern(ruleName_,rulesDir_), analyteName_, ruleName_, FragRuleParser.GENERAL_DBOND_PARSE);
+          if (LipidomicsConstants.checkChainLabelCombination()) {
+            this.labelInName_ = this.analyteName_.substring(0,this.analyteName_.indexOf(String.valueOf(cAtoms)));
+          }
         
-        checkChainsForPlausibility(chainLib,lcbLib,cAtoms,dbs,alkylChains>0,alkenylChains>0);
+          checkChainsForPlausibility(chainLib,lcbLib,cAtoms,dbs,alkylChains>0,alkenylChains>0);
         
         
 //        for (String label : this.availableSingleLabels_) {
@@ -218,7 +219,8 @@ public class FragmentCalculator
           }
         }
 */
-        extractPotentialChainCombinations(amountOfChains,fattyChains,lcbChains,acylChains,alkylChains,alkenylChains,cAtoms,dbs);
+          extractPotentialChainCombinations(amountOfChains,fattyChains,lcbChains,acylChains,alkylChains,alkenylChains,cAtoms,dbs);
+        }
       } catch (NoRuleException nrx){
         throw new RulesException("Error in rule \""+ruleName_+"\"! "+nrx.getMessage());
       }

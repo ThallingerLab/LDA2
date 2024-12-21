@@ -536,8 +536,10 @@ public class FragRuleParser
   private void checkIfGeneralValuesAreThere() throws RulesException {
     if (!generalSettings_.containsKey(GENERAL_CHAINS)) throw new RulesException("The rules file must contain the property \""+GENERAL_CHAINS+"\" in the "+GENERAL_SECTION_NAME+" section!");
     if (!generalSettings_.containsKey(GENERAL_MS2_LIB)) throw new RulesException("The rules file must contain the property \""+GENERAL_MS2_LIB+"\" in the "+GENERAL_SECTION_NAME+" section!");
-    if (!generalSettings_.containsKey(GENERAL_CATOMS_PARSE)) throw new RulesException("The rules file must contain the property \""+GENERAL_CATOMS_PARSE+"\" in the "+GENERAL_SECTION_NAME+" section!");
-    if (!generalSettings_.containsKey(GENERAL_DBOND_PARSE)) throw new RulesException("The rules file must contain the property \""+GENERAL_DBOND_PARSE+"\" in the "+GENERAL_SECTION_NAME+" section!");
+    if (foundChains_) {
+      if (!generalSettings_.containsKey(GENERAL_CATOMS_PARSE)) throw new RulesException("The rules file must contain the property \""+GENERAL_CATOMS_PARSE+"\" in the "+GENERAL_SECTION_NAME+" section!");
+      if (!generalSettings_.containsKey(GENERAL_DBOND_PARSE)) throw new RulesException("The rules file must contain the property \""+GENERAL_DBOND_PARSE+"\" in the "+GENERAL_SECTION_NAME+" section!");
+    }
     int amountOfChains =  Integer.parseInt(getAmountOfChains());
     int amountOfAlkylChains = Integer.parseInt(getAmountOfAlkylChains());
     int amountOfAlkenylChains = Integer.parseInt(getAmountOfAlkenylChains());

@@ -397,14 +397,18 @@ public class MSnAnalyzer
     basePeakValues_ = calculateBasePeakValuesIfRequired(msLevels);
     checkHeadGroupFragments(probesWithMSnSpectra_);
     if (status_== LipidomicsMSnSet.DISCARD_HIT && !debug_) return;
-    checkChainFragments(probesWithMSnSpectra_);
-    if (debug_) debugVO_.setSpectrumCoverageFulfilled(true);
-    checkSpectrumCoverage(msLevels);
-    if (status_!= LipidomicsMSnSet.FRAGMENTS_DETECTED && !debug_) return;
-    if (fragCalc_.getAllowedChainPositions()>1) {
-      try {checkPositions();
-      }catch (LipidCombinameEncodingException e) {throw new RulesException(e);}
-    }else if (status_!=LipidomicsMSnSet.DISCARD_HIT)status_ = LipidomicsMSnSet.POSITION_DETECTED;
+    if (fragCalc_.getAmountOfChains()>0) {
+      checkChainFragments(probesWithMSnSpectra_);
+      if (debug_) debugVO_.setSpectrumCoverageFulfilled(true);
+      checkSpectrumCoverage(msLevels);
+      if (status_!= LipidomicsMSnSet.FRAGMENTS_DETECTED && !debug_) return;
+      if (fragCalc_.getAllowedChainPositions()>1) {
+        try {checkPositions();
+        }catch (LipidCombinameEncodingException e) {throw new RulesException(e);}
+      }else if (status_!=LipidomicsMSnSet.DISCARD_HIT)status_ = LipidomicsMSnSet.POSITION_DETECTED;
+    }else {
+      checkSpectrumCoverage(msLevels);
+    }
   }
   
 
