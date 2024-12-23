@@ -23,6 +23,7 @@
 
 package at.tugraz.genome.lda.quantification;
 
+//import java.awt.Color;
 //import java.io.BufferedOutputStream;
 //import java.io.FileOutputStream;
 import java.io.IOException;
@@ -38,7 +39,10 @@ import java.util.Vector;
 //
 //import org.jfree.chart.ChartFactory;
 //import org.jfree.chart.JFreeChart;
+//import org.jfree.chart.StandardChartTheme;
 //import org.jfree.chart.plot.PlotOrientation;
+//import org.jfree.chart.plot.XYPlot;
+//import org.jfree.chart.renderer.xy.XYItemRenderer;
 //import org.jfree.data.xy.XYSeries;
 //import org.jfree.data.xy.XYSeriesCollection;
 
@@ -2836,8 +2840,8 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
 //      System.out.println("Reading from file");
       LipidomicsChromatogram  profile = readASingleProfile(aProbe,msLevel,true);
       
-//      this.printChromaToFile(profile, "D:\\Christer\\20170310\\test2\\profsmall.JPG");
-//      this.printChromaToFile(profile, "D:\\Christer\\20170310\\test2\\profraw.JPG",1);
+//      this.printChromaToFile(profile, "E:\\Lipidomics\\LDA-Collaborations\\Koeberle\\20241219\\profsmall.png");
+//      this.printChromaToFile(profile, "E:\\Lipidomics\\LDA-Collaborations\\Koeberle\\20241219\\profraw.png",1);
       
       profile.GetMaximumAndAverage();
       // these are specific paramaters for the Greedy-Algorithm for detection of peak borders
@@ -2952,11 +2956,11 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
 //  this.printChromaToFile(profile, "E:\\lipidomics\\20130502\\12_1_profsmall.JPG");
 //  this.printChromaToFile(profile, "E:\\lipidomics\\20130502\\12_1_profraw.JPG",1);
 
-//    this.printChromaToFile(smallChroma, "D:\\Experiment1\\QTOF\\smallChromraw.JPG",1);
-//    this.printChromaToFile(smallChroma, "D:\\Experiment1\\QTOF\\smallChrom.JPG");
+//    this.printChromaToFile(smallChroma, "E:\\Lipidomics\\LDA-Collaborations\\Koeberle\\20241219\\smallChromraw.JPG",1);
+//    this.printChromaToFile(smallChroma, "E:\\Lipidomics\\LDA-Collaborations\\Koeberle\\20241219\\smallChrom.JPG");
 //    
-//    this.printChromaToFile(broadChroma, "D:\\Experiment1\\QTOF\\broadChromraw.JPG",1);
-//    this.printChromaToFile(broadChroma, "D:\\Experiment1\\QTOF\\broadChrom.JPG");
+//    this.printChromaToFile(broadChroma, "E:\\Lipidomics\\LDA-Collaborations\\Koeberle\\20241219\\broadChromraw.JPG",1);
+//    this.printChromaToFile(broadChroma, "E:\\Lipidomics\\LDA-Collaborations\\Koeberle\\20241219\\broadChrom.JPG");
     if (!smallChroma.Good) throw new QuantificationException("The exact chromatogram (small) does not show satisfying intensities");
     CgProbe smallProbe = new CgProbe(0,charge);
     smallProbe = LipidomicsAnalyzer.copyResults(smallProbe, smallChroma, false);
@@ -3305,15 +3309,19 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
 //  
 //    XYSeries series1 = new XYSeries("Chrom small");
 //    for (int j=0;j!=cx.ScanCount;j++){
-////      if (cx.Value[j][0]<782.55f)
-//      series1.add(cx.Value[j][0],cx.Value[j][value]);
+//      if ((10f*60f)<cx.Value[j][0] && cx.Value[j][0]<(13f*60f))
+//      	series1.add(cx.Value[j][0],cx.Value[j][value]);
 //    }
 //    XYSeriesCollection coll1 = new XYSeriesCollection(series1);
+//    ChartFactory.setChartTheme(StandardChartTheme.createLegacyTheme());
 //    JFreeChart chart1 = ChartFactory.createXYLineChart("Chrom small","time","Intensity",coll1,PlotOrientation.VERTICAL,true,false,false);
+//    XYPlot xyPlot = chart1.getXYPlot();
+//    XYItemRenderer renderer = xyPlot.getRenderer();
+//    renderer.setSeriesPaint(0, Color.black);    
 //    BufferedOutputStream stream;
 //    try {
 //      stream = new BufferedOutputStream(new FileOutputStream(pathName));
-//      ImageIO.write(chart1.createBufferedImage(1000, 700), "JPEG", stream);
+//      ImageIO.write(chart1.createBufferedImage(1000, 700), "PNG", stream);
 //      stream.close();
 //    }
 //    catch (IOException e) {
