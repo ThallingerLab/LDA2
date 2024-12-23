@@ -245,7 +245,7 @@ public class LipidomicsConstants
   private float smallChromIntensityCutoff_;
   private int broadChromSmoothRepeats_;
   private int broadChromMeanSmoothRepeats_;
-  private int broadChromSmoothRange_;
+  private float broadChromSmoothRange_;
   private float broadChromIntensityCutoff_;
   private float broadChromSteepnessChangeNoSmall_;
   private float broadChromIntensityCutoffNoSmall_;
@@ -698,7 +698,7 @@ public class LipidomicsConstants
     smallChromIntensityCutoff_ = Float.parseFloat(properties.getProperty(SMALL_CHROM_INT_CUTOFF,SMALL_CHROM_INT_CUTOFF_DEFAULT));
     broadChromSmoothRepeats_ = Integer.parseInt(properties.getProperty(BROAD_CHROM_SMOOTH_REPEATS,BROAD_CHROM_SMOOTH_REPEATS_DEFAULT));
     broadChromMeanSmoothRepeats_ = Integer.parseInt(properties.getProperty(BROAD_CHROM_MEAN_SMOOTH_REPEATS,BROAD_CHROM_MEAN_SMOOTH_REPEATS_DEFAULT));
-    broadChromSmoothRange_ = Integer.parseInt(properties.getProperty(BROAD_CHROM_SMOOTH_RANGE,BROAD_CHROM_SMOOTH_RANGE_DEFAULT));
+    broadChromSmoothRange_ = Float.parseFloat(properties.getProperty(BROAD_CHROM_SMOOTH_RANGE,BROAD_CHROM_SMOOTH_RANGE_DEFAULT));
     broadChromIntensityCutoff_ = Float.parseFloat(properties.getProperty(BROAD_CHROM_INT_CUTOFF,BROAD_CHROM_INT_CUTOFF_DEFAULT));
     broadChromSteepnessChangeNoSmall_ = Float.parseFloat(properties.getProperty(BROAD_CHROM_STEEPNESS_CHANGE_NO_SMALL,BROAD_CHROM_STEEPNESS_CHANGE_NO_SMALL_DEFAULT));
     broadChromIntensityCutoffNoSmall_ = Float.parseFloat(properties.getProperty(BROAD_CHROM_INT_CUTOFF_NO_SMALL,BROAD_CHROM_INT_CUTOFF_NO_SMALL_DEFAULT));

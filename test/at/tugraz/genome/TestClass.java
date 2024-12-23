@@ -93,37 +93,37 @@ import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-//import org.jfree.chart.StandardChartTheme;
-//import org.jfree.chart.axis.LogAxis;
-//import org.jfree.chart.ChartFactory;
-//import org.jfree.chart.ChartPanel;
-//import org.jfree.chart.JFreeChart;
-//import org.jfree.chart.StandardChartTheme;
-//import org.jfree.chart.axis.LogAxis;
-//import org.jfree.chart.axis.LogarithmicAxis;
-//import org.jfree.chart.axis.NumberAxis;
-//import org.jfree.chart.axis.NumberTickUnit;
-//import org.jfree.chart.axis.ValueAxis;
-//import org.jfree.chart.plot.PlotOrientation;
-//import org.jfree.chart.plot.XYPlot;
-//import org.jfree.chart.renderer.xy.XYItemRenderer;
-//import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
-//import org.jfree.data.category.DefaultCategoryDataset;
-//import org.jfree.data.xy.XYSeries;
-//import org.jfree.data.xy.XYSeriesCollection;
-//import org.jfree.chart.ChartFactory;
-//import org.jfree.chart.JFreeChart;
-//import org.jfree.chart.plot.PlotOrientation;
-//import org.jfree.chart.plot.Zoomable;
-//import org.jfree.data.xy.XYSeries;
-//import org.jfree.data.xy.XYSeriesCollection;
-//import org.jfree.chart.ChartFactory;
-//import org.jfree.chart.JFreeChart;
-//import org.jfree.chart.plot.PlotOrientation;
-//import org.jfree.chart.plot.XYPlot;
-//import org.jfree.chart.renderer.xy.XYBarRenderer;
-//import org.jfree.data.xy.XYSeries;
-//import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.chart.StandardChartTheme;
+import org.jfree.chart.axis.LogAxis;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.StandardChartTheme;
+import org.jfree.chart.axis.LogAxis;
+import org.jfree.chart.axis.LogarithmicAxis;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.NumberTickUnit;
+import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.data.category.DefaultCategoryDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.Zoomable;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYBarRenderer;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import org.xml.sax.SAXException;
 
 
@@ -451,7 +451,7 @@ public class TestClass extends JApplet implements AddScan
     //this.readAlex123File();
     //this.startQuantitationWithAlex123File();
     //this.readIndexFile();
-    //this.readRttFile();
+    this.readRttFile();
     //this.detectMsnByAlex123();
     //this.mergeIdx2();
     //this.faSummaryConverter();
@@ -461,7 +461,7 @@ public class TestClass extends JApplet implements AddScan
     //this.groupAlexResultsByRt();
     //generateSphingolipidMassList();
   	//this.generateArchaeaMassList();
-  	this.generateAcetlyCoAMassList();
+  	//this.generateAcetlyCoAMassList();
     //generateIsoLabeledMassList();
     //parseLCBList();
     //replicateCudaBug();
@@ -14600,7 +14600,7 @@ public void testTabFile() throws Exception {
   }
   
   private void readRttFile(){
-    String rttFilePath = "D:\\shotgun\\20180206\\050_Shotgun1_IS_negative.chrom\\050_Shotgun1_IS_negative.rtt";
+    String rttFilePath = "E:\\Lipidomics\\LDA-Collaborations\\Koeberle\\20241219\\LM_Mix_C1-LM_Mix C1.chrom\\LM_Mix_C1-LM_Mix C1.rtt2";
     DataInputStream inStream = null;
     try{
       inStream = new DataInputStream(new FileInputStream(rttFilePath));
@@ -14608,11 +14608,12 @@ public void testTabFile() throws Exception {
       while (inStream.available()>0){
         int currentLine = inStream.readInt();
         float time = inStream.readFloat();
-        System.out.println(currentLine+": "+time);
+        System.out.println(currentLine+": "+(time/60f));
 //          cachedLine.put(new Integer(count), new Integer(currentLine));
 //          cachedIndex.put(new Integer(count), new Long(bytesToSkip));
         count++;
       }
+      System.out.println("Nr of MS1 scans: "+count);
     }catch(Exception iox){
       iox.printStackTrace();;
     }finally{
@@ -22241,10 +22242,10 @@ public void testTabFile() throws Exception {
       e.printStackTrace();
     }
   }
- 
+ */
   
   private void printMichaelisMenten(){
-    String pathName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\Pruefungen\\21-22\\20220429\\images\\MichaelisMenten_B.png";
+    String pathName = "E:\\Lipidomics\\LDA-Collaborations\\Koeberle\\20241219\\MichaelisMenten_B.png";
     String chartName = "";
     String series1Name = "";
 
@@ -22337,7 +22338,7 @@ public void testTabFile() throws Exception {
     }    
   } 
 
-
+/****
   private void printLineweaverBurk(){
     String pathName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\Pruefungen\\21-22\\20220613\\images\\Frage16_B.png";
     String chartName = "";
