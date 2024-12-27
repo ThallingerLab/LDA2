@@ -13,4 +13,4 @@ Name=Precursor	Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=false
 Name=NL_Head	Formula=$PRECURSOR-C9H16O	Charge=1	MSLevel=2	mandatory=true
 
 !INTENSITIES
-Equation=NL_Head>0.01*$BASEPEAK					mandatory=true
+Equation=NL_Head>0.001*$BASEPEAK					mandatory=true
