@@ -1,0 +1,23 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.01%
+ChainCutoff=60%
+RetentionTimePostprocessing=true
+SpectrumCoverage=0.5%
+SingleChainIdentification=true
+ValidOnlyWithOtherAdduct=Na|H
+OtherAdductValidityTolerance=0.4
+
+[HEAD]
+!FRAGMENTS
+Name=NL_PIhead_260	Formula=$PRECURSOR-C6H16O9PN	Charge=1	MSLevel=2	mandatory=true
+Name=Precursor		Formula=$PRECURSOR	Charge=1	MSLevel=2	mandatory=false
+
+
+[CHAINS]
+!FRAGMENTS
+Name=Carboxy_OH		Formula=$CHAIN-OH			Charge=1	MSLevel=2	mandatory=false
+Name=NL-Ketene_head	Formula=NL_PIhead_260-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false
