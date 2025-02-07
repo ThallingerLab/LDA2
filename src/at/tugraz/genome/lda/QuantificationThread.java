@@ -262,6 +262,7 @@ public class QuantificationThread extends Thread
     }else{
       analyzer.set3DParameters(LipidomicsConstants.getChromSmoothRange(),LipidomicsConstants.getChromSmoothRepeats(),
         LipidomicsConstants.removeIfOtherIsotopePresent(),LipidomicsConstants.useNoiseCutoff(), LipidomicsConstants.getNoiseCutoffDeviationValue(),
+        LipidomicsConstants.useDynamicNoiseCutoff(),
         LipidomicsConstants.getMinimumRelativeIntensity(), LipidomicsConstants.getScanStep(),
         LipidomicsConstants.getProfileMzRange(), LipidomicsConstants.getProfileTimeTolerance_(),
         LipidomicsConstants.getProfileIntThreshold_(), LipidomicsConstants.getBroaderProfileTimeTolerance_(),

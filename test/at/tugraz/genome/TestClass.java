@@ -2972,6 +2972,7 @@ public class TestClass extends JApplet implements AddScan
   private void setStandardParameters(LipidomicsAnalyzer lAnalyzer){
     lAnalyzer.set3DParameters(LipidomicsConstants.getChromSmoothRange(),LipidomicsConstants.getChromSmoothRepeats(),
         LipidomicsConstants.removeIfOtherIsotopePresent(),LipidomicsConstants.useNoiseCutoff(), LipidomicsConstants.getNoiseCutoffDeviationValue(), 
+        LipidomicsConstants.useDynamicNoiseCutoff(),
         LipidomicsConstants.getMinimumRelativeIntensity(), LipidomicsConstants.getScanStep(),
         LipidomicsConstants.getProfileMzRange(), LipidomicsConstants.getProfileTimeTolerance_(),
         LipidomicsConstants.getProfileIntThreshold_(), LipidomicsConstants.getBroaderProfileTimeTolerance_(),
@@ -14600,7 +14601,7 @@ public void testTabFile() throws Exception {
   }
   
   private void readRttFile(){
-    String rttFilePath = "E:\\Lipidomics\\LDA-Collaborations\\Koeberle\\20241219\\LM_Mix_C1-LM_Mix C1.chrom\\LM_Mix_C1-LM_Mix C1.rtt2";
+    String rttFilePath = "E:\\Lipidomics\\LDA-Collaborations\\Evelyn\\LC_CL_verfication\\20250206_testEAD\\CID\\250129_SRM1950_60min_CID_01.chrom\\250129_SRM1950_60min_CID_01.rtt";
     DataInputStream inStream = null;
     try{
       inStream = new DataInputStream(new FileInputStream(rttFilePath));

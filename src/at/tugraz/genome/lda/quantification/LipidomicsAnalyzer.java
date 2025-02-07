@@ -139,6 +139,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
   private int chromSmoothRepeats_ = 10;
   private boolean removeIfOtherIsotopePresent_ = true; 
   private boolean useNoiseCutoff_;
+  private boolean useDynamicNoiseCutoff_;
   private float noiseCutoffDeviationValue_;
   private Float minimumRelativeIntensity_;
   private int scanStep_;
@@ -230,6 +231,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     this.coarseChromMzTolerance_ = 0.02f;
     this.removeIfOtherIsotopePresent_ = true;
     this.useNoiseCutoff_ = false;
+    this.useDynamicNoiseCutoff_ = false;
     this.noiseCutoffDeviationValue_ = 2f;
     this.scanStep_ = 1;
     this.chromSmoothRange_= 0.5f;
@@ -286,7 +288,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
   }
   
   public void set3DParameters(float chromSmoothRange, int chromSmoothRepeats, boolean removeIfOtherIsotopePresent,
-      boolean useNoiseCutoff, float noiseCutoffDeviationValue, Float minimumRelativeIntensity, int scanStep, float profileMzRange, float profileTimeTolerance,
+      boolean useNoiseCutoff, float noiseCutoffDeviationValue, boolean useDynamicNoiseCutoff, Float minimumRelativeIntensity, int scanStep, float profileMzRange, float profileTimeTolerance,
       float profileIntThreshold, float broaderProfileTimeTolerance,
       float profileSmoothRange, int profileSmoothRepeats, int profileMeanSmoothRepeats, float profileMzMinRange, float profileSteepnessChange1, float profileSteepnessChange2,
       float profileIntensityCutoff1, float profileIntensityCutoff2, float profileGeneralIntCutoff, float profilePeakAcceptanceRange, float profileSmoothingCorrection,
@@ -303,6 +305,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     this.removeIfOtherIsotopePresent_ = removeIfOtherIsotopePresent;
     this.chromSmoothRepeats_ = chromSmoothRepeats;
     this.useNoiseCutoff_ = useNoiseCutoff;
+    this.useDynamicNoiseCutoff_ = useDynamicNoiseCutoff;
     this.noiseCutoffDeviationValue_ = noiseCutoffDeviationValue;
     this.minimumRelativeIntensity_ = minimumRelativeIntensity;
     this.scanStep_ = scanStep;
@@ -791,8 +794,11 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
 
     if (useNoiseCutoff_)
       this.calculateNoiseCutoffValue(chrom);
+    if (useDynamicNoiseCutoff_)
+    	this.setDynamicNoiseCutoff(chrom);
     if (minimumRelativeIntensity_!=null)
       this.calculateMinIntThreshold(chrom);
+    ////System.out.println("this.lowerIntensityThreshold_: "+this.lowerIntensityThreshold_);
     chromHash_.put(0, chrom);
     Vector<Vector<CgProbe>> both = scanForHits(chrom,previousIsoChrom,possibleIsoLowerMinimum,charge,msLevel,retentionTime, retentionTimes, prevTimeTolerance, afterTimeTolerance, timeType);
     // stores all probes that originate from a different isotope
@@ -4294,6 +4300,17 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     }
     if (lowerIntensityThreshold_<highestValue *this.minimumRelativeIntensity_) lowerIntensityThreshold_ = highestValue *this.minimumRelativeIntensity_.floatValue();
   }
+  
+  /**
+   * calculates the dynamic noise cufoff of a chromotogram, and increased the lowerIntensityThreshold_ if the noise level is higher than the current one
+   * @param chrom the chromatogram where the noise level shall be calculated
+   */
+  private void setDynamicNoiseCutoff(LipidomicsChromatogram chrom){
+  	float noiseLevel =  chrom.estimateChromatogramNoise();
+    if (lowerIntensityThreshold_<noiseLevel) lowerIntensityThreshold_ = noiseLevel;
+  	
+  }
+  
   
   public CgProbe getProbeByManualSettings(LipidomicsChromatogram cr, boolean is3D, double startTime, double stopTime, double startMz, double stopMz, int charge, int msLevel)throws CgException{
     double timeCenter = (startTime+stopTime)/2d;

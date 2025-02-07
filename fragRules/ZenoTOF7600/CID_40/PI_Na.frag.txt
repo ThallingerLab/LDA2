@@ -6,7 +6,7 @@ DoubleBondsFromName=\D*\d+:(\d+)
 BasePeakCutoff=0.01%
 RetentionTimePostprocessing=true
 SpectrumCoverage=10%
-ValidOnlyWithOtherAdduct=H|-OH
+ValidOnlyWithOtherAdduct=H|NH4
 OtherAdductValidityTolerance=0.4
 
 [HEAD]
