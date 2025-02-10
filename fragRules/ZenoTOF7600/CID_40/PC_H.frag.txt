@@ -9,17 +9,21 @@ SpectrumCoverage=5%
 
 [HEAD]
 !FRAGMENTS
-Name=PChead_104		Formula=C5H14NO			Charge=1	MSLevel=2	mandatory=false
-Name=PChead_125		Formula=C2H6O4P			Charge=1	MSLevel=2	mandatory=false
-Name=PChead_184		Formula=C5H15NO4P		Charge=1	MSLevel=2	mandatory=true
-Name=Precursor		Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=false
-Name=NL-Na_wrong	Formula=$PRECURSOR-P1O4C5N1H14	Charge=1	MSLevel=2	mandatory=other
-Name=NL-triMeth		Formula=$PRECURSOR-NC3H9	Charge=1	MSLevel=2	mandatory=other
+Name=PChead_104			Formula=C5H14NO			Charge=1	MSLevel=2	mandatory=false
+Name=PChead_125			Formula=C2H6O4P			Charge=1	MSLevel=2	mandatory=false
+Name=PChead_184			Formula=C5H15NO4P		Charge=1	MSLevel=2	mandatory=true
+Name=Precursor			Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=false
+Name=NL-Na_wrong		Formula=$PRECURSOR-P1O4C5N1H14	Charge=1	MSLevel=2	mandatory=other
+Name=NL-triMeth			Formula=$PRECURSOR-NC3H9	Charge=1	MSLevel=2	mandatory=other
+Name=NL_PEhead_141_WRONG	Formula=$PRECURSOR-C2H8NO4P	Charge=1	MSLevel=2	mandatory=other
+
 
 !INTENSITIES
 Equation=PChead_184>0.2*$BASEPEAK	mandatory=true
 Equation=NL-Na_wrong<0.2*$BASEPEAK	mandatory=true
 Equation=PChead_184*0.2>NL-Na_wrong+NL-triMeth	mandatory=true
+Equation=0.4*PChead_184>NL_PEhead_141_WRONG	mandatory=true
+
 
 
 [CHAINS]
