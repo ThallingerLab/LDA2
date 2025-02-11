@@ -32,6 +32,6 @@ Name=NL_Ketene-Head	Formula=$PRECURSOR-$CHAIN+H2O-C3H9N	Charge=1	MSLevel=2	manda
 Name=NL_Carboxy_Head	Formula=$PRECURSOR-$CHAIN-NC3H9		Charge=1	MSLevel=2	mandatory=false
 
 !INTENSITIES
-Equation=NL_Carboxy+NL_Carboxy_Head+NL_Carboxy-Na+NL_Ketene-Head*0>0*$BASEPEAK	mandatory=false
+Equation=NL_Carboxy|NL_Carboxy_Head|NL_Carboxy-Na	mandatory=true
 
 
