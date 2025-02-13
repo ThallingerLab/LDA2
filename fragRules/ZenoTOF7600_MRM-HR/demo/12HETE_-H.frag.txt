@@ -1,0 +1,16 @@
+[GENERAL]
+AmountOfChains=0
+ChainLibrary=fattyAcidChains.xlsx
+BasePeakCutoff=0.01%
+RetentionTimePostprocessing=false
+SpectrumCoverage=2%
+
+
+
+[HEAD]
+!FRAGMENTS
+Name=Precursor	Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=false
+Name=NL_Head	Formula=C11H15O2	Charge=1	MSLevel=2	mandatory=quant
+
+!INTENSITIES
+Equation=NL_Head>0.002*$BASEPEAK					mandatory=true

@@ -688,7 +688,8 @@ public class MassListParser
     }
     myxls.close();
     if (!excelOK) throw new ExcelInputFileException("The Excel file is not valid!");
-    checkForIsobaricSpecies(classSequence_,analyteSequence_,quantObjects_);
+    if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_PRM)
+    	checkForIsobaricSpecies(classSequence_,analyteSequence_,quantObjects_);
   }
   
   @Deprecated
@@ -787,7 +788,8 @@ public class MassListParser
       adductInsensitiveRtFilter_.put(className, false);
       bestMatchBySpectrumCoverage_.put(className, false);
     }
-    checkForIsobaricSpecies(classSequence_,analyteSequence_,quantObjects_);
+    if (LipidomicsConstants.isShotgun()!=LipidomicsConstants.SHOTGUN_PRM)
+    	checkForIsobaricSpecies(classSequence_,analyteSequence_,quantObjects_);
     //TODO: these few lines are only for testing purposes
 //    classSequence = new LinkedHashMap<String,Integer>();
 //    classSequence.put("TAG", 1);
