@@ -20,4 +20,4 @@ Name=Precursor		Formula=$PRECURSOR	Charge=1	MSLevel=2	mandatory=false
 [CHAINS]
 !FRAGMENTS
 Name=Carboxy_OH		Formula=$CHAIN-OH			Charge=1	MSLevel=2	mandatory=false
-Name=NL-Ketene_head	Formula=NL_PIhead_260-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false
+Name=NL-Ketene_head	Formula=NL_PIhead_260-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=true
