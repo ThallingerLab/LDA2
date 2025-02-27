@@ -2296,8 +2296,18 @@ public class MSnAnalyzer
       }
     }
     // now extract the chromatograms for each distinct mz Value
-    Hashtable<QuantVO,Hashtable<String,Vector<LipidomicsChromatogram>>> chromsForMzs = new Hashtable<QuantVO,Hashtable<String,Vector<LipidomicsChromatogram>>>();
+    Hashtable<QuantVO,Hashtable<String,Vector<LipidomicsChromatogram>>> chromsForMzs = null;
+    //TODO: this routine takes currently only the lowest MSn-level - for extending to other MSn-levels, the for-loop has to be extended over the whole procedure
+    //it is recommended to start with the lowest MSn-level (level 2), and only if this one does not give an option for a split: continue with the next MSn level 
+    List<Integer> msLevels = new ArrayList<Integer>();
     for (Integer msLevel : relevantMzHash.keySet()){
+    	msLevels.add(msLevel);
+    }
+    Collections.sort(msLevels);
+    for (Integer msLevel : msLevels){
+    	if (msLevel!=msLevels.get(0))
+    		continue;
+    	chromsForMzs = new Hashtable<QuantVO,Hashtable<String,Vector<LipidomicsChromatogram>>>();
       Hashtable<QuantVO,Hashtable<String,CgProbe>> mzsForChroms = relevantMzHash.get(msLevel);
       List<Integer> scansSorted = scanNumbersSorted.get(msLevel);
       Hashtable<Integer,Float> rts = retTimeLookup.get(msLevel);
