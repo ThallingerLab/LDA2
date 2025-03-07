@@ -3413,7 +3413,7 @@ public class RuleDefinitionInterface extends JSplitPane implements GeneralSettin
       probes.add(probe);
     }
     data_.setProbes(probes);
-    MSnAnalyzer analyzer = new MSnAnalyzer(CACHE_DIR, lipidClassName_, lipidAdduct_, data_, analyzer_, null, false, true, true);
+    MSnAnalyzer analyzer = new MSnAnalyzer(CACHE_DIR, lipidClassName_, lipidAdduct_, data_, analyzer_, null, false, true, false);
     return analyzer;
   }
   
