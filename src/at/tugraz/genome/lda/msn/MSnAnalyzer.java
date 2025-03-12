@@ -401,7 +401,7 @@ public class MSnAnalyzer
       checkChainFragments(probesWithMSnSpectra_);
       if (debug_) debugVO_.setSpectrumCoverageFulfilled(true);
       checkSpectrumCoverage(msLevels);
-      if (status_!= LipidomicsMSnSet.FRAGMENTS_DETECTED && !debug_) return;
+      if (status_!= LipidomicsMSnSet.FRAGMENTS_DETECTED) return;
       if (fragCalc_.getAllowedChainPositions()>1) {
         try {checkPositions();
         }catch (LipidCombinameEncodingException e) {throw new RulesException(e);}
@@ -2379,7 +2379,7 @@ public class MSnAnalyzer
           Hashtable<String,Vector<LipidomicsChromatogram>> chromsForQuant = chromsForMzs.get(quant);
           for (String key : chromsForQuant.keySet()){
             Vector<LipidomicsChromatogram> chroms = chromsForQuant.get(key);
-            if (startRelative<=chroms.get(1).Value[i][0] && chroms.get(1).Value[i][0]<=stopRelative) {
+          	if (startRelative<=chroms.get(1).Value[i][0] && chroms.get(1).Value[i][0]<=stopRelative) {
               chroms.get(1).Value[i][1] = chroms.get(0).Value[i][1]/highestInt;
             }
           }
