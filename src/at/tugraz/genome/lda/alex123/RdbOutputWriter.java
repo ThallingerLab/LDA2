@@ -399,7 +399,7 @@ public class RdbOutputWriter
               String speciesId = "";
               String classNameToWrite = "";
               int cIndexSpecies = 0;
-              int dbIndexSpecies = 0;
+              int dbIndexSpecies = -1;
               String sumComposition = "";
 //              if (internalStandardPrefix_!=null && internalStandardPrefix_.length()>0 && molName.startsWith(internalStandardPrefix_)){
 //                speciesId = "IS " + className+" "+ molName.substring(internalStandardPrefix_.length());
@@ -420,7 +420,8 @@ public class RdbOutputWriter
                 String[] cAndDbs = indices.split(":");
                 try{
                   cIndexSpecies = Integer.parseInt(cAndDbs[0]);
-                  dbIndexSpecies = Integer.parseInt(cAndDbs[1]);
+                  if (cAndDbs.length>1)
+                  	dbIndexSpecies = Integer.parseInt(cAndDbs[1]);
                   sumComposition = indices;
                 }catch(NumberFormatException nfx){
                   

@@ -217,6 +217,7 @@ public class LipidomicsConstants
   private int maximumThresholdForIntermediateConfidenceRTMatch_;
   private boolean useNoiseCutoff_;
   private float noiseCutoffDeviationValue_;
+  private boolean useDynamicNoiseCutoff_;
   private Float minimumRelativeIntensity_;
   private int scanStep_;
   private boolean use3D_;
@@ -392,6 +393,8 @@ public class LipidomicsConstants
   private final static String CHECK_CHAIN_LABEL_COMBINATION_DEFAULT = "false";
   private final static String NOISE_CUTOFF = "useNoiseCutoff";
   private final static String NOISE_CUTOFF_DEFAULT = "false";
+  private final static String DYNAMIC_NOISE_CUTOFF = "useDynamicNoiseCutoff";
+  private final static String DYNAMIC_NOISE_CUTOFF_DEFAULT = "false";
   private final static String NOISE_DEVIATION = "noiseCutoffDeviationValue";
   private final static String NOISE_DEVIATION_DEFAULT = "2";
   private final static String NOISE_MIN_INTENSITY = "minimumRelativeIntensity";
@@ -666,6 +669,11 @@ public class LipidomicsConstants
         minimumRelativeIntensity_ = new Float(minIntString);
       } catch (NumberFormatException nfx){}
     }
+    useDynamicNoiseCutoff_ = false;
+    String dynamicCutoffString = properties.getProperty(DYNAMIC_NOISE_CUTOFF,DYNAMIC_NOISE_CUTOFF_DEFAULT);
+    if (dynamicCutoffString!=null && (dynamicCutoffString.equalsIgnoreCase("yes")||dynamicCutoffString.equalsIgnoreCase("true")))
+      useDynamicNoiseCutoff_ = true;
+    
     scanStep_ = Integer.parseInt(properties.getProperty(SCAN_STEP,SCAN_STEP_DEFAULT));
     
     String use3DString = properties.getProperty(USE_3D,USE_3D_DEFAULT);
@@ -924,6 +932,13 @@ public class LipidomicsConstants
     getInstance();
     return instance_.useNoiseCutoff_;
   }
+
+  public static boolean useDynamicNoiseCutoff()
+  {
+    getInstance();
+    return instance_.useDynamicNoiseCutoff_;
+  }
+
   
   /**
    * 
@@ -2000,6 +2015,7 @@ public class LipidomicsConstants
       propertyRows.add(new Pair<String,String>(CHECK_CHAIN_LABEL_COMBINATION,String.valueOf(checkChainLabelCombination_)));
       propertyRows.add(new Pair<String,String>(NOISE_CUTOFF,String.valueOf(useNoiseCutoff_)));
       propertyRows.add(new Pair<String,String>(NOISE_DEVIATION,String.valueOf(noiseCutoffDeviationValue_)));
+      propertyRows.add(new Pair<String,String>(DYNAMIC_NOISE_CUTOFF,String.valueOf(useDynamicNoiseCutoff_)));
       if (minimumRelativeIntensity_!=null) {
         propertyRows.add(new Pair<String,String>(NOISE_MIN_INTENSITY,minimumRelativeIntensity_.toString()));
       }
@@ -2353,7 +2369,8 @@ public class LipidomicsConstants
         && use3D_ == other.use3D_
         && useMostOverlappingIsotopeOnly_ == other.useMostOverlappingIsotopeOnly_
         && useMsconvertForWaters_ == other.useMsconvertForWaters_
-        && useNoiseCutoff_ == other.useNoiseCutoff_;
+        && useNoiseCutoff_ == other.useNoiseCutoff_
+        && useDynamicNoiseCutoff_ == other.useDynamicNoiseCutoff_;
   }
 
   /**

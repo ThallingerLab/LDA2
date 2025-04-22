@@ -310,8 +310,8 @@ public class LDACmd
             String[] fileNameAndSuffix = StaticUtils.extractFileNameAndSuffix(rawFileCandidates[i].getAbsolutePath()); 
             String suffix = fileNameAndSuffix[1];
             String fileName = fileNameAndSuffix[0];
-            if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("raw")||suffix.equalsIgnoreCase("chrom")||suffix.equalsIgnoreCase("wiff")){
-              if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("chrom")) mzXMLOrChromPresent = true;
+            if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("mzml")||suffix.equalsIgnoreCase("raw")||suffix.equalsIgnoreCase("chrom")||suffix.equalsIgnoreCase("wiff")){
+              if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("mzml")|suffix.equalsIgnoreCase("chrom")) mzXMLOrChromPresent = true;
               Vector<File> theFiles = new Vector<File>();
               if (avoidDuplication.containsKey(fileName)){
                 
@@ -359,7 +359,7 @@ public class LDACmd
                   File file = theFiles.get(i);
                   String suffix = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf(".")+1);
                   if (mzXMLOrChromPresent && suffix.equalsIgnoreCase("wiff")) continue;
-                  if (suffix.equalsIgnoreCase("mzXML")){
+                  if (suffix.equalsIgnoreCase("mzXML")||suffix.equalsIgnoreCase("mzml")){
                     rawFiles.add(theFiles.get(i));
                   }
                 }  
