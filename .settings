@@ -28,7 +28,7 @@ MergeMultipleMSMSFiles=true
 ## the last trace is a quality trace for detection stability - this should not be merged into the data
 SkipLastMzXML=true
 ## quantitation on the graphics card
-useCuda=false
+useCuda=true
 ## use Alex123 as target lists
 Alex123=true
 ## make empty entries when an analyte cannot by found by "Quant. anal. at not found" and "Take exact peak for others"

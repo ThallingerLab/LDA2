@@ -857,27 +857,27 @@ If you distribute this Software to others, you agree to:&lt;br/&gt;&lt;br/&gt;
               <formComponent id="775" beanClass="com.install4j.runtime.beans.formcomponents.IntegerTextfieldComponent">
                 <serializedBean>
                   <property name="checkIfEmpty" type="boolean" value="true" />
-                  <property name="initialText" type="string">1024</property>
-                  <property name="labelText" type="string">Memory available in MB (for 32Bit systems 1512 is maximum) -Xmx</property>
+                  <property name="initialText" type="string">8192</property>
+                  <property name="labelText" type="string">Memory available in MB -Xmx</property>
                   <property name="variableName" type="string">xmx</property>
                 </serializedBean>
               </formComponent>
               <formComponent id="841" beanClass="com.install4j.runtime.beans.formcomponents.LabelComponent">
                 <serializedBean>
-                  <property name="labelText" type="string">It is recommended to use your system RAM minus the MEM that is usually reserved by the OS</property>
+                  <property name="labelText" type="string">It is recommended to use 90% of your system RAM</property>
                 </serializedBean>
               </formComponent>
               <formComponent id="843" beanClass="com.install4j.runtime.beans.formcomponents.SpacerComponent" />
               <formComponent id="776" beanClass="com.install4j.runtime.beans.formcomponents.IntegerTextfieldComponent">
                 <serializedBean>
-                  <property name="initialText" type="string">512</property>
+                  <property name="initialText" type="string">2048</property>
                   <property name="labelText" type="string">Reserved memory at initialization in MB -Xms</property>
                   <property name="variableName" type="string">xms</property>
                 </serializedBean>
               </formComponent>
               <formComponent id="845" beanClass="com.install4j.runtime.beans.formcomponents.LabelComponent">
                 <serializedBean>
-                  <property name="labelText" type="string">It is recommended to use half of the Xmx value for Xms</property>
+                  <property name="labelText" type="string">It is recommended to use 25-50% of the Xmx value for Xms</property>
                 </serializedBean>
               </formComponent>
               <formComponent id="844" beanClass="com.install4j.runtime.beans.formcomponents.SpacerComponent" />
