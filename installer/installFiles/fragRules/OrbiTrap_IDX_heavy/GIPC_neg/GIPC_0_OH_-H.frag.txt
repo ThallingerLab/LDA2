@@ -1,0 +1,47 @@
+[GENERAL]
+AmountOfChains=2
+AmountOfLCBs=1
+ChainLibrary=fattyAcidChains.xlsx
+LCBLibrary=dLCB.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.05%
+ChainCutoff=10%
+SpectrumCoverage=10%
+FaHydroxylationRange=0-1
+LcbHydroxylationRange=2-3
+RetentionTimePostprocessing=true
+SingleChainIdentification=false
+
+[HEAD]
+!FRAGMENTS
+Name=Precursor		Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=false
+Name=Phosphate_79	Formula=PO3			Charge=1	MSLevel=2	mandatory=false
+Name=Phosphate_97	Formula=H2PO4			Charge=1	MSLevel=2	mandatory=false
+Name=PIhead_241		Formula=C6H10O8P		Charge=1	MSLevel=2	mandatory=true
+Name=PIhead_259		Formula=C6H12O9P		Charge=1	MSLevel=2	mandatory=true
+Name=C3PO3_421		Formula=C12H22O14P		Charge=1	MSLevel=2	mandatory=false
+Name=C3PO3_419		Formula=C12H20O14P		Charge=1	MSLevel=2	mandatory=false
+Name=B3PO3_405		Formula=C12H22O13P		Charge=1	MSLevel=2	mandatory=false
+Name=2B3PO3_403		Formula=C12H20O13P		Charge=1	MSLevel=2	mandatory=false
+Name=C3_341		Formula=C12H21O11		Charge=1	MSLevel=2	mandatory=false
+Name=B3_325		Formula=C12H21O10		Charge=1	MSLevel=2	mandatory=false
+Name=2B3_323		Formula=C12H19O10		Charge=1	MSLevel=2	mandatory=false
+Name=C2_179		Formula=C6H11O6			Charge=1	MSLevel=2	mandatory=false
+Name=B2_163		Formula=C6H11O5			Charge=1	MSLevel=2	mandatory=false
+Name=2B2_161		Formula=C6H9O5			Charge=1	MSLevel=2	mandatory=false
+Name=NL_Y1		Formula=$PRECURSOR-C6H10O5	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Z2		Formula=$PRECURSOR-C6H10O6	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Z2m2h		Formula=$PRECURSOR-C6H12O6	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Y0PO3		Formula=$PRECURSOR-C12H20O10	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Z0PO3		Formula=$PRECURSOR-C12H20O11	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Z0PO3m2h	Formula=$PRECURSOR-C12H18O11	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Y0		Formula=$PRECURSOR-C12H21O13P	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Z0		Formula=$PRECURSOR-C12H21O14P	Charge=1	MSLevel=2	mandatory=false
+Name=2NL_Z0		Formula=$PRECURSOR-C12H23O14P	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Z0m2h		Formula=$PRECURSOR-C12H23O14P	Charge=1	MSLevel=2	mandatory=false
+	
+
+!INTENSITIES
+Equation=PIhead_259*0.9>PIhead_241		mandatory=true
+

@@ -1,0 +1,31 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.01%
+SpectrumCoverage=10%
+RetentionTimePostprocessing=true
+
+
+[HEAD]
+!Fragments
+Name=LPE(140)		Formula=C2H7NO4P	Charge=1	MSLevel=2	mandatory=false
+Name=LPE(196)		Formula=C5H11O5PN	Charge=1	MSLevel=2	mandatory=false
+Name=LPE(214)		Formula=C5H13O6PN	Charge=1	MSLevel=2	mandatory=false
+Name=LPC(224)		Formula=C7H15O5NP	Charge=1	MSLevel=2	mandatory=other
+Name=LPC(242)		Formula=C7H17O6NP	Charge=1	MSLevel=2	mandatory=other
+Name=Precursor		Formula=$PRECURSOR	Charge=1	MSLevel=2	mandatory=other
+
+!INTENSITIES
+Equation=LPE(196)+LPE(214)>Precursor			mandatory=true
+
+	
+[CHAINS]
+!FRAGMENTS
+Name=FA (+O)	Formula=$CHAIN-H	Charge=1	MSLevel=2	mandatory=true
+
+!INTENSITIES
+Equation=FA (+O)>0.1*$BASEPEAK		mandatory=true
+
+

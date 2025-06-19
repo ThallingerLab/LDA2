@@ -1,0 +1,39 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.01%
+AlkenylChains=1
+ChainCutoff=30%
+RetentionTimePostprocessing=true
+SingleChainIdentification=true
+SpectrumCoverage=10%
+
+
+[HEAD]
+!FRAGMENTS
+Name=-PC O-(60)		Formula=$PRECURSOR-C2O2H4	Charge=1	MSLevel=2	mandatory=true
+Name=Precursor		Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=other
+Name=-PS(87)		Formula=$PRECURSOR-C3H5NO2	Charge=1	MSLevel=2	mandatory=other
+Name=-LPC(285)  	Formula=$PRECURSOR-C9H20O7P1N1	Charge=1	MSLevel=2	mandatory=other
+
+!INTENSITIES
+Equation=-PC O-(60)>$BASEPEAK*0.6	mandatory=true
+Equation=-PS(87)<-PC O-(60)*0.002	mandatory=true
+Equation=-LPC(285)<-PC O-(60)*0.002	mandatory=true
+Equation=Precursor<0.25*$BASEPEAK	mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=FA (+O)		Formula=$CHAIN-H			Charge=1	MSLevel=2	mandatory=true
+Name=FA			Formula=$ALKENYLCHAIN-H			Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=FA (+O)*0.5>FA		mandatory=true
+
+
+[POSITION]
+!INTENSITIES
+Equation=FA (+O)[2]>0*FA[2]+0*$BASEPEAK			mandatory=true

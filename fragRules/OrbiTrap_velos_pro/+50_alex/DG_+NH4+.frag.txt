@@ -1,0 +1,38 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=3%
+RetentionTimePostprocessing=false
+ChainCutoff=10%
+SpectrumCoverage=5%
+
+[HEAD]
+!FRAGMENTS
+Name=-DG(17)	Formula=$PRECURSOR-NH3		Charge=1	MSLevel=2	mandatory=false
+Name=-DG(35)	Formula=$PRECURSOR-H5NO		Charge=1	MSLevel=2	mandatory=false
+Name=-DG(18)	Formula=$PRECURSOR-H2O		Charge=1	MSLevel=2	mandatory=false
+Name=Precursor	Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=other
+Name=PC(184)	Formula=C5H15NO4P		Charge=1	MSLevel=2	mandatory=other
+Name=-PE(141)	Formula=$PRECURSOR-C2H8NO4P	Charge=1	MSLevel=2	mandatory=other
+
+!INTENSITIES
+Equation=-DG(35)>Precursor												mandatory=true
+Equation=PC(184)<0.5*$BASEPEAK												mandatory=true
+Equation=-DG(17)+-DG(35)+-DG(18)+0*Precursor+0*PC(184)+0*-PE(141)>0*-DG(18)+0*Precursor+0.1*PC(184)+0.1*-PE(141)	mandatory=true
+Equation=-DG(17)+-DG(35)+-DG(18)+0*Precursor+0*PC(184)+0*-PE(141)>0*$BASEPEAK						mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=-FA (+HO) -DG(17)	Formula=$PRECURSOR-$CHAIN-NH3	Charge=1	MSLevel=2	mandatory=false
+Name=FA			Formula=$CHAIN-OH		Charge=1	MSLevel=2	mandatory=false
+Name=FA (-H2O)		Formula=$CHAIN-H3O2		Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=-FA (+HO) -DG(17)+FA (-H2O)+FA*0>$BASEPEAK*0				mandatory=true
+Equation=-FA (+HO) -DG(17)+FA (-H2O)+FA*0>-DG(17)*0+-DG(35)*0+-DG(18)*0		mandatory=true
+Equation=1.5*(-FA (+HO) -DG(17)+FA (-H2O))>FA					mandatory=true
+
+

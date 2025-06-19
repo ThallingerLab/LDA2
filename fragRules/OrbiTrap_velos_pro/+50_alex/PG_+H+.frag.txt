@@ -1,0 +1,21 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=1%
+RetentionTimePostprocessing=true
+SpectrumCoverage=1%
+
+
+[HEAD]
+!FRAGMENTS
+Name=-PG(18)	Formula=$PRECURSOR-H2O		Charge=1	MSLevel=2	mandatory=false
+Name=-PG(172)	Formula=$PRECURSOR-C3H9O6P	Charge=1	MSLevel=2	mandatory=false
+
+[CHAINS]
+!FRAGMENTS
+Name=-FA (+HO)	Formula=$PRECURSOR-$CHAIN		Charge=1	MSLevel=2	mandatory=false
+Name=-FA (-H)	Formula=$PRECURSOR-$CHAIN+H2O		Charge=1	MSLevel=2	mandatory=true
+
+

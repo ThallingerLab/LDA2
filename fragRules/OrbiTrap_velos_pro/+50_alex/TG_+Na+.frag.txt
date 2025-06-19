@@ -1,0 +1,19 @@
+[GENERAL]
+AmountOfChains=3
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.1%
+ChainCutoff=45%
+SpectrumCoverage=35%
+RetentionTimePostprocessing=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=-FA (+HO)		Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=true
+Name=-FA (+ONa)		Formula=$PRECURSOR-$CHAIN+H-Na	Charge=1	MSLevel=2	mandatory=true
+Name=-FA (+HO) -TG(17)	Formula=$PRECURSOR-$CHAIN-NH3	Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=-FA (+HO)*1.5>-FA (+ONa)	mandatory=true

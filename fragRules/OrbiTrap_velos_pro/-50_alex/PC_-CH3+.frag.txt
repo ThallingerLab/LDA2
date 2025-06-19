@@ -1,0 +1,41 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=1%
+ChainCutoff=10%
+RetentionTimePostprocessing=false
+SpectrumCoverage=25%
+ClassSpecificMS1Cutoff=0.001
+
+[HEAD]
+!FRAGMENTS
+Name=PE(140)		Formula=C2H7NO4P		Charge=1	MSLevel=2	mandatory=other
+Name=PE(196)		Formula=C5H11O5PN		Charge=1	MSLevel=2	mandatory=other
+Name=Precursor		Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=other
+Name=-PC(60)		Formula=$PRECURSOR-C2O2H4	Charge=1	MSLevel=2	mandatory=other
+Name=-PS(87)		Formula=$PRECURSOR-C3H5NO2	Charge=1	MSLevel=2	mandatory=other
+
+!INTENSITIES
+Equation=PE(140)<0.01*$BASEPEAK	mandatory=true
+Equation=PE(196)<0.01*$BASEPEAK	mandatory=true
+Equation=-PC(60)<0.2*Precursor		mandatory=true
+Equation=-PS(87)<0.01*$BASEPEAK	mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=FA (+O)		Formula=$CHAIN-H		Charge=1	MSLevel=2	mandatory=true
+Name=-FA (+HO)		Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=false
+Name=-FA (-H)		Formula=$PRECURSOR-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=FA (+O)>-FA (-H)	mandatory=true
+Equation=-FA (-H)*1.5>-FA (+HO)	mandatory=true
+
+[POSITION]
+!INTENSITIES
+Equation=FA (+O)[2]*0.7>FA (+O)[1]	mandatory=true
+Equation=-FA (-H)[2]*0.9>-FA (-H)[1]	mandatory=false
+

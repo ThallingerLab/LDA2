@@ -1,0 +1,15 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.1%
+SpectrumCoverage=1%
+RetentionTimePostprocessing=true
+
+
+[HEAD]
+!FRAGMENTS
+Name=-PI(17)	Formula=$PRECURSOR-NH3		Charge=1	MSLevel=2	mandatory=true
+Name=-PI(277)	Formula=$PRECURSOR-NH3-C6H13O9P	Charge=1	MSLevel=2	mandatory=false
+

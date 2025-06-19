@@ -1,0 +1,59 @@
+[GENERAL]
+AmountOfChains=2
+AmountOfLCBs=1
+ChainLibrary=fattyAcidChains.xlsx
+LCBLibrary=dLCB.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.05%
+ChainCutoff=10%
+SpectrumCoverage=10%
+FaHydroxylationRange=0-1
+LcbHydroxylationRange=2-3
+RetentionTimePostprocessing=true
+SingleChainIdentification=true
+
+
+[HEAD]
+!FRAGMENTS
+Name=Precursor			Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=false
+Name=Precursor-B1		Formula=$PRECURSOR-C6H9O5	Charge=1	MSLevel=2	mandatory=false
+Name=C5PO3      		Formula=C30H53NO29P		Charge=1	MSLevel=2	mandatory=false
+Name=C5PO3-B1      		Formula=C24H43NO24P		Charge=1	MSLevel=2	mandatory=false
+Name=C5PO3-B1-H2O       	Formula=C24H41NO23P		Charge=1	MSLevel=2	mandatory=false
+Name=C5PO3-B1-H2O_MS3      	Formula=C24H41NO23P		Charge=1	MSLevel=3	mandatory=false
+Name=B2 			Formula=C12H21O10		Charge=1	MSLevel=2	mandatory=false
+Name=B1 			Formula=C6H11O5			Charge=1	MSLevel=2	mandatory=false
+Name=C2 			Formula=C12H23O11		Charge=1	MSLevel=2	mandatory=false
+Name=IP				Formula=C6H14O9P		Charge=1	MSLevel=2	mandatory=false
+Name=IP_MS3			Formula=C6H14O9P		Charge=1	MSLevel=3	mandatory=false
+Name=Z0				Formula=$PRECURSOR-C30H52NO29P	Charge=1	MSLevel=2	mandatory=false
+Name=Z0_H20			Formula=$PRECURSOR-C30H54NO30P	Charge=1	MSLevel=2	mandatory=false
+Name=B3_amine                   Formula=C18H32NO14              Charge=1        MSLevel=2       mandatory=false
+Name=C5PO3-B1-B2                Formula=C18H33NO19P             Charge=1        MSLevel=2       mandatory=false
+Name=C5PO3-B1-B2-B3             Formula=C12H22O15P              Charge=1        MSLevel=2       mandatory=false
+Name=C5PO3-B1-B2-B3_MS3         Formula=C12H22O15P              Charge=1        MSLevel=3       mandatory=false
+Name=B3_amine-B1                Formula=C12H22NO9               Charge=1        MSLevel=2       mandatory=false
+Name=B3_amine-B1_MS3            Formula=C12H22NO9               Charge=1        MSLevel=3       mandatory=false
+Name=B3_amine-B1-H2O            Formula=C12H20NO8               Charge=1        MSLevel=2       mandatory=false
+Name=B3_amine-B1-H2O_MS3        Formula=C12H20NO8               Charge=1        MSLevel=3       mandatory=false
+Name=B3_amine-B1-2H2O_MS3       Formula=C12H18NO7               Charge=1        MSLevel=3       mandatory=false
+Name=C5PO3-B1-B2_MS3            Formula=C18H33NO19P             Charge=1        MSLevel=3       mandatory=false
+Name=B3amine-B2-B1		Formula=C6H12NO4		Charge=1	MSLevel=2	mandatory=false
+Name=B3amine-B2-B1_MS3		Formula=C6H12NO4		Charge=1	MSLevel=3	mandatory=false
+Name=Z0_MS3			Formula=$PRECURSOR-C30H52NO29P	Charge=1	MSLevel=3	mandatory=false
+Name=Z0_H20_MS3			Formula=$PRECURSOR-C30H54NO30P	Charge=1	MSLevel=3	mandatory=false
+
+
+[CHAINS]
+!FRAGMENTS
+Name=W			Formula=$LCB-HO				Charge=1	MSLevel=2	mandatory=false	oh=1,2,3
+Name=W-H2O		Formula=$LCB-H3O2			Charge=1	MSLevel=2	mandatory=false	oh=2,3
+Name=W-2H2O		Formula=$LCB-H5O3			Charge=1	MSLevel=2	mandatory=false	oh=3
+Name=W_MS3		Formula=$LCB-HO				Charge=1	MSLevel=3	mandatory=false	oh=1,2,3
+Name=W-H2O_MS3		Formula=$LCB-H3O2			Charge=1	MSLevel=3	mandatory=false	oh=2,3
+Name=W-2H2O_MS3		Formula=$LCB-H5O3			Charge=1	MSLevel=3	mandatory=false	oh=3
+Name=V			Formula=$CHAIN+H2N			Charge=1	MSLevel=2	mandatory=false
+Name=V_2		Formula=$CHAIN+HN			Charge=1	MSLevel=2	mandatory=false
+Name=V_MS3		Formula=$CHAIN+H2N			Charge=1	MSLevel=3	mandatory=false
+Name=V_MS3_2		Formula=$CHAIN+HN			Charge=1	MSLevel=3	mandatory=false

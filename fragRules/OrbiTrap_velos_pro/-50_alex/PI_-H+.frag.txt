@@ -1,0 +1,43 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.1%
+SpectrumCoverage=10%
+RetentionTimePostprocessing=true
+
+[HEAD]
+!FRAGMENTS
+Name=PI(153)		Formula=C3H6O5P			Charge=1	MSLevel=2	mandatory=false
+Name=PI(223)		Formula=C6H8O7P			Charge=1	MSLevel=2	mandatory=false
+Name=PI(241)		Formula=C6H10O8P		Charge=1	MSLevel=2	mandatory=true
+Name=PI(259)		Formula=C6H12O9P		Charge=1	MSLevel=2	mandatory=false
+Name=PI(297)		Formula=C9H14O9P		Charge=1	MSLevel=2	mandatory=false
+Name=PI(315)		Formula=C9H16O10P		Charge=1	MSLevel=2	mandatory=false
+Name=-PI(162)		Formula=$PRECURSOR-C6H10O5	Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=PI(241)*0.9>PI(223)	mandatory=false
+Equation=PI(241)*0.9>PI(297)	mandatory=false
+
+[CHAINS]
+!FRAGMENTS
+Name=FA (+O)		Formula=$CHAIN-H		Charge=1	MSLevel=2	mandatory=false
+Name=-FA (+HO)		Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=true
+Name=-FA (-H)		Formula=$PRECURSOR-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false
+Name=-FA (+HO) -PI(162)	Formula=-FA (+HO)-C6H10O5	Charge=1	MSLevel=2	mandatory=false
+Name=-FA (-H) -PI(162)	Formula=-FA (-H)-C6H10O5	Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=-FA (+HO)*0.8>-FA (-H)					mandatory=true
+Equation=FA (+O)+-FA (+HO) -PI(162)+-FA (+HO)*0>0*$BASEPEAK	mandatory=true
+
+
+[POSITION]
+!INTENSITIES
+Equation=FA (+O)[1]*0.9>FA (+O)[2]				mandatory=true
+Equation=-FA (+HO)[2]*0.5>-FA (+HO)[1]				mandatory=true
+Equation=-FA (-H)[2]*0.8>-FA (-H)[1]				mandatory=false
+Equation=-FA (+HO) -PI(162)[2]*0.8>-FA (+HO) -PI(162)[1]	mandatory=true
+Equation=-FA (-H) -PI(162)[2]*0.8>-FA (-H) -PI(162)[1]		mandatory=false

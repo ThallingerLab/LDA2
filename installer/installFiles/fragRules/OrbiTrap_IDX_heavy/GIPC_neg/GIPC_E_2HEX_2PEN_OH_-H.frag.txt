@@ -1,0 +1,22 @@
+[GENERAL]
+AmountOfChains=2
+AmountOfLCBs=1
+ChainLibrary=fattyAcidChains.xlsx
+LCBLibrary=dLCB.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.05%
+ChainCutoff=10%
+SpectrumCoverage=10%
+FaHydroxylationRange=0-1
+LcbHydroxylationRange=2-3
+RetentionTimePostprocessing=true
+SingleChainIdentification=false
+
+[HEAD]
+!FRAGMENTS
+Name=IPmH2O_241		Formula=C6H10O8P		Charge=1	MSLevel=2	mandatory=true
+Name=IP_259		Formula=C6H12O9P		Charge=1	MSLevel=2	mandatory=true
+
+!INTENSITIES
+Equation=IP_259*0.9>IPmH2O_241	mandatory=true
