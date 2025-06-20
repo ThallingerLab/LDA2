@@ -1,0 +1,96 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.01%
+ChainCutoff=60%
+RetentionTimePostprocessing=true
+SpectrumCoverage=0.5%
+SingleChainIdentification=true
+
+[HEAD]
+!FRAGMENTS
+Name=NL_PIhead_260	Formula=$PRECURSOR-C6H16O9PN	Charge=1	MSLevel=2	mandatory=true
+Name=Precursor		Formula=$PRECURSOR				Charge=1	MSLevel=2	mandatory=false
+Name=NL_C1						Formula=$PRECURSOR-CH3				Charge=1	MSLevel=2	mandatory=false
+Name=NL_C2						Formula=$PRECURSOR-CH3-CH2			Charge=1	MSLevel=2	mandatory=false
+Name=NL_C3						Formula=$PRECURSOR-CH3-C2H4			Charge=1	MSLevel=2	mandatory=false
+Name=NL_C4						Formula=$PRECURSOR-CH3-C3H6			Charge=1	MSLevel=2	mandatory=false
+Name=NL_C5						Formula=$PRECURSOR-CH3-C4H8			Charge=1	MSLevel=2	mandatory=false
+Name=NL_C6						Formula=$PRECURSOR-CH3-C5H10		Charge=1	MSLevel=2	mandatory=false
+Name=NL_C7						Formula=$PRECURSOR-CH3-C6H12		Charge=1	MSLevel=2	mandatory=false
+Name=NL_C8						Formula=$PRECURSOR-CH3-C7H14		Charge=1	MSLevel=2	mandatory=false
+Name=NL_C9						Formula=$PRECURSOR-CH3-C8H16		Charge=1	MSLevel=2	mandatory=false
+Name=NL_C10						Formula=$PRECURSOR-CH3-C9H18		Charge=1	MSLevel=2	mandatory=false
+Name=NL_C11						Formula=$PRECURSOR-CH3-C10H20		Charge=1	MSLevel=2	mandatory=false
+Name=NL_C12						Formula=$PRECURSOR-CH3-C11H22		Charge=1	MSLevel=2	mandatory=false
+Name=NL_C13						Formula=$PRECURSOR-CH3-C12H24		Charge=1	MSLevel=2	mandatory=false
+Name=NL_C14						Formula=$PRECURSOR-CH3-C13H26		Charge=1	MSLevel=2	mandatory=false
+Name=NL_C15						Formula=$PRECURSOR-CH3-C14H28		Charge=1	MSLevel=2	mandatory=false
+Name=NL_C16						Formula=$PRECURSOR-CH3-C15H30		Charge=1	MSLevel=2	mandatory=false
+Name=n1						Formula=$PRECURSOR-CH3-CH2+H2			Charge=1	MSLevel=2	mandatory=false
+Name=n2						Formula=$PRECURSOR-CH3-C2H4+H2			Charge=1	MSLevel=2	mandatory=false
+Name=n3						Formula=$PRECURSOR-CH3-C3H6+H2			Charge=1	MSLevel=2	mandatory=false
+Name=n4						Formula=$PRECURSOR-CH3-C4H8+H2			Charge=1	MSLevel=2	mandatory=false
+Name=n5						Formula=$PRECURSOR-CH3-C5H10+H2		Charge=1	MSLevel=2	mandatory=false
+Name=n6						Formula=$PRECURSOR-CH3-C6H12+H2		Charge=1	MSLevel=2	mandatory=false
+Name=n7						Formula=$PRECURSOR-CH3-C7H14+H2		Charge=1	MSLevel=2	mandatory=false
+Name=n8						Formula=$PRECURSOR-CH3-C8H16+H2		Charge=1	MSLevel=2	mandatory=false
+Name=n9						Formula=$PRECURSOR-CH3-C9H18+H2		Charge=1	MSLevel=2	mandatory=false
+Name=n10						Formula=$PRECURSOR-CH3-C10H20+H2		Charge=1	MSLevel=2	mandatory=false
+Name=n11						Formula=$PRECURSOR-CH3-C11H22+H2		Charge=1	MSLevel=2	mandatory=false
+Name=n12						Formula=$PRECURSOR-CH3-C12H24+H2		Charge=1	MSLevel=2	mandatory=false
+Name=n13						Formula=$PRECURSOR-CH3-C13H26+H2		Charge=1	MSLevel=2	mandatory=false
+Name=n14						Formula=$PRECURSOR-CH3-C14H28+H2		Charge=1	MSLevel=2	mandatory=false
+Name=n15						Formula=$PRECURSOR-CH3-C15H30+H2		Charge=1	MSLevel=2	mandatory=false
+Name=n3'						Formula=$PRECURSOR-CH3-C3H6+H4			Charge=1	MSLevel=2	mandatory=false
+Name=n4'						Formula=$PRECURSOR-CH3-C4H8+H4			Charge=1	MSLevel=2	mandatory=false
+Name=n5'						Formula=$PRECURSOR-CH3-C5H10+H4		Charge=1	MSLevel=2	mandatory=false
+Name=n6'						Formula=$PRECURSOR-CH3-C6H12+H4		Charge=1	MSLevel=2	mandatory=false
+Name=n7'						Formula=$PRECURSOR-CH3-C7H14+H4		Charge=1	MSLevel=2	mandatory=false
+Name=n8'						Formula=$PRECURSOR-CH3-C8H16+H4		Charge=1	MSLevel=2	mandatory=false
+Name=n9'						Formula=$PRECURSOR-CH3-C9H18+H4		Charge=1	MSLevel=2	mandatory=false
+Name=n10'						Formula=$PRECURSOR-CH3-C10H20+H4		Charge=1	MSLevel=2	mandatory=false
+Name=n11'						Formula=$PRECURSOR-CH3-C11H22+H4		Charge=1	MSLevel=2	mandatory=false
+Name=n12'						Formula=$PRECURSOR-CH3-C12H24+H4		Charge=1	MSLevel=2	mandatory=false
+Name=n13'						Formula=$PRECURSOR-CH3-C13H26+H4		Charge=1	MSLevel=2	mandatory=false
+Name=n14'						Formula=$PRECURSOR-CH3-C14H28+H4		Charge=1	MSLevel=2	mandatory=false
+Name=n15'						Formula=$PRECURSOR-CH3-C15H30+H4		Charge=1	MSLevel=2	mandatory=false
+Name=n5''						Formula=$PRECURSOR-CH3-C5H10+H6		Charge=1	MSLevel=2	mandatory=false
+Name=n6''						Formula=$PRECURSOR-CH3-C6H12+H6		Charge=1	MSLevel=2	mandatory=false
+Name=n7''						Formula=$PRECURSOR-CH3-C7H14+H6		Charge=1	MSLevel=2	mandatory=false
+Name=n8''						Formula=$PRECURSOR-CH3-C8H16+H6		Charge=1	MSLevel=2	mandatory=false
+Name=n9''						Formula=$PRECURSOR-CH3-C9H18+H6		Charge=1	MSLevel=2	mandatory=false
+Name=n10''						Formula=$PRECURSOR-CH3-C10H20+H6		Charge=1	MSLevel=2	mandatory=false
+Name=n11''						Formula=$PRECURSOR-CH3-C11H22+H6		Charge=1	MSLevel=2	mandatory=false
+Name=n12''						Formula=$PRECURSOR-CH3-C12H24+H6		Charge=1	MSLevel=2	mandatory=false
+Name=n13''						Formula=$PRECURSOR-CH3-C13H26+H6		Charge=1	MSLevel=2	mandatory=false
+Name=n14''						Formula=$PRECURSOR-CH3-C14H28+H6		Charge=1	MSLevel=2	mandatory=false
+Name=n15''						Formula=$PRECURSOR-CH3-C15H30+H6		Charge=1	MSLevel=2	mandatory=false
+Name=n7'''						Formula=$PRECURSOR-CH3-C7H14+H8		Charge=1	MSLevel=2	mandatory=false
+Name=n8'''						Formula=$PRECURSOR-CH3-C8H16+H8		Charge=1	MSLevel=2	mandatory=false
+Name=n9'''						Formula=$PRECURSOR-CH3-C9H18+H8		Charge=1	MSLevel=2	mandatory=false
+Name=n10'''						Formula=$PRECURSOR-CH3-C10H20+H8		Charge=1	MSLevel=2	mandatory=false
+Name=n11'''						Formula=$PRECURSOR-CH3-C11H22+H8		Charge=1	MSLevel=2	mandatory=false
+Name=n12'''						Formula=$PRECURSOR-CH3-C12H24+H8		Charge=1	MSLevel=2	mandatory=false
+Name=n13'''						Formula=$PRECURSOR-CH3-C13H26+H8		Charge=1	MSLevel=2	mandatory=false
+Name=n14'''						Formula=$PRECURSOR-CH3-C14H28+H8		Charge=1	MSLevel=2	mandatory=false
+Name=n15'''						Formula=$PRECURSOR-CH3-C15H30+H8		Charge=1	MSLevel=2	mandatory=false
+Name=n9''''						Formula=$PRECURSOR-CH3-C9H18+H8		Charge=1	MSLevel=2	mandatory=false
+Name=n10''''						Formula=$PRECURSOR-CH3-C10H20+H10		Charge=1	MSLevel=2	mandatory=false
+Name=n11''''						Formula=$PRECURSOR-CH3-C11H22+H10		Charge=1	MSLevel=2	mandatory=false
+Name=n12''''						Formula=$PRECURSOR-CH3-C12H24+H10		Charge=1	MSLevel=2	mandatory=false
+Name=n13''''						Formula=$PRECURSOR-CH3-C13H26+H10		Charge=1	MSLevel=2	mandatory=false
+Name=n14''''						Formula=$PRECURSOR-CH3-C14H28+H10		Charge=1	MSLevel=2	mandatory=false
+Name=n15''''						Formula=$PRECURSOR-CH3-C15H30+H10		Charge=1	MSLevel=2	mandatory=false
+
+[CHAINS]
+!FRAGMENTS
+Name=Carboxy_OH		Formula=$CHAIN-OH					Charge=1	MSLevel=2	mandatory=false
+Name=NL_Ketene_head	Formula=NL_PIhead_260-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=true
+
+[POSITION]
+!INTENSITIES
+Equation=NL_Ketene_head[1]<0.8*NL_Ketene_head[2]				mandatory=true
+Equation=NL_Ketene_head[2]>0*$BASEPEAK							mandatory=true
