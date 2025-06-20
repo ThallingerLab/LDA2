@@ -1,0 +1,34 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.1%
+ChainCutoff=20%
+RetentionTimePostprocessing=true
+SpectrumCoverage=25%
+
+
+[HEAD]
+!FRAGMENTS
+Name=PG(177)	Formula=C3H7O5PNa		Charge=1	MSLevel=2	mandatory=false
+Name=PG(195)	Formula=C3H9NaO6P		Charge=1	MSLevel=2	mandatory=true
+Name=-PG(154)	Formula=$PRECURSOR-C3H7O5P	Charge=1	MSLevel=2	mandatory=false
+Name=-PG(172)	Formula=$PRECURSOR-C3H9O6P	Charge=1	MSLevel=2	mandatory=true
+Name=-PG(194)	Formula=$PRECURSOR-C3H8O6PNa	Charge=1	MSLevel=2	mandatory=false
+
+
+[CHAINS]
+!FRAGMENTS
+Name=-FA (+HO)		Formula=$PRECURSOR-$CHAIN		Charge=1	MSLevel=2	mandatory=true
+Name=-FA (-H)		Formula=$PRECURSOR-$CHAIN+H2O		Charge=1	MSLevel=2	mandatory=false
+Name=-FA (-H) -PG(74)	Formula=$PRECURSOR-$CHAIN-C3H6O2	Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=-FA (+HO)>-FA (-H)		mandatory=false
+
+
+[POSITION]
+!INTENSITIES
+Equation=-FA (+HO)[1]>-FA (+HO)[2]	mandatory=true
+Equation=-FA (-H)[2]>-FA (-H)[1]	mandatory=false
