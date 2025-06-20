@@ -1,0 +1,31 @@
+[GENERAL]
+AmountOfChains=3
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=1%
+ChainCutoff=45%
+SpectrumCoverage=35%
+RetentionTimePostprocessing=true
+RetentionTimeParallelSeries=true
+
+
+[HEAD]
+!FRAGMENTS
+Name=-TG(17)	Formula=$PRECURSOR-NH3		Charge=1	MSLevel=2	mandatory=false
+Name=-TG(35)	Formula=$PRECURSOR-NH3-H2O	Charge=1	MSLevel=2	mandatory=false
+
+
+[CHAINS]
+!FRAGMENTS
+Name=FA			Formula=$CHAIN-OH		Charge=1	MSLevel=2	mandatory=false
+Name=FA (-H2O)		Formula=$CHAIN-H3O2		Charge=1	MSLevel=2	mandatory=false
+Name=-FA (+HO) -TG(17)	Formula=$PRECURSOR-$CHAIN-NH3	Charge=1	MSLevel=2	mandatory=true
+Name=FA (+C3HO2D5)	Formula=$CHAIN+C3D5O		Charge=1	MSLevel=2	mandatory=false
+Name=FA (+C3H6O2)	Formula=$CHAIN+C3H5O		Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=-FA (+HO) -TG(17)*3>FA (+C3H6O2)+FA (+C3HO2D5)	mandatory=true
+Equation=-FA (+HO) -TG(17)>FA+FA (-H2O)			mandatory=true
+
+

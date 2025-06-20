@@ -1,0 +1,40 @@
+[GENERAL]
+AmountOfChains=2
+AmountOfLCBs=1
+ChainLibrary=fattyAcidChains.xlsx
+LCBLibrary=dLCB.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.05%
+ChainCutoff=10%
+SpectrumCoverage=10%
+FaHydroxylationRange=0-1
+LcbHydroxylationRange=2-3
+RetentionTimePostprocessing=true
+SingleChainIdentification=true
+
+[HEAD]
+!FRAGMENTS
+Name=Precursor			Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=false
+Name=IP				Formula=C6H13O9PNa		Charge=1	MSLevel=2	mandatory=false
+Name=C3PO3_B1_459		Formula=C12H21O15PNa		Charge=1	MSLevel=2	mandatory=false
+Name=Z0				Formula=$PRECURSOR-C18H31O20P	Charge=1	MSLevel=2	mandatory=false
+Name=Z0mH2O			Formula=$PRECURSOR-C18H33O21P	Charge=1	MSLevel=2	mandatory=false
+Name=B2_hydroxy			Formula=C12H18O11Na		Charge=1	MSLevel=2	mandatory=false
+Name=B1_hydroxy			Formula=C6H10O5Na		Charge=1	MSLevel=2	mandatory=false
+Name=C2_hydroxy			Formula=C12H20O12Na		Charge=1	MSLevel=2	mandatory=false
+Name=IPmH2O			Formula=C6H11O8PNa		Charge=1	MSLevel=2	mandatory=false
+
+
+[CHAINS]
+!FRAGMENTS
+Name=W			Formula=$LCB-HO				Charge=1	MSLevel=2	mandatory=false	oh=1,2,3
+Name=W-H2O		Formula=$LCB-H3O2			Charge=1	MSLevel=2	mandatory=false	oh=2,3
+Name=W-2H2O		Formula=$LCB-H5O3			Charge=1	MSLevel=2	mandatory=false	oh=3
+Name=W_MS3		Formula=$LCB-HO				Charge=1	MSLevel=3	mandatory=false	oh=1,2,3
+Name=W-H2O_MS3		Formula=$LCB-H3O2			Charge=1	MSLevel=3	mandatory=false	oh=2,3
+Name=W-2H2O_MS3		Formula=$LCB-H5O3			Charge=1	MSLevel=3	mandatory=false	oh=3
+Name=V			Formula=$CHAIN+H2N			Charge=1	MSLevel=2	mandatory=false
+Name=V_2		Formula=$CHAIN+HN			Charge=1	MSLevel=2	mandatory=false
+Name=V_MS3		Formula=$CHAIN+H2N			Charge=1	MSLevel=3	mandatory=false
+Name=V_MS3_2		Formula=$CHAIN+HN			Charge=1	MSLevel=3	mandatory=false

@@ -1,14 +1,34 @@
+/* 
+ * This file is part of Lipid Data Analyzer
+ * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
+ * Copyright (c) 2023 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
+ *  
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * by the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ *  
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details. 
+ *  
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Please contact lda@genome.tugraz.at if you need additional information or 
+ * have any questions.
+ */
+
 package at.tugraz.genome.lda.target.experiment;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Stroke;
 import java.util.Hashtable;
 import java.util.Vector;
 
-import javax.swing.JFrame;
 import javax.swing.JPanel;
 
 import org.jfree.chart.ChartPanel;
@@ -24,7 +44,11 @@ import org.jfree.data.xy.XYSeriesCollection;
 import at.tugraz.genome.lda.exception.ChemicalFormulaException;
 import at.tugraz.genome.lda.utils.StaticUtils;
 
-
+/**
+ * 
+ * @author Leonida M. Lamp
+ *
+ */
 public class TotalIsotopeEffectPlot extends JPanel
 { 
 	private static final long serialVersionUID = 1L;
@@ -36,7 +60,7 @@ public class TotalIsotopeEffectPlot extends JPanel
     Font fontTitle = new Font("Dialog", Font.BOLD, 25);
     Font fontLabel = new Font("Dialog", Font.PLAIN, 20);
     Font tickLabel = new Font("Dialog", Font.PLAIN, 14);
-    int domainAxisMax = regression.getMaxNumDeuteriumAllowed()+2;
+    int domainAxisMax = regression.getMaxNumDeuteriumAllowed();
 //    Stroke dashed =  new BasicStroke(0.5f);
 //    Stroke dashed =  new BasicStroke(1.0f,BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, new float[] {10.0f}, 0.0f);
     XYDataset scatterPlotDataset = getScatterPlotDataset(data);
@@ -74,38 +98,7 @@ public class TotalIsotopeEffectPlot extends JPanel
     chartPanel.setPreferredSize(dimension);
     
     this.add(chartPanel);
-//    JFrame frame = new JFrame(); 
-//    frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-//    frame.setSize(1200, 1200);
-//    frame.setContentPane(chartPanel);
-//    frame.pack();
-//    frame.setVisible(true);
-    
-//    ApplicationFrame frame = new ApplicationFrame("Example");
-//    frame.setContentPane(chartPanel);
-//    frame.pack();
-//    frame.setVisible(true);
   }
-
-//  private XYDataset getFunctionDataset(
-//    double a0, double a1, double a2,
-//    double minY, double maxY)
-//  {
-//    double[] a = { a0, a1, a2 };
-//    Function2D p = new PolynomialFunction2D(a);
-//    XYSeries series = sampleFunctionOverY(p, minY, maxY, 100, "Function");
-//    XYSeriesCollection dataset = new XYSeriesCollection();
-//    dataset.addSeries(series);
-//    return dataset;
-//  }
-  
-//  private XYDataset getCurveFitDataset(RecalibrationRegression regression)
-//  {
-//  	Function2D curve = new PolynomialFunction2D(regression.getCoefficients());
-//  	double minRT = regression.getLowerRTLimit();
-//  	double maxRT = regression.getUpperRTLimit();
-//  	return DatasetUtils.sampleFunction2D(regression.getFunction(), minRT, maxRT, (int)((maxRT-minRT)*60), "hello");
-//  }
   
   private double findMaximumForRangeAxis(Vector<MatchedPartnerVO> data, IsotopeEffectRegression regression, int domainAxisMax)
   {
@@ -127,7 +120,7 @@ public class TotalIsotopeEffectPlot extends JPanel
   	int num = 10000;
   	XYSeriesCollection dataset = new XYSeriesCollection();
   	XYSeries dataSeries = new XYSeries("Fit");
-  	double step = new Double(regression.getMaxNumDeuteriumAllowed()+2)/num;
+  	double step = new Double(regression.getMaxNumDeuteriumAllowed())/num;
   	for (int i=0; i<=num;i++)
   	{
   		double x = i*step;
@@ -176,16 +169,4 @@ public class TotalIsotopeEffectPlot extends JPanel
       dataset.addSeries(dataSeries);
       return dataset;
   }
-  
-//  private XYDataset getScatterPlotDataset()
-//  {
-//      XYSeriesCollection dataset = new XYSeriesCollection();
-//      XYSeries data = new XYSeries("Scatterplot");
-//      data.add(3.0, 2.0);
-//      data.add(1.7, 1.0);
-//      data.add(2.0, -1.0);
-//      data.add(1.0, 1.8);
-//      dataset.addSeries(data);
-//      return dataset;
-//  }
 }

@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2018 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2018 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -134,13 +134,13 @@ public abstract class LDAExporter
       Hashtable<String,Vector<String>> ambiguous){
     HashMap<String,String> newValues = new HashMap<String,String>();
     for (String woPosition : molecularSpecies){
-      int totalCount = molSpeciesCount.get(woPosition);
+//      int totalCount = molSpeciesCount.get(woPosition);
       Hashtable<String,Integer> positionsFound = positionCount.get(woPosition);
       boolean usePositionIdentification = false;
       //use position if there is no contradicting evidence
       if (positionsFound.size()==1){
         ////the second check was removed for sphingolipid export
-        int detections = positionsFound.values().iterator().next();
+//        int detections = positionsFound.values().iterator().next();
         //this is for ambiguous identifications
         if (ambiguous!=null && ambiguous.containsKey(woPosition)){
           boolean allDetected = true;
@@ -155,14 +155,17 @@ public abstract class LDAExporter
               }
             }
             if (oneTimeCorrect)
-              detections++;
+            {
+//              detections++;
+            }
             else{
               allDetected = false;
               break;
             }
           }
-          if (!allDetected){
-            detections = 0;
+          if (!allDetected)
+          {
+//            detections = 0;
           }
         }
         //use a position when it was found more than once, and at least more than half of the times of the

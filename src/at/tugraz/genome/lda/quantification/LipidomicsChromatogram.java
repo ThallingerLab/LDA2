@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,12 +19,16 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.quantification;
 
+import java.util.Collections;
+import java.util.Vector;
+
 import at.tugraz.genome.maspectras.quantification.CgChromatogram;
 import at.tugraz.genome.maspectras.utils.Calculator;
+import at.tugraz.genome.util.FloatMatrix;
 
 /**
  * 
@@ -664,6 +668,49 @@ public class LipidomicsChromatogram extends CgChromatogram
       }
     }
     return index;
+  }
+  
+  /**
+   * estimates the noise of a chromatogram based on the dynamic noise level algorithm of Xu H. and Freitas M.A. BMC Bioinformatics 2010
+   * @return the noise level
+   */
+  public float estimateChromatogramNoise(){
+    float noise = 0f;
+    Vector<Float> intensities = new Vector<Float>();
+    for( int i = 0; i < ScanCount; i ++ ) {
+    	if (this.Value[i][1]>0)
+    		intensities.add(this.Value[i][1]);
+    }
+    Collections.sort(intensities);      
+    float delta = 0f;
+    float noiseImprovement = 1.7f;
+    for (int i=1;i!=(intensities.size()/2);i++){
+    	delta += intensities.get(i)-intensities.get(i-1);
+    }
+    delta = delta/(float)(intensities.size()/2);
+    float[][] matrixValues = new float[intensities.size()-1][2];
+    float[][] intensityValues = new float[intensities.size()-1][1];
+    for (int j=0;j!=intensities.size()-1;j++){
+    	matrixValues[j][0] = (j+1);
+    	matrixValues[j][1] = 1f;
+    	intensityValues[j][0] = intensities.get(j);
+    }
+      
+      
+    for (int i=(intensities.size()/2);i!=intensities.size();i++){
+    	FloatMatrix matrix = new FloatMatrix(matrixValues);
+    	matrix.m = i-1;
+    	FloatMatrix transposed = matrix.transpose();
+    	FloatMatrix product = transposed.times(matrix);
+    	FloatMatrix intensityMatrix = new FloatMatrix(intensityValues);
+    	intensityMatrix.m = i-1;
+    	FloatMatrix result = product.inverse().times(transposed).times(intensityMatrix);
+    	noise = (float)i*result.A[0][0]+result.A[1][0];
+    	if (intensities.get(i)>(noise*noiseImprovement)){
+    		break;
+    	}
+    }
+    return noise;
   }
   
 }

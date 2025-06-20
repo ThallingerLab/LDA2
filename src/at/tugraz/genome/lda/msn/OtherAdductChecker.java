@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2019 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2019 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -20,6 +20,7 @@
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
  */ 
+
 package at.tugraz.genome.lda.msn;
 
 import java.io.IOException;
@@ -60,6 +61,7 @@ public class OtherAdductChecker
    * @param quantObjects the original quantitation instructions that were read from the Excel file
    * @param analyzer object that holds MS data and can quantify fragments of interest
    * @param classSequence the MS levels of each lipid class
+   * @param analyteSequence the sorted lists of analytes
    * @return the results after removing adducts where the required other adducts are not present, and where the peaks were split correspondingly
    * @throws CgException exception that is thrown when there is something wrong with the fragment detection
    * @throws LipidCombinameEncodingException thrown when a lipid combi id (containing type and OH number) cannot be decoded
@@ -68,7 +70,7 @@ public class OtherAdductChecker
       Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>> results,
       Hashtable<String,Hashtable<String,Hashtable<String,Hashtable<String,LipidParameterSet>>>> unsplittedPeaks,
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects, LipidomicsAnalyzer analyzer,
-      LinkedHashMap<String,Integer> classSequence) throws CgException, LipidCombinameEncodingException{
+      LinkedHashMap<String,Integer> classSequence, LinkedHashMap<String,Vector<String>> analyteSequence) throws CgException, LipidCombinameEncodingException{
     
     String ruleName;
     Hashtable<String,Boolean> requiresOtherAdducts = new Hashtable<String,Boolean>();
@@ -142,12 +144,16 @@ public class OtherAdductChecker
     }
     
     //now enforce the adduct or split peaks having different adducts
-    //TODO: these lines have to be tested on a bigger data set!!!
     Vector<QuantVO> allQuants;
-    for (String lClass : quantObjects.keySet()) {
-      for (String analyte : quantObjects.get(lClass).keySet()){
+    //these two lines do not work, because the sequence of the objects is important to get the correct number of isobars
+//    for (String lClass : quantObjects.keySet()) {
+//      for (String analyte : quantObjects.get(lClass).keySet()){
+    for (String lClass : classSequence.keySet()) {
+    	for (String analyte : analyteSequence.get(lClass)){
         for (String mod : quantObjects.get(lClass).get(analyte).keySet()) {
           QuantVO quantSet = quantObjects.get(lClass).get(analyte).get(mod);
+          if (quantSet.isQuantifiedByOtherIsobar())
+          	continue;
           allQuants = new Vector<QuantVO>();
           boolean isAffected = false;
           allQuants.add(quantSet);
@@ -156,7 +162,8 @@ public class OtherAdductChecker
           for (QuantVO one : allQuants) {
             if (!affectedMods.containsKey(StaticUtils.getRuleName(one.getAnalyteClass(),one.getModName())))
               continue;
-            if (interestingQuantVOs.containsKey(getUniqueId(lClass,analyte,mod,"")))
+            //in the old version, the next line was wrong - always the default lClass and analyte was provided - could only work if the removed one comes first
+            if (interestingQuantVOs.containsKey(getUniqueId(one.getAnalyteClass(),StaticUtils.generateLipidNameString(one.getAnalyteName(), one.getDbs(), -1, one.getOxState()),mod,"")))
               isAffected = true;
           }
           if (!isAffected)
@@ -248,6 +255,11 @@ public class OtherAdductChecker
               if (!hitsWithQuant.containsKey(quant))
                 hitsWithQuant.put(quant, new Hashtable<String,LipidParameterSet>());
               hitsWithQuant.get(quant).put(set.getRt(), set);
+              //take the unsplitted version if there is any
+              if (unsplittedPeaks.containsKey(quant.getAnalyteClass()) && unsplittedPeaks.get(quant.getAnalyteClass()).containsKey(quant.getIdString())
+              		&& unsplittedPeaks.get(quant.getAnalyteClass()).get(quant.getIdString()).containsKey(quant.getModName())
+              		&& unsplittedPeaks.get(quant.getAnalyteClass()).get(quant.getIdString()).get(quant.getModName()).containsKey(rt))
+              	hitsWithQuant.get(quant).put(set.getRt(), unsplittedPeaks.get(quant.getAnalyteClass()).get(quant.getIdString()).get(quant.getModName()).get(rt));
               peaksBeforeSplit.put(quant, new Hashtable<String,LipidParameterSet>());
             }
             MSnPeakSeparator separator = new MSnPeakSeparator(hitsWithQuant, peaksBeforeSplit, analyzer,  classSequence.get(lipClass),new HashSet<String>());

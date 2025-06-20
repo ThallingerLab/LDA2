@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.msn.parser;
 
@@ -536,8 +536,10 @@ public class FragRuleParser
   private void checkIfGeneralValuesAreThere() throws RulesException {
     if (!generalSettings_.containsKey(GENERAL_CHAINS)) throw new RulesException("The rules file must contain the property \""+GENERAL_CHAINS+"\" in the "+GENERAL_SECTION_NAME+" section!");
     if (!generalSettings_.containsKey(GENERAL_MS2_LIB)) throw new RulesException("The rules file must contain the property \""+GENERAL_MS2_LIB+"\" in the "+GENERAL_SECTION_NAME+" section!");
-    if (!generalSettings_.containsKey(GENERAL_CATOMS_PARSE)) throw new RulesException("The rules file must contain the property \""+GENERAL_CATOMS_PARSE+"\" in the "+GENERAL_SECTION_NAME+" section!");
-    if (!generalSettings_.containsKey(GENERAL_DBOND_PARSE)) throw new RulesException("The rules file must contain the property \""+GENERAL_DBOND_PARSE+"\" in the "+GENERAL_SECTION_NAME+" section!");
+    if (foundChains_) {
+      if (!generalSettings_.containsKey(GENERAL_CATOMS_PARSE)) throw new RulesException("The rules file must contain the property \""+GENERAL_CATOMS_PARSE+"\" in the "+GENERAL_SECTION_NAME+" section!");
+      if (!generalSettings_.containsKey(GENERAL_DBOND_PARSE)) throw new RulesException("The rules file must contain the property \""+GENERAL_DBOND_PARSE+"\" in the "+GENERAL_SECTION_NAME+" section!");
+    }
     int amountOfChains =  Integer.parseInt(getAmountOfChains());
     int amountOfAlkylChains = Integer.parseInt(getAmountOfAlkylChains());
     int amountOfAlkenylChains = Integer.parseInt(getAmountOfAlkenylChains());
@@ -1601,6 +1603,7 @@ public class FragRuleParser
   private static void writeFragmentRule(BufferedWriter bw, FragmentRuleVO rule) throws IOException{
     String mandatory = "false";                
     if(rule.isMandatory()==FragmentRuleVO.MANDATORY_TRUE) mandatory = "true";
+    else if (rule.isMandatory()==FragmentRuleVO.MANDATORY_OTHER) mandatory = "other";
     bw.write(FRAGMENT_NAME+"=" + rule.getName() + "\t" + FRAGMENT_FORMULA+"=" + 
       rule.getFormula() + "\t" + FRAGMENT_CHARGE+"=" + 
       Integer.toString(rule.getCharge()) + "\t"+ FRAGMENT_LEVEL+"=" + 

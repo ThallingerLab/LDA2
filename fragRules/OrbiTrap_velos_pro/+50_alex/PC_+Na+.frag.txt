@@ -1,0 +1,42 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=0.02%
+ChainCutoff=50%
+RetentionTimePostprocessing=true
+SpectrumCoverage=10%
+
+
+[HEAD]
+!FRAGMENTS
+Name=-PC(59)	Formula=$PRECURSOR-C3H9N	Charge=1	MSLevel=2	mandatory=true
+Name=-PC(183)	Formula=$PRECURSOR-C5H14NO4P	Charge=1	MSLevel=2	mandatory=true
+Name=-PC(205)	Formula=$PRECURSOR-C5H13NO4PNa	Charge=1	MSLevel=2	mandatory=true
+Name=-PC(60)	Formula=-PC(59)-H	Charge=1	MSLevel=2	mandatory=other
+Name=PC(184)	Formula=C5H15NO4P		Charge=1	MSLevel=2	mandatory=other
+Name=-PE(141)	Formula=$PRECURSOR-C2H8NO4P	Charge=1	MSLevel=2	mandatory=other
+
+!INTENSITIES
+Equation=-PC(59)>0.9*$BASEPEAK		mandatory=true
+Equation=-PC(59)*0.9>-PC(183)		mandatory=true
+Equation=-PC(183)*0.5>-PC(205)		mandatory=true
+Equation=-PC(60)<0.02*$BASEPEAK	mandatory=true
+Equation=-PC(59)>3*PC(184)	mandatory=true
+Equation=-PC(59)*2>-PE(141)		mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=-FA (+HO)		Formula=$PRECURSOR-$CHAIN		Charge=1	MSLevel=2	mandatory=true
+Name=-FA (+ONa)		Formula=$PRECURSOR-$CHAIN+H-Na		Charge=1	MSLevel=2	mandatory=false
+Name=-FA (+HO) -PC(59)	Formula=$PRECURSOR-$CHAIN-NC3H9		Charge=1	MSLevel=2	mandatory=true
+Name=-FA (+ONa) -PC(59)	Formula=$PRECURSOR-$CHAIN-NC3H8Na	Charge=1	MSLevel=2	mandatory=false
+
+
+[POSITION]
+!INTENSITIES
+Equation=-FA (+HO) -PC(59)[1]*0.7>-FA (+HO) -PC(59)[2]		mandatory=true
+Equation=-FA (+ONa) -PC(59)[1]*0.5>-FA (+ONa) -PC(59)[2]	mandatory=true
+Equation=-FA (+HO)[1]*0.7>-FA (+HO)[2]				mandatory=false

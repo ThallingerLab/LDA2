@@ -48,7 +48,7 @@ import at.tugraz.genome.lda.vos.DoubleStringVO;
 import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.voutils.GeneralComparator;
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 
 /**
  * TODO: remove ambig pos.
@@ -271,7 +271,7 @@ public class LipidomicsMSnSet extends LipidParameterSet
     //now the names are sorted by area -> I can buiild my lookyp hashes
     if (status_==FRAGMENTS_DETECTED || status_==POSITION_DETECTED){
       for (String combiName : validChainCombinations_){
-      	nameLookupPositionInsensitve_.put(combiName, StaticUtils.getHumanReadableCombiName(combiName,faEncoding,lcbEncoding,false));
+      	nameLookupPositionInsensitve_.put(combiName, StaticUtils.getHumanReadableCombiName(combiName,faEncoding,lcbEncoding));
         if (status_==POSITION_DETECTED && positionDefinition_.containsKey(combiName)){
           Vector<String> posNames = getPositionSpecificCombiNames(combiName,positionDefinition_.get(combiName),faEncoding,lcbEncoding);
           Vector<String> snPosNames = getPositionSpecificCombiName(combiName,positionDefinition_.get(combiName),faEncoding,lcbEncoding);
@@ -333,6 +333,8 @@ public class LipidomicsMSnSet extends LipidParameterSet
   	String humanReadableWithoutDB = StaticUtils.getHumanReadableWODoubleBondPositions(humanReadable);
   	String positionInsensitive = nameLookupHumReadableToPositionInsensitve_.get(humanReadableWithoutDB);
   	
+  	if (positionInsensitive == null) return; //if called from the heatmap it's possible that a molecular species is not present for some files
+  	
   	nameLookupHumReadableToPositionInsensitve_.remove(humanReadableWithoutDB);
   	nameLookupPositionSnNomenclature_.remove(humanReadableWithoutDB);
   	nameLookupPositionInsensitve_.remove(positionInsensitive);
@@ -344,13 +346,11 @@ public class LipidomicsMSnSet extends LipidParameterSet
   	
   	//recalculating the relative area contributions
   	Double multiplier = 1.0 / (1.0 - relativeIntensityOfCombination_.get(positionInsensitive));
-  	System.out.println(multiplier);
   	relativeIntensityOfCombination_.remove(positionInsensitive);
   	for (String key : relativeIntensityOfCombination_.keySet()) 
   	{
   		Double rel = relativeIntensityOfCombination_.get(key);
   		Double newRel = rel * multiplier;
-  		System.out.println(newRel);
   		relativeIntensityOfCombination_.put(key, newRel);
   	}
   	
@@ -762,10 +762,6 @@ public class LipidomicsMSnSet extends LipidParameterSet
   public float getBasePeak(IntensityRuleVO rule)
   {
     CgProbe probe = rule.getAnyNonBasepeakFragment(headGroupFragments_,chainFragments_); 
-    if (probe == null)
-    {
-    	System.out.println("hi!");
-    }
     return getBasePeak(probe.getMsLevel());
   }
 

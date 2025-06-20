@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */
+ */ 
 
 package at.tugraz.genome.lda.xml;
 
@@ -38,7 +38,6 @@ import javax.xml.stream.XMLStreamReader;
 import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.maspectras.quantification.CgDefines;
 import at.tugraz.genome.maspectras.quantification.CgException;
-import at.tugraz.genome.maspectras.quantification.CgScan;
 
 /**
  * StAX based mzXML Reader for the Package.
@@ -321,6 +320,16 @@ public abstract class AbstractXMLSpectraReader implements XMLSpectraReader
    *          All internal exceptions are mapped to the CgException type.
    */
   protected abstract void readMsRun(boolean readOnlyRequiredInfoForMultiThreading) throws CgException;
+  
+  /**
+   * This method reads out the m/z maxima of a binary data array, for getting an idea
+   * about the m/z ranges for splitting in iterations and/or threads
+   * 
+   * @param peaksCount
+   * @return A float[] containing the lowest and highest m/z value
+   * @throws CgException
+   */
+  protected abstract float[] getMaximaFromBinaryDataArray(int peaksCount) throws CgException;
   
   /**
    * This method reads only the information required for getting an idea about the 

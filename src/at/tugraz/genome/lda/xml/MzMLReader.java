@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */
+ */ 
 
 package at.tugraz.genome.lda.xml;
 
@@ -275,7 +275,7 @@ public class MzMLReader extends AbstractXMLSpectraReader
         	
           if (params.getMsLevel() == 1) {
             if (!foundMzBorders && (params.getPeaksCount()>0)){
-              float[] maxima = getMaximaFromBinaryDataArray();
+              float[] maxima = getMaximaFromBinaryDataArray(params.getPeaksCount());
               if (!Arrays.equals(maxima, new float[]{Float.MAX_VALUE, 0f})) {
               	params.setLowMz(maxima[0]);
               	params.setHighMz(maxima[1]);
@@ -352,12 +352,14 @@ public class MzMLReader extends AbstractXMLSpectraReader
    * This method reads out the m/z maxima of a binary data array, for getting an idea
    * about the m/z ranges for splitting in iterations and/or threads
    * 
+   * @param peaksCount
    * @return A float[] containing the lowest and highest m/z value
-   * @throws CgException All internal exceptions are mapped to the CgException type.
+   * @throws CgException
    */
-  private float[] getMaximaFromBinaryDataArray() throws CgException
+  protected float[] getMaximaFromBinaryDataArray(int peaksCount) throws CgException
   {
     float[] maxima = new float[]{Float.MAX_VALUE, 0f};
+    if (peaksCount<1) return maxima;
     String precision = null;
     String compression = null;
     

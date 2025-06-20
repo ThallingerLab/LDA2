@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.swing;
 
@@ -33,6 +33,8 @@ import java.awt.event.MouseListener;
 import javax.swing.JButton;
 import javax.swing.border.LineBorder;
 
+import at.tugraz.genome.lda.TooltipTexts;
+
 /**
  * 
  * @author Juergen Hartler
@@ -42,12 +44,12 @@ public class ExportButton extends JButton implements MouseListener
 {
   private static final long serialVersionUID = 211052889655909533L;
 
-  public ExportButton(String name,String actionCommand, Color fontColor, Color bkgrnd, ActionListener parent) {
+  public ExportButton(String name,String actionCommand, Color fontColor, Color bkgrnd, String toolTips, ActionListener parent) {
     super(name);
     setForeground(fontColor);
     setActionCommand(actionCommand);
     addActionListener(parent);
-    Font textFont = new Font("Helvetica",Font.BOLD, 9);
+    Font textFont = new Font("Helvetica",Font.BOLD, 12);
     //setFont(getFont().deriveFont(10f));
     setFont(textFont);
     setMargin(new Insets(1,5,1,5));
@@ -62,6 +64,7 @@ public class ExportButton extends JButton implements MouseListener
     this.addMouseListener(this);
     this.setFocusPainted(false);
     this.setContentAreaFilled(false);
+    this.setToolTipText(toolTips);
   }
   
   public void mouseEntered(MouseEvent e) {

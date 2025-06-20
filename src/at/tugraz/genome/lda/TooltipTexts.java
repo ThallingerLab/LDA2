@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp  
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -33,10 +33,13 @@ public class TooltipTexts
 {
   
   public final static String TABS_MAIN_QUANTITATION = "<html>Quantitation of a single experiment</html>";
+  public final static String TABS_MAIN_SINGLE= "<html>Quantitation of a single experiment</html>";
   public final static String TABS_MAIN_BATCH = "<html>Batch Quantitation of a experiments</html>";
   public final static String TABS_MAIN_STATISTICS = "<html>Analysis of quantified results</html>";
   public final static String TABS_MAIN_DISPLAY = "<html>Manual verification of results with 3D viewer</html>";
-  public final static String TABS_MAIN_TARGET = "<html>Creation of target files with information for \u03C9-C=C position identification</html>";
+  public final static String TABS_MAIN_MASSLIST_CREATOR = "<html>Automated creation of LDA mass lists</html>";
+  public final static String TABS_MAIN_TARGET = "<html>Creation of RT-DBs with information for \u03C9-C=C position identification</html>";
+  public final static String TABS_MAIN_FRAGRULE_GENERATOR = "<html>Generation of fragmentation rules from experimental data</html>";
   public final static String TABS_MAIN_SETTINGS = "<html>Default LDA settings; e.g. type of mass spectrometer</html>";
   public final static String TABS_MAIN_LICENSE = "<html>Information about the current licensing status</html>";
   public final static String TABS_MAIN_HELP = "<html>Help component</html>";
@@ -57,7 +60,7 @@ public class TooltipTexts
   public final static String GENERAL_ACCEPT_SINGLE_END = "?</html>";
   public final static String ALL_GENERAL  = "<html>Select all</html>";
   public final static String NONE_GENERAL  = "<html>Select none</html>";
-  public final static String INVERT_GENERAL  = "<html>Invert selection</html>";;
+  public final static String INVERT_GENERAL  = "<html>Invert selection</html>";
   
   public final static String QUANTITATION_SINGLE_RAW_FILE = "<html>Enter the raw file of your experiment!<br>" +
   		  "The following file types are accepted:<br>" +
@@ -93,6 +96,9 @@ public class TooltipTexts
   		"The first input field defines the amount of isotpes.<br/>" +
   		"The second one the amount of isotopes that must match the<br/>" +
   		"isotopic distribution (otherwise hit is discarded).</html>";
+  
+  public final static String CHROM_PROCESSORS = "<html>The number of processors to be used for file translation.<br/>" +
+      "It is recommended to use 1 processor.</html>";
   
   public final static String QUANTITATION_PROCESSORS = "<html>The number of processors to be used for quantitation.<br/>" +
       "It is recommended to use n-1 processors.<br/>" +
@@ -158,7 +164,16 @@ public class TooltipTexts
   "With this option the user can specify if these are displayed as separate hits or not.<br/>" +
   "This option has no effects for data was generated with LDA versions 1.6.0 or earlier.<br/>" +
   "The value specifies the RT-shift-tolerance of the peak grouping accross experiments.</html>";
-
+  
+  public final static String STATISTICS_SHOW_MSN_ONLY = "<html>Only load analytes for which MSn evidence <br/>" +
+  "of at least the headgroup is present. <br/>" +
+  "ATTENTION: for correct statistical results, do NOT check this box and instead select the display option 'Analyte groups verified by MS/MS' in the heatmap</html>";
+  
+  public final static String STATISTICS_CHAIN_EVIDENCE_ONLY = "<html>Only load analytes for which MSn evidence <br/>" +
+  "of the headgroup and chains is present. <br/>" +
+  "ATTENTION: for correct statistical results, do NOT check this box and instead select the display option 'Analyte groups verified by MS/MS' in the heatmap</html>";
+  
+  public final static String STATISTICS_COMBINE_OX = "<html>Combines classes with their respective oxidized classes.</html>";
   
   public final static String STATISTICS_CORRECT_ORDER_FILE = "<html>The analytes are normally ordered according to the order in the result Excel files.<br/>" +
   "However, due to not-quantified analytes this order could deviate from the original order in the quantitation file.<br/>" +
@@ -225,6 +240,13 @@ public class TooltipTexts
   public final static String EXPORT_N_RTs = "<html>Export mass list for &omega identification.</html>";
   public final static String EXPORT_MAF = "<html>Exports data in MAF format.</html>";
   
+  public final static String HEATMAP_SETTINGS_APPLY_TO_ALL = "<html>Apply these settings to all lipid classes, as far as applicable</html>";
+  public final static String HEATMAP_SELECTION_MODE = "<html>Allows for quick selection/deselection of the chosen option with a single left-click.</html>";
+  public final static String HEATMAP_SORTING_OPTIONS = "<html>Choose the way analytes are sorted.</html>";
+  public final static String HEATMAP_SHOW_OPTION = "<html>Select at which level of structural detail analyte groups should be displayed.</html>";
+  public final static String HEATMAP_SHOW_OPTION_MSN = "<html>Select at which level of MS verification analyte groups should be displayed. <br>" +
+  		"One analyte per RT group meeting the desired level of verification suffices for all IDs of the group to be included. <br>" +
+  		"Standards are included in any case.</html>";
   public final static String HEATMAP_SHOW_INT = "<html>Display the internal standards in the heat map or not.</html>";
   public final static String HEATMAP_SHOW_EXT = "<html>Display the external standards in the heat map or not.</html>";
   public final static String HEATMAP_ISOTOPES = "<html>Upper limit for the additional isotopic peaks used for the quantitative value.</html>";
@@ -332,6 +354,90 @@ public class TooltipTexts
   public final static String DISPLAY_ASSIGN_SELECTED_DB_SPECIES = "<html>Assign selected molecular species to this signal.</html>";
   public final static String DISPLAY_REMOVE_SELECTED_DB_SPECIES = "<html>Remove selected molecular species.</html>";
   public final static String DISPLAY_SAVE_CHANGES = "<html>Save changes to result file.</html>";
+  
+  public final static String MASSLIST_GENERAL_BROWSE= "<html>Select a filepath to store the exported Excel file to.<br/>" +
+  		"The file name must be entered manually if no file exists that should be overridden.<br/>" +
+  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>"; 
+  public final static String MASSLIST_GENERAL_BROWSE_FIELD= "<html>Enter a filepath to store the exported Excel file to.<br/>" +
+  		"The 'Browse' button offers an alternative option to select a viable file path.<br/>" +
+  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>"; 
+  public final static String MASSLIST_GENERAL_EXPORT= "<html>Export the selected lipid (sub)classes to the chosen directory.</html>";
+  public final static String MASSLIST_GENERAL_ION_MODE= "<html>Select for which ion mode(s) relevant adducts should be exported.<br/>" +
+  		"This is based on the sign of the adduct charge.<br/>" +
+  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>"; 
+  public final static String MASSLIST_GENERAL_FORMAT= "<html>Select the desired output format.<br/>" +
+  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>"; 
+  
+  public final static String MASSLIST_CLASS_SELECT_ALL = "<html>Invert the selection of listed lipid classes.</html>"; 
+  public final static String MASSLIST_CLASS_NAME = "<html>This defines the name of the lipid (sub)class.<br/>" +
+  		"In combination with the respective adduct name this determines the filename of the MS/MS fragmentation rules file <br/>" +
+  		"that LDA will look for in the folder 'fragRules' in the installation directory.<br/>" +
+  		"E.g. the fragmentation rule file for the lipid subclass 'PC' with the adduct 'H' is named 'PC_H.frag.txt'.<br/>" +
+  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>"; 
+  public final static String MASSLIST_CLASS_FORMULA = "<html>This defines the chemical formula of the lipid headgroup (without chains).<br/>" +
+  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>"; 
+  public final static String MASSLIST_CLASS_OH_RANGE = "<html>This defines the range of chain (FA and SPB) oxidation of a lipid (sub)class.<br/>" +
+  		"Only masses that are possible given the chains defined in the provided chain lists are exported.<br/>" +
+  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";
+  public final static String MASSLIST_CLASS_C_RANGE = "<html>This defines the range of combined chain (FA and SPB) C atoms that should be exported.<br/>" +
+  		"Only masses that are possible given the chains defined in the provided chain lists are exported.<br/>" +
+  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";
+  public final static String MASSLIST_CLASS_DB_RANGE = "<html>This defines the range of combined chain (FA and SPB) double bonds that should be exported.<br/>" +
+  		"Only masses that are possible given the chains defined in the provided chain lists are exported.<br/>" +
+  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";
+  public final static String MASSLIST_CLASS_RT_RANGE = "<html>This defines the retention time range setting for the LDA mass list.<br/>" +
+  		"If a range is defined, LDA will only consider IDs within the defined RT range.<br/>" +
+  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";  
+  public final static String MASSLIST_CLASS_RT_FILTER = "<html>When checked, the LDA RT filter is calculated based on all identified adducts.<br/>" +
+  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";  
+  public final static String MASSLIST_CLASS_PICK_BEST = "<html>When checked, the best matches are picked from duplicates (same lipid (sub)class and scan number) by spectrum coverage.<br/>" +
+  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";  
+  public final static String MASSLIST_CLASS_FA_LIST = "<html>This defines the fatty acid chain list to base the mass list on.<br/>" +
+  		"Available for selection are all fatty acid chain lists in the folder 'fattyAcids' in the installation directory.<br/>" +
+  		"Only compounds that are possible given the entries in the provided chain list will be included in the exported file.<br/>" +
+  		"If the chain list includes stable isotope labeled chains, those will be included in all possible combinations.<br/>" +
+  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";
+  public final static String MASSLIST_CLASS_SPB_LIST = "<html>This defines the sphingoid base list to base the mass list on.<br/>" +
+  		"Available for selection are all sphingoid base lists in the folder 'fattyAcids' in the installation directory.<br/>" +
+  		"Only compounds that are possible given the entries in the provided chain list will be included in the resulting mass list.<br/>" +
+  		"If the chain list includes stable isotope labeled chains, those will be included in all possible combinations in the generated mass list file.<br/>" +
+  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";
+  public final static String MASSLIST_CLASS_NUM_CHAIN = "<html>This defines the number of fatty acid chains and spingoid bases in the lipid (sub)class.<br/>" +
+  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";
+  public final static String MASSLIST_CLASS_ADDUCT_SELECTION= "<html>One or multiple adducts may be selected for this lipid (sub)class.<br/>" +
+  		"Additional adducts may be defined below.<br/>" +
+  		"Depending on the option chosen in the 'mass list export' settings below, m/z values for all adducts or only those relevant for negative or positive ion mode, respectively, are exported.<br/>" +
+  		"Please refer to the user manual (tab 'Help') for more detailed instructions.</html>";
+  public final static String MASSLIST_CLASS_DELETE= "<html>Delete this lipid (sub)class definition.</html>";
+  public final static String MASSLIST_CLASS_OVERRIDE= "<html>Override the existing lipid (sub)class definition.</html>";
+  public final static String MASSLIST_CLASS_SAVE_NEW= "<html>Export this new lipid (sub)class definition.</html>";
+  public final static String MASSLIST_CLASS_OVERRIDE_ALL= "<html>Apply all these settings to all listed lipid (sub)class definitions.</html>";
+  public final static String MASSLIST_CLASS_APPLY= "<html>Apply this setting to all listed lipid (sub)class definitions.</html>";
+  public final static String MASSLIST_CLASS_EXPORT_OPTION= "<html>Select which group of lipid (sub)class definitions should be exported.</html>";
+  
+  public final static String MASSLIST_EDIT_ADDUCT = "<html>Add, remove or edit adducts.</html>"; 
+  public final static String MASSLIST_ADDUCT_NAME = "<html>This defines the name of the adduct.<br/>" +
+  		"In combination with the respective lipid (sub)class name this determines the filename of the MS/MS fragmentation rules file <br/>" +
+  		"that LDA will look for in the folder 'fragRules' in the installation directory. <br/>" +
+  		"E.g. the fragmentation rule file for the lipid subclass 'PC' with the adduct 'H' is named 'PC_H.frag.txt'. <br/>" +
+  		"Please refer to the user manual for more detailed instructions.</html>"; 
+  public final static String MASSLIST_ADDUCT_FORMULA = "<html>This defines the chemical formula of the adduct.<br/>" +
+  		"chemical formulas prefixed with a minus symbol will be subtracted from the neutral mass,<br/>" +
+  		"whereas formulas prefixed with a plus will be added (an adduct formula may contain both, a minus and a plus).<br/>" +
+  		"Please refer to the user manual for more detailed instructions.</html>"; 
+  public final static String MASSLIST_ADDUCT_CHARGE = "<html>This defines the charge of the adduct.<br/>" +
+  		"The neutral mass is divided by the absolute value of the respective adduct charge for the exported mass list.<br/>" +
+  		"The sign of the adduct charge is crucial when only adducts for a specific ion mode (i.e. negative or positive) are selected for export.<br/>" +
+  		"Please refer to the user manual for more detailed instructions.</html>"; 
+  public final static String MASSLIST_ADDUCT_DELETE= "<html>Delete this adduct definition.</html>";
+  public final static String MASSLIST_ADDUCT_OVERRIDE= "<html>Override the existing adduct definition.</html>";
+  public final static String MASSLIST_ADDUCT_SAVE_NEW= "<html>Export this new adduct definition.</html>";
+  
+  public final static String LCCL_MATCHING_ALGORITHM = "<html>Use this setting to define the matching algorithm to be used for data types OTHER THAN 'standards'.<br/>" +
+  		"Please refer to the user manual for details.</html>";
+  public final static String LCCL_MAX_DEVIATION = "<html>Use this setting to define a maximum allowed deviation from the standards-curve.<br/>" +
+  		"for anchor points derived from biological data.<br/>" +
+  		"A higher threshold will require more manual removal of visual outliers.</html>";
   
   public final static String DIALOG_ADD_PEAK_START_TIME = "<html>The lower time border in minutes.</html>";
   public final static String DIALOG_ADD_PEAK_STOP_TIME = "<html>The upper time border in minutes.</html>";

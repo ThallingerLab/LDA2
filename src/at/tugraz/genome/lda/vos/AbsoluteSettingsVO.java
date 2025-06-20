@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */  
 
 package at.tugraz.genome.lda.vos;
 
@@ -35,13 +35,16 @@ public class AbsoluteSettingsVO
   
   private Hashtable<String,ProbeVolConcVO> volumeSettings_;
   private Hashtable<String, LipidClassSettingVO> classSettings_;
+  private Hashtable<String,String> chosenClass_;
   
   public AbsoluteSettingsVO(Hashtable<String,ProbeVolConcVO> volumeSettings_,
-      Hashtable<String,LipidClassSettingVO> classSettings_)
+      Hashtable<String,LipidClassSettingVO> classSettings_,
+      Hashtable<String,String> chosenClass)
   {
     super();
     this.volumeSettings_ = volumeSettings_;
     this.classSettings_ = classSettings_;
+    this.chosenClass_ = chosenClass;
   }
   
   public Hashtable<String,ProbeVolConcVO> getVolumeSettings()
@@ -51,6 +54,11 @@ public class AbsoluteSettingsVO
   public Hashtable<String,LipidClassSettingVO> getClassSettings()
   {
     return classSettings_;
+  }
+  
+  public String getChosenClass(String originalClassName)
+  {
+  	return chosenClass_.get(originalClassName);
   }
   
 }

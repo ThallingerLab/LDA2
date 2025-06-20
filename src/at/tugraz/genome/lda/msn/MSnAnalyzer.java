@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.msn;
 
@@ -59,7 +59,6 @@ import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.quantification.LipidomicsChromatogram;
 import at.tugraz.genome.lda.swing.Range;
 import at.tugraz.genome.lda.utils.FloatFloatVO;
-import at.tugraz.genome.lda.utils.Pair;
 import at.tugraz.genome.lda.utils.StaticUtils;
 import at.tugraz.genome.lda.vos.DoubleStringVO;
 import at.tugraz.genome.lda.vos.QuantVO;
@@ -71,6 +70,7 @@ import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.maspectras.quantification.ChromatogramReader;
 import at.tugraz.genome.maspectras.utils.Calculator;
 import at.tugraz.genome.voutils.GeneralComparator;
+import org.apache.commons.math3.util.Pair;
 
 /**
  * Central class for the verification of MSn evidence
@@ -397,14 +397,18 @@ public class MSnAnalyzer
     basePeakValues_ = calculateBasePeakValuesIfRequired(msLevels);
     checkHeadGroupFragments(probesWithMSnSpectra_);
     if (status_== LipidomicsMSnSet.DISCARD_HIT && !debug_) return;
-    checkChainFragments(probesWithMSnSpectra_);
-    if (debug_) debugVO_.setSpectrumCoverageFulfilled(true);
-    checkSpectrumCoverage(msLevels);
-    if (status_!= LipidomicsMSnSet.FRAGMENTS_DETECTED && !debug_) return;
-    if (fragCalc_.getAllowedChainPositions()>1) {
-      try {checkPositions();
-      }catch (LipidCombinameEncodingException e) {throw new RulesException(e);}
-    }else if (status_!=LipidomicsMSnSet.DISCARD_HIT)status_ = LipidomicsMSnSet.POSITION_DETECTED;
+    if (fragCalc_.getAmountOfChains()>0) {
+      checkChainFragments(probesWithMSnSpectra_);
+      if (debug_) debugVO_.setSpectrumCoverageFulfilled(true);
+      checkSpectrumCoverage(msLevels);
+      if (status_!= LipidomicsMSnSet.FRAGMENTS_DETECTED) return;
+      if (fragCalc_.getAllowedChainPositions()>1) {
+        try {checkPositions();
+        }catch (LipidCombinameEncodingException e) {throw new RulesException(e);}
+      }else if (status_!=LipidomicsMSnSet.DISCARD_HIT)status_ = LipidomicsMSnSet.POSITION_DETECTED;
+    }else {
+      checkSpectrumCoverage(msLevels);
+    }
   }
   
 
@@ -2292,8 +2296,18 @@ public class MSnAnalyzer
       }
     }
     // now extract the chromatograms for each distinct mz Value
-    Hashtable<QuantVO,Hashtable<String,Vector<LipidomicsChromatogram>>> chromsForMzs = new Hashtable<QuantVO,Hashtable<String,Vector<LipidomicsChromatogram>>>();
+    Hashtable<QuantVO,Hashtable<String,Vector<LipidomicsChromatogram>>> chromsForMzs = null;
+    //TODO: this routine takes currently only the lowest MSn-level - for extending to other MSn-levels, the for-loop has to be extended over the whole procedure
+    //it is recommended to start with the lowest MSn-level (level 2), and only if this one does not give an option for a split: continue with the next MSn level 
+    List<Integer> msLevels = new ArrayList<Integer>();
     for (Integer msLevel : relevantMzHash.keySet()){
+    	msLevels.add(msLevel);
+    }
+    Collections.sort(msLevels);
+    for (Integer msLevel : msLevels){
+    	if (msLevel!=msLevels.get(0))
+    		continue;
+    	chromsForMzs = new Hashtable<QuantVO,Hashtable<String,Vector<LipidomicsChromatogram>>>();
       Hashtable<QuantVO,Hashtable<String,CgProbe>> mzsForChroms = relevantMzHash.get(msLevel);
       List<Integer> scansSorted = scanNumbersSorted.get(msLevel);
       Hashtable<Integer,Float> rts = retTimeLookup.get(msLevel);
@@ -2365,7 +2379,7 @@ public class MSnAnalyzer
           Hashtable<String,Vector<LipidomicsChromatogram>> chromsForQuant = chromsForMzs.get(quant);
           for (String key : chromsForQuant.keySet()){
             Vector<LipidomicsChromatogram> chroms = chromsForQuant.get(key);
-            if (startRelative<=chroms.get(1).Value[i][0] && chroms.get(1).Value[i][0]<=stopRelative) {
+          	if (startRelative<=chroms.get(1).Value[i][0] && chroms.get(1).Value[i][0]<=stopRelative) {
               chroms.get(1).Value[i][1] = chroms.get(0).Value[i][1]/highestInt;
             }
           }

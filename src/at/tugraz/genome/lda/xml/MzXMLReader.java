@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2021 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */
+ */ 
 
 package at.tugraz.genome.lda.xml;
 
@@ -385,10 +385,11 @@ public class MzXMLReader extends AbstractXMLSpectraReader
    * This method reads out the m/z maxima of a binary data array, for getting an idea
    * about the m/z ranges for splitting in iterations and/or threads
    * 
+   * @param peaksCount
    * @return A float[] containing the lowest and highest m/z value
-   * @throws CgException All internal exceptions are mapped to the CgException type.
+   * @throws CgException
    */
-  private float[] getMaximaFromBinaryDataArray(int peaksCount) throws CgException
+  protected float[] getMaximaFromBinaryDataArray(int peaksCount) throws CgException
   {
     float[] maxima = new float[]{Float.MAX_VALUE,0f};
     if (peaksCount<1) return maxima;

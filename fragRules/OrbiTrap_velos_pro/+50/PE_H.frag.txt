@@ -16,6 +16,7 @@ Name=PEhead_Na_164_wrong	Formula=$PRECURSOR-C2H5N			Charge=1	MSLevel=2	mandatory
 Name=Precursor			Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=other
 Name=Na_phosphate_wrong		Formula=H3PO4Na			Charge=1	MSLevel=2	mandatory=other
 Name=NL_PEhead_163_WRONG	Formula=$PRECURSOR-C2H7NO4PNa	Charge=1	MSLevel=2	mandatory=other
+Name=PChead_184_WRONG		Formula=C5H15NO4P		Charge=1	MSLevel=2	mandatory=other
 
 !INTENSITIES
 Equation=NL_PEhead_141>0.9*$BASEPEAK		mandatory=true
@@ -24,7 +25,8 @@ Equation=NL_PEhead_141*0.9>PEhead_Na_164_wrong	mandatory=true
 Equation=Precursor<0.25*$BASEPEAK		mandatory=true
 Equation=NL_PEhead_141*0.15>Na_phosphate_wrong	mandatory=true
 Equation=NL_PEhead_141*0.25>NL_PEhead_163_WRONG	mandatory=true
-
+Equation=PChead_184_WRONG<0.25*$BASEPEAK	mandatory=true
+Equation=PChead_184_WRONG<3*NL_PEhead_141	mandatory=true
 
 [CHAINS]
 !FRAGMENTS

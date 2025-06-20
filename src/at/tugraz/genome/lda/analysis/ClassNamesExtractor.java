@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.analysis;
 
@@ -27,13 +27,18 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collection;
 import java.util.Hashtable;
+import java.util.List;
+import java.util.Optional;
+import java.util.TreeMap;
 import java.util.Vector;
 import java.util.stream.Stream;
 
 import javax.swing.JFrame;
 
 import org.dhatim.fastexcel.reader.ReadableWorkbook;
+import org.dhatim.fastexcel.reader.Row;
 import org.dhatim.fastexcel.reader.Sheet;
 
 import at.tugraz.genome.lda.WarningMessage;
@@ -85,20 +90,33 @@ public class ClassNamesExtractor
   
   protected void parseResultFileFastExcel(File resultFile) throws ExcelInputFileException, LipidCombinameEncodingException{
   	try (InputStream is = new FileInputStream(resultFile);
-        ReadableWorkbook wb = new ReadableWorkbook(is);
-        Stream<Sheet> sheets = wb.getSheets();) 
+        ReadableWorkbook wb = new ReadableWorkbook(is);) 
   	{
-  		sheets.filter((s) -> (!s.getName().equals(QuantificationResultExporter.SHEET_CONSTANTS)&&
-									          !s.getName().endsWith(QuantificationResultExporter.ADDUCT_OMEGA_SHEET)&&
-									          !s.getName().endsWith(QuantificationResultExporter.ADDUCT_OVERVIEW_SHEET)&&
-									          !s.getName().endsWith(QuantificationResultExporter.ADDUCT_MSN_SHEET)))
-  					.forEach((s) -> {
-  						if (!classesHash_.containsKey(s.getName())) 
-  						{
-  							lipidClasses_.add(s.getName());
-  	            classesHash_.put(s.getName(), s.getName());
-  						}
-  					});  
+  		Optional<Sheet> lipidClassSheet = wb.getSheets().filter((s) -> (s.getName().equals(QuantificationResultExporter.SHEET_LIPID_CLASS_LOOKUP))).findFirst();
+  		if (lipidClassSheet.isPresent())
+  		{
+  			TreeMap<String,String> map = parseLipidClassSheet(lipidClassSheet.get());
+  			Collection<String> lipidClasses = map.values();
+  			lipidClasses_.addAll(lipidClasses);
+  			for (String lipidClass : lipidClasses)
+  			{
+  				classesHash_.put(lipidClass, lipidClass);
+  			}
+  		}
+  		else
+  		{
+  			wb.getSheets().filter((s) -> (!s.getName().equals(QuantificationResultExporter.SHEET_CONSTANTS)&&
+										          !s.getName().endsWith(QuantificationResultExporter.ADDUCT_OMEGA_SHEET)&&
+										          !s.getName().endsWith(QuantificationResultExporter.ADDUCT_OVERVIEW_SHEET)&&
+										          !s.getName().endsWith(QuantificationResultExporter.ADDUCT_MSN_SHEET)))
+							.forEach((s) -> {
+								if (!classesHash_.containsKey(s.getName())) 
+								{
+									lipidClasses_.add(s.getName());
+									classesHash_.put(s.getName(), s.getName());
+								}
+							});  
+  		} 
   	}
   	catch (IOException ex)
   	{
@@ -106,6 +124,21 @@ public class ClassNamesExtractor
       new WarningMessage(new JFrame(), "ERROR", ex.getMessage());
       throw new ExcelInputFileException(ex);
     }
+  }
+  
+  public static TreeMap<String,String> parseLipidClassSheet(Sheet sheet) throws IOException
+  {
+  	TreeMap<String,String> map = new TreeMap<String,String>();
+  	List<Row> rows = sheet.read();
+    List<Row> contentRows = rows.subList(1, rows.size());
+
+    for (Row row : contentRows) {
+      
+      String key = row.getCellText(0);
+      String lipidClass = row.getCellText(1);
+      map.put(key, lipidClass);
+    }
+    return map;
   }
 
   public Vector<String> getLipidClasses(){

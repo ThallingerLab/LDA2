@@ -24,7 +24,6 @@ Equation=PChead_184_WRONG<0.3*Precursor		mandatory=true
 !FRAGMENTS
 Name=NL_Carboxy		Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=false
 Name=NL_Carboxy_Na	Formula=$PRECURSOR-$CHAIN+H-Na	Charge=1	MSLevel=2	mandatory=false
-Name=NL_Carboxy_NH3	Formula=$PRECURSOR-$CHAIN-NH3	Charge=1	MSLevel=2	mandatory=false
 
 !INTENSITIES
 Equation=NL_Carboxy+0*NL_Carboxy_Na>0.005*Precursor	mandatory=true

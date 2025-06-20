@@ -1,0 +1,26 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=1%
+ChainCutoff=10%
+SpectrumCoverage=10%
+RetentionTimePostprocessing=true
+MSIdentificationOrder=MSnOnly
+
+[HEAD]
+!FRAGMENTS
+Name=glycerol_phosphate_155	Formula=C3H8O5P			Charge=1	MSLevel=2	mandatory=false
+Name=NL_H2O			Formula=$PRECURSOR-H2O		Charge=1	MSLevel=2	mandatory=false
+Name=NL_PEhead_61		Formula=$PRECURSOR-C2H7NO	Charge=1	MSLevel=2	mandatory=false
+Name=NL_PEhead_141		Formula=$PRECURSOR-C2H8NO4P	Charge=1	MSLevel=2	mandatory=true
+Name=NL_PGhead_172		Formula=$PRECURSOR-C3H9O6P	Charge=1	MSLevel=2	mandatory=true
+
+!INTENSITIES
+Equation=NL_PEhead_141*1.4>NL_PGhead_172	mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=NL_Carboxy		Formula=$PRECURSOR-$CHAIN		Charge=1	MSLevel=2	mandatory=false

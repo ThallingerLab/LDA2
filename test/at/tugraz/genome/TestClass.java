@@ -93,37 +93,37 @@ import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-//import org.jfree.chart.StandardChartTheme;
-//import org.jfree.chart.axis.LogAxis;
-//import org.jfree.chart.ChartFactory;
-//import org.jfree.chart.ChartPanel;
-//import org.jfree.chart.JFreeChart;
-//import org.jfree.chart.StandardChartTheme;
-//import org.jfree.chart.axis.LogAxis;
-//import org.jfree.chart.axis.LogarithmicAxis;
-//import org.jfree.chart.axis.NumberAxis;
-//import org.jfree.chart.axis.NumberTickUnit;
-//import org.jfree.chart.axis.ValueAxis;
-//import org.jfree.chart.plot.PlotOrientation;
-//import org.jfree.chart.plot.XYPlot;
-//import org.jfree.chart.renderer.xy.XYItemRenderer;
-//import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
-//import org.jfree.data.category.DefaultCategoryDataset;
-//import org.jfree.data.xy.XYSeries;
-//import org.jfree.data.xy.XYSeriesCollection;
-//import org.jfree.chart.ChartFactory;
-//import org.jfree.chart.JFreeChart;
-//import org.jfree.chart.plot.PlotOrientation;
-//import org.jfree.chart.plot.Zoomable;
-//import org.jfree.data.xy.XYSeries;
-//import org.jfree.data.xy.XYSeriesCollection;
-//import org.jfree.chart.ChartFactory;
-//import org.jfree.chart.JFreeChart;
-//import org.jfree.chart.plot.PlotOrientation;
-//import org.jfree.chart.plot.XYPlot;
-//import org.jfree.chart.renderer.xy.XYBarRenderer;
-//import org.jfree.data.xy.XYSeries;
-//import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.chart.StandardChartTheme;
+import org.jfree.chart.axis.LogAxis;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.StandardChartTheme;
+import org.jfree.chart.axis.LogAxis;
+import org.jfree.chart.axis.LogarithmicAxis;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.NumberTickUnit;
+import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.data.category.DefaultCategoryDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.Zoomable;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYBarRenderer;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import org.xml.sax.SAXException;
 
 
@@ -177,7 +177,7 @@ import at.tugraz.genome.lda.msn.PostQuantificationProcessor;
 import at.tugraz.genome.lda.msn.RulesContainer;
 import at.tugraz.genome.lda.msn.parser.FALibParser;
 import at.tugraz.genome.lda.msn.parser.FragRuleParser;
-import at.tugraz.genome.lda.msn.parser.LCBLibParser;
+import at.tugraz.genome.lda.msn.parser.SPBLibParser;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 import at.tugraz.genome.lda.msn.vos.IntensityChainVO;
 import at.tugraz.genome.lda.msn.vos.IntensityPositionVO;
@@ -185,6 +185,7 @@ import at.tugraz.genome.lda.msn.vos.IntensityRuleVO;
 import at.tugraz.genome.lda.msn.vos.MSnDebugVO;
 import at.tugraz.genome.lda.parser.LDAResultReader;
 import at.tugraz.genome.lda.parser.MzXMLMergerForWaters;
+import at.tugraz.genome.lda.parser.MassListParser;
 import at.tugraz.genome.lda.quantification.LipidParameterSet;
 import at.tugraz.genome.lda.quantification.LipidomicsAnalyzer;
 import at.tugraz.genome.lda.quantification.LipidomicsChromatogram;
@@ -251,6 +252,7 @@ import at.tugraz.genome.vos.MSFinderEntry;
 import at.tugraz.genome.vos.MSFinderHitVO;
 import at.tugraz.genome.vos.Mix1Standards;
 import at.tugraz.genome.vos.Mix2Standards;
+import at.tugraz.genome.vos.RTCheckedVO;
 import at.tugraz.genome.vos.ReferenceInfoVO;
 import at.tugraz.genome.voutils.GeneralComparator;
 //import at.tugraz.genome.thermo.IXRawfile;
@@ -338,6 +340,7 @@ public class TestClass extends JApplet implements AddScan
   
   private final String COLUMN_HEADER_ADDUCT = "Adduct";
   private final String COLUMN_HEADER_SCORE = "ALEX score";
+  private final String COLUMN_HEADER_SCORE_ALL_FRAGMENTS = "ALEX score combined";
   private final String COLUMN_HEADER_TYPE = "Fragment type";
   private final String COLUMN_HEADER_CLASS = "Lipid class";
   private final String COLUMN_HEADER_SPECIES = "Lipid species";
@@ -345,6 +348,12 @@ public class TestClass extends JApplet implements AddScan
   private final String COLUMN_HEADER_POLARITY= "Polarity";
   private final String COLUMN_HEADER_RT_GROUP= "RT group";
   private final String COLUMN_HEADER_TP= "TP";
+  private final String COLUMN_HEADER_COMMENT= "Comment";
+  private final String COLUMN_HEADER_MAX_FRAGS= "MS2_Max_fragments_expected";
+  private final String COLUMN_HEADER_MAX_ALL_FRAGS = "MS2_Max_fragments_expected combined";
+  private final String COLUMN_HEADER_SCORE_UNCORRECTED = "ALEX score uncorr.";
+  private final String COLUMN_HEADER_AMBIGUOUS = "Ambiguous partner";
+
   
   private final String TYPE_SPECIES = "Species-level identification";
   private final String TYPE_SPECIES_ABBREV = "LCSF";
@@ -354,6 +363,7 @@ public class TestClass extends JApplet implements AddScan
   private final short ALEX_DATA_BIN_FIXED_0_04 = 0;
   private final short ALEX_DATA_BIN_LOW_RES = 1;
   private final short ALEX_DATA_BIN_HIGH_RES = 2;
+  
 
 
   public TestClass()
@@ -441,7 +451,7 @@ public class TestClass extends JApplet implements AddScan
     //this.readAlex123File();
     //this.startQuantitationWithAlex123File();
     //this.readIndexFile();
-    //this.readRttFile();
+    this.readRttFile();
     //this.detectMsnByAlex123();
     //this.mergeIdx2();
     //this.faSummaryConverter();
@@ -450,6 +460,8 @@ public class TestClass extends JApplet implements AddScan
     //this.batchQuantByCommandLine();
     //this.groupAlexResultsByRt();
     //generateSphingolipidMassList();
+  	//this.generateArchaeaMassList();
+  	//this.generateAcetlyCoAMassList();
     //generateIsoLabeledMassList();
     //parseLCBList();
     //replicateCudaBug();
@@ -487,7 +499,7 @@ public class TestClass extends JApplet implements AddScan
     //this.checkMixtureModelLMFormula();
     //this.mixtureModelWithDecoySearch();
     //this.mixtureModelWithDecoySearchAddFunction();
-    this.validateHitsBasedOnRetentionTime();
+    //this.validateHitsBasedOnRetentionTime();
     //this.generateCodeForSpeciesEvaluation();
   }
 
@@ -589,7 +601,7 @@ public class TestClass extends JApplet implements AddScan
               } 
 
               else if (contents.startsWith("mass")&&contents.contains("(")&&contents.contains(")")){
-                String[] formulaAndName = QuantificationThread.extractFormulaAndAdductName(contents);
+                String[] formulaAndName = StaticUtils.extractFormulaAndAdductName(contents);
                 adductComposition.put(formulaAndName[1],StaticUtils.categorizeFormula(formulaAndName[0]));
                 massOfInterestColumns.put(i,formulaAndName[1]);
               }
@@ -991,7 +1003,7 @@ public class TestClass extends JApplet implements AddScan
     try {
       parser.parse();
       //System.out.println(parser.calculateTheoreticalMass("C18 H31 O1", false));
-      System.out.println(parser.calculateTheoreticalMass("C2 F3 O2", false));
+      System.out.println(parser.calculateTheoreticalMass("C48 H87 O10 P1 N1", false));
       //System.out.println(parser.calculateTheoreticalMass("C44 H83 O8 P1 N1", false));
     }
     catch (SpectrummillParserException e) {
@@ -1541,7 +1553,7 @@ public class TestClass extends JApplet implements AddScan
 
   private void plus2IsotopicRelationXls(){
     try{
-//      Vector contents = QuantificationThread.parseQuantExcelFile("E:\\lipidomics\\Niki\\20140515_BMP_pos.xls", 2f, 3f, 3, 1, true, 0.0001f, 0f, -1f, -1f);
+//      Vector contents = (new TargetListParser()).parseQuantExcelFile("E:\\lipidomics\\Niki\\20140515_BMP_pos.xls", 2f, 3f, 3, 1, true, 0.0001f, 0f, -1f, -1f);
 //      LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)contents.get(0);
 //      Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)contents.get(1);
 //      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)contents.get(2);
@@ -1608,7 +1620,7 @@ public class TestClass extends JApplet implements AddScan
   
   private void readQuantExcel(){
     try{
-////      Vector excelContent = QuantificationThread.parseQuantExcelFile("D:\\Kim\\SL_massLists\\SL_negative.xlsx", -1f, -1f, 2, 1, true, 0f, 0f, -1f, -1f);
+////      Vector excelContent = (new TargetListParser()).parseQuantExcelFile("D:\\Kim\\SL_massLists\\SL_negative.xlsx", -1f, -1f, 2, 1, true, 0f, 0f, -1f, -1f);
       Vector excelContent = null;
       System.out.println("Hallo");
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)excelContent.get(3);
@@ -2960,6 +2972,7 @@ public class TestClass extends JApplet implements AddScan
   private void setStandardParameters(LipidomicsAnalyzer lAnalyzer){
     lAnalyzer.set3DParameters(LipidomicsConstants.getChromSmoothRange(),LipidomicsConstants.getChromSmoothRepeats(),
         LipidomicsConstants.removeIfOtherIsotopePresent(),LipidomicsConstants.useNoiseCutoff(), LipidomicsConstants.getNoiseCutoffDeviationValue(), 
+        LipidomicsConstants.useDynamicNoiseCutoff(),
         LipidomicsConstants.getMinimumRelativeIntensity(), LipidomicsConstants.getScanStep(),
         LipidomicsConstants.getProfileMzRange(), LipidomicsConstants.getProfileTimeTolerance_(),
         LipidomicsConstants.getProfileIntThreshold_(), LipidomicsConstants.getBroaderProfileTimeTolerance_(),
@@ -3198,7 +3211,7 @@ public void testTabFile() throws Exception {
   private void createN15MassList(){
 
 /*    try {
-      Vector excelContent = QuantificationThread.parseQuantExcelFile("E:\\Dancy\\20131217\\PE Values.xls", 0f, 0f, 2, 1, true, 0f, 0f, 0f, 0f);
+      Vector excelContent = (new TargetListParser()).parseQuantExcelFile("E:\\Dancy\\20131217\\PE Values.xls", 0f, 0f, 2, 1, true, 0f, 0f, 0f, 0f);
       LinkedHashMap<String,Integer> classSequence = (LinkedHashMap<String,Integer>)excelContent.get(0);
       Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)excelContent.get(1);
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantObjects = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)excelContent.get(2);
@@ -5846,7 +5859,7 @@ public void testTabFile() throws Exception {
   private void performComparisonOfNaturalProbes(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses, 
       Hashtable<String,LipidClassInfoVO> lipidClassInfo, String chromFile, String quantFile, String ldaFile, String lbFile, String outputFile){
     try{
-      //Vector quantValues = QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f);
+      //Vector quantValues = (new TargetListParser()).parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f);
       Vector quantValues = null;
       String[] chromPaths = StringUtils.getChromFilePaths(chromFile);   
       LipidomicsAnalyzer analyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
@@ -6946,7 +6959,7 @@ public void testTabFile() throws Exception {
       Hashtable<String,Hashtable<String,Hashtable<String,LipidBLASTIdentificationVO>>> resultsLB = lBlastParser.getResults_();
       String[] chromPaths = StringUtils.getChromFilePaths(chromFile);   
       LipidomicsAnalyzer analyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
-      ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f).get(3);
+      ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new TargetListParser()).parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f).get(3);
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = null;
       Sheet summarySheet = resultWorkbook.createSheet("Summary");
       Sheet detailsSheet = resultWorkbook.createSheet("Details");
@@ -9348,7 +9361,7 @@ public void testTabFile() throws Exception {
     files[0] = new File("D:\\Experiment1\\SanDiego\\negative\\10022015 Hartler (4 Samples) EMS IDA neg and pos mode 5x replicates-Standard 1 5uM neg_Ex1_neg.xlsx");
 
     try {
-      ////Vector allInfo = QuantificationThread.parseQuantExcelFile("D:\\Experiment1\\massLists\\quant\\Ex1_pos.xlsx",  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f);
+      ////Vector allInfo = (new TargetListParser()).parseQuantExcelFile("D:\\Experiment1\\massLists\\quant\\Ex1_pos.xlsx",  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f);
       Vector allInfo = null;
       Set<String> classes = ((LinkedHashMap<String,Integer>)allInfo.get(0)).keySet();
       Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)allInfo.get(1);
@@ -9661,7 +9674,7 @@ public void testTabFile() throws Exception {
     
     try{
       Vector<String> tgSpecies = null;
-      ////tgSpecies = ((Hashtable<String,Vector<String>>)QuantificationThread.parseQuantExcelFile("D:\\BiologicalExperiment\\massLists\\positive\\TG.xlsx",  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f).get(1)).get("TG");
+      ////tgSpecies = ((Hashtable<String,Vector<String>>)(new TargetListParser()).parseQuantExcelFile("D:\\BiologicalExperiment\\massLists\\positive\\TG.xlsx",  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f).get(1)).get("TG");
       Workbook workbook = null;
       BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(basePath+"Orbitrap_CID_TG_species_MSMS.xlsx"));
       Workbook wb = new XSSFWorkbook();
@@ -10366,7 +10379,6 @@ public void testTabFile() throws Exception {
     lipidClassInfo.put("SM", new LipidClassInfoVO(1,true,0.7d,adducts));
 
   }
-
   private void getValidOrbitrapCIDSpeciesNegative(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
       Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
     lipidClasses.put("PI", FoundBiologicalSpecies.getPISpeciesOrbitrap());
@@ -10399,7 +10411,10 @@ public void testTabFile() throws Exception {
     lipidClassInfo.put("PG", new LipidClassInfoVO(2,true,0.7d,adducts));
     adducts = new LinkedHashMap<String,Boolean>();
     lipidClasses.put("Cer", FoundBiologicalSpecies.getCerSpeciesOrbitrap());
+    //original version
     adducts.put("-H", false);
+    //MS-DIAL comparison
+    adducts.put("HCOO", false);
     lipidClassInfo.put("Cer", new LipidClassInfoVO(1,true,0.7d,adducts));
   }
   
@@ -10503,7 +10518,7 @@ public void testTabFile() throws Exception {
     try{
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();          
       for (String quantFile : quantitationFiles){
-        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
+        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new MassListParser(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f,false)).getResultsVector().get(3);
         ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = null;
         for (String className : oneFile.keySet()){
           Hashtable<String,Hashtable<String,QuantVO>> oneClass= oneFile.get(className);
@@ -10891,7 +10906,7 @@ public void testTabFile() throws Exception {
     try{
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();          
       for (String quantFile : quantitationFiles){
-        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
+        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new MassListParser(quantFile, 0f, 0f, 0, 0, true, 0f, 0f, 0f,false)).getResultsVector().get(3);
         ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = null;
         for (String className : oneFile.keySet()){
           Hashtable<String,Hashtable<String,QuantVO>> oneClass= oneFile.get(className);
@@ -11294,7 +11309,7 @@ public void testTabFile() throws Exception {
     try{
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();          
       for (String quantFile : quantitationFiles){
-        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
+        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new MassListParser(quantFile, 0f, 0f, 0, 0, true, 0f, 0f, 0f,false)).getResultsVector().get(3);
         ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = null;
         for (String className : oneFile.keySet()){
           Hashtable<String,Hashtable<String,QuantVO>> oneClass= oneFile.get(className);
@@ -11562,7 +11577,7 @@ public void testTabFile() throws Exception {
     try{
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();          
       for (String quantFile : quantitationFiles){
-        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
+        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new MassListParser(quantFile, 0f, 0f, 0, 0, true, 0f, 0f, 0f,false)).getResultsVector().get(3);
         ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = null;
         for (String className : oneFile.keySet()){
           Hashtable<String,Hashtable<String,QuantVO>> oneClass= oneFile.get(className);
@@ -11853,7 +11868,7 @@ public void testTabFile() throws Exception {
     try{
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();          
       for (String quantFile : quantitationFiles){
-        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
+        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new MassListParser(quantFile, 0f, 0f, 0, 0, true, 0f, 0f, 0f,false)).getResultsVector().get(3);
         ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = null;
         for (String className : oneFile.keySet()){
           Hashtable<String,Hashtable<String,QuantVO>> oneClass= oneFile.get(className);
@@ -13127,7 +13142,7 @@ public void testTabFile() throws Exception {
       String novelFile = "D:\\BiologicalExperiment\\NovelSpecies.xlsx";
       
       LinkedHashMap<String,Hashtable<String,LinkedHashMap<String,Vector<SingleAdductIdentificationVO>>>> resultDetails = readDetailsOfSeveralPlatforms(detailsFileName);
-      Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)QuantificationThread.parseQuantExcelFile(speciesSequenceFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(1);
+      Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)(new MassListParser(speciesSequenceFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f,false)).getResultsVector().get(1);
       Vector<String> classSequence = new Vector<String>();
       classSequence.add("PI");
       classSequence.add("P-PC");
@@ -14326,7 +14341,7 @@ public void testTabFile() throws Exception {
     String file = "D:\\Christer\\20170606\\NP MS1 R450k\\pos\\NP_MS1_pos_01_positive_LPC_PC_PE_TG.xlsx";
     try{
       ElementConfigParser aaParser = Settings.getElementParser();
-//      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> idealMasses = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile("D:\\Christer\\20170531\\quant\\positive_LPC_PC_PE_TG.xlsx",  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
+//      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> idealMasses = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new TargetListParser()).parseQuantExcelFile("D:\\Christer\\20170531\\quant\\positive_LPC_PC_PE_TG.xlsx",  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
       aaParser.parse();
       Hashtable<String,Vector<LipidParameterSet>> classes = LDAResultReader.readResultFile(file,new Hashtable<String,Boolean>()).getIdentifications();
       List<IsotopicRatioDeviationVO> ratios = new ArrayList<IsotopicRatioDeviationVO>();
@@ -14586,7 +14601,7 @@ public void testTabFile() throws Exception {
   }
   
   private void readRttFile(){
-    String rttFilePath = "D:\\shotgun\\20180206\\050_Shotgun1_IS_negative.chrom\\050_Shotgun1_IS_negative.rtt";
+    String rttFilePath = "E:\\Lipidomics\\LDA-Collaborations\\Evelyn\\LC_CL_verfication\\20250206_testEAD\\CID\\250129_SRM1950_60min_CID_01.chrom\\250129_SRM1950_60min_CID_01.rtt";
     DataInputStream inStream = null;
     try{
       inStream = new DataInputStream(new FileInputStream(rttFilePath));
@@ -14594,11 +14609,12 @@ public void testTabFile() throws Exception {
       while (inStream.available()>0){
         int currentLine = inStream.readInt();
         float time = inStream.readFloat();
-        System.out.println(currentLine+": "+time);
+        System.out.println(currentLine+": "+(time/60f));
 //          cachedLine.put(new Integer(count), new Integer(currentLine));
 //          cachedIndex.put(new Integer(count), new Long(bytesToSkip));
         count++;
       }
+      System.out.println("Nr of MS1 scans: "+count);
     }catch(Exception iox){
       iox.printStackTrace();;
     }finally{
@@ -14731,16 +14747,6 @@ public void testTabFile() throws Exception {
   {
     // TODO Auto-generated method stub
     return 0;
-  }
-
-  private void faSummaryConverter(){
-    LDAToFASummaryConverter converter = new LDAToFASummaryConverter("D:\\Experiment1\\Orbitrap_CID\\positive\\50");
-    try {
-      converter.convert();
-    }
-    catch (Exception e) {
-      e.printStackTrace();
-    }
   }
   
   private void mzTabValidation(){
@@ -14929,8 +14935,8 @@ public void testTabFile() throws Exception {
             batchQuantTableModel.addFiles(pairs);
             progressBatchBar.setValue(0);
             BatchQuantThread batchQuantThread_ = new BatchQuantThread(batchQuantTable, batchQuantTableModel,progressBatchBar, 
-              quantifyingBatchLabel, minusTimeTol,plusTimeTol,amountOfIsotopes,isotopesMustMatch,searchUnknownBatchTime, cutoff, 
-                rtShift, nrProcessors,ionMode,true);
+                quantifyingBatchLabel, minusTimeTol,plusTimeTol,amountOfIsotopes,isotopesMustMatch,searchUnknownBatchTime, cutoff, 
+                  rtShift, 1, nrProcessors,ionMode,true);
             batchQuantThread_.start();
           }else{
             if (rawFiles.size()==0){
@@ -14955,15 +14961,6 @@ public void testTabFile() throws Exception {
           }
         }
 
-    }
-  }
-  
-  private void groupAlexResultsByRt() {
-    AlexRtGrouper grouper = new AlexRtGrouper("C:\\data\\Christer\\20190111\\positive",0.4d);
-    try {
-      grouper.groupTheEntries();
-    } catch (Exception e) {
-      e.printStackTrace();
     }
   }
   
@@ -15336,10 +15333,471 @@ public void testTabFile() throws Exception {
 
   }
   
+  private void generateAcetlyCoAMassList() {
+    try{
+      ElementConfigParser parser = new ElementConfigParser("elementconfig.xml");
+      parser.parse();
+    
+      String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Marcel\\20241122\\MHO06AE_MS-275_360min\\massList\\AcetylCoA_pos.xlsx";
+      
+      BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(quantFile));
+      XSSFWorkbook resultWorkbook = new XSSFWorkbook();
+      XSSFCellStyle headerStyle = getHeaderStyle(resultWorkbook);
+
+      //for AcetylCoA
+      Sheet resultSheet = resultWorkbook.createSheet("AcetylCoA");
+      
+      //for GDGT
+      //Sheet resultSheet = resultWorkbook.createSheet("GDGT");
+      //for PI-PI-GDGT
+      //Sheet resultSheet = resultWorkbook.createSheet("PI-PI-GDGT");
+      //for PHex-PHexHex-GDGT
+      //Sheet resultSheet = resultWorkbook.createSheet("PHex-PHexHex-GDGT");
+
+      
+      int rowCount = 4;
+      Row outRow = resultSheet.createRow(rowCount);
+      Cell label = outRow.createCell(0,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("Name");
+      label.setCellStyle(headerStyle);
+//      label = outRow.createCell(2,HSSFCell.CELL_TYPE_STRING);
+//      label.setCellValue("dbs");
+//      label.setCellStyle(headerStyle);
+      label = outRow.createCell(3,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("C");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(4,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("H");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(5,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("O");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(6,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("P");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(7,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("N");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(8,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("S");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(9,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("Cc");
+      label.setCellStyle(headerStyle);
+      //for all others
+      label = outRow.createCell(10,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("M");
+      label.setCellStyle(headerStyle);
+
+      
+      //for positive ion mode data
+      label = outRow.createCell(11,HSSFCell.CELL_TYPE_STRING);      
+      label.setCellValue("mass(form[+H] name[H])");
+      label.setCellStyle(headerStyle);
+      
+      //for all except for sphingoid backbone chain library
+      label = outRow.createCell(13,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("tR (min)");
+      label.setCellStyle(headerStyle);
+      rowCount++;
+      
+      Hashtable<Integer,Integer> cDbsCombi = new Hashtable<Integer,Integer>();
+
+      for (int i=23; i<24; i++) {
+        for (int j=0; j!=11; j++) {
+          cDbsCombi.put(i, j);
+        }
+      }
+      
+
+      
+      for (int cAtoms=23; cAtoms<24; cAtoms++){
+      //for GDGT, PI-PI-GDGT
+//      for (int cAtoms=80; cAtoms<81; cAtoms+=1){
+        int dbs = 0;
+        int dbsMax = cDbsCombi.get(cAtoms)+1;
+        while (dbs<dbsMax){
+          //for Acetyl-CoA
+        	
+        	int totalC = cAtoms-dbs;
+        	int hAtoms = 38;
+        	int oAtoms = 17;
+        	int pAtoms = 3;
+        	int nAtoms = 7;
+        	int sAtoms = 1;
+        	int c13Atoms = dbs;
+        	
+          //for GDGT
+//          int totalC = cAtoms+6;
+//          int hAtoms = totalC*2-2*dbs;
+//          int oAtoms = 6;
+//          int pAtoms = 0;
+//          int nAtoms = 0;
+
+        	//for PI-PI-GDGT
+//        	int totalC = cAtoms+18;
+//        	int hAtoms = totalC*2-2*dbs-2;
+//        	int oAtoms = 22;
+//        	int pAtoms = 2;
+//        	int nAtoms = 0;
+
+        	//for PHex-PHexHex-GDGT
+//        	int totalC = cAtoms+24;
+//        	int hAtoms = totalC*2-2*dbs-4;
+//        	int oAtoms = 27;
+//        	int pAtoms = 2;
+//        	int nAtoms = 0;
+
+
+        	int dAtoms = 0;
+          double massNeutral = parser.getElementDetails("C").getMonoMass()*((double)totalC)+parser.getElementDetails("H").getMonoMass()*((double)hAtoms)+
+              parser.getElementDetails("O").getMonoMass()*((double)oAtoms)+parser.getElementDetails("P").getMonoMass()*((double)pAtoms)+
+              parser.getElementDetails("N").getMonoMass()*((double)nAtoms)+parser.getElementDetails("S").getMonoMass()*((double)sAtoms)+
+              parser.getElementDetails("Cc").getMonoMass()*((double)c13Atoms);
+          
+          //for positive ion mode
+          //protonated
+          double massH = massNeutral+parser.getElementDetails("h").getMonoMass();
+
+          //for negative ion mode
+          //deprotonated
+//          double massH = massNeutral-parser.getElementDetails("h").getMonoMass();
+//          //water loss
+//          double massHCOO = massNeutral-parser.getElementDetails("h").getMonoMass()+2*parser.getElementDetails("H").getMonoMass()+parser.getElementDetails("C").getMonoMass()+2*parser.getElementDetails("O").getMonoMass();
+//          //sodiated
+//          double massCl = massNeutral+parser.getElementDetails("cl").getMonoMass();
+
+          outRow = resultSheet.createRow(rowCount);
+          label = outRow.createCell(0,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue("M"+String.valueOf(dbs));
+          label = outRow.createCell(3,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(totalC);
+          label = outRow.createCell(4,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(hAtoms);
+          label = outRow.createCell(5,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(oAtoms);
+          label = outRow.createCell(6,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(pAtoms);
+          label = outRow.createCell(7,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(nAtoms);
+          label = outRow.createCell(8,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(sAtoms);
+          label = outRow.createCell(9,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(c13Atoms);
+          label = outRow.createCell(10,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(massNeutral);
+          
+          //positive
+          label = outRow.createCell(11,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(massH);
+          dbs++;
+          rowCount++;
+        }
+      }      
+      resultWorkbook.write(out);
+      out.close();
+    } catch (Exception ex){
+      ex.printStackTrace();
+    }
+
+  }
+  
+  private void generateArchaeaMassList() {
+    try{
+      ElementConfigParser parser = new ElementConfigParser("elementconfig.xml");
+      parser.parse();
+    
+      //for HC
+      //String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\HC_positive.xlsx";
+      //for DGD
+      //String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\DGD_positive.xlsx";
+      //for PI-DGD
+      //String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\PI-DGD_positive.xlsx";
+      //for PHexHex-DGD
+      //String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\PHexHex-DGD_positive.xlsx";
+      //for PHexHex-DGD
+      String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\PHexHexNH2-DGD_positive.xlsx";
+      //for GDGT
+      //String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\GDGT_positive.xlsx";
+      //for PI-PI-GDGT
+      //String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\PI-PI-GDGT_positive.xlsx";
+      //for PHex-PHexHex-GDGT
+      //String quantFile = "E:\\Lipidomics\\LDA-Collaborations\\Jacob\\20241031\\massList\\PHex-PHexHex-GDGT_positive.xlsx";
+      
+      
+      BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(quantFile));
+      XSSFWorkbook resultWorkbook = new XSSFWorkbook();
+      XSSFCellStyle headerStyle = getHeaderStyle(resultWorkbook);
+
+      //for HC
+      //Sheet resultSheet = resultWorkbook.createSheet("HC");
+      //for DGD
+      //Sheet resultSheet = resultWorkbook.createSheet("DGD");
+      //for PI-DGD
+      //Sheet resultSheet = resultWorkbook.createSheet("PI-DGD");
+      //for PHexHex-DGD
+      //Sheet resultSheet = resultWorkbook.createSheet("PHexHex-DGD");
+      //for PHexHexNH2-DGD
+      Sheet resultSheet = resultWorkbook.createSheet("PHexHexNH2-DGD");
+      
+      //for GDGT
+      //Sheet resultSheet = resultWorkbook.createSheet("GDGT");
+      //for PI-PI-GDGT
+      //Sheet resultSheet = resultWorkbook.createSheet("PI-PI-GDGT");
+      //for PHex-PHexHex-GDGT
+      //Sheet resultSheet = resultWorkbook.createSheet("PHex-PHexHex-GDGT");
+
+      
+      int rowCount = 4;
+      Row outRow = resultSheet.createRow(rowCount);
+      Cell label = outRow.createCell(0,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("Name");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(2,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("dbs");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(3,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("C");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(4,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("H");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(5,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("O");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(6,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("P");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(7,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("N");
+      label.setCellStyle(headerStyle);
+//      label = outRow.createCell(8,HSSFCell.CELL_TYPE_STRING);
+//      label.setCellValue("D");
+//      label.setCellStyle(headerStyle);
+      //for sphingoid backbone chain library
+//      label = outRow.createCell(9,HSSFCell.CELL_TYPE_STRING);
+//      label.setCellValue("mass");
+//      label.setCellStyle(headerStyle);
+      //for all others
+      label = outRow.createCell(9,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("M");
+      label.setCellStyle(headerStyle);
+
+      
+      //for positive ion mode data
+      label = outRow.createCell(10,HSSFCell.CELL_TYPE_STRING);      
+      label.setCellValue("mass(form[+H] name[H])");
+      label.setCellStyle(headerStyle);
+      label = outRow.createCell(11,HSSFCell.CELL_TYPE_STRING);      
+      label.setCellValue("mass(form[+H2] name[H2] charge=2)");
+      label.setCellStyle(headerStyle);
+//      label = outRow.createCell(12,HSSFCell.CELL_TYPE_STRING);      
+//      label.setCellValue("mass(form[+Na] name[Na])");
+//      label.setCellStyle(headerStyle);
+      //for negative ion mode data
+//      label = outRow.createCell(10,HSSFCell.CELL_TYPE_STRING);      
+//      label.setCellValue("mass(form[-H] name[-H])");
+//      label.setCellStyle(headerStyle);
+//      label = outRow.createCell(11,HSSFCell.CELL_TYPE_STRING);      
+//      label.setCellValue("mass(form[+HCOO] name[HCOO])");
+//      label.setCellStyle(headerStyle);
+//      label = outRow.createCell(12,HSSFCell.CELL_TYPE_STRING);      
+//      label.setCellValue("mass(form[+Cl] name[Cl])");
+//      label.setCellStyle(headerStyle);
+      
+      //for all except for sphingoid backbone chain library
+      label = outRow.createCell(12,HSSFCell.CELL_TYPE_STRING);
+      label.setCellValue("tR (min)");
+      label.setCellStyle(headerStyle);
+      rowCount++;
+      
+      Hashtable<Integer,Integer> cDbsCombi = new Hashtable<Integer,Integer>();
+
+      //for sphingoid backbone chain library
+//      for (int i=10; i!=21; i++) {
+//        for (int j=0; j!=5; j++) {
+//          if (j>4 && i<12)
+//            continue;
+//          if (j>5 && i<17)
+//            continue;
+//          cDbsCombi.put(i, j);
+//        }
+//      }
+      
+      //for sphingoid bases, LSM and S1P
+//      for (int i=2; i!=31; i++) {
+//        for (int j=0; j!=6; j++) {
+//          if (j>0 && i<10)
+//            continue;
+//          cDbsCombi.put(i, j);
+//        }
+//      }
+
+      //HC
+//      for (int i=30; i<41; i+=5) {
+//        for (int j=0; j!=(i/5+1); j++) {
+//          cDbsCombi.put(i, j);
+//        }
+//      }
+
+      
+//      //DGD, PI-DGD, PHexHex-DGD
+      for (int i=30; i<51; i+=5) {
+        for (int j=0; j!=(i/5+1); j++) {
+          cDbsCombi.put(i, j);
+        }
+      }
+
+      //GDGT, PI-PI-GDGT
+//      for (int i=80; i!=81; i++) {
+//        for (int j=0; j!=17; j++) {
+//          cDbsCombi.put(i, j);
+//        }
+//      }
+
+      
+      //for DGD, PI-DGD, PHexHex-DGD
+      //for (int cAtoms=30; cAtoms<41; cAtoms+=5){
+      //for DGD, PI-DGD, PHexHex-DGD
+      for (int cAtoms=30; cAtoms<51; cAtoms+=5){
+      //for GDGT, PI-PI-GDGT
+//      for (int cAtoms=80; cAtoms<81; cAtoms+=1){
+        int dbs = 0;
+        int dbsMax = cDbsCombi.get(cAtoms)+1;
+        while (dbs<dbsMax){
+          //for HC
+//        	int totalC = cAtoms;
+//        	int hAtoms = totalC*2-2*dbs+2;
+//        	int oAtoms = 0;
+//        	int pAtoms = 0;
+//        	int nAtoms = 0;
+
+          //for DGD
+//          int totalC = cAtoms+3;
+//          int hAtoms = totalC*2-2*dbs+2;
+//          int oAtoms = 3;
+//          int pAtoms = 0;
+//          int nAtoms = 0;
+
+        	//for PI-DGD && PHex-DGD
+//        	int totalC = cAtoms+9;
+//        	int hAtoms = totalC*2-2*dbs+1;
+//        	int oAtoms = 11;
+//        	int pAtoms = 1;
+//        	int nAtoms = 0;
+
+        	//for PHexHex-DGD
+//        	int totalC = cAtoms+15;
+//        	int hAtoms = totalC*2-2*dbs-1;
+//        	int oAtoms = 16;
+//        	int pAtoms = 1;
+//        	int nAtoms = 0;
+        	
+        	//for PHexHexNH2-DGD
+        	int totalC = cAtoms+15;
+        	int hAtoms = totalC*2-2*dbs;
+        	int oAtoms = 15;
+        	int pAtoms = 1;
+        	int nAtoms = 1;
+
+        	
+          //for GDGT
+//          int totalC = cAtoms+6;
+//          int hAtoms = totalC*2-2*dbs;
+//          int oAtoms = 6;
+//          int pAtoms = 0;
+//          int nAtoms = 0;
+
+        	//for PI-PI-GDGT
+//        	int totalC = cAtoms+18;
+//        	int hAtoms = totalC*2-2*dbs-2;
+//        	int oAtoms = 22;
+//        	int pAtoms = 2;
+//        	int nAtoms = 0;
+
+        	//for PHex-PHexHex-GDGT
+//        	int totalC = cAtoms+24;
+//        	int hAtoms = totalC*2-2*dbs-4;
+//        	int oAtoms = 27;
+//        	int pAtoms = 2;
+//        	int nAtoms = 0;
+
+
+        	int dAtoms = 0;
+          double massNeutral = parser.getElementDetails("C").getMonoMass()*((double)totalC)+parser.getElementDetails("H").getMonoMass()*((double)hAtoms)+
+              parser.getElementDetails("O").getMonoMass()*((double)oAtoms)+parser.getElementDetails("P").getMonoMass()*((double)pAtoms)+
+              parser.getElementDetails("N").getMonoMass()*((double)nAtoms)+parser.getElementDetails("D").getMonoMass()*((double)dAtoms);
+          //double massCharged = massNeutral+parser.getElementDetails("H").getMonoMass()+parser.getElementDetails("C").getMonoMass()+2d*parser.getElementDetails("O").getMonoMass();
+          
+          //for positive ion mode
+          //protonated
+          double massH = massNeutral+parser.getElementDetails("h").getMonoMass();
+          //double protonated
+          double mass2H = (massNeutral+2*parser.getElementDetails("h").getMonoMass())/2d;
+
+          //for negative ion mode
+          //deprotonated
+//          double massH = massNeutral-parser.getElementDetails("h").getMonoMass();
+//          //water loss
+//          double massHCOO = massNeutral-parser.getElementDetails("h").getMonoMass()+2*parser.getElementDetails("H").getMonoMass()+parser.getElementDetails("C").getMonoMass()+2*parser.getElementDetails("O").getMonoMass();
+//          //sodiated
+//          double massCl = massNeutral+parser.getElementDetails("cl").getMonoMass();
+
+          outRow = resultSheet.createRow(rowCount);
+          label = outRow.createCell(0,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(cAtoms);
+          label = outRow.createCell(1,HSSFCell.CELL_TYPE_STRING);
+          label.setCellValue(":");       
+          label = outRow.createCell(2,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(dbs);
+          label = outRow.createCell(3,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(totalC);
+          label = outRow.createCell(4,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(hAtoms);
+          label = outRow.createCell(5,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(oAtoms);
+          label = outRow.createCell(6,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(pAtoms);
+          label = outRow.createCell(7,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(nAtoms);
+          label = outRow.createCell(8,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(dAtoms);
+          label = outRow.createCell(9,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(massNeutral);
+          
+          //positive
+          label = outRow.createCell(10,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(massH);
+          label = outRow.createCell(11,HSSFCell.CELL_TYPE_NUMERIC);
+          label.setCellValue(mass2H);
+//          label = outRow.createCell(12,HSSFCell.CELL_TYPE_NUMERIC);
+//          label.setCellValue(massNa);
+          //negative
+//        label = outRow.createCell(10,HSSFCell.CELL_TYPE_NUMERIC);
+//        label.setCellValue(massH);
+//        label = outRow.createCell(11,HSSFCell.CELL_TYPE_NUMERIC);
+//        label.setCellValue(massHCOO);
+//        label = outRow.createCell(12,HSSFCell.CELL_TYPE_NUMERIC);
+//        label.setCellValue(massCl);
+
+          dbs++;
+          rowCount++;
+        }
+      }
+      
+      resultWorkbook.write(out);
+      out.close();
+    } catch (Exception ex){
+      ex.printStackTrace();
+    }
+
+  }
+  
+  
   private void parseLCBList() {
     File lcbFile = new File("C:\\Development\\LipidDataAnalyzer\\fattyAcids\\dLCB.xlsx");
     try {
-      LCBLibParser parser = new LCBLibParser(lcbFile);
+      SPBLibParser parser = new SPBLibParser(lcbFile);
       parser.parseFile();
     }
     catch (IOException | RulesException e) {
@@ -17136,10 +17594,15 @@ public void testTabFile() throws Exception {
   }
   
   private void parseMSDialTxt() {
+  	//this version has been used for the comparison of the sphingolipids 2020
+  	////String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_0;
+  	//this is the current version
+  	String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_9;
+
     //MSDialTxtParser dialParser = new MSDialTxtParser("C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\MS-Dial_Mix1\\export\\Mix1_neg_1.txt");
-    MSDialTxtParser dialParser = new MSDialTxtParser("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\MS-Dial_Mix1\\export\\Mix1_1.txt");
+    MSDialTxtParser dialParser = new MSDialTxtParser("C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\MS-Dial_Mix1\\export\\Mix1_1.txt", null);
     try {
-      dialParser.parse();
+      dialParser.parse(msDialVersion);
       Vector<MSDialEntry> entries = dialParser.getResults();
 //      for (MSDialEntry entry : entries) {
 //        System.out.println(entry.getName());
@@ -17154,6 +17617,10 @@ public void testTabFile() throws Exception {
   
   
   private void compareLDABMSDialControlledPositiveProbes() {
+  	//this version has been used for the comparison of the sphingolipids 2020
+  	////String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_0;
+  	//this is the current version
+  	String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_9;
     LinkedHashMap<String,LinkedHashMap<String,Boolean[]>> comparableClassesAndAdducts = new LinkedHashMap<String,LinkedHashMap<String,Boolean[]>>();
     Hashtable<String,LinkedHashMap<String,ReferenceInfoVO>> correctAnalytes = new Hashtable<String,LinkedHashMap<String,ReferenceInfoVO>>();
     Hashtable<String,Integer> snPositions = new Hashtable<String,Integer>();
@@ -17233,13 +17700,17 @@ public void testTabFile() throws Exception {
     String outputFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\positive\\MS-Dial_Mix2\\Mix2_5_Dial_comp_generated.xlsx";
 
     
-    compareLDAMSDialControlledProbes(comparableClassesAndAdducts,snPositions,correctAnalytes,chromFile,quantFile,ldaFile,msDialFile,/*msFinderFile,*/outputFile);
+    compareLDAMSDialControlledProbes(comparableClassesAndAdducts,snPositions,correctAnalytes,chromFile,quantFile,ldaFile,msDialFile,/*msFinderFile,*/outputFile,msDialVersion);
 
     
   }
   
   
   private void compareLDABMSDialControlledNegativeProbes() {
+  	//this version has been used for the comparison of the sphingolipids 2020
+  	////String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_0;
+  	//this is the current version
+  	String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_9;
     LinkedHashMap<String,LinkedHashMap<String,Boolean[]>> comparableClassesAndAdducts = new LinkedHashMap<String,LinkedHashMap<String,Boolean[]>>();
     Hashtable<String,LinkedHashMap<String,ReferenceInfoVO>> correctAnalytes = new Hashtable<String,LinkedHashMap<String,ReferenceInfoVO>>();
     Hashtable<String,Integer> snPositions = new Hashtable<String,Integer>();
@@ -17300,13 +17771,13 @@ public void testTabFile() throws Exception {
     String quantFile = "C:\\Sphingolipids\\Experiment1\\massLists\\Orbitrap\\stands_negative_Mix2.xlsx";
     String outputFile = "C:\\Sphingolipids\\Experiment1\\Obitrap\\negative\\MS-Dial_Mix2\\Mix2_neg_5_Dial_comp_generated.xlsx";
     
-    compareLDAMSDialControlledProbes(comparableClassesAndAdducts,snPositions,correctAnalytes,chromFile,quantFile,ldaFile,msDialFile,/*msFinderFile,*/outputFile);
+    compareLDAMSDialControlledProbes(comparableClassesAndAdducts,snPositions,correctAnalytes,chromFile,quantFile,ldaFile,msDialFile,/*msFinderFile,*/outputFile,msDialVersion);
 
   }
   
   private void compareLDAMSDialControlledProbes(LinkedHashMap<String,LinkedHashMap<String,Boolean[]>> comparableClassesAndAdducts,
       Hashtable<String,Integer> snPositions, Hashtable<String,LinkedHashMap<String,ReferenceInfoVO>> correctAnalytes,
-      String chromFile, String quantFile, String ldaFile, String msdialFile,/* String msfinderFile,*/ String outputFile){
+      String chromFile, String quantFile, String ldaFile, String msdialFile,/* String msfinderFile,*/ String outputFile, String msDialVersion){
     try{
       BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile));
       Workbook resultWorkbook = new XSSFWorkbook();
@@ -17323,8 +17794,8 @@ public void testTabFile() throws Exception {
       CellStyle ms1FoundStyle = getMS1FoundStyle(resultWorkbook);
       CellStyle notFoundStyle = getNotFoundStyle(resultWorkbook);
       Hashtable<String,Vector<LipidParameterSet>> resultsLDA = LDAResultReader.readResultFile(ldaFile, new Hashtable<String,Boolean>()).getIdentifications();
-      MSDialTxtParser msdialParser = new MSDialTxtParser(msdialFile);
-      msdialParser.parse();
+      MSDialTxtParser msdialParser = new MSDialTxtParser(msdialFile, null);
+      msdialParser.parse(msDialVersion);
       //MSFinderStructureParser finderParser = new MSFinderStructureParser(msfinderFile);
       //finderParser.parse();
       //TODO: this might need to be changed
@@ -17333,7 +17804,7 @@ public void testTabFile() throws Exception {
       //Vector<MSFinderEntry> resultsFinder = finderParser.getResults();
       String[] chromPaths = StringUtils.getChromFilePaths(chromFile);   
       LipidomicsAnalyzer analyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
-      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,true).get(3);
+      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new MassListParser(quantFile, 0f, 0f, 0, 0, true, 0f, 0f, 0f,true)).getResultsVector().get(3);
 
       ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = null;
       Sheet summarySheet = resultWorkbook.createSheet("Summary");
@@ -18226,7 +18697,7 @@ public void testTabFile() throws Exception {
       parser.parse();
       FALibParser faParser = new FALibParser(faLibPath);
       faParser.parseFile();
-      Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> fas = faParser.getFattyAcids().get("n");
+      Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> fas = faParser.getResult().get("n");
       Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
       for (Integer cAtoms : fas.keySet()) {
         for (Integer dbs : fas.get(cAtoms).keySet()) {
@@ -18707,6 +19178,44 @@ public void testTabFile() throws Exception {
     return (totC==cAtoms && totD==dbs);
   }
   
+  private void getValidOrbitrapCIDMouseLiverSpecies(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
+      Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
+    getValidOrbitrapCIDSpeciesNegative(lipidClasses, lipidClassInfo, adducts);    
+    lipidClasses.put("P-PC", FoundBiologicalSpecies.getPPCSpeciesOrbitrap());
+    lipidClassInfo.get("P-PE").getAdducts().put("H", true);
+    lipidClassInfo.get("P-PE").getAdducts().put("Na", true);
+    lipidClassInfo.get("LPE").getAdducts().put("H", true);
+    lipidClassInfo.get("LPE").getAdducts().put("Na", true);
+    lipidClassInfo.get("PS").getAdducts().put("H", true);
+    lipidClassInfo.put("PS", new LipidClassInfoVO(2,false,-1,adducts));
+    lipidClassInfo.get("PC").getAdducts().put("H", true);
+    lipidClassInfo.get("PC").getAdducts().put("Na", true);
+    lipidClassInfo.get("PE").getAdducts().put("H", true);
+    lipidClassInfo.get("PE").getAdducts().put("Na", true);
+    lipidClassInfo.get("Cer").getAdducts().put("Na", true);
+    
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("LPC", FoundBiologicalSpecies.getLPCSpeciesOrbitrap());
+    adducts.put("H", false);
+    adducts.put("Na", false);
+    lipidClassInfo.put("LPC", new LipidClassInfoVO(1,true,1.2d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("DG", FoundBiologicalSpecies.getDGSpeciesOrbitrap());
+    adducts.put("Na", true);
+    adducts.put("NH4", true);
+    lipidClassInfo.put("DG", new LipidClassInfoVO(3,true,0.7d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("TG", FoundBiologicalSpecies.getTGSpeciesOrbitrap());
+    adducts.put("NH4", true);
+    adducts.put("Na", true);
+    lipidClassInfo.put("TG", new LipidClassInfoVO(3,true,0.7d,adducts));
+    adducts = new LinkedHashMap<String,Boolean>();
+    lipidClasses.put("SM", FoundBiologicalSpecies.getSMSpeciesOrbitrap());
+    adducts.put("H", false);
+    adducts.put("Na", false);
+    lipidClassInfo.put("SM", new LipidClassInfoVO(1,true,0.7d,adducts));
+  }
+  
   
   private void getValidSphingoOrbitrapCIDSpeciesPositive(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses,
       Hashtable<String,LipidClassInfoVO> lipidClassInfo, LinkedHashMap<String,Boolean> adducts){
@@ -18760,65 +19269,116 @@ public void testTabFile() throws Exception {
 
   
   private void compareLDAMSDialNaturalProbesPositive(){
+  	//this version has been used for the comparison of the sphingolipids 2020
+  	////String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_0;
+  	//this is the current version
+  	String msDialVersion = MSDialEntry.MSDIAL_VERSION_4_9;
+
+  	//this is for LCMS brain
+//    String baseDir = "E:\\Lipidomics\\data\\Sphingolipids\\Brain\\";
+//    //the first key is the lipid class, the second key the ms1 species name, the third key the structural identification
+//    LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>>();
+//    Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
+//    LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
+//    //TODO: the implementation of this method is not complete - only a test case
+//    this.getValidSphingoOrbitrapCIDSpeciesPositive(lipidClasses,lipidClassInfo,adducts);
+//    for (LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> correctAnalytes: lipidClasses.values()) {
+//      for (LinkedHashMap<String,ReferenceInfoVO> classCorrect : correctAnalytes.values()) {
+//        for (ReferenceInfoVO info : classCorrect.values()) {
+//          for (int i=0; i!=info.getCorrectRts().length; i++) {
+//            info.getCorrectRts()[i] = info.getCorrectRts()[i]-0.05d;        }
+//        }
+//      }
+//    }
+//    ////this.getValid4000QTRAPSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
+//
+//    String chromFile = baseDir+"Orbitrap\\positive\\Brain_pos_1.chrom";
+//    String quantFile = baseDir+"massLists\\Orbitrap\\sphingos_positive.xlsx";
+//    String ldaFile = baseDir+"Orbitrap\\positive\\Brain_pos_1_sphingos_positive.xlsx";
+//    String msDialFile = baseDir+"Orbitrap\\MS-Dial_positive_v5.1\\export\\Brain_pos_1.txt";
+//    String outputFile = baseDir+"Orbitrap\\MS-Dial_positive_v5.1\\export\\Brain_pos_1_comp_generated.xlsx";
+    
+  	//this is for LCMS liver
+    String baseDir = "E:\\Lipidomics\\data\\BiologicalExperiment\\Orbitrap_CID\\";
     //the first key is the lipid class, the second key the ms1 species name, the third key the structural identification
     LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>>();
     Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
     LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
     //TODO: the implementation of this method is not complete - only a test case
-    this.getValidSphingoOrbitrapCIDSpeciesPositive(lipidClasses,lipidClassInfo,adducts);
-    for (LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> correctAnalytes: lipidClasses.values()) {
-      for (LinkedHashMap<String,ReferenceInfoVO> classCorrect : correctAnalytes.values()) {
-        for (ReferenceInfoVO info : classCorrect.values()) {
-          for (int i=0; i!=info.getCorrectRts().length; i++) {
-            info.getCorrectRts()[i] = info.getCorrectRts()[i]-0.05d;        }
-        }
-      }
-    }
+    this.getValidOrbitrapCIDSpeciesPositive(lipidClasses,lipidClassInfo,adducts);
+//    for (LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>> correctAnalytes: lipidClasses.values()) {
+//      for (LinkedHashMap<String,ReferenceInfoVO> classCorrect : correctAnalytes.values()) {
+//        for (ReferenceInfoVO info : classCorrect.values()) {
+//          for (int i=0; i!=info.getCorrectRts().length; i++) {
+//            info.getCorrectRts()[i] = info.getCorrectRts()[i]-0.05d;        }
+//        }
+//      }
+//    }
     ////this.getValid4000QTRAPSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
 
-    String chromFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_5.chrom";
-    String quantFile = "C:\\Sphingolipids\\Brain\\massLists\\Orbitrap\\sphingos_positive.xlsx";
-    String ldaFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\positive\\Brain_pos_5_sphingos_positive.xlsx";
-    String msDialFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\MS-Dial_positive\\export\\Brain_pos_5.txt";
-    String outputFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\MS-Dial_positive\\Brain_pos_5_comp_generated.xlsx";
+    String chromFile = baseDir+"positive\\002_liver2-1_Orbitrap_CID_pos.chrom";
+    String quantFile = baseDir+"quant\\positive.xlsx";
+    String ldaFile = baseDir+"positive\\002_liver2-1_Orbitrap_CID_pos_positive.xlsx";
+    String msDialFile = baseDir+"MS-Dial_positive\\export\\002_liver2-1_Orbitrap_CID_pos.txt";
+    String outputFile = baseDir+"MS-Dial_positive\\002_liver2-1_Orbitrap_CID_pos_comp_generated.xlsx";
+    
 
-    performMSDialComparisonOfNaturalProbes(lipidClasses,lipidClassInfo,chromFile,quantFile,ldaFile,msDialFile,outputFile);    
+    performMSDialComparisonOfNaturalProbes(lipidClasses,lipidClassInfo,chromFile,quantFile,ldaFile,msDialFile,outputFile,msDialVersion);    
   }
   
   private void compareLDAMSDialNaturalProbesNegative(){
+  	//this version has been used for the comparison of the sphingolipids 2020
+  	////String msDialVersion = "4.0";
+  	//this is the current version
+  	String msDialVersion = "4.9";
     //the first key is the lipid class, the second key the ms1 species name, the third key the structural identification
     LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>>();
     Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
     LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
     
+    //this is for LCMS brain
+//    String baseDir = "E:\\Lipidomics\\data\\Sphingolipids\\Brain\\";
+//    //TODO: the implementation of this method is not complete - only a test case
+//    this.getValidSphingoOrbitrapCIDSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
+//    ////this.getValid4000QTRAPSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
+// 
+//    String chromFile = baseDir+"Orbitrap\\negative\\Brain_neg_1.chrom";
+//    String quantFile = baseDir+"\\massLists\\Orbitrap\\sphingos_negative.xlsx";
+//    String ldaFile = baseDir+"Orbitrap\\negative\\Brain_neg_1_sphingos_negative.xlsx";
+//    String msDialFile = baseDir+"Orbitrap\\MS-Dial_negative\\export\\Brain_neg_1.txt";
+//    String outputFile = baseDir+"Orbitrap\\MS-Dial_negative\\Brain_neg_1_comp_generated.xlsx";
+////    String chromFile = "D:\\BiologicalExperiment\\QTRAP\\negative\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg.chrom";
+////    String quantFile = "D:\\BiologicalExperiment\\massLists\\negative\\QTRAP\\negative.xlsx";
+////    String ldaFile = "D:\\BiologicalExperiment\\QTRAP\\negative\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_negative.xlsx";
+////    String lbFile = "D:\\BiologicalExperiment\\LipidBlast\\4000QTRAP\\negative\\output\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_MF450.mgf.tsv";
+////    String outputFile = "D:\\BiologicalExperiment\\LipidBlast\\4000QTRAP\\negative\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_MF450_comp_generated.xlsx";
+    
+    //this is for LCMS liver
+    String baseDir = "E:\\Lipidomics\\data\\BiologicalExperiment\\Orbitrap_CID\\";
     //TODO: the implementation of this method is not complete - only a test case
-    this.getValidSphingoOrbitrapCIDSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
+    this.getValidOrbitrapCIDSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
     ////this.getValid4000QTRAPSpeciesNegative(lipidClasses,lipidClassInfo,adducts);
+ 
+    String chromFile = baseDir+"negative\\002_liver2-1_Orbitrap_CID_neg.chrom";
+    String quantFile = baseDir+"negative\\quant\\negative.xlsx";
+    String ldaFile = baseDir+"negative\\002_liver2-1_Orbitrap_CID_neg_negative.xlsx";
+    String msDialFile = baseDir+"MS-Dial_negative\\export\\002_liver2-1_Orbitrap_CID_neg.txt";
+    String outputFile = baseDir+"MS-Dial_negative\\002_liver2-1_Orbitrap_CID_neg_comp_generated.xlsx";
+    
 
-    String chromFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\negative\\Brain_neg_1.chrom";
-    String quantFile = "C:\\Sphingolipids\\Brain\\massLists\\Orbitrap\\sphingos_negative.xlsx";
-    String ldaFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\negative\\Brain_neg_1_sphingos_negative.xlsx";
-    String msDialFile = "C:\\Sphingolipids\\Brain\\Orbitrap\\MS-Dial_negative\\export\\Brain_neg_1.txt";
-    String outputFile = "C:\\\\Sphingolipids\\\\Brain\\\\Orbitrap\\\\MS-Dial_negative\\Brain_neg_1_comp_generated.xlsx";
-//    String chromFile = "D:\\BiologicalExperiment\\QTRAP\\negative\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg.chrom";
-//    String quantFile = "D:\\BiologicalExperiment\\massLists\\negative\\QTRAP\\negative.xlsx";
-//    String ldaFile = "D:\\BiologicalExperiment\\QTRAP\\negative\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_negative.xlsx";
-//    String lbFile = "D:\\BiologicalExperiment\\LipidBlast\\4000QTRAP\\negative\\output\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_MF450.mgf.tsv";
-//    String outputFile = "D:\\BiologicalExperiment\\LipidBlast\\4000QTRAP\\negative\\Data20151002_QTrap_Liver-025_QTrap_Liver1-1_neg_MF450_comp_generated.xlsx";
-
-    performMSDialComparisonOfNaturalProbes(lipidClasses,lipidClassInfo,chromFile,quantFile,ldaFile,msDialFile,outputFile);
+    performMSDialComparisonOfNaturalProbes(lipidClasses,lipidClassInfo,chromFile,quantFile,ldaFile,msDialFile,outputFile,msDialVersion);
   }
 
   private void  performMSDialComparisonOfNaturalProbes(LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses, 
-      Hashtable<String,LipidClassInfoVO> lipidClassInfo, String chromFile, String quantFile, String ldaFile, String msDialFile, String outputFile){
+      Hashtable<String,LipidClassInfoVO> lipidClassInfo, String chromFile, String quantFile, String ldaFile, String msDialFile, String outputFile, String msDialVersion){
     try{
-      Vector quantValues = QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f, true);
+      Vector quantValues = (new MassListParser(quantFile, 0f, 0f, 0, 0, true, 0f, 0f, 0f,true)).getResultsVector();
       ////Vector quantValues = null;
       String[] chromPaths = StringUtils.getChromFilePaths(chromFile);   
       LipidomicsAnalyzer analyzer = new LipidomicsAnalyzer(chromPaths[1],chromPaths[2],chromPaths[3],chromPaths[0],false);
 
-      Hashtable<String,Vector<String>> analyteSequence = (Hashtable<String,Vector<String>>)quantValues.get(1);
-      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>) quantValues.get(3);
+      LinkedHashMap<String,Vector<String>> analyteSequence = (LinkedHashMap<String,Vector<String>>)quantValues.get(1);
+      Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> quantVOs = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>) quantValues.get(4);
       BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile));
       Workbook resultWorkbook = new XSSFWorkbook();
       CellStyle fullyCorrectStyle = getFullyCorrectStyle(resultWorkbook);
@@ -18832,8 +19392,8 @@ public void testTabFile() throws Exception {
       leftHeaderStyle.cloneStyleFrom(headerStyle);
       leftHeaderStyle.setAlignment(CellStyle.ALIGN_LEFT);
       Hashtable<String,Vector<LipidParameterSet>> resultsLDA = LDAResultReader.readResultFile(ldaFile, new Hashtable<String,Boolean>()).getIdentifications();
-      MSDialTxtParser msdialParser = new MSDialTxtParser(msDialFile);
-      msdialParser.parse();
+      MSDialTxtParser msdialParser = new MSDialTxtParser(msDialFile, null);
+      msdialParser.parse(msDialVersion);
       //Hashtable<String,Hashtable<String,Hashtable<String,LipidBLASTIdentificationVO>>> resultsLB = lBlastParser.getResults_();
       Hashtable<String,Hashtable<String,Hashtable<String,Vector<MSDialEntry>>>> resultsDial = msdialParser.getStructuredResults();
       Hashtable<String,Hashtable<String,Hashtable<String,Vector<MSDialEntry>>>> dialMS1Only = msdialParser.getStructuredMS1Only();
@@ -18853,8 +19413,10 @@ public void testTabFile() throws Exception {
             toRemove.add(analyte);
           else if (lClass.equalsIgnoreCase("Cer") || lClass.equalsIgnoreCase("Cer1P") || lClass.equalsIgnoreCase("HexCer") || lClass.equalsIgnoreCase("SM")){
             cAndDbsAndOx = StaticUtils.parseCAndDbsFromChainId(analyte.substring(1));
-            int[] cAndDbs = new int[1];
+            int[] cAndDbs = new int[2];
             cAndDbs[0] = Integer.parseInt(cAndDbsAndOx[0]);
+            if (cAndDbsAndOx.length<2)
+            	System.out.println(analyte.substring(1));
             cAndDbs[1] = Integer.parseInt(cAndDbsAndOx[1]);
             
             if (cAndDbs[0]<26 && cAndDbs[1]>1)
@@ -19757,7 +20319,6 @@ public void testTabFile() throws Exception {
         cell = row.createCell(legendColumn);
         cell.setCellValue("-3: false negative and false positive hit, e.g., hit at correct RT not found, but something at wrong RT reported");
       }
-            
       resultWorkbook.write(out);
       out.close();
     }catch(Exception ex){
@@ -19771,10 +20332,17 @@ public void testTabFile() throws Exception {
    * @return int[0] nr of C atoms; int[1] nr of dbs; int[2] nr of OH
    * @throws HydroxylationEncodingException 
    */
-  private int[] decodeAnalyte(String analyte) throws HydroxylationEncodingException {
+  private int[] decodeAnalyte(String analyteFull) throws HydroxylationEncodingException {
     int[] result = new int[3];
-    result[2] = Settings.getLcbHydroxyEncoding().getHydroxyNumber(analyte.substring(0,1));
-    analyte = analyte.substring(1);
+    String analyte = new String (analyteFull);
+//    System.out.println("analyteFull: "+analyteFull);
+    if (analyte.startsWith("O-")||analyte.startsWith("P-"))
+    	analyte = analyte.substring(2);
+    if (Character.isAlphabetic(analyte.substring(0,1).toCharArray()[0])) {
+    	result[2] = Settings.getLcbHydroxyEncoding().getHydroxyNumber(analyte.substring(0,1));
+    	analyte = analyte.substring(1);
+    }else
+    	result[2] = 0;
     result[0] = Integer.parseInt(analyte.substring(0,analyte.indexOf(":")));
     result[1] = Integer.parseInt(analyte.substring(analyte.indexOf(":")+1));
     return result;
@@ -20034,7 +20602,7 @@ public void testTabFile() throws Exception {
               String dialMs2Name = entry.getDialMs2Name();
               if (entry.getLdaMs2Name()!=null && entry.getLdaMs2Name().length()>0)
                 dialMs2Name = entry.getLdaMs2Name();
-              if (!StaticUtils.isAPermutedVersion(keyWOSlash, dialMs2Name.replaceAll("/", "_"),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)) continue;
+              if (!StaticUtils.isAPermutedVersion(keyWOSlash, dialMs2Name.replaceAll("/", "_"),LipidomicsConstants.CHAIN_SEPARATOR_NO_POS)) continue;             
               dialNames.put(entry.getDialMs2Name(), entry.getDialMs2Name());
               dialOKAccordingToReference.put(dialMs2Name, dialMs2Name);
               double score = entry.getScore();
@@ -20329,7 +20897,7 @@ public void testTabFile() throws Exception {
     try{
       Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> theoreticalMasses = new Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>();          
       for (String quantFile : quantitationFiles){
-        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)QuantificationThread.parseQuantExcelFile(quantFile,  0f, 0f, 0, 0, true, 0f, 0f, 0f, 0f,false).get(3);
+        Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = (Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>>)(new MassListParser(quantFile, 0f, 0f, 0, 0, true, 0f, 0f, 0f,false)).getResultsVector().get(3);
         ////Hashtable<String,Hashtable<String,Hashtable<String,QuantVO>>> oneFile = null;
         for (String className : oneFile.keySet()){
           Hashtable<String,Hashtable<String,QuantVO>> oneClass= oneFile.get(className);
@@ -20679,7 +21247,7 @@ public void testTabFile() throws Exception {
       parser.parse();
       FALibParser faParser = new FALibParser(faLibPath);
       faParser.parseFile();
-      Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> fas = faParser.getFattyAcids().get("n");
+      Hashtable<Integer, Hashtable<Integer, Hashtable<String, Hashtable<String, FattyAcidVO>>>> fas = faParser.getResult().get("n");
       Vector<FattyAcidVO> chains = new Vector<FattyAcidVO>();
       for (Integer cAtoms : fas.keySet()) {
           for (Integer dbs : fas.get(cAtoms).keySet()) {
@@ -20729,22 +21297,33 @@ public void testTabFile() throws Exception {
       
       int adductColumn = -1;
       int scoreColumn = -1;
+      int scoreUncorrectedColumn = -1;
+      int scoreAllFragsColumn = -1;
+      int ambiguousPartnerColumn = -1;
+      
       int typeColumn = -1;
       int classColumn = -1;
       int speciesColumn = -1;
       int molSpeciesColumn = -1;
       int polarityColumn = -1;
       int rtGroupColumn = -1;
+      int maxFragsColumn = -1;
+      int maxAllFragsColumn = -1;
       int lineNumber=0;
       
       String lipidClass;
       String lipidSpecies;
       String molSpecies;
       short identificationType;
-      double score;
+      double score;     
+      double scoreAllFrags;
       String adduct;
       Boolean polarity;
       String rtGroup;
+      int maxFragments;
+      int maxAllFrags;
+      double scoreUncorrected;
+      String ambiguousPartners;
       
       while ((line = reader.readLine()) != null) {
         line = line.trim();
@@ -20755,9 +21334,15 @@ public void testTabFile() throws Exception {
           molSpecies = null;
           identificationType = -1;
           score = -1d;
+          scoreAllFrags = -1;
           adduct = null;
           polarity = null;
           rtGroup = null;
+          maxFragments = -1;
+          maxAllFrags = -1;
+          scoreUncorrected = -1;
+          ambiguousPartners = null;
+          
           
           String[] columns = line.split("\t");
           if (columns.length==0)
@@ -20769,6 +21354,13 @@ public void testTabFile() throws Exception {
               score = Double.parseDouble(columns[scoreColumn]);
             }catch(NumberFormatException nfx) {
               throw new Exception ("The value of the column \""+COLUMN_HEADER_SCORE+"\" is not double format: "+columns[scoreColumn]+". Error at line "+lineNumber);
+            }
+          }
+          if (scoreAllFragsColumn>=0) {
+            try {
+              scoreAllFrags = Double.parseDouble(columns[scoreAllFragsColumn]);
+            }catch(NumberFormatException nfx) {
+              throw new Exception ("The value of the column \""+COLUMN_HEADER_SCORE_ALL_FRAGMENTS+"\" is not double format: "+columns[scoreAllFragsColumn]+". Error at line "+lineNumber);
             }
           }
           if (typeColumn>=0) {
@@ -20795,6 +21387,32 @@ public void testTabFile() throws Exception {
           }
           if (rtGroupColumn>=0 && columns.length>rtGroupColumn && columns[rtGroupColumn]!=null && columns[rtGroupColumn].length()>0)
             rtGroup = columns[rtGroupColumn];
+          if (maxFragsColumn>=0 && columns.length>maxFragsColumn && columns[maxFragsColumn]!=null && columns[maxFragsColumn].length()>0) {
+            try {
+              maxFragments = Integer.parseInt(columns[maxFragsColumn]);
+            }catch(NumberFormatException nfx) {
+              throw new Exception ("The value of the column \""+COLUMN_HEADER_MAX_FRAGS+"\" is not integer format: "+columns[maxFragsColumn]+". Error at line "+lineNumber);
+            }            
+          }
+          if (maxAllFragsColumn>=0 && columns.length>maxAllFragsColumn && columns[maxAllFragsColumn]!=null && columns[maxAllFragsColumn].length()>0) {
+            try {
+              maxAllFrags = Integer.parseInt(columns[maxAllFragsColumn]);
+            }catch(NumberFormatException nfx) {
+              throw new Exception ("The value of the column \""+COLUMN_HEADER_MAX_ALL_FRAGS+"\" is not integer format: "+columns[maxAllFragsColumn]+". Error at line "+lineNumber);
+            }            
+          }
+          if (scoreUncorrectedColumn>=0) {
+            try {
+            	if (scoreUncorrectedColumn<columns.length && columns[scoreUncorrectedColumn]!=null && columns[scoreUncorrectedColumn].length()>0)
+            		scoreUncorrected = Double.parseDouble(columns[scoreUncorrectedColumn]);
+            }catch(NumberFormatException nfx) {
+              throw new Exception ("The value of the column \""+COLUMN_HEADER_SCORE_UNCORRECTED+"\" is not double format: "+columns[scoreUncorrectedColumn]+". Error at line "+lineNumber);
+            }
+          } 
+          if (ambiguousPartnerColumn>=0) {
+          	if (ambiguousPartnerColumn<columns.length && columns[ambiguousPartnerColumn]!=null && columns[ambiguousPartnerColumn].length()>0)
+          		ambiguousPartners = columns[ambiguousPartnerColumn];
+          }
           
           if (adduct==null)
             throw new Exception ("The value of the column \""+COLUMN_HEADER_ADDUCT+"\" must not be empty. Error at line "+lineNumber);
@@ -20810,7 +21428,8 @@ public void testTabFile() throws Exception {
             throw new Exception ("The value of the column \""+COLUMN_HEADER_MOL_SPECIES+"\" must not be empty. Error at line "+lineNumber);
           else if (polarity==null)
             throw new Exception ("The value of the column \""+COLUMN_HEADER_POLARITY+"\" must not be empty. Error at line "+lineNumber);
-          results.add(new AlexScoreVO(lipidClass, lipidSpecies, molSpecies, identificationType, score, adduct, polarity, rtGroup,""));
+          results.add(new AlexScoreVO(lipidClass, lipidSpecies, molSpecies, identificationType, score, scoreAllFrags, adduct, polarity, rtGroup, "", maxFragments,
+          		maxAllFrags, scoreUncorrected, ambiguousPartners));
           
         }else if (line.contains(COLUMN_HEADER_ADDUCT) && line.contains(COLUMN_HEADER_SCORE) &&
             line.contains(COLUMN_HEADER_TYPE) && line.contains(COLUMN_HEADER_CLASS) && 
@@ -20822,6 +21441,8 @@ public void testTabFile() throws Exception {
               adductColumn = columnNr;
             } else if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_SCORE)){
               scoreColumn = columnNr;
+            } else if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_SCORE_ALL_FRAGMENTS)){
+              scoreAllFragsColumn = columnNr;
             } else if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_TYPE)){
               typeColumn = columnNr;
             } else if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_CLASS)){
@@ -20834,8 +21455,17 @@ public void testTabFile() throws Exception {
               polarityColumn = columnNr;
             } else if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_RT_GROUP)){
               rtGroupColumn = columnNr;
+            } else if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_MAX_FRAGS)) {
+              maxFragsColumn = columnNr;
+            } else if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_MAX_ALL_FRAGS)) {
+              maxAllFragsColumn = columnNr;
+            } else if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_SCORE_UNCORRECTED)){
+              scoreUncorrectedColumn = columnNr;
+            } else if (columns[columnNr].equalsIgnoreCase(COLUMN_HEADER_AMBIGUOUS)){
+              ambiguousPartnerColumn = columnNr;
             }
           }
+          System.out.println("scoreUncorrectedColumn: "+scoreUncorrectedColumn);
           headerLineFound = true;
         }
       }
@@ -21064,44 +21694,77 @@ public void testTabFile() throws Exception {
 //   String alexIdentificationFile = baseDir+"13_LCMSdata_CtrlEx1_allALEXscores_targetDB_v220305.tab";
 //   String output = baseDir+"LCMSdata_CtrlEx1_targetsearch.tab";
 	 //for mouse brain
+	 //String baseDir = "E:\\Lipidomics\\data\\Christer\\20220222_decoyLCMS-brain\\";
+
+   //for LCMS-liver
+   String baseDir = "C:\\data\\Christer\\20220119_decoyLCMS-liver\\";
+   String alexIdentificationFile = baseDir+"21_LCMSdata_liver_allALEXscores_targetsearch_v240306.tab";
+   String output = baseDir+"LP_LCMSliver_target_240306-1_allScore_Na_12.5_lessHarsh_combRemovalAll.tab";
+
+   
+   
+   //for LCMS-brain
 //   String baseDir = "C:\\data\\Christer\\20220222_decoyLCMS-brain\\";
-//   String alexIdentificationFile = baseDir+"21_LCMSdata_brain_allALEXscores_targetsearch_v220303.tab";
-//   String output = baseDir+"LCMSdata_brain_targetsearch.tab";
+//
+//   String alexIdentificationFile = baseDir+"02_LP_ALEXscores_LCMSbrain_target_230720-1_lessHarsh_ethylamine_wLPE-LPC_ext_lessHarsh.tab";
+//   String output = baseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext.tab";
+   
+   
+
+
    //for NIST human plasma
-   String baseDir = "C:\\Collaborator_Files\\Christer\\20220610_decoyLCMS-plasma\\";
-   String alexIdentificationFile = baseDir+"21_LCMSdata_serum_allALEXscores_targetsearch_v220609.tab";
-   String output = baseDir+"LCMSdata_plasma_targetsearch.tab";
+//   String baseDir = "C:\\Collaborator_Files\\Christer\\20220610_decoyLCMS-plasma\\";
+//   String alexIdentificationFile = baseDir+"21_LCMSdata_serum_allALEXscores_targetsearch_v220609.tab";
+//   String output = baseDir+"LCMSdata_plasma_targetsearch.tab";
    
 
    BufferedOutputStream out = null;
    String line;
    try {
      Vector<AlexScoreVO> results = readAlexScoreResults(alexIdentificationFile);
+     boolean containsAllFrags = (results.size()>0 ? (results.get(0).getScoreAllFrags()>=0d) : false);
      System.out.println("Lines: "+results.size());
      //Vector<AlexScoreVO> resultsmolSpecies = new Vector<AlexScoreVO>();
      
      out = new BufferedOutputStream(new FileOutputStream(output));
-     line = COLUMN_HEADER_ADDUCT+"\t"+COLUMN_HEADER_SCORE+"\t"+COLUMN_HEADER_TYPE+"\t"+COLUMN_HEADER_CLASS+"\t"+COLUMN_HEADER_SPECIES+"\t"+COLUMN_HEADER_MOL_SPECIES+"\t"+COLUMN_HEADER_POLARITY+"\t"+COLUMN_HEADER_RT_GROUP+"\n";
+     line = COLUMN_HEADER_ADDUCT+"\t"+COLUMN_HEADER_SCORE+"\t"+(containsAllFrags ? COLUMN_HEADER_SCORE_ALL_FRAGMENTS+"\t" : "")+COLUMN_HEADER_TYPE+"\t"+COLUMN_HEADER_CLASS+"\t"+COLUMN_HEADER_SPECIES+"\t"+COLUMN_HEADER_MOL_SPECIES+"\t"
+         +COLUMN_HEADER_POLARITY+"\t"+COLUMN_HEADER_RT_GROUP+"\t"+COLUMN_HEADER_MAX_FRAGS+(containsAllFrags ? "\t"+COLUMN_HEADER_MAX_ALL_FRAGS : "")+"\t"+COLUMN_HEADER_SCORE_UNCORRECTED+"\t"+COLUMN_HEADER_AMBIGUOUS+"\n";
      out.write(line.getBytes());
      //Hashtable<String,String> lClasses = new Hashtable<String,String>();
      Hashtable<String,String> removedClasses = new Hashtable<String,String>();
      for (AlexScoreVO result : results) {
        //lClasses.put(result.getLipidClass(), result.getLipidClass());
        //this check is for the LC-MS liver data set and LC-MS Exp1
+       if ((result.getLipidClass().equalsIgnoreCase("Cer") && !result.isPositive())|| result.getLipidClass().equalsIgnoreCase("TAG") || result.getLipidClass().equalsIgnoreCase("DAG") || result.getLipidClass().equalsIgnoreCase("PE O-") ||
+           result.getLipidClass().equalsIgnoreCase("PS") || result.getLipidClass().equalsIgnoreCase("LPS") || result.getLipidClass().equalsIgnoreCase("SM") || result.getLipidClass().equalsIgnoreCase("PI") ||
+           result.getLipidClass().equalsIgnoreCase("IS SM") || result.getLipidClass().equalsIgnoreCase("PG") || result.getLipidClass().equalsIgnoreCase("PE") || result.getLipidClass().equalsIgnoreCase("LPE") ||
+           result.getLipidClass().equalsIgnoreCase("PC") || result.getLipidClass().equalsIgnoreCase("LPC")) {
+       
+       ////this is for simulating the additional fragment for PE O- for the decoy searches
+//       double smallestRemove = (1d/3d)-0.2d;
+//       if (result.getLipidClass().equalsIgnoreCase("PE O-") && !result.isPositive()) {
+//         if (result.getScore()>(2d/3d)) {
+//           result.setScore(result.getScore()-0.25d);
+//         } else if (result.getScore()>(1d/3d)) {
+//           result.setScore(result.getScore()-(1d/6d));
+//         }else if (result.getScore()>smallestRemove)
+//           result.setScore(result.getScore()-smallestRemove);
+//       }
+         
+       //this check is for LC-MS mouse brain and LC-MS human plasma
 //       if (result.getLipidClass().equalsIgnoreCase("Cer") || result.getLipidClass().equalsIgnoreCase("TAG") || result.getLipidClass().equalsIgnoreCase("DAG") || result.getLipidClass().equalsIgnoreCase("PE O-") ||
 //           result.getLipidClass().equalsIgnoreCase("PS") || result.getLipidClass().equalsIgnoreCase("LPS") || result.getLipidClass().equalsIgnoreCase("SM") || result.getLipidClass().equalsIgnoreCase("PI") ||
 //           result.getLipidClass().equalsIgnoreCase("IS SM") || result.getLipidClass().equalsIgnoreCase("PG") || result.getLipidClass().equalsIgnoreCase("PE") || result.getLipidClass().equalsIgnoreCase("LPE") ||
-//           result.getLipidClass().equalsIgnoreCase("PC") || result.getLipidClass().equalsIgnoreCase("LPC")) {
-       
-       //this check is for LC-MS mouse brain
-       if (result.getLipidClass().equalsIgnoreCase("Cer") || result.getLipidClass().equalsIgnoreCase("TAG") || result.getLipidClass().equalsIgnoreCase("DAG") || result.getLipidClass().equalsIgnoreCase("PE O-") ||
-           result.getLipidClass().equalsIgnoreCase("PS") || result.getLipidClass().equalsIgnoreCase("LPS") || result.getLipidClass().equalsIgnoreCase("SM") || result.getLipidClass().equalsIgnoreCase("PI") ||
-           result.getLipidClass().equalsIgnoreCase("IS SM") || result.getLipidClass().equalsIgnoreCase("PG") || result.getLipidClass().equalsIgnoreCase("PE") || result.getLipidClass().equalsIgnoreCase("LPE") ||
-           result.getLipidClass().equalsIgnoreCase("PC") || result.getLipidClass().equalsIgnoreCase("LPC") || 
-           result.getLipidClass().equalsIgnoreCase("PC O-")) {
+//           result.getLipidClass().equalsIgnoreCase("PC") || result.getLipidClass().equalsIgnoreCase("LPC") || 
+//           result.getLipidClass().equalsIgnoreCase("PC O-") /*|| result.getLipidClass().equalsIgnoreCase("HexCer")*/) {
 
-         line = result.getAdduct()+"\t"+(result.getScore()==0d ? "0" : String.valueOf(result.getScore()))+"\t"+(result.getIdentificationType()==AlexScoreVO.IDENT_TYPE_MOL_SPECIES ? TYPE_MOL_SPECIES_ABBREV : TYPE_SPECIES_ABBREV)+"\t"
-             +result.getLipidClass()+"\t"+result.getLipidSpecies()+"\t"+result.getMolSpecies()+"\t"+(result.isPositive() ? "+" : "-")+"\t"+result.getRtGroup()+"\n";
+         line = result.getAdduct()+"\t"+(result.getScore()==0d ? "0" : String.valueOf(result.getScore()))+(containsAllFrags ? "\t"+(result.getScore()==0d ? "0" : String.valueOf(result.getScoreAllFrags())) : "")+"\t"
+             +(result.getIdentificationType()==AlexScoreVO.IDENT_TYPE_MOL_SPECIES ? TYPE_MOL_SPECIES_ABBREV : TYPE_SPECIES_ABBREV)+"\t"+result.getLipidClass()+"\t"+result.getLipidSpecies()+"\t"+result.getMolSpecies()
+             +"\t"+(result.isPositive() ? "+" : "-")+"\t"+result.getRtGroup()+"\t"+(result.getMaxFragments()>0 ? result.getMaxFragments() : "")+(containsAllFrags ? "\t"+result.getMaxAllFrags() : "");
+         if (result.getScoreUncorrected()>=0 || result.getAmbiguousPartners()!=null) {
+        	 line += "\t"+(result.getScoreUncorrected()>=0 ? result.getScoreUncorrected() : "")+(result.getAmbiguousPartners()!=null ?  "\t"+result.getAmbiguousPartners() : "");
+         }
+         line += "\n";
          out.write(line.toString().getBytes());
        }else {
          removedClasses.put(result.getLipidClass(), result.getLipidClass());
@@ -21580,10 +22243,10 @@ public void testTabFile() throws Exception {
       e.printStackTrace();
     }
   }
- 
+ */
   
   private void printMichaelisMenten(){
-    String pathName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\Pruefungen\\21-22\\20220429\\images\\MichaelisMenten_B.png";
+    String pathName = "E:\\Lipidomics\\LDA-Collaborations\\Koeberle\\20241219\\MichaelisMenten_B.png";
     String chartName = "";
     String series1Name = "";
 
@@ -21676,7 +22339,7 @@ public void testTabFile() throws Exception {
     }    
   } 
 
-
+/****
   private void printLineweaverBurk(){
     String pathName = "C:\\Users\\juerg\\Documents\\UniGraz\\Lehre\\Mathematik\\Pruefungen\\21-22\\20220613\\images\\Frage16_B.png";
     String chartName = "";
@@ -23139,20 +23802,41 @@ public void testTabFile() throws Exception {
    }
    
    private void validateHitsBasedOnRetentionTime() {
+     //this is for LC-MS liver
+//     String decoyBaseDir = "C:\\data\\Christer\\20220119_decoyLCMS-liver\\";
+//     String alexIdentificationFile = decoyBaseDir+"LCMSdata_liver_targetsearch_PE_O-5frag.tab";
+//     String outFile = decoyBaseDir+"LCMSdata_liver_targetsearch_rtChecked_13_PE_O-5frag.tab";
+
      //this is for LC-MS Exp1
 //     String decoyBaseDir = "C:\\data\\Christer\\20220204_decoyLCMS-Exp1\\";
 //     String alexIdentificationFile = decoyBaseDir+"LCMSdata_CtrlEx1targetsearch.tab";
 //     String outFile = decoyBaseDir+"LCMSdata_CtrlEx1targetsearch_rtChecked.tab";
+     
+     //this is for LC-MS mouse liver
+     String decoyBaseDir = "C:\\data\\Christer\\20220119_decoyLCMS-liver\\";
+      
+     String alexIdentificationFile = decoyBaseDir+"LP_LCMSliver_target_240306-1_allScore_Na_12.5_lessHarsh_combRemovalAll.tab";
+     String outFile = decoyBaseDir+"LCMSdata_liver_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_combRemovalAll_generated.tab";
+     String filePrevAssign = decoyBaseDir+"LCMSdata_liver_targetsearch_rtChecked_verifiedBigger0.325.xlsx";
+     
      //this is for LC-MS mouse brain
 //     String decoyBaseDir = "C:\\data\\Christer\\20220222_decoyLCMS-brain\\";
-//  	 String decoyBaseDir = "C:\\Collaborator_Files\\Christer\\20220610_decoyLCMS-plasma";
-//     String alexIdentificationFile = decoyBaseDir+"LCMSdata_brain_targetsearch.tab";
-//     String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked.tab";
-  	 
-  	 //this is for LC-MS NIST Human Plasma
-  	 String decoyBaseDir = "C:\\Collaborator_Files\\Christer\\20220610_decoyLCMS-plasma\\";
-     String alexIdentificationFile = decoyBaseDir+"LCMSdata_plasma_targetsearch.tab";
-     String outFile = decoyBaseDir+"LCMSdata_plasma_targetsearch_rtChecked.tab";
+//     //String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_Na_12.5.tab";
+//     //String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_Na_12.5_generated.tab";
+//     																							 
+//     String alexIdentificationFile = decoyBaseDir+"LP_LCMSbrain_target_230720-1_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext.tab";
+//     String outFile = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_lessHarsh_ethylamine_wLPE-LPC_ext_generated.tab";
+//     String filePrevAssign = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_allScore_Na_12.5_combiCorrected.xlsx";
+                                    
+     
+     //this is for LC-MS human plasma
+//     String decoyBaseDir = "C:\\data\\Christer\\20220610_decoyLCMS-plasma\\";
+//     String alexIdentificationFile = decoyBaseDir+"LCMSdata_serum_targetsearch_13_PE_O-5frag.tab";
+//     String outFile = decoyBaseDir+"LCMSdata_serum_targetsearch_rtChecked_13_PE_O-5frag.tab";
+     
+     //String filePrevAssign = decoyBaseDir+"LCMSdata_brain_targetsearch_rtChecked_PE_O-5frag.xlsx";
+          
+          
      String lookupClass;
      String lookupSpecies;
      String lookupMolSpecies;
@@ -23171,19 +23855,82 @@ public void testTabFile() throws Exception {
      LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>> lipidClasses = new LinkedHashMap<String,LinkedHashMap<String,LinkedHashMap<String,ReferenceInfoVO>>>();
      Hashtable<String,LipidClassInfoVO> lipidClassInfo = new Hashtable<String,LipidClassInfoVO>();
      //LinkedHashMap<String,Boolean> adducts = new LinkedHashMap<String,Boolean>();
+     //this is for LC-MS liver
+     getValidOrbitrapCIDMouseLiverSpecies(lipidClasses, lipidClassInfo, new LinkedHashMap<String,Boolean>());
      //this is for LC-MS Exp1
      //getValidOrbitrapCIDCtrlExp1SpeciesPositive(lipidClasses, lipidClassInfo, adducts);
      //this is for LC-MS mouse brain
      //getValidOrbitrapCIDMouseBrainSpecies(lipidClasses, lipidClassInfo);
-     //this is for LC-MS NIST Human Plasma
-     getValidOrbitrapCIDHumanPlasmaSpecies(lipidClasses, lipidClassInfo);
+     //this is for LC-MS human plasma
+     //getValidOrbitrapCIDHumanPlasmaSpecies(lipidClasses, lipidClassInfo);
+
      
      try {
+       Hashtable<String,Hashtable<String,Vector<RTCheckedVO>>> previousAssignments = null;
+       if (filePrevAssign!=null && filePrevAssign.length()>0) {
+         previousAssignments = parsePreviousAssignements(filePrevAssign);
+       }
       List<AlexScoreVO> resultsAll = new ArrayList<AlexScoreVO>(readAlexScoreResults(alexIdentificationFile));
       Collections.sort(resultsAll,new GeneralComparator("at.tugraz.genome.vos.AlexScoreVO", "getScore", "java.lang.Double"));
-      //for (AlexScoreVO result : resultsAll) {
+      //start: these lines perform a second sorting by the combined ALEX score
+      List<AlexScoreVO> resultsSortedAlsoBySecondScore = new ArrayList<AlexScoreVO>();
+      List<AlexScoreVO> sublist = new ArrayList<AlexScoreVO>();
+      double lastScore = -1;
       for (int i=resultsAll.size()-1; i!=-1; i--) {
         AlexScoreVO result = resultsAll.get(i);
+        if (i==resultsAll.size()-1) lastScore = result.getScore();
+        if (lastScore!=result.getScore()) {
+          Collections.sort(sublist,new GeneralComparator("at.tugraz.genome.vos.AlexScoreVO", "getScoreAllFrags", "java.lang.Double"));
+          for (int j=sublist.size()-1; j!=-1; j--)
+            resultsSortedAlsoBySecondScore.add(sublist.get(j));
+          sublist = new ArrayList<AlexScoreVO>();   
+          lastScore = result.getScore();
+        }
+        sublist.add(result);
+      }
+      if (sublist.size()>0) {
+        Collections.sort(sublist,new GeneralComparator("at.tugraz.genome.vos.AlexScoreVO", "getScoreAllFrags", "java.lang.Double"));
+        for (int j=sublist.size()-1; j!=-1; j--)
+          resultsSortedAlsoBySecondScore.add(sublist.get(j));
+        sublist = new ArrayList<AlexScoreVO>();        
+      }
+      resultsAll = resultsSortedAlsoBySecondScore;
+      //end: these lines perform a second sorting by the combined ALEX score
+      int countFound = 0;
+      //for (AlexScoreVO result : resultsAll) {
+      //for (int i=resultsAll.size()-1; i!=-1; i--) {
+      for (int i=0; i!=resultsAll.size(); i++) {
+        AlexScoreVO result = resultsAll.get(i);
+        if (previousAssignments!=null && previousAssignments.containsKey(result.getLipidClass()) && previousAssignments.get(result.getLipidClass()).containsKey(result.getLipidSpecies())) {
+          if (result.getLipidClass().startsWith("IS ")) {
+            refRt = -1000d;  
+          }else
+            refRt = Double.parseDouble(result.getRtGroup());
+          boolean found = false;
+          for (RTCheckedVO rtChecked : previousAssignments.get(result.getLipidClass()).get(result.getLipidSpecies())){
+            if (rtChecked.getMolSpec().equalsIgnoreCase(result.getMolSpecies()) && rtChecked.getAdduct().equalsIgnoreCase(result.getAdduct())) {
+              if (result.getLipidClass().startsWith("IS ")) {
+                rt = -1000d;
+              }else
+                rt = Double.parseDouble(rtChecked.getRtGroup());
+              if ((refRt-0.1d)<=rt && rt<=(refRt+0.1d)) {
+                //System.out.println("I have found this one in the results: "+result.getLipidClass()+" "+result.getLipidSpecies()+" "+result.getMolSpecies());
+                result.setTp(rtChecked.getTruePos());
+//                if (rtChecked.getComment()!=null && rtChecked.getComment().length()>0)
+//                  System.out.println(rtChecked.getComment()+" ; "+rtChecked.getTruePos());
+                result.setComment((rtChecked.getComment()!=null && rtChecked.getComment().length()>0) ? rtChecked.getComment() : "");
+                if (found)
+                  System.out.println("I have found it more than one time");
+
+                found = true;
+                countFound++;
+              }
+            }
+          }
+          if (found)
+            continue;
+        }
+        
         result.setTp("false");
         lookupClass = result.getLipidClass();
         if (lookupClass.equalsIgnoreCase("DAG"))
@@ -23208,7 +23955,14 @@ public void testTabFile() throws Exception {
           lookupSpecies = lookupSpecies.substring(0,lookupSpecies.length()-1)+String.valueOf(lastDigit);
         } else if (result.getLipidClass().equalsIgnoreCase("Cer") || result.getLipidClass().equalsIgnoreCase("HexCer") || result.getLipidClass().equalsIgnoreCase("SM")) {
           nrOh = Short.parseShort(lookupSpecies.substring(lookupSpecies.indexOf(";")+1));
-          lookupSpecies = Settings.getLcbHydroxyEncoding().getEncodedPrefix(nrOh)+lookupSpecies.substring(0,lookupSpecies.indexOf(";"));
+          //this line is for the new LDA version supporting different LCB backbones and different numbers of hydroxylation
+          ////lookupSpecies = Settings.getLcbHydroxyEncoding().getEncodedPrefix(nrOh)+lookupSpecies.substring(0,lookupSpecies.indexOf(";"));
+          //the next 5 lines are for the old LDA version (before 2.8)
+          int nrCarbons = Integer.parseInt(lookupSpecies.substring(0,lookupSpecies.indexOf(":")))-18;
+          int doubleBonds = Integer.parseInt(lookupSpecies.substring(lookupSpecies.indexOf(":")+1,lookupSpecies.indexOf(";")))-1;
+          if (doubleBonds<0)
+            lookupSpecies = "---";
+          lookupSpecies = nrCarbons+":"+doubleBonds;
         }
         if (!speciesAll.containsKey(lookupSpecies))
           continue;
@@ -23248,10 +24002,15 @@ public void testTabFile() throws Exception {
 //              else
 //                refRt = refRt-0.6d;
 //            }
+            //this is for LC-MS liver
+            if (result.isPositive() && (lookupClass.equalsIgnoreCase("P-PC") || lookupClass.equalsIgnoreCase("P-PE") || lookupClass.equalsIgnoreCase("LPE") ||
+                lookupClass.equalsIgnoreCase("PS") || lookupClass.equalsIgnoreCase("PC") || lookupClass.equalsIgnoreCase("PE") || lookupClass.equalsIgnoreCase("Cer"))) {
+              refRt = refRt-0.2d;
+            }            
           //this is for LC-MS Exp1 brain
-            if (result.isPositive()) {
-              refRt = refRt-0.05d;
-            }
+//            if (result.isPositive()) {
+//              refRt = refRt-0.05d;
+//            }
             if ((refRt-info.getRtTolerance())<rt && rt<(refRt+info.getRtTolerance())) {
               tpString = "true";
             //this lead of too many hits to check
@@ -23309,15 +24068,24 @@ public void testTabFile() throws Exception {
 //        }
         
       }
+      System.out.println("Found: "+countFound);
       String line;
       out = new BufferedOutputStream(new FileOutputStream(outFile));
-      line = COLUMN_HEADER_ADDUCT+"\t"+COLUMN_HEADER_SCORE+"\t"+COLUMN_HEADER_TYPE+"\t"+COLUMN_HEADER_CLASS+"\t"+COLUMN_HEADER_SPECIES+"\t"+COLUMN_HEADER_MOL_SPECIES+"\t"+COLUMN_HEADER_POLARITY+"\t"+COLUMN_HEADER_RT_GROUP+"\t"+COLUMN_HEADER_TP+"\n";
+      boolean containsAllFrags = (resultsAll.size()>0 ? (resultsAll.get(resultsAll.size()-1).getScoreAllFrags()>=0d) : false);
+      line = COLUMN_HEADER_ADDUCT+"\t"+COLUMN_HEADER_SCORE+"\t"+(containsAllFrags ? COLUMN_HEADER_SCORE_ALL_FRAGMENTS+"\t" : "")+COLUMN_HEADER_TYPE+"\t"+COLUMN_HEADER_CLASS+"\t"+COLUMN_HEADER_SPECIES+"\t"+COLUMN_HEADER_MOL_SPECIES
+        +"\t"+COLUMN_HEADER_POLARITY+"\t"+COLUMN_HEADER_RT_GROUP+"\t"+COLUMN_HEADER_TP+"\t"+COLUMN_HEADER_COMMENT+"\t"+COLUMN_HEADER_SCORE_UNCORRECTED+"\t"+COLUMN_HEADER_AMBIGUOUS+"\n";
       out.write(line.getBytes());
 //      for (AlexScoreVO result : resultsAll) {
-      for (int i=resultsAll.size()-1; i!=-1; i--) {
+      //for (int i=resultsAll.size()-1; i!=-1; i--) {
+      for (int i=0; i!=resultsAll.size(); i++) {
         AlexScoreVO result = resultsAll.get(i);
-            line = result.getAdduct()+"\t"+(result.getScore()==0d ? "0" : String.valueOf(result.getScore()))+"\t"+(result.getIdentificationType()==AlexScoreVO.IDENT_TYPE_MOL_SPECIES ? TYPE_MOL_SPECIES_ABBREV : TYPE_SPECIES_ABBREV)+"\t"
-                +result.getLipidClass()+"\t"+result.getLipidSpecies()+"\t"+result.getMolSpecies()+"\t"+(result.isPositive() ? "+" : "-")+"\t"+result.getRtGroup()+"\t"+result.getTp()+"\n";
+            line = result.getAdduct()+"\t"+(result.getScore()==0d ? "0" : String.valueOf(result.getScore()))+(containsAllFrags ? "\t"+(result.getScore()==0d ? "0" : String.valueOf(result.getScoreAllFrags())) : "")+"\t"
+                +(result.getIdentificationType()==AlexScoreVO.IDENT_TYPE_MOL_SPECIES ? TYPE_MOL_SPECIES_ABBREV : TYPE_SPECIES_ABBREV)+"\t"+result.getLipidClass()+"\t"+result.getLipidSpecies()+"\t"+result.getMolSpecies()
+                +"\t"+(result.isPositive() ? "+" : "-")+"\t"+result.getRtGroup()+"\t"+result.getTp()+"\t"+result.getComment();
+            if (result.getScoreUncorrected()>=0 || result.getAmbiguousPartners()!=null) {
+            	line += "\t"+(result.getScoreUncorrected()>=0 ? result.getScoreUncorrected() : "")+(result.getAmbiguousPartners()!=null ?  "\t"+result.getAmbiguousPartners() : "");
+            }
+            line += "\n";
             out.write(line.toString().getBytes());
       }
     }catch (Exception e) {
@@ -23659,4 +24427,174 @@ public void testTabFile() throws Exception {
      }
    }
    
+   private Hashtable<String,Hashtable<String,Vector<RTCheckedVO>>> parsePreviousAssignements(String filePrevAssign) throws ExcelInputFileException{
+     Hashtable<String,Hashtable<String,Vector<RTCheckedVO>>> previousAssignments = new Hashtable<String,Hashtable<String,Vector<RTCheckedVO>>>();
+     InputStream myxls = null;
+     Workbook workbook  = null;
+     try {
+       myxls = new FileInputStream(filePrevAssign);
+       workbook  = new XSSFWorkbook(myxls);     
+       for (int sheetNumber=0;sheetNumber!=workbook.getNumberOfSheets();sheetNumber++) {
+         Sheet sheet = workbook.getSheetAt(sheetNumber);
+       
+         int adductColumn = -1;
+         int scoreColumn = -1;
+         int fragTypeColumn = -1;
+         int classColumn = -1;
+         int speciesColumn = -1;
+         int molSpecColumn = -1;
+         int polarityColumn = -1;
+         int rtGroupColumn = -1;
+         int tpColumn = -1;
+         int commentColumn = -1;
+         
+         int highestColumNumber = 0;
+         
+         int rowCount=0;
+         Row row = sheet.getRow(rowCount);
+         for (int i=0;  row!=null && i!=(row.getLastCellNum()+1);i++){
+           Cell cell = row.getCell(i);
+           String contents = "";
+//           Double numeric = null;
+           int cellType = -1;
+           if (cell!=null) cellType = cell.getCellType();
+           if (cellType==Cell.CELL_TYPE_STRING){
+             contents = cell.getStringCellValue();
+           }else if (cellType==Cell.CELL_TYPE_NUMERIC || cellType==Cell.CELL_TYPE_FORMULA){
+            contents = String.valueOf(cell.getNumericCellValue());
+           }
+           contents = contents.trim();
+           if (contents==null || contents.length()==0)
+             continue;
+           if (contents.equalsIgnoreCase("Adduct")) {
+             adductColumn = i;
+             highestColumNumber = i;
+           } else if (contents.equalsIgnoreCase("ALEX score")) {
+             scoreColumn = i;
+             highestColumNumber = i;
+           } else if (contents.equalsIgnoreCase("Fragment type")) {
+             fragTypeColumn = i;
+             highestColumNumber = i;
+           } else if (contents.equalsIgnoreCase("Lipid class")) {
+             classColumn = i;
+             highestColumNumber = i;
+           } else if (contents.equalsIgnoreCase("Lipid species")) {
+             speciesColumn = i;
+             highestColumNumber = i;
+           } else if (contents.equalsIgnoreCase("Molecular lipid species")) {
+             molSpecColumn = i;
+             highestColumNumber = i;
+           } else if (contents.equalsIgnoreCase("Polarity")) {
+             polarityColumn = i;
+             highestColumNumber = i;
+           } else if (contents.equalsIgnoreCase("RT group")) {
+             rtGroupColumn = i;
+             highestColumNumber = i;
+           } else if (contents.equalsIgnoreCase("TP")) {
+             tpColumn = i;
+             highestColumNumber = i;
+           } else if (contents.equalsIgnoreCase("Comment")) {
+             commentColumn = i;
+             highestColumNumber = i;
+           }
+         }
+         if (adductColumn<0 || scoreColumn<0 || fragTypeColumn<0 || classColumn<0 || speciesColumn<0 || molSpecColumn<0 || polarityColumn<0 || rtGroupColumn<0 || tpColumn<0)
+           continue;
+         for (rowCount=1;rowCount<(sheet.getLastRowNum()+1);rowCount++){
+           row = sheet.getRow(rowCount);
+           
+           String adduct = null;
+           String score = null;
+           String fragType = null;
+           String lClass = null;
+           String species = null;
+           String molSpec = null;
+           String polarity = null;
+           String rtGroup = null;
+           String truePos = null;
+           String comment = null;
+           
+           for (int i=0;  row!=null && i!=(highestColumNumber<row.getLastCellNum() ? (highestColumNumber+1) : (row.getLastCellNum()+1));i++){
+             Cell cell = row.getCell(i);
+             String contents = "";
+             Double numeric = null;
+             int cellType = -1;
+             if (cell!=null) cellType = cell.getCellType();
+             if (cellType==Cell.CELL_TYPE_STRING){
+               contents = cell.getStringCellValue();
+               try{ numeric = new Double(contents);}catch(NumberFormatException nfx){};
+             }else if (cellType==Cell.CELL_TYPE_NUMERIC || cellType==Cell.CELL_TYPE_FORMULA){
+              numeric = cell.getNumericCellValue();
+              contents = String.valueOf(numeric);
+             }else if (cellType==Cell.CELL_TYPE_BOOLEAN) {
+               contents = String.valueOf(cell.getBooleanCellValue());
+             }
+             
+             if (cellType == Cell.CELL_TYPE_STRING)
+               contents = cell.getStringCellValue();
+             else if (cellType == Cell.CELL_TYPE_NUMERIC){
+               double cellValue = -1;
+               cellValue = cell.getNumericCellValue();
+               contents = String.valueOf(cellValue);
+             }
+             
+             if (i==adductColumn)
+               adduct = contents;
+             else if (i==scoreColumn)
+               score = contents;
+             else if (i==fragTypeColumn)
+               fragType = contents;
+             else if (i==classColumn)
+               lClass = contents;
+             else if (i==speciesColumn)
+               species = contents;
+             else if (i==molSpecColumn)
+               molSpec = contents;
+             else if (i==polarityColumn)
+               polarity = contents;
+             else if (i==rtGroupColumn)
+               rtGroup = contents;
+             else if (i==tpColumn)
+               truePos = contents;
+             else if (i==commentColumn)
+               comment = contents;
+           }
+
+           if (adduct==null || adduct.length()==0 || score==null || score.length()==0 || fragType==null || fragType.length()==0 || lClass==null || lClass.length()==0 || species==null || species.length()==0 ||
+               molSpec==null || molSpec.length()==0 || polarity==null || polarity.length()==0 || rtGroup==null || rtGroup.length()==0 || truePos==null || truePos.length()==0)
+             continue;
+
+           RTCheckedVO vo = new RTCheckedVO(adduct, score, fragType, lClass, species, molSpec, polarity, rtGroup, truePos, comment);
+           Hashtable<String,Vector<RTCheckedVO>> speciesHash = new Hashtable<String,Vector<RTCheckedVO>>();
+           if (previousAssignments.containsKey(lClass)) speciesHash = previousAssignments.get(lClass);
+           Vector<RTCheckedVO> diffRts = new Vector<RTCheckedVO>();
+           if (speciesHash.containsKey(species)) diffRts = speciesHash.get(species);
+           diffRts.add(vo);
+           speciesHash.put(species, diffRts);
+           previousAssignments.put(lClass, speciesHash);
+         }
+       }
+     } catch (IOException e) {
+       e.printStackTrace();
+       new WarningMessage(new JFrame(), "ERROR", e.getMessage()+"; it does not seem to be Microsoft Excel");
+       throw new ExcelInputFileException(e);
+     } catch (Exception e) {
+       e.printStackTrace();
+       new WarningMessage(new JFrame(), "ERROR", e.getMessage());
+       throw new ExcelInputFileException(e);
+     } finally {
+       if (workbook!=null) {
+        try {workbook.close();}catch (IOException e) {
+          e.printStackTrace();
+        }
+       }
+       if (myxls!=null) {
+         try {myxls.close();}catch (IOException e) {
+          e.printStackTrace();
+        }
+       }
+     }
+     return previousAssignments;
+     
+   }
 }

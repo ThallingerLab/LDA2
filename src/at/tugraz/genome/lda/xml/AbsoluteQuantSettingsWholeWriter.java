@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp 
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -86,6 +86,7 @@ public class AbsoluteQuantSettingsWholeWriter extends XMLFileWriter
     Hashtable<String,LipidClassSettingsPanel> classSets =  quantSettingsPanel_.getClassSettings();
     for (String className : classSets.keySet()){
       LipidClassSettingsPanel classPanel = classSets.get(className);
+      if (classPanel.getAllSettingsSame() == null) continue; //TODO: in this case it is a class without available standards that may be defined by another class, consider writing this out.
       Element classSetting = newDoc.createElement(XMLConstants.WHOLE_ABS_SET_CLASS_SET);
       classSetting.setAttribute(XMLConstants.WHOLE_ABS_SET_CLASS_NAME,className);
       boolean allExpsSame = classPanel.getAllSettingsSame().isSelected();

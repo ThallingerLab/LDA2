@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.msn.parser;
 
@@ -27,6 +27,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Set;
@@ -70,7 +72,7 @@ public class FALibParser
    * the third integer is the amount of double bonds
    * the fourth key is the prefix
    */
-  private Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> result_;
+  protected Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> result_;
   
   /** the prefixes for a chain - should be the isotopic labels*/
   protected Set<String> availablePrefixes_;
@@ -92,6 +94,23 @@ public class FALibParser
   public FALibParser (File file) throws IOException{
     if (!file.exists()) throw new IOException("The file "+file.getAbsolutePath()+" does not exist!");
     inputFile_ = file;
+  }
+  
+  public boolean isFAFile()
+  {
+    try (InputStream myxls = new FileInputStream(inputFile_);
+    		Workbook workbook = new XSSFWorkbook(myxls);) 
+    {
+      for (int sheetNumber = 0; sheetNumber!=workbook.getNumberOfSheets(); sheetNumber++)
+      {
+        if (workbook.getSheetAt(sheetNumber).getSheetName().equalsIgnoreCase(FAS_SHEET_NAME)) 
+        	return true;
+      }
+    }
+    catch (Exception ex) {
+    	return false;
+    }
+    return false;
   }
   
   /**
@@ -359,8 +378,80 @@ public class FALibParser
    * Fetches the results of the parsing - parseFile() has to be called before
    * @return the result hash - first key: encoded hydroxy; second key is the amount of carbon atoms; third key is the amount of double bonds; fourth key is the prefix, fifth key is oxidation state
    */
-  public Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> getFattyAcids(){
+  public Hashtable<String,Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>>> getResult(){
     return result_;
+  }
+  
+  /**
+   * Fetches the results of the parsing with defined hydroxyEncoding, number of C atoms and number of double bonds
+   * @param hydroxyEncoding
+   * @param numC
+   * @param numDB
+   * @return
+   */
+  public ArrayList<FattyAcidVO> getFattyAcidSet(String hydroxyEncoding, Integer numC, Integer numDB)
+  {
+  	ArrayList<FattyAcidVO> chains = new ArrayList<FattyAcidVO>();
+  	Hashtable<String,Hashtable<String,FattyAcidVO>> selectedFAs = result_.get(hydroxyEncoding).get(numC).get(numDB);
+  	for (String pref : selectedFAs.keySet()) {
+  	  for (String oxState : selectedFAs.get(pref).keySet()) {
+  		  chains.add(selectedFAs.get(pref).get(oxState));
+  	  }
+    }
+  	return chains;
+  }
+  
+  /**
+   * Fetches the results of the parsing with defined hydroxyEncoding
+   * @param hydroxyEncoding
+   * @return
+   */
+  public ArrayList<FattyAcidVO> getFattyAcidSet(String hydroxyEncoding)
+  {
+  	ArrayList<FattyAcidVO> chains = new ArrayList<FattyAcidVO>();
+  	Hashtable<Integer,Hashtable<Integer,Hashtable<String,Hashtable<String,FattyAcidVO>>>> selectedFAs = result_.get(hydroxyEncoding);
+  	for (Integer cAtoms : selectedFAs.keySet()) {
+      for (Integer dbs : selectedFAs.get(cAtoms).keySet()) {
+        for (String pref : selectedFAs.get(cAtoms).get(dbs).keySet()) {
+      	  for (String oxState : selectedFAs.get(cAtoms).get(dbs).get(pref).keySet()) {
+      		  chains.add(selectedFAs.get(cAtoms).get(dbs).get(pref).get(oxState));
+      	  }
+        }
+      }
+    }
+  	return chains;
+  }
+  
+ 
+  /**
+   * Fetches all results of the parsing
+   * @param includeOxState		when false any VO with an oxState other than no oxState will not be included
+   * @return
+   */
+  public ArrayList<FattyAcidVO> getFattyAcidSet(boolean includeOxState)
+  {
+  	ArrayList<FattyAcidVO> chains = new ArrayList<FattyAcidVO>();
+  	for (String hydroxy : result_.keySet()) {
+  		for (Integer cAtoms : result_.get(hydroxy).keySet()) {
+        for (Integer dbs : result_.get(hydroxy).get(cAtoms).keySet()) {
+          for (String pref : result_.get(hydroxy).get(cAtoms).get(dbs).keySet()) {
+        	  for (String oxState : result_.get(hydroxy).get(cAtoms).get(dbs).get(pref).keySet()) {
+        	  	FattyAcidVO chain = result_.get(hydroxy).get(cAtoms).get(dbs).get(pref).get(oxState);
+        		  if (!includeOxState && chain.getOxState().equals(""))
+        		  {
+        		  	chains.add(chain);
+        		  }
+        		  else if (includeOxState)
+        		  {
+        		  	chains.add(chain);
+        		  }
+        	  }
+          }
+        }
+      }
+  	}
+  	Collections.sort(chains);
+  	return chains;
   }
   
   /**

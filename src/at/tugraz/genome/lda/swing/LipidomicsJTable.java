@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.swing;
 
@@ -42,7 +42,6 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.table.TableCellRenderer;
 
-import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.TooltipTexts;
 import at.tugraz.genome.lda.WarningMessage;
 import at.tugraz.genome.lda.analysis.AnalyteAddRemoveListener;
@@ -176,11 +175,9 @@ public class LipidomicsJTable extends JTable implements ActionListener
       addItemPopup_.add(item);
     }
     
-    if (Settings.SHOW_OMEGA_TOOLS) {
-      item = new JMenuItem(LABEL_EDIT_OMEGA_ASSIGNMENT);
-      item.addActionListener(this);
-      addItemPopup_.add(item);
-    }
+    item = new JMenuItem(LABEL_EDIT_OMEGA_ASSIGNMENT);
+    item.addActionListener(this);
+    addItemPopup_.add(item);
     
     this.add(addItemPopup_);
     controlDown_ = false;

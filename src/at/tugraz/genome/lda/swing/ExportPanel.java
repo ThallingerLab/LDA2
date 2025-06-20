@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.swing;
 
@@ -30,6 +30,7 @@ import java.awt.event.ActionListener;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+//import at.tugraz.genome.lda.Settings;
 import at.tugraz.genome.lda.TooltipTexts;
 
 /**
@@ -57,7 +58,9 @@ public class ExportPanel extends JPanel
   public static final String EXPORT_RDB = "exportRdb";
 
   public static final String EXPORT_MAF = "exportMAF";
-
+  
+  public static final String EXPORT_SUMMARY = "exportSummary";
+  
   
   private ActionListener parent_;
   
@@ -69,25 +72,23 @@ public class ExportPanel extends JPanel
     this.parent_ = parent;
     if (background != null)
       this.setBackground(background);
-    Font textFont = new Font("Helvetica",Font.BOLD, 9);
+//    Font textFont = new Font("Helvetica",Font.BOLD, 12);
 
     JLabel label = null;
     if (!pictureOnly){
-      label = new JLabel("Export: ");
-      label.setForeground(font);
-      label.setFont(textFont);
-      label.setToolTipText(TooltipTexts.EXPORT_GENERAL);
-      this.add(label);
+//      label = new JLabel("Export: ");
+//      label.setForeground(font);
+//      label.setFont(textFont);
+//      label.setToolTipText(TooltipTexts.EXPORT_GENERAL);
+//      this.add(label);
     }
-    ExportButton png = new ExportButton("PNG",EXPORT_PNG,font,background,parent_);
-    png.setToolTipText(TooltipTexts.EXPORT_PNG);
+    ExportButton png = new ExportButton("PNG",EXPORT_PNG,font,background,TooltipTexts.EXPORT_PNG,parent_);
     this.add(png);
     label = new JLabel(" | ");
     label.setForeground(font);
-    label.setFont(textFont);
+//    label.setFont(textFont);
     this.add(label); 
-    ExportButton svg = new ExportButton("SVG",EXPORT_SVG,font,background,parent_);
-    svg.setToolTipText(TooltipTexts.EXPORT_SVG);
+    ExportButton svg = new ExportButton("SVG",EXPORT_SVG,font,background,TooltipTexts.EXPORT_SVG,parent_);
     this.add(svg);
 //    if (pictureOnly){
 //      label = new JLabel(" | ");
@@ -101,44 +102,50 @@ public class ExportPanel extends JPanel
     if (pictureOnly) return;
     label = new JLabel(" | ");
     label.setForeground(font);
-    label.setFont(textFont);
+//    label.setFont(textFont);
     this.add(label); 
-    ExportButton excel = new ExportButton("Excel",EXPORT_EXCEL,font,background,parent_);
-    excel.setToolTipText(TooltipTexts.EXPORT_EXCEL);
+    ExportButton excel = new ExportButton("Excel",EXPORT_EXCEL,font,background,TooltipTexts.EXPORT_EXCEL,parent_);
     this.add(excel);
     if (mzTab){
       label = new JLabel(" | ");
       label.setForeground(font);
-      label.setFont(textFont);
+//      label.setFont(textFont);
       this.add(label); 
-      ExportButton mztab = new ExportButton("mzTab",EXPORT_MZTAB,font,background,parent_);
-      mztab.setToolTipText(TooltipTexts.EXPORT_MZTAB);
+      ExportButton mztab = new ExportButton("mzTab",EXPORT_MZTAB,font,background,TooltipTexts.EXPORT_MZTAB,parent_);
       this.add(mztab);
       label = new JLabel(" | ");
       label.setForeground(font);
-      label.setFont(textFont);
+//      label.setFont(textFont);
       this.add(label); 
-      ExportButton rdb = new ExportButton("rdb",EXPORT_RDB,font,background,parent_);
-      rdb.setToolTipText(TooltipTexts.EXPORT_RDB);
+      ExportButton rdb = new ExportButton("rdb",EXPORT_RDB,font,background,TooltipTexts.EXPORT_RDB,parent_);
       this.add(rdb);
     }
     label = new JLabel(" | ");
     label.setForeground(font);
-    label.setFont(textFont);
+//    label.setFont(textFont);
     this.add(label); 
-    ExportButton text = new ExportButton("Text",EXPORT_TEXT,font,background,parent_);
-    text.setToolTipText(TooltipTexts.EXPORT_TXT);
+    ExportButton text = new ExportButton("Text",EXPORT_TEXT,font,background,TooltipTexts.EXPORT_TXT,parent_);
     this.add(text);
     if (chroms){
       label = new JLabel(" | ");
       label.setForeground(font);
-      label.setFont(textFont);
+//      label.setFont(textFont);
       this.add(label); 
-      ExportButton chrom = new ExportButton("Chroms",EXPORT_CHROMS,font,background,parent_);
-      chrom.setToolTipText(TooltipTexts.EXPORT_CHROMS);
+      ExportButton chrom = new ExportButton("Chroms",EXPORT_CHROMS,font,background,TooltipTexts.EXPORT_CHROMS,parent_);
       this.add(chrom);      
     }
     
+    //this has to be removed in the default LDA version; START!
+//    if (Settings.SHOW_OMEGA_TOOLS) //TODO: for SILDA analysis, remove when done
+//    {
+//      label = new JLabel(" | ");
+//      label.setForeground(font);
+//      label.setFont(textFont);
+//      this.add(label); 
+//      ExportButton summary = new ExportButton("Summary",EXPORT_SUMMARY,font,background,parent_);
+//      this.add(summary);      
+//    }
+    //this has to be removed in the default LDA version; END!
     
 
     //// this has to be removed in the default LDA version; START!

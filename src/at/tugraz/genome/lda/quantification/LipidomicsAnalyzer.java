@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,10 +19,11 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.quantification;
 
+//import java.awt.Color;
 //import java.io.BufferedOutputStream;
 //import java.io.FileOutputStream;
 import java.io.IOException;
@@ -38,7 +39,10 @@ import java.util.Vector;
 //
 //import org.jfree.chart.ChartFactory;
 //import org.jfree.chart.JFreeChart;
+//import org.jfree.chart.StandardChartTheme;
 //import org.jfree.chart.plot.PlotOrientation;
+//import org.jfree.chart.plot.XYPlot;
+//import org.jfree.chart.renderer.xy.XYItemRenderer;
 //import org.jfree.data.xy.XYSeries;
 //import org.jfree.data.xy.XYSeriesCollection;
 
@@ -135,6 +139,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
   private int chromSmoothRepeats_ = 10;
   private boolean removeIfOtherIsotopePresent_ = true; 
   private boolean useNoiseCutoff_;
+  private boolean useDynamicNoiseCutoff_;
   private float noiseCutoffDeviationValue_;
   private Float minimumRelativeIntensity_;
   private int scanStep_;
@@ -226,6 +231,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     this.coarseChromMzTolerance_ = 0.02f;
     this.removeIfOtherIsotopePresent_ = true;
     this.useNoiseCutoff_ = false;
+    this.useDynamicNoiseCutoff_ = false;
     this.noiseCutoffDeviationValue_ = 2f;
     this.scanStep_ = 1;
     this.chromSmoothRange_= 0.5f;
@@ -282,7 +288,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
   }
   
   public void set3DParameters(float chromSmoothRange, int chromSmoothRepeats, boolean removeIfOtherIsotopePresent,
-      boolean useNoiseCutoff, float noiseCutoffDeviationValue, Float minimumRelativeIntensity, int scanStep, float profileMzRange, float profileTimeTolerance,
+      boolean useNoiseCutoff, float noiseCutoffDeviationValue, boolean useDynamicNoiseCutoff, Float minimumRelativeIntensity, int scanStep, float profileMzRange, float profileTimeTolerance,
       float profileIntThreshold, float broaderProfileTimeTolerance,
       float profileSmoothRange, int profileSmoothRepeats, int profileMeanSmoothRepeats, float profileMzMinRange, float profileSteepnessChange1, float profileSteepnessChange2,
       float profileIntensityCutoff1, float profileIntensityCutoff2, float profileGeneralIntCutoff, float profilePeakAcceptanceRange, float profileSmoothingCorrection,
@@ -299,6 +305,7 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     this.removeIfOtherIsotopePresent_ = removeIfOtherIsotopePresent;
     this.chromSmoothRepeats_ = chromSmoothRepeats;
     this.useNoiseCutoff_ = useNoiseCutoff;
+    this.useDynamicNoiseCutoff_ = useDynamicNoiseCutoff;
     this.noiseCutoffDeviationValue_ = noiseCutoffDeviationValue;
     this.minimumRelativeIntensity_ = minimumRelativeIntensity;
     this.scanStep_ = scanStep;
@@ -417,8 +424,8 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
   }
 
   protected CgChromatogram readAChromatogram(float mz, float lowerMzBand, float upperMzBand,int msLevel,float smoothRange, int smoothRepeats, float meanSmoothRange, int meanSmoothRepeats, float startTime, float stopTime) throws CgException{
-//  long time = System.currentTimeMillis();
-	CgChromatogram cx = reader_.readChromatogram(mz - lowerMzBand,mz + upperMzBand,msLevel);
+  	//  long time = System.currentTimeMillis();
+  	CgChromatogram cx = reader_.readChromatogram(mz - lowerMzBand,mz + upperMzBand,msLevel);
     cx.Mz = mz;
     cx.LowerMzBand = lowerMzBand;
     cx.UpperMzBand = upperMzBand;
@@ -787,8 +794,11 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
 
     if (useNoiseCutoff_)
       this.calculateNoiseCutoffValue(chrom);
+    if (useDynamicNoiseCutoff_)
+    	this.setDynamicNoiseCutoff(chrom);
     if (minimumRelativeIntensity_!=null)
       this.calculateMinIntThreshold(chrom);
+    ////System.out.println("this.lowerIntensityThreshold_: "+this.lowerIntensityThreshold_);
     chromHash_.put(0, chrom);
     Vector<Vector<CgProbe>> both = scanForHits(chrom,previousIsoChrom,possibleIsoLowerMinimum,charge,msLevel,retentionTime, retentionTimes, prevTimeTolerance, afterTimeTolerance, timeType);
     // stores all probes that originate from a different isotope
@@ -2836,8 +2846,8 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
 //      System.out.println("Reading from file");
       LipidomicsChromatogram  profile = readASingleProfile(aProbe,msLevel,true);
       
-//      this.printChromaToFile(profile, "D:\\Christer\\20170310\\test2\\profsmall.JPG");
-//      this.printChromaToFile(profile, "D:\\Christer\\20170310\\test2\\profraw.JPG",1);
+//      this.printChromaToFile(profile, "E:\\Lipidomics\\LDA-Collaborations\\Koeberle\\20241219\\profsmall.png");
+//      this.printChromaToFile(profile, "E:\\Lipidomics\\LDA-Collaborations\\Koeberle\\20241219\\profraw.png",1);
       
       profile.GetMaximumAndAverage();
       // these are specific paramaters for the Greedy-Algorithm for detection of peak borders
@@ -2952,11 +2962,11 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
 //  this.printChromaToFile(profile, "E:\\lipidomics\\20130502\\12_1_profsmall.JPG");
 //  this.printChromaToFile(profile, "E:\\lipidomics\\20130502\\12_1_profraw.JPG",1);
 
-//    this.printChromaToFile(smallChroma, "D:\\Experiment1\\QTOF\\smallChromraw.JPG",1);
-//    this.printChromaToFile(smallChroma, "D:\\Experiment1\\QTOF\\smallChrom.JPG");
+//    this.printChromaToFile(smallChroma, "E:\\Lipidomics\\LDA-Collaborations\\Koeberle\\20241219\\smallChromraw.JPG",1);
+//    this.printChromaToFile(smallChroma, "E:\\Lipidomics\\LDA-Collaborations\\Koeberle\\20241219\\smallChrom.JPG");
 //    
-//    this.printChromaToFile(broadChroma, "D:\\Experiment1\\QTOF\\broadChromraw.JPG",1);
-//    this.printChromaToFile(broadChroma, "D:\\Experiment1\\QTOF\\broadChrom.JPG");
+//    this.printChromaToFile(broadChroma, "E:\\Lipidomics\\LDA-Collaborations\\Koeberle\\20241219\\broadChromraw.JPG",1);
+//    this.printChromaToFile(broadChroma, "E:\\Lipidomics\\LDA-Collaborations\\Koeberle\\20241219\\broadChrom.JPG");
     if (!smallChroma.Good) throw new QuantificationException("The exact chromatogram (small) does not show satisfying intensities");
     CgProbe smallProbe = new CgProbe(0,charge);
     smallProbe = LipidomicsAnalyzer.copyResults(smallProbe, smallChroma, false);
@@ -3305,15 +3315,19 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
 //  
 //    XYSeries series1 = new XYSeries("Chrom small");
 //    for (int j=0;j!=cx.ScanCount;j++){
-////      if (cx.Value[j][0]<782.55f)
-//      series1.add(cx.Value[j][0],cx.Value[j][value]);
+//      if ((10f*60f)<cx.Value[j][0] && cx.Value[j][0]<(13f*60f))
+//      	series1.add(cx.Value[j][0],cx.Value[j][value]);
 //    }
 //    XYSeriesCollection coll1 = new XYSeriesCollection(series1);
+//    ChartFactory.setChartTheme(StandardChartTheme.createLegacyTheme());
 //    JFreeChart chart1 = ChartFactory.createXYLineChart("Chrom small","time","Intensity",coll1,PlotOrientation.VERTICAL,true,false,false);
+//    XYPlot xyPlot = chart1.getXYPlot();
+//    XYItemRenderer renderer = xyPlot.getRenderer();
+//    renderer.setSeriesPaint(0, Color.black);    
 //    BufferedOutputStream stream;
 //    try {
 //      stream = new BufferedOutputStream(new FileOutputStream(pathName));
-//      ImageIO.write(chart1.createBufferedImage(1000, 700), "JPEG", stream);
+//      ImageIO.write(chart1.createBufferedImage(1000, 700), "PNG", stream);
 //      stream.close();
 //    }
 //    catch (IOException e) {
@@ -4287,6 +4301,17 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
     if (lowerIntensityThreshold_<highestValue *this.minimumRelativeIntensity_) lowerIntensityThreshold_ = highestValue *this.minimumRelativeIntensity_.floatValue();
   }
   
+  /**
+   * calculates the dynamic noise cufoff of a chromotogram, and increased the lowerIntensityThreshold_ if the noise level is higher than the current one
+   * @param chrom the chromatogram where the noise level shall be calculated
+   */
+  private void setDynamicNoiseCutoff(LipidomicsChromatogram chrom){
+  	float noiseLevel =  chrom.estimateChromatogramNoise();
+    if (lowerIntensityThreshold_<noiseLevel) lowerIntensityThreshold_ = noiseLevel;
+  	
+  }
+  
+  
   public CgProbe getProbeByManualSettings(LipidomicsChromatogram cr, boolean is3D, double startTime, double stopTime, double startMz, double stopMz, int charge, int msLevel)throws CgException{
     double timeCenter = (startTime+stopTime)/2d;
     cr.FindPeak(findIndexByTime((float)timeCenter, cr), 1, LipidomicsDefines.StandardValleyMethod);
@@ -4389,6 +4414,32 @@ public class LipidomicsAnalyzer extends ChromaAnalyzer
       }
     }
     return results;
+  }
+  
+  public CgProbe calculatePeakAtExactTimePosition(float rt, float mz, float lowerMzBand, float upperMzBand, int charge, int msLevel) throws CgException, QuantificationException {
+  	CgProbe probe = null;
+    //if (timeType == LipidomicsDefines.MINUTES) mainRt = mainRt*60f;
+    LipidomicsChromatogram chrom = new LipidomicsChromatogram(readAChromatogram(mz, lowerMzBand, upperMzBand, msLevel, chromSmoothRange_,chromSmoothRepeats_));
+    chrom.GetMaximumAndAverage();
+    int mainScan = LipidomicsAnalyzer.findIndexByTime(rt, chrom);
+    
+    try{probe = detectPeakThreeD(chrom,mainScan,false,charge,msLevel);}catch(QuantificationException qex){}
+    if (probe!=null && probe.AreaStatus == CgAreaStatus.OK){
+      return probe;
+    }
+    probe = LipidomicsAnalyzer.calculateOneArea(chrom, mainScan, LipidomicsDefines.GreedySteepnessReductionMethod,charge);
+    if (probe.AreaStatus == CgAreaStatus.OK){
+    	return probe;
+    }
+    probe = LipidomicsAnalyzer.calculateOneArea(chrom, mainScan, LipidomicsDefines.EnhancedValleyMethod,charge);
+    if (probe.AreaStatus == CgAreaStatus.OK){
+    	return probe;
+    }
+    probe = LipidomicsAnalyzer.calculateOneArea(chrom, mainScan, LipidomicsDefines.StandardValleyMethod,charge);
+    if (probe.AreaStatus == CgAreaStatus.OK){
+    	return probe;
+    }
+    return probe;
   }
   
   public Vector<Vector<CgProbe>> calculatePeakAtExactProbePosition(LipidParameterSet templateParam, int maxIsotope,int charge, int msLevel) throws CgException {

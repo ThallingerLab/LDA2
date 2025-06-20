@@ -1,0 +1,27 @@
+[GENERAL]
+AmountOfChains=1
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+BasePeakCutoff=1%
+RetentionTimePostprocessing=true
+
+
+[HEAD]
+!FRAGMENTS
+Name=-LPE(18)	Formula=$PRECURSOR-H2O		Charge=1	MSLevel=2	mandatory=false
+Name=-LPE(43)	Formula=$PRECURSOR-C2H5N	Charge=1	MSLevel=2	mandatory=true
+Name=-LPE(61)	Formula=$PRECURSOR-C2H7NO	Charge=1	MSLevel=2	mandatory=true
+Name=-LPE(123)	Formula=$PRECURSOR-C2H6NO3P	Charge=1	MSLevel=2	mandatory=false
+Name=-LPE(141)	Formula=$PRECURSOR-C2H8NO4P	Charge=1	MSLevel=2	mandatory=false
+
+!INTENSITIES
+Equation=-LPE(141)<0.2*$BASEPEAK		mandatory=true
+Equation=(-LPE(61)+-LPE(43))>1.2*$BASEPEAK	mandatory=true
+Equation=-LPE(18)<0.25*$BASEPEAK		mandatory=true
+Equation=-LPE(123)<0.25*$BASEPEAK		mandatory=true
+
+[CHAINS]
+!FRAGMENTS
+Name=-FA (+HO)	Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=false
+Name=-FA (-H)	Formula=$PRECURSOR-$CHAIN+H2O	Charge=1	MSLevel=2	mandatory=false

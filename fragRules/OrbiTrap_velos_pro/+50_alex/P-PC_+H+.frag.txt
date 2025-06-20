@@ -1,0 +1,51 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+SpectrumCoverage=10%
+BasePeakCutoff=0.01%
+ChainCutoff=50%
+SpectrumCoverage=10%
+AlkenylChains=1
+RetentionTimePostprocessing=true
+
+
+[HEAD]
+!FRAGMENTS
+Name=PC O-(184)		Formula=C5H15NO4P		Charge=1	MSLevel=2	mandatory=true
+Name=Precursor		Formula=$PRECURSOR		Charge=1	MSLevel=2	mandatory=other
+Name=PC O-(147)		Formula=C2H5O4PNa		Charge=1	MSLevel=2	mandatory=other
+Name=-PC O-(59)		Formula=$PRECURSOR-NC3H9	Charge=1	MSLevel=2	mandatory=other
+Name=-PC O-(183)	Formula=$PRECURSOR-P1O4C5N1H14	Charge=1	MSLevel=2	mandatory=other
+Name=-PC O-(205)	Formula=$PRECURSOR-C5H13NO4PNa	Charge=1	MSLevel=2	mandatory=other
+Name=PC O-(307)		Formula=C21H39O			Charge=1	MSLevel=2	mandatory=other
+Name=-PC O-(18)		Formula=$PRECURSOR-H2O		Charge=1	MSLevel=2	mandatory=other
+Name=-PE O-(141)	Formula=$PRECURSOR-C2H8NO4P	Charge=1	MSLevel=2	mandatory=other
+
+!INTENSITIES
+Equation=PC O-(184)*0.7>Precursor	mandatory=true
+Equation=PC O-(184)>0.5*$BASEPEAK	mandatory=true
+Equation=PC O-(184)*0.5>-PC O-(59)	mandatory=true
+Equation=PC O-(184)*0.9>-PC O-(183)	mandatory=true
+Equation=-PC O-(59)<0.05*PC O-(184)	mandatory=true
+Equation=PC O-(147)<0.02*PC O-(184)	mandatory=true
+Equation=-PC O-(205)<0.02*PC O-(184)	mandatory=true
+Equation=PC O-(307)<0.02*PC O-(184)	mandatory=true
+Equation=PC O-(184)*0.1>-PC O-(18)	mandatory=true
+Equation=PC O-(184)>-PE O-(141)		mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=-FA (-H)	Formula=$PRECURSOR-$CHAIN+H2O		Charge=1	MSLevel=2	mandatory=false
+Name=-FA (+H)	Formula=$PRECURSOR-$ALKENYLCHAIN	Charge=1	MSLevel=2	mandatory=true
+
+!INTENSITIES
+Equation=-FA (-H)<-FA (+H)*0.8	mandatory=true
+
+
+[POSITION]
+!INTENSITIES
+Equation=-FA (-H)[2]>0*-FA (+H)[2]+0*$BASEPEAK	mandatory=true
+Equation=-FA (+H)[1]>0*-FA (-H)[1]+0*$BASEPEAK	mandatory=true

@@ -1,0 +1,29 @@
+[GENERAL]
+AmountOfChains=2
+ChainLibrary=fattyAcidChains.xlsx
+CAtomsFromName=\D*(\d+):\d+
+DoubleBondsFromName=\D*\d+:(\d+)
+
+
+[HEAD]
+!FRAGMENTS
+Name=Precursor	Formula=$PRECURSOR	Charge=1	MSLevel=2	mandatory=false
+Name=Mass_H	Formula=$PRECURSOR-C2H2O2 Charge=1 MSLevel=2 mandatory=false 
+Name=GlycerolHex2H2O	Formula=C15H25O12 Charge=1 MSLevel=2 mandatory=true
+Name=GlycerolHex2H4O2	Formula=C15H27O13 Charge=1 MSLevel=2 mandatory=true
+Name=GlycerolHexH2O	Formula=C9H15O7 Charge=1 MSLevel=2 mandatory=false
+Name=GlycerolHexH4O2	Formula=C9H17O8 Charge=1 MSLevel=2 mandatory=false
+Name=GlycerolHex3H2O	Formula=C14H25O12 Charge=1 MSLevel=2 mandatory=other
+Name=GlycerolHex3H4O2	Formula=C14H27O13 Charge=1 MSLevel=2 mandatory=other
+
+!INTENSITIES
+Equation=GlycerolHex3H2O*1.5<GlycerolHex2H2O										mandatory=true
+Equation=GlycerolHex3H4O2*1.5<GlycerolHex2H4O2										mandatory=true
+
+
+[CHAINS]
+!FRAGMENTS
+Name=NL_CarboxyH2CO2	Formula=$PRECURSOR-$CHAIN-H2CO2	Charge=1	MSLevel=2	mandatory=false
+Name=NL_CarboxyH4CO3	Formula=$PRECURSOR-$CHAIN-H4CO3	Charge=1	MSLevel=2	mandatory=false
+Name=NL_Carboxy	Formula=$PRECURSOR-$CHAIN	Charge=1	MSLevel=2	mandatory=false
+Name=Carboxy_H	Formula=$CHAIN-H	Charge=1	MSLevel=2	mandatory=true

@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2018 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2018 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda;
 import java.io.File;
@@ -82,7 +82,10 @@ public class LDACmd
     option=new Option("q","quant", true, "directory containing quant files");
     option.setRequired(true);
     parameters.addOption(option);
-    option=new Option("p","processors", true, "number of processors");
+    option=new Option("pc","processorsChrom", true, "number of processors for translation");
+    option.setRequired(true);
+    parameters.addOption(option);
+    option=new Option("p","processors", true, "number of processors for quantification");
     option.setRequired(true);
     parameters.addOption(option);
     option=new Option("c","cutoff", true, "intensity cutoff in per mille");
@@ -128,6 +131,18 @@ public class LDACmd
     
     String rawDirString = command.getOptionValue("i");
     String quantDirString = command.getOptionValue("q");
+    int nrChromProcessors  = 1;
+    try{
+      if (command.getOptionValue("pc")!=null) nrChromProcessors = Integer.parseInt(command.getOptionValue("pc"));
+      if (nrChromProcessors<1) {
+        log_.severe("Number of Processors match must be greater 0");
+        System.exit(1);
+      }
+    }catch (NumberFormatException nfx){
+      log_.severe("Number of Processors is not integer format");
+      System.exit(1);
+    }
+    
     int nrProcessors  = 1;
     try{
       if (command.getOptionValue("p")!=null) nrProcessors = Integer.parseInt(command.getOptionValue("p"));
@@ -240,6 +255,7 @@ public class LDACmd
     System.out.println("rawDirString: "+rawDirString);
     System.out.println("quantDirString: "+quantDirString);
     System.out.println("nrProcessors: "+nrProcessors);
+    System.out.println("nrChromProcessors: "+nrChromProcessors);
     System.out.println("cutoff: "+cutoff);
     System.out.println("isotopesMustMatch: "+isotopesMustMatch);
     System.out.println("amountOfIsotopes: "+amountOfIsotopes);
@@ -249,7 +265,7 @@ public class LDACmd
     System.out.println("searchUnknownBatchTime: "+searchUnknownBatchTime);
     System.out.println("------------------------------------------");
     LDACmd cmd = new LDACmd();
-    cmd.prepareAndStartQuatification(rawDirString, quantDirString, nrProcessors, cutoff,
+    cmd.prepareAndStartQuatification(rawDirString, quantDirString, nrChromProcessors, nrProcessors, cutoff,
         isotopesMustMatch, amountOfIsotopes, minusTimeTol, plusTimeTol, rtShift,
         searchUnknownBatchTime);
   }
@@ -258,6 +274,7 @@ public class LDACmd
    * checks for the existence of directories, detects quantifiable files and quantification files, and starts the batch quantification
    * @param rawDirString directory containing the MS data
    * @param quantDirString directory containing quantification files
+   * @param nrProcessors amount of processors/threads to be used for file translation
    * @param nrProcessors amount of processors/threads to be used for quantification
    * @param cutoff the relative cutoff value in per mille
    * @param isotopesMustMatch number of isotopes that must match the theoretical distribution
@@ -268,7 +285,7 @@ public class LDACmd
    * @param searchUnknownBatchTime search unknown retention time
    */
   private void prepareAndStartQuatification(String rawDirString, String quantDirString,
-      int nrProcessors, float cutoff, int isotopesMustMatch, int amountOfIsotopes,
+      int nrChromProcessors, int nrProcessors, float cutoff, int isotopesMustMatch, int amountOfIsotopes,
       float minusTimeTol, float plusTimeTol, float rtShift, boolean searchUnknownBatchTime) {
     BatchQuantificationTableModel batchQuantTableModel = new BatchQuantificationTableModel();
     BatchQuantificationTable batchQuantTable = new BatchQuantificationTable(batchQuantTableModel);
@@ -293,8 +310,8 @@ public class LDACmd
             String[] fileNameAndSuffix = StaticUtils.extractFileNameAndSuffix(rawFileCandidates[i].getAbsolutePath()); 
             String suffix = fileNameAndSuffix[1];
             String fileName = fileNameAndSuffix[0];
-            if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("raw")||suffix.equalsIgnoreCase("chrom")||suffix.equalsIgnoreCase("wiff")){
-              if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("chrom")) mzXMLOrChromPresent = true;
+            if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("mzml")||suffix.equalsIgnoreCase("raw")||suffix.equalsIgnoreCase("chrom")||suffix.equalsIgnoreCase("wiff")){
+              if (suffix.equalsIgnoreCase("mzxml")||suffix.equalsIgnoreCase("mzml")|suffix.equalsIgnoreCase("chrom")) mzXMLOrChromPresent = true;
               Vector<File> theFiles = new Vector<File>();
               if (avoidDuplication.containsKey(fileName)){
                 
@@ -342,7 +359,7 @@ public class LDACmd
                   File file = theFiles.get(i);
                   String suffix = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf(".")+1);
                   if (mzXMLOrChromPresent && suffix.equalsIgnoreCase("wiff")) continue;
-                  if (suffix.equalsIgnoreCase("mzXML")){
+                  if (suffix.equalsIgnoreCase("mzXML")||suffix.equalsIgnoreCase("mzml")){
                     rawFiles.add(theFiles.get(i));
                   }
                 }  
@@ -372,7 +389,7 @@ public class LDACmd
             try {
               batchQuantThread_ = new BatchQuantThread(batchQuantTable, batchQuantTableModel,progressBatchBar, 
               quantifyingBatchLabel, minusTimeTol,plusTimeTol,amountOfIsotopes,isotopesMustMatch,searchUnknownBatchTime, cutoff, 
-                rtShift, nrProcessors,ionMode,true);
+                rtShift, nrChromProcessors,nrProcessors,ionMode,true);
               batchQuantThread_.start();
               this.initTimer();
             }catch(Exception ex) {

@@ -37,6 +37,7 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -61,7 +62,7 @@ import at.tugraz.genome.lda.vos.DoubleBondPositionVO;
 import at.tugraz.genome.maspectras.quantification.CgAreaStatus;
 import at.tugraz.genome.maspectras.quantification.CgProbe;
 import at.tugraz.genome.maspectras.quantification.Probe3D;
-import at.tugraz.genome.lda.utils.Pair;
+import org.apache.commons.math3.util.Pair;
 
 /**
  * 
@@ -72,7 +73,12 @@ import at.tugraz.genome.lda.utils.Pair;
 // TODO: features for omega assingment have been commented out / not added
 public class QuantificationResultExporter
 {
+	/** the maximum number of characters allowed in an excel sheet name */
+	public final static int EXCEL_SHEET_CHAR_LIMIT = 31;
+	
 	public final static String SHEET_CONSTANTS = "About";
+	
+	public final static String SHEET_LIPID_CLASS_LOOKUP = "Lipid (sub)classes";
 
 	public final static String ADDUCT_MSN_SHEET = " - MSn";
 
@@ -82,16 +88,16 @@ public class QuantificationResultExporter
 
 	// Header constants used in multiple sheets
 	public final static int HEADER_ROW = 0;
-
+	
 	public final static String HEADER_SPECIES = "Species";
-
+	
 	public final static String HEADER_AREA = "Area";
 
 	public final static String HEADER_ISOTOPE = "Isotope";
 
 	// MS1 Sheet Headers
 	public final static String HEADER_INDEX = "Index";
-
+	
 	public final static String HEADER_NAME = "Name";
 
 	public final static String HEADER_DBS = "Dbs";
@@ -480,6 +486,24 @@ public class QuantificationResultExporter
 				createHeader(ws, headerTitles);
 				writeConstants(ws, propertyRows);
 			}
+			
+			TreeMap<String,String> sheetNameLookup = new TreeMap<String,String>();
+			
+			if (isSheetNameOverlength(new ArrayList<String>(quantRes.getIdentifications().keySet())))
+			{
+				Worksheet ws = wb.newWorksheet(SHEET_LIPID_CLASS_LOOKUP);
+				List<String> headerTitles = new ArrayList<String>();
+				headerTitles.add("ID");
+				headerTitles.add("Full name");
+				createHeader(ws, headerTitles);
+				Integer count = 1;
+				for (String sheetName:quantRes.getIdentifications().keySet()) {
+					sheetNameLookup.put(sheetName, count.toString());
+					ws.value(count, 0, count.toString());
+					ws.value(count, 1, sheetName);
+					count++;
+				}
+			}
 
 			for (String sheetName:quantRes.getIdentifications().keySet()) {
 				Vector<LipidParameterSet> params = quantRes.getIdentifications()
@@ -494,8 +518,7 @@ public class QuantificationResultExporter
 					msLevel = quantRes.getMsLevels().get(sheetName);
 				}
 
-				Worksheet[] sheetsForClass = createRequiredSheetsForClass(wb,
-						sheetName);
+				Worksheet[] sheetsForClass = createRequiredSheetsForClass(wb, sheetNameLookup.isEmpty() ? sheetName : sheetNameLookup.get(sheetName));
 				Worksheet resultSheet = sheetsForClass[0];
 				Worksheet resultSheetMSn = sheetsForClass[1];
 				Worksheet resultSheetOmega = sheetsForClass[2];
@@ -527,11 +550,11 @@ public class QuantificationResultExporter
 																					 * like "AlexMSnTargetsUsed"
 																					 */
 				int omegaRowCount = HEADER_ROW + 1;
-
+				
 				for (LipidParameterSet param:params) {
 					if (param == null)
 						continue;
-
+					
 					ms1RowCount = writeEvidenceMS1(ms1RowCount, resultCount, resultSheet,
 							param, mS1HeaderTitles);
 
@@ -566,7 +589,18 @@ public class QuantificationResultExporter
 			ex.printStackTrace();
 			throw new ExportException(ex.getMessage());
 		}
-
+	}
+	
+	private static boolean isSheetNameOverlength(ArrayList<String> sheetNames)
+	{
+		int longestSuffixLength = ADDUCT_OVERVIEW_SHEET.length();
+		int max = EXCEL_SHEET_CHAR_LIMIT-longestSuffixLength;
+		for (String name : sheetNames)
+		{
+			if (name.length() > max)
+				return true;
+		}
+		return false;
 	}
 
 	/**
@@ -826,58 +860,57 @@ public class QuantificationResultExporter
 				totalIsoArea += probe.Area;
 
 				if (areaStatusOK) {
-
 					ws.value(row, headerTitles.indexOf(HEADER_ISOTOPE), chargeState);
-					ws.value(row, headerTitles.indexOf(HEADER_AREA),
-							new Double(probe.Area));
+					ws.value(row, headerTitles.indexOf(HEADER_AREA), 
+							getDoubleValue(probe.Area));
 					ws.value(row, headerTitles.indexOf(HEADER_AREA_ERROR),
-							new Double(probe.AreaError));
+							getDoubleValue(probe.AreaError));
 					ws.value(row, headerTitles.indexOf(HEADER_BACKGROUND),
-							new Double(probe.Background));
+							getDoubleValue(probe.Background));
 					ws.value(row, headerTitles.indexOf(HEADER_CHARGE), probe.Charge);
 					ws.value(row, headerTitles.indexOf(HEADER_PEAK),
-							new Double(probe.Peak));
+							getDoubleValue(probe.Peak));
 					ws.value(row, headerTitles.indexOf(HEADER_LOWER_VALLEY),
-							new Double(probe.LowerValley));
+							getDoubleValue(probe.LowerValley));
 					ws.value(row, headerTitles.indexOf(HEADER_UPPER_VALLEY),
-							new Double(probe.UpperValley));
+							getDoubleValue(probe.UpperValley));
 
 					if (probe.getLowerValley10() != null) {
 						ws.value(row, headerTitles.indexOf(HEADER_RAW_APEX),
-								new Double(probe.getApexIntensity()));
+								getDoubleValue(probe.getApexIntensity()));
 						ws.value(row, headerTitles.indexOf(HEADER_LOWER_VALLEY10PC),
-								new Double(probe.getLowerValley10()));
+								getDoubleValue(probe.getLowerValley10()));
 						ws.value(row, headerTitles.indexOf(HEADER_LOWER_VALLEY50PC),
-								new Double(probe.getLowerValley50()));
+								getDoubleValue(probe.getLowerValley50()));
 						ws.value(row, headerTitles.indexOf(HEADER_UPPER_VALLEY50PC),
-								new Double(probe.getUpperValley50()));
+								getDoubleValue(probe.getUpperValley50()));
 						ws.value(row, headerTitles.indexOf(HEADER_UPPER_VALLEY10PC),
-								new Double(probe.getUpperValley10()));
+								getDoubleValue(probe.getUpperValley10()));
 					}
 
 					if (probe3D != null) {
 						ws.value(row, headerTitles.indexOf(HEADER_LOWER_MZ),
-								new Double(probe3D.LowerMzBand));
+								getDoubleValue(probe3D.LowerMzBand));
 						ws.value(row, headerTitles.indexOf(HEADER_UPPER_MZ),
-								new Double(probe3D.UpperMzBand));
+								getDoubleValue(probe3D.UpperMzBand));
 						ws.value(row, headerTitles.indexOf(HEADER_ELL_CENT_TIME),
-								new Double(probe3D.getEllipseTimePosition()));
+								getDoubleValue(probe3D.getEllipseTimePosition()));
 						ws.value(row, headerTitles.indexOf(HEADER_ELL_CENT_MZ),
-								new Double(probe3D.getEllipseMzPosition()));
+								getDoubleValue(probe3D.getEllipseMzPosition()));
 						ws.value(row, headerTitles.indexOf(HEADER_ELL_STRETCH_TIME),
-								new Double(probe3D.getEllipseTimeStretch()));
+								getDoubleValue(probe3D.getEllipseTimeStretch()));
 						ws.value(row, headerTitles.indexOf(HEADER_ELL_STRETCH_MZ),
-								new Double(probe3D.getEllipseMzStretch()));
+								getDoubleValue(probe3D.getEllipseMzStretch()));
 
 						if (probe3D.getLowMz10() > -1) {
 							ws.value(row, headerTitles.indexOf(HEADER_LOWER_MZ10PC),
-									new Double(probe3D.getLowMz10()));
+									getDoubleValue(probe3D.getLowMz10()));
 							ws.value(row, headerTitles.indexOf(HEADER_LOWER_MZ50PC),
-									new Double(probe3D.getLowMz50()));
+									getDoubleValue(probe3D.getLowMz50()));
 							ws.value(row, headerTitles.indexOf(HEADER_UPPER_MZ50PC),
-									new Double(probe3D.getUpMz50()));
+									getDoubleValue(probe3D.getUpMz50()));
 							ws.value(row, headerTitles.indexOf(HEADER_UPPER_MZ10PC),
-									new Double(probe3D.getUpMz10()));
+									getDoubleValue(probe3D.getUpMz10()));
 						}
 
 					}
@@ -885,8 +918,7 @@ public class QuantificationResultExporter
 				} else {
 					ws.value(row, headerTitles.indexOf(HEADER_AREA), new Double(0));
 				}
-
-				ws.value(row, headerTitles.indexOf(HEADER_MZ_MS1), probe.Mz);
+				ws.value(row, headerTitles.indexOf(HEADER_MZ_MS1), getDoubleValue(probe.Mz));
 			}
 
 			totalArea_ += totalIsoArea;
@@ -922,7 +954,7 @@ public class QuantificationResultExporter
 						String.valueOf(omegaPosition));
 			}
 		}
-
+		
 		ws.value(rowFirst, headerTitles.indexOf(HEADER_MODIFICATION),
 				param.getModificationName());
 		ws.value(rowFirst, headerTitles.indexOf(HEADER_FORMULA),
@@ -934,7 +966,7 @@ public class QuantificationResultExporter
 			ws.style(rowFirst, headerTitles.indexOf(HEADER_RT)).format("0.00").set();
 			ws.value(rowFirst, headerTitles.indexOf(HEADER_RT), param.getPreciseRT());
 		}
-
+		
 		ws.value(rowFirst, headerTitles.indexOf(HEADER_AREA), totalArea_);
 		ws.value(rowFirst, headerTitles.indexOf(HEADER_CHARGE), param.getCharge());
 		ws.value(rowFirst, headerTitles.indexOf(HEADER_MZ_MS1), param.Mz[0]);
@@ -956,12 +988,24 @@ public class QuantificationResultExporter
 					param.getPercentalSplit());
 		}
 
-		if (param.getOxState() != null && !param.getOxState().isEmpty())
+		if (param.getOxState() != null && !param.getOxState().isEmpty()) {
 			ws.value(rowFirst,
 					headerTitles.indexOf(LipidomicsConstants.CHAIN_MOD_COLUMN_NAME),
 					param.getOxState());
+		}
+			
 
 		return row++;
+	}
+	
+	private static Double getDoubleValue(float value)
+	{
+		Double doubleValue = new Double(value);
+		if (doubleValue.isNaN() || doubleValue.isInfinite())
+		{
+			return new Double(0);
+		}
+		return doubleValue;
 	}
 
 	/**

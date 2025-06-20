@@ -5,7 +5,6 @@ CAtomsFromName=\D*(\d+):\d+
 DoubleBondsFromName=\D*\d+:(\d+)
 BasePeakCutoff=0.01%
 RetentionTimePostprocessing=true
-ChainCutoff=10%
 SpectrumCoverage=10%
 ClassSpecificMS1Cutoff=0.01
 

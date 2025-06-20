@@ -10,7 +10,6 @@ AlkenylChains=1
 RetentionTimePostprocessing=true
 
 
-
 [HEAD]
 !FRAGMENTS
 Name=PChead_86			Formula=C5H12N			Charge=1	MSLevel=2	mandatory=false

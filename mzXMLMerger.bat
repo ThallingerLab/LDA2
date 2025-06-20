@@ -1,1 +1,0 @@
-java -jar MzXMLMerger.jar %1 %2

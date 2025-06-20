@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.msn.vos;
 
@@ -400,14 +400,16 @@ public class FragmentRuleVO
   private static Object[] containsSelfDefinedFragments(String formula, Hashtable<String,Short> headFragments, Hashtable<String,Short> chainFragments) throws RulesException{
     Vector<String> selfDefinedParts = new Vector<String>();
     Vector<Integer> plusOrMinus = new Vector<Integer>();
-    Hashtable<String,String> allFragments = new Hashtable<String,String>();
-    for (String name : headFragments.keySet()) allFragments.put(name, name);
-    for (String name : chainFragments.keySet()) allFragments.put(name, name);
+    	
     Vector<ShortStringVO> lengthSortedFragmentNames = getLengthSortedFragmentNames(headFragments,chainFragments);
     
     // if I start with the longest names, I do not have the problem that a smaller name is contained in the name of another fragment
     for (ShortStringVO name: lengthSortedFragmentNames){
-      Object[] result = checkSelfDefinedFragment(formula,name.getKey());
+    	String fragmentName = name.getKey();
+    	if (Settings.getElementParser().isElementAvailable(fragmentName)) // fragment names that are identical to atom names must have a $ as prefix when reused in formulas
+    		fragmentName = "$"+fragmentName;
+    		
+      Object[] result = checkSelfDefinedFragment(formula,fragmentName);
       Integer fragmentAction  = (Integer)result[0];
       if (fragmentAction==NO_FRAGMENT) continue;
       selfDefinedParts.add(name.getKey());

@@ -1,7 +1,7 @@
 /* 
  * This file is part of Lipid Data Analyzer
  * Lipid Data Analyzer - Automated annotation of lipid species and their molecular structures in high-throughput data from tandem mass spectrometry
- * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger 
+ * Copyright (c) 2017 Juergen Hartler, Andreas Ziegl, Gerhard G. Thallinger, Leonida M. Lamp
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER. 
  *  
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  *
  * Please contact lda@genome.tugraz.at if you need additional information or 
  * have any questions.
- */ 
+ */
 
 package at.tugraz.genome.lda.msn;
 
@@ -34,7 +34,7 @@ import at.tugraz.genome.lda.exception.NoRuleException;
 import at.tugraz.genome.lda.exception.RulesException;
 import at.tugraz.genome.lda.exception.SheetNotPresentException;
 import at.tugraz.genome.lda.msn.parser.FALibParser;
-import at.tugraz.genome.lda.msn.parser.LCBLibParser;
+import at.tugraz.genome.lda.msn.parser.SPBLibParser;
 import at.tugraz.genome.lda.msn.vos.FattyAcidVO;
 
 /**
@@ -50,6 +50,8 @@ public class FattyAcidsContainer
   public final static String FA_FILE_SUFFIX_NEW = ".xlsx";
   /** file suffix old Excel*/
   public final static String FA_FILE_SUFFIX_OLD = ".xls";
+  /** prefix that is only present for temporary excel files */
+  private final static String EXCEL_TEMPORARY_PREFIX = "~$";
   
   /** the cache instance*/
   private static FattyAcidsContainer instance_;
@@ -174,15 +176,16 @@ public class FattyAcidsContainer
     if (!faLibDir.isDirectory()) throw new RulesException("The fatty acid lib directory is a file - not a directory!");
     File[] files = faLibDir.listFiles();
     for (File file : files){
+    	if (file.getAbsolutePath().contains(EXCEL_TEMPORARY_PREFIX)) continue;
       if (!file.getAbsolutePath().endsWith(FA_FILE_SUFFIX_NEW) && !file.getAbsolutePath().endsWith(FA_FILE_SUFFIX_OLD)) continue;
       try {
         try {
           FALibParser parser = new FALibParser(file);
           parser.parseFile();
-          fattyAcids_.put(file.getName().substring(0,file.getName().length()), parser.getFattyAcids());
+          fattyAcids_.put(file.getName().substring(0,file.getName().length()), parser.getResult());
           availableLabels_.put(file.getName().substring(0,file.getName().length()),parser.getAvailableLabels());
         } catch (SheetNotPresentException ex){
-          LCBLibParser parser = new LCBLibParser(file);
+          SPBLibParser parser = new SPBLibParser(file);
           parser.parseFile();
           lcbs_.put(file.getName().substring(0,file.getName().length()), parser.getResult());
           availableLabels_.put(file.getName().substring(0,file.getName().length()),parser.getAvailableLabels());
