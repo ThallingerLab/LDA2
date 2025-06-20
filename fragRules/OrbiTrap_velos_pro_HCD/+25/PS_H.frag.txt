@@ -6,8 +6,6 @@ DoubleBondsFromName=\D*\d+:(\d+)
 BasePeakCutoff=0.02%
 ChainCutoff=60%
 SpectrumCoverage=10%
-EnforcePeakUnionTime=6
-ClassSpecificMS1Cutoff=0.001
 
 [HEAD]
 !FRAGMENTS

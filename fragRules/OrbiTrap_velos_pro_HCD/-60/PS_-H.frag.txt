@@ -6,9 +6,7 @@ DoubleBondsFromName=\D*\d+:(\d+)
 BasePeakCutoff=0.01%
 RetentionTimePostprocessing=true
 SpectrumCoverage=10%
-EnforcePeakUnionTime=6
-IgnorePositionForUnion=true
-ClassSpecificMS1Cutoff=0.001
+
 
 [HEAD]
 !FRAGMENTS
