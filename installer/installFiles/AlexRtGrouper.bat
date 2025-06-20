@@ -1,1 +1,0 @@
-${installer:javaBinLocation} -Xms${installer:xms}m -Xmx${installer:xmx}m -jar AlexRtGrouper.jar %1 %2

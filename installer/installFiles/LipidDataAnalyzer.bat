@@ -1,1 +1,0 @@
-${installer:javaBinLocation} -Xms${installer:xms}m -Xmx${installer:xmx}m ${installer:javaProp3DL} -jar LipidDataAnalyzer.jar
