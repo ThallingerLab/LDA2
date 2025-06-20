@@ -2,12 +2,9 @@
 
 Lipid Data Analyzer 2
 
-
-
 Lipid Data Analyzer 2 is released under a GNU GENERAL PUBLIC LICENSE Version 3.
 
 Licensing details can be found in the LICENSE document of this folder.
-
 
 Project compilation:
 For the compilation the following software has to be installed in the following sequence:

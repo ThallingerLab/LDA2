@@ -27,9 +27,6 @@
 		<fileset dir="${svg.lib.dir}">
 			<include name="*.jar" />
 		</fileset>
-		<fileset dir="${jlk.lib.dir}">
-			<include name="*.jar" />
-		</fileset>
 		<fileset dir="${cli.lib.dir}">
 			<include name="*.jar" />
 		</fileset>
@@ -223,7 +220,6 @@
 	
 	<target name="copyLibs">
 		<copy todir="${dist.dir}/tuLibs">
-			<fileset dir="${jlk.lib.dir}"/>
 			<fileset dir="${maspectras.lib.dir}"/>
 		</copy>
 		<copy todir="${dist.dir}/thirdParty">
