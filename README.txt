@@ -18,6 +18,8 @@ ant
 
 In the toInstall directory of the source code folder, the LipidDataAnalyzer.jar will be created.
 The application can be started by executing the LipidDataAnylzer.bat.
+If a version of Java other than Java 1.8 is active on your PC, please replace “java” in LipidDataAnalyzer.bat
+with the direct path to the Java 1.8 executable, e.g. C:\Java\jdk1.8.0_202\bin\java.exe
 
 For working with LDA out of Eclipse, you have to select Java 8 as the default JDK. Then, for
 starting the LDA out of Eclipse, right-click on the LDA project and select "Properties". In the
