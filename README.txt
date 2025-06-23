@@ -6,6 +6,10 @@ Lipid Data Analyzer 2 is released under a GNU GENERAL PUBLIC LICENSE Version 3.
 
 Licensing details can be found in the LICENSE document of this folder.
 
+Detailed information about system requirements, installation guide, 
+demo data and instructions how to run the software can be found in LDA’s user guide (LDA.pdf) 
+located in the doc subdirectory: doc/LDA.pdf
+
 Project compilation:
 For the compilation the following software has to be installed in the following sequence:
 Java 8 JDK	http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
@@ -21,7 +25,7 @@ The application can be started by executing the LipidDataAnylzer.bat.
 If a version of Java other than Java 1.8 is active on your PC, please replace "java" in LipidDataAnalyzer.bat
 with the direct path to the Java 1.8 executable, e.g. C:\Java\jdk1.8.0_202\bin\java.exe
 
-For working with LDA out of Eclipse, you have to select Java 8 as the default JDK. Then, for
+For working with LDA out of Eclipse, Java 8 must be selected as the default JDK. Then, for
 starting the LDA out of Eclipse, right-click on the LDA project and select "Properties". In the
 appearing pop-up, click in the left menu tree on "Java Build Path", select the tab "Libaries",
 and click on "Add JARs...". Navigate to the "natives" directory in your project and open the

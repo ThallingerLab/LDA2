@@ -4,6 +4,10 @@ Lipid Data Analyzer 2
 Lipid Data Analyzer 2 is released under a GNU GENERAL PUBLIC LICENSE Version 3.
 Licensing details can be found in the LICENSE document of this folder.
 
+Detailed information about system requirements, installation guide, 
+demo data and instructions how to run the software can be found in LDA’s user guide (LDA.pdf) 
+located in the doc subdirectory: doc/LDA.pdf
+
 Project compilation:
 For the compilation the following software has to be installed in the following sequence:
 Java 8 JDK	http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
@@ -24,10 +28,3 @@ appearing pop-up, click in the left menu tree on "Java Build Path", select the t
 and click on "Add JARs...". Navigate to the "natives" directory in your project and open the
 corresponding directory (linux64, mac or windows64), and all jar files in this directory to your
 library path.
-
-Code for MS/MS spectra interpretation:
-The code primarily responsible for the MS/MS spectra interpretation can be found in
-src/at/tugraz/genome/lda/msn
-
-Scripts for e.g. evaluation of experiment 3 and test cases can be found in:
-test/at/tugraz/genome
